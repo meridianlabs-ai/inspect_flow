@@ -8,5 +8,5 @@ class LocalServer(ServerAPI):
     def add_config(self, config_file: str) -> None:
         pass
 
-    def submit(self) -> str:
+    def submit(self, config_file: str) -> str:
         return "job-id"

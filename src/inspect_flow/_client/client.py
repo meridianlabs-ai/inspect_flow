@@ -7,5 +7,5 @@ class Client:
     def set_config(self, config_file: str) -> None:
         self.server.add_config(config_file)
 
-    def submit(self) -> str:
-        return self.server.submit()
+    def submit(self, config_file: str) -> str:
+        return self.server.submit(config_file)

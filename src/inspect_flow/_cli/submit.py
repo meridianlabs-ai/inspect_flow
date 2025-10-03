@@ -10,4 +10,4 @@ def submit_command(
 ) -> str:
     client = Client()
     client.set_config(config_file)
-    return client.submit()
+    return client.submit(config_file)
