@@ -63,3 +63,13 @@ async def run(task_group: TaskGroupConfig) -> None:
             text=True,
             env=os.environ.copy(),
         )
+
+        run_path = Path(__file__).parent / "run.py"
+        subprocess.run(
+            [".venv/bin/python", str(run_path)],
+            cwd=temp_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+        )

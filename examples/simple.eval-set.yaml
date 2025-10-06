@@ -8,7 +8,6 @@ run:
             name: inspect_evals
             items:
               - name: mmlu_0_shot
-              - name: class_eval
         models:
           - package: openai
             name: openai
