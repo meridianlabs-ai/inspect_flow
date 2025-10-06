@@ -10,4 +10,11 @@ def test_load_simple_eval_set() -> None:
 
     # Verify the result
     assert config is not None
+    assert config.run is not None
+    assert len(config.run.task_groups) == 1
+    task_group = config.run.task_groups[0]
+    assert task_group.eval_set is not None
+    assert len(task_group.eval_set.tasks) == 1
+    assert task_group.eval_set.models is not None
+    assert len(task_group.eval_set.models) == 1
     # TODO: Add specific assertions once types are finalized

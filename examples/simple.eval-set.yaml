@@ -9,7 +9,7 @@ run:
             items:
               - name: mbpp
               - name: class_eval
-        model:
+        models:
           - package: openai
             name: openai
             items:
