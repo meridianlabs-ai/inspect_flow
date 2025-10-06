@@ -1,6 +1,7 @@
 run:
   task_groups:
-    - uv_lock_file: "uv.lock"
+    - pyproject_toml_file: "pyproject.toml"
+      uv_lock_file: "uv.lock"
       eval_set:
         tasks:
           - package: "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
