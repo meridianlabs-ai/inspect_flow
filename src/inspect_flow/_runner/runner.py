@@ -34,7 +34,11 @@ async def run(task_group: TaskGroupConfig) -> None:
         # )
 
         subprocess.run(
-            ["uv", "sync", "--no-install-project"],
+            [
+                "uv",
+                "sync",
+                "--no-install-project",
+            ],
             cwd=temp_dir,
             check=True,
             capture_output=True,
@@ -42,9 +46,14 @@ async def run(task_group: TaskGroupConfig) -> None:
             env=os.environ.copy(),
         )
 
+        inspect_flow_path = Path(__file__).parent.parent.parent.parent
+
         eval_set_config = task_group.eval_set
         package_configs = [*eval_set_config.tasks, *(eval_set_config.models or [])]
-        dependencies = {*(package_config.package for package_config in package_configs)}
+        dependencies = [
+            *(package_config.package for package_config in package_configs),
+            str(inspect_flow_path),
+        ]
 
         subprocess.run(
             ["uv", "pip", "install", *sorted(dependencies)],
