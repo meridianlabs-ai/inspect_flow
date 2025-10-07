@@ -26,7 +26,16 @@ dependencies = [
 flow = "inspect_flow._cli.main:main"
 
 [dependency-groups]
-dev = ["ruff", "pytest", "anthropic", "openai", "pytest-dotenv", "pyright"]
+dev = [
+    "ruff",
+    "pytest",
+    "anthropic",
+    "openai",
+    "pytest-asyncio",
+    "pytest-dotenv",
+    "pyright",
+    "types-pyyaml>=6.0.12.20250915",
+]
 
 
 [tool.hatch.build]
