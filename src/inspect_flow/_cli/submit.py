@@ -7,7 +7,7 @@ from inspect_flow._client.client import Client
 @click.argument("config-file", type=str, required=True)
 def submit_command(
     config_file: str,
-) -> str:
+) -> None:
     client = Client()
     client.set_config(config_file)
     return client.submit(config_file)

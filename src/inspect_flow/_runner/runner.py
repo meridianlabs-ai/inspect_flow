@@ -9,7 +9,7 @@ from pathlib import Path
 from inspect_flow._types.types import TaskGroupConfig
 
 
-async def run(task_group: TaskGroupConfig) -> None:
+def run(task_group: TaskGroupConfig) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=temp_dir_parent, delete=False) as temp_dir:
