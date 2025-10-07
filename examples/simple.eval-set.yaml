@@ -8,6 +8,7 @@ run:
             name: inspect_evals
             items:
               - name: mmlu_0_shot
+        log_dir: "mmlu_0_shot_logs"
         models:
           - package: openai
             name: openai

@@ -165,6 +165,8 @@ class EvalSetConfig(BaseModel):
         description="List of tasks to evaluate in this eval set."
     )
 
+    log_dir: str = Field(description="Directory to write evaluation logs to.")
+
     models: list[PackageConfig[ModelConfig] | BuiltinConfig[ModelConfig]] | None = (
         Field(
             default=None,

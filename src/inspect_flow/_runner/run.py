@@ -93,7 +93,7 @@ def run_eval_set(eval_set_config: EvalSetConfig) -> tuple[bool, list[EvalLog]]:
 
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir="logs",
+        log_dir=eval_set_config.log_dir,
         model=models,
         limit=eval_set_config.limit,
     )

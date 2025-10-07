@@ -13,6 +13,11 @@ def run(task_group: TaskGroupConfig) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=temp_dir_parent, delete=False) as temp_dir:
+        # update log_dirs to be inside logs directory
+        # TODO:ransom - make log dir configurable
+        task_group.eval_set.log_dir = str(
+            Path.cwd() / "logs" / task_group.eval_set.log_dir
+        )
         # Serialize task_group to JSON and write to file
         task_group_json_path = Path(temp_dir) / "task_group.json"
         with open(task_group_json_path, "w") as f:
@@ -24,15 +29,7 @@ def run(task_group: TaskGroupConfig) -> None:
         if task_group.uv_lock_file:
             shutil.copy2(Path(task_group.uv_lock_file), Path(temp_dir) / "uv.lock")
 
-        # subprocess.run(
-        #     ["uv", "venv"],
-        #     cwd=temp_dir,
-        #     check=True,
-        #     capture_output=True,
-        #     text=True,
-        #     env=os.environ.copy(),
-        # )
-
+        # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
         env = os.environ.copy()
         env.pop("VIRTUAL_ENV", None)
 
