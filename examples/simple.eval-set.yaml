@@ -1,0 +1,17 @@
+run:
+  task_groups:
+    - pyproject_toml_file: "pyproject.toml"
+      uv_lock_file: "uv.lock"
+      eval_set:
+        tasks:
+          - package: "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            name: inspect_evals
+            items:
+              - name: mmlu_0_shot
+        log_dir: "mmlu_0_shot_logs"
+        models:
+          - package: openai
+            name: openai
+            items:
+              - name: gpt-4o-mini
+        limit: 1
