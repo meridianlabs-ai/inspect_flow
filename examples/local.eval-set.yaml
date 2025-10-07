@@ -1,0 +1,15 @@
+run:
+  task_groups:
+    - eval_set:
+        tasks:
+          - package: "./examples/local_eval"
+            name: local_eval
+            items:
+              - name: coconot
+        log_dir: "coconot_logs"
+        models:
+          - package: openai
+            name: openai
+            items:
+              - name: gpt-4o-mini
+        limit: 1

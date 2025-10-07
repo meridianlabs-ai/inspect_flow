@@ -180,7 +180,9 @@ class EvalSetConfig(BaseModel):
 
 
 class TaskGroupConfig(BaseModel):
-    pyproject_toml_file: str = Field(description="pyproject.toml file")
+    pyproject_toml_file: str | None = Field(
+        default=None, description="pyproject.toml file"
+    )
     uv_lock_file: str | None = Field(default=None, description="uv.lock file")
     eval_set: EvalSetConfig = Field(description="Evaluation set configuration")
 
