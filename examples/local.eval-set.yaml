@@ -5,8 +5,8 @@ run:
           - package: "./examples/local_eval"
             name: local_eval
             items:
-              - name: coconot
-        log_dir: "coconot_logs"
+              - name: noop
+        log_dir: "noop_logs"
         models:
           - package: openai
             name: openai

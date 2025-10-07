@@ -1,3 +1,3 @@
-from .coconot import coconot
+from .noop import noop
 
-__all__ = ["coconot"]
+__all__ = ["noop"]

@@ -14,4 +14,4 @@ dependencies = [
 ]
 
 [project.entry-points.inspect_ai]
-local_eval = "local_eval.coconot"
+local_eval = "local_eval.noop"
