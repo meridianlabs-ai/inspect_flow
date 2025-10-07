@@ -12,7 +12,7 @@ from inspect_flow._types.types import TaskGroupConfig
 def run(task_group: TaskGroupConfig) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=temp_dir_parent, delete=False) as temp_dir:
+    with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         # update log_dirs to be inside logs directory
         # TODO:ransom - make log dir configurable
         task_group.eval_set.log_dir = str(
