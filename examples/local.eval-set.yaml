@@ -1,0 +1,15 @@
+run:
+  task_groups:
+    - eval_set:
+        tasks:
+          - package: "./examples/local_eval"
+            name: local_eval
+            items:
+              - name: noop
+        log_dir: "noop_logs"
+        models:
+          - package: openai
+            name: openai
+            items:
+              - name: gpt-4o-mini
+        limit: 1

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import List
 
 from inspect_flow._types.types import TaskGroupConfig
 
@@ -23,9 +24,10 @@ def run(task_group: TaskGroupConfig) -> None:
         with open(task_group_json_path, "w") as f:
             json.dump(task_group.model_dump(), f, indent=2)
 
-        shutil.copy2(
-            Path(task_group.pyproject_toml_file), Path(temp_dir) / "pyproject.toml"
-        )
+        if task_group.pyproject_toml_file:
+            shutil.copy2(
+                Path(task_group.pyproject_toml_file), Path(temp_dir) / "pyproject.toml"
+            )
         if task_group.uv_lock_file:
             shutil.copy2(Path(task_group.uv_lock_file), Path(temp_dir) / "uv.lock")
 
@@ -36,8 +38,7 @@ def run(task_group: TaskGroupConfig) -> None:
         subprocess.run(
             [
                 "uv",
-                "sync",
-                "--no-install-project",
+                "venv",
             ],
             cwd=temp_dir,
             check=True,
@@ -48,9 +49,13 @@ def run(task_group: TaskGroupConfig) -> None:
 
         eval_set_config = task_group.eval_set
         package_configs = [*eval_set_config.tasks, *(eval_set_config.models or [])]
-        dependencies = [
+        dependencies: List[str] = [
             *(package_config.package for package_config in package_configs),
             str(inspect_flow_path),
+        ]
+        dependencies = [
+            dep if not dep.startswith("./") else str(Path(dep).resolve())
+            for dep in dependencies
         ]
 
         subprocess.run(
