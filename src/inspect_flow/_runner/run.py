@@ -3,7 +3,8 @@ import json
 import inspect_ai
 from inspect_ai import Task
 from inspect_ai.log import EvalLog
-from inspect_ai.model import Model
+from inspect_ai.model import Model, get_model
+from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
     BuiltinConfig,
@@ -32,10 +33,8 @@ def _get_qualified_name(
     return f"{config.name}/{item.name}"
 
 
-def _load_task(task_name: str, task_config: TaskConfig):
-    task = inspect_ai.util.registry_create(
-        "task", task_name, **(task_config.args or {})
-    )
+def _load_task(task_name: str, task_config: TaskConfig) -> Task:
+    task = registry_create("task", task_name, **(task_config.args or {}))
     return task
 
 
@@ -61,19 +60,19 @@ def _get_model_from_config(
     qualified_name = _get_qualified_name(model_package_config, model_config)
 
     if model_config.args is None:
-        return inspect_ai.model.get_model(qualified_name)
+        return get_model(qualified_name)
 
     args_except_config = {
         **model_config.args.model_dump(exclude={"raw_config"}),
         **(model_config.args.model_extra or {}),
     }
     if model_config.args.parsed_config is None:
-        return inspect_ai.model.get_model(
+        return get_model(
             qualified_name,
             **args_except_config,
         )
 
-    return inspect_ai.model.get_model(
+    return get_model(
         qualified_name,
         config=model_config.args.parsed_config,
         **args_except_config,
