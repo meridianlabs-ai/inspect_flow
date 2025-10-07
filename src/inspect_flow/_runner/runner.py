@@ -62,7 +62,7 @@ def run(task_group: TaskGroupConfig) -> None:
 
         run_path = Path(__file__).parent / "run.py"
         subprocess.run(
-            [".venv/bin/python", str(run_path)],
+            ["uv", "run", "--no-project", str(run_path)],
             cwd=temp_dir,
             check=True,
             env=env,
