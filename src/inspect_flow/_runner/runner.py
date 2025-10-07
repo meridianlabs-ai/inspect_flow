@@ -33,6 +33,9 @@ def run(task_group: TaskGroupConfig) -> None:
         #     env=os.environ.copy(),
         # )
 
+        env = os.environ.copy()
+        env.pop("VIRTUAL_ENV", None)
+
         subprocess.run(
             [
                 "uv",
@@ -41,9 +44,7 @@ def run(task_group: TaskGroupConfig) -> None:
             ],
             cwd=temp_dir,
             check=True,
-            capture_output=True,
-            text=True,
-            env=os.environ.copy(),
+            env=env,
         )
 
         inspect_flow_path = Path(__file__).parent.parent.parent.parent
@@ -59,9 +60,7 @@ def run(task_group: TaskGroupConfig) -> None:
             ["uv", "pip", "install", *sorted(dependencies)],
             cwd=temp_dir,
             check=True,
-            capture_output=True,
-            text=True,
-            env=os.environ.copy(),
+            env=env,
         )
 
         run_path = Path(__file__).parent / "run.py"
@@ -69,7 +68,5 @@ def run(task_group: TaskGroupConfig) -> None:
             [".venv/bin/python", str(run_path)],
             cwd=temp_dir,
             check=True,
-            capture_output=True,
-            text=True,
-            env=os.environ.copy(),
+            env=env,
         )
