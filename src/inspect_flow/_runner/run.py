@@ -1,18 +1,13 @@
 import json
 
 import inspect_ai
-from inspect_ai import Task
 from inspect_ai.log import EvalLog
-from inspect_ai.model import Model, get_model
-from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
     BuiltinConfig,
     EvalSetConfig,
-    ModelConfig,
     PackageConfig,
     T,
-    TaskConfig,
     TaskGroupConfig,
 )
 
@@ -33,62 +28,18 @@ def _get_qualified_name(
     return f"{config.name}/{item.name}"
 
 
-def _load_task(task_name: str, task_config: TaskConfig) -> Task:
-    task = registry_create("task", task_name, **(task_config.args or {}))
-    return task
-
-
-def _load_tasks(
-    task_configs: list[PackageConfig[TaskConfig]],
-) -> list[Task]:
-    task_names, items = zip(
-        *[
-            (_get_qualified_name(pkg, item), item)
-            for pkg in task_configs
-            for item in pkg.items
-        ],
-        strict=True,
-    )
-    tasks = [*map(_load_task, task_names, items)]
-    return tasks
-
-
-def _get_model_from_config(
-    model_package_config: PackageConfig[ModelConfig] | BuiltinConfig[ModelConfig],
-    model_config: ModelConfig,
-) -> Model:
-    qualified_name = _get_qualified_name(model_package_config, model_config)
-
-    if model_config.args is None:
-        return get_model(qualified_name)
-
-    args_except_config = {
-        **model_config.args.model_dump(exclude={"raw_config"}),
-        **(model_config.args.model_extra or {}),
-    }
-    if model_config.args.parsed_config is None:
-        return get_model(
-            qualified_name,
-            **args_except_config,
-        )
-
-    return get_model(
-        qualified_name,
-        config=model_config.args.parsed_config,
-        **args_except_config,
-    )
-
-
 def run_eval_set(eval_set_config: EvalSetConfig) -> tuple[bool, list[EvalLog]]:
-    tasks = _load_tasks(eval_set_config.tasks)
+    tasks = [
+        _get_qualified_name(pkg, item)
+        for pkg in eval_set_config.tasks
+        for item in pkg.items
+    ]
 
-    models: list[Model] | None = None
-    if eval_set_config.models:
-        models = [
-            _get_model_from_config(model_package_config, item)
-            for model_package_config in eval_set_config.models
-            for item in model_package_config.items
-        ]
+    models = [
+        _get_qualified_name(pkg, item)
+        for pkg in eval_set_config.models or []
+        for item in pkg.items
+    ]
 
     return inspect_ai.eval_set(
         tasks=tasks,
