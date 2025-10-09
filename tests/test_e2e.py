@@ -1,10 +1,10 @@
 import os
 import shutil
+from itertools import product
 from pathlib import Path
 
+from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._client.client import Client
-from inspect_flow._config.config import load_config
-from inspect_flow._runner.run import run_eval_set
 
 
 def test_local_e2e() -> None:
@@ -22,3 +22,16 @@ def test_local_e2e() -> None:
 
     # Check that logs/local_logs directory was created
     assert logs_dir.exists()
+    log_list = list_eval_logs(str(logs_dir))
+
+    assert len(log_list) == 4
+    logs = [read_eval_log(log) for log in log_list]
+    assert all(log.status == "success" for log in logs), (
+        "All logs should have status 'success'"
+    )
+    assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
+        product(
+            ("local_eval/noop", "local_eval/noop2"),
+            ("mockllm/mock-llm1", "mockllm/mock-llm2"),
+        )
+    ), "Logs should cover all task/model combinations"
