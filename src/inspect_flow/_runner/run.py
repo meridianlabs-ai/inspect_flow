@@ -1,13 +1,16 @@
 import json
 
 import inspect_ai
+from inspect_ai import Task
 from inspect_ai.log import EvalLog
+from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
     BuiltinConfig,
     EvalSetConfig,
     PackageConfig,
     T,
+    TaskConfig,
     TaskGroupConfig,
 )
 
@@ -28,12 +31,19 @@ def _get_qualified_name(
     return f"{config.name}/{item.name}"
 
 
+def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig) -> Task:
+    task = registry_create(
+        type="task", name=_get_qualified_name(pkg, item), **(item.args or {})
+    )
+    return task
+
+
+def create_tasks(config: list[PackageConfig[TaskConfig]]) -> list[Task]:
+    return [create_task(pkg, item) for pkg in config for item in pkg.items]
+
+
 def run_eval_set(eval_set_config: EvalSetConfig) -> tuple[bool, list[EvalLog]]:
-    tasks = [
-        _get_qualified_name(pkg, item)
-        for pkg in eval_set_config.tasks
-        for item in pkg.items
-    ]
+    tasks = create_tasks(eval_set_config.tasks)
 
     models = [
         _get_qualified_name(pkg, item)
