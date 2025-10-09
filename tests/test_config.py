@@ -17,4 +17,3 @@ def test_load_simple_eval_set() -> None:
     assert len(task_group.eval_set.tasks) == 1
     assert task_group.eval_set.models is not None
     assert len(task_group.eval_set.models) == 1
-    # TODO: Add specific assertions once types are finalized
