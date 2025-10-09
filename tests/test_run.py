@@ -1,7 +1,8 @@
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import pip
 from inspect_ai import Task
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.types import EvalSetConfig, PackageConfig, TaskConfig
@@ -10,7 +11,9 @@ from inspect_flow._types.types import EvalSetConfig, PackageConfig, TaskConfig
 def test_task_with_get_model() -> None:
     # Install local_eval package
     local_eval_path = Path(__file__).parent.parent / "examples" / "local_eval"
-    pip.main(["install", "-e", str(local_eval_path)])
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-e", str(local_eval_path)], check=True
+    )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
