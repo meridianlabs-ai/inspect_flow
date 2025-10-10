@@ -3,11 +3,13 @@ import json
 import inspect_ai
 from inspect_ai import Task
 from inspect_ai.log import EvalLog
+from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
     BuiltinConfig,
     EvalSetConfig,
+    ModelConfig,
     PackageConfig,
     T,
     TaskConfig,
@@ -31,25 +33,44 @@ def _get_qualified_name(
     return f"{config.name}/{item.name}"
 
 
-def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig) -> Task:
+def create_model(
+    pkg: PackageConfig[ModelConfig] | BuiltinConfig[ModelConfig], item: ModelConfig
+) -> Model:
+    # TODO:ransom get_model args
+    return get_model(model=_get_qualified_name(pkg, item))
+
+
+def create_models(
+    config: list[PackageConfig[ModelConfig] | BuiltinConfig[ModelConfig]],
+) -> list[Model]:
+    return [create_model(pkg, item) for pkg in config for item in pkg.items]
+
+
+def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig, model: Model) -> Task:
+    # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+    inspect_ai.model._model.init_active_model(model, GenerateConfig())
     task = registry_create(
-        type="task", name=_get_qualified_name(pkg, item), **(item.args or {})
+        type="task",
+        name=_get_qualified_name(pkg, item),
+        **(item.args or {}),
     )
     return task
 
 
-def create_tasks(config: list[PackageConfig[TaskConfig]]) -> list[Task]:
-    return [create_task(pkg, item) for pkg in config for item in pkg.items]
+def create_tasks(
+    config: list[PackageConfig[TaskConfig]], models: list[Model]
+) -> list[Task]:
+    return [
+        create_task(pkg, item, model)
+        for model in models
+        for pkg in config
+        for item in pkg.items
+    ]
 
 
 def run_eval_set(eval_set_config: EvalSetConfig) -> tuple[bool, list[EvalLog]]:
-    tasks = create_tasks(eval_set_config.tasks)
-
-    models = [
-        _get_qualified_name(pkg, item)
-        for pkg in eval_set_config.models or []
-        for item in pkg.items
-    ]
+    models = create_models(eval_set_config.models or [])
+    tasks = create_tasks(eval_set_config.tasks, models)
 
     return inspect_ai.eval_set(
         tasks=tasks,

@@ -5,7 +5,12 @@ from unittest.mock import patch
 
 from inspect_ai import Task
 from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.types import EvalSetConfig, PackageConfig, TaskConfig
+from inspect_flow._types.types import (
+    EvalSetConfig,
+    ModelConfig,
+    PackageConfig,
+    TaskConfig,
+)
 
 
 def test_task_with_get_model() -> None:
@@ -27,6 +32,13 @@ def test_task_with_get_model() -> None:
                     )
                 ],
                 log_dir="get_model",
+                models=[
+                    PackageConfig(
+                        name="mockllm",
+                        package="mockllm",
+                        items=[ModelConfig(name="mock-llm")],
+                    )
+                ],
             )
         )
 
