@@ -4,7 +4,7 @@ from itertools import product
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow._client.client import Client
+from inspect_flow._submit.submit import submit
 
 
 def test_local_e2e() -> None:
@@ -17,8 +17,7 @@ def test_local_e2e() -> None:
 
     config_path = Path.cwd() / "examples" / "local.eval-set.yaml"
 
-    client = Client()
-    client.submit(str(config_path))
+    submit(str(config_path))
 
     # Check that logs/local_logs directory was created
     assert logs_dir.exists()
