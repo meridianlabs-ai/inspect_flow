@@ -1,6 +1,7 @@
 import click
 
-from inspect_flow._client.client import Client
+from inspect_flow._config.config import load_config
+from inspect_flow._submit.submit import submit
 
 
 @click.command("submit", help="Submit a job")
@@ -8,6 +9,5 @@ from inspect_flow._client.client import Client
 def submit_command(
     config_file: str,
 ) -> None:
-    client = Client()
-    client.set_config(config_file)
-    return client.submit(config_file)
+    config = load_config(config_file)
+    submit(config)

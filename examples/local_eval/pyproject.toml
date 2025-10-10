@@ -3,7 +3,7 @@ src = ["src"]
 [project]
 name = "local_eval"
 dynamic = ["version"]
-description = "Example local evaluation project to demonstrate and test Insepct Flow functionality"
+description = "Example local evaluation project to demonstrate and test Inspect Flow functionality"
 authors = [{ name = "Meridian Labs" }]
 requires-python = ">=3.10"
 dependencies = [
