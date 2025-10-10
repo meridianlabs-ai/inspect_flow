@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-import sys
 from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
