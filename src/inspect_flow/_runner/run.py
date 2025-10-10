@@ -76,7 +76,8 @@ def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig, model: Model) 
             name=_get_qualified_name(pkg, item),
             **(item.args or {}),
         )
-    elif pkg.file:
+    else:
+        assert pkg.file, "package or file is required"
         task = create_task_from_file(pkg.file, item)
     return task
 
