@@ -16,14 +16,14 @@ def run(task_group: TaskGroupConfig) -> None:
     task_group.eval_set.log_dir = str(Path.cwd() / "logs" / task_group.eval_set.log_dir)
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
-        create_venv(task_group, temp_dir)
+        env = create_venv(task_group, temp_dir)
 
-        run_path = Path(__file__).parent.parent / "_runner" / "run.py"
+        run_path = (Path(__file__).parent.parent / "_runner" / "run.py").absolute()
         subprocess.run(
-            ["uv", "run", "--no-project", str(run_path)],
+            ["uv", "run", str(run_path)],
             cwd=temp_dir,
             check=True,
-            env=os.environ.copy(),
+            env=env,
         )
 
 

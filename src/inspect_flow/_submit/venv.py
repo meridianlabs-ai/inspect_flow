@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
@@ -129,7 +130,7 @@ def get_pip_string(package: str) -> str:
     return direct_url_to_pip_string(direct_url)
 
 
-def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> None:
+def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> dict[str, str]:
     # Serialize task_group to JSON and write to file
     task_group_json_path = Path(temp_dir) / "task_group.json"
     with open(task_group_json_path, "w") as f:
@@ -170,3 +171,5 @@ def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> None:
         check=True,
         env=env,
     )
+
+    return env
