@@ -4,6 +4,7 @@ import inspect_ai
 from inspect_ai import Task
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, Model, get_model
+from inspect_ai.model._model import init_active_model
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
@@ -48,7 +49,7 @@ def create_models(
 
 def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig, model: Model) -> Task:
     # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-    inspect_ai.model._model.init_active_model(model, GenerateConfig())
+    init_active_model(model, GenerateConfig())
     task = registry_create(
         type="task",
         name=_get_qualified_name(pkg, item),
