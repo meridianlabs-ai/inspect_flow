@@ -1,4 +1,7 @@
 import json
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+from pathlib import Path
 
 import inspect_ai
 from inspect_ai import Task
@@ -47,14 +50,34 @@ def create_models(
     return [create_model(pkg, item) for pkg in config for item in pkg.items]
 
 
+def create_task_from_file(file: str, item: TaskConfig) -> Task:
+    module_path = Path(file).resolve()
+    module_name = module_path.as_posix()
+    loader = SourceFileLoader(module_name, module_path.absolute().as_posix())
+    spec = spec_from_loader(loader.name, loader)
+    if not spec:
+        raise ModuleNotFoundError(f"Module {module_name} not found")
+    module = module_from_spec(spec)
+    loader.exec_module(module)
+
+    if not hasattr(module, item.name):
+        raise ValueError(f"Function '{item.name}' not found in {file}")
+    task_func = getattr(module, item.name)
+
+    return task_func(**(item.args or {}))
+
+
 def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig, model: Model) -> Task:
     # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
     init_active_model(model, GenerateConfig())
-    task = registry_create(
-        type="task",
-        name=_get_qualified_name(pkg, item),
-        **(item.args or {}),
-    )
+    if pkg.package:
+        task = registry_create(
+            type="task",
+            name=_get_qualified_name(pkg, item),
+            **(item.args or {}),
+        )
+    elif pkg.file:
+        task = create_task_from_file(pkg.file, item)
     return task
 
 

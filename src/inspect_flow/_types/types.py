@@ -7,7 +7,7 @@ from typing import (
 )
 
 from inspect_ai.model import GenerateConfig
-from pydantic import AfterValidator, BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 
 
 class File(BaseModel):
@@ -132,11 +132,20 @@ def _validate_package(v: str) -> str:
 class PackageConfig(BaseModel, Generic[T]):
     """Configuration for a Python package that contains tasks, models, solvers, or agents."""
 
-    package: Annotated[str, AfterValidator(_validate_package)] = Field(
+    package: Annotated[str, AfterValidator(_validate_package)] | None = Field(
+        default=None,
         description="E.g. a PyPI package specifier or Git repository URL. To use items from the inspect-ai package, "
         + "use 'inspect-ai' (with a dash) as the package name. Do not include a version specifier or try to "
-        + "install inspect-ai from GitHub."
+        + "install inspect-ai from GitHub.",
     )
+
+    file: str | None = Field(default=None, description="file with task export")
+
+    @model_validator(mode="after")
+    def check_package_or_file(self):
+        if (self.package is None) == (self.file is None):
+            raise ValueError("Exactly one of package or file must be specified")
+        return self
 
     name: str = Field(
         description="The package name. This must match the name of the package's setuptools entry point for inspect_ai. "

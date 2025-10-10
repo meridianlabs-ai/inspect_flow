@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,9 +15,13 @@ from inspect_flow._types.types import (
 def test_task_with_get_model() -> None:
     # TODO:ransom would prefer not to install as part of tests. Maybe reference local files to get tasks instead of using a package?
     # Install local_eval package
-    local_eval_path = Path(__file__).parent.parent / "examples" / "local_eval"
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-e", str(local_eval_path)], check=True
+    task_file = (
+        Path(__file__).parent.parent
+        / "examples"
+        / "local_eval"
+        / "src"
+        / "local_eval"
+        / "noop.py"
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
@@ -27,7 +30,7 @@ def test_task_with_get_model() -> None:
                 tasks=[
                     PackageConfig(
                         name="local_eval",
-                        package="local_eval",
+                        file=str(task_file.absolute()),
                         items=[TaskConfig(name="task_with_get_model")],
                     )
                 ],
