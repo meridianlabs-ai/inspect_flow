@@ -4,7 +4,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from inspect_flow._config.config import load_config
 from inspect_flow._submit.venv import create_venv
 from inspect_flow._types.types import Config, TaskGroupConfig
 

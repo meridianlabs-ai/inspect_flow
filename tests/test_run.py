@@ -1,9 +1,7 @@
-from itertools import product
 from pathlib import Path
 from unittest.mock import patch
 
 from inspect_ai import Task
-from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.types import (
     EvalSetConfig,

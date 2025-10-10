@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import subprocess
 from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
@@ -135,13 +134,6 @@ def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> None:
     task_group_json_path = Path(temp_dir) / "task_group.json"
     with open(task_group_json_path, "w") as f:
         json.dump(task_group.model_dump(), f, indent=2)
-
-    if task_group.pyproject_toml_file:
-        shutil.copy2(
-            Path(task_group.pyproject_toml_file), Path(temp_dir) / "pyproject.toml"
-        )
-    if task_group.uv_lock_file:
-        shutil.copy2(Path(task_group.uv_lock_file), Path(temp_dir) / "uv.lock")
 
     # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
     env = os.environ.copy()

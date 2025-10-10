@@ -1,7 +1,5 @@
-from itertools import product
 from pathlib import Path
 
-from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
 
