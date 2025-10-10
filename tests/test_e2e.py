@@ -1,36 +1,21 @@
-import os
-import shutil
 from itertools import product
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
+from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
+
+from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 
 def test_local_e2e() -> None:
-    os.chdir(Path(__file__).parent.parent)
+    log_dir = init_test_logs()
 
-    # Remove logs/local_logs directory if it exists
-    logs_dir = Path.cwd() / "logs" / "local_logs"
-    if logs_dir.exists():
-        shutil.rmtree(logs_dir)
+    config_path = Path(__file__).parent.parent / "examples" / "local.eval-set.yaml"
+    config = load_config(str(config_path))
 
-    config_path = Path.cwd() / "examples" / "local.eval-set.yaml"
+    submit(config=config)
 
-    submit(str(config_path))
+    assert len(config.run.task_groups) == 1
 
-    # Check that logs/local_logs directory was created
-    assert logs_dir.exists()
-    log_list = list_eval_logs(str(logs_dir))
-
-    assert len(log_list) == 4
-    logs = [read_eval_log(log) for log in log_list]
-    assert all(log.status == "success" for log in logs), (
-        "All logs should have status 'success'"
-    )
-    assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        product(
-            ("local_eval/noop", "local_eval/noop2"),
-            ("mockllm/mock-llm1", "mockllm/mock-llm2"),
-        )
-    ), "Logs should cover all task/model combinations"
+    verify_test_logs(config=config.run.task_groups[0].eval_set, log_dir=log_dir)

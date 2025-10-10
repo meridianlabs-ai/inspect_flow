@@ -6,7 +6,7 @@ from pathlib import Path
 
 from inspect_flow._config.config import load_config
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.types import TaskGroupConfig
+from inspect_flow._types.types import Config, TaskGroupConfig
 
 
 def run(task_group: TaskGroupConfig) -> None:
@@ -28,7 +28,6 @@ def run(task_group: TaskGroupConfig) -> None:
         )
 
 
-def submit(config_file: str):
-    config = load_config(config_file)
+def submit(config: Config):
     for task_group in config.run.task_groups:
         run(task_group=task_group)

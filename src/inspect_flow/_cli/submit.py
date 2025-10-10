@@ -1,5 +1,6 @@
 import click
 
+from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
 
 
@@ -8,4 +9,5 @@ from inspect_flow._submit.submit import submit
 def submit_command(
     config_file: str,
 ) -> None:
-    submit(config_file)
+    config = load_config(config_file)
+    submit(config)
