@@ -1,7 +1,9 @@
 import json
+from functools import lru_cache
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
+from types import ModuleType
 
 import inspect_ai
 from inspect_ai import Task
@@ -50,7 +52,8 @@ def create_models(
     return [create_model(pkg, item) for pkg in config for item in pkg.items]
 
 
-def create_task_from_file(file: str, item: TaskConfig) -> Task:
+@lru_cache(maxsize=None)
+def get_module_from_file(file: str) -> ModuleType:
     module_path = Path(file).resolve()
     module_name = module_path.as_posix()
     loader = SourceFileLoader(module_name, module_path.absolute().as_posix())
@@ -59,7 +62,11 @@ def create_task_from_file(file: str, item: TaskConfig) -> Task:
         raise ModuleNotFoundError(f"Module {module_name} not found")
     module = module_from_spec(spec)
     loader.exec_module(module)
+    return module
 
+
+def create_task_from_file(file: str, item: TaskConfig) -> Task:
+    module = get_module_from_file(file)
     if not hasattr(module, item.name):
         raise ValueError(f"Function '{item.name}' not found in {file}")
     task_func = getattr(module, item.name)
@@ -79,6 +86,7 @@ def create_task(pkg: PackageConfig[TaskConfig], item: TaskConfig, model: Model) 
     else:
         assert pkg.file, "package or file is required"
         task = create_task_from_file(pkg.file, item)
+    task.model = model
     return task
 
 
@@ -97,10 +105,10 @@ def run_eval_set(eval_set_config: EvalSetConfig) -> tuple[bool, list[EvalLog]]:
     models = create_models(eval_set_config.models or [])
     tasks = create_tasks(eval_set_config.tasks, models)
 
+    # Do not pass models to eval_set as the models have already been set on the tasks
     return inspect_ai.eval_set(
         tasks=tasks,
         log_dir=eval_set_config.log_dir,
-        model=models,
         limit=eval_set_config.limit,
     )
 

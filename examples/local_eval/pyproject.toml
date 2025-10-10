@@ -7,7 +7,6 @@ description = "Example local evaluation project to demonstrate and test Insepct 
 authors = [{ name = "Meridian Labs" }]
 requires-python = ">=3.10"
 dependencies = [
-    "datasets>=3.2.0,<4.0.0",
     "inspect-ai>=0.3.131",
     "python-dotenv>=1.1.1",
     "typing_extensions>=4.9.0",
