@@ -9,6 +9,7 @@ from inspect_flow._types.types import EvalSetConfig, PackageConfig, TaskConfig
 
 
 def test_task_with_get_model() -> None:
+    # TODO:ransom would prefer not to install as part of tests. Maybe reference local files to get tasks instead of using a package?
     # Install local_eval package
     local_eval_path = Path(__file__).parent.parent / "examples" / "local_eval"
     subprocess.run(

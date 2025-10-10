@@ -26,7 +26,7 @@ dependencies = [
 [project.scripts]
 flow = "inspect_flow._cli.main:main"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "ruff",
     "pytest",
@@ -35,7 +35,7 @@ dev = [
     "pytest-asyncio",
     "pytest-dotenv",
     "pyright",
-    "types-pyyaml>=6.0.12.20250915",
+    "types-pyyaml>=6.0.12.20250915"
 ]
 
 
