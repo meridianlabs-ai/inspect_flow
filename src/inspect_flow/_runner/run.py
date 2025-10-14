@@ -15,6 +15,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.types import (
     BuiltinConfig,
     EvalSetConfig,
+    GetModelArgs,
     ModelConfig,
     PackageConfig,
     T,
@@ -42,8 +43,16 @@ def _get_qualified_name(
 def create_model(
     pkg: PackageConfig[ModelConfig] | BuiltinConfig[ModelConfig], item: ModelConfig
 ) -> Model:
-    # TODO:ransom get_model args
-    return get_model(model=_get_qualified_name(pkg, item))
+    args: GetModelArgs = item.args or GetModelArgs()
+    return get_model(
+        model=_get_qualified_name(pkg, item),
+        role=args.role,
+        default=args.default,
+        config=args.config or GenerateConfig(),
+        base_url=args.base_url,
+        api_key=args.api_key,
+        memoize=args.memoize,
+    )
 
 
 def create_models(

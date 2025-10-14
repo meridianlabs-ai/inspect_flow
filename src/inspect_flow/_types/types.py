@@ -7,7 +7,7 @@ from typing import (
 )
 
 from inspect_ai.model import GenerateConfig
-from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 
 class File(BaseModel):
@@ -45,10 +45,11 @@ class GetModelArgs(BaseModel, extra="allow", serialize_by_alias=True):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    raw_config: dict[str, Any] | None = Field(
+    # TODO:ransom should we disable extra?
+    config: GenerateConfig | None = Field(
         default=None,
         alias="config",
-        description="Configuration for model. Converted to a [GenerateConfig](https://inspect.aisi.org.uk/reference/inspect_ai.model.html#generateconfig) object.",
+        description="Configuration for model.",
     )
 
     base_url: str | None = Field(
@@ -65,33 +66,6 @@ class GetModelArgs(BaseModel, extra="allow", serialize_by_alias=True):
         default=True,
         description="Use/store a cached version of the model based on the parameters to get_model().",
     )
-
-    @classmethod
-    def _parse_config(cls, raw_config: dict[str, Any] | None) -> GenerateConfig | None:
-        if raw_config is None:
-            return None
-
-        import inspect_ai.model
-
-        class GenerateConfigWithExtraForbidden(
-            inspect_ai.model.GenerateConfig, extra="forbid"
-        ):
-            pass
-
-        return GenerateConfigWithExtraForbidden.model_validate(raw_config)
-
-    @field_validator("raw_config", mode="after")
-    @classmethod
-    def validate_raw_config(
-        cls, raw_config: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
-        cls._parse_config(raw_config)
-
-        return raw_config
-
-    @property
-    def parsed_config(self) -> GenerateConfig | None:
-        return self._parse_config(self.raw_config)
 
 
 class ModelConfig(BaseModel):
