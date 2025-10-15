@@ -8,8 +8,8 @@ from inspect_flow._types.types import (
     FlowConfig,
     FlowOptions,
     Matrix,
-    Model,
-    Task,
+    ModelConfig,
+    TaskConfig,
 )
 
 update_examples = False
@@ -28,7 +28,8 @@ def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
 def validate_config(config: FlowConfig, file_name: str) -> None:
     # Load the example config file
     example_path = Path(__file__).parent.parent / "examples" / file_name
-    expected_config = load_config(config_file=str(example_path))
+    with open(example_path, "r") as f:
+        expected_config = yaml.safe_load(f)
 
     # Compare the generated config with the example
     generated_config = config.model_dump(mode="json", exclude_unset=True)
@@ -44,7 +45,7 @@ def test_config_one_task() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        matrix=Matrix(tasks=Task(name="inspect_evals/mmlu_0_shot")),
+        matrix=Matrix(tasks=TaskConfig(name="inspect_evals/mmlu_0_shot")),
     )
     validate_config(config, "one_task_flow.yaml")
 
@@ -57,8 +58,8 @@ def test_config_two_tasks() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(name="inspect_evals/mmlu_0_shot"),
-                Task(name="inspect_evals/mmlu_5_shot"),
+                TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                TaskConfig(name="inspect_evals/mmlu_5_shot"),
             ]
         ),
     )
@@ -72,10 +73,10 @@ def test_config_two_models_one_task() -> None:
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
         matrix=Matrix(
-            tasks=Task(name="inspect_evals/mmlu_0_shot"),
+            tasks=TaskConfig(name="inspect_evals/mmlu_0_shot"),
             models=[
-                Model(name="openai/gpt-4o-mini"),
-                Model(name="openai/gpt-5-nano"),
+                ModelConfig(name="openai/gpt-4o-mini"),
+                ModelConfig(name="openai/gpt-5-nano"),
             ],
         ),
     )
@@ -90,12 +91,12 @@ def test_config_two_models_two_tasks() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(name="inspect_evals/mmlu_0_shot"),
-                Task(name="inspect_evals/mmlu_5_shot"),
+                TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                TaskConfig(name="inspect_evals/mmlu_5_shot"),
             ],
             models=[
-                Model(name="openai/gpt-4o-mini"),
-                Model(name="openai/gpt-5-nano"),
+                ModelConfig(name="openai/gpt-4o-mini"),
+                ModelConfig(name="openai/gpt-5-nano"),
             ],
         ),
     )
@@ -110,12 +111,12 @@ def test_config_model_config() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(name="inspect_evals/mmlu_0_shot"),
-                Task(name="inspect_evals/mmlu_5_shot"),
+                TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                TaskConfig(name="inspect_evals/mmlu_5_shot"),
             ],
             models=[
-                Model(name="openai/gpt-4o-mini"),
-                Model(
+                ModelConfig(name="openai/gpt-4o-mini"),
+                ModelConfig(
                     name="openai/gpt-5-nano",
                     config=[
                         GenerateConfig(reasoning_effort="minimal"),
@@ -136,14 +137,14 @@ def test_config_matrix_and_task() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(
+                TaskConfig(
                     name="inspect_evals/mmlu_0_shot",
                     models=[
-                        Model(name="openai/gpt-4o-mini"),
-                        Model(name="openai/gpt-5-nano"),
+                        ModelConfig(name="openai/gpt-4o-mini"),
+                        ModelConfig(name="openai/gpt-5-nano"),
                     ],
                 ),
-                Task(name="inspect_evals/mmlu_5_shot"),
+                TaskConfig(name="inspect_evals/mmlu_5_shot"),
             ],
         ),
     )
@@ -158,11 +159,11 @@ def test_config_nested_matrix() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(
+                TaskConfig(
                     name="inspect_evals/mmlu_0_shot",
                     args={"language": "EN_US"},
                 ),
-                Task(
+                TaskConfig(
                     name="inspect_evals/mmlu_5_shot",
                     args=[
                         {"language": "EN_US"},
@@ -172,8 +173,8 @@ def test_config_nested_matrix() -> None:
                 ),
             ],
             models=[
-                Model(name="openai/gpt-4o-mini"),
-                Model(name="openai/gpt-5-nano"),
+                ModelConfig(name="openai/gpt-4o-mini"),
+                ModelConfig(name="openai/gpt-5-nano"),
             ],
         ),
     )
