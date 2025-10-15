@@ -6,18 +6,16 @@ from inspect_flow._types.types import (
     Dependency,
     FlowConfig,
     FlowOptions,
+    Matrix,
     ModelConfig,
-    SingleTask,
-    TaskMatrix,
+    Task,
 )
 
+update_examples = False
 
-def write_flow_yaml(config: FlowConfig) -> None:
-    # Write config to YAML file in logs directory
-    logs_dir = Path("./logs")
 
-    config_output_path = logs_dir / "config.yaml"
-    with open(config_output_path, "w") as f:
+def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
+    with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(mode="json", exclude_unset=True),
             f,
@@ -33,7 +31,10 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
 
     # Compare the generated config with the example
     generated_config = config.model_dump(mode="json", exclude_unset=True)
-    assert generated_config == expected_config
+    if update_examples and generated_config != expected_config:
+        write_flow_yaml(config, example_path)
+    else:
+        assert generated_config == expected_config
 
 
 def test_load_simple_eval_set() -> None:
@@ -58,7 +59,7 @@ def test_config_one_task() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=SingleTask(name="inspect_evals/mmlu_0_shot"),
+        matrix=Matrix(tasks=Task(name="inspect_evals/mmlu_0_shot")),
     )
     validate_config(config, "one_task_flow.yaml")
 
@@ -69,10 +70,12 @@ def test_config_two_tasks() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=[
-            SingleTask(name="inspect_evals/mmlu_0_shot"),
-            SingleTask(name="inspect_evals/mmlu_5_shot"),
-        ],
+        matrix=Matrix(
+            tasks=[
+                Task(name="inspect_evals/mmlu_0_shot"),
+                Task(name="inspect_evals/mmlu_5_shot"),
+            ]
+        ),
     )
     validate_config(config, "two_task_flow.yaml")
 
@@ -83,8 +86,8 @@ def test_config_two_models_one_task() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=TaskMatrix(
-            tasks=SingleTask(name="inspect_evals/mmlu_0_shot"),
+        matrix=Matrix(
+            tasks=Task(name="inspect_evals/mmlu_0_shot"),
             models=[
                 ModelConfig(name="openai/gpt-4o-mini"),
                 ModelConfig(name="openai/gpt-5-nano"),
@@ -100,10 +103,10 @@ def test_config_two_models_two_tasks() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=TaskMatrix(
+        matrix=Matrix(
             tasks=[
-                SingleTask(name="inspect_evals/mmlu_0_shot"),
-                SingleTask(name="inspect_evals/mmlu_5_shot"),
+                Task(name="inspect_evals/mmlu_0_shot"),
+                Task(name="inspect_evals/mmlu_5_shot"),
             ],
             models=[
                 ModelConfig(name="openai/gpt-4o-mini"),
@@ -120,18 +123,18 @@ def test_config_matrix_and_task() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=[
-            TaskMatrix(
-                tasks=[
-                    SingleTask(name="inspect_evals/mmlu_0_shot"),
-                ],
-                models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(name="openai/gpt-5-nano"),
-                ],
-            ),
-            SingleTask(name="inspect_evals/mmlu_5_shot"),
-        ],
+        matrix=Matrix(
+            tasks=[
+                Task(
+                    name="inspect_evals/mmlu_0_shot",
+                    models=[
+                        ModelConfig(name="openai/gpt-4o-mini"),
+                        ModelConfig(name="openai/gpt-5-nano"),
+                    ],
+                ),
+                Task(name="inspect_evals/mmlu_5_shot"),
+            ],
+        ),
     )
     validate_config(config, "matrix_and_task_flow.yaml")
 
@@ -142,26 +145,22 @@ def test_config_nested_matrix() -> None:
         dependencies=Dependency(
             package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
         ),
-        tasks=[
-            TaskMatrix(
-                tasks=[
-                    SingleTask(
-                        name="inspect_evals/mmlu_0_shot", args={"language": "EN_US"}
-                    ),
-                    TaskMatrix(
-                        tasks=SingleTask(name="inspect_evals/mmlu_5_shot"),
-                        args=[
-                            {"language": "EN_US"},
-                            {"language": "CN_CN"},
-                            {"language": "DE_DE"},
-                        ],
-                    ),
-                ],
-                models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(name="openai/gpt-5-nano"),
-                ],
-            ),
-        ],
+        matrix=Matrix(
+            tasks=[
+                Task(name="inspect_evals/mmlu_0_shot", args={"language": "EN_US"}),
+                Task(
+                    name="inspect_evals/mmlu_5_shot",
+                    args=[
+                        {"language": "EN_US"},
+                        {"language": "CN_CN"},
+                        {"language": "DE_DE"},
+                    ],
+                ),
+            ],
+            models=[
+                ModelConfig(name="openai/gpt-4o-mini"),
+                ModelConfig(name="openai/gpt-5-nano"),
+            ],
+        ),
     )
     validate_config(config, "nested_matrix_flow.yaml")

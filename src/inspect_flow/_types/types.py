@@ -178,7 +178,7 @@ class Config(BaseModel):
     run: RunConfig = Field(description="Run configuration")
 
 
-# CONFIG PROPOSAL #1
+# CONFIG PROPOSAL #2
 
 
 class FlowOptions(BaseModel):
@@ -204,7 +204,7 @@ class Dependency(BaseModel):
         return self
 
 
-class SingleTask(BaseModel):
+class Task(BaseModel):
     name: str = Field(description="Name of the task to use.")
 
     sample_ids: list[str | int] | None = Field(
@@ -213,20 +213,20 @@ class SingleTask(BaseModel):
         description="List of sample IDs to run for the task. If not specified, all samples will be run.",
     )
 
-    args: dict[str, Any] | None = Field(
+    args: dict[str, Any] | list[dict[str, Any]] | None = Field(
         default=None,
         description="Task arguments",
     )
 
-    model: ModelConfig | None = Field(
+    models: ModelConfig | list[ModelConfig] | None = Field(
         default=None,
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
 
 
-class TaskMatrix(BaseModel):
-    tasks: Union[SingleTask, "TaskMatrix", list[Union[SingleTask, "TaskMatrix"]]] = (
-        Field(description="List of tasks to evaluate in this eval set.")
+class Matrix(BaseModel):
+    tasks: Task | list[Task] = Field(
+        description="List of tasks to evaluate in this eval set."
     )
 
     args: dict[str, Any] | list[dict[str, Any]] | None = Field(
@@ -245,6 +245,4 @@ class FlowConfig(BaseModel):
     dependencies: Dependency | list[Dependency] | None = Field(
         default=None, description="Dependencies to pip install"
     )
-    tasks: SingleTask | TaskMatrix | list[TaskMatrix | SingleTask] = Field(
-        description="Task or tasks to run"
-    )
+    matrix: Matrix = Field(description="Matrix of tasks to run")
