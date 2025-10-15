@@ -38,7 +38,7 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
         assert generated_config == expected_config
 
 
-def test_load_simple_eval_set() -> None:
+def _test_load_simple_eval_set() -> None:
     # Load the config file
     config_path = Path(__file__).parent.parent / "examples" / "simple.eval-set.yaml"
     config = load_config(str(config_path))

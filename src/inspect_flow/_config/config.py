@@ -3,10 +3,10 @@ from pathlib import Path
 
 import yaml
 
-from inspect_flow._types.types import Config
+from inspect_flow._types.types import FlowConfig
 
 
-def load_config(config_file: str) -> Config:
+def load_config(config_file: str) -> FlowConfig:
     """Load configuration from a YAML or JSON file.
 
     Args:
@@ -35,4 +35,4 @@ def load_config(config_file: str) -> Config:
                 "Supported formats: .yaml, .yml, .json"
             )
 
-    return Config(**data)
+    return FlowConfig(**data)
