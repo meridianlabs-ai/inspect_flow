@@ -2,7 +2,6 @@ from pathlib import Path
 
 import yaml
 from inspect_ai.model import GenerateConfig
-from inspect_flow._config.config import load_config
 from inspect_flow._types.types import (
     Dependency,
     FlowConfig,

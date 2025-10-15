@@ -1,0 +1,12 @@
+options:
+  log_dir: local_logs
+  limit: 1
+dependencies:
+  package: "./examples/local_eval"
+matrix:
+  tasks:
+    - name: local_eval/noop
+    - name: local_eval/noop2
+  models:
+    - name: mockllm/mock-llm1
+    - name: mockllm/mock-llm2
