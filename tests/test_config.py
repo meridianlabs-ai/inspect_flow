@@ -20,6 +20,7 @@ def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
             config.model_dump(mode="json", exclude_unset=True),
             f,
             default_flow_style=False,
+            sort_keys=False,
         )
 
 
@@ -147,7 +148,10 @@ def test_config_nested_matrix() -> None:
         ),
         matrix=Matrix(
             tasks=[
-                Task(name="inspect_evals/mmlu_0_shot", args={"language": "EN_US"}),
+                Task(
+                    name="inspect_evals/mmlu_0_shot",
+                    args={"language": "EN_US"},
+                ),
                 Task(
                     name="inspect_evals/mmlu_5_shot",
                     args=[
