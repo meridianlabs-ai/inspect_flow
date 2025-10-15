@@ -4,7 +4,7 @@ from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel, Field, model_validator
 
 
-class Model(BaseModel):
+class ModelConfig(BaseModel):
     """Configuration for a model."""
 
     name: str = Field(description="Name of the model to use.")
@@ -50,22 +50,17 @@ class FlowOptions(BaseModel):
 
 class Dependency(BaseModel):
     # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
-    package: str | None = Field(
-        default=None,
+    package: str = Field(
         description="E.g. a PyPI package specifier or Git repository URL.",
     )
 
-    file: str | None = Field(default=None, description="file with task export")
 
-    @model_validator(mode="after")
-    def check_package_or_file(self):
-        if (self.package is None) == (self.file is None):
-            raise ValueError("Exactly one of package or file must be specified")
-        return self
-
-
-class Task(BaseModel):
+class TaskConfig(BaseModel):
     name: str = Field(description="Name of the task to use.")
+
+    file: str | None = Field(
+        default=None, description="Python file containing the task implementation"
+    )
 
     sample_ids: list[str | int] | None = Field(
         default=None,
@@ -79,14 +74,14 @@ class Task(BaseModel):
         description="Task arguments",
     )
 
-    models: Model | list[Model] | None = Field(
+    models: ModelConfig | list[ModelConfig] | None = Field(
         default=None,
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
 
 
 class Matrix(BaseModel):
-    tasks: Task | list[Task] = Field(
+    tasks: TaskConfig | list[TaskConfig] = Field(
         description="List of tasks to evaluate in this eval set."
     )
 
@@ -95,7 +90,7 @@ class Matrix(BaseModel):
         description="Task arguments or list of task arguments to use for evaluation.",
     )
 
-    models: Model | list[Model] | None = Field(
+    models: ModelConfig | list[ModelConfig] | None = Field(
         default=None,
         description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
     )

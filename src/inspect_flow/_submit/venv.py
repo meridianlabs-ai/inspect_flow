@@ -5,9 +5,10 @@ from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
 
+import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.types import TaskGroupConfig
+from inspect_flow._types.types import FlowConfig
 
 
 class VcsInfo(BaseModel):
@@ -129,11 +130,15 @@ def get_pip_string(package: str) -> str:
     return direct_url_to_pip_string(direct_url)
 
 
-def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> dict[str, str]:
-    # Serialize task_group to JSON and write to file
-    task_group_json_path = Path(temp_dir) / "task_group.json"
-    with open(task_group_json_path, "w") as f:
-        json.dump(task_group.model_dump(), f, indent=2)
+def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
+    flow_yaml_path = Path(temp_dir) / "flow.yaml"
+    with open(flow_yaml_path, "w") as f:
+        yaml.dump(
+            config.model_dump(mode="json", exclude_unset=True),
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+        )
 
     # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
     env = os.environ.copy()
@@ -149,19 +154,18 @@ def create_venv(task_group: TaskGroupConfig, temp_dir: str) -> dict[str, str]:
         env=env,
     )
 
-    eval_set_config = task_group.eval_set
-    package_configs = [*eval_set_config.tasks, *(eval_set_config.models or [])]
-    dependencies: List[str] = [
-        *(
-            package_config.package
-            for package_config in package_configs
-            if package_config.package
+    dependencies_config = []
+    if config.dependencies:
+        dependencies_config = (
+            config.dependencies
+            if isinstance(config.dependencies, list)
+            else [config.dependencies]
         )
-    ]
-    dependencies = [
-        dep if not dep.startswith(".") else str(Path(dep).resolve())
-        for dep in dependencies
-    ]
+        dependencies: List[str] = [*(config.package for config in dependencies_config)]
+        dependencies = [
+            dep if not dep.startswith(".") else str(Path(dep).resolve())
+            for dep in dependencies
+        ]
     dependencies.append(get_pip_string("inspect-flow"))
 
     subprocess.run(
