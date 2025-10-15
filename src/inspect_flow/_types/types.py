@@ -4,7 +4,7 @@ from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel, Field, model_validator
 
 
-class ModelConfig(BaseModel):
+class Model(BaseModel):
     """Configuration for a model."""
 
     name: str = Field(description="Name of the model to use.")
@@ -20,10 +20,9 @@ class ModelConfig(BaseModel):
     )
 
     # TODO:ransom should we disable extra?
-    config: GenerateConfig | None = Field(
+    config: list[GenerateConfig] | GenerateConfig | None = Field(
         default=None,
-        alias="config",
-        description="Configuration for model.",
+        description="Configuration for model. If a list, will matrix over the values",
     )
 
     base_url: str | None = Field(
@@ -80,7 +79,7 @@ class Task(BaseModel):
         description="Task arguments",
     )
 
-    models: ModelConfig | list[ModelConfig] | None = Field(
+    models: Model | list[Model] | None = Field(
         default=None,
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
@@ -96,7 +95,7 @@ class Matrix(BaseModel):
         description="Task arguments or list of task arguments to use for evaluation.",
     )
 
-    models: ModelConfig | list[ModelConfig] | None = Field(
+    models: Model | list[Model] | None = Field(
         default=None,
         description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
     )

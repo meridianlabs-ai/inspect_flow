@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import yaml
+from inspect_ai.model import GenerateConfig
 from inspect_flow._config.config import load_config
 from inspect_flow._types.types import (
     Dependency,
     FlowConfig,
     FlowOptions,
     Matrix,
-    ModelConfig,
+    Model,
     Task,
 )
 
@@ -27,8 +28,7 @@ def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
 def validate_config(config: FlowConfig, file_name: str) -> None:
     # Load the example config file
     example_path = Path(__file__).parent.parent / "examples" / file_name
-    with open(example_path) as f:
-        expected_config = yaml.safe_load(f)
+    expected_config = load_config(config_file=str(example_path))
 
     # Compare the generated config with the example
     generated_config = config.model_dump(mode="json", exclude_unset=True)
@@ -36,22 +36,6 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
         write_flow_yaml(config, example_path)
     else:
         assert generated_config == expected_config
-
-
-def _test_load_simple_eval_set() -> None:
-    # Load the config file
-    config_path = Path(__file__).parent.parent / "examples" / "simple.eval-set.yaml"
-    config = load_config(str(config_path))
-
-    # Verify the result
-    assert config is not None
-    assert config.run is not None
-    assert len(config.run.task_groups) == 1
-    task_group = config.run.task_groups[0]
-    assert task_group.eval_set is not None
-    assert len(task_group.eval_set.tasks) == 1
-    assert task_group.eval_set.models is not None
-    assert len(task_group.eval_set.models) == 1
 
 
 def test_config_one_task() -> None:
@@ -90,8 +74,8 @@ def test_config_two_models_one_task() -> None:
         matrix=Matrix(
             tasks=Task(name="inspect_evals/mmlu_0_shot"),
             models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
+                Model(name="openai/gpt-4o-mini"),
+                Model(name="openai/gpt-5-nano"),
             ],
         ),
     )
@@ -110,12 +94,38 @@ def test_config_two_models_two_tasks() -> None:
                 Task(name="inspect_evals/mmlu_5_shot"),
             ],
             models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
+                Model(name="openai/gpt-4o-mini"),
+                Model(name="openai/gpt-5-nano"),
             ],
         ),
     )
     validate_config(config, "two_models_two_tasks_flow.yaml")
+
+
+def test_config_model_config() -> None:
+    config = FlowConfig(
+        options=FlowOptions(log_dir="example_logs", limit=1),
+        dependencies=Dependency(
+            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+        ),
+        matrix=Matrix(
+            tasks=[
+                Task(name="inspect_evals/mmlu_0_shot"),
+                Task(name="inspect_evals/mmlu_5_shot"),
+            ],
+            models=[
+                Model(name="openai/gpt-4o-mini"),
+                Model(
+                    name="openai/gpt-5-nano",
+                    config=[
+                        GenerateConfig(reasoning_effort="minimal"),
+                        GenerateConfig(reasoning_effort="low"),
+                    ],
+                ),
+            ],
+        ),
+    )
+    validate_config(config, "model_config_flow.yaml")
 
 
 def test_config_matrix_and_task() -> None:
@@ -129,8 +139,8 @@ def test_config_matrix_and_task() -> None:
                 Task(
                     name="inspect_evals/mmlu_0_shot",
                     models=[
-                        ModelConfig(name="openai/gpt-4o-mini"),
-                        ModelConfig(name="openai/gpt-5-nano"),
+                        Model(name="openai/gpt-4o-mini"),
+                        Model(name="openai/gpt-5-nano"),
                     ],
                 ),
                 Task(name="inspect_evals/mmlu_5_shot"),
@@ -162,8 +172,8 @@ def test_config_nested_matrix() -> None:
                 ),
             ],
             models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
+                Model(name="openai/gpt-4o-mini"),
+                Model(name="openai/gpt-5-nano"),
             ],
         ),
     )
