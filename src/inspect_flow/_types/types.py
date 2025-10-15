@@ -23,8 +23,6 @@ class TaskConfig(BaseModel):
 
     name: str = Field(description="Name of the task to use.")
 
-    args: dict[str, Any] | None = Field(default=None, description="Task arguments.")
-
     sample_ids: list[str | int] | None = Field(
         default=None,
         min_length=1,
@@ -177,3 +175,76 @@ class Config(BaseModel):
         default_factory=EnvironmentConfig, description="Environment configuration"
     )
     run: RunConfig = Field(description="Run configuration")
+
+
+# CONFIG PROPOSAL #1
+
+
+class FlowOptions(BaseModel):
+    log_dir: str = Field(description="Directory to write evaluation logs to.")
+    limit: int | None = Field(
+        default=None, description="Limit evaluated samples (defaults to all samples)."
+    )
+
+
+class Dependency(BaseModel):
+    # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
+    package: Annotated[str, AfterValidator(_validate_package)] | None = Field(
+        default=None,
+        description="E.g. a PyPI package specifier or Git repository URL.",
+    )
+
+    file: str | None = Field(default=None, description="file with task export")
+
+    @model_validator(mode="after")
+    def check_package_or_file(self):
+        if (self.package is None) == (self.file is None):
+            raise ValueError("Exactly one of package or file must be specified")
+        return self
+
+
+class SingleTask(BaseModel):
+    name: str = Field(description="Name of the task to use.")
+
+    sample_ids: list[str | int] | None = Field(
+        default=None,
+        min_length=1,
+        description="List of sample IDs to run for the task. If not specified, all samples will be run.",
+    )
+
+    args: dict[str, Any] | None = Field(
+        default=None,
+        description="Task arguments",
+    )
+
+    models: ModelConfig | None = Field(
+        default=None,
+        description="Model to use for evaluation. If not specified, the default model for the task will be used.",
+    )
+
+
+class TaskMatrix(BaseModel):
+    #     tasks: SingleTask | "TaskMatrix" | list["TaskMatrix" | SingleTask] = Field(
+    tasks: SingleTask | list[SingleTask] = Field(
+        description="List of tasks to evaluate in this eval set."
+    )
+
+    args: dict[str, Any] | list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Task arguments or list of task arguments to use for evaluation.",
+    )
+
+    models: ModelConfig | list[ModelConfig] | None = Field(
+        default=None,
+        description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
+    )
+
+
+class FlowConfig(BaseModel):
+    options: FlowOptions | None = Field(default=None, description="Global options")
+    dependencies: Dependency | list[Dependency] | None = Field(
+        default=None, description="Dependencies to pip install"
+    )
+    tasks: SingleTask | TaskMatrix | list[TaskMatrix | SingleTask] = Field(
+        description="Task or tasks to run"
+    )
