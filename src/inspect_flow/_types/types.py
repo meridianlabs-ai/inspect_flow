@@ -4,6 +4,7 @@ from typing import (
     Generic,
     Literal,
     TypeVar,
+    Union,
 )
 
 from inspect_ai.model import GenerateConfig
@@ -224,8 +225,7 @@ class SingleTask(BaseModel):
 
 
 class TaskMatrix(BaseModel):
-    #     tasks: SingleTask | "TaskMatrix" | list["TaskMatrix" | SingleTask] = Field(
-    tasks: SingleTask | list[SingleTask] = Field(
+    tasks: Union[SingleTask, "TaskMatrix", list[Union[SingleTask, "TaskMatrix"]]] = Field(
         description="List of tasks to evaluate in this eval set."
     )
 
