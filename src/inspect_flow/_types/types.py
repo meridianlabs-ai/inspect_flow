@@ -218,15 +218,15 @@ class SingleTask(BaseModel):
         description="Task arguments",
     )
 
-    models: ModelConfig | None = Field(
+    model: ModelConfig | None = Field(
         default=None,
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
 
 
 class TaskMatrix(BaseModel):
-    tasks: Union[SingleTask, "TaskMatrix", list[Union[SingleTask, "TaskMatrix"]]] = Field(
-        description="List of tasks to evaluate in this eval set."
+    tasks: Union[SingleTask, "TaskMatrix", list[Union[SingleTask, "TaskMatrix"]]] = (
+        Field(description="List of tasks to evaluate in this eval set.")
     )
 
     args: dict[str, Any] | list[dict[str, Any]] | None = Field(

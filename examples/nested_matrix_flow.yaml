@@ -9,6 +9,8 @@ tasks:
       - name: openai/gpt-5-nano
     tasks:
       - name: inspect_evals/mmlu_0_shot
+        args:
+          language: EN_US
       - args:
           - language: EN_US
           - language: CN_CN

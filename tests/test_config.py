@@ -145,7 +145,9 @@ def test_config_nested_matrix() -> None:
         tasks=[
             TaskMatrix(
                 tasks=[
-                    SingleTask(name="inspect_evals/mmlu_0_shot"),
+                    SingleTask(
+                        name="inspect_evals/mmlu_0_shot", args={"language": "EN_US"}
+                    ),
                     TaskMatrix(
                         tasks=SingleTask(name="inspect_evals/mmlu_5_shot"),
                         args=[
