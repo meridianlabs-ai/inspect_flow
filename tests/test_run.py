@@ -1,9 +1,9 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
-import pytest
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.types import (
     FlowConfig,
