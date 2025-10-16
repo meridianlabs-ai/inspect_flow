@@ -1,7 +1,9 @@
-from typing import Any
+from typing import Any, TypeAlias
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel, Field
+
+TaskArgs: TypeAlias = dict[str, Any]
 
 
 class ModelConfig(BaseModel):
@@ -69,7 +71,7 @@ class TaskConfig(BaseModel):
     )
 
     # TODO:ransom does it make sense to have args as part of the matrix? Or should just be under each task?
-    args: dict[str, Any] | list[dict[str, Any]] | None = Field(
+    args: TaskArgs | list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments",
     )
@@ -85,7 +87,7 @@ class Matrix(BaseModel):
         description="List of tasks to evaluate in this eval set."
     )
 
-    args: dict[str, Any] | list[dict[str, Any]] | None = Field(
+    args: TaskArgs | list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments or list of task arguments to use for evaluation.",
     )

@@ -1,3 +1,4 @@
+from typing import Any
 import inspect_ai
 import yaml
 from inspect_ai import Task
@@ -17,34 +18,9 @@ def read_config() -> FlowConfig:
         return FlowConfig(**data)
 
 
-def create_single_model(
-    model_config: ModelConfig, generate_config: GenerateConfig | None
-) -> Model:
-    return get_model(
-        model=model_config.name,
-        role=model_config.role,
-        default=model_config.default,
-        config=generate_config or GenerateConfig(),
-        base_url=model_config.base_url,
-        api_key=model_config.api_key,
-        memoize=model_config.memoize,
-    )
-
-
-def create_model(model_config: ModelConfig) -> list[Model]:
-    generate_config_list = ensure_non_empty_list(model_config.config)
-    return [
-        create_single_model(model_config, generate_config)
-        for generate_config in generate_config_list
-    ]
-
-
-def create_models(config: list[ModelConfig]) -> list[Model]:
-    model_lists = [create_model(model_config) for model_config in config]
-    return flatten(model_lists)
-
-
-def create_single_config_tasks(config: TaskConfig, models: list[Model]) -> list[Task]:
+def create_single_config_tasks(
+    config: TaskConfig, args: list[dict[str, Any]], models: list[Model]
+) -> list[Task]:
     if len(models) and config.models:
         raise ValueError("Only one of matrix and task may specify model")
 
@@ -88,8 +64,9 @@ def create_tasks(config: list[TaskConfig], models: list[Model]) -> list[Task]:
 
 
 def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
+    args = ensure_list(config.matrix.args)
     models = create_models(ensure_list(config.matrix.models))
-    tasks = create_tasks(ensure_list(config.matrix.tasks), models)
+    tasks = create_tasks(ensure_list(config.matrix.tasks), args, models)
 
     options = config.options or FlowOptions(log_dir=".")
     return inspect_ai.eval_set(

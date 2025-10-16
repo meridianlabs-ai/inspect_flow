@@ -19,6 +19,15 @@ def ensure_list(value: T | list[T] | None) -> list[T]:
 
 def ensure_non_empty_list(value: T | list[T] | None) -> list[T] | list[T | None]:
     if isinstance(value, list):
-        return value
+        return value if len(value) else [None]
+    else:
+        return [value]
+
+
+def ensure_list_or_none(value: T | list[T] | None) -> list[T] | None:
+    if value is None:
+        return None
+    elif isinstance(value, list):
+        return value if len(value) else None
     else:
         return [value]

@@ -161,3 +161,28 @@ def test_multiple_model_error() -> None:
                 ),
             )
         )
+
+
+def test_matrix_args() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="model_generate_config"),
+                matrix=Matrix(
+                    args=[{"subset": "original"}, {"subset": "contrast"}],
+                    models=[ModelConfig(name="mockllm/mock-llm")],
+                    tasks=[
+                        TaskConfig(
+                            name="task_with_params", file=str(task_file.absolute())
+                        )
+                    ],
+                ),
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 2
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
