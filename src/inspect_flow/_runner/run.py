@@ -1,9 +1,4 @@
-from functools import lru_cache
-from importlib.machinery import SourceFileLoader
-from importlib.util import module_from_spec, spec_from_loader
 from itertools import chain
-from pathlib import Path
-from types import ModuleType
 
 import inspect_ai
 import yaml
@@ -14,7 +9,8 @@ from inspect_ai.model._model import init_active_model
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import FlowConfig, FlowOptions, ModelConfig, TaskConfig
-from inspect_flow._util.util import ensure_list, ensure_non_empty_list
+from inspect_flow._util.list_util import ensure_list, ensure_non_empty_list
+from inspect_flow._util.module_util import get_module_from_file
 
 
 def read_config() -> FlowConfig:
@@ -50,23 +46,8 @@ def create_models(config: list[ModelConfig]) -> list[Model]:
     return list(chain.from_iterable(model_lists))
 
 
-@lru_cache(maxsize=None)
-def get_module_from_file(file: str) -> ModuleType:
-    module_path = Path(file).resolve()
-    module_name = module_path.as_posix()
-    loader = SourceFileLoader(module_name, module_path.absolute().as_posix())
-    spec = spec_from_loader(loader.name, loader)
-    if not spec:
-        raise ModuleNotFoundError(f"Module {module_name} not found")
-    module = module_from_spec(spec)
-    loader.exec_module(module)
-    return module
-
-
 def create_tasks_from_file(file: str, config: TaskConfig) -> list[Task]:
     module = get_module_from_file(file)
-    if not hasattr(module, config.name):
-        raise ValueError(f"Function '{config.name}' not found in {file}")
     task_func = getattr(module, config.name)
 
     return [task_func(**(args or {})) for args in ensure_non_empty_list(config.args)]

@@ -9,7 +9,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from inspect_flow._types.types import FlowConfig
-from inspect_flow._util.util import ensure_list
+from inspect_flow._util.list_util import ensure_list
 
 
 class VcsInfo(BaseModel):
@@ -122,7 +122,7 @@ def get_pip_string(package: str) -> str:
     direct_url = get_package_direct_url(package)
     # If DirectURL is None, could be running in dev mode or installed from PyPI.
     if direct_url is None:
-        package_path = Path(__file__).parent.parent.parent.parent
+        package_path = Path(__file__).parents[3]
         if not (package_path / "pyproject.toml").exists():
             # Assume installed from PyPI
             return package

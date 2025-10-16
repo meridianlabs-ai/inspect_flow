@@ -6,7 +6,7 @@ from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._types.types import (
     FlowConfig,
 )
-from inspect_flow._util.util import ensure_list
+from inspect_flow._util.list_util import ensure_list
 
 
 def init_test_logs() -> str:
