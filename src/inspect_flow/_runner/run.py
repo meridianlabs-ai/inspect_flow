@@ -79,23 +79,28 @@ def create_tasks_from_registry(config: TaskConfig) -> list[Task]:
     ]
 
 
-def create_single_config_tasks(config: TaskConfig, model: Model) -> list[Task]:
+def create_single_config_tasks(config: TaskConfig, model: Model | None) -> list[Task]:
     # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-    init_active_model(model, GenerateConfig())
+    if model:
+        init_active_model(model, GenerateConfig())
+
     if config.file:
         tasks = create_tasks_from_file(config.file, config)
     else:
         tasks = create_tasks_from_registry(config)
+
     # TODO:ransom use task_with?
-    for task in tasks:
-        task.model = model
+    if model:
+        for task in tasks:
+            task.model = model
     return tasks
 
 
 def create_tasks(config: list[TaskConfig], models: list[Model]) -> list[Task]:
+    models_or_none: list[Model | None] = list(models) if len(models) else [None]
     task_lists = [
         create_single_config_tasks(task_config, model)
-        for model in models
+        for model in models_or_none
         for task_config in config
     ]
     return list(chain.from_iterable(task_lists))

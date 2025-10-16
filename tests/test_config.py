@@ -41,9 +41,12 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
 def test_config_one_task() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(tasks=TaskConfig(name="inspect_evals/mmlu_0_shot")),
     )
     validate_config(config, "one_task_flow.yaml")
@@ -52,9 +55,12 @@ def test_config_one_task() -> None:
 def test_config_two_tasks() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=[
                 TaskConfig(name="inspect_evals/mmlu_0_shot"),
@@ -68,9 +74,12 @@ def test_config_two_tasks() -> None:
 def test_config_two_models_one_task() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=TaskConfig(name="inspect_evals/mmlu_0_shot"),
             models=[
@@ -85,9 +94,12 @@ def test_config_two_models_one_task() -> None:
 def test_config_two_models_two_tasks() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=[
                 TaskConfig(name="inspect_evals/mmlu_0_shot"),
@@ -105,9 +117,12 @@ def test_config_two_models_two_tasks() -> None:
 def test_config_model_config() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=[
                 TaskConfig(name="inspect_evals/mmlu_0_shot"),
@@ -131,9 +146,12 @@ def test_config_model_config() -> None:
 def test_config_matrix_and_task() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=[
                 TaskConfig(
@@ -153,9 +171,12 @@ def test_config_matrix_and_task() -> None:
 def test_config_nested_matrix() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),
-        dependencies=Dependency(
-            package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-        ),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
         matrix=Matrix(
             tasks=[
                 TaskConfig(

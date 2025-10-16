@@ -93,3 +93,22 @@ def test_model_generate_config() -> None:
         assert isinstance(tasks_arg[0].model, Model)
         config = tasks_arg[0].model.config
         assert config.system_message == system_message
+
+
+def test_default_model_config() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="model_generate_config"),
+                matrix=Matrix(
+                    tasks=[TaskConfig(name="noop", file=str(task_file.absolute()))],
+                ),
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert tasks_arg[0].model is None
