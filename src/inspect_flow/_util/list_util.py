@@ -22,3 +22,11 @@ def ensure_non_empty_list(value: T | list[T] | None) -> list[T] | list[T | None]
         return value
     else:
         return [value]
+
+
+def ensure_list_or_none(value: T | list[T] | None) -> list[T] | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return value
+    return [value]
