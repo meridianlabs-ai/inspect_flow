@@ -1,0 +1,13 @@
+options:
+  log_dir: example_logs
+  limit: 1
+dependencies:
+- package: openai
+- package: git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
+matrix:
+  tasks:
+  - name: inspect_evals/mmlu_0_shot
+  - name: inspect_evals/mmlu_5_shot
+  models:
+  - name: openai/gpt-4o-mini
+  - name: openai/gpt-5-nano
