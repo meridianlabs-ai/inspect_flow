@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
+import pytest
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.types import (
     FlowConfig,
@@ -112,3 +113,51 @@ def test_default_model_config() -> None:
         assert len(tasks_arg) == 1
         assert isinstance(tasks_arg[0], Task)
         assert tasks_arg[0].model is None
+
+
+def test_task_model() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="model_generate_config"),
+                matrix=Matrix(
+                    tasks=[
+                        TaskConfig(
+                            name="noop",
+                            file=str(task_file.absolute()),
+                            models=[ModelConfig(name="mockllm/mock-llm")],
+                        )
+                    ],
+                ),
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+        # TODO:ransom name has different meanings
+        assert tasks_arg[0].model.name == "mock-llm"
+
+
+def test_multiple_model_error() -> None:
+    with pytest.raises(
+        ValueError, match="Only one of matrix and task may specify model"
+    ):
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="model_generate_config"),
+                matrix=Matrix(
+                    models=[ModelConfig(name="mockllm/mock-llm")],
+                    tasks=[
+                        TaskConfig(
+                            name="noop",
+                            file=str(task_file.absolute()),
+                            models=[ModelConfig(name="mockllm/mock-llm2")],
+                        )
+                    ],
+                ),
+            )
+        )
