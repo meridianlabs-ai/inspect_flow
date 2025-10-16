@@ -15,7 +15,7 @@ from inspect_flow._types.types import (
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 task_file = (
-    Path(__file__).parent.parent
+    Path(__file__).parents[1]
     / "examples"
     / "local_eval"
     / "src"

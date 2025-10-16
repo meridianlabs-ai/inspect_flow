@@ -18,7 +18,7 @@ def submit(config: FlowConfig):
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
 
-        run_path = (Path(__file__).parent.parent / "_runner" / "run.py").absolute()
+        run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         subprocess.run(
             ["uv", "run", str(run_path)],
             cwd=temp_dir,

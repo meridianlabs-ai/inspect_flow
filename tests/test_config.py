@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 from inspect_ai.model import GenerateConfig
+from inspect_flow._config.config import load_config
 from inspect_flow._types.types import (
     Dependency,
     FlowConfig,
@@ -26,7 +27,7 @@ def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
 
 def validate_config(config: FlowConfig, file_name: str) -> None:
     # Load the example config file
-    example_path = Path(__file__).parent.parent / "examples" / file_name
+    example_path = Path(__file__).parents[1] / "examples" / file_name
     with open(example_path, "r") as f:
         expected_config = yaml.safe_load(f)
 
@@ -108,6 +109,13 @@ def test_config_model_and_task() -> None:
                 ModelConfig(name="openai/gpt-4o-mini"),
             ],
         ),
+    )
+    validate_config(config, "model_and_task_flow.yaml")
+
+
+def test_py_config() -> None:
+    config = load_config(
+        str(Path(__file__).parents[1] / "examples" / "model_and_task_flow.py")
     )
     validate_config(config, "model_and_task_flow.yaml")
 
