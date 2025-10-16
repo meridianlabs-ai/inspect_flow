@@ -1,6 +1,11 @@
+from itertools import chain
 from typing import TypeVar
 
 T = TypeVar("T")
+
+
+def flatten(list_of_lists: list[list[T]]) -> list[T]:
+    return list(chain.from_iterable(list_of_lists))
 
 
 def ensure_list(value: T | list[T] | None) -> list[T]:
