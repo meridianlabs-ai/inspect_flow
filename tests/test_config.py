@@ -48,7 +48,7 @@ def test_config_one_task() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(tasks=TaskConfig(name="inspect_evals/mmlu_0_shot")),
+        matrix=Matrix(tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")]),
     )
     validate_config(config, "one_task_flow.yaml")
 
@@ -82,7 +82,7 @@ def test_config_two_models_one_task() -> None:
             ),
         ],
         matrix=Matrix(
-            tasks=TaskConfig(name="inspect_evals/mmlu_0_shot"),
+            tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")],
             models=[
                 ModelConfig(name="openai/gpt-4o-mini"),
                 ModelConfig(name="openai/gpt-5-nano"),
@@ -210,7 +210,7 @@ def test_config_nested_matrix() -> None:
             tasks=[
                 TaskConfig(
                     name="inspect_evals/mmlu_0_shot",
-                    args={"language": "EN_US"},
+                    args=[{"language": "EN_US"}],
                 ),
                 TaskConfig(
                     name="inspect_evals/mmlu_5_shot",
