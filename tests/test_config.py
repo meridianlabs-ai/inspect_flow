@@ -91,6 +91,27 @@ def test_config_two_models_one_task() -> None:
     validate_config(config, "two_models_one_task_flow.yaml")
 
 
+def test_config_model_and_task() -> None:
+    config = FlowConfig(
+        options=FlowOptions(log_dir="model_and_task", limit=1),
+        dependencies=[
+            Dependency(package="openai"),
+            Dependency(
+                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+            ),
+        ],
+        matrix=Matrix(
+            tasks=[
+                TaskConfig(name="inspect_evals/mmlu_0_shot"),
+            ],
+            models=[
+                ModelConfig(name="openai/gpt-4o-mini"),
+            ],
+        ),
+    )
+    validate_config(config, "model_and_task_flow.yaml")
+
+
 def test_config_two_models_two_tasks() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs", limit=1),

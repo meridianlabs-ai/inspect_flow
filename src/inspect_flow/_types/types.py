@@ -1,7 +1,7 @@
 from typing import Any
 
 from inspect_ai.model import GenerateConfig
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class ModelConfig(BaseModel):
