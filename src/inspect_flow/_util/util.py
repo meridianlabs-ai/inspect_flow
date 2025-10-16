@@ -1,4 +1,4 @@
-from typing import Literal, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 
