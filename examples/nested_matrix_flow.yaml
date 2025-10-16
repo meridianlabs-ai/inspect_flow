@@ -8,7 +8,7 @@ matrix:
   tasks:
   - name: inspect_evals/mmlu_0_shot
     args:
-      language: EN_US
+    - language: EN_US
   - name: inspect_evals/mmlu_5_shot
     args:
     - language: EN_US

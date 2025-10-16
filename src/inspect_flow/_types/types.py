@@ -1,10 +1,11 @@
 from typing import Any, TypeAlias
 
 from inspect_ai.model import GenerateConfig
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from inspect_flow._util.list_util import ensure_list_or_none
 
 TaskArgs: TypeAlias = dict[str, Any]
-
 
 class ModelConfig(BaseModel):
     """Configuration for a model."""
@@ -42,6 +43,12 @@ class ModelConfig(BaseModel):
         description="Use/store a cached version of the model based on the parameters to get_model().",
     )
 
+    # Convert single items to lists
+    @field_validator("config", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)
+
 
 class FlowOptions(BaseModel):
     log_dir: str = Field(description="Directory to write evaluation logs to.")
@@ -71,31 +78,43 @@ class TaskConfig(BaseModel):
     )
 
     # TODO:ransom does it make sense to have args as part of the matrix? Or should just be under each task?
-    args: TaskArgs | list[TaskArgs] | None = Field(
+    args: list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments",
     )
 
-    models: ModelConfig | list[ModelConfig] | None = Field(
+    models: list[ModelConfig] | None = Field(
         default=None,
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
 
+    # Convert single items to lists
+    @field_validator("args", "models", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)
+
 
 class Matrix(BaseModel):
-    tasks: TaskConfig | list[TaskConfig] = Field(
+    tasks: list[TaskConfig] = Field(
         description="List of tasks to evaluate in this eval set."
     )
 
-    args: TaskArgs | list[TaskArgs] | None = Field(
+    args: list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments or list of task arguments to use for evaluation.",
     )
 
-    models: ModelConfig | list[ModelConfig] | None = Field(
+    models: list[ModelConfig] | None = Field(
         default=None,
         description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
     )
+
+    # Convert single items to lists
+    @field_validator("tasks", "args", "models", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)
 
 
 class FlowConfig(BaseModel):
