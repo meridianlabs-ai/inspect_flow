@@ -1,9 +1,11 @@
-from typing import Any
+from typing import Any, TypeAlias
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel, Field, field_validator
 
 from inspect_flow._util.list_util import ensure_list_or_none
+
+TaskArgs: TypeAlias = dict[str, Any]
 
 
 class ModelConfig(BaseModel):
@@ -22,7 +24,7 @@ class ModelConfig(BaseModel):
     )
 
     # TODO:ransom should we disable extra?
-    config: list[GenerateConfig] | GenerateConfig | None = Field(
+    config: list[GenerateConfig] | None = Field(
         default=None,
         description="Configuration for model. If a list, will matrix over the values",
     )
@@ -77,7 +79,7 @@ class TaskConfig(BaseModel):
     )
 
     # TODO:ransom does it make sense to have args as part of the matrix? Or should just be under each task?
-    args: list[dict[str, Any]] | None = Field(
+    args: list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments",
     )
@@ -99,7 +101,7 @@ class Matrix(BaseModel):
         description="List of tasks to evaluate in this eval set."
     )
 
-    args: list[dict[str, Any]] | None = Field(
+    args: list[TaskArgs] | None = Field(
         default=None,
         description="Task arguments or list of task arguments to use for evaluation.",
     )
@@ -118,7 +120,13 @@ class Matrix(BaseModel):
 
 class FlowConfig(BaseModel):
     options: FlowOptions | None = Field(default=None, description="Global options")
-    dependencies: Dependency | list[Dependency] | None = Field(
+    dependencies: list[Dependency] | None = Field(
         default=None, description="Dependencies to pip install"
     )
     matrix: Matrix = Field(description="Matrix of tasks to run")
+
+    # Convert single items to lists
+    @field_validator("dependencies", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)

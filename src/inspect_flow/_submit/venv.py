@@ -9,7 +9,6 @@ import yaml
 from pydantic import BaseModel, Field
 
 from inspect_flow._types.types import FlowConfig
-from inspect_flow._util.list_util import ensure_list
 
 
 class VcsInfo(BaseModel):
@@ -157,7 +156,7 @@ def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
 
     dependencies: List[str] = []
     if config.dependencies:
-        dependencies_config = ensure_list(config.dependencies)
+        dependencies_config = config.dependencies
         dependencies = [config.package for config in dependencies_config]
         dependencies = [
             dep if not dep.startswith(".") else str(Path(dep).resolve())

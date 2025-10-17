@@ -29,7 +29,7 @@ def test_task_with_get_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                options=FlowOptions(log_dir="get_model"),
+                options=FlowOptions(log_dir="test_log_dir"),
                 matrix=Matrix(
                     models=[ModelConfig(name="mockllm/mock-llm")],
                     tasks=[
@@ -73,12 +73,12 @@ def test_model_generate_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                options=FlowOptions(log_dir="model_generate_config"),
+                options=FlowOptions(log_dir="test_log_dir"),
                 matrix=Matrix(
                     models=[
                         ModelConfig(
                             name="mockllm/mock-llm",
-                            config=GenerateConfig(system_message=system_message),
+                            config=[GenerateConfig(system_message=system_message)],
                         ),
                     ],
                     tasks=[TaskConfig(name="noop", file=str(task_file.absolute()))],
@@ -100,7 +100,7 @@ def test_default_model_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                options=FlowOptions(log_dir="model_generate_config"),
+                options=FlowOptions(log_dir="test_log_dir"),
                 matrix=Matrix(
                     tasks=[TaskConfig(name="noop", file=str(task_file.absolute()))],
                 ),
@@ -119,7 +119,7 @@ def test_task_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                options=FlowOptions(log_dir="model_generate_config"),
+                options=FlowOptions(log_dir="test_log_dir"),
                 matrix=Matrix(
                     tasks=[
                         TaskConfig(
@@ -148,7 +148,7 @@ def test_multiple_model_error() -> None:
     ):
         run_eval_set(
             config=FlowConfig(
-                options=FlowOptions(log_dir="model_generate_config"),
+                options=FlowOptions(log_dir="test_log_dir"),
                 matrix=Matrix(
                     models=[ModelConfig(name="mockllm/mock-llm")],
                     tasks=[
@@ -157,6 +157,83 @@ def test_multiple_model_error() -> None:
                             file=str(task_file.absolute()),
                             models=[ModelConfig(name="mockllm/mock-llm2")],
                         )
+                    ],
+                ),
+            )
+        )
+
+
+def test_matrix_args() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=Matrix(
+                    args=[{"subset": "original"}, {"subset": "contrast"}],
+                    models=[ModelConfig(name="mockllm/mock-llm")],
+                    tasks=[
+                        TaskConfig(
+                            name="task_with_params", file=str(task_file.absolute())
+                        )
+                    ],
+                ),
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 2
+        assert tasks_arg[0].metadata["subset"] == "original"
+        assert tasks_arg[1].metadata["subset"] == "contrast"
+
+
+def test_task_args() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=Matrix(
+                    models=[ModelConfig(name="mockllm/mock-llm")],
+                    tasks=[
+                        TaskConfig(
+                            name="task_with_params",
+                            file=str(task_file.absolute()),
+                            args=[{"subset": "original"}, {"subset": "contrast"}],
+                        )
+                    ],
+                ),
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 2
+        assert tasks_arg[0].metadata["subset"] == "original"
+        assert tasks_arg[1].metadata["subset"] == "contrast"
+
+
+def test_multiple_args_error() -> None:
+    with pytest.raises(
+        ValueError, match="Only one of matrix and task may specify args"
+    ):
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=Matrix(
+                    args=[{"subset": "original"}, {"subset": "contrast"}],
+                    models=[ModelConfig(name="mockllm/mock-llm")],
+                    tasks=[
+                        TaskConfig(
+                            name="noop",
+                            file=str(task_file.absolute()),
+                        ),
+                        TaskConfig(
+                            name="task_with_params",
+                            file=str(task_file.absolute()),
+                            args=[{"subset": "original"}, {"subset": "contrast"}],
+                        ),
                     ],
                 ),
             )
