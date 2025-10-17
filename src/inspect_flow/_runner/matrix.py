@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Mapping, TypeAlias
+from typing import TypeAlias
 
 from inspect_ai import Task, task_with
 from inspect_ai._util.notgiven import NOT_GIVEN
