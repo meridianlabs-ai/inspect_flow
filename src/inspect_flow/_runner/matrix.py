@@ -41,7 +41,7 @@ class MatrixImpl:
     def create_matrix(self) -> None:
         self._args = self.matrix.args
         if self.matrix.models:
-            self._models = create_models(ensure_list(self.matrix.models))
+            self._models = create_models(self.matrix.models)
 
     def tasks(self) -> list[Task]:
         return [

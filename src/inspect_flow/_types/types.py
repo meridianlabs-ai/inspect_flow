@@ -120,7 +120,13 @@ class Matrix(BaseModel):
 
 class FlowConfig(BaseModel):
     options: FlowOptions | None = Field(default=None, description="Global options")
-    dependencies: Dependency | list[Dependency] | None = Field(
+    dependencies: list[Dependency] | None = Field(
         default=None, description="Dependencies to pip install"
     )
     matrix: Matrix = Field(description="Matrix of tasks to run")
+
+    # Convert single items to lists
+    @field_validator("dependencies", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)
