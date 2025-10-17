@@ -1,4 +1,4 @@
-from typing import Any, TypeAlias
+from typing import Any, Mapping, TypeAlias, Union
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel, Field, field_validator
@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 from inspect_flow._util.list_util import ensure_list_or_none
 
 TaskArgs: TypeAlias = dict[str, Any]
+ModelRolesConfig: TypeAlias = Mapping[str, Union["ModelConfig", str]]
 
 
 class ModelConfig(BaseModel):
@@ -89,8 +90,13 @@ class TaskConfig(BaseModel):
         description="Model to use for evaluation. If not specified, the default model for the task will be used.",
     )
 
+    model_roles: list[ModelRolesConfig] | None = Field(
+        default=None,
+        description="Model roles to use for evaluation.",
+    )
+
     # Convert single items to lists
-    @field_validator("args", "models", mode="before")
+    @field_validator("args", "models", "model_roles", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
@@ -111,8 +117,13 @@ class Matrix(BaseModel):
         description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
     )
 
+    model_roles: list[ModelRolesConfig] | None = Field(
+        default=None,
+        description="Model roles to use for evaluation.",
+    )
+
     # Convert single items to lists
-    @field_validator("tasks", "args", "models", mode="before")
+    @field_validator("tasks", "args", "models", "model_roles", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)

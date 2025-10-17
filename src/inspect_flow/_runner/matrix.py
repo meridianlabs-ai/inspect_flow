@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from typing import Mapping, TypeAlias
 
-from inspect_ai import Task
+from inspect_ai import Task, task_with
+from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
 from inspect_ai.util import registry_create
@@ -8,6 +10,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.types import (
     Matrix,
     ModelConfig,
+    ModelRolesConfig,
     TaskArgs,
     TaskConfig,
 )
@@ -17,7 +20,9 @@ from inspect_flow._util.list_util import (
 )
 from inspect_flow._util.module_util import get_module_from_file
 
-matrix_fields = ["args", "models"]
+ModelRoles: TypeAlias = dict[str, str | Model]
+
+matrix_fields = ["args", "models", "model_roles"]
 
 
 class MatrixImpl:
@@ -25,6 +30,7 @@ class MatrixImpl:
 
     _models: list[Model] | None = None
     _args: list[TaskArgs] | None = None
+    _model_roles: list[ModelRoles] | None = None
 
     def __init__(self, matrix: Matrix):
         self.matrix = matrix
@@ -41,6 +47,8 @@ class MatrixImpl:
         self._args = self.matrix.args
         if self.matrix.models:
             self._models = create_models(self.matrix.models)
+        if self.matrix.model_roles:
+            self._model_roles = create_model_roles(self.matrix.model_roles)
 
     def tasks(self) -> list[Task]:
         return [
@@ -52,20 +60,26 @@ class MatrixImpl:
     def create_single_config_tasks(self, config: TaskConfig) -> list[Task]:
         models = self._models or create_models(ensure_list(config.models))
         args_list = self._args or config.args
+        model_role_list = self._model_roles or create_model_roles(
+            ensure_list(config.model_roles)
+        )
 
         task_func = get_task_creator(config)
 
         tasks = []
         for model in ensure_non_empty_list(models):
             for args in ensure_non_empty_list(args_list):
-                if model:
-                    # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-                    init_active_model(model, GenerateConfig())
-                task = task_func(**(args or {}))
-                # TODO:ransom use task_with?
-                if model:
-                    task.model = model
-                tasks.append(task)
+                for model_roles in ensure_non_empty_list(model_role_list):
+                    if model:
+                        # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+                        init_active_model(model, GenerateConfig())
+                    task = task_func(**(args or {}))
+                    task_with(
+                        task,
+                        model=model if model else NOT_GIVEN,
+                        model_roles=model_roles if model_roles else NOT_GIVEN,
+                    )
+                    tasks.append(task)
         return tasks
 
 
@@ -97,6 +111,26 @@ def create_models(config: list[ModelConfig]) -> list[Model]:
         for model_config in config
         for model in create_single_config_models(model_config)
     ]
+
+
+def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
+    roles_list = []
+    for roles_config in config:
+        roles = {}
+        for role, model_config in roles_config.items():
+            model = model_config
+            if isinstance(model, ModelConfig):
+                if model.config and len(model.config) > 1:
+                    raise ValueError(
+                        "at most one config may be specified for models in model_roles"
+                    )
+                model = create_model(
+                    model_config=model,
+                    generate_config=model.config[0] if model.config else None,
+                )
+            roles[role] = model
+        roles_list.append(roles)
+    return roles_list
 
 
 def get_task_creator(config: TaskConfig) -> Callable[..., Task]:

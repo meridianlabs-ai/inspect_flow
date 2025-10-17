@@ -34,3 +34,10 @@ def task_with_params(
         }
     )
     return task
+
+
+@task
+def task_with_model_roles() -> Task:
+    _model1 = get_model(role="mark")
+    _model2 = get_model(role="conartist")
+    return Task()
