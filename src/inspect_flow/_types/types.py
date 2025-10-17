@@ -7,6 +7,7 @@ from inspect_flow._util.list_util import ensure_list_or_none
 
 TaskArgs: TypeAlias = dict[str, Any]
 
+
 class ModelConfig(BaseModel):
     """Configuration for a model."""
 
@@ -23,7 +24,7 @@ class ModelConfig(BaseModel):
     )
 
     # TODO:ransom should we disable extra?
-    config: list[GenerateConfig] | GenerateConfig | None = Field(
+    config: list[GenerateConfig] | None = Field(
         default=None,
         description="Configuration for model. If a list, will matrix over the values",
     )
