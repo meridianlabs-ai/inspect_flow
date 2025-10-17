@@ -26,4 +26,11 @@ def task_with_params(
     use_system_prompt: bool = False,
     grader: list[str | Model | None] | str | Model | None = "openai/gpt-3.5-turbo",
 ) -> Task:
-    return Task()
+    task = Task(
+        metadata={
+            "subset": subset,
+            "use_system_prompt": use_system_prompt,
+            "grader": grader,
+        }
+    )
+    return task
