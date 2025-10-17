@@ -14,7 +14,6 @@ from inspect_flow._types.types import (
 from inspect_flow._util.list_util import (
     ensure_list,
     ensure_non_empty_list,
-    flatten,
 )
 from inspect_flow._util.module_util import get_module_from_file
 
@@ -93,8 +92,11 @@ def create_single_config_models(model_config: ModelConfig) -> list[Model]:
 
 
 def create_models(config: list[ModelConfig]) -> list[Model]:
-    model_lists = [create_single_config_models(model_config) for model_config in config]
-    return flatten(model_lists)
+    return [
+        model
+        for model_config in config
+        for model in create_single_config_models(model_config)
+    ]
 
 
 def get_task_creator(config: TaskConfig) -> Callable[..., Task]:

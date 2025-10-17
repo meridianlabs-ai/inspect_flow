@@ -16,10 +16,11 @@ def read_config() -> FlowConfig:
 
 
 def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
-    matrix = MatrixImpl(config.matrix)
+    matrix_list = [MatrixImpl(matrix_config) for matrix_config in config.matrix]
+    tasks = [task for matrix in matrix_list for task in matrix.tasks()]
     options = config.options or FlowOptions(log_dir=".")
     return inspect_ai.eval_set(
-        tasks=matrix.tasks(),
+        tasks=tasks,
         log_dir=options.log_dir,
         limit=options.limit,
     )
