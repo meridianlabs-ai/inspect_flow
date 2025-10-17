@@ -293,3 +293,131 @@ def test_two_matrix() -> None:
         assert len(tasks_arg) == 2
         assert tasks_arg[0].name == "noop"
         assert tasks_arg[1].name == "noop2"
+
+
+def test_matrix_model_roles() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        system_message = "mock system message"
+        model_roles1 = {
+            "mark": "mockllm/mock-mark1",
+            "conartist": "mockllm/mock-conartist1",
+        }
+        model_roles2 = {
+            "mark": "mockllm/mock-mark2",
+            "conartist": ModelConfig(
+                name="mockllm/mock-conartist2",
+                config=[GenerateConfig(system_message=system_message)],
+            ),
+        }
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=[
+                    Matrix(
+                        models=[ModelConfig(name="mockllm/mock-llm")],
+                        model_roles=[model_roles1, model_roles2],
+                        tasks=[
+                            TaskConfig(
+                                name="task_with_model_roles",
+                                file=str(task_file.absolute()),
+                            )
+                        ],
+                    ),
+                ],
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 2
+        assert tasks_arg[0].model_roles["mark"].name == "mock-mark1"
+        assert tasks_arg[0].model_roles["conartist"].name == "mock-conartist1"
+        assert tasks_arg[1].model_roles["mark"].name == "mock-mark2"
+        assert tasks_arg[1].model_roles["conartist"].name == "mock-conartist2"
+        assert (
+            tasks_arg[1].model_roles["conartist"].config.system_message
+            == system_message
+        )
+
+
+def test_task_model_roles() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        system_message = "mock system message"
+        model_roles1 = {
+            "mark": "mockllm/mock-mark1",
+            "conartist": "mockllm/mock-conartist1",
+        }
+        model_roles2 = {
+            "mark": "mockllm/mock-mark2",
+            "conartist": ModelConfig(
+                name="mockllm/mock-conartist2",
+                config=[GenerateConfig(system_message=system_message)],
+            ),
+        }
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=[
+                    Matrix(
+                        models=[ModelConfig(name="mockllm/mock-llm")],
+                        tasks=[
+                            TaskConfig(
+                                name="task_with_model_roles",
+                                file=str(task_file.absolute()),
+                                model_roles=[model_roles1, model_roles2],
+                            )
+                        ],
+                    ),
+                ],
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 2
+        assert tasks_arg[0].model_roles["mark"].name == "mock-mark1"
+        assert tasks_arg[0].model_roles["conartist"].name == "mock-conartist1"
+        assert tasks_arg[1].model_roles["mark"].name == "mock-mark2"
+        assert tasks_arg[1].model_roles["conartist"].name == "mock-conartist2"
+        assert (
+            tasks_arg[1].model_roles["conartist"].config.system_message
+            == system_message
+        )
+
+
+def test_multiple_model_roles_error() -> None:
+    with pytest.raises(
+        ValueError, match="Only one of matrix and task may specify model_roles"
+    ):
+        system_message = "mock system message"
+        model_roles1 = {
+            "mark": "mockllm/mock-mark1",
+            "conartist": "mockllm/mock-conartist1",
+        }
+        model_roles2 = {
+            "mark": "mockllm/mock-mark2",
+            "conartist": ModelConfig(
+                name="mockllm/mock-conartist2",
+                config=[GenerateConfig(system_message=system_message)],
+            ),
+        }
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=[
+                    Matrix(
+                        model_roles=[model_roles1, model_roles2],
+                        models=[ModelConfig(name="mockllm/mock-llm")],
+                        tasks=[
+                            TaskConfig(
+                                name="task_with_model_roles",
+                                file=str(task_file.absolute()),
+                                model_roles=[model_roles1, model_roles2],
+                            )
+                        ],
+                    ),
+                ],
+            )
+        )
