@@ -1,5 +1,4 @@
-from collections.abc import Generator
-from dataclasses import dataclass
+from collections.abc import Callable
 
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model, get_model
@@ -7,7 +6,6 @@ from inspect_ai.model._model import init_active_model
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
-    FlowConfig,
     Matrix,
     ModelConfig,
     TaskArgs,
@@ -56,13 +54,7 @@ class MatrixImpl:
         models = self._models or create_models(ensure_list(config.models))
         args_list = self._args or config.args
 
-        if config.file:
-            module = get_module_from_file(config.file)
-            task_func = getattr(module, config.name)
-        else:
-
-            def task_func(**kwargs):
-                return registry_create(type="task", name=config.name, **kwargs)
+        task_func = get_task_creator(config)
 
         tasks = []
         for model in ensure_non_empty_list(models):
@@ -78,7 +70,7 @@ class MatrixImpl:
         return tasks
 
 
-def create_single_model(
+def create_model(
     model_config: ModelConfig, generate_config: GenerateConfig | None
 ) -> Model:
     return get_model(
@@ -92,14 +84,26 @@ def create_single_model(
     )
 
 
-def create_model(model_config: ModelConfig) -> list[Model]:
+def create_single_config_models(model_config: ModelConfig) -> list[Model]:
     generate_config_list = ensure_non_empty_list(model_config.config)
     return [
-        create_single_model(model_config, generate_config)
+        create_model(model_config, generate_config)
         for generate_config in generate_config_list
     ]
 
 
 def create_models(config: list[ModelConfig]) -> list[Model]:
-    model_lists = [create_model(model_config) for model_config in config]
+    model_lists = [create_single_config_models(model_config) for model_config in config]
     return flatten(model_lists)
+
+
+def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
+    if config.file:
+        module = get_module_from_file(config.file)
+        task_func = getattr(module, config.name)
+    else:
+
+        def task_func(**kwargs):
+            return registry_create(type="task", name=config.name, **kwargs)
+
+    return task_func
