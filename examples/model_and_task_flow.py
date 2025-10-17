@@ -17,12 +17,14 @@ def flow_config() -> FlowConfig:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(name="inspect_evals/mmlu_0_shot"),
-            ],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                ],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                ],
+            ),
+        ],
     )

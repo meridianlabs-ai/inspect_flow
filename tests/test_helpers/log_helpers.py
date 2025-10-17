@@ -21,9 +21,12 @@ def verify_test_logs(config: FlowConfig, log_dir: str) -> None:
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
-    tasks = [task.name for task in config.matrix.tasks]
-    assert config.matrix.models
-    models = [model.name for model in config.matrix.models]
+    # TODO:ransom validation only supports top level matrix params
+    tasks = [task.name for matrix in config.matrix for task in matrix.tasks]
+    models = []
+    for matrix in config.matrix:
+        assert matrix.models
+        models.extend([model.name for model in matrix.models])
 
     assert len(log_list) == len(tasks) * len(models)
     logs = [read_eval_log(log) for log in log_list]

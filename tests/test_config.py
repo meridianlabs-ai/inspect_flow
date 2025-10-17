@@ -48,7 +48,7 @@ def test_config_one_task() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")]),
+        matrix=[Matrix(tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")])],
     )
     validate_config(config, "one_task_flow.yaml")
 
@@ -62,12 +62,14 @@ def test_config_two_tasks() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                TaskConfig(name="inspect_evals/mmlu_5_shot"),
-            ]
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                ]
+            ),
+        ],
     )
     validate_config(config, "two_task_flow.yaml")
 
@@ -81,13 +83,15 @@ def test_config_two_models_one_task() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                    ModelConfig(name="openai/gpt-5-nano"),
+                ],
+            ),
+        ],
     )
     validate_config(config, "two_models_one_task_flow.yaml")
 
@@ -101,14 +105,16 @@ def test_config_model_and_task() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(name="inspect_evals/mmlu_0_shot"),
-            ],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                ],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                ],
+            ),
+        ],
     )
     validate_config(config, "model_and_task_flow.yaml")
 
@@ -129,16 +135,18 @@ def test_config_two_models_two_tasks() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                TaskConfig(name="inspect_evals/mmlu_5_shot"),
-            ],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                ],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                    ModelConfig(name="openai/gpt-5-nano"),
+                ],
+            ),
+        ],
     )
     validate_config(config, "two_models_two_tasks_flow.yaml")
 
@@ -152,22 +160,24 @@ def test_config_model_config() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                TaskConfig(name="inspect_evals/mmlu_5_shot"),
-            ],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(
-                    name="openai/gpt-5-nano",
-                    config=[
-                        GenerateConfig(reasoning_effort="minimal"),
-                        GenerateConfig(reasoning_effort="low"),
-                    ],
-                ),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                ],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                    ModelConfig(
+                        name="openai/gpt-5-nano",
+                        config=[
+                            GenerateConfig(reasoning_effort="minimal"),
+                            GenerateConfig(reasoning_effort="low"),
+                        ],
+                    ),
+                ],
+            ),
+        ],
     )
     validate_config(config, "model_config_flow.yaml")
 
@@ -181,18 +191,20 @@ def test_config_matrix_and_task() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(
-                    name="inspect_evals/mmlu_0_shot",
-                    models=[
-                        ModelConfig(name="openai/gpt-4o-mini"),
-                        ModelConfig(name="openai/gpt-5-nano"),
-                    ],
-                ),
-                TaskConfig(name="inspect_evals/mmlu_5_shot"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(
+                        name="inspect_evals/mmlu_0_shot",
+                        models=[
+                            ModelConfig(name="openai/gpt-4o-mini"),
+                            ModelConfig(name="openai/gpt-5-nano"),
+                        ],
+                    ),
+                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                ],
+            ),
+        ],
     )
     validate_config(config, "matrix_and_task_flow.yaml")
 
@@ -206,25 +218,27 @@ def test_config_nested_matrix() -> None:
                 package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
             ),
         ],
-        matrix=Matrix(
-            tasks=[
-                TaskConfig(
-                    name="inspect_evals/mmlu_0_shot",
-                    args=[{"language": "EN_US"}],
-                ),
-                TaskConfig(
-                    name="inspect_evals/mmlu_5_shot",
-                    args=[
-                        {"language": "EN_US"},
-                        {"language": "CN_CN"},
-                        {"language": "DE_DE"},
-                    ],
-                ),
-            ],
-            models=[
-                ModelConfig(name="openai/gpt-4o-mini"),
-                ModelConfig(name="openai/gpt-5-nano"),
-            ],
-        ),
+        matrix=[
+            Matrix(
+                tasks=[
+                    TaskConfig(
+                        name="inspect_evals/mmlu_0_shot",
+                        args=[{"language": "EN_US"}],
+                    ),
+                    TaskConfig(
+                        name="inspect_evals/mmlu_5_shot",
+                        args=[
+                            {"language": "EN_US"},
+                            {"language": "CN_CN"},
+                            {"language": "DE_DE"},
+                        ],
+                    ),
+                ],
+                models=[
+                    ModelConfig(name="openai/gpt-4o-mini"),
+                    ModelConfig(name="openai/gpt-5-nano"),
+                ],
+            ),
+        ],
     )
     validate_config(config, "nested_matrix_flow.yaml")
