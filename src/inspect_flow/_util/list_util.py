@@ -1,4 +1,3 @@
-from itertools import chain
 from typing import TypeVar
 
 T = TypeVar("T")
