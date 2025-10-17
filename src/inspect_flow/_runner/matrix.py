@@ -3,15 +3,19 @@ from typing import TypeAlias
 
 from inspect_ai import Task, task_with
 from inspect_ai._util.notgiven import NOT_GIVEN
+from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
+from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.types import (
+    AgentConfig,
+    CreateArgs,
     Matrix,
     ModelConfig,
     ModelRolesConfig,
-    TaskArgs,
+    SolverConfig,
     TaskConfig,
 )
 from inspect_flow._util.list_util import (
@@ -21,16 +25,18 @@ from inspect_flow._util.list_util import (
 from inspect_flow._util.module_util import get_module_from_file
 
 ModelRoles: TypeAlias = dict[str, str | Model]
+SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 
-matrix_fields = ["args", "models", "model_roles"]
+matrix_fields = ["args", "models", "model_roles", "solvers"]
 
 
 class MatrixImpl:
     matrix: Matrix
 
     _models: list[Model] | None = None
-    _args: list[TaskArgs] | None = None
+    _args: list[CreateArgs] | None = None
     _model_roles: list[ModelRoles] | None = None
+    _solvers: list[SingleSolver] | None = None
 
     def __init__(self, matrix: Matrix):
         self.matrix = matrix
@@ -49,6 +55,8 @@ class MatrixImpl:
             self._models = create_models(self.matrix.models)
         if self.matrix.model_roles:
             self._model_roles = create_model_roles(self.matrix.model_roles)
+        if self.matrix.solvers:
+            self._solvers = create_solvers(self.matrix.solvers)
 
     def tasks(self) -> list[Task]:
         return [
@@ -63,6 +71,7 @@ class MatrixImpl:
         model_role_list = self._model_roles or create_model_roles(
             ensure_list(config.model_roles)
         )
+        solvers = self._solvers or create_solvers(ensure_list(config.solvers))
 
         task_func = get_task_creator(config)
 
@@ -70,16 +79,18 @@ class MatrixImpl:
         for model in ensure_non_empty_list(models):
             for args in ensure_non_empty_list(args_list):
                 for model_roles in ensure_non_empty_list(model_role_list):
-                    if model:
-                        # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-                        init_active_model(model, GenerateConfig())
-                    task = task_func(**(args or {}))
-                    task_with(
-                        task,
-                        model=model if model else NOT_GIVEN,
-                        model_roles=model_roles if model_roles else NOT_GIVEN,
-                    )
-                    tasks.append(task)
+                    for solver in ensure_non_empty_list(solvers):
+                        if model:
+                            # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+                            init_active_model(model, GenerateConfig())
+                        task = task_func(**(args or {}))
+                        task_with(
+                            task,
+                            model=model if model else NOT_GIVEN,
+                            model_roles=model_roles if model_roles else NOT_GIVEN,
+                            solver=solver if solver else NOT_GIVEN,  # pyright: ignore[reportArgumentType] TODO:ransom
+                        )
+                        tasks.append(task)
         return tasks
 
 
@@ -110,6 +121,39 @@ def create_models(config: list[ModelConfig]) -> list[Model]:
         model
         for model_config in config
         for model in create_single_config_models(model_config)
+    ]
+
+
+def create_single_config_solvers(
+    config: SolverConfig | list[SolverConfig] | AgentConfig,
+) -> list[SingleSolver]:
+    if isinstance(config, SolverConfig):
+        args_list = ensure_non_empty_list(config.args)
+        return [
+            registry_create(type="solver", name=config.name, **(args or {}))
+            for args in args_list
+        ]
+    if isinstance(config, AgentConfig):
+        args_list = ensure_non_empty_list(config.args)
+        return [
+            registry_create(type="agent", name=config.name, **(args or {}))
+            for args in args_list
+        ]
+    solver_chain = []
+    for single_config in config:
+        if single_config.args and len(single_config.args) > 1:
+            raise ValueError("chained solvers may not provide multiple sets of args")
+        solver_chain.extend(create_single_config_solvers(single_config))
+    return [solver_chain]
+
+
+def create_solvers(
+    config: list[SolverConfig | list[SolverConfig] | AgentConfig],
+) -> list[SingleSolver]:
+    return [
+        solver
+        for solver_config in config
+        for solver in create_single_config_solvers(solver_config)
     ]
 
 

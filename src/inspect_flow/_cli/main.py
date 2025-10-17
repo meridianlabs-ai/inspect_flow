@@ -32,7 +32,7 @@ flow.add_command(submit_command)
 
 def main() -> None:
     load_dotenv()
-    flow(auto_envvar_prefix="FLOW")  # pylint: disable=no-value-for-parameter
+    flow(auto_envvar_prefix="INSPECT_FLOW")  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
