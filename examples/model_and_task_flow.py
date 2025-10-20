@@ -1,5 +1,6 @@
 from inspect_flow._types.types import (
     Dependency,
+    EvalSetOptions,
     FlowConfig,
     FlowOptions,
     Matrix,
@@ -10,7 +11,8 @@ from inspect_flow._types.types import (
 
 def flow_config() -> FlowConfig:
     return FlowConfig(
-        options=FlowOptions(log_dir="model_and_task", limit=1),
+        options=FlowOptions(log_dir="model_and_task"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(

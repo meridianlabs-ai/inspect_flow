@@ -4,10 +4,9 @@ from inspect_ai.log import EvalLog
 
 from inspect_flow._runner.matrix import MatrixImpl
 from inspect_flow._types.types import (
+    EvalSetOptions,
     FlowConfig,
     FlowOptions,
-    RetryOptions,
-    SandboxOptions,
 )
 
 
@@ -21,24 +20,23 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
     matrix_list = [MatrixImpl(matrix_config) for matrix_config in config.matrix]
     tasks = [task for matrix in matrix_list for task in matrix.tasks()]
 
-    options = config.options or FlowOptions(log_dir=".")
-    retry_options = config.retry_options or RetryOptions()
-    sandbox_options = config.sandbox_options or SandboxOptions()
+    flow_options = config.options or FlowOptions(log_dir=".")
+    options = config.eval_set_options or EvalSetOptions()
 
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=options.log_dir,
-        retry_attempts=retry_options.retry_attempts,
-        retry_wait=retry_options.retry_wait,
-        retry_connections=retry_options.retry_connections,
-        retry_cleanup=retry_options.retry_cleanup,
+        log_dir=flow_options.log_dir,
+        retry_attempts=options.retry_attempts,
+        retry_wait=options.retry_wait,
+        retry_connections=options.retry_connections,
+        retry_cleanup=options.retry_cleanup,
         # model= Matrix or Task
         # model_base_url= ModelConfig
         # model_args= ModelConfig
         # model_roles= Matrix or Task
         # task_args= Matrix or Task
-        sandbox=sandbox_options.sandbox,
-        sandbox_cleanup=sandbox_options.sandbox_cleanup,
+        sandbox=options.sandbox,
+        sandbox_cleanup=options.sandbox_cleanup,
         # solver= Matrix or Task
         tags=options.tags,
         metadata=options.metadata,
@@ -55,7 +53,7 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
         # epochs= TaskConfig
         # fail_on_error= TaskConfig
         # continue_on_fail= TaskConfig
-        retry_on_error=retry_options.retry_on_error,
+        retry_on_error=options.retry_on_error,
         debug_errors=options.debug_errors,
         # message_limit= TaskConfig
         # token_limit= TaskConfig

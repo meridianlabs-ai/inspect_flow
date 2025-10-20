@@ -202,6 +202,38 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set)."
     )
 
+
+class EvalSetOptions(BaseModel, extra="forbid"):
+    retry_attempts: int | None = Field(
+        default=None,
+        description="Maximum number of retry attempts before giving up (defaults to 10).",
+    )
+
+    retry_wait: float | None = Field(
+        default=None,
+        description="Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour.",
+    )
+
+    retry_connections: float | None = Field(
+        default=None,
+        description="Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).",
+    )
+
+    retry_cleanup: bool | None = Field(
+        default=None,
+        description="Cleanup failed log files after retries (defaults to True).",
+    )
+
+    sandbox: SandboxEnvironmentType | None = Field(
+        default=None,
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+    )
+
+    sandbox_cleanup: bool | None = Field(
+        default=None,
+        description="Cleanup sandbox environments after task completes (defaults to True)",
+    )
+
     tags: list[str] | None = Field(
         default=None, description="Tags to associate with this evaluation run."
     )
@@ -248,6 +280,11 @@ class FlowOptions(BaseModel, extra="forbid"):
     sample_shuffle: bool | int | None = Field(
         default=None,
         description="Shuffle order of samples (pass a seed to make the order deterministic).",
+    )
+
+    retry_on_error: int | None = Field(
+        default=None,
+        description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
     )
 
     debug_errors: bool | None = Field(
@@ -309,56 +346,19 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
 
-class RetryOptions(BaseModel, extra="forbid"):
-    retry_attempts: int | None = Field(
-        default=None,
-        description="Maximum number of retry attempts before giving up (defaults to 10).",
-    )
-
-    retry_wait: float | None = Field(
-        default=None,
-        description="Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour.",
-    )
-
-    retry_connections: float | None = Field(
-        default=None,
-        description="Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).",
-    )
-
-    retry_cleanup: bool | None = Field(
-        default=None,
-        description="Cleanup failed log files after retries (defaults to True).",
-    )
-
-    retry_on_error: int | None = Field(
-        default=None,
-        description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
-    )
-
-
-class SandboxOptions(BaseModel, extra="forbid"):
-    sandbox: SandboxEnvironmentType | None = Field(
-        default=None,
-        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
-    )
-
-    sandbox_cleanup: bool | None = Field(
-        default=None,
-        description="Cleanup sandbox environments after task completes (defaults to True)",
-    )
-
-
 class FlowConfig(BaseModel, extra="forbid"):
-    retry_options: RetryOptions | None = Field(
-        default=None, description="Retry options"
+    options: FlowOptions | None = Field(
+        default=None, description="Global options for flow"
     )
-    sandbox_options: SandboxOptions | None = Field(
-        default=None, description="Sandbox options"
+
+    eval_set_options: EvalSetOptions | None = Field(
+        default=None, description="Arguments for calls to eval_set."
     )
-    options: FlowOptions | None = Field(default=None, description="Global options")
+
     dependencies: list[Dependency] | None = Field(
         default=None, description="Dependencies to pip install"
     )
+
     matrix: list[Matrix] = Field(description="Matrix of tasks to run")
 
     # Convert single items to lists

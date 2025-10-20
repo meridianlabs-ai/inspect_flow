@@ -11,9 +11,8 @@ def submit(config: FlowConfig):
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
 
-    # TODO:ransom - make log dir configurable
-    config.options = config.options or FlowOptions(log_dir="flow_logs")
-    config.options.log_dir = str(Path.cwd() / "logs" / config.options.log_dir)
+    config.options = config.options or FlowOptions(log_dir="./logs/flow")
+    config.options.log_dir = str(Path(config.options.log_dir).resolve())
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
