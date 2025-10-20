@@ -51,8 +51,8 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
         # sample_id= TaskConfig
         sample_shuffle=options.sample_shuffle,
         # epochs= TaskConfig
-        # fail_on_error= TaskConfig
-        # continue_on_fail= TaskConfig
+        fail_on_error=options.fail_on_error,
+        continue_on_fail=options.continue_on_fail,
         retry_on_error=options.retry_on_error,
         debug_errors=options.debug_errors,
         # message_limit= TaskConfig

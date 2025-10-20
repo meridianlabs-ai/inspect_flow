@@ -339,6 +339,16 @@ class EvalSetOptions(BaseModel, extra="forbid"):
         description="Shuffle order of samples (pass a seed to make the order deterministic).",
     )
 
+    fail_on_error: bool | float | None = Field(
+        default=None,
+        description="`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
+    )
+
+    continue_on_fail: bool | None = Field(
+        default=None,
+        description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
+    )
+
     retry_on_error: int | None = Field(
         default=None,
         description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
