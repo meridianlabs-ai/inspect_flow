@@ -4,7 +4,7 @@ from inspect_ai import Epochs
 from inspect_ai.approval import ApprovalPolicy
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import DisplayType, SandboxEnvironmentType
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -93,37 +93,58 @@ class AgentConfig(BaseModel, extra="forbid"):
 
 
 class TaskConfig(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the task to use.")
+    name: str | None = Field(
+        default=None,
+        description='Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file',
+    )
 
     file: str | None = Field(
         default=None, description="Python file containing the task implementation"
     )
 
+    file_attr: str | None = Field(
+        default=None,
+        description="Name of the attr within file to use to create tasks. Only used if file is specified. Defaults to 'name'.",
+    )
+
+    registry_name: str | None = Field(
+        default=None,
+        description="Name of the task within the registry. Only used if file is not specified. Defaults to 'name'.",
+    )
+
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Task arguments",
-    )
-
-    models: list[ModelConfig] | None = Field(
-        default=None,
-        description="Model to use for evaluation. If not specified, the default model for the task will be used.",
-    )
-
-    model_roles: list[ModelRolesConfig] | None = Field(
-        default=None,
-        description="Model roles to use for evaluation.",
+        description="Task factory arguments",
     )
 
     solvers: list[SolverConfig | list[SolverConfig] | AgentConfig] | None = Field(
         default=None,
-        description="Solvers.",
+        description="List of solver or list of list of solvers. Defaults to generate(), a normal call to the model. Will matrix when multiple items in the top level list.",
     )
 
-    # TODO:ransom sample_ids not implemented
-    sample_id: str | int | list[str | int] | None = Field(
+    models: list[ModelConfig] | None = Field(
         default=None,
-        min_length=1,
-        description="Evaluate specific sample(s) from the dataset.",
+        description="Default model for task (Optional, defaults to eval model). Will matrix when multiple are provided",
+    )
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Model generation config for default model (does not apply to model roles)",
+    )
+
+    model_roles: list[ModelRolesConfig] | None = Field(
+        default=None,
+        description="Named roles for use in `get_model()`. Will matrix when multiple are provided.",
+    )
+
+    sandbox: SandboxEnvironmentType | None = Field(
+        default=None,
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+    )
+
+    approval: str | list[ApprovalPolicy] | None = Field(
+        default=None,
+        description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )
 
     epochs: int | Epochs | None = Field(
@@ -158,11 +179,47 @@ class TaskConfig(BaseModel, extra="forbid"):
         description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
     )
 
+    version: int | None = Field(
+        default=None,
+        description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
+    )
+
+    metadata: dict[str, Any] | None = Field(
+        default=None, description="Additional metadata to associate with the task."
+    )
+
+    # TODO:ransom sample_ids not implemented
+    sample_id: str | int | list[str | int] | None = Field(
+        default=None,
+        min_length=1,
+        description="Evaluate specific sample(s) from the dataset.",
+    )
+
     # Convert single items to lists
     @field_validator("args", "models", "model_roles", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    @model_validator(mode="after")
+    def validate_field_combinations(self):
+        if self.file is not None:
+            if self.registry_name is not None:
+                raise ValueError(
+                    "registry_name cannot be specified when file is specified"
+                )
+            if self.file_attr is None and self.name is None:
+                raise ValueError(
+                    "Either file_attr or name must be specified when file is specified"
+                )
+        elif self.file_attr is not None:
+            raise ValueError("file_attr cannot be specified when file is not specified")
+        elif self.registry_name is None and self.name is None:
+            raise ValueError(
+                "Either registry_name or name must be specified when file is not specified"
+            )
+
+        return self
 
 
 class Matrix(BaseModel, extra="forbid"):
@@ -253,7 +310,7 @@ class EvalSetOptions(BaseModel, extra="forbid"):
 
     approval: str | list[ApprovalPolicy] | None = Field(
         default=None,
-        description="Tool use approval policies.Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
+        description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )
 
     score: bool = Field(default=True, description="Score output (defaults to True)")

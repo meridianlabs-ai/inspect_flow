@@ -91,9 +91,17 @@ class MatrixImpl:
 
                         task_with(
                             task,
-                            model=ng(model),
-                            model_roles=ng(model_roles),
+                            # dataset= Not Supported
+                            # setup= Not Supported
                             solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+                            # cleanup= Not Supported
+                            # scorer= Not Supported
+                            # metrics= Not Supported
+                            model=ng(model),
+                            config=ng(config.config),
+                            model_roles=ng(model_roles),
+                            sandbox=ng(config.sandbox),
+                            approval=ng(config.approval),
                             epochs=ng(config.epochs),
                             fail_on_error=ng(config.fail_on_error),
                             continue_on_fail=ng(config.continue_on_fail),
@@ -101,6 +109,9 @@ class MatrixImpl:
                             token_limit=ng(config.token_limit),
                             time_limit=ng(config.time_limit),
                             working_limit=ng(config.working_limit),
+                            name=ng(config.name),
+                            version=ng(config.version),
+                            metadata=ng(config.metadata),
                         )
                         tasks.append(task)
         return tasks
@@ -191,11 +202,21 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
 
 def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
     if config.file:
+        file_attr = config.file_attr or config.name
+        if not file_attr:
+            raise ValueError(
+                f"file_attr or name not specified for task with file {config.file} "
+            )
         module = get_module_from_file(config.file)
-        task_func = getattr(module, config.name)
+        task_func = getattr(module, file_attr)
     else:
+        registry_name = config.registry_name or config.name
+        if not registry_name:
+            raise ValueError(
+                "registry_name or name not specified for task without file"
+            )
 
         def task_func(**kwargs):
-            return registry_create(type="task", name=config.name, **kwargs)
+            return registry_create(type="task", name=registry_name, **kwargs)
 
     return task_func
