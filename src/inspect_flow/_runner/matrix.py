@@ -97,6 +97,10 @@ class MatrixImpl:
                             epochs=ng(config.epochs),
                             fail_on_error=ng(config.fail_on_error),
                             continue_on_fail=ng(config.continue_on_fail),
+                            message_limit=ng(config.message_limit),
+                            token_limit=ng(config.token_limit),
+                            time_limit=ng(config.time_limit),
+                            working_limit=ng(config.working_limit),
                         )
                         tasks.append(task)
         return tasks

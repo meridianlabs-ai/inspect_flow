@@ -57,6 +57,22 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
         # continue_on_fail= TaskConfig
         retry_on_error=retry_options.retry_on_error,
         debug_errors=options.debug_errors,
+        # message_limit= TaskConfig
+        # token_limit= TaskConfig
+        # time_limit= TaskConfig
+        # working_limit= TaskConfig
+        max_samples=options.max_samples,
+        max_tasks=options.max_tasks,
+        max_subprocesses=options.max_subprocesses,
+        max_sandboxes=options.max_sandboxes,
+        log_samples=options.log_samples,
+        log_realtime=options.log_realtime,
+        log_images=options.log_images,
+        log_buffer=options.log_buffer,
+        log_shared=options.log_shared,
+        # bundle_dir= Not supported
+        # bundle_overwrite= Not supported
+        **(options.config.model_dump() if options.config else {}),  # type: ignore[call-arg]
     )
 
 

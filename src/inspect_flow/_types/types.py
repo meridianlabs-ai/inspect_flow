@@ -141,6 +141,23 @@ class TaskConfig(BaseModel, extra="forbid"):
         description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
     )
 
+    message_limit: int | None = Field(
+        default=None, description="Limit on total messages used for each sample."
+    )
+
+    token_limit: int | None = Field(
+        default=None, description="Limit on total tokens used for each sample."
+    )
+
+    time_limit: int | None = Field(
+        default=None, description="Limit on clock time (in seconds) for samples."
+    )
+
+    working_limit: int | None = Field(
+        default=None,
+        description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
+    )
+
     # Convert single items to lists
     @field_validator("args", "models", "model_roles", mode="before")
     @classmethod
@@ -236,6 +253,59 @@ class FlowOptions(BaseModel, extra="forbid"):
     debug_errors: bool | None = Field(
         default=None,
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to False).",
+    )
+
+    max_samples: int | None = Field(
+        default=None,
+        description="Maximum number of samples to run in parallel (default is max_connections)",
+    )
+
+    max_tasks: int | None = Field(
+        default=None,
+        description="Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)",
+    )
+
+    max_subprocesses: int | None = Field(
+        default=None,
+        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count())",
+    )
+
+    max_sandboxes: int | None = Field(
+        default=None,
+        description="Maximum number of sandboxes (per-provider) to run in parallel.",
+    )
+
+    log_samples: bool | None = Field(
+        default=None, description="Log detailed samples and scores (defaults to True)"
+    )
+
+    log_realtime: bool | None = Field(
+        default=None,
+        description="Log events in realtime (enables live viewing of samples in inspect view). Defaults to True.",
+    )
+
+    log_images: bool | None = Field(
+        default=None,
+        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)",
+    )
+
+    log_buffer: int | None = Field(
+        default=None,
+        description="Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).",
+    )
+
+    log_shared: bool | None = Field(
+        default=None,
+        description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
+    )
+
+    log_dir_allow_dirty: bool | None = Field(
+        default=None,
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
+    )
+
+    config: GenerateConfig | None = Field(
+        default=None, description="Model generation options."
     )
 
 
