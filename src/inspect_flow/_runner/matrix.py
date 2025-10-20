@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import TypeAlias
 
 from inspect_ai import Task, task_with
-from inspect_ai._util.notgiven import NOT_GIVEN
+from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -84,11 +84,19 @@ class MatrixImpl:
                             # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
                             init_active_model(model, GenerateConfig())
                         task = task_func(**(args or {}))
+
+                        def ng(arg):
+                            """Pass NOT_GIVEN for args that are None"""
+                            return arg if arg is not None else NOT_GIVEN
+
                         task_with(
                             task,
-                            model=model if model else NOT_GIVEN,
-                            model_roles=model_roles if model_roles else NOT_GIVEN,
-                            solver=solver if solver else NOT_GIVEN,  # pyright: ignore[reportArgumentType] TODO:ransom
+                            model=ng(model),
+                            model_roles=ng(model_roles),
+                            solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+                            epochs=ng(config.epochs),
+                            fail_on_error=ng(config.fail_on_error),
+                            continue_on_fail=ng(config.continue_on_fail),
                         )
                         tasks.append(task)
         return tasks
