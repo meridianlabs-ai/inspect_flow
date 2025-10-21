@@ -203,7 +203,6 @@ class TaskConfig(BaseModel, extra="forbid"):
 
     sample_id: str | int | list[str | int] | None = Field(
         default=None,
-        min_length=1,
         description="Evaluate specific sample(s) from the dataset.",
     )
 

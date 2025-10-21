@@ -1,12 +1,18 @@
 from typing import Literal
 
 from inspect_ai import Task, task
+from inspect_ai.dataset import Sample
 from inspect_ai.model import Model, get_model
 
 
 @task
 def noop() -> Task:
-    return Task()
+    return Task(
+        dataset=[
+            Sample(id=1, input="Test sample 1"),
+            Sample(id=2, input="Test sample 2"),
+        ]
+    )
 
 
 @task
