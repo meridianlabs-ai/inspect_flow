@@ -42,7 +42,7 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
         metadata=options.metadata,
         trace=options.trace,
         display=options.display,
-        approval=options.approval,
+        approval=options.approval,  # type: ignore TODO:ransom
         score=options.score,
         log_level=options.log_level,
         log_level_transcript=options.log_level_transcript,

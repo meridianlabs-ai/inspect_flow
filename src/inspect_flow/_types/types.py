@@ -1,7 +1,8 @@
 from typing import Any, Literal, Mapping, TypeAlias, Union
 
-from inspect_ai import Epochs
-from inspect_ai.approval import ApprovalPolicy
+from inspect_ai.approval._policy import (
+    ApprovalPolicyConfig,
+)  # TODO:ransom private import
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import DisplayType, SandboxEnvironmentType
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -92,6 +93,15 @@ class AgentConfig(BaseModel, extra="forbid"):
         return ensure_list_or_none(v)
 
 
+class EpochsConfig(BaseModel):
+    epochs: int = Field(description="Number of epochs.")
+
+    reducer: str | list[str] | None = Field(
+        default=None,
+        description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
+    )
+
+
 class TaskConfig(BaseModel, extra="forbid"):
     name: str | None = Field(
         default=None,
@@ -142,12 +152,12 @@ class TaskConfig(BaseModel, extra="forbid"):
         description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
     )
 
-    approval: str | list[ApprovalPolicy] | None = Field(
+    approval: str | ApprovalPolicyConfig | None = Field(
         default=None,
         description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )
 
-    epochs: int | Epochs | None = Field(
+    epochs: int | EpochsConfig | None = Field(
         default=None,
         description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
     )
@@ -308,7 +318,7 @@ class EvalSetOptions(BaseModel, extra="forbid"):
         default=None, description="Task display type (defaults to 'full')."
     )
 
-    approval: str | list[ApprovalPolicy] | None = Field(
+    approval: str | ApprovalPolicyConfig | None = Field(
         default=None,
         description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )

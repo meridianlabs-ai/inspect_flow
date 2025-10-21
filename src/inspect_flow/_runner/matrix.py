@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import TypeAlias
 
-from inspect_ai import Task, task_with
+from inspect_ai import Epochs, Task, task_with
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
@@ -12,6 +12,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.types import (
     AgentConfig,
     CreateArgs,
+    EpochsConfig,
     Matrix,
     ModelConfig,
     ModelRolesConfig,
@@ -85,6 +86,13 @@ class MatrixImpl:
                             init_active_model(model, GenerateConfig())
                         task = task_func(**(args or {}))
 
+                        epochs = config.epochs
+                        if isinstance(epochs, EpochsConfig):
+                            epochs = Epochs(
+                                epochs=epochs.epochs,
+                                reducer=epochs.reducer,
+                            )
+
                         def ng(arg):
                             """Pass NOT_GIVEN for args that are None"""
                             return arg if arg is not None else NOT_GIVEN
@@ -101,8 +109,8 @@ class MatrixImpl:
                             config=ng(config.config),
                             model_roles=ng(model_roles),
                             sandbox=ng(config.sandbox),
-                            approval=ng(config.approval),
-                            epochs=ng(config.epochs),
+                            approval=ng(config.approval),  # type: ignore TODO:ransom
+                            epochs=ng(epochs),
                             fail_on_error=ng(config.fail_on_error),
                             continue_on_fail=ng(config.continue_on_fail),
                             message_limit=ng(config.message_limit),
