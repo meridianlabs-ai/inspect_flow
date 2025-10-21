@@ -58,13 +58,6 @@ class ModelConfig(BaseModel, extra="forbid"):
         return ensure_list_or_none(v)
 
 
-class Dependency(BaseModel, extra="forbid"):
-    # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
-    package: str = Field(
-        description="E.g. a PyPI package specifier or Git repository URL.",
-    )
-
-
 class SolverConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
 
@@ -434,8 +427,10 @@ class FlowConfig(BaseModel, extra="forbid"):
         default=None, description="Arguments for calls to eval_set."
     )
 
-    dependencies: list[Dependency] | None = Field(
-        default=None, description="Dependencies to pip install"
+    dependencies: list[str] | None = Field(
+        # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
+        default=None,
+        description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
     matrix: list[Matrix] = Field(description="Matrix of tasks to run")

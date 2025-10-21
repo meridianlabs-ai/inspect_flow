@@ -3,7 +3,7 @@ options:
 eval_set_options:
   limit: 1
 dependencies:
-  package: "./examples/local_eval"
+  - "./examples/local_eval"
 matrix:
   tasks:
     - name: local_eval/noop

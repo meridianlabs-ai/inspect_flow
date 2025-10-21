@@ -1,5 +1,4 @@
 from inspect_flow._types.types import (
-    Dependency,
     EvalSetOptions,
     FlowConfig,
     FlowOptions,
@@ -14,10 +13,8 @@ def flow_config() -> FlowConfig:
         options=FlowOptions(log_dir="model_and_task"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(

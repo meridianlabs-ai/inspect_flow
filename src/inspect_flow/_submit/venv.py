@@ -154,14 +154,11 @@ def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
         env=env,
     )
 
-    dependencies: List[str] = []
-    if config.dependencies:
-        dependencies_config = config.dependencies
-        dependencies = [config.package for config in dependencies_config]
-        dependencies = [
-            dep if not dep.startswith(".") else str(Path(dep).resolve())
-            for dep in dependencies
-        ]
+    dependencies: List[str] = config.dependencies or []
+    dependencies = [
+        dep if not dep.startswith(".") else str(Path(dep).resolve())
+        for dep in dependencies
+    ]
     dependencies.append(get_pip_string("inspect-flow"))
 
     subprocess.run(
