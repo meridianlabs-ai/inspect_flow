@@ -136,6 +136,7 @@ def create_model(
         base_url=model_config.base_url,
         api_key=model_config.api_key,
         memoize=model_config.memoize,
+        **(model_config.model_args or {}),
     )
 
 

@@ -14,8 +14,6 @@ ModelRolesConfig: TypeAlias = Mapping[str, Union["ModelConfig", str]]
 
 
 class ModelConfig(BaseModel, extra="forbid"):
-    """Configuration for a model."""
-
     name: str = Field(description="Name of the model to use.")
 
     role: str | None = Field(
@@ -28,10 +26,10 @@ class ModelConfig(BaseModel, extra="forbid"):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    # TODO:ransom should we disable extra?
+    # TODO:ransom should we forbid extra on GenerateConfig?
     config: list[GenerateConfig] | None = Field(
         default=None,
-        description="Configuration for model. If a list, will matrix over the values",
+        description="Configuration for model. One model is created for each value in the list. Config values will be overridden if set on the task or eval_set_config.",
     )
 
     base_url: str | None = Field(
@@ -41,12 +39,16 @@ class ModelConfig(BaseModel, extra="forbid"):
 
     api_key: None = Field(
         default=None,
-        description="Hawk doesn't allow setting api_key because Hawk could accidentally log the API key.",
+        description="Optional. API key for model.",
     )
 
     memoize: bool = Field(
         default=True,
         description="Use/store a cached version of the model based on the parameters to get_model().",
+    )
+
+    model_args: CreateArgs | None = Field(
+        default=None, description="Additional args to pass to model constructor."
     )
 
     # Convert single items to lists
@@ -68,7 +70,7 @@ class SolverConfig(BaseModel, extra="forbid"):
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Solver arguments.",
+        description="Solver arguments. One solver is create for each value in the list. Only a single value may be set for solvers in a chain.",
     )
 
     # Convert single items to lists
@@ -83,7 +85,7 @@ class AgentConfig(BaseModel, extra="forbid"):
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Agent arguments.",
+        description="Agent arguments. One Agent is created for each value in the list.",
     )
 
     # Convert single items to lists
@@ -105,16 +107,17 @@ class EpochsConfig(BaseModel):
 class TaskConfig(BaseModel, extra="forbid"):
     name: str | None = Field(
         default=None,
-        description='Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file',
+        description='Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file.',
     )
 
     file: str | None = Field(
-        default=None, description="Python file containing the task implementation"
+        default=None,
+        description="Python file containing the task implementation. If not provided, the task will be loaded from the registry.",
     )
 
     file_attr: str | None = Field(
         default=None,
-        description="Name of the attr within file to use to create tasks. Only used if file is specified. Defaults to 'name'.",
+        description="Name of the task factory attr within file. Only used if file is specified. Defaults to 'name'.",
     )
 
     registry_name: str | None = Field(
@@ -124,27 +127,27 @@ class TaskConfig(BaseModel, extra="forbid"):
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Task factory arguments",
+        description="Task factory arguments.",
     )
 
     solvers: list[SolverConfig | list[SolverConfig] | AgentConfig] | None = Field(
         default=None,
-        description="List of solver or list of list of solvers. Defaults to generate(), a normal call to the model. Will matrix when multiple items in the top level list.",
+        description="List of solver or list of list of solvers. Defaults to generate(), a normal call to the model. Will matrix over items in the top level list.",
     )
 
     models: list[ModelConfig] | None = Field(
         default=None,
-        description="Default model for task (Optional, defaults to eval model). Will matrix when multiple are provided",
+        description="Default model for task (Optional, defaults to eval model). Will matrix over items in the list.",
     )
 
     config: GenerateConfig | None = Field(
         default=None,
-        description="Model generation config for default model (does not apply to model roles)",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the ModelConfig. Config values will be overridden if also set on the eval_set_config.",
     )
 
     model_roles: list[ModelRolesConfig] | None = Field(
         default=None,
-        description="Named roles for use in `get_model()`. Will matrix when multiple are provided.",
+        description="Named roles for use in `get_model()`. Will matrix over items in the list.",
     )
 
     sandbox: SandboxEnvironmentType | None = Field(
@@ -154,7 +157,7 @@ class TaskConfig(BaseModel, extra="forbid"):
 
     approval: str | ApprovalPolicyConfig | None = Field(
         default=None,
-        description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
+        description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
     )
 
     epochs: int | EpochsConfig | None = Field(
@@ -419,7 +422,8 @@ class EvalSetOptions(BaseModel, extra="forbid"):
     )
 
     config: GenerateConfig | None = Field(
-        default=None, description="Model generation options."
+        default=None,
+        description="Model generation options. Will override settings on the ModelConfig and TaskConfig.",
     )
 
 
