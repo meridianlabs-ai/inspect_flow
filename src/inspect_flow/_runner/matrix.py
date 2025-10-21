@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import TypeAlias
 
 from inspect_ai import Epochs, Task, task_with
+from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
@@ -85,6 +86,13 @@ class MatrixImpl:
                             # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
                             init_active_model(model, GenerateConfig())
                         task = task_func(**(args or {}))
+
+                        if config.sample_id is not None:
+                            task.dataset = slice_dataset(
+                                task.dataset,
+                                limit=None,
+                                sample_id=config.sample_id,
+                            )
 
                         epochs = config.epochs
                         if isinstance(epochs, EpochsConfig):

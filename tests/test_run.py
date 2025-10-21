@@ -575,3 +575,29 @@ def test_multiple_solvers_error() -> None:
                 ],
             )
         )
+
+
+def test_sample_id() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                options=FlowOptions(log_dir="test_log_dir"),
+                matrix=[
+                    Matrix(
+                        tasks=[
+                            TaskConfig(
+                                name="noop", file=str(task_file.absolute()), sample_id=1
+                            )
+                        ],
+                    ),
+                ],
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert len(tasks_arg[0].dataset.samples) == 1
+        assert tasks_arg[0].dataset.samples[0].id == 1
