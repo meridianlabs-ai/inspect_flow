@@ -5,6 +5,7 @@ from inspect_ai.model import GenerateConfig
 from inspect_flow._config.config import load_config
 from inspect_flow._types.types import (
     Dependency,
+    EvalSetOptions,
     FlowConfig,
     FlowOptions,
     Matrix,
@@ -41,7 +42,8 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
 
 def test_config_one_task() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -55,7 +57,8 @@ def test_config_one_task() -> None:
 
 def test_config_two_tasks() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -76,7 +79,8 @@ def test_config_two_tasks() -> None:
 
 def test_config_two_models_one_task() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -98,7 +102,8 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="model_and_task", limit=1),
+        options=FlowOptions(log_dir="model_and_task"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -128,7 +133,8 @@ def test_py_config() -> None:
 
 def test_config_two_models_two_tasks() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -153,7 +159,8 @@ def test_config_two_models_two_tasks() -> None:
 
 def test_config_model_config() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -184,7 +191,8 @@ def test_config_model_config() -> None:
 
 def test_config_matrix_and_task() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(
@@ -211,7 +219,8 @@ def test_config_matrix_and_task() -> None:
 
 def test_config_nested_matrix() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs", limit=1),
+        options=FlowOptions(log_dir="example_logs"),
+        eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
             Dependency(

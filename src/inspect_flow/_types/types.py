@@ -1,7 +1,11 @@
-from typing import Any, Mapping, TypeAlias, Union
+from typing import Any, Literal, Mapping, TypeAlias, Union
 
+from inspect_ai.approval._policy import (
+    ApprovalPolicyConfig,
+)  # TODO:ransom private import
 from inspect_ai.model import GenerateConfig
-from pydantic import BaseModel, Field, field_validator
+from inspect_ai.util import DisplayType, SandboxEnvironmentType
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -10,8 +14,6 @@ ModelRolesConfig: TypeAlias = Mapping[str, Union["ModelConfig", str]]
 
 
 class ModelConfig(BaseModel, extra="forbid"):
-    """Configuration for a model."""
-
     name: str = Field(description="Name of the model to use.")
 
     role: str | None = Field(
@@ -24,10 +26,10 @@ class ModelConfig(BaseModel, extra="forbid"):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    # TODO:ransom should we disable extra?
+    # TODO:ransom should we forbid extra on GenerateConfig?
     config: list[GenerateConfig] | None = Field(
         default=None,
-        description="Configuration for model. If a list, will matrix over the values",
+        description="Configuration for model. One model is created for each value in the list. Config values will be overridden if set on the task or eval_set_config.",
     )
 
     base_url: str | None = Field(
@@ -37,7 +39,7 @@ class ModelConfig(BaseModel, extra="forbid"):
 
     api_key: None = Field(
         default=None,
-        description="Hawk doesn't allow setting api_key because Hawk could accidentally log the API key.",
+        description="Optional. API key for model.",
     )
 
     memoize: bool = Field(
@@ -45,18 +47,15 @@ class ModelConfig(BaseModel, extra="forbid"):
         description="Use/store a cached version of the model based on the parameters to get_model().",
     )
 
+    model_args: CreateArgs | None = Field(
+        default=None, description="Additional args to pass to model constructor."
+    )
+
     # Convert single items to lists
     @field_validator("config", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
-
-
-class FlowOptions(BaseModel, extra="forbid"):
-    log_dir: str = Field(description="Directory to write evaluation logs to.")
-    limit: int | None = Field(
-        default=None, description="Limit evaluated samples (defaults to all samples)."
-    )
 
 
 class Dependency(BaseModel, extra="forbid"):
@@ -71,7 +70,7 @@ class SolverConfig(BaseModel, extra="forbid"):
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Solver arguments.",
+        description="Solver arguments. One solver is create for each value in the list. Only a single value may be set for solvers in a chain.",
     )
 
     # Convert single items to lists
@@ -86,7 +85,7 @@ class AgentConfig(BaseModel, extra="forbid"):
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Agent arguments.",
+        description="Agent arguments. One Agent is created for each value in the list.",
     )
 
     # Convert single items to lists
@@ -96,38 +95,117 @@ class AgentConfig(BaseModel, extra="forbid"):
         return ensure_list_or_none(v)
 
 
-class TaskConfig(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the task to use.")
+class EpochsConfig(BaseModel):
+    epochs: int = Field(description="Number of epochs.")
 
-    file: str | None = Field(
-        default=None, description="Python file containing the task implementation"
+    reducer: str | list[str] | None = Field(
+        default=None,
+        description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
     )
 
-    # TODO:ransom sample_ids not implemented
-    sample_ids: list[str | int] | None = Field(
+
+class TaskConfig(BaseModel, extra="forbid"):
+    name: str | None = Field(
         default=None,
-        min_length=1,
-        description="List of sample IDs to run for the task. If not specified, all samples will be run.",
+        description='Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file.',
+    )
+
+    file: str | None = Field(
+        default=None,
+        description="Python file containing the task implementation. If not provided, the task will be loaded from the registry.",
+    )
+
+    file_attr: str | None = Field(
+        default=None,
+        description="Name of the task factory attr within file. Only used if file is specified. Defaults to 'name'.",
+    )
+
+    registry_name: str | None = Field(
+        default=None,
+        description="Name of the task within the registry. Only used if file is not specified. Defaults to 'name'.",
     )
 
     args: list[CreateArgs] | None = Field(
         default=None,
-        description="Task arguments",
-    )
-
-    models: list[ModelConfig] | None = Field(
-        default=None,
-        description="Model to use for evaluation. If not specified, the default model for the task will be used.",
-    )
-
-    model_roles: list[ModelRolesConfig] | None = Field(
-        default=None,
-        description="Model roles to use for evaluation.",
+        description="Task factory arguments.",
     )
 
     solvers: list[SolverConfig | list[SolverConfig] | AgentConfig] | None = Field(
         default=None,
-        description="Solvers.",
+        description="List of solver or list of list of solvers. Defaults to generate(), a normal call to the model. Will matrix over items in the top level list.",
+    )
+
+    models: list[ModelConfig] | None = Field(
+        default=None,
+        description="Default model for task (Optional, defaults to eval model). Will matrix over items in the list.",
+    )
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the ModelConfig. Config values will be overridden if also set on the eval_set_config.",
+    )
+
+    model_roles: list[ModelRolesConfig] | None = Field(
+        default=None,
+        description="Named roles for use in `get_model()`. Will matrix over items in the list.",
+    )
+
+    sandbox: SandboxEnvironmentType | None = Field(
+        default=None,
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+    )
+
+    approval: str | ApprovalPolicyConfig | None = Field(
+        default=None,
+        description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
+    )
+
+    epochs: int | EpochsConfig | None = Field(
+        default=None,
+        description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
+    )
+
+    fail_on_error: bool | float | None = Field(
+        default=None,
+        description="`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
+    )
+
+    continue_on_fail: bool | None = Field(
+        default=None,
+        description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
+    )
+
+    message_limit: int | None = Field(
+        default=None, description="Limit on total messages used for each sample."
+    )
+
+    token_limit: int | None = Field(
+        default=None, description="Limit on total tokens used for each sample."
+    )
+
+    time_limit: int | None = Field(
+        default=None, description="Limit on clock time (in seconds) for samples."
+    )
+
+    working_limit: int | None = Field(
+        default=None,
+        description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
+    )
+
+    version: int | None = Field(
+        default=None,
+        description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
+    )
+
+    metadata: dict[str, Any] | None = Field(
+        default=None, description="Additional metadata to associate with the task."
+    )
+
+    # TODO:ransom sample_ids not implemented
+    sample_id: str | int | list[str | int] | None = Field(
+        default=None,
+        min_length=1,
+        description="Evaluate specific sample(s) from the dataset.",
     )
 
     # Convert single items to lists
@@ -135,6 +213,26 @@ class TaskConfig(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    @model_validator(mode="after")
+    def validate_field_combinations(self):
+        if self.file is not None:
+            if self.registry_name is not None:
+                raise ValueError(
+                    "registry_name cannot be specified when file is specified"
+                )
+            if self.file_attr is None and self.name is None:
+                raise ValueError(
+                    "Either file_attr or name must be specified when file is specified"
+                )
+        elif self.file_attr is not None:
+            raise ValueError("file_attr cannot be specified when file is not specified")
+        elif self.registry_name is None and self.name is None:
+            raise ValueError(
+                "Either registry_name or name must be specified when file is not specified"
+            )
+
+        return self
 
 
 class Matrix(BaseModel, extra="forbid"):
@@ -169,11 +267,179 @@ class Matrix(BaseModel, extra="forbid"):
         return ensure_list_or_none(v)
 
 
+class FlowOptions(BaseModel, extra="forbid"):
+    log_dir: str = Field(
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set)."
+    )
+
+
+class EvalSetOptions(BaseModel, extra="forbid"):
+    retry_attempts: int | None = Field(
+        default=None,
+        description="Maximum number of retry attempts before giving up (defaults to 10).",
+    )
+
+    retry_wait: float | None = Field(
+        default=None,
+        description="Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour.",
+    )
+
+    retry_connections: float | None = Field(
+        default=None,
+        description="Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).",
+    )
+
+    retry_cleanup: bool | None = Field(
+        default=None,
+        description="Cleanup failed log files after retries (defaults to True).",
+    )
+
+    sandbox: SandboxEnvironmentType | None = Field(
+        default=None,
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+    )
+
+    sandbox_cleanup: bool | None = Field(
+        default=None,
+        description="Cleanup sandbox environments after task completes (defaults to True)",
+    )
+
+    tags: list[str] | None = Field(
+        default=None, description="Tags to associate with this evaluation run."
+    )
+
+    metadata: dict[str, Any] | None = Field(
+        default=None, description="Metadata to associate with this evaluation run."
+    )
+
+    trace: bool | None = Field(
+        default=None,
+        description="Trace message interactions with evaluated model to terminal.",
+    )
+
+    display: DisplayType | None = Field(
+        default=None, description="Task display type (defaults to 'full')."
+    )
+
+    approval: str | ApprovalPolicyConfig | None = Field(
+        default=None,
+        description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
+    )
+
+    score: bool = Field(default=True, description="Score output (defaults to True)")
+
+    log_level: str | None = Field(
+        default=None,
+        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")',
+    )
+
+    log_level_transcript: str | None = Field(
+        default=None,
+        description='Level for logging to the log file (defaults to "info")',
+    )
+
+    log_format: Literal["eval", "json"] | None = Field(
+        default=None,
+        description='Format for writing log files (defaults to "eval", the native high-performance format).',
+    )
+
+    limit: int | None = Field(
+        default=None, description="Limit evaluated samples (defaults to all samples)."
+    )
+
+    sample_shuffle: bool | int | None = Field(
+        default=None,
+        description="Shuffle order of samples (pass a seed to make the order deterministic).",
+    )
+
+    fail_on_error: bool | float | None = Field(
+        default=None,
+        description="`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
+    )
+
+    continue_on_fail: bool | None = Field(
+        default=None,
+        description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
+    )
+
+    retry_on_error: int | None = Field(
+        default=None,
+        description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
+    )
+
+    debug_errors: bool | None = Field(
+        default=None,
+        description="Raise task errors (rather than logging them) so they can be debugged (defaults to False).",
+    )
+
+    max_samples: int | None = Field(
+        default=None,
+        description="Maximum number of samples to run in parallel (default is max_connections)",
+    )
+
+    max_tasks: int | None = Field(
+        default=None,
+        description="Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)",
+    )
+
+    max_subprocesses: int | None = Field(
+        default=None,
+        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count())",
+    )
+
+    max_sandboxes: int | None = Field(
+        default=None,
+        description="Maximum number of sandboxes (per-provider) to run in parallel.",
+    )
+
+    log_samples: bool | None = Field(
+        default=None, description="Log detailed samples and scores (defaults to True)"
+    )
+
+    log_realtime: bool | None = Field(
+        default=None,
+        description="Log events in realtime (enables live viewing of samples in inspect view). Defaults to True.",
+    )
+
+    log_images: bool | None = Field(
+        default=None,
+        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)",
+    )
+
+    log_buffer: int | None = Field(
+        default=None,
+        description="Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).",
+    )
+
+    log_shared: bool | None = Field(
+        default=None,
+        description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
+    )
+
+    log_dir_allow_dirty: bool | None = Field(
+        default=None,
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
+    )
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Model generation options. Will override settings on the ModelConfig and TaskConfig.",
+    )
+
+
 class FlowConfig(BaseModel, extra="forbid"):
-    options: FlowOptions | None = Field(default=None, description="Global options")
+    options: FlowOptions | None = Field(
+        default=None, description="Global options for flow"
+    )
+
+    eval_set_options: EvalSetOptions | None = Field(
+        default=None, description="Arguments for calls to eval_set."
+    )
+
     dependencies: list[Dependency] | None = Field(
         default=None, description="Dependencies to pip install"
     )
+
     matrix: list[Matrix] = Field(description="Matrix of tasks to run")
 
     # Convert single items to lists

@@ -1,8 +1,8 @@
 from collections.abc import Callable
 from typing import TypeAlias
 
-from inspect_ai import Task, task_with
-from inspect_ai._util.notgiven import NOT_GIVEN
+from inspect_ai import Epochs, Task, task_with
+from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -12,6 +12,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.types import (
     AgentConfig,
     CreateArgs,
+    EpochsConfig,
     Matrix,
     ModelConfig,
     ModelRolesConfig,
@@ -84,11 +85,41 @@ class MatrixImpl:
                             # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
                             init_active_model(model, GenerateConfig())
                         task = task_func(**(args or {}))
+
+                        epochs = config.epochs
+                        if isinstance(epochs, EpochsConfig):
+                            epochs = Epochs(
+                                epochs=epochs.epochs,
+                                reducer=epochs.reducer,
+                            )
+
+                        def ng(arg):
+                            """Pass NOT_GIVEN for args that are None"""
+                            return arg if arg is not None else NOT_GIVEN
+
                         task_with(
                             task,
-                            model=model if model else NOT_GIVEN,
-                            model_roles=model_roles if model_roles else NOT_GIVEN,
-                            solver=solver if solver else NOT_GIVEN,  # pyright: ignore[reportArgumentType] TODO:ransom
+                            # dataset= Not Supported
+                            # setup= Not Supported
+                            solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+                            # cleanup= Not Supported
+                            # scorer= Not Supported
+                            # metrics= Not Supported
+                            model=ng(model),
+                            config=ng(config.config),
+                            model_roles=ng(model_roles),
+                            sandbox=ng(config.sandbox),
+                            approval=ng(config.approval),  # type: ignore TODO:ransom
+                            epochs=ng(epochs),
+                            fail_on_error=ng(config.fail_on_error),
+                            continue_on_fail=ng(config.continue_on_fail),
+                            message_limit=ng(config.message_limit),
+                            token_limit=ng(config.token_limit),
+                            time_limit=ng(config.time_limit),
+                            working_limit=ng(config.working_limit),
+                            name=ng(config.name),
+                            version=ng(config.version),
+                            metadata=ng(config.metadata),
                         )
                         tasks.append(task)
         return tasks
@@ -105,6 +136,7 @@ def create_model(
         base_url=model_config.base_url,
         api_key=model_config.api_key,
         memoize=model_config.memoize,
+        **(model_config.model_args or {}),
     )
 
 
@@ -179,11 +211,21 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
 
 def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
     if config.file:
+        file_attr = config.file_attr or config.name
+        if not file_attr:
+            raise ValueError(
+                f"file_attr or name not specified for task with file {config.file} "
+            )
         module = get_module_from_file(config.file)
-        task_func = getattr(module, config.name)
+        task_func = getattr(module, file_attr)
     else:
+        registry_name = config.registry_name or config.name
+        if not registry_name:
+            raise ValueError(
+                "registry_name or name not specified for task without file"
+            )
 
         def task_func(**kwargs):
-            return registry_create(type="task", name=config.name, **kwargs)
+            return registry_create(type="task", name=registry_name, **kwargs)
 
     return task_func
