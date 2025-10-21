@@ -201,7 +201,6 @@ class TaskConfig(BaseModel, extra="forbid"):
         default=None, description="Additional metadata to associate with the task."
     )
 
-    # TODO:ransom sample_ids not implemented
     sample_id: str | int | list[str | int] | None = Field(
         default=None,
         min_length=1,
