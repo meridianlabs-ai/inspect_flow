@@ -4,7 +4,6 @@ import yaml
 from inspect_ai.model import GenerateConfig
 from inspect_flow._config.config import load_config
 from inspect_flow._types.types import (
-    Dependency,
     EvalSetOptions,
     FlowConfig,
     FlowOptions,
@@ -45,10 +44,8 @@ def test_config_one_task() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[Matrix(tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")])],
     )
@@ -60,10 +57,8 @@ def test_config_two_tasks() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -82,10 +77,8 @@ def test_config_two_models_one_task() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -105,10 +98,8 @@ def test_config_model_and_task() -> None:
         options=FlowOptions(log_dir="model_and_task"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -136,10 +127,8 @@ def test_config_two_models_two_tasks() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -162,10 +151,8 @@ def test_config_model_config() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -194,10 +181,8 @@ def test_config_matrix_and_task() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
@@ -222,10 +207,8 @@ def test_config_nested_matrix() -> None:
         options=FlowOptions(log_dir="example_logs"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
-            Dependency(package="openai"),
-            Dependency(
-                package="git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
-            ),
+            "openai",
+            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
             Matrix(
