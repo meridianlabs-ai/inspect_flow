@@ -102,7 +102,7 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowConfig(
-        options=FlowOptions(log_dir="example_logs"),
+        options=FlowOptions(log_dir="model_and_task"),
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             Dependency(package="openai"),
