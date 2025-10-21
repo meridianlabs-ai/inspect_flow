@@ -1,5 +1,6 @@
 options:
   log_dir: model_and_task
+eval_set_options:
   limit: 1
 dependencies:
 - package: openai
