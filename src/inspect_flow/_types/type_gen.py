@@ -1,50 +1,70 @@
-import json
 import re
 from pathlib import Path
 
 from datamodel_code_generator import DataModelType, generate
 
-from inspect_flow._types.flow_types import FlowConfig, Matrix
-
-
-def json_schema() -> str:
-    schemas = {}
-    for model in [FlowConfig, Matrix]:
-        schema = model.model_json_schema()
-        schemas.update(schema.get("$defs", {}))
-    return json.dumps({"$defs": schemas, "type": "object"})
+from inspect_flow._types.flow_types import FlowConfig
 
 
 def main():
-    output = Path(__file__).parent / "flow_type_dicts.py"
+    generated_type_file = Path(__file__).parent / "flow_type_dicts.py"
+    output_file = Path(__file__).parent / "flow_types.py"
 
     generate(
         str(FlowConfig.model_json_schema()),
-        output=output,
+        output=generated_type_file,
         output_model_type=DataModelType.TypingTypedDict,
         custom_class_name_generator=lambda name: f"{name}Dict",
     )
 
     # Post-process the generated file to add union types
-    with open(output, "r") as f:
+    with open(generated_type_file, "r") as f:
         lines = f.readlines()
 
-    modified_lines = []
+    generated_code: list[str] = []
+    section = "comment"
     for line in lines:
-        if line.strip().startswith(("from", "class")):
-            # Don't modify import or class definition lines
-            modified_lines.append(line)
-        else:
-            # Replace ClassNameDict with ClassName | ClassNameDict
-            modified_line = re.sub(
-                r"\b(\w+)Dict\b",
-                lambda m: f'Union["{m.group(1)}", {m.group(0)}]',
-                line,
-            )
-            modified_lines.append(modified_line)
+        if section == "comment":
+            if line.strip().startswith("from"):
+                section = "imports"
+            else:
+                generated_code.append(line)
+        if section == "imports":
+            if line.strip().startswith("class"):
+                section = "classes"
+            # Do not include imports
+        if section == "classes":
+            if line.strip().startswith("class"):
+                # Don't modify import or class definition lines
+                generated_code.append(line)
+            else:
+                # Replace ClassNameDict with ClassName | ClassNameDict
+                modified_line = re.sub(
+                    r"\b(\w+)Dict\b",
+                    lambda m: f'Union["{m.group(1)}", "{m.group(0)}"]',
+                    line,
+                )
+                generated_code.append(modified_line)
 
-    with open(output, "w") as f:
-        f.writelines(modified_lines)
+    with open(output_file, "r") as f:
+        lines = f.readlines()
+
+    output_lines: list[str] = []
+    section = "before"
+    for line in lines:
+        if section == "before":
+            output_lines.append(line)
+            if line.strip() == "# BEGIN GENERATED CODE":
+                section = "generated"
+                output_lines.extend(generated_code)
+        if section == "generated":
+            if line.strip() == "# END GENERATED CODE":
+                section = "after"
+        if section == "after":
+            output_lines.append(line)
+
+    with open(output_file, "w") as f:
+        f.writelines(output_lines)
 
 
 if __name__ == "__main__":
