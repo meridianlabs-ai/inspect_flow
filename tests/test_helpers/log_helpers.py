@@ -3,7 +3,7 @@ from itertools import product
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow._types.types import (
+from inspect_flow._types.flow_types import (
     FlowConfig,
 )
 

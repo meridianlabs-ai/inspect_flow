@@ -1,5 +1,4 @@
 from typing import (
-    TYPE_CHECKING,
     Any,
     Literal,
     Mapping,
@@ -474,12 +473,6 @@ class EvalSetOptions(BaseModel, extra="forbid"):
 # MatrixDict = model_to_typeddict(Matrix, "MatrixDict")
 
 
-if TYPE_CHECKING:
-    MatrixInput = Matrix | MatrixDict | str
-else:
-    MatrixInput = Matrix
-
-
 class FlowConfigDict(TypedDict, total=False):
     matrix: list[Matrix | MatrixDict]
     options: FlowOptions | None
@@ -528,16 +521,16 @@ class FlowConfig(BaseModel, extra="forbid"):
 matrix: MatrixDict = {"tasks": []}
 matrix: MatrixDict = {}
 
-config = FlowConfig({"matrix": [{"tasks": ["one_module/one_task"]}]})
-config = FlowConfig({"matrix": [Matrix(tasks=[])]})
-config = FlowConfig(matrix=[{"tasks": []}])
-config = FlowConfig(matrix=[Matrix(tasks=[])])
+# config = FlowConfig({"matrix": [{"tasks": ["one_module/one_task"]}]})
+# config = FlowConfig({"matrix": [Matrix(tasks=[])]})
+# config = FlowConfig(matrix=[{"tasks": []}])
+# config = FlowConfig(matrix=[Matrix(tasks=[])])
 config = FlowConfig(matrix=[Matrix(tasks=[{"name": "dict"}])])
-config = FlowConfig(
-    matrix=[Matrix(tasks=["string", TaskConfig(name="class"), {"name": "dict"}])]
-)
-config = FlowConfig(matrix=[Matrix(tasks=[])])
-config = FlowConfig(bad=None)
+# config = FlowConfig(
+#     matrix=[Matrix(tasks=["string", TaskConfig(name="class"), {"name": "dict"}])]
+# )
+# config = FlowConfig(matrix=[Matrix(tasks=[])])
+# config = FlowConfig(bad=None)
 
 
 def foo(config: FlowConfig) -> None:

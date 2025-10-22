@@ -3,7 +3,7 @@ import yaml
 from inspect_ai.log import EvalLog
 
 from inspect_flow._runner.matrix import MatrixImpl
-from inspect_flow._types.types import (
+from inspect_flow._types.flow_types import (
     EvalSetOptions,
     FlowConfig,
     FlowOptions,
