@@ -1,4 +1,5 @@
 import re
+import subprocess
 from pathlib import Path
 
 from datamodel_code_generator import DataModelType, generate
@@ -21,6 +22,12 @@ def main():
     with open(generated_type_file, "r") as f:
         lines = f.readlines()
 
+    def replacement(m: re.Match[str]) -> str:
+        if m.group(1) in ["TaskConfig"]:
+            return f'Union[str, "{m.group(1)}", "{m.group(0)}"]'
+        else:
+            return f'Union["{m.group(1)}", "{m.group(0)}"]'
+
     generated_code: list[str] = []
     section = "comment"
     for line in lines:
@@ -41,7 +48,7 @@ def main():
                 # Replace ClassNameDict with ClassName | ClassNameDict
                 modified_line = re.sub(
                     r"\b(\w+)Dict\b",
-                    lambda m: f'Union["{m.group(1)}", "{m.group(0)}"]',
+                    replacement,
                     line,
                 )
                 generated_code.append(modified_line)
@@ -65,6 +72,9 @@ def main():
 
     with open(output_file, "w") as f:
         f.writelines(output_lines)
+
+    # Format the output file with ruff
+    subprocess.run(["ruff", "format", str(output_file)], check=True)
 
 
 if __name__ == "__main__":

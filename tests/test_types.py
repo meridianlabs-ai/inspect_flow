@@ -12,13 +12,15 @@ config = FlowConfig(
 )
 config = FlowConfig(matrix=[Matrix(tasks=[])])
 
-# Should fail
-matrix: MatrixDict = {}
-matrix = Matrix({"tasks": []})
-config = FlowConfig({"matrix": [Matrix(tasks=[Matrix(tasks=[])])]})
-config = FlowConfig({"matrix": [TaskConfig()]})
-config = FlowConfig(matrix=[Matrix(tasks=[]), TaskConfig()])
-config = FlowConfig(bad=None)
+
+# Should have pylance errors
+def errors() -> None:
+    matrix: MatrixDict = {}
+    matrix = Matrix({"tasks": []})
+    config = FlowConfig({"matrix": [Matrix(tasks=[Matrix(tasks=[])])]})
+    config = FlowConfig({"matrix": [TaskConfig()]})
+    config = FlowConfig(matrix=[Matrix(tasks=[]), TaskConfig()])
+    config = FlowConfig(bad=None)
 
 
 def foo(config: FlowConfig) -> None:
