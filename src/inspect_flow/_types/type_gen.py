@@ -26,7 +26,7 @@ def generate_typed_dict_code() -> list[str]:
 
 
 def modify_generated_code(lines: list[str]) -> list[str]:
-    str_as_class = ["TaskConfig", "ModelConfig"]
+    str_as_class = ["TaskConfig", "ModelConfig", "SolverConfig"]
 
     def replacement(m: re.Match[str]) -> str:
         if m.group(1) in str_as_class:

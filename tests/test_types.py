@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from inspect_flow._types.flow_types import FlowConfig, Matrix, MatrixDict, TaskConfig
+from inspect_flow._types.flow_types import (
+    FlowConfig,
+    Matrix,
+    MatrixDict,
+    SolverConfig,
+    TaskConfig,
+)
 
 matrix: MatrixDict = {"tasks": []}
 
@@ -45,7 +51,7 @@ def test_model_from_string():
         {
             "matrix": [
                 {
-                    "tasks": [TaskConfig(name="module/task")],
+                    "tasks": ["module/task"],
                     "models": [model_name],
                     "model_roles": [{model_role: model_name2}],
                 }
@@ -76,3 +82,46 @@ def test_model_from_string():
     assert config.matrix[0].tasks[0].models[0].name == model_name
     assert config.matrix[0].tasks[0].model_roles
     assert config.matrix[0].tasks[0].model_roles[0][model_role] == model_name2
+
+
+def test_solver_from_string():
+    solver_name = "module/solver"
+    solver_name2 = "module/solver2"
+    solver_name3 = "module/solver3"
+    config = FlowConfig(
+        {
+            "matrix": [
+                {
+                    "tasks": ["module/task"],
+                    "solvers": [solver_name, [solver_name2, solver_name3]],
+                }
+            ]
+        }
+    )
+    assert config.matrix[0].solvers
+    assert isinstance(config.matrix[0].solvers[0], SolverConfig)
+    assert config.matrix[0].solvers[0].name == solver_name
+    assert isinstance(config.matrix[0].solvers[1], list)
+    assert config.matrix[0].solvers[1][0].name == solver_name2
+    assert config.matrix[0].solvers[1][1].name == solver_name3
+
+    config = FlowConfig(
+        {
+            "matrix": [
+                {
+                    "tasks": [
+                        {
+                            "name": "module/task",
+                            "solvers": [solver_name, [solver_name2, solver_name3]],
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+    assert config.matrix[0].tasks[0].solvers
+    assert isinstance(config.matrix[0].tasks[0].solvers[0], SolverConfig)
+    assert config.matrix[0].tasks[0].solvers[0].name == solver_name
+    assert isinstance(config.matrix[0].tasks[0].solvers[1], list)
+    assert config.matrix[0].tasks[0].solvers[1][0].name == solver_name2
+    assert config.matrix[0].tasks[0].solvers[1][1].name == solver_name3
