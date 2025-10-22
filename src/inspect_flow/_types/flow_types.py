@@ -7,8 +7,8 @@ from typing import (
     NotRequired,
     Optional,
     TypeAlias,
-    TypeVar,
     TypedDict,
+    TypeVar,
     Union,
     overload,
 )
@@ -465,10 +465,15 @@ class TaskConfig(BaseModel, extra="forbid"):
     )
 
     # Convert single items to lists
-    @field_validator("args", "models", "model_roles", mode="before")
+    @field_validator("args", "model_roles", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    @field_validator("models", mode="before")
+    @classmethod
+    def convert_string_models(cls, v):
+        return convert_to_class_list(ModelConfig, v)
 
     @model_validator(mode="after")
     def validate_field_combinations(self):
@@ -489,19 +494,6 @@ class TaskConfig(BaseModel, extra="forbid"):
             )
 
         return self
-
-
-T = TypeVar("T", TaskConfig, ModelConfig, SolverConfig, AgentConfig)
-
-
-def convert_to_class_list(
-    cls: type[T], v: str | T | list[str | T] | None
-) -> list[T] | None:
-    if v is None:
-        return v
-    if not isinstance(v, list):
-        v = [v]
-    return [cls(name=task) if isinstance(task, str) else task for task in v]
 
 
 class Matrix(BaseModel, extra="forbid"):
@@ -530,7 +522,7 @@ class Matrix(BaseModel, extra="forbid"):
     )
 
     # Convert single items to lists
-    @field_validator("tasks", "models", mode="before")
+    @field_validator("args", "model_roles", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
@@ -779,3 +771,16 @@ class FlowConfig(BaseModel, extra="forbid"):
             super().__init__(**__config_dict)
         else:
             super().__init__(**kwargs)
+
+
+T = TypeVar("T", TaskConfig, ModelConfig, SolverConfig, AgentConfig)
+
+
+def convert_to_class_list(
+    cls: type[T], v: str | T | list[str | T] | None
+) -> list[T] | None:
+    if v is None:
+        return v
+    if not isinstance(v, list):
+        v = [v]
+    return [cls(name=task) if isinstance(task, str) else task for task in v]

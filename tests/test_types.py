@@ -25,10 +25,6 @@ def errors() -> None:
     config = FlowConfig(bad=None)
 
 
-def foo(config: FlowConfig) -> None:
-    value = config.matrix[0].args
-
-
 def test_task_from_string():
     task_name = "one_module/one_task"
     config = FlowConfig({"matrix": [{"tasks": [task_name]}]})
@@ -52,3 +48,9 @@ def test_model_from_string():
     )
     assert config.matrix[0].models
     assert config.matrix[0].models[0].name == model_name
+
+    config = FlowConfig(
+        {"matrix": [{"tasks": [{"name": "module/task", "models": [model_name]}]}]}
+    )
+    assert config.matrix[0].tasks[0].models
+    assert config.matrix[0].tasks[0].models[0].name == model_name
