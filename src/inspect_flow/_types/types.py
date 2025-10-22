@@ -1,4 +1,13 @@
-from typing import Any, Literal, Mapping, TypeAlias, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Mapping,
+    Required,
+    TypeAlias,
+    TypedDict,
+    Union,
+)
 
 from inspect_ai.approval._policy import (
     ApprovalPolicyConfig,
@@ -6,6 +15,7 @@ from inspect_ai.approval._policy import (
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import DisplayType, SandboxEnvironmentType
 from pydantic import BaseModel, Field, field_validator, model_validator
+from typing_extensions import Unpack
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -37,7 +47,7 @@ class ModelConfig(BaseModel, extra="forbid"):
         description="Optional. Alternate base URL for model.",
     )
 
-    api_key: None = Field(
+    api_key: str | None = Field(
         default=None,
         description="Optional. API key for model.",
     )
@@ -226,6 +236,18 @@ class TaskConfig(BaseModel, extra="forbid"):
         return self
 
 
+class TaskConfigDict(TypedDict, total=False):
+    name: Required[str]
+
+
+class MatrixDict(TypedDict, total=False):
+    tasks: Required[list[TaskConfig | TaskConfigDict | str]]
+    args: list[CreateArgs] | None
+    models: list[ModelConfig] | None
+    model_roles: list[ModelRolesConfig] | None
+    solvers: list[dict[str, Any]] | None
+
+
 class Matrix(BaseModel, extra="forbid"):
     tasks: list[TaskConfig] = Field(
         description="List of tasks to evaluate in this eval set."
@@ -256,6 +278,20 @@ class Matrix(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    def __init__(
+        self,
+        __config_dict: MatrixDict | None = None,
+        /,
+        **kwargs: Unpack[MatrixDict],
+    ) -> None:
+        """Initialize FlowConfig from either a FlowConfigDict or keyword arguments."""
+        if __config_dict is not None:
+            # Initialize from FlowConfigDict
+            super().__init__(**__config_dict)
+        else:
+            # Initialize from keyword arguments (default behavior)
+            super().__init__(**kwargs)
 
 
 class FlowOptions(BaseModel, extra="forbid"):
@@ -418,6 +454,39 @@ class EvalSetOptions(BaseModel, extra="forbid"):
     )
 
 
+# def model_to_typeddict(model: type[BaseModel], name: str) -> type[TypedDict]:  # type: ignore[valid-type]
+#     """Convert a Pydantic model to a TypedDict."""
+#     fields = {
+#         field_name: info.annotation for field_name, info in model.model_fields.items()
+#     }
+#     # Create TypedDict with required/optional fields
+#     required_fields = {
+#         k: v for k, v in fields.items() if model.model_fields[k].is_required()
+#     }
+#     optional_fields = {
+#         k: v for k, v in fields.items() if not model.model_fields[k].is_required()
+#     }
+
+#     # TypedDict doesn't support inheritance well, so create it directly
+#     return TypedDict(name, {**required_fields, **optional_fields}, total=False)  # type: ignore[return-value]
+
+
+# MatrixDict = model_to_typeddict(Matrix, "MatrixDict")
+
+
+if TYPE_CHECKING:
+    MatrixInput = Matrix | MatrixDict | str
+else:
+    MatrixInput = Matrix
+
+
+class FlowConfigDict(TypedDict, total=False):
+    matrix: list[Matrix | MatrixDict]
+    options: FlowOptions | None
+    eval_set_options: EvalSetOptions | None
+    dependencies: list[str] | None
+
+
 class FlowConfig(BaseModel, extra="forbid"):
     options: FlowOptions | None = Field(
         default=None, description="Global options for flow"
@@ -440,3 +509,36 @@ class FlowConfig(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    def __init__(
+        self,
+        __config_dict: FlowConfigDict | None = None,
+        /,
+        **kwargs: Unpack[FlowConfigDict],
+    ) -> None:
+        """Initialize FlowConfig from either a FlowConfigDict or keyword arguments."""
+        if __config_dict is not None:
+            # Initialize from FlowConfigDict
+            super().__init__(**__config_dict)
+        else:
+            # Initialize from keyword arguments (default behavior)
+            super().__init__(**kwargs)
+
+
+matrix: MatrixDict = {"tasks": []}
+matrix: MatrixDict = {}
+
+config = FlowConfig({"matrix": [{"tasks": ["one_module/one_task"]}]})
+config = FlowConfig({"matrix": [Matrix(tasks=[])]})
+config = FlowConfig(matrix=[{"tasks": []}])
+config = FlowConfig(matrix=[Matrix(tasks=[])])
+config = FlowConfig(matrix=[Matrix(tasks=[{"name": "dict"}])])
+config = FlowConfig(
+    matrix=[Matrix(tasks=["string", TaskConfig(name="class"), {"name": "dict"}])]
+)
+config = FlowConfig(matrix=[Matrix(tasks=[])])
+config = FlowConfig(bad=None)
+
+
+def foo(config: FlowConfig) -> None:
+    value = config.matrix[0].args
