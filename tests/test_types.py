@@ -12,23 +12,23 @@ matrix: MatrixDict = {"tasks": []}
 
 
 def no_errors() -> None:
-    config = FlowConfig({"matrix": [{"tasks": ["one_module/one_task"]}]})
-    config = FlowConfig(matrix=[{"tasks": []}])
-    config = FlowConfig(matrix=[Matrix(tasks=[{"name": "dict"}])])
-    config = FlowConfig(
+    _config = FlowConfig({"matrix": [{"tasks": ["one_module/one_task"]}]})
+    _config = FlowConfig(matrix=[{"tasks": []}])
+    _config = FlowConfig(matrix=[Matrix(tasks=[{"name": "dict"}])])
+    _config = FlowConfig(
         matrix=[Matrix(tasks=["string", TaskConfig(name="class"), {"name": "dict"}])]
     )
-    config = FlowConfig(matrix=[Matrix(tasks=[])])
+    _config = FlowConfig(matrix=[Matrix(tasks=[])])
 
 
 # Should have pylance errors
 def errors() -> None:
-    matrix: MatrixDict = {}
-    matrix = Matrix({"tasks": []})
-    config = FlowConfig({"matrix": [Matrix(tasks=[Matrix(tasks=[])])]})
-    config = FlowConfig({"matrix": [TaskConfig()]})
-    config = FlowConfig(matrix=[Matrix(tasks=[]), TaskConfig()])
-    config = FlowConfig(bad=None)
+    _matrix: MatrixDict = {}  # pyright: ignore[reportAssignmentType]
+    _matrix = Matrix({"tasks": []})  # pyright: ignore[reportAssignmentType]
+    _config = FlowConfig({"matrix": [Matrix(tasks=[Matrix(tasks=[])])]})  # pyright: ignore[reportArgumentType]
+    _config = FlowConfig({"matrix": [TaskConfig()]})  # pyright: ignore[reportArgumentType]
+    _config = FlowConfig(matrix=[Matrix(tasks=[]), TaskConfig()])  # pyright: ignore[reportArgumentType]
+    _config = FlowConfig(bad=None)  # pyright: ignore[reportCallIssue]
 
 
 def test_task_from_string():

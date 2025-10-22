@@ -18,6 +18,7 @@ def generate_typed_dict_code() -> list[str]:
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
             custom_class_name_generator=lambda name: f"{name}Dict",
+            use_generic_container_types=True,
         )
 
         # Post-process the generated file to add union types
