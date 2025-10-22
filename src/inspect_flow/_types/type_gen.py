@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from datamodel_code_generator import DataModelType, generate
+from datamodel_code_generator import DataModelType, InputFileType, generate
 
 from inspect_flow._types.flow_types import FlowConfig
 
@@ -14,6 +14,7 @@ def generate_typed_dict_code() -> list[str]:
 
         generate(
             str(FlowConfig.model_json_schema()),
+            input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
             custom_class_name_generator=lambda name: f"{name}Dict",
@@ -38,10 +39,9 @@ def modify_generated_code(lines: list[str]) -> list[str]:
     section = "comment"
     for line in lines:
         if section == "comment":
-            if line.strip().startswith("from"):
-                section = "imports"
-            else:
-                generated_code.append(line)
+            generated_code.append(line)
+            # Only add the first line of the comment - do not want to include the timestamp to not change the file when there are no changes
+            section = "imports"
         if section == "imports":
             if line.strip().startswith("class"):
                 section = "classes"
