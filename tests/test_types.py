@@ -39,18 +39,40 @@ def test_task_from_dict():
 
 def test_model_from_string():
     model_name = "module/model"
+    model_role = "mark"
+    model_name2 = "module/model2"
     config = FlowConfig(
         {
             "matrix": [
-                {"tasks": [TaskConfig(name="module/task")], "models": [model_name]}
+                {
+                    "tasks": [TaskConfig(name="module/task")],
+                    "models": [model_name],
+                    "model_roles": [{model_role: model_name2}],
+                }
             ]
         }
     )
     assert config.matrix[0].models
     assert config.matrix[0].models[0].name == model_name
+    assert config.matrix[0].model_roles
+    assert config.matrix[0].model_roles[0][model_role] == model_name2
 
     config = FlowConfig(
-        {"matrix": [{"tasks": [{"name": "module/task", "models": [model_name]}]}]}
+        {
+            "matrix": [
+                {
+                    "tasks": [
+                        {
+                            "name": "module/task",
+                            "models": [model_name],
+                            "model_roles": [{model_role: model_name2}],
+                        }
+                    ]
+                }
+            ]
+        }
     )
     assert config.matrix[0].tasks[0].models
     assert config.matrix[0].tasks[0].models[0].name == model_name
+    assert config.matrix[0].tasks[0].model_roles
+    assert config.matrix[0].tasks[0].model_roles[0][model_role] == model_name2
