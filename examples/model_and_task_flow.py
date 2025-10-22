@@ -1,29 +1,18 @@
-from inspect_flow._types.flow_types import (
-    EvalSetOptions,
-    FlowConfig,
-    FlowOptions,
-    Matrix,
-    ModelConfig,
-    TaskConfig,
-)
+from inspect_flow._types.flow_types import FlowConfig
 
 
 def flow_config() -> FlowConfig:
     return FlowConfig(
-        options=FlowOptions(log_dir="model_and_task"),
-        eval_set_options=EvalSetOptions(limit=1),
+        options={"log_dir": "model_and_task"},
+        eval_set_options={"limit": 1},
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
-                tasks=[
-                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                ],
-                models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                ],
-            ),
+            {
+                "tasks": ["inspect_evals/mmlu_0_shot"],
+                "models": ["openai/gpt-4o-mini"],
+            },
         ],
     )
