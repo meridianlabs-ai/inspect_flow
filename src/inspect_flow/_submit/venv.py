@@ -8,7 +8,7 @@ from typing import List, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.types import FlowConfig
+from inspect_flow._types.flow_types import FlowConfig
 
 
 class VcsInfo(BaseModel):

@@ -10,7 +10,7 @@ from inspect_ai.model._model import init_active_model
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 
-from inspect_flow._types.types import (
+from inspect_flow._types.flow_types import (
     AgentConfig,
     CreateArgs,
     EpochsConfig,

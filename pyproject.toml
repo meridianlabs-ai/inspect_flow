@@ -35,7 +35,8 @@ dev = [
     "pytest-asyncio",
     "pytest-dotenv",
     "pyright",
-    "types-pyyaml>=6.0.12.20250915"
+    "types-pyyaml>=6.0.12.20250915",
+    "datamodel-code-generator",
 ]
 
 

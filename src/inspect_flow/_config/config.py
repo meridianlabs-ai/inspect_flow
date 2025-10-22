@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from inspect_flow._types.types import FlowConfig
+from inspect_flow._types.flow_types import FlowConfig
 from inspect_flow._util.module_util import get_module_from_file
 
 

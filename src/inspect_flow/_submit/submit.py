@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.types import FlowConfig, FlowOptions
+from inspect_flow._types.flow_types import FlowConfig, FlowOptions
 
 
 def submit(config: FlowConfig):
