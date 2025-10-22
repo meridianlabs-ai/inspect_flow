@@ -1,5 +1,6 @@
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 from datamodel_code_generator import DataModelType, generate
@@ -7,23 +8,28 @@ from datamodel_code_generator import DataModelType, generate
 from inspect_flow._types.flow_types import FlowConfig
 
 
-def main():
-    generated_type_file = Path(__file__).parent / "flow_type_dicts.py"
-    output_file = Path(__file__).parent / "flow_types.py"
+def generate_typed_dict_code() -> list[str]:
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
+        generated_type_file = Path(tmp_file.name)
 
-    generate(
-        str(FlowConfig.model_json_schema()),
-        output=generated_type_file,
-        output_model_type=DataModelType.TypingTypedDict,
-        custom_class_name_generator=lambda name: f"{name}Dict",
-    )
+        generate(
+            str(FlowConfig.model_json_schema()),
+            output=generated_type_file,
+            output_model_type=DataModelType.TypingTypedDict,
+            custom_class_name_generator=lambda name: f"{name}Dict",
+        )
 
-    # Post-process the generated file to add union types
-    with open(generated_type_file, "r") as f:
-        lines = f.readlines()
+        # Post-process the generated file to add union types
+        with open(generated_type_file, "r") as f:
+            lines = f.readlines()
+    return lines
+
+
+def modify_generated_code(lines: list[str]) -> list[str]:
+    str_as_class = ["TaskConfig", "ModelConfig"]
 
     def replacement(m: re.Match[str]) -> str:
-        if m.group(1) in ["TaskConfig"]:
+        if m.group(1) in str_as_class:
             return f'Union[str, "{m.group(1)}", "{m.group(0)}"]'
         else:
             return f'Union["{m.group(1)}", "{m.group(0)}"]'
@@ -52,6 +58,11 @@ def main():
                     line,
                 )
                 generated_code.append(modified_line)
+    return generated_code
+
+
+def write_generated_code(generated_code: list[str]) -> None:
+    output_file = Path(__file__).parent / "flow_types.py"
 
     with open(output_file, "r") as f:
         lines = f.readlines()
@@ -72,9 +83,13 @@ def main():
 
     with open(output_file, "w") as f:
         f.writelines(output_lines)
-
-    # Format the output file with ruff
     subprocess.run(["ruff", "format", str(output_file)], check=True)
+
+
+def main():
+    lines = generate_typed_dict_code()
+    generated_code = modify_generated_code(lines)
+    write_generated_code(generated_code)
 
 
 if __name__ == "__main__":
