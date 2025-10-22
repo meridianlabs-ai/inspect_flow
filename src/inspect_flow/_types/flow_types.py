@@ -1,8 +1,8 @@
+import sys
 from typing import (
     Any,
     Literal,
     Mapping,
-    NotRequired,
     Optional,
     Sequence,
     TypeAlias,
@@ -24,7 +24,7 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import Unpack
+from typing_extensions import NotRequired, Unpack
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -566,12 +566,22 @@ class Matrix(BaseModel, extra="forbid"):
         /,
     ) -> None: ...
 
-    @overload
-    def __init__(
-        self,
-        /,
-        **kwargs: Unpack[MatrixDict],
-    ) -> None: ...
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[MatrixDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
 
     def __init__(
         self,
@@ -775,12 +785,22 @@ class FlowConfig(BaseModel, extra="forbid"):
         /,
     ) -> None: ...
 
-    @overload
-    def __init__(
-        self,
-        /,
-        **kwargs: Unpack[FlowConfigDict],
-    ) -> None: ...
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[FlowConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
 
     def __init__(
         self,
