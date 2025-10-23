@@ -1,3 +1,24 @@
+# FlowConfig types
+#
+# To support arbitrary mixing of python types like TaskConfig and TypedDicts,
+# we specify the pydantic types and codegen the TypedDicts from them.
+# The TypedDicts and pydantic types reference each other.
+#
+# To get this to work correctly with pyright resolving forward type references,
+# we need to include both in the same file.
+# So the auto-generated TypedDicts are included at the start of this file.
+#
+# Ideally we would add a baseclass which provides the __init__ overloads and implementation.
+# I was unable to get that to work, as pydantic does its own overrides of __init__ which interfered
+# with inheriting from a baseclass. It may be worth revisiting that in the future.
+#
+# For now, __init__ overloads are only provided for the matrix classes.
+# If desired we could add for additional classes.
+#
+# We explicitly chose not to provide __init__ overloads that take strings (as the name parameter).
+# That resulted in less helpful type checking error messages.
+#
+
 import sys
 from typing import (
     Any,
@@ -334,6 +355,41 @@ class ModelConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
+    @overload
+    def __init__(
+        self,
+        __config_dict: ModelConfigDict,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[ModelConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict: ModelConfigDict | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict is not None:
+            super().__init__(**__config_dict)
+        else:
+            super().__init__(**kwargs)
+
 
 class SolverConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
@@ -349,6 +405,41 @@ class SolverConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
+    @overload
+    def __init__(
+        self,
+        __config_dict: SolverConfigDict,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[SolverConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict: SolverConfigDict | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict is not None:
+            super().__init__(**__config_dict)
+        else:
+            super().__init__(**kwargs)
+
 
 class AgentConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
@@ -363,6 +454,41 @@ class AgentConfig(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    @overload
+    def __init__(
+        self,
+        __config_dict: AgentConfigDict,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[AgentConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict: AgentConfigDict | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict is not None:
+            super().__init__(**__config_dict)
+        else:
+            super().__init__(**kwargs)
 
 
 class EpochsConfig(BaseModel):
@@ -511,6 +637,41 @@ class TaskConfig(BaseModel, extra="forbid"):
             )
 
         return self
+
+    @overload
+    def __init__(
+        self,
+        __config_dict: TaskConfigDict,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[TaskConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict: TaskConfigDict | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict is not None:
+            super().__init__(**__config_dict)
+        else:
+            super().__init__(**kwargs)
 
 
 class Matrix(BaseModel, extra="forbid"):
@@ -808,7 +969,6 @@ class FlowConfig(BaseModel, extra="forbid"):
         /,
         **kwargs: Any,
     ) -> None:
-        """Initialize FlowConfig from either a FlowConfigDict or keyword arguments."""
         if __config_dict is not None:
             super().__init__(**__config_dict)
         else:
