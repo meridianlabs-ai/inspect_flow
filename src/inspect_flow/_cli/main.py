@@ -1,5 +1,5 @@
 import click
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 from .. import __version__
 from .submit import submit_command
@@ -31,8 +31,8 @@ flow.add_command(submit_command)
 
 
 def main() -> None:
-    load_dotenv()
-    flow(auto_envvar_prefix="INSPECT_FLOW")  # pylint: disable=no-value-for-parameter
+    load_dotenv(find_dotenv(usecwd=True))
+    flow(auto_envvar_prefix="INSPECT_FLOW")
 
 
 if __name__ == "__main__":
