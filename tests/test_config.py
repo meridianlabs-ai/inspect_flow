@@ -122,6 +122,13 @@ def test_py_config() -> None:
     validate_config(config, "model_and_task_flow.yaml")
 
 
+def test_py_config_with_assign() -> None:
+    config = load_config(
+        str(Path(__file__).parents[1] / "examples" / "model_and_task2_flow.py")
+    )
+    validate_config(config, "model_and_task_flow.yaml")
+
+
 def test_config_two_models_two_tasks() -> None:
     config = FlowConfig(
         options=FlowOptions(log_dir="example_logs"),
