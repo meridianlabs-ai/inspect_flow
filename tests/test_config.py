@@ -94,7 +94,7 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowConfig(
-        log_dir="model_and_task",
+        log_dir="logs/model_and_task",
         eval_set_options=EvalSetOptions(limit=1),
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
