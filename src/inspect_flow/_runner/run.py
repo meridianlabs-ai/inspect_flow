@@ -6,7 +6,6 @@ from inspect_flow._runner.matrix import MatrixImpl
 from inspect_flow._types.flow_types import (
     EvalSetOptions,
     FlowConfig,
-    FlowOptions,
 )
 
 
@@ -20,12 +19,11 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
     matrix_list = [MatrixImpl(matrix_config) for matrix_config in config.matrix]
     tasks = [task for matrix in matrix_list for task in matrix.tasks()]
 
-    flow_options = config.options or FlowOptions(log_dir=".")
     options = config.eval_set_options or EvalSetOptions()
 
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=flow_options.log_dir,
+        log_dir=config.log_dir,
         retry_attempts=options.retry_attempts,
         retry_wait=options.retry_wait,
         retry_connections=options.retry_connections,

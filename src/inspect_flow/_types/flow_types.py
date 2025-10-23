@@ -80,10 +80,6 @@ class EpochsConfigDict(TypedDict):
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
 
 
-class FlowOptionsDict(TypedDict):
-    log_dir: str
-
-
 class JSONSchemaDict(TypedDict):
     type: NotRequired[
         Optional[
@@ -300,7 +296,7 @@ class MatrixDict(TypedDict):
 
 
 class FlowConfigDict(TypedDict):
-    options: NotRequired[Optional[Union["FlowOptions", "FlowOptionsDict"]]]
+    log_dir: NotRequired[str]
     eval_set_options: NotRequired[
         Optional[Union["EvalSetOptions", "EvalSetOptionsDict"]]
     ]
@@ -756,12 +752,6 @@ class Matrix(BaseModel, extra="forbid"):
             super().__init__(**kwargs)
 
 
-class FlowOptions(BaseModel, extra="forbid"):
-    log_dir: str = Field(
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set)."
-    )
-
-
 class EvalSetOptions(BaseModel, extra="forbid"):
     retry_attempts: int | None = Field(
         default=None,
@@ -917,8 +907,9 @@ class EvalSetOptions(BaseModel, extra="forbid"):
 
 
 class FlowConfig(BaseModel, extra="forbid"):
-    options: FlowOptions | None = Field(
-        default=None, description="Global options for flow"
+    log_dir: str = Field(
+        default="logs/flow",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set).",
     )
 
     eval_set_options: EvalSetOptions | None = Field(
