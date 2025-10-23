@@ -1,6 +1,6 @@
 from inspect_flow._types.flow_types import FlowConfig
 
-FlowConfig(
+flow_config = FlowConfig(
     {
         "options": {"log_dir": "model_and_task"},
         "eval_set_options": {"limit": 1},
