@@ -1,3 +1,4 @@
+from ast import mod
 import json
 import os
 import subprocess
@@ -8,7 +9,7 @@ from typing import List, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import FlowConfig, Matrix, ModelConfig, TaskConfig
 
 
 class VcsInfo(BaseModel):
@@ -130,6 +131,61 @@ def get_pip_string(package: str) -> str:
     return direct_url_to_pip_string(direct_url)
 
 
+# TODO:ransom how do we keep in sync with inspect_ai - should probably export from there
+providers = {
+    "groq": "groq",
+    "openai": "openai",
+    "anthropic": "anthropic",
+    "google": "google-genai",
+    "hf": None,
+    "vllm": "vllm",
+    "cf": None,
+    "mistral": "mistralai",
+    "grok": "openai",
+    "together": "openai",
+    "fireworks": "openai",
+    "sambanova": "openai",
+    "ollama": "openai",
+    "openrouter": "openai",
+    "perplexity": "openai",
+    "llama-cpp-python": "openai",
+    "azureai": "azure-ai-inference",
+    "bedrock": None,
+    "sglang": "openai",
+    "transformer_lens": "transformer_lens",
+    "goodfire": "goodfire",
+    "hf-inference-providers": "openai",
+}
+
+
+def get_model_dependencies(config: FlowConfig) -> List[str]:
+    model_dependencies: set[str] = set()
+
+    def collect_dependency(model_name: str) -> None:
+        """Extract provider from model name like 'openai/gpt-4o-mini' -> 'openai'"""
+        if "/" in model_name:
+            dependency = providers.get(model_name.split("/")[0])
+            if dependency:
+                model_dependencies.add(dependency)
+
+    def collect_model_dependencies(config: Matrix | TaskConfig) -> None:
+        for model in config.models or []:
+            collect_dependency(model.name)
+        for model_roles in config.model_roles or []:
+            for model_role in model_roles.values():
+                if isinstance(model_role, ModelConfig):
+                    collect_dependency(model_role.name)
+                else:
+                    collect_dependency(model_role)
+
+    for matrix in config.matrix:
+        collect_model_dependencies(matrix)
+        for task in matrix.tasks:
+            collect_model_dependencies(task)
+
+    return sorted(model_dependencies)
+
+
 def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
@@ -159,6 +215,7 @@ def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
         dep if not dep.startswith(".") else str(Path(dep).resolve())
         for dep in dependencies
     ]
+    dependencies.extend(get_model_dependencies(config))
     dependencies.append(get_pip_string("inspect-flow"))
 
     subprocess.run(
