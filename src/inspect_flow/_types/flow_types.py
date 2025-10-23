@@ -12,6 +12,9 @@
 # I was unable to get that to work, as pydantic does its own overrides of __init__ which interfered
 # with inheriting from a baseclass. It may be worth revisiting that in the future.
 #
+# For now, __init__ overloads are only provided for the matrix classes.
+# If desired we could add for additional classes.
+#
 # We explicitly chose not to provide __init__ overloads that take strings (as the name parameter).
 # That resulted in less helpful type checking error messages.
 #
@@ -966,7 +969,6 @@ class FlowConfig(BaseModel, extra="forbid"):
         /,
         **kwargs: Any,
     ) -> None:
-        """Initialize FlowConfig from either a FlowConfigDict or keyword arguments."""
         if __config_dict is not None:
             super().__init__(**__config_dict)
         else:
