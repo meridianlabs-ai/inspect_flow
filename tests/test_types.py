@@ -4,6 +4,7 @@ from inspect_flow._types.flow_types import (
     FlowConfig,
     Matrix,
     MatrixDict,
+    ModelConfig,
     SolverConfig,
     TaskConfig,
 )
@@ -29,6 +30,29 @@ def errors() -> None:
     _config = FlowConfig({"matrix": [TaskConfig()]})  # pyright: ignore[reportArgumentType]
     _config = FlowConfig(matrix=[Matrix(tasks=[]), TaskConfig()])  # pyright: ignore[reportArgumentType]
     _config = FlowConfig(bad=None)  # pyright: ignore[reportCallIssue]
+
+
+def test_contructors():
+    task_name = "one_module/one_task"
+    model_name = "module/model"
+
+    config = TaskConfig(task_name)
+    assert config.name == task_name
+    config = TaskConfig({"name": task_name, "models": [model_name]})
+    assert config.name == task_name
+    assert config.models
+    assert config.models[0].name == model_name
+    config = TaskConfig(name=task_name, models=[model_name])
+    assert config.name == task_name
+    assert config.models
+    assert config.models[0].name == model_name
+
+    config = ModelConfig(model_name)
+    assert config.name == model_name
+    config = ModelConfig({"name": model_name})
+    assert config.name == model_name
+    config = ModelConfig(name=model_name)
+    assert config.name == model_name
 
 
 def test_task_from_string():

@@ -334,6 +334,51 @@ class ModelConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
+    @overload
+    def __init__(
+        self,
+        __config_dict: TaskConfigDict,
+        /,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        __name: str,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[TaskConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict_or_name: TaskConfigDict | str | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict_or_name is not None:
+            if isinstance(__config_dict_or_name, str):
+                super().__init__(name=__config_dict_or_name, **kwargs)
+            else:
+                super().__init__(**__config_dict_or_name)
+        else:
+            super().__init__(**kwargs)
+
 
 class SolverConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
@@ -511,6 +556,51 @@ class TaskConfig(BaseModel, extra="forbid"):
             )
 
         return self
+
+    @overload
+    def __init__(
+        self,
+        __config_dict: TaskConfigDict,
+        /,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        __name: str,
+        /,
+    ) -> None: ...
+
+    if sys.version_info >= (3, 11):
+
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Unpack[TaskConfigDict],
+        ) -> None: ...
+    else:
+        # python 3.10 TypedDict is less flexible about accepting dict literals
+        @overload
+        def __init__(
+            self,
+            /,
+            **kwargs: Any,
+        ) -> None: ...
+
+    def __init__(
+        self,
+        __config_dict_or_name: TaskConfigDict | str | None = None,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        if __config_dict_or_name is not None:
+            if isinstance(__config_dict_or_name, str):
+                super().__init__(name=__config_dict_or_name, **kwargs)
+            else:
+                super().__init__(**__config_dict_or_name)
+        else:
+            super().__init__(**kwargs)
 
 
 class Matrix(BaseModel, extra="forbid"):
