@@ -5,7 +5,6 @@ FlowConfig(
         "log_dir": "model_and_task",
         "eval_set_options": {"limit": 1},
         "dependencies": [
-            "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         "matrix": [
