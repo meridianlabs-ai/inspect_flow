@@ -1,6 +1,5 @@
 import ast
 import builtins
-import runpy
 from functools import lru_cache
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
