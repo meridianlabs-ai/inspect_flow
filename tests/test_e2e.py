@@ -2,8 +2,8 @@ from pathlib import Path
 
 from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
-
 from inspect_flow._types.flow_types import FlowConfig
+
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 
