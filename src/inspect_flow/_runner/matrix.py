@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from itertools import product
 from typing import TypeAlias
 
+from attr import has
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
@@ -76,61 +78,66 @@ class MatrixImpl:
         )
         solvers = self._solvers or create_solvers(ensure_list(config.solvers))
 
-        task_func = get_task_creator(config)
+        task_funcs = get_task_creators(config)
 
         tasks = []
-        for model in ensure_non_empty_list(models):
-            for args in ensure_non_empty_list(args_list):
-                for model_roles in ensure_non_empty_list(model_role_list):
-                    for solver in ensure_non_empty_list(solvers):
-                        if model:
-                            # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-                            init_active_model(model, GenerateConfig())
-                        task = task_func(**(args or {}))
+        matrix = product(
+            ensure_non_empty_list(models),
+            ensure_non_empty_list(args_list),
+            ensure_non_empty_list(model_role_list),
+            ensure_non_empty_list(solvers),
+            task_funcs,
+        )
 
-                        if config.sample_id is not None:
-                            task.dataset = slice_dataset(
-                                task.dataset,
-                                limit=None,
-                                sample_id=config.sample_id,
-                            )
+        for model, args, model_roles, solver, task_func in matrix:
+            if model:
+                # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+                init_active_model(model, GenerateConfig())
+            task = task_func(**(args or {}))
 
-                        epochs = config.epochs
-                        if isinstance(epochs, EpochsConfig):
-                            epochs = Epochs(
-                                epochs=epochs.epochs,
-                                reducer=epochs.reducer,
-                            )
+            if config.sample_id is not None:
+                task.dataset = slice_dataset(
+                    task.dataset,
+                    limit=None,
+                    sample_id=config.sample_id,
+                )
 
-                        def ng(arg):
-                            """Pass NOT_GIVEN for args that are None"""
-                            return arg if arg is not None else NOT_GIVEN
+            epochs = config.epochs
+            if isinstance(epochs, EpochsConfig):
+                epochs = Epochs(
+                    epochs=epochs.epochs,
+                    reducer=epochs.reducer,
+                )
 
-                        task_with(
-                            task,
-                            # dataset= Not Supported
-                            # setup= Not Supported
-                            solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
-                            # cleanup= Not Supported
-                            # scorer= Not Supported
-                            # metrics= Not Supported
-                            model=ng(model),
-                            config=ng(config.config),
-                            model_roles=ng(model_roles),
-                            sandbox=ng(config.sandbox),
-                            approval=ng(config.approval),  # type: ignore TODO:ransom
-                            epochs=ng(epochs),
-                            fail_on_error=ng(config.fail_on_error),
-                            continue_on_fail=ng(config.continue_on_fail),
-                            message_limit=ng(config.message_limit),
-                            token_limit=ng(config.token_limit),
-                            time_limit=ng(config.time_limit),
-                            working_limit=ng(config.working_limit),
-                            name=ng(config.name),
-                            version=ng(config.version),
-                            metadata=ng(config.metadata),
-                        )
-                        tasks.append(task)
+            def ng(arg):
+                """Pass NOT_GIVEN for args that are None"""
+                return arg if arg is not None else NOT_GIVEN
+
+            task_with(
+                task,
+                # dataset= Not Supported
+                # setup= Not Supported
+                solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+                # cleanup= Not Supported
+                # scorer= Not Supported
+                # metrics= Not Supported
+                model=ng(model),
+                config=ng(config.config),
+                model_roles=ng(model_roles),
+                sandbox=ng(config.sandbox),
+                approval=ng(config.approval),  # type: ignore TODO:ransom
+                epochs=ng(epochs),
+                fail_on_error=ng(config.fail_on_error),
+                continue_on_fail=ng(config.continue_on_fail),
+                message_limit=ng(config.message_limit),
+                token_limit=ng(config.token_limit),
+                time_limit=ng(config.time_limit),
+                working_limit=ng(config.working_limit),
+                name=ng(config.name),
+                version=ng(config.version),
+                metadata=ng(config.metadata),
+            )
+            tasks.append(task)
         return tasks
 
 
@@ -218,16 +225,23 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
     return roles_list
 
 
-def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
+def get_task_creators(config: TaskConfig) -> list[Callable[..., Task]]:
     if config.file:
         file_attr = config.file_attr or config.name
-        if not file_attr:
-            raise ValueError(
-                f"file_attr or name not specified for task with file {config.file} "
-            )
         file = find_file(config.file)
         module = get_module_from_file(file)
-        task_func = getattr(module, file_attr)
+        if file_attr:
+            task_funcs = [getattr(module, file_attr)]
+        else:
+            # load all task decorated functions and ensure only one exists
+            task_funcs = [
+                getattr(module, attr)
+                for attr in dir(module)
+                if hasattr(getattr(module, attr), "__registry_info__")
+                and getattr(module, attr).__registry_info__.type == "task"
+            ]
+            if not task_funcs:
+                raise ValueError("No task functions found in file {file}")
     else:
         registry_name = config.registry_name or config.name
         if not registry_name:
@@ -238,4 +252,6 @@ def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
         def task_func(**kwargs):
             return registry_create(type="task", name=registry_name, **kwargs)
 
-    return task_func
+        task_funcs = [task_func]
+
+    return task_funcs
