@@ -95,3 +95,30 @@ jobs:
         run: |
           uv pip install --system dist/*.whl
           python -c "import inspect_flow; print('Package imported successfully')"
+
+  check-type-gen:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install dependencies with uv
+        run: uv sync --dev
+      - name: Generate types
+        run: python src/inspect_flow/_types/type_gen.py
+      - name: Ensure schema and types changes are checked in
+        run: |
+          if [[ $(git status --porcelain) != "" ]]
+          then
+            echo "Generated types are out of date. Please run python src/inspect_flow/_types/type_gen.py and check in the changes."
+            git status
+            git diff
+            exit 1
+          fi
