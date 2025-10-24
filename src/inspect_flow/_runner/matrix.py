@@ -2,7 +2,6 @@ from collections.abc import Callable
 from itertools import product
 from typing import TypeAlias
 
-from attr import has
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
