@@ -9,7 +9,7 @@ FlowConfig(
                 "tasks": [
                     {"name": "noop", "file": "local_eval/src/local_eval/noop.py"}
                 ],
-                "models": ["openai/gpt-4o-mini"],
+                "models": ["mockllm/mock-llm"],
             },
         ],
     }
