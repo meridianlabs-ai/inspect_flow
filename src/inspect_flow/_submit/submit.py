@@ -5,9 +5,10 @@ from pathlib import Path
 
 from inspect_flow._submit.venv import create_venv
 from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._util.path_util import set_path_env_vars
 
 
-def submit(config: FlowConfig):
+def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
 
@@ -15,6 +16,7 @@ def submit(config: FlowConfig):
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
+        set_path_env_vars(env, config_file_path)
 
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         subprocess.run(
