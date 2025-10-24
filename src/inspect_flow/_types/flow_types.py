@@ -912,11 +912,6 @@ class FlowConfig(BaseModel, extra="forbid"):
         description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set).",
     )
 
-    python_version: str | None = Field(
-        default=None,
-        description="Python version to use for the flow execution environment (e.g. '3.11'). If not specified, the current python version is used.",
-    )
-
     eval_set_options: EvalSetOptions | None = Field(
         default=None, description="Arguments for calls to eval_set."
     )
