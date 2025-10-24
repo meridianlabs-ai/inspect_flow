@@ -297,6 +297,7 @@ class MatrixDict(TypedDict):
 
 class FlowConfigDict(TypedDict):
     log_dir: NotRequired[str]
+    python_version: NotRequired[Optional[str]]
     eval_set_options: NotRequired[
         Optional[Union["EvalSetOptions", "EvalSetOptionsDict"]]
     ]
@@ -906,6 +907,11 @@ class FlowConfig(BaseModel, extra="forbid"):
     log_dir: str = Field(
         default="logs/flow",
         description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set).",
+    )
+
+    python_version: str | None = Field(
+        default=None,
+        description="Python version to use in the flow virtual environment (e.g. '3.11)",
     )
 
     eval_set_options: EvalSetOptions | None = Field(
