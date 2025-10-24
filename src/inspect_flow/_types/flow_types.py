@@ -621,15 +621,11 @@ class TaskConfig(BaseModel, extra="forbid"):
                 raise ValueError(
                     "registry_name cannot be specified when file is specified"
                 )
-            if self.file_attr is None and self.name is None:
-                raise ValueError(
-                    "Either file_attr or name must be specified when file is specified"
-                )
         elif self.file_attr is not None:
             raise ValueError("file_attr cannot be specified when file is not specified")
         elif self.registry_name is None and self.name is None:
             raise ValueError(
-                "Either registry_name or name must be specified when file is not specified"
+                "TaskConfig must have at least one of registry_name, name, or file specified"
             )
 
         return self
