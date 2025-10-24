@@ -10,4 +10,4 @@ def submit_command(
     config_file: str,
 ) -> None:
     config = load_config(config_file)
-    submit(config)
+    submit(config, config_file)

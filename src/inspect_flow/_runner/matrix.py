@@ -25,6 +25,7 @@ from inspect_flow._util.list_util import (
     ensure_non_empty_list,
 )
 from inspect_flow._util.module_util import get_module_from_file
+from inspect_flow._util.path_util import find_file
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
@@ -224,7 +225,8 @@ def get_task_creator(config: TaskConfig) -> Callable[..., Task]:
             raise ValueError(
                 f"file_attr or name not specified for task with file {config.file} "
             )
-        module = get_module_from_file(config.file)
+        file = find_file(config.file)
+        module = get_module_from_file(file)
         task_func = getattr(module, file_attr)
     else:
         registry_name = config.registry_name or config.name
