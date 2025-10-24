@@ -18,9 +18,10 @@ def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
         env = create_venv(config, temp_dir)
         set_path_env_vars(env, config_file_path)
 
+        python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         subprocess.run(
-            ["uv", "run", str(run_path)],
+            [str(python_path), str(run_path)],
             cwd=temp_dir,
             check=True,
             env=env,
