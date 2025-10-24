@@ -112,7 +112,7 @@ jobs:
       - name: Install dependencies with uv
         run: uv sync --dev
       - name: Generate types
-        run: python src/inspect_flow/_types/type_gen.py
+        run: uv run python src/inspect_flow/_types/type_gen.py
       - name: Ensure schema and types changes are checked in
         run: |
           if [[ $(git status --porcelain) != "" ]]
