@@ -199,11 +199,11 @@ def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
     env = os.environ.copy()
     env.pop("VIRTUAL_ENV", None)
 
+    command = ["uv", "venv"]
+    if config.python_version:
+        command.extend(["--python", config.python_version])
     subprocess.run(
-        [
-            "uv",
-            "venv",
-        ],
+        command,
         cwd=temp_dir,
         check=True,
         env=env,

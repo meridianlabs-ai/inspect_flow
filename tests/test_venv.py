@@ -1,3 +1,4 @@
+from platform import python_version
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -80,4 +81,24 @@ def test_model_dependency() -> None:
                 "google-genai",
                 "groq",
                 "openai",
+            ]
+
+
+def test_python_version() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            create_venv(
+                config=FlowConfig(
+                    python_version="3.11", matrix=[{"tasks": ["task_name"]}]
+                ),
+                temp_dir=temp_dir,
+            )
+
+            assert mock_run.call_count == 2
+            args = mock_run.mock_calls[0].args[0]
+            assert args == [
+                "uv",
+                "venv",
+                "--python",
+                "3.11",
             ]
