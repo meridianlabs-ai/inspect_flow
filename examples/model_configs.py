@@ -5,6 +5,7 @@ FlowConfig(
         "log_dir": "logs/model_configs",
         "eval_set_options": {"limit": 1},
         "dependencies": [
+            "-e /Users/ransomrichardson/git/inspect_ai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         "matrix": [
