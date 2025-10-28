@@ -37,6 +37,7 @@ dev = [
     "pyright",
     "types-pyyaml>=6.0.12.20250915",
     "datamodel-code-generator",
+    "pre-commit",
 ]
 
 
