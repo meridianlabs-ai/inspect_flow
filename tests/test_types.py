@@ -162,23 +162,23 @@ def test_solver_from_string():
 
 
 def test_single_items():
-    flow_config({"dependencies": "single_dependency", "matrix": []})
+    flow_config({"dependencies": "single_dependency", "matrix": [{"tasks": []}]})
     flow_config({"matrix": {"tasks": []}})
 
-    flow_matrix({"args": {}, "tasks": {}})
-    flow_matrix({"tasks": {}})
-    flow_matrix({"models": "model_name", "tasks": {}})
-    flow_matrix({"models": {"name": "model_name"}, "tasks": {}})
-    flow_matrix({"model_roles": {}, "tasks": {}})
-    flow_matrix({"solvers": "solver_name", "tasks": {}})
-    flow_matrix({"solvers": {"name": "solver_name"}, "tasks": {}})
+    flow_matrix({"args": {}, "tasks": {"name": "task_name"}})
+    flow_matrix({"tasks": {"name": "task_name"}})
+    flow_matrix({"models": "model_name", "tasks": {"name": "task_name"}})
+    flow_matrix({"models": {"name": "model_name"}, "tasks": {"name": "task_name"}})
+    flow_matrix({"model_roles": {}, "tasks": {"name": "task_name"}})
+    flow_matrix({"solvers": "solver_name", "tasks": {"name": "task_name"}})
+    flow_matrix({"solvers": {"name": "solver_name"}, "tasks": {"name": "task_name"}})
 
-    flow_task({"args": {}})
-    flow_task({"model_roles": {}})
-    flow_task({"models": "model_name"})
-    flow_task({"models": {"name": "model_name"}})
-    flow_task({"solvers": "solver_name"})
-    flow_task({"solvers": {"name": "solver_name"}})
+    flow_task({"name": "task_name", "args": {}})
+    flow_task({"name": "task_name", "model_roles": {}})
+    flow_task({"name": "task_name", "models": "model_name"})
+    flow_task({"name": "task_name", "models": {"name": "model_name"}})
+    flow_task({"name": "task_name", "solvers": "solver_name"})
+    flow_task({"name": "task_name", "solvers": {"name": "solver_name"}})
 
     flow_agent({"name": "agent_name", "args": {}})
 
