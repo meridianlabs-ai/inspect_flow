@@ -125,6 +125,7 @@ class ApprovalPolicyConfigDict(TypedDict):
 class GenerateConfigDict(TypedDict):
     max_retries: NotRequired[Optional[int]]
     timeout: NotRequired[Optional[int]]
+    attempt_timeout: NotRequired[Optional[int]]
     max_connections: NotRequired[Optional[int]]
     system_message: NotRequired[Optional[str]]
     max_tokens: NotRequired[Optional[int]]
