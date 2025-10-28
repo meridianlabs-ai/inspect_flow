@@ -1,24 +1,3 @@
-# FlowConfig types
-#
-# To support arbitrary mixing of python types like TaskConfig and TypedDicts,
-# we specify the pydantic types and codegen the TypedDicts from them.
-# The TypedDicts and pydantic types reference each other.
-#
-# To get this to work correctly with pyright resolving forward type references,
-# we need to include both in the same file.
-# So the auto-generated TypedDicts are included at the start of this file.
-#
-# Ideally we would add a baseclass which provides the __init__ overloads and implementation.
-# I was unable to get that to work, as pydantic does its own overrides of __init__ which interfered
-# with inheriting from a baseclass. It may be worth revisiting that in the future.
-#
-# For now, __init__ overloads are only provided for the matrix classes.
-# If desired we could add for additional classes.
-#
-# We explicitly chose not to provide __init__ overloads that take strings (as the name parameter).
-# That resulted in less helpful type checking error messages.
-#
-
 from typing import (
     Any,
     Literal,
