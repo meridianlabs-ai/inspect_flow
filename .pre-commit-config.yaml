@@ -32,3 +32,11 @@ repos:
       - id: typos
         files: docs|.md
         exclude: .yml
+  - repo: local
+    hooks:
+      - id: type-gen
+        name: Generate type definitions
+        entry: uv run python src/inspect_flow/_types/type_gen.py
+        language: system
+        pass_filenames: false
+        always_run: true
