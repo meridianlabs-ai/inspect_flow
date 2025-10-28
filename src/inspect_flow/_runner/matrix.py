@@ -12,14 +12,14 @@ from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.flow_types import (
-    AgentConfig,
     CreateArgs,
-    EpochsConfig,
-    Matrix,
-    ModelConfig,
+    FlowAgent,
+    FlowEpochs,
+    FlowMatrix,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
     ModelRolesConfig,
-    SolverConfig,
-    TaskConfig,
 )
 from inspect_flow._util.list_util import (
     ensure_list,
@@ -35,14 +35,14 @@ matrix_fields = ["args", "models", "model_roles", "solvers"]
 
 
 class MatrixImpl:
-    matrix: Matrix
+    matrix: FlowMatrix
 
     _models: list[Model] | None = None
     _args: list[CreateArgs] | None = None
     _model_roles: list[ModelRoles] | None = None
     _solvers: list[SingleSolver] | None = None
 
-    def __init__(self, matrix: Matrix):
+    def __init__(self, matrix: FlowMatrix):
         self.matrix = matrix
         self.validate_config()
         self.create_matrix()
@@ -69,7 +69,7 @@ class MatrixImpl:
             for task in self.create_single_config_tasks(config)
         ]
 
-    def create_single_config_tasks(self, config: TaskConfig) -> list[Task]:
+    def create_single_config_tasks(self, config: FlowTask) -> list[Task]:
         models = self._models or create_models(ensure_list(config.models))
         args_list = self._args or config.args
         model_role_list = self._model_roles or create_model_roles(
@@ -102,7 +102,7 @@ class MatrixImpl:
                 )
 
             epochs = config.epochs
-            if isinstance(epochs, EpochsConfig):
+            if isinstance(epochs, FlowEpochs):
                 epochs = Epochs(
                     epochs=epochs.epochs,
                     reducer=epochs.reducer,
@@ -141,7 +141,7 @@ class MatrixImpl:
 
 
 def create_model(
-    model_config: ModelConfig, generate_config: GenerateConfig | None
+    model_config: FlowModel, generate_config: GenerateConfig | None
 ) -> Model:
     return get_model(
         model=model_config.name,
@@ -155,7 +155,7 @@ def create_model(
     )
 
 
-def create_single_config_models(model_config: ModelConfig) -> list[Model]:
+def create_single_config_models(model_config: FlowModel) -> list[Model]:
     generate_config_list = ensure_non_empty_list(model_config.config)
     return [
         create_model(model_config, generate_config)
@@ -163,7 +163,7 @@ def create_single_config_models(model_config: ModelConfig) -> list[Model]:
     ]
 
 
-def create_models(config: list[ModelConfig]) -> list[Model]:
+def create_models(config: list[FlowModel]) -> list[Model]:
     return [
         model
         for model_config in config
@@ -172,15 +172,15 @@ def create_models(config: list[ModelConfig]) -> list[Model]:
 
 
 def create_single_config_solvers(
-    config: SolverConfig | list[SolverConfig] | AgentConfig,
+    config: FlowSolver | list[FlowSolver] | FlowAgent,
 ) -> list[SingleSolver]:
-    if isinstance(config, SolverConfig):
+    if isinstance(config, FlowSolver):
         args_list = ensure_non_empty_list(config.args)
         return [
             registry_create(type="solver", name=config.name, **(args or {}))
             for args in args_list
         ]
-    if isinstance(config, AgentConfig):
+    if isinstance(config, FlowAgent):
         args_list = ensure_non_empty_list(config.args)
         return [
             registry_create(type="agent", name=config.name, **(args or {}))
@@ -195,7 +195,7 @@ def create_single_config_solvers(
 
 
 def create_solvers(
-    config: list[SolverConfig | list[SolverConfig] | AgentConfig],
+    config: list[FlowSolver | list[FlowSolver] | FlowAgent],
 ) -> list[SingleSolver]:
     return [
         solver
@@ -210,7 +210,7 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
         roles = {}
         for role, model_config in roles_config.items():
             model = model_config
-            if isinstance(model, ModelConfig):
+            if isinstance(model, FlowModel):
                 if model.config and len(model.config) > 1:
                     raise ValueError(
                         "at most one config may be specified for models in model_roles"
@@ -224,7 +224,7 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
     return roles_list
 
 
-def get_task_creators(config: TaskConfig) -> list[Callable[..., Task]]:
+def get_task_creators(config: FlowTask) -> list[Callable[..., Task]]:
     if config.file:
         file_attr = config.file_attr or config.name
         file = find_file(config.file)

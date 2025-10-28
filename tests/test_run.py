@@ -6,12 +6,12 @@ from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import (
-    AgentConfig,
+    FlowAgent,
     FlowConfig,
-    Matrix,
-    ModelConfig,
-    SolverConfig,
-    TaskConfig,
+    FlowMatrix,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
 )
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
@@ -28,10 +28,10 @@ def test_task_with_get_model() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_get_model",
                                 file=str(task_file),
                             )
@@ -56,12 +56,12 @@ def test_task_with_two_models() -> None:
     config = FlowConfig(
         log_dir=log_dir,
         matrix=[
-            Matrix(
+            FlowMatrix(
                 models=[
-                    ModelConfig(name="mockllm/mock-llm1"),
-                    ModelConfig(name="mockllm/mock-llm2"),
+                    FlowModel(name="mockllm/mock-llm1"),
+                    FlowModel(name="mockllm/mock-llm2"),
                 ],
-                tasks=[TaskConfig(name="noop", file=str(task_file))],
+                tasks=[FlowTask(name="noop", file=str(task_file))],
             ),
         ],
     )
@@ -77,14 +77,14 @@ def test_model_generate_config() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
+                    FlowMatrix(
                         models=[
-                            ModelConfig(
+                            FlowModel(
                                 name="mockllm/mock-llm",
                                 config=[GenerateConfig(system_message=system_message)],
                             ),
                         ],
-                        tasks=[TaskConfig(name="noop", file=str(task_file))],
+                        tasks=[FlowTask(name="noop", file=str(task_file))],
                     ),
                 ],
             )
@@ -106,8 +106,8 @@ def test_default_model_config() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        tasks=[TaskConfig(name="noop", file=str(task_file))],
+                    FlowMatrix(
+                        tasks=[FlowTask(name="noop", file=str(task_file))],
                     ),
                 ],
             )
@@ -127,12 +127,12 @@ def test_task_model() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
+                    FlowMatrix(
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
-                                models=[ModelConfig(name="mockllm/mock-llm")],
+                                models=[FlowModel(name="mockllm/mock-llm")],
                             )
                         ],
                     ),
@@ -158,13 +158,13 @@ def test_multiple_model_error() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
-                                models=[ModelConfig(name="mockllm/mock-llm2")],
+                                models=[FlowModel(name="mockllm/mock-llm2")],
                             )
                         ],
                     ),
@@ -179,12 +179,10 @@ def test_matrix_args() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
+                    FlowMatrix(
                         args=[{"subset": "original"}, {"subset": "contrast"}],
-                        models=[ModelConfig(name="mockllm/mock-llm")],
-                        tasks=[
-                            TaskConfig(name="task_with_params", file=str(task_file))
-                        ],
+                        models=[FlowModel(name="mockllm/mock-llm")],
+                        tasks=[FlowTask(name="task_with_params", file=str(task_file))],
                     ),
                 ],
             )
@@ -204,10 +202,10 @@ def test_task_args() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_params",
                                 file=str(task_file),
                                 args=[{"subset": "original"}, {"subset": "contrast"}],
@@ -234,15 +232,15 @@ def test_multiple_args_error() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
+                    FlowMatrix(
                         args=[{"subset": "original"}, {"subset": "contrast"}],
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
                             ),
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_params",
                                 file=str(task_file),
                                 args=[{"subset": "original"}, {"subset": "contrast"}],
@@ -260,19 +258,19 @@ def test_two_matrix() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
                             )
                         ],
                     ),
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop2",
                                 file=str(task_file),
                             )
@@ -299,7 +297,7 @@ def test_matrix_model_roles() -> None:
         }
         model_roles2 = {
             "mark": "mockllm/mock-mark2",
-            "conartist": ModelConfig(
+            "conartist": FlowModel(
                 name="mockllm/mock-conartist2",
                 config=[GenerateConfig(system_message=system_message)],
             ),
@@ -308,11 +306,11 @@ def test_matrix_model_roles() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         model_roles=[model_roles1, model_roles2],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_model_roles",
                                 file=str(task_file),
                             )
@@ -345,7 +343,7 @@ def test_task_model_roles() -> None:
         }
         model_roles2 = {
             "mark": "mockllm/mock-mark2",
-            "conartist": ModelConfig(
+            "conartist": FlowModel(
                 name="mockllm/mock-conartist2",
                 config=[GenerateConfig(system_message=system_message)],
             ),
@@ -354,10 +352,10 @@ def test_task_model_roles() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_model_roles",
                                 file=str(task_file),
                                 model_roles=[model_roles1, model_roles2],
@@ -393,7 +391,7 @@ def test_multiple_model_roles_error() -> None:
         }
         model_roles2 = {
             "mark": "mockllm/mock-mark2",
-            "conartist": ModelConfig(
+            "conartist": FlowModel(
                 name="mockllm/mock-conartist2",
                 config=[GenerateConfig(system_message=system_message)],
             ),
@@ -402,11 +400,11 @@ def test_multiple_model_roles_error() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
+                    FlowMatrix(
                         model_roles=[model_roles1, model_roles2],
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_model_roles",
                                 file=str(task_file),
                                 model_roles=[model_roles1, model_roles2],
@@ -424,10 +422,10 @@ def test_matrix_solvers() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         solvers=[
-                            SolverConfig(
+                            FlowSolver(
                                 name="inspect_ai/system_message",
                                 args=[
                                     {"template": "test system message"},
@@ -435,16 +433,16 @@ def test_matrix_solvers() -> None:
                                 ],
                             ),
                             [
-                                SolverConfig(
+                                FlowSolver(
                                     name="inspect_ai/system_message",
                                     args=[{"template": "test system message"}],
                                 ),
-                                SolverConfig(name="inspect_ai/generate"),
+                                FlowSolver(name="inspect_ai/generate"),
                             ],
-                            AgentConfig(name="inspect_ai/react"),
+                            FlowAgent(name="inspect_ai/react"),
                         ],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
                             )
@@ -469,10 +467,10 @@ def test_multiple_solver_args_error() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         solvers=[
-                            SolverConfig(
+                            FlowSolver(
                                 name="inspect_ai/system_message",
                                 args=[
                                     {"template": "test system message"},
@@ -480,19 +478,19 @@ def test_multiple_solver_args_error() -> None:
                                 ],
                             ),
                             [
-                                SolverConfig(
+                                FlowSolver(
                                     name="inspect_ai/system_message",
                                     args=[
                                         {"template": "test system message"},
                                         {"template": "another test system message"},
                                     ],
                                 ),
-                                SolverConfig(name="inspect_ai/generate"),
+                                FlowSolver(name="inspect_ai/generate"),
                             ],
-                            AgentConfig(name="inspect_ai/react"),
+                            FlowAgent(name="inspect_ai/react"),
                         ],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
                             )
@@ -509,14 +507,14 @@ def test_task_solvers() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="noop",
                                 file=str(task_file),
                                 solvers=[
-                                    SolverConfig(
+                                    FlowSolver(
                                         name="inspect_ai/system_message",
                                         args=[
                                             {"template": "test system message"},
@@ -524,13 +522,13 @@ def test_task_solvers() -> None:
                                         ],
                                     ),
                                     [
-                                        SolverConfig(
+                                        FlowSolver(
                                             name="inspect_ai/system_message",
                                             args=[{"template": "test system message"}],
                                         ),
-                                        SolverConfig(name="inspect_ai/generate"),
+                                        FlowSolver(name="inspect_ai/generate"),
                                     ],
-                                    AgentConfig(name="inspect_ai/react"),
+                                    FlowAgent(name="inspect_ai/react"),
                                 ],
                             )
                         ],
@@ -554,14 +552,14 @@ def test_multiple_solvers_error() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        models=[ModelConfig(name="mockllm/mock-llm")],
-                        solvers=[SolverConfig(name="inspect_ai/generate")],
+                    FlowMatrix(
+                        models=[FlowModel(name="mockllm/mock-llm")],
+                        solvers=[FlowSolver(name="inspect_ai/generate")],
                         tasks=[
-                            TaskConfig(
+                            FlowTask(
                                 name="task_with_model_roles",
                                 file=str(task_file),
-                                solvers=[SolverConfig(name="inspect_ai/generate")],
+                                solvers=[FlowSolver(name="inspect_ai/generate")],
                             )
                         ],
                     ),
@@ -576,10 +574,8 @@ def test_sample_id() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        tasks=[
-                            TaskConfig(name="noop", file=str(task_file), sample_id=1)
-                        ],
+                    FlowMatrix(
+                        tasks=[FlowTask(name="noop", file=str(task_file), sample_id=1)],
                     ),
                 ],
             )
@@ -600,8 +596,8 @@ def test_all_tasks_in_file() -> None:
             config=FlowConfig(
                 log_dir="test_log_dir",
                 matrix=[
-                    Matrix(
-                        tasks=[TaskConfig(file=str((task_dir / "three_tasks.py")))],
+                    FlowMatrix(
+                        tasks=[FlowTask(file=str((task_dir / "three_tasks.py")))],
                     ),
                 ],
             )

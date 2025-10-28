@@ -1,5 +1,5 @@
 log_dir: ./logs/local_logs
-eval_set_options:
+options:
   limit: 1
 dependencies:
   - "./examples/local_eval"

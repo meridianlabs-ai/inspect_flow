@@ -35,7 +35,7 @@ def test_cwd_relative_py_file() -> None:
     config = flow_config(
         {
             "log_dir": "logs/local_logs",
-            "eval_set_options": {"limit": 1},
+            "options": {"limit": 1},
             "matrix": [
                 {
                     "tasks": [
