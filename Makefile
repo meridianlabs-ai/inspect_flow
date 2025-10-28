@@ -8,3 +8,7 @@ check:
 .PHONY: test
 test:
 	uv tool run pytest
+
+.PHONY: hooks
+hooks:
+	pre-commit install
