@@ -12,7 +12,7 @@ def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
 
-    config.log_dir = str(Path(config.log_dir).resolve())
+    config.flow_dir = str(Path(config.flow_dir).resolve())
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
