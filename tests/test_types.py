@@ -159,3 +159,29 @@ def test_solver_from_string():
     assert isinstance(config.matrix[0].tasks[0].solvers[1], list)
     assert config.matrix[0].tasks[0].solvers[1][0].name == solver_name2
     assert config.matrix[0].tasks[0].solvers[1][1].name == solver_name3
+
+
+def test_single_items():
+    flow_config({"dependencies": "single_dependency", "matrix": [{"tasks": []}]})
+    flow_config({"matrix": {"tasks": []}})
+
+    flow_matrix({"args": {}, "tasks": {"name": "task_name"}})
+    flow_matrix({"tasks": {"name": "task_name"}})
+    flow_matrix({"models": "model_name", "tasks": {"name": "task_name"}})
+    flow_matrix({"models": {"name": "model_name"}, "tasks": {"name": "task_name"}})
+    flow_matrix({"model_roles": {}, "tasks": {"name": "task_name"}})
+    flow_matrix({"solvers": "solver_name", "tasks": {"name": "task_name"}})
+    flow_matrix({"solvers": {"name": "solver_name"}, "tasks": {"name": "task_name"}})
+
+    flow_task({"name": "task_name", "args": {}})
+    flow_task({"name": "task_name", "model_roles": {}})
+    flow_task({"name": "task_name", "models": "model_name"})
+    flow_task({"name": "task_name", "models": {"name": "model_name"}})
+    flow_task({"name": "task_name", "solvers": "solver_name"})
+    flow_task({"name": "task_name", "solvers": {"name": "solver_name"}})
+
+    flow_agent({"name": "agent_name", "args": {}})
+
+    flow_solver({"name": "solver_name", "args": {}})
+
+    flow_model({"name": "model_name", "config": {}})
