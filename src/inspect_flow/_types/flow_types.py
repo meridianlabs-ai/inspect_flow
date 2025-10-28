@@ -19,7 +19,6 @@
 # That resulted in less helpful type checking error messages.
 #
 
-import sys
 from typing import (
     Any,
     Literal,
@@ -45,7 +44,7 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing_extensions import NotRequired, Unpack
+from typing_extensions import NotRequired
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -353,41 +352,6 @@ class ModelConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
-    @overload
-    def __init__(
-        self,
-        __config_dict: ModelConfigDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[ModelConfigDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: ModelConfigDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
-
 
 class SolverConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
@@ -403,41 +367,6 @@ class SolverConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
-    @overload
-    def __init__(
-        self,
-        __config_dict: SolverConfigDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[SolverConfigDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: SolverConfigDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
-
 
 class AgentConfig(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
@@ -452,41 +381,6 @@ class AgentConfig(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
-
-    @overload
-    def __init__(
-        self,
-        __config_dict: AgentConfigDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[AgentConfigDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: AgentConfigDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
 
 
 class EpochsConfig(BaseModel):
@@ -632,41 +526,6 @@ class TaskConfig(BaseModel, extra="forbid"):
 
         return self
 
-    @overload
-    def __init__(
-        self,
-        __config_dict: TaskConfigDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[TaskConfigDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: TaskConfigDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
-
 
 class Matrix(BaseModel, extra="forbid"):
     tasks: list[TaskConfig] = Field(
@@ -713,41 +572,6 @@ class Matrix(BaseModel, extra="forbid"):
     @classmethod
     def convert_string_solvers(cls, v):
         return convert_to_solver_config_list(v)
-
-    @overload
-    def __init__(
-        self,
-        __config_dict: MatrixDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[MatrixDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: MatrixDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
 
 
 class EvalSetOptions(BaseModel, extra="forbid"):
@@ -933,41 +757,6 @@ class FlowConfig(BaseModel, extra="forbid"):
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
-    @overload
-    def __init__(
-        self,
-        __config_dict: FlowConfigDict,
-        /,
-    ) -> None: ...
-
-    if sys.version_info >= (3, 11):
-
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Unpack[FlowConfigDict],
-        ) -> None: ...
-    else:
-        # python 3.10 TypedDict is less flexible about accepting dict literals
-        @overload
-        def __init__(
-            self,
-            /,
-            **kwargs: Any,
-        ) -> None: ...
-
-    def __init__(
-        self,
-        __config_dict: FlowConfigDict | None = None,
-        /,
-        **kwargs: Any,
-    ) -> None:
-        if __config_dict is not None:
-            super().__init__(**__config_dict)
-        else:
-            super().__init__(**kwargs)
-
 
 T = TypeVar("T", TaskConfig, ModelConfig, SolverConfig, AgentConfig)
 
@@ -1009,3 +798,27 @@ def convert_to_solver_config_list(
     if not isinstance(v, list):
         v = [v]
     return [convert_to_solver_config(task) for task in v]
+
+
+def flow_config(config: FlowConfigDict) -> FlowConfig:
+    return FlowConfig.model_validate(config)
+
+
+def matrix(config: MatrixDict) -> Matrix:
+    return Matrix.model_validate(config)
+
+
+def task_config(config: TaskConfigDict) -> TaskConfig:
+    return TaskConfig.model_validate(config)
+
+
+def model_config(config: ModelConfigDict) -> ModelConfig:
+    return ModelConfig.model_validate(config)
+
+
+def solver_config(config: SolverConfigDict) -> SolverConfig:
+    return SolverConfig.model_validate(config)
+
+
+def agent_config(config: AgentConfigDict) -> AgentConfig:
+    return AgentConfig.model_validate(config)
