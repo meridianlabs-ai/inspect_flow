@@ -2,14 +2,14 @@ from pathlib import Path
 
 import yaml
 from inspect_ai.model import GenerateConfig
-from inspect_flow._config.config import load_config
-from inspect_flow._types.flow_types import (
-    EvalSetOptions,
+from inspect_flow import (
     FlowConfig,
-    Matrix,
-    ModelConfig,
-    TaskConfig,
+    FlowMatrix,
+    FlowModel,
+    FlowOptions,
+    FlowTask,
 )
+from inspect_flow._config.config import load_config
 
 update_examples = False
 
@@ -41,12 +41,12 @@ def validate_config(config: FlowConfig, file_name: str) -> None:
 def test_config_one_task() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
-        matrix=[Matrix(tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")])],
+        matrix=[FlowMatrix(tasks=[FlowTask(name="inspect_evals/mmlu_0_shot")])],
     )
     validate_config(config, "one_task_flow.yaml")
 
@@ -54,16 +54,16 @@ def test_config_one_task() -> None:
 def test_config_two_tasks() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                    FlowTask(name="inspect_evals/mmlu_0_shot"),
+                    FlowTask(name="inspect_evals/mmlu_5_shot"),
                 ]
             ),
         ],
@@ -74,17 +74,17 @@ def test_config_two_tasks() -> None:
 def test_config_two_models_one_task() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
-                tasks=[TaskConfig(name="inspect_evals/mmlu_0_shot")],
+            FlowMatrix(
+                tasks=[FlowTask(name="inspect_evals/mmlu_0_shot")],
                 models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(name="openai/gpt-5-nano"),
+                    FlowModel(name="openai/gpt-4o-mini"),
+                    FlowModel(name="openai/gpt-5-nano"),
                 ],
             ),
         ],
@@ -95,17 +95,17 @@ def test_config_two_models_one_task() -> None:
 def test_config_model_and_task() -> None:
     config = FlowConfig(
         log_dir="logs/model_and_task",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
+                    FlowTask(name="inspect_evals/mmlu_0_shot"),
                 ],
                 models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
+                    FlowModel(name="openai/gpt-4o-mini"),
                 ],
             ),
         ],
@@ -130,20 +130,20 @@ def test_py_config_with_assign() -> None:
 def test_config_two_models_two_tasks() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                    FlowTask(name="inspect_evals/mmlu_0_shot"),
+                    FlowTask(name="inspect_evals/mmlu_5_shot"),
                 ],
                 models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(name="openai/gpt-5-nano"),
+                    FlowModel(name="openai/gpt-4o-mini"),
+                    FlowModel(name="openai/gpt-5-nano"),
                 ],
             ),
         ],
@@ -154,20 +154,20 @@ def test_config_two_models_two_tasks() -> None:
 def test_config_model_config() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(name="inspect_evals/mmlu_0_shot"),
-                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                    FlowTask(name="inspect_evals/mmlu_0_shot"),
+                    FlowTask(name="inspect_evals/mmlu_5_shot"),
                 ],
                 models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(
+                    FlowModel(name="openai/gpt-4o-mini"),
+                    FlowModel(
                         name="openai/gpt-5-nano",
                         config=[
                             GenerateConfig(reasoning_effort="minimal"),
@@ -184,22 +184,22 @@ def test_config_model_config() -> None:
 def test_config_matrix_and_task() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(
+                    FlowTask(
                         name="inspect_evals/mmlu_0_shot",
                         models=[
-                            ModelConfig(name="openai/gpt-4o-mini"),
-                            ModelConfig(name="openai/gpt-5-nano"),
+                            FlowModel(name="openai/gpt-4o-mini"),
+                            FlowModel(name="openai/gpt-5-nano"),
                         ],
                     ),
-                    TaskConfig(name="inspect_evals/mmlu_5_shot"),
+                    FlowTask(name="inspect_evals/mmlu_5_shot"),
                 ],
             ),
         ],
@@ -210,19 +210,19 @@ def test_config_matrix_and_task() -> None:
 def test_config_nested_matrix() -> None:
     config = FlowConfig(
         log_dir="example_logs",
-        eval_set_options=EvalSetOptions(limit=1),
+        options=FlowOptions(limit=1),
         dependencies=[
             "openai",
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         matrix=[
-            Matrix(
+            FlowMatrix(
                 tasks=[
-                    TaskConfig(
+                    FlowTask(
                         name="inspect_evals/mmlu_0_shot",
                         args=[{"language": "EN_US"}],
                     ),
-                    TaskConfig(
+                    FlowTask(
                         name="inspect_evals/mmlu_5_shot",
                         args=[
                             {"language": "EN_US"},
@@ -232,8 +232,8 @@ def test_config_nested_matrix() -> None:
                     ),
                 ],
                 models=[
-                    ModelConfig(name="openai/gpt-4o-mini"),
-                    ModelConfig(name="openai/gpt-5-nano"),
+                    FlowModel(name="openai/gpt-4o-mini"),
+                    FlowModel(name="openai/gpt-5-nano"),
                 ],
             ),
         ],

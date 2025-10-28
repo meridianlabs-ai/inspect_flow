@@ -1,9 +1,9 @@
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow import flow_config
 
-FlowConfig(
+flow_config(
     {
         "log_dir": "logs/local_logs",
-        "eval_set_options": {"limit": 1},
+        "options": {"limit": 1},
         "matrix": [
             {
                 "tasks": [

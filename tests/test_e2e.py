@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from inspect_flow import flow_config
 from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
-from inspect_flow._types.flow_types import FlowConfig
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -32,10 +32,10 @@ def test_relative_py_file() -> None:
 def test_cwd_relative_py_file() -> None:
     log_dir = init_test_logs()
 
-    config = FlowConfig(
+    config = flow_config(
         {
             "log_dir": "logs/local_logs",
-            "eval_set_options": {"limit": 1},
+            "options": {"limit": 1},
             "matrix": [
                 {
                     "tasks": [
