@@ -1,13 +1,13 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from inspect_flow import FlowConfig
+from inspect_flow import flow_config
 from inspect_flow._submit.submit import submit
 
 
 def test_submit() -> None:
     with patch("subprocess.run") as mock_run:
-        submit(config=FlowConfig(matrix=[{"tasks": ["task_name"]}]))
+        submit(config=flow_config({"matrix": [{"tasks": ["task_name"]}]}))
 
         assert mock_run.call_count == 3
         args = mock_run.mock_calls[2].args[0]
