@@ -445,9 +445,9 @@ class FlowOptions(BaseModel, extra="forbid"):
 
 
 class FlowConfig(BaseModel, extra="forbid"):
-    log_dir: str = Field(
+    flow_dir: str = Field(
         default="logs/flow",
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned for the set).",
+        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned).",
     )
 
     python_version: str | None = Field(

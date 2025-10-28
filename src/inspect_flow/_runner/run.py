@@ -23,7 +23,7 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
 
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=config.log_dir,
+        log_dir=config.flow_dir,
         retry_attempts=options.retry_attempts,
         retry_wait=options.retry_wait,
         retry_connections=options.retry_connections,

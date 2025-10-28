@@ -246,7 +246,7 @@ class FlowMatrixDict(TypedDict):
 
 
 class FlowConfigDict(TypedDict):
-    log_dir: NotRequired[str]
+    flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
     options: NotRequired[Optional[Union[FlowOptions, "FlowOptionsDict"]]]
     dependencies: NotRequired[Optional[Sequence[str]]]

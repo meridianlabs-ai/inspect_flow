@@ -1,4 +1,4 @@
-log_dir: ./logs/local_logs
+flow_dir: ./logs/local_logs
 options:
   limit: 1
 dependencies:

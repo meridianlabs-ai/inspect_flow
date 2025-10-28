@@ -2,7 +2,7 @@ from inspect_flow import flow_config
 
 flow_config(
     {
-        "log_dir": "logs/local_logs",
+        "flow_dir": "logs/local_logs",
         "options": {"limit": 1},
         "matrix": [
             {

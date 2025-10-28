@@ -2,7 +2,7 @@ from inspect_flow import flow_config
 
 flow_config(
     {
-        "log_dir": "logs/model_and_task",
+        "flow_dir": "logs/model_and_task",
         "options": {"limit": 1},
         "dependencies": [
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",

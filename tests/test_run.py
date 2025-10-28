@@ -26,7 +26,7 @@ def test_task_with_get_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -54,7 +54,7 @@ def test_task_with_two_models() -> None:
     log_dir = init_test_logs()
 
     config = FlowConfig(
-        log_dir=log_dir,
+        flow_dir=log_dir,
         matrix=[
             FlowMatrix(
                 models=[
@@ -75,7 +75,7 @@ def test_model_generate_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[
@@ -104,7 +104,7 @@ def test_default_model_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         tasks=[FlowTask(name="noop", file=str(task_file))],
@@ -125,7 +125,7 @@ def test_task_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         tasks=[
@@ -156,7 +156,7 @@ def test_multiple_model_error() -> None:
     ):
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -177,7 +177,7 @@ def test_matrix_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         args=[{"subset": "original"}, {"subset": "contrast"}],
@@ -200,7 +200,7 @@ def test_task_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -230,7 +230,7 @@ def test_multiple_args_error() -> None:
     ):
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         args=[{"subset": "original"}, {"subset": "contrast"}],
@@ -256,7 +256,7 @@ def test_two_matrix() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -304,7 +304,7 @@ def test_matrix_model_roles() -> None:
         }
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -350,7 +350,7 @@ def test_task_model_roles() -> None:
         }
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -398,7 +398,7 @@ def test_multiple_model_roles_error() -> None:
         }
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         model_roles=[model_roles1, model_roles2],
@@ -420,7 +420,7 @@ def test_matrix_solvers() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -465,7 +465,7 @@ def test_multiple_solver_args_error() -> None:
     ):
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -505,7 +505,7 @@ def test_task_solvers() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -550,7 +550,7 @@ def test_multiple_solvers_error() -> None:
     ):
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         models=[FlowModel(name="mockllm/mock-llm")],
@@ -572,7 +572,7 @@ def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         tasks=[FlowTask(name="noop", file=str(task_file), sample_id=1)],
@@ -594,7 +594,7 @@ def test_all_tasks_in_file() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
-                log_dir="test_log_dir",
+                flow_dir="test_log_dir",
                 matrix=[
                     FlowMatrix(
                         tasks=[FlowTask(file=str((task_dir / "three_tasks.py")))],
