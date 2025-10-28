@@ -607,3 +607,63 @@ def test_all_tasks_in_file() -> None:
         assert tasks_arg[0].name == "noop1"
         assert tasks_arg[1].name == "noop2"
         assert tasks_arg[2].name == "noop3"
+
+
+def test_config_generate_config() -> None:
+    config_system_message = "Config System Message"
+    task_system_message = "Task System Message"
+    model_system_message = "Model System Message"
+    config_temperature = 0.0
+    task_temperature = 0.2
+    config_max_tokens = 100
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                flow_dir="test_log_dir",
+                config=GenerateConfig(
+                    system_message=config_system_message,
+                    temperature=config_temperature,
+                    max_tokens=config_max_tokens,
+                ),
+                matrix=[
+                    FlowMatrix(
+                        models=[
+                            FlowModel(
+                                name="mockllm/mock-llm",
+                                config=[
+                                    GenerateConfig(system_message=model_system_message)
+                                ],
+                            ),
+                        ],
+                        tasks=[
+                            FlowTask(
+                                name="noop",
+                                file=str(task_file),
+                                config=GenerateConfig(
+                                    system_message=task_system_message,
+                                    temperature=task_temperature,
+                                ),
+                            )
+                        ],
+                    ),
+                ],
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+
+        task_config: GenerateConfig = tasks_arg[0].config
+        assert task_config.system_message == model_system_message
+        assert task_config.temperature == task_temperature
+        assert task_config.max_tokens == config_max_tokens
+
+        model_config: GenerateConfig = tasks_arg[0].model.config
+        assert model_config.system_message == model_system_message
+        assert model_config.temperature is None
+        assert model_config.max_tokens is None
