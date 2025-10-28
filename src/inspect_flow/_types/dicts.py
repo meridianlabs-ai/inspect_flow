@@ -83,6 +83,52 @@ class ApprovalPolicyConfigDict(TypedDict):
     approvers: Sequence[Union[ApproverPolicyConfig, "ApproverPolicyConfigDict"]]
 
 
+class FlowOptionsDict(TypedDict):
+    retry_attempts: NotRequired[Optional[int]]
+    retry_wait: NotRequired[Optional[float]]
+    retry_connections: NotRequired[Optional[float]]
+    retry_cleanup: NotRequired[Optional[bool]]
+    sandbox: NotRequired[
+        Optional[
+            Union[
+                str,
+                Sequence,
+                Union[SandboxEnvironmentSpec, "SandboxEnvironmentSpecDict"],
+            ]
+        ]
+    ]
+    sandbox_cleanup: NotRequired[Optional[bool]]
+    tags: NotRequired[Optional[Sequence[str]]]
+    metadata: NotRequired[Optional[Mapping[str, Any]]]
+    trace: NotRequired[Optional[bool]]
+    display: NotRequired[
+        Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
+    ]
+    approval: NotRequired[
+        Optional[Union[str, Union[ApprovalPolicyConfig, "ApprovalPolicyConfigDict"]]]
+    ]
+    score: NotRequired[bool]
+    log_level: NotRequired[Optional[str]]
+    log_level_transcript: NotRequired[Optional[str]]
+    log_format: NotRequired[Optional[Literal["eval", "json"]]]
+    limit: NotRequired[Optional[int]]
+    sample_shuffle: NotRequired[Optional[Union[bool, int]]]
+    fail_on_error: NotRequired[Optional[Union[bool, float]]]
+    continue_on_fail: NotRequired[Optional[bool]]
+    retry_on_error: NotRequired[Optional[int]]
+    debug_errors: NotRequired[Optional[bool]]
+    max_samples: NotRequired[Optional[int]]
+    max_tasks: NotRequired[Optional[int]]
+    max_subprocesses: NotRequired[Optional[int]]
+    max_sandboxes: NotRequired[Optional[int]]
+    log_samples: NotRequired[Optional[bool]]
+    log_realtime: NotRequired[Optional[bool]]
+    log_images: NotRequired[Optional[bool]]
+    log_buffer: NotRequired[Optional[int]]
+    log_shared: NotRequired[Optional[bool]]
+    log_dir_allow_dirty: NotRequired[Optional[bool]]
+
+
 class GenerateConfigDict(TypedDict):
     max_retries: NotRequired[Optional[int]]
     timeout: NotRequired[Optional[int]]
@@ -133,53 +179,6 @@ class FlowModelDict(TypedDict):
     api_key: NotRequired[Optional[str]]
     memoize: NotRequired[bool]
     model_args: NotRequired[Optional[Mapping[str, Any]]]
-
-
-class FlowOptionsDict(TypedDict):
-    retry_attempts: NotRequired[Optional[int]]
-    retry_wait: NotRequired[Optional[float]]
-    retry_connections: NotRequired[Optional[float]]
-    retry_cleanup: NotRequired[Optional[bool]]
-    sandbox: NotRequired[
-        Optional[
-            Union[
-                str,
-                Sequence,
-                Union[SandboxEnvironmentSpec, "SandboxEnvironmentSpecDict"],
-            ]
-        ]
-    ]
-    sandbox_cleanup: NotRequired[Optional[bool]]
-    tags: NotRequired[Optional[Sequence[str]]]
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
-    trace: NotRequired[Optional[bool]]
-    display: NotRequired[
-        Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
-    ]
-    approval: NotRequired[
-        Optional[Union[str, Union[ApprovalPolicyConfig, "ApprovalPolicyConfigDict"]]]
-    ]
-    score: NotRequired[bool]
-    log_level: NotRequired[Optional[str]]
-    log_level_transcript: NotRequired[Optional[str]]
-    log_format: NotRequired[Optional[Literal["eval", "json"]]]
-    limit: NotRequired[Optional[int]]
-    sample_shuffle: NotRequired[Optional[Union[bool, int]]]
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    continue_on_fail: NotRequired[Optional[bool]]
-    retry_on_error: NotRequired[Optional[int]]
-    debug_errors: NotRequired[Optional[bool]]
-    max_samples: NotRequired[Optional[int]]
-    max_tasks: NotRequired[Optional[int]]
-    max_subprocesses: NotRequired[Optional[int]]
-    max_sandboxes: NotRequired[Optional[int]]
-    log_samples: NotRequired[Optional[bool]]
-    log_realtime: NotRequired[Optional[bool]]
-    log_images: NotRequired[Optional[bool]]
-    log_buffer: NotRequired[Optional[int]]
-    log_shared: NotRequired[Optional[bool]]
-    log_dir_allow_dirty: NotRequired[Optional[bool]]
-    config: NotRequired[Optional[Union[GenerateConfig, "GenerateConfigDict"]]]
 
 
 class FlowTaskDict(TypedDict):
@@ -296,6 +295,7 @@ class FlowConfigDict(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
     options: NotRequired[Optional[Union[FlowOptions, "FlowOptionsDict"]]]
+    config: NotRequired[Optional[Union[GenerateConfig, "GenerateConfigDict"]]]
     dependencies: NotRequired[Optional[Union[Sequence[str], str]]]
     matrix: Union[
         Sequence[Union[FlowMatrix, "FlowMatrixDict"]],

@@ -16,11 +16,10 @@ def read_config() -> FlowConfig:
 
 
 def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
-    matrix_list = [MatrixImpl(matrix_config) for matrix_config in config.matrix]
+    matrix_list = [MatrixImpl(matrix_config, config) for matrix_config in config.matrix]
     tasks = [task for matrix in matrix_list for task in matrix.tasks()]
 
     options = config.options or FlowOptions()
-
     return inspect_ai.eval_set(
         tasks=tasks,
         log_dir=config.flow_dir,
@@ -68,7 +67,7 @@ def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
         log_shared=options.log_shared,
         # bundle_dir= Not supported
         # bundle_overwrite= Not supported
-        **(options.config.model_dump() if options.config else {}),  # type: ignore[call-arg]
+        # kwargs= FlowConfig, TaskConfig, and ModelConfig allow setting the generate config
     )
 
 

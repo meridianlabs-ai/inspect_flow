@@ -40,7 +40,7 @@ class FlowModel(BaseModel, extra="forbid"):
     # TODO:ransom should we forbid extra on GenerateConfig?
     config: list[GenerateConfig] | None = Field(
         default=None,
-        description="Configuration for model. One model is created for each value in the list. Config values will be overridden if set on the task or eval_set_config.",
+        description="Configuration for model. One model is created for each value in the list. Config values will be override settings on the FlowTask and FlowConfig.",
     )
 
     base_url: str | None = Field(
@@ -146,7 +146,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: GenerateConfig | None = Field(
         default=None,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the ModelConfig. Config values will be overridden if also set on the eval_set_config.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: list[ModelRolesConfig] | None = Field(
@@ -237,7 +237,7 @@ class FlowTask(BaseModel, extra="forbid"):
             raise ValueError("file_attr cannot be specified when file is not specified")
         elif self.registry_name is None and self.name is None:
             raise ValueError(
-                "TaskConfig must have at least one of registry_name, name, or file specified"
+                "FlowTask must have at least one of registry_name, name, or file specified"
             )
 
         return self
@@ -438,11 +438,6 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
-    config: GenerateConfig | None = Field(
-        default=None,
-        description="Model generation options. Will override settings on the ModelConfig and TaskConfig.",
-    )
-
 
 class FlowConfig(BaseModel, extra="forbid"):
     flow_dir: str = Field(
@@ -457,6 +452,11 @@ class FlowConfig(BaseModel, extra="forbid"):
 
     options: FlowOptions | None = Field(
         default=None, description="Arguments for calls to eval_set."
+    )
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )
 
     dependencies: list[str] | None = Field(

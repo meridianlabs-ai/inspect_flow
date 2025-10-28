@@ -15,6 +15,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.flow_types import (
     CreateArgs,
     FlowAgent,
+    FlowConfig,
     FlowEpochs,
     FlowMatrix,
     FlowModel,
@@ -37,14 +38,16 @@ matrix_fields = ["args", "models", "model_roles", "solvers"]
 
 class MatrixImpl:
     matrix: FlowMatrix
+    flow_config: FlowConfig
 
     _models: list[Model] | None = None
     _args: list[CreateArgs] | None = None
     _model_roles: list[ModelRoles] | None = None
     _solvers: list[SingleSolver] | None = None
 
-    def __init__(self, matrix: FlowMatrix):
+    def __init__(self, matrix: FlowMatrix, flow_config: FlowConfig):
         self.matrix = matrix
+        self.flow_config = flow_config
         self.validate_config()
         self.create_matrix()
 
@@ -92,7 +95,7 @@ class MatrixImpl:
         for model, args, model_roles, solver, task_func in matrix:
             if model:
                 # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-                init_active_model(model, GenerateConfig())
+                init_active_model(model, model.config)
             task = task_func(**(args or {}))
 
             if config.sample_id is not None:
@@ -109,6 +112,12 @@ class MatrixImpl:
                     reducer=epochs.reducer,
                 )
 
+            generate_config = self.flow_config.config or GenerateConfig()
+            if config.config:
+                generate_config = generate_config.merge(config.config)
+            if model:
+                generate_config = generate_config.merge(model.config)
+
             def ng(arg):
                 """Pass NOT_GIVEN for args that are None"""
                 return arg if arg is not None else NOT_GIVEN
@@ -122,7 +131,7 @@ class MatrixImpl:
                 # scorer= Not Supported
                 # metrics= Not Supported
                 model=ng(model),
-                config=ng(config.config),
+                config=generate_config,
                 model_roles=ng(model_roles),
                 sandbox=ng(config.sandbox),
                 approval=ng(config.approval),  # type: ignore TODO:ransom
