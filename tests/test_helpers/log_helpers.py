@@ -16,7 +16,9 @@ def init_test_logs() -> str:
     return str(log_dir)
 
 
-def verify_test_logs(config: FlowConfig, log_dir: str) -> None:
+def verify_test_logs(
+    config: FlowConfig, log_dir: str, expected_logs: int | None
+) -> None:
     # Check that logs/local_logs directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
@@ -28,11 +30,15 @@ def verify_test_logs(config: FlowConfig, log_dir: str) -> None:
         assert matrix.models
         models.extend([model.name for model in matrix.models])
 
-    assert len(log_list) == len(tasks) * len(models)
+    if expected_logs is not None:
+        assert len(log_list) == expected_logs
+    else:
+        assert len(log_list) == len(tasks) * len(models)
     logs = [read_eval_log(log) for log in log_list]
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
-    assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        product(tasks, models)
-    )
+    if expected_logs is None:
+        assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
+            product(tasks, models)
+        )

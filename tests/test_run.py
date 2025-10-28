@@ -614,3 +614,69 @@ def test_all_tasks_in_file() -> None:
         assert tasks_arg[0].name == "noop1"
         assert tasks_arg[1].name == "noop2"
         assert tasks_arg[2].name == "noop3"
+
+
+def test_task_with_two_model_configs() -> None:
+    # This test verifies that the tasks have distinct identifiers and eval_set runs correctly
+    # So can not use a mock
+    log_dir = init_test_logs()
+
+    config = FlowConfig(
+        log_dir=log_dir,
+        matrix=[
+            Matrix(
+                models=[
+                    ModelConfig(
+                        name="mockllm/mock-llm1",
+                        config=[
+                            GenerateConfig(temperature=0),
+                            GenerateConfig(temperature=0.5),
+                        ],
+                    ),
+                ],
+                tasks=[TaskConfig(name="noop", file=str(task_file))],
+            ),
+        ],
+    )
+    run_eval_set(config=config)
+
+    verify_test_logs(config, log_dir, expected_logs=2)
+
+
+def test_task_with_two_solvers() -> None:
+    # This test verifies that the tasks have distinct identifiers and eval_set runs correctly
+    # So can not use a mock
+    log_dir = init_test_logs()
+
+    config = FlowConfig(
+        log_dir=log_dir,
+        matrix=[
+            Matrix(
+                models=[
+                    ModelConfig(
+                        name="mockllm/mock-llm1",
+                    ),
+                ],
+                solvers=[
+                    SolverConfig(
+                        name="inspect_ai/system_message",
+                        args=[
+                            {"template": "test system message"},
+                            {"template": "another test system message"},
+                        ],
+                    ),
+                    [
+                        SolverConfig(
+                            name="inspect_ai/system_message",
+                            args=[{"template": "another test system message"}],
+                        ),
+                        SolverConfig(name="inspect_ai/generate"),
+                    ],
+                ],
+                tasks=[TaskConfig(name="noop", file=str(task_file))],
+            ),
+        ],
+    )
+    run_eval_set(config=config)
+
+    verify_test_logs(config, log_dir, expected_logs=3)
