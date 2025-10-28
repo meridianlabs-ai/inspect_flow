@@ -1,0 +1,40 @@
+from inspect_flow import (
+    FlowAgent,
+    FlowConfig,
+    FlowMatrix,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
+)
+from inspect_flow._types.flow_types import (
+    FlowAgentDict,
+    FlowConfigDict,
+    FlowMatrixDict,
+    FlowModelDict,
+    FlowSolverDict,
+    FlowTaskDict,
+)
+
+
+def flow_config(config: FlowConfigDict) -> FlowConfig:
+    return FlowConfig.model_validate(config)
+
+
+def flow_matrix(config: FlowMatrixDict) -> FlowMatrix:
+    return FlowMatrix.model_validate(config)
+
+
+def flow_task(config: FlowTaskDict) -> FlowTask:
+    return FlowTask.model_validate(config)
+
+
+def flow_model(config: FlowModelDict) -> FlowModel:
+    return FlowModel.model_validate(config)
+
+
+def flow_solver(config: FlowSolverDict) -> FlowSolver:
+    return FlowSolver.model_validate(config)
+
+
+def flow_agent(config: FlowAgentDict) -> FlowAgent:
+    return FlowAgent.model_validate(config)

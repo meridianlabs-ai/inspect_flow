@@ -788,27 +788,3 @@ def convert_to_solver_config_list(
     if not isinstance(v, list):
         v = [v]
     return [convert_to_solver_config(task) for task in v]
-
-
-def flow_config(config: FlowConfigDict) -> FlowConfig:
-    return FlowConfig.model_validate(config)
-
-
-def flow_matrix(config: FlowMatrixDict) -> FlowMatrix:
-    return FlowMatrix.model_validate(config)
-
-
-def flow_task(config: FlowTaskDict) -> FlowTask:
-    return FlowTask.model_validate(config)
-
-
-def flow_model(config: FlowModelDict) -> FlowModel:
-    return FlowModel.model_validate(config)
-
-
-def flow_solver(config: FlowSolverDict) -> FlowSolver:
-    return FlowSolver.model_validate(config)
-
-
-def flow_agent(config: FlowAgentDict) -> FlowAgent:
-    return FlowAgent.model_validate(config)
