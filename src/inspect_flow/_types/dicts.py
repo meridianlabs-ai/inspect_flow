@@ -7,7 +7,7 @@ from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema
 from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec
 from typing_extensions import NotRequired
 
-from inspect_flow import (
+from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowEpochs,
     FlowMatrix,

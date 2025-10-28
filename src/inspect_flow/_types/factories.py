@@ -1,18 +1,18 @@
-from inspect_flow import (
-    FlowAgent,
-    FlowConfig,
-    FlowMatrix,
-    FlowModel,
-    FlowSolver,
-    FlowTask,
-)
-from inspect_flow._types.flow_types import (
+from inspect_flow._types.dicts import (
     FlowAgentDict,
     FlowConfigDict,
     FlowMatrixDict,
     FlowModelDict,
     FlowSolverDict,
     FlowTaskDict,
+)
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowConfig,
+    FlowMatrix,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
 )
 
 
