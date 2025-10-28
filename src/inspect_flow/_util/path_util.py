@@ -12,7 +12,7 @@ def set_path_env_vars(env: dict[str, str], config_path: str | None) -> None:
     env[cwd_path_key] = str(Path.cwd().resolve())
 
 
-def find_file(file_path: str) -> str:
+def find_file(file_path: str) -> str | None:
     """Locate a file that may have a path relative to the config file or original cwd."""
     path = Path(file_path)
     if path.exists():
@@ -28,4 +28,4 @@ def find_file(file_path: str) -> str:
         if relative_path.exists():
             return str(relative_path.resolve())
 
-    raise FileNotFoundError(f"File not found: {file_path}")
+    return None

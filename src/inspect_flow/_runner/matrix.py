@@ -5,6 +5,7 @@ from typing import TypeAlias
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
+from inspect_ai._util.registry import registry_lookup  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -224,29 +225,47 @@ def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
     return roles_list
 
 
+def get_task_creators_from_file(config: FlowTask) -> list[Callable[..., Task]]:
+    assert config.file
+    file_attr = config.file_attr or config.name
+    file = find_file(config.file)
+    if not file:
+        raise FileNotFoundError(f"File not found: {config.file}")
+
+    module = get_module_from_file(file)
+    if file_attr:
+        task_funcs = [getattr(module, file_attr)]
+    else:
+        # load all task decorated functions and ensure only one exists
+        task_funcs = [
+            getattr(module, attr)
+            for attr in dir(module)
+            if hasattr(getattr(module, attr), "__registry_info__")
+            and getattr(module, attr).__registry_info__.type == "task"
+        ]
+        if not task_funcs:
+            raise ValueError("No task functions found in file {file}")
+    return task_funcs
+
+
 def get_task_creators(config: FlowTask) -> list[Callable[..., Task]]:
-    if config.file:
-        file_attr = config.file_attr or config.name
-        file = find_file(config.file)
-        module = get_module_from_file(file)
-        if file_attr:
-            task_funcs = [getattr(module, file_attr)]
-        else:
-            # load all task decorated functions and ensure only one exists
-            task_funcs = [
-                getattr(module, attr)
-                for attr in dir(module)
-                if hasattr(getattr(module, attr), "__registry_info__")
-                and getattr(module, attr).__registry_info__.type == "task"
-            ]
-            if not task_funcs:
-                raise ValueError("No task functions found in file {file}")
+    if config.file or config.file_attr:
+        config.file = config.file or config.name
+        return get_task_creators_from_file(config)
     else:
         registry_name = config.registry_name or config.name
         if not registry_name:
             raise ValueError(
                 "registry_name or name not specified for task without file"
             )
+        if not registry_lookup(type="task", name=registry_name):
+            # Check if name is a file name
+            if config.name:
+                if file := find_file(config.name):
+                    config.file = file
+                    config.name = None
+                    return get_task_creators_from_file(config)
+            raise LookupError(f"{registry_name} was not found in the registry")
 
         def task_func(**kwargs):
             return registry_create(type="task", name=registry_name, **kwargs)

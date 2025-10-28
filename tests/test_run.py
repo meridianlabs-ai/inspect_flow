@@ -11,6 +11,7 @@ from inspect_flow import (
     FlowModel,
     FlowSolver,
     FlowTask,
+    flow_matrix,
 )
 from inspect_flow._runner.run import run_eval_set
 
@@ -595,12 +596,8 @@ def test_all_tasks_in_file() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        tasks=[FlowTask(file=str((task_dir / "three_tasks.py")))],
-                    ),
-                ],
-            )
+                matrix=[flow_matrix({"tasks": str((task_dir / "three_tasks.py"))})],
+            ),
         )
 
         mock_eval_set.assert_called_once()
