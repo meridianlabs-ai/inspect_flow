@@ -35,7 +35,7 @@ class BatchConfigDict(TypedDict):
 
 class FlowAgentDict(TypedDict):
     name: str
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    args: NotRequired[Optional[Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]]]
 
 
 class FlowEpochsDict(TypedDict):
@@ -45,7 +45,7 @@ class FlowEpochsDict(TypedDict):
 
 class FlowSolverDict(TypedDict):
     name: str
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    args: NotRequired[Optional[Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]]]
 
 
 class JSONSchemaDict(TypedDict):
@@ -121,7 +121,14 @@ class FlowModelDict(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
     default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Sequence[Union[GenerateConfig, "GenerateConfigDict"]]]]
+    config: NotRequired[
+        Optional[
+            Union[
+                Sequence[Union[GenerateConfig, "GenerateConfigDict"]],
+                Union[GenerateConfig, "GenerateConfigDict"],
+            ]
+        ]
+    ]
     base_url: NotRequired[Optional[str]]
     api_key: NotRequired[Optional[str]]
     memoize: NotRequired[bool]
@@ -180,23 +187,42 @@ class FlowTaskDict(TypedDict):
     file: NotRequired[Optional[str]]
     file_attr: NotRequired[Optional[str]]
     registry_name: NotRequired[Optional[str]]
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    args: NotRequired[Optional[Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]]]
     solvers: NotRequired[
         Optional[
-            Sequence[
+            Union[
+                Sequence[
+                    Union[
+                        Union[str, FlowSolver, FlowSolverDict],
+                        Sequence[Union[str, FlowSolver, FlowSolverDict]],
+                        Union[FlowAgent, "FlowAgentDict"],
+                    ]
+                ],
                 Union[
                     Union[str, FlowSolver, FlowSolverDict],
                     Sequence[Union[str, FlowSolver, FlowSolverDict]],
                     Union[FlowAgent, "FlowAgentDict"],
-                ]
+                ],
             ]
         ]
     ]
-    models: NotRequired[Optional[Sequence[Union[str, FlowModel, FlowModelDict]]]]
+    models: NotRequired[
+        Optional[
+            Union[
+                Sequence[Union[str, FlowModel, FlowModelDict]],
+                Union[str, FlowModel, FlowModelDict],
+            ]
+        ]
+    ]
     config: NotRequired[Optional[Union[GenerateConfig, "GenerateConfigDict"]]]
     model_roles: NotRequired[
         Optional[
-            Sequence[Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]]]
+            Union[
+                Sequence[
+                    Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]]
+                ],
+                Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]],
+            ]
         ]
     ]
     sandbox: NotRequired[
@@ -224,22 +250,43 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowMatrixDict(TypedDict):
-    tasks: Sequence[Union[str, FlowTask, FlowTaskDict]]
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    models: NotRequired[Optional[Sequence[Union[str, FlowModel, FlowModelDict]]]]
+    tasks: Union[
+        Sequence[Union[str, FlowTask, FlowTaskDict]], Union[str, FlowTask, FlowTaskDict]
+    ]
+    args: NotRequired[Optional[Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]]]
+    models: NotRequired[
+        Optional[
+            Union[
+                Sequence[Union[str, FlowModel, FlowModelDict]],
+                Union[str, FlowModel, FlowModelDict],
+            ]
+        ]
+    ]
     model_roles: NotRequired[
         Optional[
-            Sequence[Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]]]
+            Union[
+                Sequence[
+                    Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]]
+                ],
+                Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]],
+            ]
         ]
     ]
     solvers: NotRequired[
         Optional[
-            Sequence[
+            Union[
+                Sequence[
+                    Union[
+                        Union[str, FlowSolver, FlowSolverDict],
+                        Sequence[Union[str, FlowSolver, FlowSolverDict]],
+                        Union[FlowAgent, "FlowAgentDict"],
+                    ]
+                ],
                 Union[
                     Union[str, FlowSolver, FlowSolverDict],
                     Sequence[Union[str, FlowSolver, FlowSolverDict]],
                     Union[FlowAgent, "FlowAgentDict"],
-                ]
+                ],
             ]
         ]
     ]
@@ -249,5 +296,8 @@ class FlowConfigDict(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
     options: NotRequired[Optional[Union[FlowOptions, "FlowOptionsDict"]]]
-    dependencies: NotRequired[Optional[Sequence[str]]]
-    matrix: Sequence[Union[FlowMatrix, "FlowMatrixDict"]]
+    dependencies: NotRequired[Optional[Union[Sequence[str], str]]]
+    matrix: Union[
+        Sequence[Union[FlowMatrix, "FlowMatrixDict"]],
+        Union[FlowMatrix, "FlowMatrixDict"],
+    ]

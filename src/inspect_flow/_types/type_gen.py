@@ -2,6 +2,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any, TypeAlias
 
 from datamodel_code_generator import DataModelType, InputFileType, generate
 
@@ -15,13 +16,68 @@ ADDITIONAL_IMPORTS = [
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowMatrix, FlowModel, FlowSolver, FlowTask\n",
 ]
 
+Schema: TypeAlias = dict[str, Any]
+
+ITEM_OR_LIST_FIELDS = {
+    ("FlowConfig", "dependencies"),
+    ("FlowConfig", "matrix"),
+    ("FlowMatrix", "args"),
+    ("FlowMatrix", "tasks"),
+    ("FlowMatrix", "models"),
+    ("FlowMatrix", "model_roles"),
+    ("FlowMatrix", "solvers"),
+    ("FlowTask", "args"),
+    ("FlowTask", "model_roles"),
+    ("FlowTask", "models"),
+    ("FlowTask", "solvers"),
+    ("FlowAgent", "args"),
+    ("FlowSolver", "args"),
+    ("FlowModel", "config"),
+}
+
+
+def add_item_option(field_schema: Schema) -> None:
+    if "type" in field_schema:
+        # Convert array typed value to anyOf
+        assert field_schema["type"] == "array"
+        array_type = {"type": "array", "items": field_schema["items"]}
+        del field_schema["type"]
+        del field_schema["items"]
+        field_schema["anyOf"] = [array_type]
+
+    # Find the array option
+    any_of: list[Schema] = field_schema["anyOf"]
+    array_field: Schema | None = None
+    for field in any_of:
+        if field["type"] == "array":
+            array_field = field
+            break
+    assert array_field
+
+    # Add an option for a single item in the array
+    any_of.append(array_field["items"])
+
+
+def transform_schema(schema: Schema) -> Schema:
+    defs: Schema = schema["$defs"]
+    classes: list[Schema] = [schema, *[v for v in defs.values()]]
+    for c in classes:
+        properties: Schema = c["properties"]
+        for field_name, field_value in properties.items():
+            if (c["title"], field_name) in ITEM_OR_LIST_FIELDS:
+                add_item_option(field_value)
+
+    return schema
+
 
 def generate_typed_dict_code() -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
+        schema = transform_schema(FlowConfig.model_json_schema())
+
         generate(
-            str(FlowConfig.model_json_schema()),
+            str(schema),
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
