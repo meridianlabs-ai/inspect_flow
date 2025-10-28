@@ -2,15 +2,16 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+from inspect_flow import FlowConfig, flow_matrix
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.flow_types import FlowConfig
 
 
 def test_no_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowConfig(matrix=[{"tasks": ["task_name"]}]), temp_dir=temp_dir
+                config=FlowConfig(matrix=[flow_matrix({"tasks": ["task_name"]})]),
+                temp_dir=temp_dir,
             )
 
             assert mock_run.call_count == 2
@@ -29,7 +30,8 @@ def test_dependencies() -> None:
         with patch("subprocess.run") as mock_run:
             create_venv(
                 config=FlowConfig(
-                    dependencies=["inspect_evals"], matrix=[{"tasks": ["task_name"]}]
+                    dependencies=["inspect_evals"],
+                    matrix=[flow_matrix({"tasks": ["task_name"]})],
                 ),
                 temp_dir=temp_dir,
             )
@@ -52,17 +54,19 @@ def test_model_dependency() -> None:
             create_venv(
                 config=FlowConfig(
                     matrix=[
-                        {
-                            "tasks": [
-                                {
-                                    "name": "task_name",
-                                    "models": ["anthropic/claude-2"],
-                                    "model_roles": [{"mark": "groq/somemodel"}],
-                                }
-                            ],
-                            "models": ["openai/gpt-4o-mini"],
-                            "model_roles": [{"mark": {"name": "google/gemini-1"}}],
-                        }
+                        flow_matrix(
+                            {
+                                "tasks": [
+                                    {
+                                        "name": "task_name",
+                                        "models": ["anthropic/claude-2"],
+                                        "model_roles": [{"mark": "groq/somemodel"}],
+                                    }
+                                ],
+                                "models": ["openai/gpt-4o-mini"],
+                                "model_roles": [{"mark": {"name": "google/gemini-1"}}],
+                            }
+                        )
                     ],
                 ),
                 temp_dir=temp_dir,
@@ -88,7 +92,8 @@ def test_python_version() -> None:
         with patch("subprocess.run") as mock_run:
             create_venv(
                 config=FlowConfig(
-                    python_version="3.11", matrix=[{"tasks": ["task_name"]}]
+                    python_version="3.11",
+                    matrix=[flow_matrix({"tasks": ["task_name"]})],
                 ),
                 temp_dir=temp_dir,
             )

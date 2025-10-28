@@ -1,8 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from inspect_flow import FlowConfig
 from inspect_flow._submit.submit import submit
-from inspect_flow._types.flow_types import FlowConfig
 
 
 def test_submit() -> None:

@@ -1,4 +1,4 @@
-from inspect_flow._types.flow_types import flow_config
+from inspect_flow import flow_config
 
 flow_config(
     {

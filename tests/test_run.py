@@ -4,8 +4,7 @@ from unittest.mock import patch
 import pytest
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
-from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.flow_types import (
+from inspect_flow import (
     FlowAgent,
     FlowConfig,
     FlowMatrix,
@@ -13,6 +12,7 @@ from inspect_flow._types.flow_types import (
     FlowSolver,
     FlowTask,
 )
+from inspect_flow._runner.run import run_eval_set
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 

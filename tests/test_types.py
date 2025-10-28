@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from inspect_flow._types.flow_types import (
+from inspect_flow import (
     FlowAgent,
     FlowConfig,
     FlowMatrix,
