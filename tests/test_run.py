@@ -1,19 +1,17 @@
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
 from inspect_flow import (
     FlowAgent,
     FlowConfig,
-    FlowMatrix,
     FlowModel,
     FlowSolver,
     FlowTask,
-    flow_matrix,
 )
 from inspect_flow._runner.run import run_eval_set
+from inspect_flow._types.factories import flow_config, solvers, tasks
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -28,15 +26,11 @@ def test_task_with_get_model() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_get_model",
-                                file=str(task_file),
-                            )
-                        ],
+                tasks=[
+                    FlowTask(
+                        name="task_with_get_model",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
                     )
                 ],
             )
@@ -56,15 +50,15 @@ def test_task_with_two_models() -> None:
 
     config = FlowConfig(
         flow_dir=log_dir,
-        matrix=[
-            FlowMatrix(
-                models=[
+        tasks=tasks(
+            FlowTask(name="noop", file=str(task_file)),
+            matrix={
+                "model": [
                     FlowModel(name="mockllm/mock-llm1"),
                     FlowModel(name="mockllm/mock-llm2"),
-                ],
-                tasks=[FlowTask(name="noop", file=str(task_file))],
-            ),
-        ],
+                ]
+            },
+        ),
     )
     run_eval_set(config=config)
 
@@ -77,16 +71,15 @@ def test_model_generate_config() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[
-                            FlowModel(
-                                name="mockllm/mock-llm",
-                                config=[GenerateConfig(system_message=system_message)],
-                            ),
-                        ],
-                        tasks=[FlowTask(name="noop", file=str(task_file))],
-                    ),
+                tasks=[
+                    FlowTask(
+                        name="noop",
+                        file=str(task_file),
+                        model=FlowModel(
+                            name="mockllm/mock-llm",
+                            config=GenerateConfig(system_message=system_message),
+                        ),
+                    )
                 ],
             )
         )
@@ -106,11 +99,7 @@ def test_default_model_config() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        tasks=[FlowTask(name="noop", file=str(task_file))],
-                    ),
-                ],
+                tasks=[FlowTask(name="noop", file=str(task_file))],
             )
         )
 
@@ -127,16 +116,12 @@ def test_task_model() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                                models=[FlowModel(name="mockllm/mock-llm")],
-                            )
-                        ],
-                    ),
+                tasks=[
+                    FlowTask(
+                        name="noop",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
+                    )
                 ],
             )
         )
@@ -151,41 +136,19 @@ def test_task_model() -> None:
         assert tasks_arg[0].model.name == "mock-llm"
 
 
-def test_multiple_model_error() -> None:
-    with pytest.raises(
-        ValueError, match="Only one of matrix and task may specify model"
-    ):
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                                models=[FlowModel(name="mockllm/mock-llm2")],
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
-
-
 def test_matrix_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        args=[{"subset": "original"}, {"subset": "contrast"}],
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[FlowTask(name="task_with_params", file=str(task_file))],
+                tasks=tasks(
+                    FlowTask(
+                        name="task_with_params",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
                     ),
-                ],
+                    matrix={"args": [{"subset": "original"}, {"subset": "contrast"}]},
+                ),
             )
         )
 
@@ -195,98 +158,6 @@ def test_matrix_args() -> None:
         assert len(tasks_arg) == 2
         assert tasks_arg[0].metadata["subset"] == "original"
         assert tasks_arg[1].metadata["subset"] == "contrast"
-
-
-def test_task_args() -> None:
-    with patch("inspect_ai.eval_set") as mock_eval_set:
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_params",
-                                file=str(task_file),
-                                args=[{"subset": "original"}, {"subset": "contrast"}],
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
-
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert tasks_arg[0].metadata["subset"] == "original"
-        assert tasks_arg[1].metadata["subset"] == "contrast"
-
-
-def test_multiple_args_error() -> None:
-    with pytest.raises(
-        ValueError, match="Only one of matrix and task may specify args"
-    ):
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        args=[{"subset": "original"}, {"subset": "contrast"}],
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                            ),
-                            FlowTask(
-                                name="task_with_params",
-                                file=str(task_file),
-                                args=[{"subset": "original"}, {"subset": "contrast"}],
-                            ),
-                        ],
-                    ),
-                ],
-            )
-        )
-
-
-def test_two_matrix() -> None:
-    with patch("inspect_ai.eval_set") as mock_eval_set:
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                            )
-                        ],
-                    ),
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="noop2",
-                                file=str(task_file),
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
-
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert tasks_arg[0].name == "noop"
-        assert tasks_arg[1].name == "noop2"
 
 
 def test_matrix_model_roles() -> None:
@@ -300,24 +171,20 @@ def test_matrix_model_roles() -> None:
             "mark": "mockllm/mock-mark2",
             "conartist": FlowModel(
                 name="mockllm/mock-conartist2",
-                config=[GenerateConfig(system_message=system_message)],
+                config=GenerateConfig(system_message=system_message),
             ),
         }
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        model_roles=[model_roles1, model_roles2],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_model_roles",
-                                file=str(task_file),
-                            )
-                        ],
+                tasks=tasks(
+                    FlowTask(
+                        name="task_with_model_roles",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
                     ),
-                ],
+                    matrix={"model_roles": [model_roles1, model_roles2]},
+                ),
             )
         )
 
@@ -332,88 +199,6 @@ def test_matrix_model_roles() -> None:
         assert (
             tasks_arg[1].model_roles["conartist"].config.system_message
             == system_message
-        )
-
-
-def test_task_model_roles() -> None:
-    with patch("inspect_ai.eval_set") as mock_eval_set:
-        system_message = "mock system message"
-        model_roles1 = {
-            "mark": "mockllm/mock-mark1",
-            "conartist": "mockllm/mock-conartist1",
-        }
-        model_roles2 = {
-            "mark": "mockllm/mock-mark2",
-            "conartist": FlowModel(
-                name="mockllm/mock-conartist2",
-                config=[GenerateConfig(system_message=system_message)],
-            ),
-        }
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_model_roles",
-                                file=str(task_file),
-                                model_roles=[model_roles1, model_roles2],
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
-
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert tasks_arg[0].model_roles["mark"].name == "mock-mark1"
-        assert tasks_arg[0].model_roles["conartist"].name == "mock-conartist1"
-        assert tasks_arg[1].model_roles["mark"].name == "mock-mark2"
-        assert tasks_arg[1].model_roles["conartist"].name == "mock-conartist2"
-        assert (
-            tasks_arg[1].model_roles["conartist"].config.system_message
-            == system_message
-        )
-
-
-def test_multiple_model_roles_error() -> None:
-    with pytest.raises(
-        ValueError, match="Only one of matrix and task may specify model_roles"
-    ):
-        system_message = "mock system message"
-        model_roles1 = {
-            "mark": "mockllm/mock-mark1",
-            "conartist": "mockllm/mock-conartist1",
-        }
-        model_roles2 = {
-            "mark": "mockllm/mock-mark2",
-            "conartist": FlowModel(
-                name="mockllm/mock-conartist2",
-                config=[GenerateConfig(system_message=system_message)],
-            ),
-        }
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        model_roles=[model_roles1, model_roles2],
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_model_roles",
-                                file=str(task_file),
-                                model_roles=[model_roles1, model_roles2],
-                            )
-                        ],
-                    ),
-                ],
-            )
         )
 
 
@@ -422,119 +207,34 @@ def test_matrix_solvers() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        solvers=[
-                            FlowSolver(
-                                name="inspect_ai/system_message",
-                                args=[
-                                    {"template": "test system message"},
-                                    {"template": "another test system message"},
-                                ],
-                            ),
-                            [
-                                FlowSolver(
-                                    name="inspect_ai/system_message",
-                                    args=[{"template": "test system message"}],
-                                ),
-                                FlowSolver(name="inspect_ai/generate"),
-                            ],
-                            FlowAgent(name="inspect_ai/react"),
-                        ],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                            )
-                        ],
+                tasks=tasks(
+                    FlowTask(
+                        name="noop",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
                     ),
-                ],
-            )
-        )
-
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 4
-        # solvers are functions, so not simple to verify
-
-
-def test_multiple_solver_args_error() -> None:
-    with pytest.raises(
-        ValueError, match="chained solvers may not provide multiple sets of args"
-    ):
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        solvers=[
-                            FlowSolver(
-                                name="inspect_ai/system_message",
-                                args=[
-                                    {"template": "test system message"},
-                                    {"template": "another test system message"},
-                                ],
-                            ),
-                            [
-                                FlowSolver(
-                                    name="inspect_ai/system_message",
-                                    args=[
+                    matrix={
+                        "solver": [
+                            *solvers(
+                                "inspect_ai/system_message",
+                                matrix={
+                                    "args": [
                                         {"template": "test system message"},
                                         {"template": "another test system message"},
-                                    ],
+                                    ]
+                                },
+                            ),
+                            [
+                                FlowSolver(
+                                    name="inspect_ai/system_message",
+                                    args={"template": "test system message"},
                                 ),
                                 FlowSolver(name="inspect_ai/generate"),
                             ],
                             FlowAgent(name="inspect_ai/react"),
-                        ],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
-
-
-def test_task_solvers() -> None:
-    with patch("inspect_ai.eval_set") as mock_eval_set:
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                                solvers=[
-                                    FlowSolver(
-                                        name="inspect_ai/system_message",
-                                        args=[
-                                            {"template": "test system message"},
-                                            {"template": "another test system message"},
-                                        ],
-                                    ),
-                                    [
-                                        FlowSolver(
-                                            name="inspect_ai/system_message",
-                                            args=[{"template": "test system message"}],
-                                        ),
-                                        FlowSolver(name="inspect_ai/generate"),
-                                    ],
-                                    FlowAgent(name="inspect_ai/react"),
-                                ],
-                            )
-                        ],
-                    ),
-                ],
+                        ]
+                    },
+                ),
             )
         )
 
@@ -543,30 +243,6 @@ def test_task_solvers() -> None:
         tasks_arg = call_args.kwargs["tasks"]
         assert len(tasks_arg) == 4
         # solvers are functions, so not simple to verify
-
-
-def test_multiple_solvers_error() -> None:
-    with pytest.raises(
-        ValueError, match="Only one of matrix and task may specify solvers"
-    ):
-        run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        models=[FlowModel(name="mockllm/mock-llm")],
-                        solvers=[FlowSolver(name="inspect_ai/generate")],
-                        tasks=[
-                            FlowTask(
-                                name="task_with_model_roles",
-                                file=str(task_file),
-                                solvers=[FlowSolver(name="inspect_ai/generate")],
-                            )
-                        ],
-                    ),
-                ],
-            )
-        )
 
 
 def test_sample_id() -> None:
@@ -574,11 +250,7 @@ def test_sample_id() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                matrix=[
-                    FlowMatrix(
-                        tasks=[FlowTask(name="noop", file=str(task_file), sample_id=1)],
-                    ),
-                ],
+                tasks=[FlowTask(name="noop", file=str(task_file), sample_id=1)],
             )
         )
 
@@ -594,9 +266,11 @@ def test_sample_id() -> None:
 def test_all_tasks_in_file() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                matrix=[flow_matrix({"tasks": str((task_dir / "three_tasks.py"))})],
+            config=flow_config(
+                {
+                    "flow_dir": "test_log_dir",
+                    "tasks": str(task_dir / "three_tasks.py"),
+                }
             ),
         )
 
@@ -626,27 +300,19 @@ def test_config_generate_config() -> None:
                     temperature=config_temperature,
                     max_tokens=config_max_tokens,
                 ),
-                matrix=[
-                    FlowMatrix(
-                        models=[
-                            FlowModel(
-                                name="mockllm/mock-llm",
-                                config=[
-                                    GenerateConfig(system_message=model_system_message)
-                                ],
-                            ),
-                        ],
-                        tasks=[
-                            FlowTask(
-                                name="noop",
-                                file=str(task_file),
-                                config=GenerateConfig(
-                                    system_message=task_system_message,
-                                    temperature=task_temperature,
-                                ),
-                            )
-                        ],
-                    ),
+                tasks=[
+                    FlowTask(
+                        name="noop",
+                        file=str(task_file),
+                        config=GenerateConfig(
+                            system_message=task_system_message,
+                            temperature=task_temperature,
+                        ),
+                        model=FlowModel(
+                            name="mockllm/mock-llm",
+                            config=GenerateConfig(system_message=model_system_message),
+                        ),
+                    )
                 ],
             )
         )
