@@ -5,6 +5,7 @@ from typing import (
     TypeAlias,
     TypeVar,
     Union,
+    overload,
 )
 
 from inspect_ai.approval._policy import (
@@ -199,7 +200,7 @@ class FlowTask(BaseModel, extra="forbid"):
     @field_validator("solver", mode="before")
     @classmethod
     def convert_string_solvers(cls, v):
-        return convert_str_to_class(FlowSolver, v)
+        return convert_str_to_solver(v)
 
     @model_validator(mode="after")
     def validate_field_combinations(self):
@@ -420,5 +421,23 @@ def convert_to_task_list(
 T = TypeVar("T", FlowModel, FlowSolver)
 
 
+@overload
+def convert_str_to_class(cls: type[T], v: None) -> None: ...
+
+
+@overload
+def convert_str_to_class(cls: type[T], v: str | T) -> T: ...
+
+
 def convert_str_to_class(cls: type[T], v: str | T | None) -> T | None:
     return cls(name=v) if isinstance(v, str) else v
+
+
+def convert_str_to_solver(
+    v: str | FlowSolver | list[str | FlowSolver] | None,
+) -> FlowSolver | list[FlowSolver] | None:
+    if v is None:
+        return None
+    if isinstance(v, list):
+        return [convert_str_to_class(FlowSolver, solver) for solver in v]
+    return convert_str_to_class(FlowSolver, v)

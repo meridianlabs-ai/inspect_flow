@@ -105,7 +105,10 @@ def test_solver_from_string():
 
 def test_single_items():
     flow_config({"dependencies": "single_dependency", "tasks": []})
-    flow_config({"tasks": [{}]})  # TODO:ransom do we want to support a single task?
+    flow_config({"tasks": "task_name"})
+    flow_config(
+        {"tasks": [{"name": "task_name"}]}
+    )  # TODO:ransom do we want to support a single task?
 
     flow_task({"name": "task_name", "args": {}})
     flow_task({"name": "task_name", "model_roles": {}})
