@@ -179,7 +179,7 @@ class FlowTaskDict(TypedDict):
     file_attr: NotRequired[Optional[str]]
     registry_name: NotRequired[Optional[str]]
     args: NotRequired[Optional[Mapping[str, Any]]]
-    solvers: NotRequired[
+    solver: NotRequired[
         Optional[
             Union[
                 Union[str, FlowSolver, FlowSolverDict],
@@ -188,7 +188,7 @@ class FlowTaskDict(TypedDict):
             ]
         ]
     ]
-    models: NotRequired[Optional[Union[str, FlowModel, FlowModelDict]]]
+    model: NotRequired[Optional[Union[str, FlowModel, FlowModelDict]]]
     config: NotRequired[Optional[Union[GenerateConfig, "GenerateConfigDict"]]]
     model_roles: NotRequired[
         Optional[Mapping[str, Union[Union[str, FlowModel, FlowModelDict], str]]]

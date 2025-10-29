@@ -114,12 +114,12 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Additional args to pass to task constructor",
     )
 
-    solvers: FlowSolver | list[FlowSolver] | FlowAgent | None = Field(
+    solver: FlowSolver | list[FlowSolver] | FlowAgent | None = Field(
         default=None,
         description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    models: FlowModel | None = Field(
+    model: FlowModel | None = Field(
         default=None,
         description="Default model for task (Optional, defaults to eval model).",
     )

@@ -213,7 +213,7 @@ class FlowTaskMatrixDict(TypedDict):
     file_attr: NotRequired[Optional[Sequence[str]]]
     registry_name: NotRequired[Optional[Sequence[str]]]
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    solvers: NotRequired[
+    solver: NotRequired[
         Optional[
             Sequence[
                 Union[
@@ -224,7 +224,7 @@ class FlowTaskMatrixDict(TypedDict):
             ]
         ]
     ]
-    models: NotRequired[Optional[Sequence[Union[str, FlowModel, FlowModelMatrixDict]]]]
+    model: NotRequired[Optional[Sequence[Union[str, FlowModel, FlowModelMatrixDict]]]]
     config: NotRequired[
         Optional[Sequence[Union[GenerateConfig, "GenerateConfigMatrixDict"]]]
     ]

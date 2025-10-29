@@ -2,7 +2,7 @@ import inspect_ai
 import yaml
 from inspect_ai.log import EvalLog
 
-from inspect_flow._runner.matrix import MatrixImpl
+from inspect_flow._runner.matrix import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowConfig,
     FlowOptions,
@@ -16,8 +16,7 @@ def read_config() -> FlowConfig:
 
 
 def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
-    matrix_list = [MatrixImpl(matrix_config, config) for matrix_config in config.matrix]
-    tasks = [task for matrix in matrix_list for task in matrix.tasks()]
+    tasks = instantiate_tasks(config)
 
     options = config.options or FlowOptions()
     return inspect_ai.eval_set(
