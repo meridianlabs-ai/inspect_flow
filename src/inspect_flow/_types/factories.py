@@ -44,12 +44,15 @@ _T = TypeVar("_T", bound=BaseModel)
 
 
 def _generate(
-    base: Mapping[str, Any] | None,
+    base: Mapping[str, Any] | str | None,
     matrix: Mapping[str, Any],
     pydantic_type: type[_T],
 ) -> list[_T]:
     if base is None:
         base = {}
+    elif isinstance(base, str):
+        base = {"name": base}
+
     for key in matrix.keys():
         if key in base:
             raise ValueError(f"{key} provided in both base and matrix")
@@ -62,12 +65,18 @@ def _generate(
 
 
 def models(
-    base: FlowModelDict | None = None, *, matrix: FlowModelMatrixDict
+    base: FlowModelDict | str | None = None, *, matrix: FlowModelMatrixDict
 ) -> list[FlowModel]:
     return _generate(base, matrix, FlowModel)
 
 
 def tasks(
-    base: FlowTaskDict | None = None, *, matrix: FlowTaskMatrixDict
+    base: FlowTaskDict | str | None | list[FlowTask] = None,
+    *,
+    matrix: FlowTaskMatrixDict,
 ) -> list[FlowTask]:
+    if isinstance(base, list):
+        return [
+            task for b in base for task in _generate(b.model_dump(), matrix, FlowTask)
+        ]
     return _generate(base, matrix, FlowTask)
