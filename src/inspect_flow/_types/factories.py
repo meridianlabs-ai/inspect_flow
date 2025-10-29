@@ -56,7 +56,13 @@ def _generate(
         return [
             task
             for b in base
-            for task in _generate(b.model_dump(), matrix, pydantic_type)
+            for task in _generate(
+                b.model_dump(
+                    exclude_defaults=True, exclude_none=True, exclude_unset=True
+                ),
+                matrix,
+                pydantic_type,
+            )
         ]
 
     if base is None:
@@ -64,7 +70,9 @@ def _generate(
     elif isinstance(base, str):
         base = {"name": base}
     elif isinstance(base, BaseModel):
-        base = base.model_dump()
+        base = base.model_dump(
+            exclude_defaults=True, exclude_none=True, exclude_unset=True
+        )
 
     for key in matrix.keys():
         if key in base:

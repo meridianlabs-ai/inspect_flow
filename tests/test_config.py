@@ -11,13 +11,18 @@ from inspect_flow import (
 from inspect_flow._config.config import load_config
 from inspect_flow._types.factories import models, tasks
 
-update_examples = True
+update_examples = False
 
 
 def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
     with open(file_path, "w") as f:
         yaml.dump(
-            config.model_dump(mode="json", exclude_unset=True),
+            config.model_dump(
+                mode="json",
+                exclude_unset=True,
+                exclude_defaults=True,
+                exclude_none=True,
+            ),
             f,
             default_flow_style=False,
             sort_keys=False,
