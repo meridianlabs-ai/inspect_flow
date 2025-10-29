@@ -224,3 +224,4 @@ class FlowConfigDict(TypedDict):
     config: NotRequired[Optional[Union[GenerateConfig, "GenerateConfigDict"]]]
     dependencies: NotRequired[Optional[Sequence[str]]]
     tasks: Sequence[Union[str, FlowTask, FlowTaskDict]]
+    env: NotRequired[Optional[Mapping[str, str]]]

@@ -396,6 +396,10 @@ class FlowConfig(BaseModel, extra="forbid"):
 
     tasks: list[FlowTask] = Field(description="Tasks to run")
 
+    env: dict[str, str] | None = Field(
+        default=None, description="Environment variables to set when running tasks."
+    )
+
     # Convert single items to lists
     @field_validator("dependencies", mode="before")
     @classmethod
