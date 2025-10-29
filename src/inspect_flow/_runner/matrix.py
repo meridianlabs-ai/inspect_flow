@@ -17,7 +17,6 @@ from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowConfig,
     FlowEpochs,
-    FlowMatrix,
     FlowModel,
     FlowSolver,
     FlowTask,

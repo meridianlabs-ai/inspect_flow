@@ -74,7 +74,8 @@ def generate_typed_dict_code() -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
-        schema = transform_schema(FlowConfig.model_json_schema())
+        # schema = transform_schema(FlowConfig.model_json_schema())
+        schema = FlowConfig.model_json_schema()
 
         generate(
             str(schema),
