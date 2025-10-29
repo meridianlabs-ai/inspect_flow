@@ -18,8 +18,8 @@ from inspect_flow._types.flow_types import (
 
 
 class ApproverPolicyConfigMatrixDict(TypedDict):
-    name: Optional[Sequence[str]]
-    tools: Optional[Sequence[Union[str, Sequence[str]]]]
+    name: NotRequired[Optional[Sequence[str]]]
+    tools: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
     params: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
@@ -33,17 +33,17 @@ class BatchConfigMatrixDict(TypedDict):
 
 
 class FlowAgentMatrixDict(TypedDict):
-    name: Optional[Sequence[str]]
+    name: NotRequired[Optional[Sequence[str]]]
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
 class FlowEpochsMatrixDict(TypedDict):
-    epochs: Optional[Sequence[int]]
+    epochs: NotRequired[Optional[Sequence[int]]]
     reducer: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
 
 
 class FlowSolverMatrixDict(TypedDict):
-    name: Optional[Sequence[str]]
+    name: NotRequired[Optional[Sequence[str]]]
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
@@ -75,21 +75,23 @@ class JSONSchemaMatrixDict(TypedDict):
 
 
 class ResponseSchemaMatrixDict(TypedDict):
-    name: Optional[Sequence[str]]
-    json_schema: Union[JSONSchema, "JSONSchemaMatrixDict"]
+    name: NotRequired[Optional[Sequence[str]]]
+    json_schema: NotRequired[Union[JSONSchema, "JSONSchemaMatrixDict"]]
     description: NotRequired[Optional[Sequence[str]]]
     strict: NotRequired[Optional[Sequence[bool]]]
 
 
 class SandboxEnvironmentSpecMatrixDict(TypedDict):
-    type: Optional[Sequence[str]]
+    type: NotRequired[Optional[Sequence[str]]]
     config: NotRequired[Optional[Sequence]]
 
 
 class ApprovalPolicyConfigMatrixDict(TypedDict):
-    approvers: Optional[
-        Sequence[
-            Sequence[Union[ApproverPolicyConfig, "ApproverPolicyConfigMatrixDict"]]
+    approvers: NotRequired[
+        Optional[
+            Sequence[
+                Sequence[Union[ApproverPolicyConfig, "ApproverPolicyConfigMatrixDict"]]
+            ]
         ]
     ]
 
@@ -195,7 +197,7 @@ class GenerateConfigMatrixDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    name: Optional[Sequence[str]]
+    name: NotRequired[Optional[Sequence[str]]]
     role: NotRequired[Optional[Sequence[str]]]
     default: NotRequired[Optional[Sequence[str]]]
     config: NotRequired[
@@ -281,4 +283,6 @@ class FlowConfigMatrixDict(TypedDict):
         Optional[Sequence[Union[GenerateConfig, "GenerateConfigMatrixDict"]]]
     ]
     dependencies: NotRequired[Optional[Sequence[Sequence[str]]]]
-    tasks: Optional[Sequence[Sequence[Union[str, FlowTask, FlowTaskMatrixDict]]]]
+    tasks: NotRequired[
+        Optional[Sequence[Sequence[Union[str, FlowTask, FlowTaskMatrixDict]]]]
+    ]

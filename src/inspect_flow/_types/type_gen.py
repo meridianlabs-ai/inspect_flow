@@ -45,6 +45,8 @@ def field_type_to_list(field_schema: Schema) -> None:
         field_type = {}
 
     field_schema["anyOf"] = [{"type": "array", "items": field_type}, {"type": "null"}]
+    if "default" not in field_schema:
+        field_schema["default"] = None
 
 
 def fields_to_lists(schema: Schema) -> Schema:
@@ -52,6 +54,7 @@ def fields_to_lists(schema: Schema) -> Schema:
     classes: list[Schema] = [schema, *[v for v in defs.values()]]
     for c in classes:
         properties: Schema = c["properties"]
+        c.pop("required", None)
         for field_value in properties.values():
             field_type_to_list(field_value)
     return schema
