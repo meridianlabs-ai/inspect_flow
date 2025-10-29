@@ -1,3 +1,4 @@
+import pytest
 from inspect_flow._types.factories import tasks
 from inspect_flow._types.flow_types import FlowTask
 
@@ -31,3 +32,8 @@ def test_flow_task_x_models():
     assert result[1].name == "task1"
     assert result[1].model
     assert result[1].model.name == "model2"
+
+
+def test_duplicate_raises():
+    with pytest.raises(ValueError, match="name provided in both base and matrix"):
+        tasks(FlowTask(name="task1"), matrix={"name": ["task2"]})
