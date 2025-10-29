@@ -396,10 +396,25 @@ class FlowConfig(BaseModel, extra="forbid"):
     tasks: list[FlowTask] = Field(description="Tasks to run")
 
     # Convert single items to lists
-    @field_validator("dependencies", "tasks", mode="before")
+    @field_validator("dependencies", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+    @field_validator("tasks", mode="before")
+    @classmethod
+    def convert_string_tasks(cls, v):
+        return convert_to_task_list(v)
+
+
+def convert_to_task_list(
+    v: str | FlowTask | list[str | FlowTask] | None,
+) -> list[FlowTask] | None:
+    if v is None:
+        return v
+    if not isinstance(v, list):
+        v = [v]
+    return [FlowTask(name=task) if isinstance(task, str) else task for task in v]
 
 
 T = TypeVar("T", FlowModel, FlowSolver)
