@@ -3,6 +3,7 @@ from typing import (
     Literal,
     Mapping,
     TypeAlias,
+    TypeVar,
     Union,
 )
 
@@ -189,6 +190,16 @@ class FlowTask(BaseModel, extra="forbid"):
         default=None,
         description="Evaluate specific sample(s) from the dataset.",
     )
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def convert_string_model(cls, v):
+        return convert_str_to_class(FlowModel, v)
+
+    @field_validator("solver", mode="before")
+    @classmethod
+    def convert_string_solvers(cls, v):
+        return convert_str_to_class(FlowSolver, v)
 
     @model_validator(mode="after")
     def validate_field_combinations(self):
@@ -389,3 +400,10 @@ class FlowConfig(BaseModel, extra="forbid"):
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
+
+
+T = TypeVar("T", FlowModel, FlowSolver)
+
+
+def convert_str_to_class(cls: type[T], v: str | T | None) -> T | None:
+    return cls(name=v) if isinstance(v, str) else v

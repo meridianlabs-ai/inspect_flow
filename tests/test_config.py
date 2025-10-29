@@ -11,7 +11,7 @@ from inspect_flow import (
 from inspect_flow._config.config import load_config
 from inspect_flow._types.factories import models, tasks
 
-update_examples = False
+update_examples = True
 
 
 def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:

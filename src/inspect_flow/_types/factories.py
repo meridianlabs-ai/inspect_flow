@@ -72,7 +72,7 @@ def _generate(
 
     matrix_keys = matrix.keys()
     result = []
-    for matrix_values in product(matrix.values()):
+    for matrix_values in product(*matrix.values()):
         item_dict = dict(base) | dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(pydantic_type.model_validate(item_dict))
     return result
