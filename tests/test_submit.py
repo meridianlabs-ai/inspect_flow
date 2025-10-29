@@ -1,6 +1,8 @@
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from inspect_flow import flow_config
 from inspect_flow._submit.submit import submit
 
@@ -22,3 +24,22 @@ def test_submit() -> None:
                 / "run.py"
             ).resolve()
         )
+
+
+def test_submit_handles_subprocess_error() -> None:
+    """Test that CalledProcessError causes sys.exit without stack trace."""
+    with (
+        patch("subprocess.run") as mock_run,
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        # Configure the third subprocess.run call to raise CalledProcessError
+        mock_run.side_effect = [
+            None,  # First call succeeds
+            None,  # Second call succeeds
+            subprocess.CalledProcessError(42, "cmd"),  # Third call fails
+        ]
+
+        submit(config=flow_config({"tasks": ["task_name"]}))
+
+    # Verify sys.exit was called with the subprocess's return code
+    assert exc_info.value.code == 42
