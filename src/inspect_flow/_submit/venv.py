@@ -8,7 +8,7 @@ from typing import List, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.flow_types import FlowConfig, FlowMatrix, FlowModel, FlowTask
+from inspect_flow._types.flow_types import FlowConfig, FlowModel, FlowTask
 
 
 class VcsInfo(BaseModel):
@@ -167,20 +167,18 @@ def get_model_dependencies(config: FlowConfig) -> List[str]:
             if dependency:
                 model_dependencies.add(dependency)
 
-    def collect_model_dependencies(config: FlowMatrix | FlowTask) -> None:
-        for model in config.models or []:
-            collect_dependency(model.name)
-        for model_roles in config.model_roles or []:
-            for model_role in model_roles.values():
+    def collect_model_dependencies(config: FlowTask) -> None:
+        if config.model:
+            collect_dependency(config.model.name)
+        if config.model_roles:
+            for model_role in config.model_roles.values():
                 if isinstance(model_role, FlowModel):
                     collect_dependency(model_role.name)
                 else:
                     collect_dependency(model_role)
 
-    for matrix in config.matrix:
-        collect_model_dependencies(matrix)
-        for task in matrix.tasks:
-            collect_model_dependencies(task)
+    for task in config.tasks:
+        collect_model_dependencies(task)
 
     return sorted(model_dependencies)
 

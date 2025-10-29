@@ -10,7 +10,7 @@ from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 def test_local_e2e() -> None:
     log_dir = init_test_logs()
 
-    config_path = Path(__file__).parents[1] / "examples" / "e2e_test_flow.yaml"
+    config_path = Path(__file__).parents[1] / "examples" / "e2e_test_flow.py"
     config = load_config(str(config_path))
 
     submit(config=config)
@@ -36,18 +36,14 @@ def test_cwd_relative_py_file() -> None:
         {
             "flow_dir": "logs/local_logs",
             "options": {"limit": 1},
-            "matrix": [
+            "tasks": [
                 {
-                    "tasks": [
-                        {
-                            "name": "noop",
-                            "file": "examples/local_eval/src/local_eval/noop.py",
-                        }
-                    ],
-                    "models": ["mockllm/mock-llm"],
-                },
+                    "name": "noop",
+                    "file": "examples/local_eval/src/local_eval/noop.py",
+                    "model": "mockllm/mock-llm",
+                }
             ],
-        }
+        },
     )
 
     submit(config=config)

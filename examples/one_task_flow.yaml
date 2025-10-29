@@ -4,6 +4,5 @@ options:
 dependencies:
 - openai
 - git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
-matrix:
-- tasks:
-  - name: inspect_evals/mmlu_0_shot
+tasks:
+- name: inspect_evals/mmlu_0_shot

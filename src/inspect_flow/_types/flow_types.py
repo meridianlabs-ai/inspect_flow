@@ -38,9 +38,9 @@ class FlowModel(BaseModel, extra="forbid"):
     )
 
     # TODO:ransom should we forbid extra on GenerateConfig?
-    config: list[GenerateConfig] | None = Field(
+    config: GenerateConfig | None = Field(
         default=None,
-        description="Configuration for model. One model is created for each value in the list. Config values will be override settings on the FlowTask and FlowConfig.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
     )
 
     base_url: str | None = Field(
@@ -62,41 +62,23 @@ class FlowModel(BaseModel, extra="forbid"):
         default=None, description="Additional args to pass to model constructor."
     )
 
-    # Convert single items to lists
-    @field_validator("config", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
-
 
 class FlowSolver(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
 
-    args: list[CreateArgs] | None = Field(
+    args: CreateArgs | None = Field(
         default=None,
-        description="Solver arguments. One solver is create for each value in the list. Only a single value may be set for solvers in a chain.",
+        description="Additional args to pass to solver constructor.",
     )
-
-    # Convert single items to lists
-    @field_validator("args", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
 
 
 class FlowAgent(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
 
-    args: list[CreateArgs] | None = Field(
+    args: CreateArgs | None = Field(
         default=None,
-        description="Agent arguments. One Agent is created for each value in the list.",
+        description="Additional args to pass to agent constructor.",
     )
-
-    # Convert single items to lists
-    @field_validator("args", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
 
 
 class FlowEpochs(BaseModel):
@@ -129,19 +111,19 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Name of the task within the registry. Only used if file is not specified. Defaults to 'name'.",
     )
 
-    args: list[CreateArgs] | None = Field(
+    args: CreateArgs | None = Field(
         default=None,
-        description="Task factory arguments.",
+        description="Additional args to pass to task constructor",
     )
 
-    solvers: list[FlowSolver | list[FlowSolver] | FlowAgent] | None = Field(
+    solver: FlowSolver | list[FlowSolver] | FlowAgent | None = Field(
         default=None,
-        description="List of solver or list of list of solvers. Defaults to generate(), a normal call to the model. Will matrix over items in the top level list.",
+        description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    models: list[FlowModel] | None = Field(
+    model: FlowModel | None = Field(
         default=None,
-        description="Default model for task (Optional, defaults to eval model). Will matrix over items in the list.",
+        description="Default model for task (Optional, defaults to eval model).",
     )
 
     config: GenerateConfig | None = Field(
@@ -149,9 +131,9 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
     )
 
-    model_roles: list[ModelRolesConfig] | None = Field(
+    model_roles: ModelRolesConfig | None = Field(
         default=None,
-        description="Named roles for use in `get_model()`. Will matrix over items in the list.",
+        description="Named roles for use in `get_model()`.",
     )
 
     sandbox: SandboxEnvironmentType | None = Field(
@@ -210,21 +192,15 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Evaluate specific sample(s) from the dataset.",
     )
 
-    # Convert single items to lists
-    @field_validator("args", "model_roles", mode="before")
+    @field_validator("model", mode="before")
     @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
+    def convert_string_model(cls, v):
+        return convert_str_to_class(FlowModel, v)
 
-    @field_validator("models", mode="before")
-    @classmethod
-    def convert_string_models(cls, v):
-        return convert_to_class_list(FlowModel, v)
-
-    @field_validator("solvers", mode="before")
+    @field_validator("solver", mode="before")
     @classmethod
     def convert_string_solvers(cls, v):
-        return convert_to_solver_config_list(v)
+        return convert_str_to_solver(v)
 
     @model_validator(mode="after")
     def validate_field_combinations(self):
@@ -241,53 +217,6 @@ class FlowTask(BaseModel, extra="forbid"):
             )
 
         return self
-
-
-class FlowMatrix(BaseModel, extra="forbid"):
-    tasks: list[FlowTask] = Field(
-        description="List of tasks to evaluate in this eval set."
-    )
-
-    args: list[CreateArgs] | None = Field(
-        default=None,
-        description="Task arguments or list of task arguments to use for evaluation.",
-    )
-
-    models: list[FlowModel] | None = Field(
-        default=None,
-        description="Model or list of models to use for evaluation. If not specified, the default model for each task will be used.",
-    )
-
-    model_roles: list[ModelRolesConfig] | None = Field(
-        default=None,
-        description="Model roles to use for evaluation.",
-    )
-
-    solvers: list[FlowSolver | list[FlowSolver] | FlowAgent] | None = Field(
-        default=None,
-        description="Solvers.",
-    )
-
-    # Convert single items to lists
-    @field_validator("args", "model_roles", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
-
-    @field_validator("tasks", mode="before")
-    @classmethod
-    def convert_string_tasks(cls, v):
-        return convert_to_class_list(FlowTask, v)
-
-    @field_validator("models", mode="before")
-    @classmethod
-    def convert_string_models(cls, v):
-        return convert_to_class_list(FlowModel, v)
-
-    @field_validator("solvers", mode="before")
-    @classmethod
-    def convert_string_solvers(cls, v):
-        return convert_to_solver_config_list(v)
 
 
 class FlowOptions(BaseModel, extra="forbid"):
@@ -428,7 +357,7 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).",
     )
 
-    log_shared: bool | None = Field(
+    log_shared: bool | int | None = Field(
         default=None,
         description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
     )
@@ -447,7 +376,7 @@ class FlowConfig(BaseModel, extra="forbid"):
 
     python_version: str | None = Field(
         default=None,
-        description="Python version to use in the flow virtual environment (e.g. '3.11)",
+        description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
     options: FlowOptions | None = Field(
@@ -465,52 +394,50 @@ class FlowConfig(BaseModel, extra="forbid"):
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
-    matrix: list[FlowMatrix] = Field(description="Matrix of tasks to run")
+    tasks: list[FlowTask] = Field(description="Tasks to run")
 
     # Convert single items to lists
-    @field_validator("dependencies", "matrix", mode="before")
+    @field_validator("dependencies", mode="before")
     @classmethod
     def convert_to_list(cls, v):
         return ensure_list_or_none(v)
 
-
-T = TypeVar("T", FlowTask, FlowModel, FlowSolver, FlowAgent)
-
-
-@overload
-def convert_to_class_list(cls: type[T], v: None) -> None: ...
+    @field_validator("tasks", mode="before")
+    @classmethod
+    def convert_string_tasks(cls, v):
+        return convert_to_task_list(v)
 
 
-@overload
-def convert_to_class_list(cls: type[T], v: str | T | list[str | T]) -> list[T]: ...
-
-
-def convert_to_class_list(
-    cls: type[T], v: str | T | list[str | T] | None
-) -> list[T] | None:
+def convert_to_task_list(
+    v: str | FlowTask | list[str | FlowTask] | None,
+) -> list[FlowTask] | None:
     if v is None:
         return v
     if not isinstance(v, list):
         v = [v]
-    return [cls(name=task) if isinstance(task, str) else task for task in v]
+    return [FlowTask(name=task) if isinstance(task, str) else task for task in v]
 
 
-def convert_to_solver_config(
-    v: str | FlowSolver | list[str | FlowSolver],
-) -> FlowSolver | list[FlowSolver]:
-    if isinstance(v, str):
-        return FlowSolver(name=v)
+T = TypeVar("T", FlowModel, FlowSolver)
+
+
+@overload
+def convert_str_to_class(cls: type[T], v: None) -> None: ...
+
+
+@overload
+def convert_str_to_class(cls: type[T], v: str | T) -> T: ...
+
+
+def convert_str_to_class(cls: type[T], v: str | T | None) -> T | None:
+    return cls(name=v) if isinstance(v, str) else v
+
+
+def convert_str_to_solver(
+    v: str | FlowSolver | list[str | FlowSolver] | None,
+) -> FlowSolver | list[FlowSolver] | None:
+    if v is None:
+        return None
     if isinstance(v, list):
-        return convert_to_class_list(FlowSolver, v)
-    return v
-
-
-# SolverConfig supports chained solvers specified as nested lists
-def convert_to_solver_config_list(
-    v: str | FlowSolver | list[str | FlowSolver | list[str | FlowSolver]] | None,
-) -> list[FlowSolver | list[FlowSolver]] | None:
-    if v is None:
-        return v
-    if not isinstance(v, list):
-        v = [v]
-    return [convert_to_solver_config(task) for task in v]
+        return [convert_str_to_class(FlowSolver, solver) for solver in v]
+    return convert_str_to_class(FlowSolver, v)

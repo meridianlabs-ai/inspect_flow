@@ -1,5 +1,4 @@
 import shutil
-from itertools import product
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
@@ -21,18 +20,11 @@ def verify_test_logs(config: FlowConfig, log_dir: str) -> None:
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
-    # TODO:ransom validation only supports top level matrix params
-    tasks = [task.name for matrix in config.matrix for task in matrix.tasks]
-    models = []
-    for matrix in config.matrix:
-        assert matrix.models
-        models.extend([model.name for model in matrix.models])
-
-    assert len(log_list) == len(tasks) * len(models)
+    assert len(log_list) == len(config.tasks)
     logs = [read_eval_log(log) for log in log_list]
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        product(tasks, models)
+        [(task.name, task.model.name if task.model else None) for task in config.tasks]
     )
