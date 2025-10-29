@@ -286,3 +286,4 @@ class FlowConfigMatrixDict(TypedDict):
     tasks: NotRequired[
         Optional[Sequence[Sequence[Union[str, FlowTask, FlowTaskMatrixDict]]]]
     ]
+    env: NotRequired[Optional[Sequence[Mapping[str, str]]]]

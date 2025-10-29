@@ -43,3 +43,21 @@ def test_submit_handles_subprocess_error() -> None:
 
     # Verify sys.exit was called with the subprocess's return code
     assert exc_info.value.code == 42
+
+
+def test_env() -> None:
+    """Test that CalledProcessError causes sys.exit without stack trace."""
+    with patch("subprocess.run") as mock_run:
+        submit(
+            config=flow_config(
+                {
+                    "tasks": ["task_name"],
+                    "env": {"myenv1": "value1", "myenv2": "value2"},
+                }
+            )
+        )
+
+    assert mock_run.call_count == 3
+    env = mock_run.mock_calls[2].kwargs["env"]
+    assert env["myenv1"] == "value1"
+    assert env["myenv2"] == "value2"

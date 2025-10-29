@@ -17,6 +17,8 @@ def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
+        if config.env:
+            env.update(**config.env)
         set_path_env_vars(env, config_file_path)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
