@@ -345,7 +345,7 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).",
     )
 
-    log_shared: bool | None = Field(
+    log_shared: bool | int | None = Field(
         default=None,
         description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
     )
@@ -364,7 +364,7 @@ class FlowConfig(BaseModel, extra="forbid"):
 
     python_version: str | None = Field(
         default=None,
-        description="Python version to use in the flow virtual environment (e.g. '3.11)",
+        description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
     options: FlowOptions | None = Field(

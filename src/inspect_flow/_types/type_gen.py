@@ -2,87 +2,76 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from datamodel_code_generator import DataModelType, InputFileType, generate
 
 from inspect_flow._types.flow_types import FlowConfig
+
+GenType = Literal["Dict", "MatrixDict"]
 
 # TODO:ransom private import
 ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowMatrix, FlowModel, FlowSolver, FlowTask\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowModel, FlowSolver, FlowTask\n",
 ]
 
 Schema: TypeAlias = dict[str, Any]
 
-ITEM_OR_LIST_FIELDS = {
-    ("FlowConfig", "dependencies"),
-    ("FlowConfig", "matrix"),
-    ("FlowMatrix", "args"),
-    ("FlowMatrix", "tasks"),
-    ("FlowMatrix", "models"),
-    ("FlowMatrix", "model_roles"),
-    ("FlowMatrix", "solvers"),
-    ("FlowTask", "args"),
-    ("FlowTask", "model_roles"),
-    ("FlowTask", "models"),
-    ("FlowTask", "solvers"),
-    ("FlowAgent", "args"),
-    ("FlowSolver", "args"),
-    ("FlowModel", "config"),
-}
+
+def remove_none_option(any_of: list[Schema]) -> list[Schema]:
+    return [v for v in any_of if v.get("type") != "null"]
 
 
-def add_item_option(field_schema: Schema) -> None:
+def field_type_to_list(field_schema: Schema) -> None:
+    field_type: Schema
     if "type" in field_schema:
-        # Convert array typed value to anyOf
-        assert field_schema["type"] == "array"
-        array_type = {"type": "array", "items": field_schema["items"]}
+        type = field_schema["type"]
+        if type == "array":
+            field_type = {"type": type, "items": field_schema["items"]}
+            del field_schema["items"]
+        else:
+            field_type = {"type": type}
         del field_schema["type"]
-        del field_schema["items"]
-        field_schema["anyOf"] = [array_type]
+    elif "anyOf" in field_schema:
+        any_of: list[Schema] = field_schema["anyOf"]
+        del field_schema["anyOf"]
+        any_of = remove_none_option(any_of)
+        field_type = {"anyOf": any_of}
+    else:
+        # Any type
+        field_type = {}
 
-    # Find the array option
-    any_of: list[Schema] = field_schema["anyOf"]
-    array_field: Schema | None = None
-    for field in any_of:
-        if field["type"] == "array":
-            array_field = field
-            break
-    assert array_field
-
-    # Add an option for a single item in the array
-    any_of.append(array_field["items"])
+    field_schema["anyOf"] = [{"type": "array", "items": field_type}, {"type": "null"}]
 
 
-def transform_schema(schema: Schema) -> Schema:
+def fields_to_lists(schema: Schema) -> Schema:
     defs: Schema = schema["$defs"]
     classes: list[Schema] = [schema, *[v for v in defs.values()]]
     for c in classes:
         properties: Schema = c["properties"]
-        for field_name, field_value in properties.items():
-            if (c["title"], field_name) in ITEM_OR_LIST_FIELDS:
-                add_item_option(field_value)
-
+        for field_value in properties.values():
+            field_type_to_list(field_value)
     return schema
 
 
-def generate_typed_dict_code() -> list[str]:
+def generate_dict_code(type: GenType) -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
         # schema = transform_schema(FlowConfig.model_json_schema())
         schema = FlowConfig.model_json_schema()
+        if type == "MatrixDict":
+            schema = fields_to_lists(schema)
 
         generate(
             str(schema),
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
-            custom_class_name_generator=lambda name: f"{name}Dict",
+            custom_class_name_generator=lambda name: f"{name}{type}",
             use_generic_container_types=True,
         )
 
@@ -91,7 +80,7 @@ def generate_typed_dict_code() -> list[str]:
     return lines
 
 
-def modify_generated_code(lines: list[str]) -> list[str]:
+def modify_generated_code(type: GenType, lines: list[str]) -> list[str]:
     str_as_class = ["FlowTask", "FlowModel", "FlowSolver"]
 
     def replacement(m: re.Match[str]) -> str:
@@ -121,7 +110,7 @@ def modify_generated_code(lines: list[str]) -> list[str]:
             else:
                 # Replace ClassNameDict with ClassName | ClassNameDict
                 modified_line = re.sub(
-                    r"\b(\w+)Dict\b",
+                    rf"\b(\w+){type}\b",
                     replacement,
                     line,
                 )
@@ -129,8 +118,8 @@ def modify_generated_code(lines: list[str]) -> list[str]:
     return generated_code
 
 
-def write_generated_code(generated_code: list[str]) -> None:
-    output_file = Path(__file__).parent / "dicts.py"
+def write_generated_code(file_name: str, generated_code: list[str]) -> None:
+    output_file = Path(__file__).parent / file_name
 
     with open(output_file, "w") as f:
         f.writelines(generated_code)
@@ -139,9 +128,12 @@ def write_generated_code(generated_code: list[str]) -> None:
 
 
 def main():
-    lines = generate_typed_dict_code()
-    generated_code = modify_generated_code(lines)
-    write_generated_code(generated_code)
+    lines = generate_dict_code("Dict")
+    generated_code = modify_generated_code("Dict", lines)
+    write_generated_code("dicts.py", generated_code)
+    lines = generate_dict_code("MatrixDict")
+    generated_code = modify_generated_code("MatrixDict", lines)
+    write_generated_code("matrix_dicts.py", generated_code)
 
 
 if __name__ == "__main__":

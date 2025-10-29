@@ -124,7 +124,7 @@ class FlowOptionsDict(TypedDict):
     log_realtime: NotRequired[Optional[bool]]
     log_images: NotRequired[Optional[bool]]
     log_buffer: NotRequired[Optional[int]]
-    log_shared: NotRequired[Optional[bool]]
+    log_shared: NotRequired[Optional[Union[bool, int]]]
     log_dir_allow_dirty: NotRequired[Optional[bool]]
 
 
