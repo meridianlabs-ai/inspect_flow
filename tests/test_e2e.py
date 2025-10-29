@@ -36,18 +36,14 @@ def test_cwd_relative_py_file() -> None:
         {
             "flow_dir": "logs/local_logs",
             "options": {"limit": 1},
-            "matrix": [
+            "tasks": [
                 {
-                    "tasks": [
-                        {
-                            "name": "noop",
-                            "file": "examples/local_eval/src/local_eval/noop.py",
-                        }
-                    ],
-                    "models": ["mockllm/mock-llm"],
-                },
+                    "name": "noop",
+                    "file": "examples/local_eval/src/local_eval/noop.py",
+                    "model": "mockllm/mock-llm",
+                }
             ],
-        }
+        },
     )
 
     submit(config=config)
