@@ -1,5 +1,6 @@
 import pathlib
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -20,9 +21,12 @@ def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
-        subprocess.run(
-            [str(python_path), str(run_path)],
-            cwd=temp_dir,
-            check=True,
-            env=env,
-        )
+        try:
+            subprocess.run(
+                [str(python_path), str(run_path)],
+                cwd=temp_dir,
+                check=True,
+                env=env,
+            )
+        except subprocess.CalledProcessError as e:
+            sys.exit(e.returncode)
