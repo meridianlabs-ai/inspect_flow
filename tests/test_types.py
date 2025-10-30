@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from inspect_flow import (
-    FlowAgent,
-    FlowConfig,
-    FlowModel,
-    FlowSolver,
-    FlowTask,
     flow_agent,
     flow_config,
     flow_model,
     flow_solver,
     flow_task,
+)
+from inspect_flow.types import (
+    FlowAgent,
+    FlowConfig,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
 )
 
 

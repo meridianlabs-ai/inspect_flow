@@ -1,6 +1,7 @@
 from itertools import product
 from typing import Any, Mapping, TypeVar
 
+from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
 
 from inspect_flow._types.dicts import (
@@ -12,6 +13,8 @@ from inspect_flow._types.dicts import (
     FlowSolverMatrixDict,
     FlowTaskDict,
     FlowTaskMatrixDict,
+    GenerateConfigDict,
+    GenerateConfigMatrixDict,
 )
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -106,3 +109,15 @@ def tasks(
     matrix: FlowTaskMatrixDict,
 ) -> list[FlowTask]:
     return _generate(base, matrix, FlowTask)
+
+
+def configs(
+    base: GenerateConfigDict
+    | str
+    | None
+    | GenerateConfig
+    | list[GenerateConfig] = None,
+    *,
+    matrix: GenerateConfigMatrixDict,
+) -> list[GenerateConfig]:
+    return _generate(base, matrix, GenerateConfig)

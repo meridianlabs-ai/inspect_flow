@@ -2,14 +2,14 @@ from pathlib import Path
 
 import yaml
 from inspect_ai.model import GenerateConfig
-from inspect_flow import (
+from inspect_flow._config.config import load_config
+from inspect_flow._types.factories import models, tasks
+from inspect_flow.types import (
     FlowConfig,
     FlowModel,
     FlowOptions,
     FlowTask,
 )
-from inspect_flow._config.config import load_config
-from inspect_flow._types.factories import models, tasks
 
 update_examples = False
 

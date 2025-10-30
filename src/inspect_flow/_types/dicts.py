@@ -44,29 +44,6 @@ class ApproverPolicyConfigDict(TypedDict):
     params: NotRequired[Mapping[str, Any]]
 
 
-class ApproverPolicyConfigMatrixDict(TypedDict):
-    """
-    Configuration format for approver policies.
-
-    For example, here is a configuration in YAML:
-
-    ```yaml
-    approvers:
-      - name: human
-        tools: web_browser*, bash, pyhton
-        choices: [approve, reject]
-
-      - name: auto
-        tools: *
-        decision: approve
-    ```
-    """
-
-    name: NotRequired[Optional[Sequence[str]]]
-    tools: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
-    params: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-
-
 class BatchConfigDict(TypedDict):
     """Batch processing configuration."""
 
@@ -78,17 +55,6 @@ class BatchConfigDict(TypedDict):
     max_consecutive_check_failures: NotRequired[Optional[int]]
 
 
-class BatchConfigMatrixDict(TypedDict):
-    """Batch processing configuration."""
-
-    size: NotRequired[Optional[Sequence[int]]]
-    max_size: NotRequired[Optional[Sequence[int]]]
-    send_delay: NotRequired[Optional[Sequence[float]]]
-    tick: NotRequired[Optional[Sequence[float]]]
-    max_batches: NotRequired[Optional[Sequence[int]]]
-    max_consecutive_check_failures: NotRequired[Optional[Sequence[int]]]
-
-
 class FlowAgentDict(TypedDict):
     name: str
     """Name of the solver."""
@@ -96,24 +62,10 @@ class FlowAgentDict(TypedDict):
     """Additional args to pass to agent constructor."""
 
 
-class FlowAgentMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the solver."""
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Additional args to pass to agent constructor."""
-
-
 class FlowEpochsDict(TypedDict):
     epochs: int
     """Number of epochs."""
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
-    """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
-
-
-class FlowEpochsMatrixDict(TypedDict):
-    epochs: NotRequired[Optional[Sequence[int]]]
-    """Number of epochs."""
-    reducer: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
     """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
 
 
@@ -138,23 +90,8 @@ class SandboxEnvironmentSpecDict(TypedDict):
     config: NotRequired[Any]
 
 
-class SandboxEnvironmentSpecMatrixDict(TypedDict):
-    """Specification of a SandboxEnvironment."""
-
-    type: NotRequired[Optional[Sequence[str]]]
-    config: NotRequired[Optional[Sequence]]
-
-
 class ApprovalPolicyConfigDict(TypedDict):
     approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
-
-
-class ApprovalPolicyConfigMatrixDict(TypedDict):
-    approvers: NotRequired[
-        Optional[
-            Sequence[Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]]
-        ]
-    ]
 
 
 class FlowOptionsDict(TypedDict):
@@ -227,88 +164,6 @@ class FlowOptionsDict(TypedDict):
     log_shared: NotRequired[Optional[Union[bool, int]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
-
-
-class FlowOptionsMatrixDict(TypedDict):
-    retry_attempts: NotRequired[Optional[Sequence[int]]]
-    """Maximum number of retry attempts before giving up (defaults to 10)."""
-    retry_wait: NotRequired[Optional[Sequence[float]]]
-    """Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour."""
-    retry_connections: NotRequired[Optional[Sequence[float]]]
-    """Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction)."""
-    retry_cleanup: NotRequired[Optional[Sequence[bool]]]
-    """Cleanup failed log files after retries (defaults to True)."""
-    sandbox: NotRequired[
-        Optional[
-            Sequence[
-                Union[
-                    str,
-                    Sequence,
-                    SandboxEnvironmentSpec,
-                    SandboxEnvironmentSpecDict,
-                ]
-            ]
-        ]
-    ]
-    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    sandbox_cleanup: NotRequired[Optional[Sequence[bool]]]
-    """Cleanup sandbox environments after task completes (defaults to True)"""
-    tags: NotRequired[Optional[Sequence[Sequence[str]]]]
-    """Tags to associate with this evaluation run."""
-    metadata: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Metadata to associate with this evaluation run."""
-    trace: NotRequired[Optional[Sequence[bool]]]
-    """Trace message interactions with evaluated model to terminal."""
-    display: NotRequired[
-        Optional[
-            Sequence[Literal["full", "conversation", "rich", "plain", "log", "none"]]
-        ]
-    ]
-    """Task display type (defaults to 'full')."""
-    approval: NotRequired[
-        Optional[Sequence[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]]
-    ]
-    """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
-    score: NotRequired[Optional[Sequence[bool]]]
-    """Score output (defaults to True)"""
-    log_level: NotRequired[Optional[Sequence[str]]]
-    """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
-    log_level_transcript: NotRequired[Optional[Sequence[str]]]
-    """Level for logging to the log file (defaults to "info")"""
-    log_format: NotRequired[Optional[Sequence[Literal["eval", "json"]]]]
-    """Format for writing log files (defaults to "eval", the native high-performance format)."""
-    limit: NotRequired[Optional[Sequence[int]]]
-    """Limit evaluated samples (defaults to all samples)."""
-    sample_shuffle: NotRequired[Optional[Sequence[Union[bool, int]]]]
-    """Shuffle order of samples (pass a seed to make the order deterministic)."""
-    fail_on_error: NotRequired[Optional[Sequence[Union[bool, float]]]]
-    """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: NotRequired[Optional[Sequence[bool]]]
-    """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    retry_on_error: NotRequired[Optional[Sequence[int]]]
-    """Number of times to retry samples if they encounter errors (by default, no retries occur)."""
-    debug_errors: NotRequired[Optional[Sequence[bool]]]
-    """Raise task errors (rather than logging them) so they can be debugged (defaults to False)."""
-    max_samples: NotRequired[Optional[Sequence[int]]]
-    """Maximum number of samples to run in parallel (default is max_connections)"""
-    max_tasks: NotRequired[Optional[Sequence[int]]]
-    """Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)"""
-    max_subprocesses: NotRequired[Optional[Sequence[int]]]
-    """Maximum number of subprocesses to run in parallel (default is os.cpu_count())"""
-    max_sandboxes: NotRequired[Optional[Sequence[int]]]
-    """Maximum number of sandboxes (per-provider) to run in parallel."""
-    log_samples: NotRequired[Optional[Sequence[bool]]]
-    """Log detailed samples and scores (defaults to True)"""
-    log_realtime: NotRequired[Optional[Sequence[bool]]]
-    """Log events in realtime (enables live viewing of samples in inspect view). Defaults to True."""
-    log_images: NotRequired[Optional[Sequence[bool]]]
-    """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)"""
-    log_buffer: NotRequired[Optional[Sequence[int]]]
-    """Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems)."""
-    log_shared: NotRequired[Optional[Sequence[Union[bool, int]]]]
-    """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
-    log_dir_allow_dirty: NotRequired[Optional[Sequence[bool]]]
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
@@ -586,33 +441,6 @@ class JSONSchemaDict(TypedDict):
     required: NotRequired[Optional[Sequence[str]]]
 
 
-class JSONSchemaMatrixDict(TypedDict):
-    """JSON Schema for type."""
-
-    type: NotRequired[
-        Optional[
-            Sequence[
-                Literal[
-                    "string", "integer", "number", "boolean", "array", "object", "null"
-                ]
-            ]
-        ]
-    ]
-    format: NotRequired[Optional[Sequence[str]]]
-    description: NotRequired[Optional[Sequence[str]]]
-    default: NotRequired[Optional[Sequence]]
-    enum: NotRequired[Optional[Sequence[Sequence]]]
-    items: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
-    properties: NotRequired[
-        Optional[Sequence[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
-    ]
-    additionalProperties: NotRequired[
-        Optional[Sequence[Union[JSONSchema, bool, JSONSchemaDict]]]
-    ]
-    anyOf: NotRequired[Optional[Sequence[Sequence[Union[JSONSchema, JSONSchemaDict]]]]]
-    required: NotRequired[Optional[Sequence[Sequence[str]]]]
-
-
 class ResponseSchemaDict(TypedDict):
     """Schema for model response when using Structured Output."""
 
@@ -620,15 +448,6 @@ class ResponseSchemaDict(TypedDict):
     json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
-
-
-class ResponseSchemaMatrixDict(TypedDict):
-    """Schema for model response when using Structured Output."""
-
-    name: NotRequired[Optional[Sequence[str]]]
-    json_schema: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
-    description: NotRequired[Optional[Sequence[str]]]
-    strict: NotRequired[Optional[Sequence[bool]]]
 
 
 class FlowConfigDict(TypedDict):
@@ -645,21 +464,4 @@ class FlowConfigDict(TypedDict):
     tasks: Sequence[Union[FlowTask, FlowTaskDict, str]]
     """Tasks to run"""
     env: NotRequired[Optional[Mapping[str, str]]]
-    """Environment variables to set when running tasks."""
-
-
-class FlowConfigMatrixDict(TypedDict):
-    flow_dir: NotRequired[Optional[Sequence[str]]]
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
-    python_version: NotRequired[Optional[Sequence[str]]]
-    """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: NotRequired[Optional[Sequence[Union[FlowOptions, FlowOptionsDict]]]]
-    """Arguments for calls to eval_set."""
-    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
-    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    dependencies: NotRequired[Optional[Sequence[Sequence[str]]]]
-    """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: NotRequired[Optional[Sequence[Sequence[Union[FlowTask, FlowTaskDict, str]]]]]
-    """Tasks to run"""
-    env: NotRequired[Optional[Sequence[Mapping[str, str]]]]
     """Environment variables to set when running tasks."""
