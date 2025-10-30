@@ -211,13 +211,20 @@ def modify_generated_code(type: GenType, lines: list[str]) -> list[str]:
                 section = "imports"
                 generated_code.extend(ADDITIONAL_IMPORTS)
         elif section == "imports":
-            generated_code.append(line)
             if line.strip().startswith("class"):
                 section = "classes"
-        elif section == "classes":
-            if line.strip().startswith("class"):
-                # Don't modify import or class definition lines
+            else:
                 generated_code.append(line)
+        elif section == "ignore class":
+            if line.strip().startswith("class"):
+                section = "classes"
+
+        if section == "classes":
+            if line.strip().startswith("class"):
+                if line.find("Ignore") != -1:
+                    section = "ignore class"
+                else:
+                    generated_code.append(line)
             else:
                 # Replace IgnoreClassName with ClassName
                 modified_line = re.sub(

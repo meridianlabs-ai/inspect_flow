@@ -33,12 +33,6 @@ class ApproverPolicyConfigMatrixDict(TypedDict):
     params: NotRequired[Mapping[str, Any]]
 
 
-class IgnoreApproverPolicyConfig(TypedDict):
-    name: str
-    tools: Union[str, Sequence[str]]
-    params: NotRequired[Mapping[str, Any]]
-
-
 class BatchConfigDict(TypedDict):
     size: NotRequired[Optional[int]]
     max_size: NotRequired[Optional[int]]
@@ -57,26 +51,12 @@ class BatchConfigMatrixDict(TypedDict):
     max_consecutive_check_failures: NotRequired[Optional[int]]
 
 
-class IgnoreBatchConfig(TypedDict):
-    size: NotRequired[Optional[int]]
-    max_size: NotRequired[Optional[int]]
-    send_delay: NotRequired[Optional[float]]
-    tick: NotRequired[Optional[float]]
-    max_batches: NotRequired[Optional[int]]
-    max_consecutive_check_failures: NotRequired[Optional[int]]
-
-
 class FlowAgentDict(TypedDict):
     name: str
     args: NotRequired[Optional[Mapping[str, Any]]]
 
 
 class FlowAgentMatrixDict(TypedDict):
-    name: str
-    args: NotRequired[Optional[Mapping[str, Any]]]
-
-
-class IgnoreFlowAgent(TypedDict):
     name: str
     args: NotRequired[Optional[Mapping[str, Any]]]
 
@@ -91,22 +71,12 @@ class FlowEpochsMatrixDict(TypedDict):
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
 
 
-class IgnoreFlowEpochs(TypedDict):
-    epochs: int
-    reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
-
-
 class FlowSolverDict(TypedDict):
     name: str
     args: NotRequired[Optional[Mapping[str, Any]]]
 
 
 class FlowSolverMatrixDict(TypedDict):
-    name: str
-    args: NotRequired[Optional[Mapping[str, Any]]]
-
-
-class IgnoreFlowSolver(TypedDict):
     name: str
     args: NotRequired[Optional[Mapping[str, Any]]]
 
@@ -121,20 +91,11 @@ class SandboxEnvironmentSpecMatrixDict(TypedDict):
     config: NotRequired[Any]
 
 
-class IgnoreSandboxEnvironmentSpec(TypedDict):
-    type: str
-    config: NotRequired[Any]
-
-
 class ApprovalPolicyConfigDict(TypedDict):
     approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
 class ApprovalPolicyConfigMatrixDict(TypedDict):
-    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
-
-
-class IgnoreApprovalPolicyConfig(TypedDict):
     approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
@@ -222,48 +183,6 @@ class FlowOptionsMatrixDict(TypedDict):
     log_dir_allow_dirty: NotRequired[Optional[bool]]
 
 
-class IgnoreFlowOptions(TypedDict):
-    retry_attempts: NotRequired[Optional[int]]
-    retry_wait: NotRequired[Optional[float]]
-    retry_connections: NotRequired[Optional[float]]
-    retry_cleanup: NotRequired[Optional[bool]]
-    sandbox: NotRequired[
-        Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-        ]
-    ]
-    sandbox_cleanup: NotRequired[Optional[bool]]
-    tags: NotRequired[Optional[Sequence[str]]]
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
-    trace: NotRequired[Optional[bool]]
-    display: NotRequired[
-        Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
-    ]
-    approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
-    ]
-    score: NotRequired[bool]
-    log_level: NotRequired[Optional[str]]
-    log_level_transcript: NotRequired[Optional[str]]
-    log_format: NotRequired[Optional[Literal["eval", "json"]]]
-    limit: NotRequired[Optional[int]]
-    sample_shuffle: NotRequired[Optional[Union[bool, int]]]
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    continue_on_fail: NotRequired[Optional[bool]]
-    retry_on_error: NotRequired[Optional[int]]
-    debug_errors: NotRequired[Optional[bool]]
-    max_samples: NotRequired[Optional[int]]
-    max_tasks: NotRequired[Optional[int]]
-    max_subprocesses: NotRequired[Optional[int]]
-    max_sandboxes: NotRequired[Optional[int]]
-    log_samples: NotRequired[Optional[bool]]
-    log_realtime: NotRequired[Optional[bool]]
-    log_images: NotRequired[Optional[bool]]
-    log_buffer: NotRequired[Optional[int]]
-    log_shared: NotRequired[Optional[Union[bool, int]]]
-    log_dir_allow_dirty: NotRequired[Optional[bool]]
-
-
 class FlowModelDict(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
@@ -276,17 +195,6 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    name: str
-    role: NotRequired[Optional[str]]
-    default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    base_url: NotRequired[Optional[str]]
-    api_key: NotRequired[Optional[str]]
-    memoize: NotRequired[bool]
-    model_args: NotRequired[Optional[Mapping[str, Any]]]
-
-
-class IgnoreFlowModel(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
     default: NotRequired[Optional[str]]
@@ -340,48 +248,6 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowTaskMatrixDict(TypedDict):
-    name: NotRequired[Optional[str]]
-    file: NotRequired[Optional[str]]
-    file_attr: NotRequired[Optional[str]]
-    registry_name: NotRequired[Optional[str]]
-    args: NotRequired[Optional[Mapping[str, Any]]]
-    solver: NotRequired[
-        Optional[
-            Union[
-                FlowSolver,
-                Sequence[Union[FlowSolver, FlowSolverDict]],
-                FlowAgent,
-                FlowSolverDict,
-                FlowAgentDict,
-            ]
-        ]
-    ]
-    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    model_roles: NotRequired[
-        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
-    ]
-    sandbox: NotRequired[
-        Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-        ]
-    ]
-    approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
-    ]
-    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    continue_on_fail: NotRequired[Optional[bool]]
-    message_limit: NotRequired[Optional[int]]
-    token_limit: NotRequired[Optional[int]]
-    time_limit: NotRequired[Optional[int]]
-    working_limit: NotRequired[Optional[int]]
-    version: NotRequired[Optional[int]]
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
-    sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
-
-
-class IgnoreFlowTask(TypedDict):
     name: NotRequired[Optional[str]]
     file: NotRequired[Optional[str]]
     file_attr: NotRequired[Optional[str]]
@@ -487,38 +353,6 @@ class GenerateConfigMatrixDict(TypedDict):
     batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
 
 
-class IgnoreGenerateConfig(TypedDict):
-    max_retries: NotRequired[Optional[int]]
-    timeout: NotRequired[Optional[int]]
-    attempt_timeout: NotRequired[Optional[int]]
-    max_connections: NotRequired[Optional[int]]
-    system_message: NotRequired[Optional[str]]
-    max_tokens: NotRequired[Optional[int]]
-    top_p: NotRequired[Optional[float]]
-    temperature: NotRequired[Optional[float]]
-    stop_seqs: NotRequired[Optional[Sequence[str]]]
-    best_of: NotRequired[Optional[int]]
-    frequency_penalty: NotRequired[Optional[float]]
-    presence_penalty: NotRequired[Optional[float]]
-    logit_bias: NotRequired[Optional[Mapping[str, float]]]
-    seed: NotRequired[Optional[int]]
-    top_k: NotRequired[Optional[int]]
-    num_choices: NotRequired[Optional[int]]
-    logprobs: NotRequired[Optional[bool]]
-    top_logprobs: NotRequired[Optional[int]]
-    parallel_tool_calls: NotRequired[Optional[bool]]
-    internal_tools: NotRequired[Optional[bool]]
-    max_tool_output: NotRequired[Optional[int]]
-    cache_prompt: NotRequired[Optional[Union[str, bool]]]
-    reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
-    reasoning_tokens: NotRequired[Optional[int]]
-    reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
-    reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
-    extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
-
-
 class JSONSchemaDict(TypedDict):
     type: NotRequired[
         Optional[
@@ -553,23 +387,6 @@ class JSONSchemaMatrixDict(TypedDict):
     required: NotRequired[Optional[Sequence[str]]]
 
 
-class IgnoreJSONSchema(TypedDict):
-    type: NotRequired[
-        Optional[
-            Literal["string", "integer", "number", "boolean", "array", "object", "null"]
-        ]
-    ]
-    format: NotRequired[Optional[str]]
-    description: NotRequired[Optional[str]]
-    default: NotRequired[Any]
-    enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
-    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
-    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
-    required: NotRequired[Optional[Sequence[str]]]
-
-
 class ResponseSchemaDict(TypedDict):
     name: str
     json_schema: Union[JSONSchema, JSONSchemaDict]
@@ -578,13 +395,6 @@ class ResponseSchemaDict(TypedDict):
 
 
 class ResponseSchemaMatrixDict(TypedDict):
-    name: str
-    json_schema: Union[JSONSchema, JSONSchemaDict]
-    description: NotRequired[Optional[str]]
-    strict: NotRequired[Optional[bool]]
-
-
-class IgnoreResponseSchema(TypedDict):
     name: str
     json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
@@ -602,16 +412,6 @@ class FlowConfigDict(TypedDict):
 
 
 class FlowConfigMatrixDict(TypedDict):
-    flow_dir: NotRequired[str]
-    python_version: NotRequired[Optional[str]]
-    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
-    env: NotRequired[Optional[Mapping[str, str]]]
-
-
-class IgnoreFlowConfig(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
     options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
