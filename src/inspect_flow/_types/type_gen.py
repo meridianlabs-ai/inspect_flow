@@ -184,9 +184,6 @@ def generate_dict_code(type: GenType) -> list[str]:
             use_generic_container_types=True,
             use_field_description=False,
             use_schema_description=False,
-            additional_imports=[
-                "inspect_flow._types.flow_types.FlowAgent",
-            ],
         )
 
         with open(generated_type_file, "r") as f:
@@ -218,7 +215,17 @@ def modify_generated_code(type: GenType, lines: list[str]) -> list[str]:
             if line.strip().startswith("class"):
                 section = "classes"
         elif section == "classes":
-            generated_code.append(line)
+            if line.strip().startswith("class"):
+                # Don't modify import or class definition lines
+                generated_code.append(line)
+            else:
+                # Replace IgnoreClassName with ClassName
+                modified_line = re.sub(
+                    r"\bIgnore(\w+)\b",
+                    lambda m: m.group(1),
+                    line,
+                )
+                generated_code.append(modified_line)
     return generated_code
 
 

@@ -4,7 +4,19 @@ from __future__ import annotations
 
 from typing import Any, Literal, Mapping, Optional, Sequence, TypedDict, Union
 
+from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
+from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema
+from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec
 from typing_extensions import NotRequired
+
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowEpochs,
+    FlowModel,
+    FlowOptions,
+    FlowSolver,
+    FlowTask,
+)
 
 Model = Any
 
@@ -115,15 +127,15 @@ class IgnoreSandboxEnvironmentSpec(TypedDict):
 
 
 class ApprovalPolicyConfigDict(TypedDict):
-    approvers: Sequence[Union[IgnoreApproverPolicyConfig, ApproverPolicyConfigDict]]
+    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
 class ApprovalPolicyConfigMatrixDict(TypedDict):
-    approvers: Sequence[Union[IgnoreApproverPolicyConfig, ApproverPolicyConfigDict]]
+    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
 class IgnoreApprovalPolicyConfig(TypedDict):
-    approvers: Sequence[Union[IgnoreApproverPolicyConfig, ApproverPolicyConfigDict]]
+    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
 class FlowOptionsDict(TypedDict):
@@ -133,9 +145,7 @@ class FlowOptionsDict(TypedDict):
     retry_cleanup: NotRequired[Optional[bool]]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     sandbox_cleanup: NotRequired[Optional[bool]]
@@ -146,7 +156,7 @@ class FlowOptionsDict(TypedDict):
         Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     score: NotRequired[bool]
     log_level: NotRequired[Optional[str]]
@@ -177,9 +187,7 @@ class FlowOptionsMatrixDict(TypedDict):
     retry_cleanup: NotRequired[Optional[bool]]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     sandbox_cleanup: NotRequired[Optional[bool]]
@@ -190,7 +198,7 @@ class FlowOptionsMatrixDict(TypedDict):
         Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     score: NotRequired[bool]
     log_level: NotRequired[Optional[str]]
@@ -221,9 +229,7 @@ class IgnoreFlowOptions(TypedDict):
     retry_cleanup: NotRequired[Optional[bool]]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     sandbox_cleanup: NotRequired[Optional[bool]]
@@ -234,7 +240,7 @@ class IgnoreFlowOptions(TypedDict):
         Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     score: NotRequired[bool]
     log_level: NotRequired[Optional[str]]
@@ -262,7 +268,7 @@ class FlowModelDict(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
     default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     base_url: NotRequired[Optional[str]]
     api_key: NotRequired[Optional[str]]
     memoize: NotRequired[bool]
@@ -273,7 +279,7 @@ class FlowModelMatrixDict(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
     default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     base_url: NotRequired[Optional[str]]
     api_key: NotRequired[Optional[str]]
     memoize: NotRequired[bool]
@@ -284,7 +290,7 @@ class IgnoreFlowModel(TypedDict):
     name: str
     role: NotRequired[Optional[str]]
     default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     base_url: NotRequired[Optional[str]]
     api_key: NotRequired[Optional[str]]
     memoize: NotRequired[bool]
@@ -300,30 +306,28 @@ class FlowTaskDict(TypedDict):
     solver: NotRequired[
         Optional[
             Union[
-                IgnoreFlowSolver,
-                Sequence[Union[IgnoreFlowSolver, FlowSolverDict]],
-                IgnoreFlowAgent,
+                FlowSolver,
+                Sequence[Union[FlowSolver, FlowSolverDict]],
+                FlowAgent,
                 FlowSolverDict,
                 FlowAgentDict,
             ]
         ]
     ]
-    model: NotRequired[Optional[Union[IgnoreFlowModel, FlowModelDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     model_roles: NotRequired[
-        Optional[Mapping[str, Union[IgnoreFlowModel, str, FlowModelDict]]]
+        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
     ]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
-    epochs: NotRequired[Optional[Union[int, IgnoreFlowEpochs, FlowEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     continue_on_fail: NotRequired[Optional[bool]]
     message_limit: NotRequired[Optional[int]]
@@ -344,30 +348,28 @@ class FlowTaskMatrixDict(TypedDict):
     solver: NotRequired[
         Optional[
             Union[
-                IgnoreFlowSolver,
-                Sequence[Union[IgnoreFlowSolver, FlowSolverDict]],
-                IgnoreFlowAgent,
+                FlowSolver,
+                Sequence[Union[FlowSolver, FlowSolverDict]],
+                FlowAgent,
                 FlowSolverDict,
                 FlowAgentDict,
             ]
         ]
     ]
-    model: NotRequired[Optional[Union[IgnoreFlowModel, FlowModelDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     model_roles: NotRequired[
-        Optional[Mapping[str, Union[IgnoreFlowModel, str, FlowModelDict]]]
+        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
     ]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
-    epochs: NotRequired[Optional[Union[int, IgnoreFlowEpochs, FlowEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     continue_on_fail: NotRequired[Optional[bool]]
     message_limit: NotRequired[Optional[int]]
@@ -388,30 +390,28 @@ class IgnoreFlowTask(TypedDict):
     solver: NotRequired[
         Optional[
             Union[
-                IgnoreFlowSolver,
-                Sequence[Union[IgnoreFlowSolver, FlowSolverDict]],
-                IgnoreFlowAgent,
+                FlowSolver,
+                Sequence[Union[FlowSolver, FlowSolverDict]],
+                FlowAgent,
                 FlowSolverDict,
                 FlowAgentDict,
             ]
         ]
     ]
-    model: NotRequired[Optional[Union[IgnoreFlowModel, FlowModelDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     model_roles: NotRequired[
-        Optional[Mapping[str, Union[IgnoreFlowModel, str, FlowModelDict]]]
+        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
     ]
     sandbox: NotRequired[
         Optional[
-            Union[
-                str, Sequence, IgnoreSandboxEnvironmentSpec, SandboxEnvironmentSpecDict
-            ]
+            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
         ]
     ]
     approval: NotRequired[
-        Optional[Union[str, IgnoreApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
-    epochs: NotRequired[Optional[Union[int, IgnoreFlowEpochs, FlowEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     continue_on_fail: NotRequired[Optional[bool]]
     message_limit: NotRequired[Optional[int]]
@@ -450,11 +450,9 @@ class GenerateConfigDict(TypedDict):
     reasoning_tokens: NotRequired[Optional[int]]
     reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
     reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[
-        Optional[Union[IgnoreResponseSchema, ResponseSchemaDict]]
-    ]
+    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
     extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, IgnoreBatchConfig, BatchConfigDict]]]
+    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
 
 
 class GenerateConfigMatrixDict(TypedDict):
@@ -484,11 +482,9 @@ class GenerateConfigMatrixDict(TypedDict):
     reasoning_tokens: NotRequired[Optional[int]]
     reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
     reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[
-        Optional[Union[IgnoreResponseSchema, ResponseSchemaDict]]
-    ]
+    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
     extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, IgnoreBatchConfig, BatchConfigDict]]]
+    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
 
 
 class IgnoreGenerateConfig(TypedDict):
@@ -518,11 +514,9 @@ class IgnoreGenerateConfig(TypedDict):
     reasoning_tokens: NotRequired[Optional[int]]
     reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
     reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[
-        Optional[Union[IgnoreResponseSchema, ResponseSchemaDict]]
-    ]
+    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
     extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, IgnoreBatchConfig, BatchConfigDict]]]
+    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
 
 
 class JSONSchemaDict(TypedDict):
@@ -535,14 +529,10 @@ class JSONSchemaDict(TypedDict):
     description: NotRequired[Optional[str]]
     default: NotRequired[Any]
     enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[
-        Optional[Mapping[str, Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    ]
-    additionalProperties: NotRequired[
-        Optional[Union[IgnoreJSONSchema, bool, JSONSchemaDict]]
-    ]
-    anyOf: NotRequired[Optional[Sequence[Union[IgnoreJSONSchema, JSONSchemaDict]]]]
+    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
+    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
+    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
+    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
     required: NotRequired[Optional[Sequence[str]]]
 
 
@@ -556,14 +546,10 @@ class JSONSchemaMatrixDict(TypedDict):
     description: NotRequired[Optional[str]]
     default: NotRequired[Any]
     enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[
-        Optional[Mapping[str, Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    ]
-    additionalProperties: NotRequired[
-        Optional[Union[IgnoreJSONSchema, bool, JSONSchemaDict]]
-    ]
-    anyOf: NotRequired[Optional[Sequence[Union[IgnoreJSONSchema, JSONSchemaDict]]]]
+    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
+    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
+    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
+    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
     required: NotRequired[Optional[Sequence[str]]]
 
 
@@ -577,34 +563,30 @@ class IgnoreJSONSchema(TypedDict):
     description: NotRequired[Optional[str]]
     default: NotRequired[Any]
     enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[
-        Optional[Mapping[str, Union[IgnoreJSONSchema, JSONSchemaDict]]]
-    ]
-    additionalProperties: NotRequired[
-        Optional[Union[IgnoreJSONSchema, bool, JSONSchemaDict]]
-    ]
-    anyOf: NotRequired[Optional[Sequence[Union[IgnoreJSONSchema, JSONSchemaDict]]]]
+    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
+    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
+    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
+    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
     required: NotRequired[Optional[Sequence[str]]]
 
 
 class ResponseSchemaDict(TypedDict):
     name: str
-    json_schema: Union[IgnoreJSONSchema, JSONSchemaDict]
+    json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
 
 
 class ResponseSchemaMatrixDict(TypedDict):
     name: str
-    json_schema: Union[IgnoreJSONSchema, JSONSchemaDict]
+    json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
 
 
 class IgnoreResponseSchema(TypedDict):
     name: str
-    json_schema: Union[IgnoreJSONSchema, JSONSchemaDict]
+    json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
 
@@ -612,28 +594,28 @@ class IgnoreResponseSchema(TypedDict):
 class FlowConfigDict(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
-    options: NotRequired[Optional[Union[IgnoreFlowOptions, FlowOptionsDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[IgnoreFlowTask, FlowTaskDict]]
+    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
     env: NotRequired[Optional[Mapping[str, str]]]
 
 
 class FlowConfigMatrixDict(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
-    options: NotRequired[Optional[Union[IgnoreFlowOptions, FlowOptionsDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[IgnoreFlowTask, FlowTaskDict]]
+    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
     env: NotRequired[Optional[Mapping[str, str]]]
 
 
 class IgnoreFlowConfig(TypedDict):
     flow_dir: NotRequired[str]
     python_version: NotRequired[Optional[str]]
-    options: NotRequired[Optional[Union[IgnoreFlowOptions, FlowOptionsDict]]]
-    config: NotRequired[Optional[Union[IgnoreGenerateConfig, GenerateConfigDict]]]
+    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[IgnoreFlowTask, FlowTaskDict]]
+    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
     env: NotRequired[Optional[Mapping[str, str]]]
