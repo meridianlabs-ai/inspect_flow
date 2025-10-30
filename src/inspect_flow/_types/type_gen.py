@@ -62,6 +62,13 @@ def fields_to_lists(schema: Schema) -> Schema:
     return schema
 
 
+def properties_to_lists(type_def: Schema) -> None:
+    properties: Schema = type_def["properties"]
+    type_def.pop("required", None)
+    for field_value in properties.values():
+        field_type_to_list(field_value)
+
+
 def rename_field_type(field_schema: Schema) -> None:
     if "anyOf" in field_schema:
         for field in field_schema["anyOf"]:
@@ -109,6 +116,8 @@ def root_type_as_def(schema: Schema) -> None:
 
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
+    if type == "MatrixDict":
+        properties_to_lists(dict_def)
     new_title = title + type
     dict_def["title"] = new_title
     defs[new_title] = dict_def

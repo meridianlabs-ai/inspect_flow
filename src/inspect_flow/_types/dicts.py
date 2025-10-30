@@ -28,9 +28,9 @@ class ApproverPolicyConfigDict(TypedDict):
 
 
 class ApproverPolicyConfigMatrixDict(TypedDict):
-    name: str
-    tools: Union[str, Sequence[str]]
-    params: NotRequired[Mapping[str, Any]]
+    name: NotRequired[Optional[Sequence[str]]]
+    tools: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
+    params: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
 class BatchConfigDict(TypedDict):
@@ -43,12 +43,12 @@ class BatchConfigDict(TypedDict):
 
 
 class BatchConfigMatrixDict(TypedDict):
-    size: NotRequired[Optional[int]]
-    max_size: NotRequired[Optional[int]]
-    send_delay: NotRequired[Optional[float]]
-    tick: NotRequired[Optional[float]]
-    max_batches: NotRequired[Optional[int]]
-    max_consecutive_check_failures: NotRequired[Optional[int]]
+    size: NotRequired[Optional[Sequence[int]]]
+    max_size: NotRequired[Optional[Sequence[int]]]
+    send_delay: NotRequired[Optional[Sequence[float]]]
+    tick: NotRequired[Optional[Sequence[float]]]
+    max_batches: NotRequired[Optional[Sequence[int]]]
+    max_consecutive_check_failures: NotRequired[Optional[Sequence[int]]]
 
 
 class FlowAgentDict(TypedDict):
@@ -57,8 +57,8 @@ class FlowAgentDict(TypedDict):
 
 
 class FlowAgentMatrixDict(TypedDict):
-    name: str
-    args: NotRequired[Optional[Mapping[str, Any]]]
+    name: NotRequired[Optional[Sequence[str]]]
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
 class FlowEpochsDict(TypedDict):
@@ -67,8 +67,8 @@ class FlowEpochsDict(TypedDict):
 
 
 class FlowEpochsMatrixDict(TypedDict):
-    epochs: int
-    reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
+    epochs: NotRequired[Optional[Sequence[int]]]
+    reducer: NotRequired[Optional[Sequence[Union[str, Sequence[str]]]]]
 
 
 class FlowSolverDict(TypedDict):
@@ -77,8 +77,8 @@ class FlowSolverDict(TypedDict):
 
 
 class FlowSolverMatrixDict(TypedDict):
-    name: str
-    args: NotRequired[Optional[Mapping[str, Any]]]
+    name: NotRequired[Optional[Sequence[str]]]
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
 class SandboxEnvironmentSpecDict(TypedDict):
@@ -87,8 +87,8 @@ class SandboxEnvironmentSpecDict(TypedDict):
 
 
 class SandboxEnvironmentSpecMatrixDict(TypedDict):
-    type: str
-    config: NotRequired[Any]
+    type: NotRequired[Optional[Sequence[str]]]
+    config: NotRequired[Optional[Sequence]]
 
 
 class ApprovalPolicyConfigDict(TypedDict):
@@ -96,7 +96,11 @@ class ApprovalPolicyConfigDict(TypedDict):
 
 
 class ApprovalPolicyConfigMatrixDict(TypedDict):
-    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
+    approvers: NotRequired[
+        Optional[
+            Sequence[Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]]
+        ]
+    ]
 
 
 class FlowOptionsDict(TypedDict):
@@ -142,45 +146,54 @@ class FlowOptionsDict(TypedDict):
 
 
 class FlowOptionsMatrixDict(TypedDict):
-    retry_attempts: NotRequired[Optional[int]]
-    retry_wait: NotRequired[Optional[float]]
-    retry_connections: NotRequired[Optional[float]]
-    retry_cleanup: NotRequired[Optional[bool]]
+    retry_attempts: NotRequired[Optional[Sequence[int]]]
+    retry_wait: NotRequired[Optional[Sequence[float]]]
+    retry_connections: NotRequired[Optional[Sequence[float]]]
+    retry_cleanup: NotRequired[Optional[Sequence[bool]]]
     sandbox: NotRequired[
         Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
+            Sequence[
+                Union[
+                    str,
+                    Sequence,
+                    SandboxEnvironmentSpec,
+                    SandboxEnvironmentSpecDict,
+                ]
+            ]
         ]
     ]
-    sandbox_cleanup: NotRequired[Optional[bool]]
-    tags: NotRequired[Optional[Sequence[str]]]
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
-    trace: NotRequired[Optional[bool]]
+    sandbox_cleanup: NotRequired[Optional[Sequence[bool]]]
+    tags: NotRequired[Optional[Sequence[Sequence[str]]]]
+    metadata: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    trace: NotRequired[Optional[Sequence[bool]]]
     display: NotRequired[
-        Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
+        Optional[
+            Sequence[Literal["full", "conversation", "rich", "plain", "log", "none"]]
+        ]
     ]
     approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Sequence[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]]
     ]
-    score: NotRequired[bool]
-    log_level: NotRequired[Optional[str]]
-    log_level_transcript: NotRequired[Optional[str]]
-    log_format: NotRequired[Optional[Literal["eval", "json"]]]
-    limit: NotRequired[Optional[int]]
-    sample_shuffle: NotRequired[Optional[Union[bool, int]]]
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    continue_on_fail: NotRequired[Optional[bool]]
-    retry_on_error: NotRequired[Optional[int]]
-    debug_errors: NotRequired[Optional[bool]]
-    max_samples: NotRequired[Optional[int]]
-    max_tasks: NotRequired[Optional[int]]
-    max_subprocesses: NotRequired[Optional[int]]
-    max_sandboxes: NotRequired[Optional[int]]
-    log_samples: NotRequired[Optional[bool]]
-    log_realtime: NotRequired[Optional[bool]]
-    log_images: NotRequired[Optional[bool]]
-    log_buffer: NotRequired[Optional[int]]
-    log_shared: NotRequired[Optional[Union[bool, int]]]
-    log_dir_allow_dirty: NotRequired[Optional[bool]]
+    score: NotRequired[Optional[Sequence[bool]]]
+    log_level: NotRequired[Optional[Sequence[str]]]
+    log_level_transcript: NotRequired[Optional[Sequence[str]]]
+    log_format: NotRequired[Optional[Sequence[Literal["eval", "json"]]]]
+    limit: NotRequired[Optional[Sequence[int]]]
+    sample_shuffle: NotRequired[Optional[Sequence[Union[bool, int]]]]
+    fail_on_error: NotRequired[Optional[Sequence[Union[bool, float]]]]
+    continue_on_fail: NotRequired[Optional[Sequence[bool]]]
+    retry_on_error: NotRequired[Optional[Sequence[int]]]
+    debug_errors: NotRequired[Optional[Sequence[bool]]]
+    max_samples: NotRequired[Optional[Sequence[int]]]
+    max_tasks: NotRequired[Optional[Sequence[int]]]
+    max_subprocesses: NotRequired[Optional[Sequence[int]]]
+    max_sandboxes: NotRequired[Optional[Sequence[int]]]
+    log_samples: NotRequired[Optional[Sequence[bool]]]
+    log_realtime: NotRequired[Optional[Sequence[bool]]]
+    log_images: NotRequired[Optional[Sequence[bool]]]
+    log_buffer: NotRequired[Optional[Sequence[int]]]
+    log_shared: NotRequired[Optional[Sequence[Union[bool, int]]]]
+    log_dir_allow_dirty: NotRequired[Optional[Sequence[bool]]]
 
 
 class FlowModelDict(TypedDict):
@@ -195,14 +208,14 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    name: str
-    role: NotRequired[Optional[str]]
-    default: NotRequired[Optional[str]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    base_url: NotRequired[Optional[str]]
-    api_key: NotRequired[Optional[str]]
-    memoize: NotRequired[bool]
-    model_args: NotRequired[Optional[Mapping[str, Any]]]
+    name: NotRequired[Optional[Sequence[str]]]
+    role: NotRequired[Optional[Sequence[str]]]
+    default: NotRequired[Optional[Sequence[str]]]
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
+    base_url: NotRequired[Optional[Sequence[str]]]
+    api_key: NotRequired[Optional[Sequence[str]]]
+    memoize: NotRequired[Optional[Sequence[bool]]]
+    model_args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
 
 
 class FlowTaskDict(TypedDict):
@@ -248,45 +261,56 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowTaskMatrixDict(TypedDict):
-    name: NotRequired[Optional[str]]
-    file: NotRequired[Optional[str]]
-    file_attr: NotRequired[Optional[str]]
-    registry_name: NotRequired[Optional[str]]
-    args: NotRequired[Optional[Mapping[str, Any]]]
+    name: NotRequired[Optional[Sequence[str]]]
+    file: NotRequired[Optional[Sequence[str]]]
+    file_attr: NotRequired[Optional[Sequence[str]]]
+    registry_name: NotRequired[Optional[Sequence[str]]]
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     solver: NotRequired[
         Optional[
-            Union[
-                FlowSolver,
-                Sequence[Union[FlowSolver, FlowSolverDict]],
-                FlowAgent,
-                FlowSolverDict,
-                FlowAgentDict,
+            Sequence[
+                Union[
+                    FlowSolver,
+                    Sequence[Union[FlowSolver, FlowSolverDict]],
+                    FlowAgent,
+                    FlowSolverDict,
+                    FlowAgentDict,
+                ]
             ]
         ]
     ]
-    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
+    model: NotRequired[Optional[Sequence[Union[FlowModel, FlowModelDict]]]]
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     model_roles: NotRequired[
-        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
+        Optional[Sequence[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]
     ]
     sandbox: NotRequired[
         Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
+            Sequence[
+                Union[
+                    str,
+                    Sequence,
+                    SandboxEnvironmentSpec,
+                    SandboxEnvironmentSpecDict,
+                ]
+            ]
         ]
     ]
     approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
+        Optional[Sequence[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]]
     ]
-    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    continue_on_fail: NotRequired[Optional[bool]]
-    message_limit: NotRequired[Optional[int]]
-    token_limit: NotRequired[Optional[int]]
-    time_limit: NotRequired[Optional[int]]
-    working_limit: NotRequired[Optional[int]]
-    version: NotRequired[Optional[int]]
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
-    sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
+    epochs: NotRequired[Optional[Sequence[Union[int, FlowEpochs, FlowEpochsDict]]]]
+    fail_on_error: NotRequired[Optional[Sequence[Union[bool, float]]]]
+    continue_on_fail: NotRequired[Optional[Sequence[bool]]]
+    message_limit: NotRequired[Optional[Sequence[int]]]
+    token_limit: NotRequired[Optional[Sequence[int]]]
+    time_limit: NotRequired[Optional[Sequence[int]]]
+    working_limit: NotRequired[Optional[Sequence[int]]]
+    version: NotRequired[Optional[Sequence[int]]]
+    metadata: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    sample_id: NotRequired[
+        Optional[Sequence[Union[str, int, Sequence[Union[str, int]]]]]
+    ]
 
 
 class GenerateConfigDict(TypedDict):
@@ -322,35 +346,45 @@ class GenerateConfigDict(TypedDict):
 
 
 class GenerateConfigMatrixDict(TypedDict):
-    max_retries: NotRequired[Optional[int]]
-    timeout: NotRequired[Optional[int]]
-    attempt_timeout: NotRequired[Optional[int]]
-    max_connections: NotRequired[Optional[int]]
-    system_message: NotRequired[Optional[str]]
-    max_tokens: NotRequired[Optional[int]]
-    top_p: NotRequired[Optional[float]]
-    temperature: NotRequired[Optional[float]]
-    stop_seqs: NotRequired[Optional[Sequence[str]]]
-    best_of: NotRequired[Optional[int]]
-    frequency_penalty: NotRequired[Optional[float]]
-    presence_penalty: NotRequired[Optional[float]]
-    logit_bias: NotRequired[Optional[Mapping[str, float]]]
-    seed: NotRequired[Optional[int]]
-    top_k: NotRequired[Optional[int]]
-    num_choices: NotRequired[Optional[int]]
-    logprobs: NotRequired[Optional[bool]]
-    top_logprobs: NotRequired[Optional[int]]
-    parallel_tool_calls: NotRequired[Optional[bool]]
-    internal_tools: NotRequired[Optional[bool]]
-    max_tool_output: NotRequired[Optional[int]]
-    cache_prompt: NotRequired[Optional[Union[str, bool]]]
-    reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
-    reasoning_tokens: NotRequired[Optional[int]]
-    reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
-    reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
-    extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
+    max_retries: NotRequired[Optional[Sequence[int]]]
+    timeout: NotRequired[Optional[Sequence[int]]]
+    attempt_timeout: NotRequired[Optional[Sequence[int]]]
+    max_connections: NotRequired[Optional[Sequence[int]]]
+    system_message: NotRequired[Optional[Sequence[str]]]
+    max_tokens: NotRequired[Optional[Sequence[int]]]
+    top_p: NotRequired[Optional[Sequence[float]]]
+    temperature: NotRequired[Optional[Sequence[float]]]
+    stop_seqs: NotRequired[Optional[Sequence[Sequence[str]]]]
+    best_of: NotRequired[Optional[Sequence[int]]]
+    frequency_penalty: NotRequired[Optional[Sequence[float]]]
+    presence_penalty: NotRequired[Optional[Sequence[float]]]
+    logit_bias: NotRequired[Optional[Sequence[Mapping[str, float]]]]
+    seed: NotRequired[Optional[Sequence[int]]]
+    top_k: NotRequired[Optional[Sequence[int]]]
+    num_choices: NotRequired[Optional[Sequence[int]]]
+    logprobs: NotRequired[Optional[Sequence[bool]]]
+    top_logprobs: NotRequired[Optional[Sequence[int]]]
+    parallel_tool_calls: NotRequired[Optional[Sequence[bool]]]
+    internal_tools: NotRequired[Optional[Sequence[bool]]]
+    max_tool_output: NotRequired[Optional[Sequence[int]]]
+    cache_prompt: NotRequired[Optional[Sequence[Union[str, bool]]]]
+    reasoning_effort: NotRequired[
+        Optional[Sequence[Literal["minimal", "low", "medium", "high"]]]
+    ]
+    reasoning_tokens: NotRequired[Optional[Sequence[int]]]
+    reasoning_summary: NotRequired[
+        Optional[Sequence[Literal["concise", "detailed", "auto"]]]
+    ]
+    reasoning_history: NotRequired[
+        Optional[Sequence[Literal["none", "all", "last", "auto"]]]
+    ]
+    response_schema: NotRequired[
+        Optional[Sequence[Union[ResponseSchema, ResponseSchemaDict]]]
+    ]
+    extra_body: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    batch: NotRequired[
+        Optional[Sequence[Union[bool, int, BatchConfig, BatchConfigDict]]]
+    ]
 
 
 class JSONSchemaDict(TypedDict):
@@ -373,18 +407,26 @@ class JSONSchemaDict(TypedDict):
 class JSONSchemaMatrixDict(TypedDict):
     type: NotRequired[
         Optional[
-            Literal["string", "integer", "number", "boolean", "array", "object", "null"]
+            Sequence[
+                Literal[
+                    "string", "integer", "number", "boolean", "array", "object", "null"
+                ]
+            ]
         ]
     ]
-    format: NotRequired[Optional[str]]
-    description: NotRequired[Optional[str]]
-    default: NotRequired[Any]
-    enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
-    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
-    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
-    required: NotRequired[Optional[Sequence[str]]]
+    format: NotRequired[Optional[Sequence[str]]]
+    description: NotRequired[Optional[Sequence[str]]]
+    default: NotRequired[Optional[Sequence]]
+    enum: NotRequired[Optional[Sequence[Sequence]]]
+    items: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
+    properties: NotRequired[
+        Optional[Sequence[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
+    ]
+    additionalProperties: NotRequired[
+        Optional[Sequence[Union[JSONSchema, bool, JSONSchemaDict]]]
+    ]
+    anyOf: NotRequired[Optional[Sequence[Sequence[Union[JSONSchema, JSONSchemaDict]]]]]
+    required: NotRequired[Optional[Sequence[Sequence[str]]]]
 
 
 class ResponseSchemaDict(TypedDict):
@@ -395,10 +437,10 @@ class ResponseSchemaDict(TypedDict):
 
 
 class ResponseSchemaMatrixDict(TypedDict):
-    name: str
-    json_schema: Union[JSONSchema, JSONSchemaDict]
-    description: NotRequired[Optional[str]]
-    strict: NotRequired[Optional[bool]]
+    name: NotRequired[Optional[Sequence[str]]]
+    json_schema: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
+    description: NotRequired[Optional[Sequence[str]]]
+    strict: NotRequired[Optional[Sequence[bool]]]
 
 
 class FlowConfigDict(TypedDict):
@@ -412,10 +454,10 @@ class FlowConfigDict(TypedDict):
 
 
 class FlowConfigMatrixDict(TypedDict):
-    flow_dir: NotRequired[str]
-    python_version: NotRequired[Optional[str]]
-    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
-    env: NotRequired[Optional[Mapping[str, str]]]
+    flow_dir: NotRequired[Optional[Sequence[str]]]
+    python_version: NotRequired[Optional[Sequence[str]]]
+    options: NotRequired[Optional[Sequence[Union[FlowOptions, FlowOptionsDict]]]]
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
+    dependencies: NotRequired[Optional[Sequence[Sequence[str]]]]
+    tasks: NotRequired[Optional[Sequence[Sequence[Union[FlowTask, FlowTaskDict]]]]]
+    env: NotRequired[Optional[Sequence[Mapping[str, str]]]]
