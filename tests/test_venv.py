@@ -2,10 +2,9 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from inspect_flow import FlowConfig
+from inspect_flow import flow_config
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.factories import flow_config
-from inspect_flow._types.flow_types import FlowTask
+from inspect_flow.types import FlowConfig, FlowTask
 
 
 def test_no_dependencies() -> None:
