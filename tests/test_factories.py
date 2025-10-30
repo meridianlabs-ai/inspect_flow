@@ -1,8 +1,7 @@
-from xml.dom import ValidationErr
-from pydantic import ValidationError
 import pytest
 from inspect_flow._types.factories import tasks
 from inspect_flow._types.flow_types import FlowTask
+from pydantic import ValidationError
 
 
 def test_tasks_x_models():
