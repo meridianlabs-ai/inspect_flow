@@ -71,7 +71,7 @@ def test_nested_types_error():
                     {
                         "name": "model1",
                         "config": [{"system_message": "test system message"}],
-                    },
+                    },  # type: ignore
                     {"name": "model2"},
                 ]
             },
