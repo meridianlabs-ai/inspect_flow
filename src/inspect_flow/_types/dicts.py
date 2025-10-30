@@ -228,14 +228,15 @@ class FlowTaskDict(TypedDict):
         Optional[
             Union[
                 FlowSolver,
-                Sequence[Union[FlowSolver, FlowSolverDict]],
+                Sequence[Union[FlowSolver, FlowSolverDict, str]],
                 FlowAgent,
                 FlowSolverDict,
+                str,
                 FlowAgentDict,
             ]
         ]
     ]
-    model: NotRequired[Optional[Union[FlowModel, FlowModelDict]]]
+    model: NotRequired[Optional[Union[FlowModel, FlowModelDict, str]]]
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     model_roles: NotRequired[
         Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
@@ -271,15 +272,16 @@ class FlowTaskMatrixDict(TypedDict):
             Sequence[
                 Union[
                     FlowSolver,
-                    Sequence[Union[FlowSolver, FlowSolverDict]],
+                    Sequence[Union[FlowSolver, FlowSolverDict, str]],
                     FlowAgent,
                     FlowSolverDict,
+                    str,
                     FlowAgentDict,
                 ]
             ]
         ]
     ]
-    model: NotRequired[Optional[Sequence[Union[FlowModel, FlowModelDict]]]]
+    model: NotRequired[Optional[Sequence[Union[FlowModel, FlowModelDict, str]]]]
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     model_roles: NotRequired[
         Optional[Sequence[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]
@@ -449,7 +451,7 @@ class FlowConfigDict(TypedDict):
     options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     dependencies: NotRequired[Optional[Sequence[str]]]
-    tasks: Sequence[Union[FlowTask, FlowTaskDict]]
+    tasks: Sequence[Union[FlowTask, FlowTaskDict, str]]
     env: NotRequired[Optional[Mapping[str, str]]]
 
 
@@ -459,5 +461,5 @@ class FlowConfigMatrixDict(TypedDict):
     options: NotRequired[Optional[Sequence[Union[FlowOptions, FlowOptionsDict]]]]
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     dependencies: NotRequired[Optional[Sequence[Sequence[str]]]]
-    tasks: NotRequired[Optional[Sequence[Sequence[Union[FlowTask, FlowTaskDict]]]]]
+    tasks: NotRequired[Optional[Sequence[Sequence[Union[FlowTask, FlowTaskDict, str]]]]]
     env: NotRequired[Optional[Sequence[Mapping[str, str]]]]

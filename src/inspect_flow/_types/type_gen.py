@@ -20,6 +20,8 @@ ADDITIONAL_IMPORTS = [
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowModel, FlowSolver, FlowTask\n",
 ]
 
+STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver"]
+
 Schema: TypeAlias = dict[str, Any]
 
 
@@ -153,9 +155,13 @@ def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) ->
         field_schema["$ref"] = ignore_ref
         if parent_list:
             parent_list.append({"$ref": dict_ref})
+            if type_name in STR_AS_CLASS:
+                parent_list.append({"type": "string"})
         else:
             del field_schema["$ref"]
             field_schema["anyOf"] = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
+            if type_name in STR_AS_CLASS:
+                field_schema["anyOf"].append({"type": "string"})
 
 
 def update_refs(type_def: Schema) -> None:
