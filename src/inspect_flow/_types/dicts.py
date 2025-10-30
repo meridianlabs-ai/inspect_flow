@@ -378,6 +378,50 @@ class GenerateConfigDict(TypedDict):
     batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
 
 
+class GenerateConfigMatrixDict(TypedDict):
+    """Model generation options."""
+
+    max_retries: NotRequired[Optional[Sequence[int]]]
+    timeout: NotRequired[Optional[Sequence[int]]]
+    attempt_timeout: NotRequired[Optional[Sequence[int]]]
+    max_connections: NotRequired[Optional[Sequence[int]]]
+    system_message: NotRequired[Optional[Sequence[str]]]
+    max_tokens: NotRequired[Optional[Sequence[int]]]
+    top_p: NotRequired[Optional[Sequence[float]]]
+    temperature: NotRequired[Optional[Sequence[float]]]
+    stop_seqs: NotRequired[Optional[Sequence[Sequence[str]]]]
+    best_of: NotRequired[Optional[Sequence[int]]]
+    frequency_penalty: NotRequired[Optional[Sequence[float]]]
+    presence_penalty: NotRequired[Optional[Sequence[float]]]
+    logit_bias: NotRequired[Optional[Sequence[Mapping[str, float]]]]
+    seed: NotRequired[Optional[Sequence[int]]]
+    top_k: NotRequired[Optional[Sequence[int]]]
+    num_choices: NotRequired[Optional[Sequence[int]]]
+    logprobs: NotRequired[Optional[Sequence[bool]]]
+    top_logprobs: NotRequired[Optional[Sequence[int]]]
+    parallel_tool_calls: NotRequired[Optional[Sequence[bool]]]
+    internal_tools: NotRequired[Optional[Sequence[bool]]]
+    max_tool_output: NotRequired[Optional[Sequence[int]]]
+    cache_prompt: NotRequired[Optional[Sequence[Union[str, bool]]]]
+    reasoning_effort: NotRequired[
+        Optional[Sequence[Literal["minimal", "low", "medium", "high"]]]
+    ]
+    reasoning_tokens: NotRequired[Optional[Sequence[int]]]
+    reasoning_summary: NotRequired[
+        Optional[Sequence[Literal["concise", "detailed", "auto"]]]
+    ]
+    reasoning_history: NotRequired[
+        Optional[Sequence[Literal["none", "all", "last", "auto"]]]
+    ]
+    response_schema: NotRequired[
+        Optional[Sequence[Union[ResponseSchema, ResponseSchemaDict]]]
+    ]
+    extra_body: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    batch: NotRequired[
+        Optional[Sequence[Union[bool, int, BatchConfig, BatchConfigDict]]]
+    ]
+
+
 class JSONSchemaDict(TypedDict):
     """JSON Schema for type."""
 

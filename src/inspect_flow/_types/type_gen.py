@@ -26,6 +26,7 @@ MATRIX_DICT_CLASS = [
     "FlowTaskMatrixDict",
     "FlowModelMatrixDict",
     "FlowSolverMatrixDict",
+    "GenerateConfigMatrixDict",
 ]
 
 Schema: TypeAlias = dict[str, Any]

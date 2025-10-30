@@ -1,6 +1,6 @@
 import pytest
-from inspect_flow._types.factories import tasks
-from inspect_flow._types.flow_types import FlowTask
+from inspect_flow._types.factories import configs, tasks
+from inspect_flow._types.flow_types import FlowModel, FlowTask
 from pydantic import ValidationError
 
 
@@ -76,3 +76,19 @@ def test_nested_types_error():
                 ]
             },
         )
+
+
+def test_configs():
+    result = tasks(
+        FlowTask(name="task1", model=FlowModel(name="model1")),
+        matrix={
+            "config": configs(matrix={"system_message": ["message1", "message2"]}),
+        },
+    )
+    assert len(result) == 2
+    assert result[0].name == "task1"
+    assert result[0].config
+    assert result[0].config.system_message == "message1"
+    assert result[1].name == "task1"
+    assert result[1].config
+    assert result[1].config.system_message == "message2"
