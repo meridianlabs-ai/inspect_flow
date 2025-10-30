@@ -13,6 +13,7 @@ GenType = Literal["Dict", "MatrixDict"]
 
 # TODO:ransom private import
 ADDITIONAL_IMPORTS = [
+    "from __future__ import annotations\n",
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
@@ -120,9 +121,44 @@ def ignore_type(defs: Schema, title: str, ignore_type: Schema) -> None:
     defs[new_title] = ignore_type
 
 
+def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -> None:
+    if "anyOf" in field_schema:
+        any_of_list: list[Schema] = field_schema["anyOf"]
+        for field in list(any_of_list):
+            update_field_refs(field, any_of_list)
+    if "items" in field_schema:
+        items_def = field_schema["items"]
+        update_field_refs(items_def, None)
+    if "additionalProperties" in field_schema:
+        additional_properties = field_schema["additionalProperties"]
+        if isinstance(additional_properties, dict):
+            update_field_refs(additional_properties, None)
+    if "$ref" in field_schema:
+        type: str = field_schema["$ref"]
+        split = type.split("/")
+        type_name = split[-1]
+        split[-1] = "Ignore" + type_name
+        ignore_ref = "/".join(split)
+        split[-1] = type_name + "Dict"
+        dict_ref = "/".join(split)
+        field_schema["$ref"] = ignore_ref
+        if parent_list:
+            parent_list.append({"$ref": dict_ref})
+        else:
+            del field_schema["$ref"]
+            field_schema["anyOf"] = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
+
+
+def update_refs(type_def: Schema) -> None:
+    properties: Schema = type_def["properties"]
+    for field_value in properties.values():
+        update_field_refs(field_value, None)
+
+
 def create_dict_types(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
     for title, v in list(defs.items()):
+        update_refs(v)
         create_type(defs, title, v, "Dict")
         create_type(defs, title, v, "MatrixDict")
         ignore_type(defs, title, v)
@@ -148,7 +184,9 @@ def generate_dict_code(type: GenType) -> list[str]:
             use_generic_container_types=True,
             use_field_description=False,
             use_schema_description=False,
-            additional_imports=["inspect_flow._types.flow_types.FlowAgent"],
+            additional_imports=[
+                "inspect_flow._types.flow_types.FlowAgent",
+            ],
         )
 
         with open(generated_type_file, "r") as f:
