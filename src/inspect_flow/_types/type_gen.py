@@ -146,13 +146,94 @@ def generate_dict_code() -> list[str]:
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
             use_generic_container_types=True,
-            use_field_description=False,
-            use_schema_description=False,
+            use_field_description=True,
+            use_schema_description=True,
         )
 
         with open(generated_type_file, "r") as f:
             lines = f.readlines()
     return lines
+
+
+def add_docstr_line(line: str, result: list[str]) -> None:
+    indent = line[: len(line) - len(line.lstrip())]
+    split = line.strip().split("\\n")
+    result.extend([f"{indent}{li}\n" if li else "\n" for li in split])
+
+
+def expand_docstring_newlines(lines: list[str]) -> list[str]:
+    r"""Convert literal \\n in docstrings to actual newlines."""
+    result: list[str] = []
+    in_docstring = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Check if this line starts a docstring
+        if not in_docstring and stripped.startswith('"""'):
+            if not (stripped.endswith('"""') and len(stripped) >= 6):
+                in_docstring = True
+            add_docstr_line(line, result)
+        elif in_docstring:
+            if stripped.endswith('"""'):
+                in_docstring = False
+            add_docstr_line(line, result)
+        else:
+            result.append(line)
+
+    return result
+
+
+def convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
+    """Convert multi-line docstrings to single-line format when they contain only one line of text."""
+    result: list[str] = []
+    in_docstring = False
+    docstring_lines: list[str] = []
+    docstring_indent = ""
+    original_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Check if this line starts a docstring
+        if not in_docstring and stripped.startswith('"""'):
+            # Check if it's already a single-line docstring
+            if stripped.endswith('"""') and len(stripped) > 6:
+                result.append(line)
+                continue
+            # Start collecting a multi-line docstring
+            in_docstring = True
+            original_lines = [line]
+            docstring_indent = line[: len(line) - len(line.lstrip())]
+            docstring_lines = [stripped[3:]]  # Remove opening """
+        elif in_docstring:
+            # Check if this line ends the docstring
+            if stripped.endswith('"""'):
+                # Add the final content (without closing """)
+                content = stripped[:-3].strip()
+                if content:
+                    docstring_lines.append(content)
+
+                # Filter out empty lines
+                non_empty_lines = [line for line in docstring_lines if line.strip()]
+
+                # Only convert to single-line if there's exactly one line of content
+                if len(non_empty_lines) == 1:
+                    full_docstring = non_empty_lines[0].strip()
+                    result.append(f'{docstring_indent}"""{full_docstring}"""\n')
+                else:
+                    result.extend(original_lines)
+                    result.append(line)
+
+                in_docstring = False
+            else:
+                # Continue collecting docstring content
+                original_lines.append(line)
+                docstring_lines.append(line)
+        else:
+            result.append(line)
+
+    return result
 
 
 def modify_generated_code(lines: list[str]) -> list[str]:
@@ -189,6 +270,13 @@ def modify_generated_code(lines: list[str]) -> list[str]:
                     line,
                 )
                 generated_code.append(modified_line)
+
+    # First pass: expand literal \n in docstrings to actual newlines
+    generated_code = expand_docstring_newlines(generated_code)
+
+    # Second pass: convert multi-line docstrings to single-line when they contain only one line
+    generated_code = convert_multiline_docstrings_to_single_line(generated_code)
+
     return generated_code
 
 
