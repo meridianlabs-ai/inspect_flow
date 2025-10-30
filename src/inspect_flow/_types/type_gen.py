@@ -1,3 +1,4 @@
+from copy import copy, deepcopy
 import re
 import subprocess
 import tempfile
@@ -60,22 +61,94 @@ def fields_to_lists(schema: Schema) -> Schema:
     return schema
 
 
+def rename_field_type(field_schema: Schema) -> None:
+    if "anyOf" in field_schema:
+        for field in field_schema["anyOf"]:
+            rename_field_type(field)
+    if "items" in field_schema:
+        rename_field_type(field_schema["items"])
+    if "additionalProperties" in field_schema:
+        additional_properties = field_schema["additionalProperties"]
+        if isinstance(additional_properties, dict):
+            rename_field_type(additional_properties)
+    if "$ref" in field_schema:
+        type: str = field_schema["$ref"]
+        type = type.split("/")[-1]
+        del field_schema["$ref"]
+        field_schema["type"] = type
+
+
+def rename_types(schema: Schema, type: GenType) -> Schema:
+    # rename the top level type
+    schema["title"] = schema["title"] + type
+    defs: Schema = schema["$defs"]
+    for title, v in list(defs.items()):
+        new_title = title + type
+        v["title"] = new_title
+        del defs[title]
+        defs[new_title] = v
+
+    classes: list[Schema] = [schema, *[v for v in defs.values()]]
+    for c in classes:
+        properties: Schema = c["properties"]
+        for field_value in properties.values():
+            rename_field_type(field_value)
+
+    return schema
+
+
+def root_type_as_def(schema: Schema) -> None:
+    defs: Schema = schema["$defs"]
+    del schema["$defs"]
+    root_type = copy(schema)
+    schema.clear()
+    defs[root_type["title"]] = root_type
+    schema["$defs"] = defs
+
+
+def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
+    dict_def = deepcopy(base_type)
+    new_title = title + type
+    dict_def["title"] = new_title
+    defs[new_title] = dict_def
+
+
+def ignore_type(defs: Schema, title: str, ignore_type: Schema) -> None:
+    del defs[title]
+    new_title = "Ignore" + title
+    ignore_type[title] = new_title
+    defs[new_title] = ignore_type
+
+
+def create_dict_types(schema: Schema) -> None:
+    defs: Schema = schema["$defs"]
+    for title, v in list(defs.items()):
+        create_type(defs, title, v, "Dict")
+        create_type(defs, title, v, "MatrixDict")
+        ignore_type(defs, title, v)
+
+
 def generate_dict_code(type: GenType) -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
         # schema = transform_schema(FlowConfig.model_json_schema())
         schema = FlowConfig.model_json_schema()
-        if type == "MatrixDict":
-            schema = fields_to_lists(schema)
+        root_type_as_def(schema)
+        create_dict_types(schema)
+        # schema = rename_types(schema, type)
+        # if type == "MatrixDict":
+        #     schema = fields_to_lists(schema)
 
         generate(
             str(schema),
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
-            custom_class_name_generator=lambda name: f"{name}{type}",
             use_generic_container_types=True,
+            use_field_description=False,
+            use_schema_description=False,
+            additional_imports=["inspect_flow._types.flow_types.FlowAgent"],
         )
 
         with open(generated_type_file, "r") as f:
@@ -107,17 +180,7 @@ def modify_generated_code(type: GenType, lines: list[str]) -> list[str]:
             if line.strip().startswith("class"):
                 section = "classes"
         elif section == "classes":
-            if line.strip().startswith("class"):
-                # Don't modify import or class definition lines
-                generated_code.append(line)
-            else:
-                # Replace ClassNameDict with ClassName | ClassNameDict
-                modified_line = re.sub(
-                    rf"\b(\w+){type}\b",
-                    replacement,
-                    line,
-                )
-                generated_code.append(modified_line)
+            generated_code.append(line)
     return generated_code
 
 
@@ -134,9 +197,9 @@ def main():
     lines = generate_dict_code("Dict")
     generated_code = modify_generated_code("Dict", lines)
     write_generated_code("dicts.py", generated_code)
-    lines = generate_dict_code("MatrixDict")
-    generated_code = modify_generated_code("MatrixDict", lines)
-    write_generated_code("matrix_dicts.py", generated_code)
+    # lines = generate_dict_code("MatrixDict")
+    # generated_code = modify_generated_code("MatrixDict", lines)
+    # write_generated_code("matrix_dicts.py", generated_code)
 
 
 if __name__ == "__main__":
