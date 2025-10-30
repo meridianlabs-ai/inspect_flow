@@ -1,3 +1,6 @@
+import os
+
+import click
 import inspect_ai
 import yaml
 from inspect_ai.log import EvalLog
@@ -17,6 +20,10 @@ def read_config() -> FlowConfig:
 
 def run_eval_set(config: FlowConfig) -> tuple[bool, list[EvalLog]]:
     tasks = instantiate_tasks(config)
+
+    if os.environ.get("INSPECT_FLOW_DRY_RUN") == "1":
+        click.echo(f"eval_set would be called with {len(tasks)} tasks")
+        return False, []
 
     options = config.options or FlowOptions()
     return inspect_ai.eval_set(
