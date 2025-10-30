@@ -7,8 +7,11 @@ from inspect_flow._types.dicts import (
     FlowAgentDict,
     FlowConfigDict,
     FlowModelDict,
+    FlowModelMatrixDict,
     FlowSolverDict,
+    FlowSolverMatrixDict,
     FlowTaskDict,
+    FlowTaskMatrixDict,
 )
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -16,11 +19,6 @@ from inspect_flow._types.flow_types import (
     FlowModel,
     FlowSolver,
     FlowTask,
-)
-from inspect_flow._types.matrix_dicts import (
-    FlowModelMatrixDict,
-    FlowSolverMatrixDict,
-    FlowTaskMatrixDict,
 )
 
 
