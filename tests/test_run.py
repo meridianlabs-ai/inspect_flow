@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -333,3 +334,24 @@ def test_config_generate_config() -> None:
         assert model_config.system_message == model_system_message
         assert model_config.temperature is None
         assert model_config.max_tokens is None
+
+
+def test_dry_run():
+    assert not os.environ.get("INSPECT_FLOW_DRY_RUN")
+    os.environ["INSPECT_FLOW_DRY_RUN"] = "1"
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=FlowConfig(
+                flow_dir="test_log_dir",
+                tasks=[
+                    FlowTask(
+                        name="task_with_get_model",
+                        file=str(task_file),
+                        model=FlowModel(name="mockllm/mock-llm"),
+                    )
+                ],
+            )
+        )
+
+    del os.environ["INSPECT_FLOW_DRY_RUN"]
+    mock_eval_set.assert_not_called()
