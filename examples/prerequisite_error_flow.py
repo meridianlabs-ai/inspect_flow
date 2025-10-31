@@ -8,7 +8,9 @@ FlowConfig(
         "./examples/local_eval",
     ],
     tasks=tasks(
-        {"name": "local_eval/noop", "model": "mockllm/mock-llm1"},
-        matrix={"message_limit": [4, 5]},
+        matrix={
+            "task": {"name": "local_eval/noop", "model": "mockllm/mock-llm1"},
+            "message_limit": [4, 5],
+        },
     ),
 )
