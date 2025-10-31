@@ -61,3 +61,41 @@ def test_env() -> None:
     env = mock_run.mock_calls[2].kwargs["env"]
     assert env["myenv1"] == "value1"
     assert env["myenv2"] == "value2"
+
+
+def test_relative_flow_dir() -> None:
+    flow_dir = "./logs/flow"
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._submit.submit.create_venv") as mock_venv,
+    ):
+        submit(
+            config=flow_config(
+                {
+                    "flow_dir": flow_dir,
+                    "tasks": ["task_name"],
+                }
+            )
+        )
+    mock_venv.assert_called_once()
+    assert mock_venv.mock_calls[0].args[0].flow_dir == str(Path(flow_dir).resolve())
+    assert mock_run.call_count == 1
+
+
+def test_s3() -> None:
+    flow_dir = "s3://my-bucket/flow-logs"
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._submit.submit.create_venv") as mock_venv,
+    ):
+        submit(
+            config=flow_config(
+                {
+                    "flow_dir": flow_dir,
+                    "tasks": ["task_name"],
+                }
+            )
+        )
+    mock_venv.assert_called_once()
+    assert mock_venv.mock_calls[0].args[0].flow_dir == flow_dir
+    assert mock_run.call_count == 1
