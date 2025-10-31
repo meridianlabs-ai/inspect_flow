@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 from inspect_ai.model import GenerateConfig
 from inspect_flow._config.config import load_config
-from inspect_flow._types.factories import models, tasks
+from inspect_flow._types.factories import flow_task, models, tasks
 from inspect_flow.types import (
     FlowConfig,
     FlowModel,
@@ -81,12 +81,12 @@ def test_config_two_models_one_task() -> None:
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         tasks=tasks(
-            {"name": "inspect_evals/mmlu_0_shot"},
             matrix={
+                "task": {"name": "inspect_evals/mmlu_0_shot"},
                 "model": [
                     FlowModel(name="openai/gpt-4o-mini"),
                     FlowModel(name="openai/gpt-5-nano"),
-                ]
+                ],
             },
         ),
     )
@@ -100,10 +100,11 @@ def test_config_model_and_task() -> None:
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
-        tasks=tasks(
-            {"name": "inspect_evals/mmlu_0_shot", "model": "openai/gpt-4o-mini"},
-            matrix={},
-        ),
+        tasks=[
+            flow_task(
+                {"name": "inspect_evals/mmlu_0_shot", "model": "openai/gpt-4o-mini"}
+            )
+        ],
     )
     validate_config(config, "model_and_task_flow.yaml")
 
@@ -154,12 +155,12 @@ def test_config_model_config() -> None:
                 "model": [
                     "openai/gpt-4o-mini",
                     *models(
-                        {"name": "openai/gpt-5-nano"},
                         matrix={
+                            "model": {"name": "openai/gpt-5-nano"},
                             "config": [
                                 GenerateConfig(reasoning_effort="minimal"),
                                 GenerateConfig(reasoning_effort="low"),
-                            ]
+                            ],
                         },
                     ),
                 ],
@@ -179,8 +180,10 @@ def test_config_matrix_and_task() -> None:
         ],
         tasks=[
             *tasks(
-                "inspect_evals/mmlu_0_shot",
-                matrix={"model": ["openai/gpt-4o-mini", "openai/gpt-5-nano"]},
+                matrix={
+                    "task": "inspect_evals/mmlu_0_shot",
+                    "model": ["openai/gpt-4o-mini", "openai/gpt-5-nano"],
+                },
             ),
             FlowTask(name="inspect_evals/mmlu_5_shot"),
         ],
@@ -197,23 +200,25 @@ def test_config_nested_matrix() -> None:
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         tasks=tasks(
-            [
-                FlowTask(
-                    name="inspect_evals/mmlu_0_shot",
-                    args={"language": "EN_US"},
-                ),
-                *tasks(
-                    "inspect_evals/mmlu_5_shot",
-                    matrix={
-                        "args": [
-                            {"language": "EN_US"},
-                            {"language": "CN_CN"},
-                            {"language": "DE_DE"},
-                        ]
-                    },
-                ),
-            ],
-            matrix={"model": ["openai/gpt-4o-mini", "openai/gpt-5-nano"]},
+            matrix={
+                "task": [
+                    FlowTask(
+                        name="inspect_evals/mmlu_0_shot",
+                        args={"language": "EN_US"},
+                    ),
+                    *tasks(
+                        matrix={
+                            "task": "inspect_evals/mmlu_5_shot",
+                            "args": [
+                                {"language": "EN_US"},
+                                {"language": "CN_CN"},
+                                {"language": "DE_DE"},
+                            ],
+                        },
+                    ),
+                ],
+                "model": ["openai/gpt-4o-mini", "openai/gpt-5-nano"],
+            },
         ),
     )
     validate_config(config, "nested_matrix_flow.yaml")

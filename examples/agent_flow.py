@@ -8,8 +8,8 @@ FlowConfig(
         "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
     ],
     tasks=tasks(
-        {"name": "TODO", "model": "openai/gpt-4o-mini"},
         matrix={
+            "task": {"model": "openai/gpt-4o-mini"},
             "name": ["inspect_evals/mbpp", "inspect_evals/class_eval"],
         },
     ),
