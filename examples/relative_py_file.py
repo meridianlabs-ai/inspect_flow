@@ -6,8 +6,7 @@ flow_config(
         "options": {"limit": 1},
         "tasks": [
             {
-                "name": "noop",
-                "file": "local_eval/src/local_eval/noop.py",
+                "name": "local_eval/src/local_eval/noop.py@noop",
                 "model": "mockllm/mock-llm",
             },
         ],

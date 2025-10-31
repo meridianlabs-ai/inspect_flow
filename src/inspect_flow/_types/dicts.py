@@ -206,14 +206,8 @@ class FlowModelMatrixDict(TypedDict):
 
 
 class FlowTaskDict(TypedDict):
-    name: NotRequired[Optional[str]]
-    """Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file."""
-    file: NotRequired[Optional[str]]
-    """Python file containing the task implementation. If not provided, the task will be loaded from the registry."""
-    file_attr: NotRequired[Optional[str]]
-    """Name of the task factory attr within file. Only used if file is specified. Defaults to 'name'."""
-    registry_name: NotRequired[Optional[str]]
-    """Name of the task within the registry. Only used if file is not specified. Defaults to 'name'."""
+    name: str
+    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
@@ -271,13 +265,7 @@ class FlowTaskDict(TypedDict):
 
 class FlowTaskMatrixDict(TypedDict):
     name: NotRequired[Optional[Sequence[str]]]
-    """Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file."""
-    file: NotRequired[Optional[Sequence[str]]]
-    """Python file containing the task implementation. If not provided, the task will be loaded from the registry."""
-    file_attr: NotRequired[Optional[Sequence[str]]]
-    """Name of the task factory attr within file. Only used if file is specified. Defaults to 'name'."""
-    registry_name: NotRequired[Optional[Sequence[str]]]
-    """Name of the task within the registry. Only used if file is not specified. Defaults to 'name'."""
+    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[

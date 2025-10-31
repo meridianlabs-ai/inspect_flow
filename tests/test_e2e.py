@@ -38,8 +38,7 @@ def test_cwd_relative_py_file() -> None:
             "options": {"limit": 1},
             "tasks": [
                 {
-                    "name": "noop",
-                    "file": "examples/local_eval/src/local_eval/noop.py",
+                    "name": "examples/local_eval/src/local_eval/noop.py@noop",
                     "model": "mockllm/mock-llm",
                 }
             ],

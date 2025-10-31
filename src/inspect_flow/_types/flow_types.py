@@ -16,7 +16,7 @@ from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
 )
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
@@ -91,24 +91,8 @@ class FlowEpochs(BaseModel):
 
 
 class FlowTask(BaseModel, extra="forbid"):
-    name: str | None = Field(
-        default=None,
-        description='Task name. If not specified is automatically determined based on the name of the task directory (or "task") if its anonymous task (e.g. created by a function exported from a file.',
-    )
-
-    file: str | None = Field(
-        default=None,
-        description="Python file containing the task implementation. If not provided, the task will be loaded from the registry.",
-    )
-
-    file_attr: str | None = Field(
-        default=None,
-        description="Name of the task factory attr within file. Only used if file is specified. Defaults to 'name'.",
-    )
-
-    registry_name: str | None = Field(
-        default=None,
-        description="Name of the task within the registry. Only used if file is not specified. Defaults to 'name'.",
+    name: str = Field(
+        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name").',
     )
 
     args: CreateArgs | None = Field(
@@ -201,22 +185,6 @@ class FlowTask(BaseModel, extra="forbid"):
     @classmethod
     def convert_string_solvers(cls, v):
         return convert_str_to_solver(v)
-
-    @model_validator(mode="after")
-    def validate_field_combinations(self):
-        if self.file is not None:
-            if self.registry_name is not None:
-                raise ValueError(
-                    "registry_name cannot be specified when file is specified"
-                )
-        elif self.file_attr is not None:
-            raise ValueError("file_attr cannot be specified when file is not specified")
-        elif self.registry_name is None and self.name is None:
-            raise ValueError(
-                "FlowTask must have at least one of registry_name, name, or file specified"
-            )
-
-        return self
 
 
 class FlowOptions(BaseModel, extra="forbid"):
