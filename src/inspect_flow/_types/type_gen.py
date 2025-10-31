@@ -20,14 +20,16 @@ ADDITIONAL_IMPORTS = [
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowModel, FlowSolver, FlowTask\n",
 ]
 
-STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver"]
+STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
-MATRIX_DICT_CLASS = [
-    "FlowTaskMatrixDict",
-    "FlowModelMatrixDict",
-    "FlowSolverMatrixDict",
-    "GenerateConfigMatrixDict",
-]
+MATRIX_CLASS_ATTRS = {
+    "FlowTask": "task",
+    "FlowModel": "model",
+    "FlowSolver": "solver",
+    "FlowAgent": "agent",
+    "GenerateConfig": "config",
+}
+
 
 Schema: TypeAlias = dict[str, Any]
 
@@ -62,7 +64,6 @@ def field_type_to_list(field_schema: Schema) -> None:
 
 def properties_to_lists(type_def: Schema) -> None:
     properties: Schema = type_def["properties"]
-    type_def.pop("required", None)
     for field_value in properties.values():
         field_type_to_list(field_value)
 
@@ -76,10 +77,40 @@ def root_type_as_def(schema: Schema) -> None:
     schema["$defs"] = defs
 
 
+def create_matrix_dict(dict_def: Schema, title: str) -> None:
+    properties_to_lists(dict_def)
+    attr = MATRIX_CLASS_ATTRS[title]
+    properties: Schema = dict_def["properties"]
+    assert attr not in properties, f"Attribute {attr} already exists in {title}"
+    attr_base_type: Schema = {
+        "anyOf": [
+            {"$ref": f"#/$defs/{title}"},
+            {"$ref": f"#/$defs/{title}Dict"},
+        ]
+    }
+    if title in STR_AS_CLASS:
+        attr_base_type["anyOf"].append({"type": "string"})
+    attr_type = {
+        "anyOf": [
+            attr_base_type,
+            {
+                "type": "array",
+                "items": attr_base_type,
+            },
+            {"type": "null"},
+        ],
+        "description": f"A {attr} or list of {attr}s to create a matrix over.",
+    }
+    properties[attr] = attr_type
+
+
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
+    if title in MATRIX_CLASS_ATTRS:
+        dict_def.pop("required", None)
     if type == "MatrixDict":
-        properties_to_lists(dict_def)
+        create_matrix_dict(dict_def, title)
+
     new_title = title + type
     dict_def["title"] = new_title
     defs[new_title] = dict_def
@@ -135,7 +166,8 @@ def create_dict_types(schema: Schema) -> None:
     for title, v in list(defs.items()):
         update_refs(v)
         create_type(defs, title, v, "Dict")
-        create_type(defs, title, v, "MatrixDict")
+        if title in MATRIX_CLASS_ATTRS:
+            create_type(defs, title, v, "MatrixDict")
         ignore_type(defs, title, v)
 
 
@@ -246,8 +278,6 @@ def convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
 def should_skip_class(line: str) -> bool:
     if line.find("Ignore") != -1:
         return True
-    if line.find("MatrixDict") != -1:
-        return not any([line.find(c) != -1 for c in MATRIX_DICT_CLASS])
     return False
 
 
