@@ -137,16 +137,16 @@ def instantiate_tasks(config: FlowConfig) -> list[Task]:
     ]
 
 
-def get_task_creators_from_file(config: FlowTask) -> list[Callable[..., Task]]:
-    assert config.file
-    file_attr = config.file_attr or config.name
-    file = find_file(config.file)
+def get_task_creators_from_file(
+    file_path: str, attr: str | None, config: FlowTask
+) -> list[Callable[..., Task]]:
+    file = find_file(file_path)
     if not file:
-        raise FileNotFoundError(f"File not found: {config.file}")
+        raise FileNotFoundError(f"File not found: {file_path}")
 
     module = get_module_from_file(file)
-    if file_attr:
-        task_funcs = [getattr(module, file_attr)]
+    if attr:
+        task_funcs = [getattr(module, attr)]
     else:
         # load all task decorated functions and ensure only one exists
         task_funcs = [
@@ -157,30 +157,27 @@ def get_task_creators_from_file(config: FlowTask) -> list[Callable[..., Task]]:
         ]
         if not task_funcs:
             raise ValueError("No task functions found in file {file}")
+        if len(task_funcs) > 1:
+            config.name = None  # Clear the name so it will be set to the name of the attr  # type: ignore
     return task_funcs
 
 
 def get_task_creators(config: FlowTask) -> list[Callable[..., Task]]:
-    if config.file or config.file_attr:
-        config.file = config.file or config.name
-        return get_task_creators_from_file(config)
+    if config.name.find("@") != -1:
+        file, attr = config.name.split("@", 1)
+        return get_task_creators_from_file(file, attr, config)
+    if config.name.find(".py") != -1:
+        result = get_task_creators_from_file(config.name, None, config)
+        return result
     else:
-        registry_name = config.registry_name or config.name
-        if not registry_name:
-            raise ValueError(
-                "registry_name or name not specified for task without file"
-            )
-        if not registry_lookup(type="task", name=registry_name):
+        if not registry_lookup(type="task", name=config.name):
             # Check if name is a file name
-            if config.name:
-                if file := find_file(config.name):
-                    config.file = file
-                    config.name = None
-                    return get_task_creators_from_file(config)
-            raise LookupError(f"{registry_name} was not found in the registry")
+            if file := find_file(config.name):
+                return get_task_creators_from_file(file, None, config)
+            raise LookupError(f"{config.name} was not found in the registry")
 
         def task_func(**kwargs):
-            return registry_create(type="task", name=registry_name, **kwargs)
+            return registry_create(type="task", name=config.name, **kwargs)
 
         task_funcs = [task_func]
 

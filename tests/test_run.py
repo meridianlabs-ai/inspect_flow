@@ -19,7 +19,7 @@ from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 task_dir = (
     Path(__file__).parents[1] / "examples" / "local_eval" / "src" / "local_eval"
 ).resolve()
-task_file = task_dir / "noop.py"
+task_file = str(task_dir / "noop.py")
 
 
 def test_task_with_get_model() -> None:
@@ -29,8 +29,7 @@ def test_task_with_get_model() -> None:
                 flow_dir="test_log_dir",
                 tasks=[
                     FlowTask(
-                        name="task_with_get_model",
-                        file=str(task_file),
+                        name=task_file + "@task_with_get_model",
                         model=FlowModel(name="mockllm/mock-llm"),
                     )
                 ],
@@ -52,7 +51,7 @@ def test_task_with_two_models() -> None:
     config = FlowConfig(
         flow_dir=log_dir,
         tasks=tasks(
-            FlowTask(name="noop", file=str(task_file)),
+            FlowTask(name=task_file + "@noop"),
             matrix={
                 "model": [
                     FlowModel(name="mockllm/mock-llm1"),
@@ -74,8 +73,7 @@ def test_model_generate_config() -> None:
                 flow_dir="test_log_dir",
                 tasks=[
                     FlowTask(
-                        name="noop",
-                        file=str(task_file),
+                        name=task_file + "@noop",
                         model=FlowModel(
                             name="mockllm/mock-llm",
                             config=GenerateConfig(system_message=system_message),
@@ -100,7 +98,7 @@ def test_default_model_config() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                tasks=[FlowTask(name="noop", file=str(task_file))],
+                tasks=[FlowTask(name=task_file + "@noop")],
             )
         )
 
@@ -119,8 +117,7 @@ def test_task_model() -> None:
                 flow_dir="test_log_dir",
                 tasks=[
                     FlowTask(
-                        name="noop",
-                        file=str(task_file),
+                        name=task_file + "@noop",
                         model=FlowModel(name="mockllm/mock-llm"),
                     )
                 ],
@@ -144,8 +141,7 @@ def test_matrix_args() -> None:
                 flow_dir="test_log_dir",
                 tasks=tasks(
                     FlowTask(
-                        name="task_with_params",
-                        file=str(task_file),
+                        name=task_file + "@task_with_params",
                         model=FlowModel(name="mockllm/mock-llm"),
                     ),
                     matrix={"args": [{"subset": "original"}, {"subset": "contrast"}]},
@@ -180,8 +176,7 @@ def test_matrix_model_roles() -> None:
                 flow_dir="test_log_dir",
                 tasks=tasks(
                     FlowTask(
-                        name="task_with_model_roles",
-                        file=str(task_file),
+                        name=task_file + "@task_with_model_roles",
                         model=FlowModel(name="mockllm/mock-llm"),
                     ),
                     matrix={"model_roles": [model_roles1, model_roles2]},
@@ -210,8 +205,7 @@ def test_matrix_solvers() -> None:
                 flow_dir="test_log_dir",
                 tasks=tasks(
                     FlowTask(
-                        name="noop",
-                        file=str(task_file),
+                        name=task_file + "@noop",
                         model=FlowModel(name="mockllm/mock-llm"),
                     ),
                     matrix={
@@ -251,7 +245,7 @@ def test_sample_id() -> None:
         run_eval_set(
             config=FlowConfig(
                 flow_dir="test_log_dir",
-                tasks=[FlowTask(name="noop", file=str(task_file), sample_id=1)],
+                tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
             )
         )
 
@@ -303,8 +297,7 @@ def test_config_generate_config() -> None:
                 ),
                 tasks=[
                     FlowTask(
-                        name="noop",
-                        file=str(task_file),
+                        name=task_file + "@noop",
                         config=GenerateConfig(
                             system_message=task_system_message,
                             temperature=task_temperature,
@@ -345,8 +338,7 @@ def test_dry_run():
                 flow_dir="test_log_dir",
                 tasks=[
                     FlowTask(
-                        name="task_with_get_model",
-                        file=str(task_file),
+                        name=task_file + "@task_with_get_model",
                         model=FlowModel(name="mockllm/mock-llm"),
                     )
                 ],
