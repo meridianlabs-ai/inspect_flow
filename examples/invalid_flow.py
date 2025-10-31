@@ -13,7 +13,7 @@ flow_config(
                 "model": [
                     "mockllm/mock-llm1",
                     "mockllm/mock-llm2",
-                    {"name": "mockllm/mock-llm3", "version": "v1.0"},
+                    {"name": "mockllm/mock-llm3", "version": "v1.0"},  # pyright: ignore[reportArgumentType]
                 ],
             },
         ),
