@@ -5,6 +5,7 @@ except ImportError:
 
 from inspect_flow._submit.submit import submit
 from inspect_flow._types.factories import (
+    agents,
     configs,
     flow_agent,
     flow_config,
@@ -18,6 +19,7 @@ from inspect_flow._types.factories import (
 
 __all__ = [
     "__version__",
+    "agents",
     "configs",
     "flow_agent",
     "flow_config",
