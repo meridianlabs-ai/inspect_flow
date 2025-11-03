@@ -1,5 +1,5 @@
-from inspect_flow._types.factories import tasks
-from inspect_flow._types.flow_types import FlowConfig, FlowOptions
+from inspect_flow import tasks_matrix
+from inspect_flow.types import FlowConfig, FlowOptions
 
 FlowConfig(
     flow_dir="./logs/local_logs",
@@ -7,9 +7,9 @@ FlowConfig(
     dependencies=[
         "./examples/local_eval",
     ],
-    tasks=tasks(
-        matrix={
-            "task": {"name": "local_eval/noop", "model": "mockllm/mock-llm1"},
+    tasks=tasks_matrix(
+        {"name": "local_eval/noop", "model": "mockllm/mock-llm1"},
+        {
             "message_limit": [4, 5],
         },
     ),

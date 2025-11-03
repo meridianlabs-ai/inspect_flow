@@ -39,8 +39,8 @@ class ApproverPolicyConfigDict(TypedDict):
     ```
     """
 
-    name: str
-    tools: Union[str, Sequence[str]]
+    name: NotRequired[str]
+    tools: NotRequired[Union[str, Sequence[str]]]
     params: NotRequired[Mapping[str, Any]]
 
 
@@ -62,8 +62,13 @@ class FlowAgentDict(TypedDict):
     """Additional args to pass to agent constructor."""
 
 
+class FlowAgentMatrixDict(TypedDict):
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    """Additional args to pass to agent constructor."""
+
+
 class FlowEpochsDict(TypedDict):
-    epochs: int
+    epochs: NotRequired[int]
     """Number of epochs."""
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
     """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
@@ -76,31 +81,22 @@ class FlowSolverDict(TypedDict):
     """Additional args to pass to solver constructor."""
 
 
+class FlowSolverMatrixDict(TypedDict):
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    """Additional args to pass to solver constructor."""
+
+
 class SandboxEnvironmentSpecDict(TypedDict):
     """Specification of a SandboxEnvironment."""
 
-    type: str
+    type: NotRequired[str]
     config: NotRequired[Any]
 
 
 class ApprovalPolicyConfigDict(TypedDict):
-    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
-
-
-class FlowAgentMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the solver."""
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Additional args to pass to agent constructor."""
-    agent: NotRequired[
-        Optional[
-            Union[
-                Union[FlowAgent, FlowAgentDict, str],
-                Sequence[Union[FlowAgent, FlowAgentDict, str]],
-            ]
-        ]
+    approvers: NotRequired[
+        Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
     ]
-    """A agent or list of agents to create a matrix over."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -176,22 +172,6 @@ class FlowOptionsDict(TypedDict):
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
-class FlowSolverMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the solver."""
-    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Additional args to pass to solver constructor."""
-    solver: NotRequired[
-        Optional[
-            Union[
-                Union[FlowSolver, FlowSolverDict, str],
-                Sequence[Union[FlowSolver, FlowSolverDict, str]],
-            ]
-        ]
-    ]
-    """A solver or list of solvers to create a matrix over."""
-
-
 class FlowModelDict(TypedDict):
     name: NotRequired[str]
     """Name of the model to use."""
@@ -212,8 +192,6 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the model to use."""
     role: NotRequired[Optional[Sequence[str]]]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: NotRequired[Optional[Sequence[str]]]
@@ -228,15 +206,6 @@ class FlowModelMatrixDict(TypedDict):
     """Use/store a cached version of the model based on the parameters to get_model()."""
     model_args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to model constructor."""
-    model: NotRequired[
-        Optional[
-            Union[
-                Union[FlowModel, FlowModelDict, str],
-                Sequence[Union[FlowModel, FlowModelDict, str]],
-            ]
-        ]
-    ]
-    """A model or list of models to create a matrix over."""
 
 
 class FlowTaskDict(TypedDict):
@@ -298,8 +267,6 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowTaskMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
@@ -364,15 +331,6 @@ class FlowTaskMatrixDict(TypedDict):
         Optional[Sequence[Union[str, int, Sequence[Union[str, int]]]]]
     ]
     """Evaluate specific sample(s) from the dataset."""
-    task: NotRequired[
-        Optional[
-            Union[
-                Union[FlowTask, FlowTaskDict, str],
-                Sequence[Union[FlowTask, FlowTaskDict, str]],
-            ]
-        ]
-    ]
-    """A task or list of tasks to create a matrix over."""
 
 
 class GenerateConfigDict(TypedDict):
@@ -451,15 +409,6 @@ class GenerateConfigMatrixDict(TypedDict):
     batch: NotRequired[
         Optional[Sequence[Union[bool, int, BatchConfig, BatchConfigDict]]]
     ]
-    config: NotRequired[
-        Optional[
-            Union[
-                Union[GenerateConfig, GenerateConfigDict],
-                Sequence[Union[GenerateConfig, GenerateConfigDict]],
-            ]
-        ]
-    ]
-    """A config or list of configs to create a matrix over."""
 
 
 class JSONSchemaDict(TypedDict):
@@ -484,8 +433,8 @@ class JSONSchemaDict(TypedDict):
 class ResponseSchemaDict(TypedDict):
     """Schema for model response when using Structured Output."""
 
-    name: str
-    json_schema: Union[JSONSchema, JSONSchemaDict]
+    name: NotRequired[str]
+    json_schema: NotRequired[Union[JSONSchema, JSONSchemaDict]]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
 
@@ -501,7 +450,7 @@ class FlowConfigDict(TypedDict):
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: NotRequired[Optional[Sequence[str]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: Sequence[Union[FlowTask, FlowTaskDict, str]]
+    tasks: NotRequired[Sequence[Union[FlowTask, FlowTaskDict, str]]]
     """Tasks to run"""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
