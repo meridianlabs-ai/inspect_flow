@@ -63,8 +63,6 @@ class FlowAgentDict(TypedDict):
 
 
 class FlowAgentMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the solver."""
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to agent constructor."""
 
@@ -84,8 +82,6 @@ class FlowSolverDict(TypedDict):
 
 
 class FlowSolverMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the solver."""
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to solver constructor."""
 
@@ -196,8 +192,6 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Name of the model to use."""
     role: NotRequired[Optional[Sequence[str]]]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: NotRequired[Optional[Sequence[str]]]
@@ -273,8 +267,6 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowTaskMatrixDict(TypedDict):
-    name: NotRequired[Optional[Sequence[str]]]
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[

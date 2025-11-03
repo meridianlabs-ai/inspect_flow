@@ -149,70 +149,70 @@ def _matrix(
 
 
 def agents_with(
-    agents: AgentInput | Sequence[AgentInput],
+    agent: AgentInput | Sequence[AgentInput],
     values: FlowAgentDict,
 ) -> list[FlowAgent]:
-    return _with(agents, values, FlowAgent)
+    return _with(agent, values, FlowAgent)
 
 
 def configs_with(
-    configs: ConfigInput | Sequence[ConfigInput],
+    config: ConfigInput | Sequence[ConfigInput],
     values: GenerateConfigDict,
 ) -> list[GenerateConfig]:
-    return _with(configs, values, GenerateConfig)
+    return _with(config, values, GenerateConfig)
 
 
 def models_with(
-    models: ModelInput | Sequence[ModelInput],
+    model: ModelInput | Sequence[ModelInput],
     values: FlowModelDict,
 ) -> list[FlowModel]:
-    return _with(models, values, FlowModel)
+    return _with(model, values, FlowModel)
 
 
 def solvers_with(
-    solvers: SolverInput | Sequence[SolverInput],
+    solver: SolverInput | Sequence[SolverInput],
     values: FlowSolverDict,
 ) -> list[FlowSolver]:
-    return _with(solvers, values, FlowSolver)
+    return _with(solver, values, FlowSolver)
 
 
 def tasks_with(
-    tasks: TaskInput | Sequence[TaskInput],
+    task: TaskInput | Sequence[TaskInput],
     values: FlowTaskDict,
 ) -> list[FlowTask]:
-    return _with(tasks, values, FlowTask)
+    return _with(task, values, FlowTask)
 
 
 def agents_matrix(
-    agents: AgentInput | Sequence[AgentInput],
+    agent: AgentInput | Sequence[AgentInput],
     matrix: FlowAgentMatrixDict,
 ) -> list[FlowAgent]:
-    return _matrix(agents, matrix, FlowAgent)
+    return _matrix(agent, matrix, FlowAgent)
 
 
 def configs_matrix(
-    configs: ConfigInput | Sequence[ConfigInput],
+    config: ConfigInput | Sequence[ConfigInput],
     matrix: GenerateConfigMatrixDict,
 ) -> list[GenerateConfig]:
-    return _matrix(configs, matrix, GenerateConfig)
+    return _matrix(config, matrix, GenerateConfig)
 
 
 def models_matrix(
-    models: ModelInput | Sequence[ModelInput],
+    model: ModelInput | Sequence[ModelInput],
     matrix: FlowModelMatrixDict,
 ) -> list[FlowModel]:
-    return _matrix(models, matrix, FlowModel)
+    return _matrix(model, matrix, FlowModel)
 
 
 def solvers_matrix(
-    solvers: SolverInput | Sequence[SolverInput],
+    solver: SolverInput | Sequence[SolverInput],
     matrix: FlowSolverMatrixDict,
 ) -> list[FlowSolver]:
-    return _matrix(solvers, matrix, FlowSolver)
+    return _matrix(solver, matrix, FlowSolver)
 
 
 def tasks_matrix(
-    tasks: TaskInput | Sequence[TaskInput],
+    task: TaskInput | Sequence[TaskInput],
     matrix: FlowTaskMatrixDict,
 ) -> list[FlowTask]:
-    return _matrix(tasks, matrix, FlowTask)
+    return _matrix(task, matrix, FlowTask)

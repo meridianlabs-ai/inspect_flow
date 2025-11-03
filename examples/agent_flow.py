@@ -1,5 +1,5 @@
-from inspect_flow._types.factories import tasks_with
-from inspect_flow._types.flow_types import FlowConfig, FlowOptions
+from inspect_flow import tasks_with
+from inspect_flow.types import FlowConfig, FlowOptions
 
 FlowConfig(
     flow_dir="./logs/local_logs",

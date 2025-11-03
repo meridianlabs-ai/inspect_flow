@@ -71,7 +71,8 @@ def root_type_as_def(schema: Schema) -> None:
 
 
 def create_matrix_dict(dict_def: Schema, title: str) -> None:
-    dict_def.pop("name", None)  # do not support matrix over name
+    properties: Schema = dict_def["properties"]
+    properties.pop("name", None)  # do not support matrix over name
     properties_to_lists(dict_def)
 
 
