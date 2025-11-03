@@ -192,20 +192,8 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
-    role: NotRequired[Optional[Sequence[str]]]
-    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[Optional[Sequence[str]]]
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-    base_url: NotRequired[Optional[Sequence[str]]]
-    """Optional. Alternate base URL for model."""
-    api_key: NotRequired[Optional[Sequence[str]]]
-    """Optional. API key for model."""
-    memoize: NotRequired[Optional[Sequence[bool]]]
-    """Use/store a cached version of the model based on the parameters to get_model()."""
-    model_args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Additional args to pass to model constructor."""
 
 
 class FlowTaskDict(TypedDict):
@@ -292,45 +280,6 @@ class FlowTaskMatrixDict(TypedDict):
         Optional[Sequence[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]
     ]
     """Named roles for use in `get_model()`."""
-    sandbox: NotRequired[
-        Optional[
-            Sequence[
-                Union[
-                    str,
-                    Sequence,
-                    SandboxEnvironmentSpec,
-                    SandboxEnvironmentSpecDict,
-                ]
-            ]
-        ]
-    ]
-    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    approval: NotRequired[
-        Optional[Sequence[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]]
-    ]
-    """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Sequence[Union[int, FlowEpochs, FlowEpochsDict]]]]
-    """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
-    fail_on_error: NotRequired[Optional[Sequence[Union[bool, float]]]]
-    """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: NotRequired[Optional[Sequence[bool]]]
-    """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    message_limit: NotRequired[Optional[Sequence[int]]]
-    """Limit on total messages used for each sample."""
-    token_limit: NotRequired[Optional[Sequence[int]]]
-    """Limit on total tokens used for each sample."""
-    time_limit: NotRequired[Optional[Sequence[int]]]
-    """Limit on clock time (in seconds) for samples."""
-    working_limit: NotRequired[Optional[Sequence[int]]]
-    """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: NotRequired[Optional[Sequence[int]]]
-    """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
-    metadata: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    """Additional metadata to associate with the task."""
-    sample_id: NotRequired[
-        Optional[Sequence[Union[str, int, Sequence[Union[str, int]]]]]
-    ]
-    """Evaluate specific sample(s) from the dataset."""
 
 
 class GenerateConfigDict(TypedDict):
@@ -370,10 +319,6 @@ class GenerateConfigDict(TypedDict):
 class GenerateConfigMatrixDict(TypedDict):
     """Model generation options."""
 
-    max_retries: NotRequired[Optional[Sequence[int]]]
-    timeout: NotRequired[Optional[Sequence[int]]]
-    attempt_timeout: NotRequired[Optional[Sequence[int]]]
-    max_connections: NotRequired[Optional[Sequence[int]]]
     system_message: NotRequired[Optional[Sequence[str]]]
     max_tokens: NotRequired[Optional[Sequence[int]]]
     top_p: NotRequired[Optional[Sequence[float]]]
@@ -406,9 +351,6 @@ class GenerateConfigMatrixDict(TypedDict):
         Optional[Sequence[Union[ResponseSchema, ResponseSchemaDict]]]
     ]
     extra_body: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
-    batch: NotRequired[
-        Optional[Sequence[Union[bool, int, BatchConfig, BatchConfigDict]]]
-    ]
 
 
 class JSONSchemaDict(TypedDict):
