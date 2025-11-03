@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Any, Mapping, TypeVar
+from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ from inspect_flow._types.dicts import (
     FlowSolverMatrixDict,
     FlowTaskDict,
     FlowTaskMatrixDict,
+    GenerateConfigDict,
     GenerateConfigMatrixDict,
 )
 from inspect_flow._types.flow_types import (
@@ -45,14 +46,33 @@ def flow_agent(config: FlowAgentDict) -> FlowAgent:
     return FlowAgent.model_validate(config)
 
 
-_T = TypeVar("_T", bound=BaseModel)
+BaseType = TypeVar(
+    "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
+)
+
+AgentInput: TypeAlias = str | FlowAgent | FlowAgentDict
+ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
+ModelInput: TypeAlias = str | FlowModel | FlowModelDict
+SolverInput: TypeAlias = str | FlowSolver | FlowSolverDict
+TaskInput: TypeAlias = str | FlowTask | FlowTaskDict
+
+BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
+
+MatrixDict = TypeVar(
+    "MatrixDict",
+    FlowAgentMatrixDict,
+    GenerateConfigMatrixDict,
+    FlowModelMatrixDict,
+    FlowSolverMatrixDict,
+    FlowTaskMatrixDict,
+)
 
 
 def _generate_from_base(
-    base: Mapping[str, Any] | str | BaseModel,
-    matrix: dict[str, Any],
-    pydantic_type: type[_T],
-) -> list[_T]:
+    base: BaseInput,
+    matrix: Mapping[str, Any],
+    pydantic_type: type[BaseType],
+) -> list[BaseType]:
     if isinstance(base, str):
         base = {"name": base}
     elif isinstance(base, BaseModel):
@@ -73,18 +93,17 @@ def _generate_from_base(
 
 
 def _generate(
-    matrix: Mapping[str, Any], pydantic_type: type[_T], base_attr_name: str
-) -> list[_T]:
+    base: BaseInput | Sequence[BaseInput],
+    matrix: MatrixDict,
+    pydantic_type: type[BaseType],
+) -> Sequence[BaseType]:
     matrix_dict = dict(matrix)
-    base = matrix_dict.pop(base_attr_name, {})
-    if isinstance(base, list):
+    if isinstance(base, Sequence):
         return [
             item
             for b in base
             for item in _generate_from_base(
-                b.model_dump(
-                    exclude_defaults=True, exclude_none=True, exclude_unset=True
-                ),
+                b,
                 matrix_dict,
                 pydantic_type,
             )
@@ -92,36 +111,36 @@ def _generate(
     return _generate_from_base(base, matrix_dict, pydantic_type)
 
 
-def solvers(
-    *,
-    matrix: FlowSolverMatrixDict,
-) -> list[FlowSolver]:
-    return _generate(matrix, FlowSolver, "solver")
-
-
-def agents(
-    *,
+def agents_matrix(
+    agents: AgentInput | Sequence[AgentInput],
     matrix: FlowAgentMatrixDict,
-) -> list[FlowAgent]:
-    return _generate(matrix, FlowAgent, "agent")
+) -> Sequence[FlowAgent]:
+    return _generate(agents, matrix, FlowAgent)
 
 
-def models(
-    *,
-    matrix: FlowModelMatrixDict,
-) -> list[FlowModel]:
-    return _generate(matrix, FlowModel, "model")
-
-
-def tasks(
-    *,
-    matrix: FlowTaskMatrixDict,
-) -> list[FlowTask]:
-    return _generate(matrix, FlowTask, "task")
-
-
-def configs(
-    *,
+def configs_matrix(
+    configs: ConfigInput | Sequence[ConfigInput],
     matrix: GenerateConfigMatrixDict,
-) -> list[GenerateConfig]:
-    return _generate(matrix, GenerateConfig, "config")
+) -> Sequence[GenerateConfig]:
+    return _generate(configs, matrix, GenerateConfig)
+
+
+def models_matrix(
+    models: ModelInput | Sequence[ModelInput],
+    matrix: FlowModelMatrixDict,
+) -> Sequence[FlowModel]:
+    return _generate(models, matrix, FlowModel)
+
+
+def solvers_matrix(
+    solvers: SolverInput | Sequence[SolverInput],
+    matrix: FlowSolverMatrixDict,
+) -> Sequence[FlowSolver]:
+    return _generate(solvers, matrix, FlowSolver)
+
+
+def tasks_matrix(
+    tasks: TaskInput | Sequence[TaskInput],
+    matrix: FlowTaskMatrixDict,
+) -> Sequence[FlowTask]:
+    return _generate(tasks, matrix, FlowTask)
