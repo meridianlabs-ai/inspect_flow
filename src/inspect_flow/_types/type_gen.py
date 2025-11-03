@@ -22,14 +22,7 @@ ADDITIONAL_IMPORTS = [
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
-MATRIX_CLASS_ATTRS = {
-    "FlowTask": "task",
-    "FlowModel": "model",
-    "FlowSolver": "solver",
-    "FlowAgent": "agent",
-    "GenerateConfig": "config",
-}
-
+MATRIX_CLASSES = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent", "GenerateConfig"]
 
 Schema: TypeAlias = dict[str, Any]
 
@@ -78,36 +71,12 @@ def root_type_as_def(schema: Schema) -> None:
 
 
 def create_matrix_dict(dict_def: Schema, title: str) -> None:
+    dict_def.pop("name", None)  # do not support matrix over name
     properties_to_lists(dict_def)
-    attr = MATRIX_CLASS_ATTRS[title]
-    properties: Schema = dict_def["properties"]
-    assert attr not in properties, f"Attribute {attr} already exists in {title}"
-    attr_base_type: Schema = {
-        "anyOf": [
-            {"$ref": f"#/$defs/{title}"},
-            {"$ref": f"#/$defs/{title}Dict"},
-        ]
-    }
-    if title in STR_AS_CLASS:
-        attr_base_type["anyOf"].append({"type": "string"})
-    attr_type = {
-        "anyOf": [
-            attr_base_type,
-            {
-                "type": "array",
-                "items": attr_base_type,
-            },
-            {"type": "null"},
-        ],
-        "description": f"A {attr} or list of {attr}s to create a matrix over.",
-    }
-    properties[attr] = attr_type
 
 
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
-    if title in MATRIX_CLASS_ATTRS:
-        dict_def.pop("required", None)
     if type == "MatrixDict":
         create_matrix_dict(dict_def, title)
 
@@ -166,7 +135,7 @@ def create_dict_types(schema: Schema) -> None:
     for title, v in list(defs.items()):
         update_refs(v)
         create_type(defs, title, v, "Dict")
-        if title in MATRIX_CLASS_ATTRS:
+        if title in MATRIX_CLASSES:
             create_type(defs, title, v, "MatrixDict")
         ignore_type(defs, title, v)
 
