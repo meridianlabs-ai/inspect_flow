@@ -77,6 +77,7 @@ def create_matrix_dict(dict_def: Schema, title: str) -> None:
 
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
+    dict_def.pop("required", None)
     if type == "MatrixDict":
         create_matrix_dict(dict_def, title)
 

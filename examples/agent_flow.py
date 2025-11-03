@@ -1,4 +1,4 @@
-from inspect_flow._types.factories import tasks
+from inspect_flow._types.factories import tasks_with
 from inspect_flow._types.flow_types import FlowConfig, FlowOptions
 
 FlowConfig(
@@ -7,10 +7,8 @@ FlowConfig(
     dependencies=[
         "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
     ],
-    tasks=tasks(
-        matrix={
-            "task": {"model": "openai/gpt-4o-mini"},
-            "name": ["inspect_evals/mbpp", "inspect_evals/class_eval"],
-        },
+    tasks=tasks_with(
+        ["inspect_evals/mbpp", "inspect_evals/class_eval"],
+        {"model": "openai/gpt-4o-mini"},
     ),
 )

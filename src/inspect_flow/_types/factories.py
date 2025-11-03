@@ -68,7 +68,44 @@ MatrixDict = TypeVar(
 )
 
 
-def _generate_from_base(
+def _with_base(
+    base: BaseInput,
+    values: Mapping[str, Any],
+    pydantic_type: type[BaseType],
+) -> BaseType:
+    if isinstance(base, str):
+        base = {"name": base}
+    elif isinstance(base, BaseModel):
+        base = base.model_dump(
+            exclude_defaults=True, exclude_none=True, exclude_unset=True
+        )
+
+    for key in values.keys():
+        if key in base:
+            raise ValueError(f"{key} provided in both base and values")
+
+    return pydantic_type.model_validate(dict(base) | dict(values))
+
+
+def _with(
+    base: BaseInput | Sequence[BaseInput],
+    values: Mapping[str, Any],
+    pydantic_type: type[BaseType],
+) -> list[BaseType]:
+    matrix_dict = dict(values)
+    if isinstance(base, Sequence):
+        return [
+            _with_base(
+                b,
+                matrix_dict,
+                pydantic_type,
+            )
+            for b in base
+        ]
+    return [_with_base(base, values, pydantic_type)]
+
+
+def _matrix_with_base(
     base: BaseInput,
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
@@ -92,55 +129,90 @@ def _generate_from_base(
     return result
 
 
-def _generate(
+def _matrix(
     base: BaseInput | Sequence[BaseInput],
     matrix: MatrixDict,
     pydantic_type: type[BaseType],
-) -> Sequence[BaseType]:
+) -> list[BaseType]:
     matrix_dict = dict(matrix)
     if isinstance(base, Sequence):
         return [
             item
             for b in base
-            for item in _generate_from_base(
+            for item in _matrix_with_base(
                 b,
                 matrix_dict,
                 pydantic_type,
             )
         ]
-    return _generate_from_base(base, matrix_dict, pydantic_type)
+    return _matrix_with_base(base, matrix_dict, pydantic_type)
+
+
+def agents_with(
+    agents: AgentInput | Sequence[AgentInput],
+    values: FlowAgentDict,
+) -> list[FlowAgent]:
+    return _with(agents, values, FlowAgent)
+
+
+def configs_with(
+    configs: ConfigInput | Sequence[ConfigInput],
+    values: GenerateConfigDict,
+) -> list[GenerateConfig]:
+    return _with(configs, values, GenerateConfig)
+
+
+def models_with(
+    models: ModelInput | Sequence[ModelInput],
+    values: FlowModelDict,
+) -> list[FlowModel]:
+    return _with(models, values, FlowModel)
+
+
+def solvers_with(
+    solvers: SolverInput | Sequence[SolverInput],
+    values: FlowSolverDict,
+) -> list[FlowSolver]:
+    return _with(solvers, values, FlowSolver)
+
+
+def tasks_with(
+    tasks: TaskInput | Sequence[TaskInput],
+    values: FlowTaskDict,
+) -> list[FlowTask]:
+    return _with(tasks, values, FlowTask)
 
 
 def agents_matrix(
     agents: AgentInput | Sequence[AgentInput],
     matrix: FlowAgentMatrixDict,
-) -> Sequence[FlowAgent]:
-    return _generate(agents, matrix, FlowAgent)
+) -> list[FlowAgent]:
+    return _matrix(agents, matrix, FlowAgent)
 
 
 def configs_matrix(
     configs: ConfigInput | Sequence[ConfigInput],
     matrix: GenerateConfigMatrixDict,
-) -> Sequence[GenerateConfig]:
-    return _generate(configs, matrix, GenerateConfig)
+) -> list[GenerateConfig]:
+    return _matrix(configs, matrix, GenerateConfig)
 
 
 def models_matrix(
     models: ModelInput | Sequence[ModelInput],
     matrix: FlowModelMatrixDict,
-) -> Sequence[FlowModel]:
-    return _generate(models, matrix, FlowModel)
+) -> list[FlowModel]:
+    return _matrix(models, matrix, FlowModel)
 
 
 def solvers_matrix(
     solvers: SolverInput | Sequence[SolverInput],
     matrix: FlowSolverMatrixDict,
-) -> Sequence[FlowSolver]:
-    return _generate(solvers, matrix, FlowSolver)
+) -> list[FlowSolver]:
+    return _matrix(solvers, matrix, FlowSolver)
 
 
 def tasks_matrix(
     tasks: TaskInput | Sequence[TaskInput],
     matrix: FlowTaskMatrixDict,
-) -> Sequence[FlowTask]:
-    return _generate(tasks, matrix, FlowTask)
+) -> list[FlowTask]:
+    return _matrix(tasks, matrix, FlowTask)
