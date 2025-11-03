@@ -22,7 +22,38 @@ ADDITIONAL_IMPORTS = [
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
-MATRIX_CLASSES = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent", "GenerateConfig"]
+MATRIX_CLASS_FIELDS = {
+    "FlowTask": ["args", "solver", "model", "config", "model_roles"],
+    "FlowModel": ["config"],
+    "FlowSolver": ["args"],
+    "FlowAgent": ["args"],
+    "GenerateConfig": [
+        "system_message",
+        "max_tokens",
+        "top_p",
+        "temperature",
+        "stop_seqs",
+        "best_of",
+        "frequency_penalty",
+        "presence_penalty",
+        "logit_bias",
+        "seed",
+        "top_k",
+        "num_choices",
+        "logprobs",
+        "top_logprobs",
+        "parallel_tool_calls",
+        "internal_tools",
+        "max_tool_output",
+        "cache_prompt",
+        "reasoning_effort",
+        "reasoning_tokens",
+        "reasoning_summary",
+        "reasoning_history",
+        "response_schema",
+        "extra_body",
+    ],
+}
 
 Schema: TypeAlias = dict[str, Any]
 
@@ -55,12 +86,6 @@ def field_type_to_list(field_schema: Schema) -> None:
         field_schema["default"] = None
 
 
-def properties_to_lists(type_def: Schema) -> None:
-    properties: Schema = type_def["properties"]
-    for field_value in properties.values():
-        field_type_to_list(field_value)
-
-
 def root_type_as_def(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
     del schema["$defs"]
@@ -72,8 +97,11 @@ def root_type_as_def(schema: Schema) -> None:
 
 def create_matrix_dict(dict_def: Schema, title: str) -> None:
     properties: Schema = dict_def["properties"]
-    properties.pop("name", None)  # do not support matrix over name
-    properties_to_lists(dict_def)
+    for name, value in list(properties.items()):
+        if name in MATRIX_CLASS_FIELDS[title]:
+            field_type_to_list(value)
+        else:
+            del properties[name]
 
 
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
@@ -137,7 +165,7 @@ def create_dict_types(schema: Schema) -> None:
     for title, v in list(defs.items()):
         update_refs(v)
         create_type(defs, title, v, "Dict")
-        if title in MATRIX_CLASSES:
+        if title in MATRIX_CLASS_FIELDS:
             create_type(defs, title, v, "MatrixDict")
         ignore_type(defs, title, v)
 
