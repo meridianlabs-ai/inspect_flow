@@ -93,7 +93,7 @@ def _with(
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
     matrix_dict = dict(values)
-    if isinstance(base, Sequence):
+    if isinstance(base, Sequence) and not isinstance(base, str):
         return [
             _with_base(
                 b,
@@ -135,7 +135,7 @@ def _matrix(
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
     matrix_dict = dict(matrix)
-    if isinstance(base, Sequence):
+    if isinstance(base, Sequence) and not isinstance(base, str):
         return [
             item
             for b in base
