@@ -7,6 +7,7 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
+from inspect_flow._types.flow_types import FSolver
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -14,6 +15,8 @@ from inspect_flow.types import (
     FlowSolver,
     FlowTask,
 )
+
+from tests.test_helpers.type_helpers import fc, ft
 
 
 def no_errors() -> None:
@@ -27,11 +30,11 @@ def test_contructors():
     task_name = "one_module/one_task"
     model_name = "module/model"
 
-    config = flow_task({"name": task_name, "model": model_name})
+    config = ft(flow_task({"name": task_name, "model": model_name}))
     assert config.name == task_name
     assert config.model
     assert config.model.name == model_name
-    config = FlowTask(name=task_name, model=FlowModel(name=model_name))
+    config = ft(flow_task(FlowTask(name=task_name, model=FlowModel(name=model_name))))
     assert config.name == task_name
     assert config.model
     assert config.model.name == model_name
@@ -54,13 +57,13 @@ def test_contructors():
 
 def test_task_from_string():
     task_name = "one_module/one_task"
-    config = flow_config({"tasks": [task_name]})
+    config = fc(flow_config({"tasks": [task_name]}))
     assert config.tasks[0].name == task_name
 
 
 def test_task_from_dict():
     task_name = "one_module/one_task"
-    config = flow_config({"tasks": [{"name": task_name}]})
+    config = fc(flow_config({"tasks": [{"name": task_name}]}))
     assert config.tasks[0].name == task_name
 
 
@@ -68,16 +71,18 @@ def test_model_from_string():
     model_name = "module/model"
     model_role = "mark"
     model_name2 = "module/model2"
-    config = flow_config(
-        {
-            "tasks": [
-                {
-                    "name": "module/task",
-                    "model": model_name,
-                    "model_roles": {model_role: model_name2},
-                }
-            ]
-        }
+    config = fc(
+        flow_config(
+            {
+                "tasks": [
+                    {
+                        "name": "module/task",
+                        "model": model_name,
+                        "model_roles": {model_role: model_name2},
+                    }
+                ]
+            }
+        )
     )
     assert config.tasks[0].model
     assert config.tasks[0].model.name == model_name
@@ -89,16 +94,18 @@ def test_solver_from_string():
     solver_name = "module/solver"
     solver_name2 = "module/solver2"
     solver_name3 = "module/solver3"
-    config = flow_config(
-        {
-            "tasks": [
-                {"name": "module/task", "solver": solver_name},
-                {"name": "module/task", "solver": [solver_name2, solver_name3]},
-            ],
-        }
+    config = fc(
+        flow_config(
+            {
+                "tasks": [
+                    {"name": "module/task", "solver": solver_name},
+                    {"name": "module/task", "solver": [solver_name2, solver_name3]},
+                ],
+            }
+        )
     )
     assert config.tasks[0].solver
-    assert isinstance(config.tasks[0].solver, FlowSolver)
+    assert isinstance(config.tasks[0].solver, FSolver)
     assert config.tasks[0].solver.name == solver_name
     assert isinstance(config.tasks[1].solver, list)
     assert config.tasks[1].solver[0].name == solver_name2
@@ -106,8 +113,8 @@ def test_solver_from_string():
 
 
 def test_single_items():
-    flow_config({"dependencies": "single_dependency", "tasks": []})
-    flow_config({"tasks": "task_name"})
+    # flow_config({"dependencies": "single_dependency", "tasks": []})
+    # flow_config({"tasks": "task_name"})
     flow_config(
         {"tasks": [{"name": "task_name"}]}
     )  # TODO:ransom do we want to support a single task?

@@ -12,12 +12,12 @@ from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 
 from inspect_flow._types.flow_types import (
-    FlowAgent,
-    FlowConfig,
-    FlowEpochs,
-    FlowModel,
-    FlowSolver,
-    FlowTask,
+    FAgent,
+    FConfig,
+    FEpochs,
+    FModel,
+    FSolver,
+    FTask,
     ModelRolesConfig,
 )
 from inspect_flow._util.module_util import get_module_from_file
@@ -29,7 +29,7 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 matrix_fields = ["args", "models", "model_roles", "solvers"]
 
 
-def create_model(model_config: FlowModel) -> Model:
+def create_model(model_config: FModel) -> Model:
     return get_model(
         model=model_config.name,
         role=model_config.role,
@@ -46,27 +46,27 @@ def create_model_roles(config: ModelRolesConfig) -> ModelRoles:
     roles = {}
     for role, model_config in config.items():
         model = model_config
-        if isinstance(model, FlowModel):
+        if isinstance(model, FModel):
             model = create_model(model_config=model)
         roles[role] = model
     return roles
 
 
-def create_single_solver(config: FlowSolver) -> Solver:
+def create_single_solver(config: FSolver) -> Solver:
     return registry_create(type="solver", name=config.name, **(config.args or {}))
 
 
 def create_solver(
-    config: FlowSolver | list[FlowSolver] | FlowAgent,
+    config: FSolver | list[FSolver] | FAgent,
 ) -> SingleSolver:
-    if isinstance(config, FlowSolver):
+    if isinstance(config, FSolver):
         return create_single_solver(config)
-    if isinstance(config, FlowAgent):
+    if isinstance(config, FAgent):
         return registry_create(type="agent", name=config.name, **(config.args or {}))
     return [create_single_solver(single_config) for single_config in config]
 
 
-def instantiate_task(flow_config: FlowConfig, config: FlowTask) -> list[Task]:
+def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
     model = create_model(config.model) if config.model else None
     solver = create_solver(config.solver) if config.solver else None
     model_roles = create_model_roles(config.model_roles) if config.model_roles else None
@@ -85,7 +85,7 @@ def instantiate_task(flow_config: FlowConfig, config: FlowTask) -> list[Task]:
             )
 
         epochs = config.epochs
-        if isinstance(epochs, FlowEpochs):
+        if isinstance(epochs, FEpochs):
             epochs = Epochs(
                 epochs=epochs.epochs,
                 reducer=epochs.reducer,
@@ -129,7 +129,7 @@ def instantiate_task(flow_config: FlowConfig, config: FlowTask) -> list[Task]:
     return tasks
 
 
-def instantiate_tasks(config: FlowConfig) -> list[Task]:
+def instantiate_tasks(config: FConfig) -> list[Task]:
     return [
         task
         for task_config in config.tasks
@@ -138,7 +138,7 @@ def instantiate_tasks(config: FlowConfig) -> list[Task]:
 
 
 def get_task_creators_from_file(
-    file_path: str, attr: str | None, config: FlowTask
+    file_path: str, attr: str | None, config: FTask
 ) -> list[Callable[..., Task]]:
     file = find_file(file_path)
     if not file:
@@ -162,7 +162,7 @@ def get_task_creators_from_file(
     return task_funcs
 
 
-def get_task_creators(config: FlowTask) -> list[Callable[..., Task]]:
+def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
     if config.name.find("@") != -1:
         file, attr = config.name.split("@", 1)
         return get_task_creators_from_file(file, attr, config)

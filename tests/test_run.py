@@ -4,15 +4,16 @@ from unittest.mock import patch
 
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
-from inspect_flow import flow_config, solvers_matrix, tasks_matrix
+from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
+from inspect_flow._types.dicts import FlowSolver, FlowTask
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
     FlowModel,
-    FlowSolver,
-    FlowTask,
 )
+
+from tests.test_helpers.type_helpers import fc
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -25,14 +26,16 @@ task_file = str(task_dir / "noop.py")
 def test_task_with_get_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[
-                    FlowTask(
-                        name=task_file + "@task_with_get_model",
-                        model=FlowModel(name="mockllm/mock-llm"),
-                    )
-                ],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@task_with_get_model",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        )
+                    ],
+                )
             )
         )
 
@@ -60,7 +63,7 @@ def test_task_with_two_models() -> None:
             },
         ),
     )
-    run_eval_set(config=config)
+    run_eval_set(config=fc(config))
 
     verify_test_logs(config, log_dir)
 
@@ -69,17 +72,19 @@ def test_model_generate_config() -> None:
     system_message = "Test System Message"
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[
-                    FlowTask(
-                        name=task_file + "@noop",
-                        model=FlowModel(
-                            name="mockllm/mock-llm",
-                            config=GenerateConfig(system_message=system_message),
-                        ),
-                    )
-                ],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                                config=GenerateConfig(system_message=system_message),
+                            ),
+                        )
+                    ],
+                )
             )
         )
 
@@ -96,9 +101,11 @@ def test_model_generate_config() -> None:
 def test_default_model_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[FlowTask(name=task_file + "@noop")],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[FlowTask(name=task_file + "@noop")],
+                )
             )
         )
 
@@ -113,14 +120,16 @@ def test_default_model_config() -> None:
 def test_task_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[
-                    FlowTask(
-                        name=task_file + "@noop",
-                        model=FlowModel(name="mockllm/mock-llm"),
-                    )
-                ],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        )
+                    ],
+                )
             )
         )
 
@@ -137,17 +146,19 @@ def test_task_model() -> None:
 def test_matrix_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=tasks_matrix(
-                    FlowTask(
-                        name=task_file + "@task_with_params",
-                        model=FlowModel(name="mockllm/mock-llm"),
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=tasks_matrix(
+                        FlowTask(
+                            name=task_file + "@task_with_params",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        ),
+                        {
+                            "args": [{"subset": "original"}, {"subset": "contrast"}],
+                        },
                     ),
-                    {
-                        "args": [{"subset": "original"}, {"subset": "contrast"}],
-                    },
-                ),
+                )
             )
         )
 
@@ -174,17 +185,19 @@ def test_matrix_model_roles() -> None:
             ),
         }
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=tasks_matrix(
-                    FlowTask(
-                        name=task_file + "@task_with_model_roles",
-                        model=FlowModel(name="mockllm/mock-llm"),
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=tasks_matrix(
+                        FlowTask(
+                            name=task_file + "@task_with_model_roles",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        ),
+                        {
+                            "model_roles": [model_roles1, model_roles2],
+                        },
                     ),
-                    {
-                        "model_roles": [model_roles1, model_roles2],
-                    },
-                ),
+                )
             )
         )
 
@@ -205,35 +218,37 @@ def test_matrix_model_roles() -> None:
 def test_matrix_solvers() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=tasks_matrix(
-                    FlowTask(
-                        name=task_file + "@noop",
-                        model=FlowModel(name="mockllm/mock-llm"),
-                    ),
-                    {
-                        "solver": [
-                            *solvers_matrix(
-                                "inspect_ai/system_message",
-                                {
-                                    "args": [
-                                        {"template": "test system message"},
-                                        {"template": "another test system message"},
-                                    ],
-                                },
-                            ),
-                            [
-                                FlowSolver(
-                                    name="inspect_ai/system_message",
-                                    args={"template": "test system message"},
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=tasks_matrix(
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        ),
+                        {
+                            "solver": [
+                                *solvers_matrix(
+                                    "inspect_ai/system_message",
+                                    {
+                                        "args": [
+                                            {"template": "test system message"},
+                                            {"template": "another test system message"},
+                                        ],
+                                    },
                                 ),
-                                FlowSolver(name="inspect_ai/generate"),
+                                [
+                                    FlowSolver(
+                                        name="inspect_ai/system_message",
+                                        args={"template": "test system message"},
+                                    ),
+                                    FlowSolver(name="inspect_ai/generate"),
+                                ],
+                                FlowAgent(name="inspect_ai/react"),
                             ],
-                            FlowAgent(name="inspect_ai/react"),
-                        ],
-                    },
-                ),
+                        },
+                    ),
+                )
             )
         )
 
@@ -247,9 +262,11 @@ def test_matrix_solvers() -> None:
 def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
+                )
             )
         )
 
@@ -265,12 +282,12 @@ def test_sample_id() -> None:
 def test_all_tasks_in_file() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=flow_config(
-                {
-                    "flow_dir": "test_log_dir",
-                    "tasks": str(task_dir / "three_tasks.py"),
-                }
-            ),
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[str(task_dir / "three_tasks.py")],
+                ),
+            )
         )
 
         mock_eval_set.assert_called_once()
@@ -292,26 +309,30 @@ def test_config_generate_config() -> None:
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                config=GenerateConfig(
-                    system_message=config_system_message,
-                    temperature=config_temperature,
-                    max_tokens=config_max_tokens,
-                ),
-                tasks=[
-                    FlowTask(
-                        name=task_file + "@noop",
-                        config=GenerateConfig(
-                            system_message=task_system_message,
-                            temperature=task_temperature,
-                        ),
-                        model=FlowModel(
-                            name="mockllm/mock-llm",
-                            config=GenerateConfig(system_message=model_system_message),
-                        ),
-                    )
-                ],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    config=GenerateConfig(
+                        system_message=config_system_message,
+                        temperature=config_temperature,
+                        max_tokens=config_max_tokens,
+                    ),
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            config=GenerateConfig(
+                                system_message=task_system_message,
+                                temperature=task_temperature,
+                            ),
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                                config=GenerateConfig(
+                                    system_message=model_system_message
+                                ),
+                            ),
+                        )
+                    ],
+                )
             )
         )
 
@@ -338,14 +359,16 @@ def test_dry_run():
     os.environ["INSPECT_FLOW_DRY_RUN"] = "1"
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=FlowConfig(
-                flow_dir="test_log_dir",
-                tasks=[
-                    FlowTask(
-                        name=task_file + "@task_with_get_model",
-                        model=FlowModel(name="mockllm/mock-llm"),
-                    )
-                ],
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@task_with_get_model",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                        )
+                    ],
+                )
             )
         )
 

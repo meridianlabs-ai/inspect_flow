@@ -5,44 +5,48 @@ from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
 
 from inspect_flow._types.dicts import (
+    FlowAgent,
     FlowAgentDict,
     FlowAgentMatrixDict,
+    FlowConfig,
     FlowConfigDict,
+    FlowModel,
     FlowModelDict,
     FlowModelMatrixDict,
+    FlowSolver,
     FlowSolverDict,
     FlowSolverMatrixDict,
+    FlowTask,
     FlowTaskDict,
     FlowTaskMatrixDict,
     GenerateConfigDict,
     GenerateConfigMatrixDict,
 )
 from inspect_flow._types.flow_types import (
-    FlowAgent,
-    FlowConfig,
-    FlowModel,
-    FlowSolver,
-    FlowTask,
+    FAgent,
+    FModel,
+    FSolver,
+    FTask,
 )
 
 
-def flow_config(config: FlowConfigDict) -> FlowConfig:
+def flow_config(config: FlowConfigDict | FlowConfig) -> FlowConfig:
     return FlowConfig.model_validate(config)
 
 
-def flow_task(config: FlowTaskDict) -> FlowTask:
+def flow_task(config: FlowTaskDict | FlowTask) -> FlowTask:
     return FlowTask.model_validate(config)
 
 
-def flow_model(config: FlowModelDict) -> FlowModel:
+def flow_model(config: FlowModelDict | FlowModel) -> FlowModel:
     return FlowModel.model_validate(config)
 
 
-def flow_solver(config: FlowSolverDict) -> FlowSolver:
+def flow_solver(config: FlowSolverDict | FlowSolver) -> FlowSolver:
     return FlowSolver.model_validate(config)
 
 
-def flow_agent(config: FlowAgentDict) -> FlowAgent:
+def flow_agent(config: FlowAgentDict | FlowAgent) -> FlowAgent:
     return FlowAgent.model_validate(config)
 
 
@@ -50,11 +54,11 @@ BaseType = TypeVar(
     "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
 )
 
-AgentInput: TypeAlias = str | FlowAgent | FlowAgentDict
+AgentInput: TypeAlias = str | FAgent | FlowAgent | FlowAgentDict
 ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
-ModelInput: TypeAlias = str | FlowModel | FlowModelDict
-SolverInput: TypeAlias = str | FlowSolver | FlowSolverDict
-TaskInput: TypeAlias = str | FlowTask | FlowTaskDict
+ModelInput: TypeAlias = str | FModel | FlowModel | FlowModelDict
+SolverInput: TypeAlias = str | FSolver | FlowSolver | FlowSolverDict
+TaskInput: TypeAlias = str | FTask | FlowTask | FlowTaskDict
 
 BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
 

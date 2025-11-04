@@ -2,14 +2,21 @@ from inspect_flow._types.dicts import (
     ApprovalPolicyConfigDict,
     ApproverPolicyConfigDict,
     BatchConfigDict,
+    FlowAgent,
     FlowAgentDict,
+    FlowConfig,
     FlowConfigDict,
+    FlowEpochs,
     FlowEpochsDict,
+    FlowModel,
     FlowModelDict,
     FlowModelMatrixDict,
+    FlowOptions,
     FlowOptionsDict,
+    FlowSolver,
     FlowSolverDict,
     FlowSolverMatrixDict,
+    FlowTask,
     FlowTaskDict,
     FlowTaskMatrixDict,
     GenerateConfigDict,
@@ -17,15 +24,6 @@ from inspect_flow._types.dicts import (
     JSONSchemaDict,
     ResponseSchemaDict,
     SandboxEnvironmentSpecDict,
-)
-from inspect_flow._types.flow_types import (
-    FlowAgent,
-    FlowConfig,
-    FlowEpochs,
-    FlowModel,
-    FlowOptions,
-    FlowSolver,
-    FlowTask,
 )
 
 __all__ = [

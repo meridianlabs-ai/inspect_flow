@@ -3,9 +3,12 @@ from inspect_flow import configs_matrix, tasks_matrix, tasks_with
 from inspect_flow.types import FlowModel, FlowTask
 from pydantic import ValidationError
 
+from tests.test_helpers.type_helpers import ft
+
 
 def test_tasks_x_models():
     result = tasks_matrix(["task1", "task2"], {"model": ["model1", "model2"]})
+    result = [ft(r) for r in result]
     assert len(result) == 4
     assert result[0].name == "task1"
     assert result[0].model
@@ -23,6 +26,7 @@ def test_tasks_x_models():
 
 def test_flow_task_x_models():
     result = tasks_matrix(FlowTask(name="task1"), {"model": ["model1", "model2"]})
+    result = [ft(r) for r in result]
     assert len(result) == 2
     assert result[0].name == "task1"
     assert result[0].model
@@ -34,6 +38,7 @@ def test_flow_task_x_models():
 
 def test_task_x_names():
     result = tasks_with(["task1", "task2"], {"model": "model1"})
+    result = [ft(r) for r in result]
     assert len(result) == 2
     assert result[0].name == "task1"
     assert result[0].model
@@ -64,6 +69,7 @@ def test_nested_types():
             ],
         },
     )
+    result = [ft(r) for r in result]
     assert len(result) == 2
     assert result[0].name == "task1"
     assert result[0].model
@@ -96,6 +102,7 @@ def test_configs():
             "config": configs_matrix({}, {"system_message": ["message1", "message2"]}),
         },
     )
+    result = [ft(r) for r in result]
     assert len(result) == 2
     assert result[0].name == "task1"
     assert result[0].config

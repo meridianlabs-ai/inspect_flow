@@ -4,6 +4,7 @@ import yaml
 from inspect_ai.model import GenerateConfig
 from inspect_flow import flow_task, models_matrix, tasks_matrix
 from inspect_flow._config.config import load_config
+from inspect_flow._types.flow_types import FConfig
 from inspect_flow.types import (
     FlowConfig,
     FlowModel,
@@ -14,7 +15,8 @@ from inspect_flow.types import (
 update_examples = False
 
 
-def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
+def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
+    config = FConfig.model_validate(config.model_dump())
     with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(
@@ -29,14 +31,17 @@ def write_flow_yaml(config: FlowConfig, file_path: Path) -> None:
         )
 
 
-def validate_config(config: FlowConfig, file_name: str) -> None:
+def validate_config(config: FlowConfig | FConfig, file_name: str) -> None:
+    config = FConfig.model_validate(config.model_dump())
     # Load the example config file
     example_path = Path(__file__).parents[1] / "examples" / file_name
     with open(example_path, "r") as f:
         expected_config = yaml.safe_load(f)
 
     # Compare the generated config with the example
-    generated_config = config.model_dump(mode="json", exclude_unset=True)
+    generated_config = config.model_dump(
+        mode="json", exclude_unset=True, exclude_defaults=True, exclude_none=True
+    )
     if update_examples and generated_config != expected_config:
         write_flow_yaml(config, example_path)
     else:
