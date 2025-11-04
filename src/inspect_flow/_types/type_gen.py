@@ -118,6 +118,16 @@ def root_type_as_def(schema: Schema) -> None:
     schema["$defs"] = defs
 
 
+def create_dict(dict_def: Schema) -> None:
+    properties: Schema = dict_def["properties"]
+    if "name" in properties:
+        value = properties["name"]
+        if "type" in value and value["type"] == "string" and "default" not in value:
+            del value["type"]
+            value["anyOf"] = [{"type": "string"}, {"type": "null"}]
+            value["default"] = None
+
+
 def create_matrix_dict(dict_def: Schema, title: str) -> None:
     properties: Schema = dict_def["properties"]
     for name, value in list(properties.items()):
@@ -130,7 +140,9 @@ def create_matrix_dict(dict_def: Schema, title: str) -> None:
 def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
     dict_def.pop("required", None)
-    if type == "MatrixDict":
+    if type == "Dict":
+        create_dict(dict_def)
+    else:
         create_matrix_dict(dict_def, title)
 
     new_title = title + type

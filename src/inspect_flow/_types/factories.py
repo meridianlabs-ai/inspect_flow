@@ -181,10 +181,11 @@ def solvers_with(
 
 
 def tasks_with(
+    *,
     task: TaskInput | Sequence[TaskInput],
-    values: FlowTaskDict,
+    **kwargs: Unpack[FlowTaskDict],
 ) -> list[FlowTask]:
-    return _with(task, values, FlowTask)
+    return _with(task, kwargs, FlowTask)
 
 
 def agents_matrix(

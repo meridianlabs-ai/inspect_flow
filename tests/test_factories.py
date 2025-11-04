@@ -37,7 +37,7 @@ def test_flow_task_x_models():
 
 
 def test_task_x_names():
-    result = tasks_with(["task1", "task2"], {"model": "model1"})
+    result = tasks_with(task=["task1", "task2"], model="model1")
     result = [ft(r) for r in result]
     assert len(result) == 2
     assert result[0].name == "task1"
