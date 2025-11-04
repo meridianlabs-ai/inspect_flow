@@ -6,7 +6,13 @@ from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
-from datamodel_code_generator import DataModelType, InputFileType, generate
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    LiteralType,
+    PythonVersion,
+    generate,
+)
 
 from inspect_flow._types.flow_types import FConfig
 
@@ -24,7 +30,6 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FAgent, FEpochs, FOptions, FModel, FSolver, FTask\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
@@ -233,9 +238,12 @@ def generate_dict_code() -> GeneratedCode:
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.TypingTypedDict,
+            target_python_version=PythonVersion.PY_310,
             use_generic_container_types=True,
             use_field_description=True,
             use_schema_description=True,
+            use_default_kwarg=True,
+            enum_field_as_literal=LiteralType.All,
         )
 
         with open(generated_type_file, "r") as f:
@@ -251,9 +259,12 @@ def generate_dict_code() -> GeneratedCode:
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
             output_model_type=DataModelType.PydanticV2BaseModel,
+            target_python_version=PythonVersion.PY_310,
             use_generic_container_types=True,
             use_field_description=True,
             use_schema_description=True,
+            use_default_kwarg=True,
+            enum_field_as_literal=LiteralType.All,
         )
 
         with open(generated_type_file, "r") as f:
