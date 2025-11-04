@@ -153,31 +153,35 @@ def _matrix(
 
 
 def agents_with(
+    *,
     agent: AgentInput | Sequence[AgentInput],
-    values: FlowAgentDict,
+    **kwargs: Unpack[FlowAgentDict],
 ) -> list[FlowAgent]:
-    return _with(agent, values, FlowAgent)
+    return _with(agent, kwargs, FlowAgent)
 
 
 def configs_with(
+    *,
     config: ConfigInput | Sequence[ConfigInput],
-    values: GenerateConfigDict,
+    **kwargs: Unpack[GenerateConfigDict],
 ) -> list[GenerateConfig]:
-    return _with(config, values, GenerateConfig)
+    return _with(config, kwargs, GenerateConfig)
 
 
 def models_with(
+    *,
     model: ModelInput | Sequence[ModelInput],
-    values: FlowModelDict,
+    **kwargs: Unpack[FlowModelDict],
 ) -> list[FlowModel]:
-    return _with(model, values, FlowModel)
+    return _with(model, kwargs, FlowModel)
 
 
 def solvers_with(
+    *,
     solver: SolverInput | Sequence[SolverInput],
-    values: FlowSolverDict,
+    **kwargs: Unpack[FlowSolverDict],
 ) -> list[FlowSolver]:
-    return _with(solver, values, FlowSolver)
+    return _with(solver, kwargs, FlowSolver)
 
 
 def tasks_with(
