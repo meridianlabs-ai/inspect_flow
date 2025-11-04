@@ -54,13 +54,11 @@ def test_task_with_two_models() -> None:
     config = FlowConfig(
         flow_dir=log_dir,
         tasks=tasks_matrix(
-            task_file + "@noop",
-            {
-                "model": [
-                    FlowModel(name="mockllm/mock-llm1"),
-                    FlowModel(name="mockllm/mock-llm2"),
-                ],
-            },
+            task=task_file + "@noop",
+            model=[
+                FlowModel(name="mockllm/mock-llm1"),
+                FlowModel(name="mockllm/mock-llm2"),
+            ],
         ),
     )
     run_eval_set(config=fc(config))
@@ -150,13 +148,11 @@ def test_matrix_args() -> None:
                 FlowConfig(
                     flow_dir="test_log_dir",
                     tasks=tasks_matrix(
-                        FlowTask(
+                        task=FlowTask(
                             name=task_file + "@task_with_params",
                             model=FlowModel(name="mockllm/mock-llm"),
                         ),
-                        {
-                            "args": [{"subset": "original"}, {"subset": "contrast"}],
-                        },
+                        args=[{"subset": "original"}, {"subset": "contrast"}],
                     ),
                 )
             )
@@ -189,13 +185,11 @@ def test_matrix_model_roles() -> None:
                 FlowConfig(
                     flow_dir="test_log_dir",
                     tasks=tasks_matrix(
-                        FlowTask(
+                        task=FlowTask(
                             name=task_file + "@task_with_model_roles",
                             model=FlowModel(name="mockllm/mock-llm"),
                         ),
-                        {
-                            "model_roles": [model_roles1, model_roles2],
-                        },
+                        model_roles=[model_roles1, model_roles2],
                     ),
                 )
             )
@@ -222,31 +216,29 @@ def test_matrix_solvers() -> None:
                 FlowConfig(
                     flow_dir="test_log_dir",
                     tasks=tasks_matrix(
-                        FlowTask(
+                        task=FlowTask(
                             name=task_file + "@noop",
                             model=FlowModel(name="mockllm/mock-llm"),
                         ),
-                        {
-                            "solver": [
-                                *solvers_matrix(
-                                    "inspect_ai/system_message",
-                                    {
-                                        "args": [
-                                            {"template": "test system message"},
-                                            {"template": "another test system message"},
-                                        ],
-                                    },
+                        solver=[
+                            *solvers_matrix(
+                                "inspect_ai/system_message",
+                                {
+                                    "args": [
+                                        {"template": "test system message"},
+                                        {"template": "another test system message"},
+                                    ],
+                                },
+                            ),
+                            [
+                                FlowSolver(
+                                    name="inspect_ai/system_message",
+                                    args={"template": "test system message"},
                                 ),
-                                [
-                                    FlowSolver(
-                                        name="inspect_ai/system_message",
-                                        args={"template": "test system message"},
-                                    ),
-                                    FlowSolver(name="inspect_ai/generate"),
-                                ],
-                                FlowAgent(name="inspect_ai/react"),
+                                FlowSolver(name="inspect_ai/generate"),
                             ],
-                        },
+                            FlowAgent(name="inspect_ai/react"),
+                        ],
                     ),
                 )
             )

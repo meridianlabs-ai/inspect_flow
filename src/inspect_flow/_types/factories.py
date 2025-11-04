@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
+from typing import Any, Mapping, Sequence, TypeAlias, TypeVar, Unpack
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
@@ -216,7 +216,8 @@ def solvers_matrix(
 
 
 def tasks_matrix(
+    *,
     task: TaskInput | Sequence[TaskInput],
-    matrix: FlowTaskMatrixDict,
+    **kwargs: Unpack[FlowTaskMatrixDict],
 ) -> list[FlowTask]:
-    return _matrix(task, matrix, FlowTask)
+    return _matrix(task, kwargs, FlowTask)
