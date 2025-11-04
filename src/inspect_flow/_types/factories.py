@@ -188,31 +188,35 @@ def tasks_with(
 
 
 def agents_matrix(
+    *,
     agent: AgentInput | Sequence[AgentInput],
-    matrix: FlowAgentMatrixDict,
+    **kwargs: Unpack[FlowAgentMatrixDict],
 ) -> list[FlowAgent]:
-    return _matrix(agent, matrix, FlowAgent)
+    return _matrix(agent, kwargs, FlowAgent)
 
 
 def configs_matrix(
+    *,
     config: ConfigInput | Sequence[ConfigInput],
-    matrix: GenerateConfigMatrixDict,
+    **kwargs: Unpack[GenerateConfigMatrixDict],
 ) -> list[GenerateConfig]:
-    return _matrix(config, matrix, GenerateConfig)
+    return _matrix(config, kwargs, GenerateConfig)
 
 
 def models_matrix(
+    *,
     model: ModelInput | Sequence[ModelInput],
-    matrix: FlowModelMatrixDict,
+    **kwargs: Unpack[FlowModelMatrixDict],
 ) -> list[FlowModel]:
-    return _matrix(model, matrix, FlowModel)
+    return _matrix(model, kwargs, FlowModel)
 
 
 def solvers_matrix(
+    *,
     solver: SolverInput | Sequence[SolverInput],
-    matrix: FlowSolverMatrixDict,
+    **kwargs: Unpack[FlowSolverMatrixDict],
 ) -> list[FlowSolver]:
-    return _matrix(solver, matrix, FlowSolver)
+    return _matrix(solver, kwargs, FlowSolver)
 
 
 def tasks_matrix(

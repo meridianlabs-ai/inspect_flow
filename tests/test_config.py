@@ -155,13 +155,11 @@ def test_config_model_config() -> None:
             model=[
                 "openai/gpt-4o-mini",
                 *models_matrix(
-                    {"name": "openai/gpt-5-nano"},
-                    {
-                        "config": [
-                            GenerateConfig(reasoning_effort="minimal"),
-                            GenerateConfig(reasoning_effort="low"),
-                        ],
-                    },
+                    model={"name": "openai/gpt-5-nano"},
+                    config=[
+                        GenerateConfig(reasoning_effort="minimal"),
+                        GenerateConfig(reasoning_effort="low"),
+                    ],
                 ),
             ],
         ),

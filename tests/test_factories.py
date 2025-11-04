@@ -94,7 +94,7 @@ def test_nested_types_error():
 def test_configs():
     result = tasks_matrix(
         task=FlowTask(name="task1", model=FlowModel(name="model1")),
-        config=configs_matrix({}, {"system_message": ["message1", "message2"]}),
+        config=configs_matrix(config={}, system_message=["message1", "message2"]),
     )
     result = [ft(r) for r in result]
     assert len(result) == 2

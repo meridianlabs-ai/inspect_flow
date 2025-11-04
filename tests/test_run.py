@@ -222,13 +222,11 @@ def test_matrix_solvers() -> None:
                         ),
                         solver=[
                             *solvers_matrix(
-                                "inspect_ai/system_message",
-                                {
-                                    "args": [
-                                        {"template": "test system message"},
-                                        {"template": "another test system message"},
-                                    ],
-                                },
+                                solver="inspect_ai/system_message",
+                                args=[
+                                    {"template": "test system message"},
+                                    {"template": "another test system message"},
+                                ],
                             ),
                             [
                                 FlowSolver(
