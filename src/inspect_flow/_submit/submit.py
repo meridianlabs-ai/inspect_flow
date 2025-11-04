@@ -14,7 +14,7 @@ from inspect_flow._util.path_util import set_path_env_vars
 
 def submit(config: FConfig | FlowConfig, config_file_path: str | None = None) -> None:
     if isinstance(config, FlowConfig):
-        config = FConfig.model_validate(config)
+        config = FConfig.model_validate(config.model_dump())
 
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)

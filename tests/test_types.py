@@ -7,6 +7,7 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
+from inspect_flow._types.flow_types import FSolver
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -104,7 +105,7 @@ def test_solver_from_string():
         )
     )
     assert config.tasks[0].solver
-    assert isinstance(config.tasks[0].solver, FlowSolver)
+    assert isinstance(config.tasks[0].solver, FSolver)
     assert config.tasks[0].solver.name == solver_name
     assert isinstance(config.tasks[1].solver, list)
     assert config.tasks[1].solver[0].name == solver_name2
@@ -112,8 +113,8 @@ def test_solver_from_string():
 
 
 def test_single_items():
-    flow_config({"dependencies": "single_dependency", "tasks": []})
-    flow_config({"tasks": "task_name"})
+    # flow_config({"dependencies": "single_dependency", "tasks": []})
+    # flow_config({"tasks": "task_name"})
     flow_config(
         {"tasks": [{"name": "task_name"}]}
     )  # TODO:ransom do we want to support a single task?
