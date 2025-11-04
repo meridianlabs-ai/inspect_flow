@@ -5,13 +5,17 @@ from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
 
 from inspect_flow._types.dicts import (
+    FlowAgent,
     FlowAgentDict,
     FlowAgentMatrixDict,
     FlowConfigDict,
+    FlowModel,
     FlowModelDict,
     FlowModelMatrixDict,
+    FlowSolver,
     FlowSolverDict,
     FlowSolverMatrixDict,
+    FlowTask,
     FlowTaskDict,
     FlowTaskMatrixDict,
     GenerateConfigDict,
@@ -48,11 +52,11 @@ def flow_agent(config: FlowAgentDict) -> FAgent:
 
 BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, GenerateConfig)
 
-AgentInput: TypeAlias = str | FAgent | FlowAgentDict
+AgentInput: TypeAlias = str | FlowAgent | FlowAgentDict
 ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
-ModelInput: TypeAlias = str | FModel | FlowModelDict
-SolverInput: TypeAlias = str | FSolver | FlowSolverDict
-TaskInput: TypeAlias = str | FTask | FlowTaskDict
+ModelInput: TypeAlias = str | FlowModel | FlowModelDict
+SolverInput: TypeAlias = str | FlowSolver | FlowSolverDict
+TaskInput: TypeAlias = str | FlowTask | FlowTaskDict
 
 BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
 

@@ -5,6 +5,7 @@ from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._types.flow_types import (
     FConfig,
 )
+from inspect_flow.types import FlowConfig
 
 
 def init_test_logs() -> str:
@@ -15,7 +16,9 @@ def init_test_logs() -> str:
     return str(log_dir)
 
 
-def verify_test_logs(config: FConfig, log_dir: str) -> None:
+def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
+    if isinstance(config, FlowConfig):
+        config = FConfig.model_validate(config)
     # Check that logs/local_logs directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)

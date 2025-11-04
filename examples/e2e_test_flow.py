@@ -1,9 +1,9 @@
 from inspect_flow import tasks_matrix
-from inspect_flow.types import FConfig, FOptions
+from inspect_flow.types import FlowConfig, FlowOptions
 
-FConfig(
+FlowConfig(
     flow_dir="./logs/local_logs",
-    options=FOptions(limit=1),
+    options=FlowOptions(limit=1),
     dependencies=[
         "./examples/local_eval",
     ],
