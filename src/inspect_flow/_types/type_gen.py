@@ -7,7 +7,7 @@ from typing import Any, Literal, TypeAlias
 
 from datamodel_code_generator import DataModelType, InputFileType, generate
 
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import _FlowConfig
 
 GenType = Literal["Dict", "MatrixDict"]
 
@@ -111,6 +111,8 @@ def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> N
         create_matrix_dict(dict_def, title)
 
     new_title = title + type
+    if new_title.startswith("_"):
+        new_title = new_title[1:]
     dict_def["title"] = new_title
     defs[new_title] = dict_def
 
@@ -174,7 +176,7 @@ def generate_dict_code() -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
-        schema = FlowConfig.model_json_schema()
+        schema = _FlowConfig.model_json_schema()
         root_type_as_def(schema)
         create_dict_types(schema)
 

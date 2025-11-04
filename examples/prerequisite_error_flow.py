@@ -1,9 +1,9 @@
 from inspect_flow._types.factories import flow_task
-from inspect_flow.types import FlowConfig, FlowOptions
+from inspect_flow.types import _FlowConfig, _FlowOptions
 
-FlowConfig(
+_FlowConfig(
     flow_dir="./logs/local_logs",
-    options=FlowOptions(limit=1),
+    options=_FlowOptions(limit=1),
     dependencies=[
         "./examples/local_eval",
     ],

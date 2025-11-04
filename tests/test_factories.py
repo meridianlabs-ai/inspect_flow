@@ -1,6 +1,6 @@
 import pytest
 from inspect_flow import configs_matrix, tasks_matrix, tasks_with
-from inspect_flow.types import FlowModel, FlowTask
+from inspect_flow.types import _FlowModel, _FlowTask
 from pydantic import ValidationError
 
 
@@ -22,7 +22,7 @@ def test_tasks_x_models():
 
 
 def test_flow_task_x_models():
-    result = tasks_matrix(FlowTask(name="task1"), {"model": ["model1", "model2"]})
+    result = tasks_matrix(_FlowTask(name="task1"), {"model": ["model1", "model2"]})
     assert len(result) == 2
     assert result[0].name == "task1"
     assert result[0].model
@@ -46,14 +46,14 @@ def test_task_x_names():
 def test_duplicate_raises():
     with pytest.raises(ValueError, match="model provided in both base and matrix"):
         tasks_matrix(
-            FlowTask(name="task1", model=FlowModel(name="model1")),
+            _FlowTask(name="task1", model=_FlowModel(name="model1")),
             {"model": ["model2"]},
         )
 
 
 def test_nested_types():
     result = tasks_matrix(
-        FlowTask(name="task1"),
+        _FlowTask(name="task1"),
         {
             "model": [
                 {
@@ -76,7 +76,7 @@ def test_nested_types():
 def test_nested_types_error():
     with pytest.raises(ValidationError):
         tasks_matrix(
-            FlowTask(name="task1"),
+            _FlowTask(name="task1"),
             {
                 "model": [
                     {
@@ -91,7 +91,7 @@ def test_nested_types_error():
 
 def test_configs():
     result = tasks_matrix(
-        FlowTask(name="task1", model=FlowModel(name="model1")),
+        _FlowTask(name="task1", model=_FlowModel(name="model1")),
         {
             "config": configs_matrix({}, {"system_message": ["message1", "message2"]}),
         },

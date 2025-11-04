@@ -8,19 +8,19 @@ from inspect_flow import (
     flow_task,
 )
 from inspect_flow.types import (
-    FlowAgent,
-    FlowConfig,
-    FlowModel,
-    FlowSolver,
-    FlowTask,
+    _FlowAgent,
+    _FlowConfig,
+    _FlowModel,
+    _FlowSolver,
+    _FlowTask,
 )
 
 
 def no_errors() -> None:
     _config = flow_config({"tasks": ["one_module/one_task"]})
-    _config = FlowConfig(tasks=[])
-    _config = FlowConfig(tasks=[flow_task({"name": "dict"})])
-    _config = FlowConfig(tasks=[FlowTask(name="class"), flow_task({"name": "dict"})])
+    _config = _FlowConfig(tasks=[])
+    _config = _FlowConfig(tasks=[flow_task({"name": "dict"})])
+    _config = _FlowConfig(tasks=[_FlowTask(name="class"), flow_task({"name": "dict"})])
 
 
 def test_contructors():
@@ -31,24 +31,24 @@ def test_contructors():
     assert config.name == task_name
     assert config.model
     assert config.model.name == model_name
-    config = FlowTask(name=task_name, model=FlowModel(name=model_name))
+    config = _FlowTask(name=task_name, model=_FlowModel(name=model_name))
     assert config.name == task_name
     assert config.model
     assert config.model.name == model_name
 
     config = flow_model({"name": model_name, "role": "mark"})
     assert config.name == model_name
-    config = FlowModel(name=model_name, role="mark")
+    config = _FlowModel(name=model_name, role="mark")
     assert config.name == model_name
 
     config = flow_solver({"name": model_name, "args": {"temperature": 0.5}})
     assert config.name == model_name
-    config = FlowSolver(name=model_name)
+    config = _FlowSolver(name=model_name)
     assert config.name == model_name
 
     config = flow_agent({"name": model_name, "args": {"temperature": 0.7}})
     assert config.name == model_name
-    config = FlowAgent(name=model_name)
+    config = _FlowAgent(name=model_name)
     assert config.name == model_name
 
 
@@ -98,7 +98,7 @@ def test_solver_from_string():
         }
     )
     assert config.tasks[0].solver
-    assert isinstance(config.tasks[0].solver, FlowSolver)
+    assert isinstance(config.tasks[0].solver, _FlowSolver)
     assert config.tasks[0].solver.name == solver_name
     assert isinstance(config.tasks[1].solver, list)
     assert config.tasks[1].solver[0].name == solver_name2

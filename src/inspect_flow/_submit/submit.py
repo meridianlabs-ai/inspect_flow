@@ -7,11 +7,11 @@ from pathlib import Path
 from inspect_ai._util.file import absolute_file_path
 
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import _FlowConfig
 from inspect_flow._util.path_util import set_path_env_vars
 
 
-def submit(config: FlowConfig, config_file_path: str | None = None) -> None:
+def submit(config: _FlowConfig, config_file_path: str | None = None) -> None:
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
 
