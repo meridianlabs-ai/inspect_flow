@@ -7,25 +7,25 @@ from inspect_ai.log import EvalLog
 
 from inspect_flow._runner.matrix import instantiate_tasks
 from inspect_flow._types.flow_types import (
-    _FlowConfig,
-    _FlowOptions,
+    FConfig,
+    FOptions,
 )
 
 
-def read_config() -> _FlowConfig:
+def read_config() -> FConfig:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
-        return _FlowConfig(**data)
+        return FConfig(**data)
 
 
-def run_eval_set(config: _FlowConfig) -> tuple[bool, list[EvalLog]]:
+def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
     tasks = instantiate_tasks(config)
 
     if os.environ.get("INSPECT_FLOW_DRY_RUN") == "1":
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
 
-    options = config.options or _FlowOptions()
+    options = config.options or FOptions()
     return inspect_ai.eval_set(
         tasks=tasks,
         log_dir=config.flow_dir,

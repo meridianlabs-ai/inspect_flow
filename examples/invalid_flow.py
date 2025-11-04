@@ -1,6 +1,6 @@
 from inspect_flow import flow_config, tasks_matrix
 from inspect_flow._cli.main import flow
-from inspect_flow._types.flow_types import _FlowConfig, _FlowOptions, _FlowTask
+from inspect_flow._types.flow_types import FConfig, FOptions, FTask
 
 flow_config(
     {
@@ -26,11 +26,11 @@ flow_config(
 
 FlowConfigStrict
 
-_FlowConfig(
+FConfig(
     flow_dir="./logs/local_logs",
     options={"limit": 1},
     dependencies=[
         "./examples/local_eval",
     ],
-    tasks=[_FlowTask(name="local_eval/noop")],
+    tasks=[FTask(name="local_eval/noop")],
 )

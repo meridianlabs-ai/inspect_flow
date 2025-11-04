@@ -1,9 +1,9 @@
 from inspect_flow import tasks_matrix
-from inspect_flow.types import _FlowConfig, _FlowOptions
+from inspect_flow.types import FConfig, FOptions
 
-_FlowConfig(
+FConfig(
     flow_dir="s3://inspect-flow-test/flow_logs/test2",
-    options=_FlowOptions(limit=1),
+    options=FOptions(limit=1),
     dependencies=[
         "./examples/local_eval",
     ],

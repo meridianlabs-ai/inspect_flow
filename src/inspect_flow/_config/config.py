@@ -3,11 +3,11 @@ from pathlib import Path
 
 import yaml
 
-from inspect_flow._types.flow_types import _FlowConfig
+from inspect_flow._types.flow_types import FConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 
 
-def load_config(config_file: str) -> _FlowConfig:
+def load_config(config_file: str) -> FConfig:
     config_path = Path(config_file)
 
     if not config_path.exists():
@@ -20,7 +20,7 @@ def load_config(config_file: str) -> _FlowConfig:
                 raise ValueError(
                     f"No value returned from Python config file: {config_file}"
                 )
-            if not isinstance(result, _FlowConfig):
+            if not isinstance(result, FConfig):
                 raise TypeError(
                     f"Expected FlowConfig from Python config file, got {type(result)}"
                 )
@@ -35,4 +35,4 @@ def load_config(config_file: str) -> _FlowConfig:
                 "Supported formats: .yaml, .yml, .json"
             )
 
-    return _FlowConfig(**data)
+    return FConfig(**data)

@@ -7,7 +7,7 @@ from typing import Any, Literal, TypeAlias
 
 from datamodel_code_generator import DataModelType, InputFileType, generate
 
-from inspect_flow._types.flow_types import _FlowConfig
+from inspect_flow._types.flow_types import FConfig
 
 GenType = Literal["Dict", "MatrixDict"]
 
@@ -17,7 +17,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowOptions, FlowModel, FlowSolver, FlowTask\n",
+    "from inspect_flow._types.flow_types import FAgent, FEpochs, FOptions, FModel, FSolver, FTask\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
@@ -176,7 +176,7 @@ def generate_dict_code() -> list[str]:
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
 
-        schema = _FlowConfig.model_json_schema()
+        schema = FConfig.model_json_schema()
         root_type_as_def(schema)
         create_dict_types(schema)
 

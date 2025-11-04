@@ -21,10 +21,10 @@ from pydantic import BaseModel, Field, field_validator
 from inspect_flow._util.list_util import ensure_list_or_none
 
 CreateArgs: TypeAlias = Mapping[str, Any]
-ModelRolesConfig: TypeAlias = Mapping[str, Union["_FlowModel", str]]
+ModelRolesConfig: TypeAlias = Mapping[str, Union["FModel", str]]
 
 
-class _FlowModel(BaseModel, extra="forbid"):
+class FModel(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the model to use.")
 
     role: str | None = Field(
@@ -63,7 +63,7 @@ class _FlowModel(BaseModel, extra="forbid"):
     )
 
 
-class _FlowSolver(BaseModel, extra="forbid"):
+class FSolver(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
 
     args: CreateArgs | None = Field(
@@ -72,7 +72,7 @@ class _FlowSolver(BaseModel, extra="forbid"):
     )
 
 
-class _FlowAgent(BaseModel, extra="forbid"):
+class FAgent(BaseModel, extra="forbid"):
     name: str = Field(description="Name of the solver.")
 
     args: CreateArgs | None = Field(
@@ -81,7 +81,7 @@ class _FlowAgent(BaseModel, extra="forbid"):
     )
 
 
-class _FlowEpochs(BaseModel):
+class FEpochs(BaseModel):
     epochs: int = Field(description="Number of epochs.")
 
     reducer: str | list[str] | None = Field(
@@ -90,7 +90,7 @@ class _FlowEpochs(BaseModel):
     )
 
 
-class _FlowTask(BaseModel, extra="forbid"):
+class FTask(BaseModel, extra="forbid"):
     name: str = Field(
         description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name").',
     )
@@ -100,12 +100,12 @@ class _FlowTask(BaseModel, extra="forbid"):
         description="Additional args to pass to task constructor",
     )
 
-    solver: _FlowSolver | list[_FlowSolver] | _FlowAgent | None = Field(
+    solver: FSolver | list[FSolver] | FAgent | None = Field(
         default=None,
         description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    model: _FlowModel | None = Field(
+    model: FModel | None = Field(
         default=None,
         description="Default model for task (Optional, defaults to eval model).",
     )
@@ -130,7 +130,7 @@ class _FlowTask(BaseModel, extra="forbid"):
         description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
     )
 
-    epochs: int | _FlowEpochs | None = Field(
+    epochs: int | FEpochs | None = Field(
         default=None,
         description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
     )
@@ -179,7 +179,7 @@ class _FlowTask(BaseModel, extra="forbid"):
     @field_validator("model", mode="before")
     @classmethod
     def convert_string_model(cls, v):
-        return convert_str_to_class(_FlowModel, v)
+        return convert_str_to_class(FModel, v)
 
     @field_validator("solver", mode="before")
     @classmethod
@@ -187,7 +187,7 @@ class _FlowTask(BaseModel, extra="forbid"):
         return convert_str_to_solver(v)
 
 
-class _FlowOptions(BaseModel, extra="forbid"):
+class FOptions(BaseModel, extra="forbid"):
     retry_attempts: int | None = Field(
         default=None,
         description="Maximum number of retry attempts before giving up (defaults to 10).",
@@ -336,7 +336,7 @@ class _FlowOptions(BaseModel, extra="forbid"):
     )
 
 
-class _FlowConfig(BaseModel, extra="forbid"):
+class FConfig(BaseModel, extra="forbid"):
     flow_dir: str = Field(
         default="logs/flow",
         description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned).",
@@ -347,7 +347,7 @@ class _FlowConfig(BaseModel, extra="forbid"):
         description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
-    options: _FlowOptions | None = Field(
+    options: FOptions | None = Field(
         default=None, description="Arguments for calls to eval_set."
     )
 
@@ -362,7 +362,7 @@ class _FlowConfig(BaseModel, extra="forbid"):
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
-    tasks: list[_FlowTask] = Field(description="Tasks to run")
+    tasks: list[FTask] = Field(description="Tasks to run")
 
     env: dict[str, str] | None = Field(
         default=None, description="Environment variables to set when running tasks."
@@ -381,16 +381,16 @@ class _FlowConfig(BaseModel, extra="forbid"):
 
 
 def convert_to_task_list(
-    v: str | _FlowTask | list[str | _FlowTask] | None,
-) -> list[_FlowTask] | None:
+    v: str | FTask | list[str | FTask] | None,
+) -> list[FTask] | None:
     if v is None:
         return v
     if not isinstance(v, list):
         v = [v]
-    return [_FlowTask(name=task) if isinstance(task, str) else task for task in v]
+    return [FTask(name=task) if isinstance(task, str) else task for task in v]
 
 
-T = TypeVar("T", _FlowModel, _FlowSolver)
+T = TypeVar("T", FModel, FSolver)
 
 
 @overload
@@ -406,10 +406,10 @@ def convert_str_to_class(cls: type[T], v: str | T | None) -> T | None:
 
 
 def convert_str_to_solver(
-    v: str | _FlowSolver | list[str | _FlowSolver] | None,
-) -> _FlowSolver | list[_FlowSolver] | None:
+    v: str | FSolver | list[str | FSolver] | None,
+) -> FSolver | list[FSolver] | None:
     if v is None:
         return None
     if isinstance(v, list):
-        return [convert_str_to_class(_FlowSolver, solver) for solver in v]
-    return convert_str_to_class(_FlowSolver, v)
+        return [convert_str_to_class(FSolver, solver) for solver in v]
+    return convert_str_to_class(FSolver, v)

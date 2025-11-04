@@ -18,43 +18,41 @@ from inspect_flow._types.dicts import (
     GenerateConfigMatrixDict,
 )
 from inspect_flow._types.flow_types import (
-    _FlowAgent,
-    _FlowConfig,
-    _FlowModel,
-    _FlowSolver,
-    _FlowTask,
+    FAgent,
+    FConfig,
+    FModel,
+    FSolver,
+    FTask,
 )
 
 
-def flow_config(config: FlowConfigDict) -> _FlowConfig:
-    return _FlowConfig.model_validate(config)
+def flow_config(config: FlowConfigDict) -> FConfig:
+    return FConfig.model_validate(config)
 
 
-def flow_task(config: FlowTaskDict) -> _FlowTask:
-    return _FlowTask.model_validate(config)
+def flow_task(config: FlowTaskDict) -> FTask:
+    return FTask.model_validate(config)
 
 
-def flow_model(config: FlowModelDict) -> _FlowModel:
-    return _FlowModel.model_validate(config)
+def flow_model(config: FlowModelDict) -> FModel:
+    return FModel.model_validate(config)
 
 
-def flow_solver(config: FlowSolverDict) -> _FlowSolver:
-    return _FlowSolver.model_validate(config)
+def flow_solver(config: FlowSolverDict) -> FSolver:
+    return FSolver.model_validate(config)
 
 
-def flow_agent(config: FlowAgentDict) -> _FlowAgent:
-    return _FlowAgent.model_validate(config)
+def flow_agent(config: FlowAgentDict) -> FAgent:
+    return FAgent.model_validate(config)
 
 
-BaseType = TypeVar(
-    "BaseType", _FlowAgent, _FlowModel, _FlowSolver, _FlowTask, GenerateConfig
-)
+BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, GenerateConfig)
 
-AgentInput: TypeAlias = str | _FlowAgent | FlowAgentDict
+AgentInput: TypeAlias = str | FAgent | FlowAgentDict
 ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
-ModelInput: TypeAlias = str | _FlowModel | FlowModelDict
-SolverInput: TypeAlias = str | _FlowSolver | FlowSolverDict
-TaskInput: TypeAlias = str | _FlowTask | FlowTaskDict
+ModelInput: TypeAlias = str | FModel | FlowModelDict
+SolverInput: TypeAlias = str | FSolver | FlowSolverDict
+TaskInput: TypeAlias = str | FTask | FlowTaskDict
 
 BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
 
@@ -151,8 +149,8 @@ def _matrix(
 def agents_with(
     agent: AgentInput | Sequence[AgentInput],
     values: FlowAgentDict,
-) -> list[_FlowAgent]:
-    return _with(agent, values, _FlowAgent)
+) -> list[FAgent]:
+    return _with(agent, values, FAgent)
 
 
 def configs_with(
@@ -165,29 +163,29 @@ def configs_with(
 def models_with(
     model: ModelInput | Sequence[ModelInput],
     values: FlowModelDict,
-) -> list[_FlowModel]:
-    return _with(model, values, _FlowModel)
+) -> list[FModel]:
+    return _with(model, values, FModel)
 
 
 def solvers_with(
     solver: SolverInput | Sequence[SolverInput],
     values: FlowSolverDict,
-) -> list[_FlowSolver]:
-    return _with(solver, values, _FlowSolver)
+) -> list[FSolver]:
+    return _with(solver, values, FSolver)
 
 
 def tasks_with(
     task: TaskInput | Sequence[TaskInput],
     values: FlowTaskDict,
-) -> list[_FlowTask]:
-    return _with(task, values, _FlowTask)
+) -> list[FTask]:
+    return _with(task, values, FTask)
 
 
 def agents_matrix(
     agent: AgentInput | Sequence[AgentInput],
     matrix: FlowAgentMatrixDict,
-) -> list[_FlowAgent]:
-    return _matrix(agent, matrix, _FlowAgent)
+) -> list[FAgent]:
+    return _matrix(agent, matrix, FAgent)
 
 
 def configs_matrix(
@@ -200,19 +198,19 @@ def configs_matrix(
 def models_matrix(
     model: ModelInput | Sequence[ModelInput],
     matrix: FlowModelMatrixDict,
-) -> list[_FlowModel]:
-    return _matrix(model, matrix, _FlowModel)
+) -> list[FModel]:
+    return _matrix(model, matrix, FModel)
 
 
 def solvers_matrix(
     solver: SolverInput | Sequence[SolverInput],
     matrix: FlowSolverMatrixDict,
-) -> list[_FlowSolver]:
-    return _matrix(solver, matrix, _FlowSolver)
+) -> list[FSolver]:
+    return _matrix(solver, matrix, FSolver)
 
 
 def tasks_matrix(
     task: TaskInput | Sequence[TaskInput],
     matrix: FlowTaskMatrixDict,
-) -> list[_FlowTask]:
-    return _matrix(task, matrix, _FlowTask)
+) -> list[FTask]:
+    return _matrix(task, matrix, FTask)
