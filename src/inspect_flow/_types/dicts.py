@@ -55,8 +55,10 @@ class BatchConfigDict(TypedDict):
 
 
 class FlowAgentDict(TypedDict):
+    type: NotRequired[Literal["agent"]]
+    """Type needed to differentiated solvers and agents in solver lists."""
     name: NotRequired[str]
-    """Name of the solver."""
+    """Name of the agent."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
 
@@ -405,8 +407,10 @@ class FlowAgent(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
+    type: Literal["agent"] = Field(default="agent", title="Type")
+    """Type needed to differentiated solvers and agents in solver lists."""
     name: str = Field(..., title="Name")
-    """Name of the solver."""
+    """Name of the agent."""
     args: Optional[Mapping[str, Any]] = Field(default=None, title="Args")
     """Additional args to pass to agent constructor."""
 

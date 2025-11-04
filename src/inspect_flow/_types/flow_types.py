@@ -73,7 +73,12 @@ class FSolver(BaseModel, extra="forbid"):
 
 
 class FAgent(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the solver.")
+    type: Literal["agent"] = Field(
+        default="agent",
+        description="Type needed to differentiated solvers and agents in solver lists.",
+    )
+
+    name: str = Field(description="Name of the agent.")
 
     args: CreateArgs | None = Field(
         default=None,

@@ -12,7 +12,7 @@ from inspect_flow.types import (
     FlowTask,
 )
 
-update_examples = False
+update_examples = True
 
 
 def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:

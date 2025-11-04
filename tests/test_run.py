@@ -4,15 +4,16 @@ from unittest.mock import patch
 
 from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
-from inspect_flow import flow_config, solvers_matrix, tasks_matrix
+from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.dicts import FlowSolver, FlowTask
-from inspect_flow._types.flow_types import FConfig
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
     FlowModel,
 )
+
+from tests.test_helpers.type_helpers import fc
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -20,10 +21,6 @@ task_dir = (
     Path(__file__).parents[1] / "examples" / "local_eval" / "src" / "local_eval"
 ).resolve()
 task_file = str(task_dir / "noop.py")
-
-
-def fc(config: FlowConfig) -> FConfig:
-    return FConfig.model_validate(config)
 
 
 def test_task_with_get_model() -> None:
@@ -285,12 +282,12 @@ def test_sample_id() -> None:
 def test_all_tasks_in_file() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
-            config=flow_config(
-                {
-                    "flow_dir": "test_log_dir",
-                    "tasks": str(task_dir / "three_tasks.py"),
-                }
-            ),
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    tasks=[str(task_dir / "three_tasks.py")],
+                ),
+            )
         )
 
         mock_eval_set.assert_called_once()

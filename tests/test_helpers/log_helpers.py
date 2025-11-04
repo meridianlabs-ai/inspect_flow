@@ -18,7 +18,7 @@ def init_test_logs() -> str:
 
 def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
     if isinstance(config, FlowConfig):
-        config = FConfig.model_validate(config)
+        config = FConfig.model_validate(config.model_dump())
     # Check that logs/local_logs directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
