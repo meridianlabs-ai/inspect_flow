@@ -1,8 +1,9 @@
 from itertools import product
-from typing import Any, Mapping, Sequence, TypeAlias, TypeVar, Unpack
+from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
+from typing_extensions import Unpack
 
 from inspect_flow._types.dicts import (
     FlowAgent,
