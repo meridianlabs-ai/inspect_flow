@@ -11,12 +11,13 @@ from inspect_flow.types import (
     FlowOptions,
     FlowTask,
 )
+from pydantic_core import to_jsonable_python
 
 update_examples = False
 
 
 def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
-    config = FConfig.model_validate(config.model_dump())
+    config = FConfig.model_validate(to_jsonable_python(config))
     with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(
@@ -32,7 +33,7 @@ def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
 
 
 def validate_config(config: FlowConfig | FConfig, file_name: str) -> None:
-    config = FConfig.model_validate(config.model_dump())
+    config = FConfig.model_validate(to_jsonable_python(config))
     # Load the example config file
     example_path = Path(__file__).parents[1] / "examples" / file_name
     with open(example_path, "r") as f:

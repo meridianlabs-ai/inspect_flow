@@ -149,7 +149,7 @@ def test_matrix_args() -> None:
                     flow_dir="test_log_dir",
                     tasks=tasks_matrix(
                         task=FlowTask(
-                            name=task_file + "@task_with_params",
+                            task_file + "@task_with_params",
                             model=FlowModel(name="mockllm/mock-llm"),
                         ),
                         args=[{"subset": "original"}, {"subset": "contrast"}],

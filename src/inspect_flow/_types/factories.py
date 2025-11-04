@@ -2,7 +2,7 @@ from itertools import product
 from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai.model import GenerateConfig
-from pydantic import BaseModel
+from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
 
 from inspect_flow._types.dicts import (
@@ -25,35 +25,34 @@ from inspect_flow._types.dicts import (
 )
 from inspect_flow._types.flow_types import (
     FAgent,
+    FConfig,
     FModel,
     FSolver,
     FTask,
 )
 
 
-def flow_config(config: FlowConfigDict | FlowConfig) -> FlowConfig:
-    return FlowConfig.model_validate(config)
+def flow_config(config: FlowConfigDict | FlowConfig) -> FConfig:
+    return FConfig.model_validate(to_jsonable_python(config))
 
 
-def flow_task(config: FlowTaskDict | FlowTask) -> FlowTask:
-    return FlowTask.model_validate(config)
+def flow_task(config: FlowTaskDict | FlowTask) -> FTask:
+    return FTask.model_validate(to_jsonable_python(config))
 
 
-def flow_model(config: FlowModelDict | FlowModel) -> FlowModel:
-    return FlowModel.model_validate(config)
+def flow_model(config: FlowModelDict | FlowModel) -> FModel:
+    return FModel.model_validate(to_jsonable_python(config))
 
 
-def flow_solver(config: FlowSolverDict | FlowSolver) -> FlowSolver:
-    return FlowSolver.model_validate(config)
+def flow_solver(config: FlowSolverDict | FlowSolver) -> FSolver:
+    return FSolver.model_validate(to_jsonable_python(config))
 
 
-def flow_agent(config: FlowAgentDict | FlowAgent) -> FlowAgent:
-    return FlowAgent.model_validate(config)
+def flow_agent(config: FlowAgentDict | FlowAgent) -> FAgent:
+    return FAgent.model_validate(to_jsonable_python(config))
 
 
-BaseType = TypeVar(
-    "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
-)
+BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, GenerateConfig)
 
 AgentInput: TypeAlias = str | FAgent | FlowAgent | FlowAgentDict
 ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
@@ -61,7 +60,21 @@ ModelInput: TypeAlias = str | FModel | FlowModel | FlowModelDict
 SolverInput: TypeAlias = str | FSolver | FlowSolver | FlowSolverDict
 TaskInput: TypeAlias = str | FTask | FlowTask | FlowTaskDict
 
-BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
+BaseInputType: TypeAlias = (
+    str
+    | FAgent
+    | FlowAgent
+    | GenerateConfig
+    | FModel
+    | FlowModel
+    | FSolver
+    | FlowSolver
+    | FTask
+    | FlowTask
+    | Mapping[str, Any]
+)
+
+BaseInput: TypeAlias = BaseInputType | Sequence[BaseInputType]
 
 MatrixDict = TypeVar(
     "MatrixDict",
@@ -74,26 +87,27 @@ MatrixDict = TypeVar(
 
 
 def _with_base(
-    base: BaseInput,
+    base: BaseInputType,
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> BaseType:
+    base_dict: dict[str, Any] = {}
     if isinstance(base, str):
-        base = {"name": base}
-    elif isinstance(base, BaseModel):
-        base = base.model_dump(
-            exclude_defaults=True, exclude_none=True, exclude_unset=True
-        )
+        base_dict = {"name": base}
+    elif not isinstance(base, Mapping):
+        base_dict = to_jsonable_python(base, exclude_none=True)
+    else:
+        base_dict = dict(base)
 
     for key in values.keys():
-        if key in base:
+        if key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(dict(base) | dict(values))
+    return pydantic_type.model_validate(base_dict | dict(values))
 
 
 def _with(
-    base: BaseInput | Sequence[BaseInput],
+    base: BaseInput,
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -111,31 +125,31 @@ def _with(
 
 
 def _matrix_with_base(
-    base: BaseInput,
+    base: BaseInputType,
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
+    base_dict: dict[str, Any] = {}
     if isinstance(base, str):
-        base = {"name": base}
-    elif isinstance(base, BaseModel):
-        base = base.model_dump(
-            exclude_defaults=True, exclude_none=True, exclude_unset=True
-        )
+        base_dict = {"name": base}
+    else:
+        base_dict = to_jsonable_python(base, exclude_none=True)
 
     for key in matrix.keys():
-        if key in base:
+        if key in base_dict and base_dict[key] is not None:
             raise ValueError(f"{key} provided in both base and matrix")
 
+    matrix = to_jsonable_python(matrix, exclude_none=True)
     matrix_keys = matrix.keys()
     result = []
     for matrix_values in product(*matrix.values()):
-        item_dict = dict(base) | dict(zip(matrix_keys, matrix_values, strict=True))
+        item_dict = base_dict | dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(pydantic_type.model_validate(item_dict))
     return result
 
 
 def _matrix(
-    base: BaseInput | Sequence[BaseInput],
+    base: BaseInput,
     matrix: MatrixDict,
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -157,8 +171,8 @@ def agents_with(
     *,
     agent: AgentInput | Sequence[AgentInput],
     **kwargs: Unpack[FlowAgentDict],
-) -> list[FlowAgent]:
-    return _with(agent, kwargs, FlowAgent)
+) -> list[FAgent]:
+    return _with(agent, kwargs, FAgent)
 
 
 def configs_with(
@@ -173,32 +187,32 @@ def models_with(
     *,
     model: ModelInput | Sequence[ModelInput],
     **kwargs: Unpack[FlowModelDict],
-) -> list[FlowModel]:
-    return _with(model, kwargs, FlowModel)
+) -> list[FModel]:
+    return _with(model, kwargs, FModel)
 
 
 def solvers_with(
     *,
     solver: SolverInput | Sequence[SolverInput],
     **kwargs: Unpack[FlowSolverDict],
-) -> list[FlowSolver]:
-    return _with(solver, kwargs, FlowSolver)
+) -> list[FSolver]:
+    return _with(solver, kwargs, FSolver)
 
 
 def tasks_with(
     *,
     task: TaskInput | Sequence[TaskInput],
     **kwargs: Unpack[FlowTaskDict],
-) -> list[FlowTask]:
-    return _with(task, kwargs, FlowTask)
+) -> list[FTask]:
+    return _with(task, kwargs, FTask)
 
 
 def agents_matrix(
     *,
     agent: AgentInput | Sequence[AgentInput],
     **kwargs: Unpack[FlowAgentMatrixDict],
-) -> list[FlowAgent]:
-    return _matrix(agent, kwargs, FlowAgent)
+) -> list[FAgent]:
+    return _matrix(agent, kwargs, FAgent)
 
 
 def configs_matrix(
@@ -213,21 +227,21 @@ def models_matrix(
     *,
     model: ModelInput | Sequence[ModelInput],
     **kwargs: Unpack[FlowModelMatrixDict],
-) -> list[FlowModel]:
-    return _matrix(model, kwargs, FlowModel)
+) -> list[FModel]:
+    return _matrix(model, kwargs, FModel)
 
 
 def solvers_matrix(
     *,
     solver: SolverInput | Sequence[SolverInput],
     **kwargs: Unpack[FlowSolverMatrixDict],
-) -> list[FlowSolver]:
-    return _matrix(solver, kwargs, FlowSolver)
+) -> list[FSolver]:
+    return _matrix(solver, kwargs, FSolver)
 
 
 def tasks_matrix(
     *,
     task: TaskInput | Sequence[TaskInput],
     **kwargs: Unpack[FlowTaskMatrixDict],
-) -> list[FlowTask]:
-    return _matrix(task, kwargs, FlowTask)
+) -> list[FTask]:
+    return _matrix(task, kwargs, FTask)
