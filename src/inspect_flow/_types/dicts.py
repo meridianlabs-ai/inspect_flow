@@ -55,24 +55,34 @@ class BatchConfigDict(TypedDict):
     max_consecutive_check_failures: NotRequired[Optional[int]]
 
 
-class FAgentDict(TypedDict):
+class FlowAgentDict(TypedDict):
     name: NotRequired[str]
     """Name of the solver."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
 
 
-class FEpochsDict(TypedDict):
+class FlowAgentMatrixDict(TypedDict):
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    """Additional args to pass to agent constructor."""
+
+
+class FlowEpochsDict(TypedDict):
     epochs: NotRequired[int]
     """Number of epochs."""
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
     """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
 
 
-class FSolverDict(TypedDict):
+class FlowSolverDict(TypedDict):
     name: NotRequired[str]
     """Name of the solver."""
     args: NotRequired[Optional[Mapping[str, Any]]]
+    """Additional args to pass to solver constructor."""
+
+
+class FlowSolverMatrixDict(TypedDict):
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
     """Additional args to pass to solver constructor."""
 
 
@@ -89,7 +99,7 @@ class ApprovalPolicyConfigDict(TypedDict):
     ]
 
 
-class FOptionsDict(TypedDict):
+class FlowOptionsDict(TypedDict):
     retry_attempts: NotRequired[Optional[int]]
     """Maximum number of retry attempts before giving up (defaults to 10)."""
     retry_wait: NotRequired[Optional[float]]
@@ -162,7 +172,7 @@ class FOptionsDict(TypedDict):
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
-class FModelDict(TypedDict):
+class FlowModelDict(TypedDict):
     name: NotRequired[str]
     """Name of the model to use."""
     role: NotRequired[Optional[str]]
@@ -181,7 +191,12 @@ class FModelDict(TypedDict):
     """Additional args to pass to model constructor."""
 
 
-class FTaskDict(TypedDict):
+class FlowModelMatrixDict(TypedDict):
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+
+
+class FlowTaskDict(TypedDict):
     name: NotRequired[str]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Mapping[str, Any]]]
@@ -189,20 +204,23 @@ class FTaskDict(TypedDict):
     solver: NotRequired[
         Optional[
             Union[
-                FSolver,
-                Sequence[Union[FSolver, FSolverDict]],
-                FAgent,
-                FSolverDict,
-                FAgentDict,
+                FlowSolver,
+                Sequence[Union[FlowSolver, FlowSolverDict, str]],
+                FlowAgent,
+                FlowSolverDict,
+                str,
+                FlowAgentDict,
             ]
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Union[FModel, FModelDict]]]
+    model: NotRequired[Optional[Union[FlowModel, FlowModelDict, str]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
-    model_roles: NotRequired[Optional[Mapping[str, Union[FModel, str, FModelDict]]]]
+    model_roles: NotRequired[
+        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
+    ]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
         Optional[
@@ -214,7 +232,7 @@ class FTaskDict(TypedDict):
         Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Union[int, FEpochs, FEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
@@ -234,6 +252,34 @@ class FTaskDict(TypedDict):
     """Additional metadata to associate with the task."""
     sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
     """Evaluate specific sample(s) from the dataset."""
+
+
+class FlowTaskMatrixDict(TypedDict):
+    args: NotRequired[Optional[Sequence[Mapping[str, Any]]]]
+    """Additional args to pass to task constructor"""
+    solver: NotRequired[
+        Optional[
+            Sequence[
+                Union[
+                    FlowSolver,
+                    Sequence[Union[FlowSolver, FlowSolverDict, str]],
+                    FlowAgent,
+                    FlowSolverDict,
+                    str,
+                    FlowAgentDict,
+                ]
+            ]
+        ]
+    ]
+    """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
+    model: NotRequired[Optional[Sequence[Union[FlowModel, FlowModelDict, str]]]]
+    """Default model for task (Optional, defaults to eval model)."""
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    model_roles: NotRequired[
+        Optional[Sequence[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]
+    ]
+    """Named roles for use in `get_model()`."""
 
 
 class GenerateConfigDict(TypedDict):
@@ -335,18 +381,18 @@ class ResponseSchemaDict(TypedDict):
     strict: NotRequired[Optional[bool]]
 
 
-class FConfigDict(TypedDict):
+class FlowConfigDict(TypedDict):
     flow_dir: NotRequired[str]
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: NotRequired[Optional[Union[FOptions, FOptionsDict]]]
+    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
     """Arguments for calls to eval_set."""
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: NotRequired[Optional[Sequence[str]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: NotRequired[Sequence[Union[FTask, FTaskDict]]]
+    tasks: NotRequired[Sequence[Union[FlowTask, FlowTaskDict, str]]]
     """Tasks to run"""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
