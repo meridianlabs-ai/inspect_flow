@@ -38,7 +38,7 @@ class ApproverPolicyConfigDict(TypedDict):
     ```
     """
 
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     tools: NotRequired[Union[str, Sequence[str]]]
     params: NotRequired[Mapping[str, Any]]
 
@@ -57,7 +57,7 @@ class BatchConfigDict(TypedDict):
 class FlowAgentDict(TypedDict):
     type: NotRequired[Literal["agent"]]
     """Type needed to differentiated solvers and agents in solver lists."""
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     """Name of the agent."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
@@ -76,7 +76,7 @@ class FlowEpochsDict(TypedDict):
 
 
 class FlowSolverDict(TypedDict):
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     """Name of the solver."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to solver constructor."""
@@ -174,7 +174,7 @@ class FlowOptionsDict(TypedDict):
 
 
 class FlowModelDict(TypedDict):
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     """Name of the model to use."""
     role: NotRequired[Optional[str]]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
@@ -198,7 +198,7 @@ class FlowModelMatrixDict(TypedDict):
 
 
 class FlowTaskDict(TypedDict):
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to task constructor"""
@@ -380,7 +380,7 @@ class JSONSchemaDict(TypedDict):
 class ResponseSchemaDict(TypedDict):
     """Schema for model response when using Structured Output."""
 
-    name: NotRequired[str]
+    name: NotRequired[Optional[str]]
     json_schema: NotRequired[Union[JSONSchema, JSONSchemaDict]]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]

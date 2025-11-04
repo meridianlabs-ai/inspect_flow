@@ -3,6 +3,7 @@ from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai.model import GenerateConfig
 from pydantic import BaseModel
+from typing_extensions import Unpack
 
 from inspect_flow._types.dicts import (
     FlowAgent,
@@ -153,70 +154,80 @@ def _matrix(
 
 
 def agents_with(
+    *,
     agent: AgentInput | Sequence[AgentInput],
-    values: FlowAgentDict,
+    **kwargs: Unpack[FlowAgentDict],
 ) -> list[FlowAgent]:
-    return _with(agent, values, FlowAgent)
+    return _with(agent, kwargs, FlowAgent)
 
 
 def configs_with(
+    *,
     config: ConfigInput | Sequence[ConfigInput],
-    values: GenerateConfigDict,
+    **kwargs: Unpack[GenerateConfigDict],
 ) -> list[GenerateConfig]:
-    return _with(config, values, GenerateConfig)
+    return _with(config, kwargs, GenerateConfig)
 
 
 def models_with(
+    *,
     model: ModelInput | Sequence[ModelInput],
-    values: FlowModelDict,
+    **kwargs: Unpack[FlowModelDict],
 ) -> list[FlowModel]:
-    return _with(model, values, FlowModel)
+    return _with(model, kwargs, FlowModel)
 
 
 def solvers_with(
+    *,
     solver: SolverInput | Sequence[SolverInput],
-    values: FlowSolverDict,
+    **kwargs: Unpack[FlowSolverDict],
 ) -> list[FlowSolver]:
-    return _with(solver, values, FlowSolver)
+    return _with(solver, kwargs, FlowSolver)
 
 
 def tasks_with(
+    *,
     task: TaskInput | Sequence[TaskInput],
-    values: FlowTaskDict,
+    **kwargs: Unpack[FlowTaskDict],
 ) -> list[FlowTask]:
-    return _with(task, values, FlowTask)
+    return _with(task, kwargs, FlowTask)
 
 
 def agents_matrix(
+    *,
     agent: AgentInput | Sequence[AgentInput],
-    matrix: FlowAgentMatrixDict,
+    **kwargs: Unpack[FlowAgentMatrixDict],
 ) -> list[FlowAgent]:
-    return _matrix(agent, matrix, FlowAgent)
+    return _matrix(agent, kwargs, FlowAgent)
 
 
 def configs_matrix(
+    *,
     config: ConfigInput | Sequence[ConfigInput],
-    matrix: GenerateConfigMatrixDict,
+    **kwargs: Unpack[GenerateConfigMatrixDict],
 ) -> list[GenerateConfig]:
-    return _matrix(config, matrix, GenerateConfig)
+    return _matrix(config, kwargs, GenerateConfig)
 
 
 def models_matrix(
+    *,
     model: ModelInput | Sequence[ModelInput],
-    matrix: FlowModelMatrixDict,
+    **kwargs: Unpack[FlowModelMatrixDict],
 ) -> list[FlowModel]:
-    return _matrix(model, matrix, FlowModel)
+    return _matrix(model, kwargs, FlowModel)
 
 
 def solvers_matrix(
+    *,
     solver: SolverInput | Sequence[SolverInput],
-    matrix: FlowSolverMatrixDict,
+    **kwargs: Unpack[FlowSolverMatrixDict],
 ) -> list[FlowSolver]:
-    return _matrix(solver, matrix, FlowSolver)
+    return _matrix(solver, kwargs, FlowSolver)
 
 
 def tasks_matrix(
+    *,
     task: TaskInput | Sequence[TaskInput],
-    matrix: FlowTaskMatrixDict,
+    **kwargs: Unpack[FlowTaskMatrixDict],
 ) -> list[FlowTask]:
-    return _matrix(task, matrix, FlowTask)
+    return _matrix(task, kwargs, FlowTask)
