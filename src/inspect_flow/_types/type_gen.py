@@ -289,7 +289,7 @@ def generate_dict_code() -> GeneratedCode:
             json.dumps(schema),
             input_file_type=InputFileType.JsonSchema,
             output=generated_type_file,
-            output_model_type=DataModelType.PydanticV2BaseModel,
+            output_model_type=DataModelType.DataclassesDataclass,
             target_python_version=PythonVersion.PY_310,
             use_generic_container_types=True,
             use_field_description=True,
@@ -407,7 +407,7 @@ def add_generated_code(
             if line.strip().startswith("from"):
                 section = "imports"
         elif section == "imports":
-            if line.strip().startswith("class"):
+            if line.strip().startswith("class") or line[0] == "@":
                 section = "classes"
             elif line.strip().startswith("from"):
                 # Remove TypedDict from the import line but keep other imports
@@ -423,9 +423,7 @@ def add_generated_code(
                     section = "ignore class"
                 else:
                     code.classes.append(line)
-            elif line.find("model_rebuild()") != -1:
-                pass
-            else:
+            elif line[0].isspace() or line[0] == "@":
                 # Replace IgnoreClassName with ClassName
                 modified_line = re.sub(
                     r"\bIgnore(\w+)\b",

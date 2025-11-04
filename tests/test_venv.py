@@ -57,23 +57,21 @@ def test_model_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=fc(
-                    flow_config(
-                        {
-                            "tasks": [
-                                {
-                                    "name": "task_name",
-                                    "model": "anthropic/claude-2",
-                                    "model_roles": {"mark": "groq/somemodel"},
-                                },
-                                {
-                                    "name": "task_name",
-                                    "model": "openai/gpt-4o-mini",
-                                    "model_roles": {"mark": "google/gemini-1"},
-                                },
-                            ]
-                        }
-                    )
+                config=flow_config(
+                    {
+                        "tasks": [
+                            {
+                                "name": "task_name",
+                                "model": "anthropic/claude-2",
+                                "model_roles": {"mark": "groq/somemodel"},
+                            },
+                            {
+                                "name": "task_name",
+                                "model": "openai/gpt-4o-mini",
+                                "model_roles": {"mark": "google/gemini-1"},
+                            },
+                        ]
+                    }
                 ),
                 temp_dir=temp_dir,
             )

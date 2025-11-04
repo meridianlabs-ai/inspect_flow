@@ -6,6 +6,7 @@ from inspect_flow._types.flow_types import (
     FConfig,
 )
 from inspect_flow.types import FlowConfig
+from pydantic_core import to_jsonable_python
 
 
 def init_test_logs() -> str:
@@ -18,7 +19,7 @@ def init_test_logs() -> str:
 
 def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
     if isinstance(config, FlowConfig):
-        config = FConfig.model_validate(config.model_dump())
+        config = FConfig.model_validate(to_jsonable_python(config))
     # Check that logs/local_logs directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)

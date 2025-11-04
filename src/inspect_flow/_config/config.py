@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import yaml
+from pydantic_core import to_jsonable_python
 
 from inspect_flow._types.dicts import FlowConfig
 from inspect_flow._types.flow_types import FConfig
@@ -22,7 +23,7 @@ def load_config(config_file: str) -> FConfig:
                     f"No value returned from Python config file: {config_file}"
                 )
             if isinstance(result, FlowConfig):
-                result = FConfig.model_validate(result.model_dump())
+                result = FConfig.model_validate(to_jsonable_python(result))
             elif not isinstance(result, FConfig):
                 raise TypeError(
                     f"Expected FlowConfig from Python config file, got {type(result)}"

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Optional, Sequence, Union
 
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema
 from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec
-from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import NotRequired, TypedDict
 
 from inspect_flow._types.flow_types import (
@@ -403,148 +403,129 @@ class FlowConfigDict(TypedDict):
     """Environment variables to set when running tasks."""
 
 
-class FlowAgent(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    type: Literal["agent"] = Field(default="agent", title="Type")
-    """Type needed to differentiated solvers and agents in solver lists."""
-    name: str = Field(..., title="Name")
+@dataclass
+class FlowAgent:
+    name: str
     """Name of the agent."""
-    args: Optional[Mapping[str, Any]] = Field(default=None, title="Args")
+    type: Literal["agent"] = "agent"
+    """Type needed to differentiated solvers and agents in solver lists."""
+    args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to agent constructor."""
 
 
-class FlowEpochs(BaseModel):
-    epochs: int = Field(..., title="Epochs")
+@dataclass
+class FlowEpochs:
+    epochs: int
     """Number of epochs."""
-    reducer: Optional[Union[str, Sequence[str]]] = Field(default=None, title="Reducer")
+    reducer: Optional[Union[str, Sequence[str]]] = None
     """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
 
 
-class FlowSolver(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    name: str = Field(..., title="Name")
+@dataclass
+class FlowSolver:
+    name: str
     """Name of the solver."""
-    args: Optional[Mapping[str, Any]] = Field(default=None, title="Args")
+    args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to solver constructor."""
 
 
-class FlowOptions(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    retry_attempts: Optional[int] = Field(default=None, title="Retry Attempts")
+@dataclass
+class FlowOptions:
+    retry_attempts: Optional[int] = None
     """Maximum number of retry attempts before giving up (defaults to 10)."""
-    retry_wait: Optional[float] = Field(default=None, title="Retry Wait")
+    retry_wait: Optional[float] = None
     """Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour."""
-    retry_connections: Optional[float] = Field(default=None, title="Retry Connections")
+    retry_connections: Optional[float] = None
     """Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction)."""
-    retry_cleanup: Optional[bool] = Field(default=None, title="Retry Cleanup")
+    retry_cleanup: Optional[bool] = None
     """Cleanup failed log files after retries (defaults to True)."""
     sandbox: Optional[
         Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-    ] = Field(default=None, title="Sandbox")
+    ] = None
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    sandbox_cleanup: Optional[bool] = Field(default=None, title="Sandbox Cleanup")
+    sandbox_cleanup: Optional[bool] = None
     """Cleanup sandbox environments after task completes (defaults to True)"""
-    tags: Optional[Sequence[str]] = Field(default=None, title="Tags")
+    tags: Optional[Sequence[str]] = None
     """Tags to associate with this evaluation run."""
-    metadata: Optional[Mapping[str, Any]] = Field(default=None, title="Metadata")
+    metadata: Optional[Mapping[str, Any]] = None
     """Metadata to associate with this evaluation run."""
-    trace: Optional[bool] = Field(default=None, title="Trace")
+    trace: Optional[bool] = None
     """Trace message interactions with evaluated model to terminal."""
     display: Optional[
         Literal["full", "conversation", "rich", "plain", "log", "none"]
-    ] = Field(default=None, title="Display")
+    ] = None
     """Task display type (defaults to 'full')."""
     approval: Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]] = (
-        Field(default=None, title="Approval")
+        None
     )
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
-    score: Optional[bool] = Field(default=True, title="Score")
+    score: Optional[bool] = True
     """Score output (defaults to True)"""
-    log_level: Optional[str] = Field(default=None, title="Log Level")
+    log_level: Optional[str] = None
     """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
-    log_level_transcript: Optional[str] = Field(
-        default=None, title="Log Level Transcript"
-    )
+    log_level_transcript: Optional[str] = None
     """Level for logging to the log file (defaults to "info")"""
-    log_format: Optional[Literal["eval", "json"]] = Field(
-        default=None, title="Log Format"
-    )
+    log_format: Optional[Literal["eval", "json"]] = None
     """Format for writing log files (defaults to "eval", the native high-performance format)."""
-    limit: Optional[int] = Field(default=None, title="Limit")
+    limit: Optional[int] = None
     """Limit evaluated samples (defaults to all samples)."""
-    sample_shuffle: Optional[Union[bool, int]] = Field(
-        default=None, title="Sample Shuffle"
-    )
+    sample_shuffle: Optional[Union[bool, int]] = None
     """Shuffle order of samples (pass a seed to make the order deterministic)."""
-    fail_on_error: Optional[Union[bool, float]] = Field(
-        default=None, title="Fail On Error"
-    )
+    fail_on_error: Optional[Union[bool, float]] = None
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: Optional[bool] = Field(default=None, title="Continue On Fail")
+    continue_on_fail: Optional[bool] = None
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    retry_on_error: Optional[int] = Field(default=None, title="Retry On Error")
+    retry_on_error: Optional[int] = None
     """Number of times to retry samples if they encounter errors (by default, no retries occur)."""
-    debug_errors: Optional[bool] = Field(default=None, title="Debug Errors")
+    debug_errors: Optional[bool] = None
     """Raise task errors (rather than logging them) so they can be debugged (defaults to False)."""
-    max_samples: Optional[int] = Field(default=None, title="Max Samples")
+    max_samples: Optional[int] = None
     """Maximum number of samples to run in parallel (default is max_connections)"""
-    max_tasks: Optional[int] = Field(default=None, title="Max Tasks")
+    max_tasks: Optional[int] = None
     """Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)"""
-    max_subprocesses: Optional[int] = Field(default=None, title="Max Subprocesses")
+    max_subprocesses: Optional[int] = None
     """Maximum number of subprocesses to run in parallel (default is os.cpu_count())"""
-    max_sandboxes: Optional[int] = Field(default=None, title="Max Sandboxes")
+    max_sandboxes: Optional[int] = None
     """Maximum number of sandboxes (per-provider) to run in parallel."""
-    log_samples: Optional[bool] = Field(default=None, title="Log Samples")
+    log_samples: Optional[bool] = None
     """Log detailed samples and scores (defaults to True)"""
-    log_realtime: Optional[bool] = Field(default=None, title="Log Realtime")
+    log_realtime: Optional[bool] = None
     """Log events in realtime (enables live viewing of samples in inspect view). Defaults to True."""
-    log_images: Optional[bool] = Field(default=None, title="Log Images")
+    log_images: Optional[bool] = None
     """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)"""
-    log_buffer: Optional[int] = Field(default=None, title="Log Buffer")
+    log_buffer: Optional[int] = None
     """Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems)."""
-    log_shared: Optional[Union[bool, int]] = Field(default=None, title="Log Shared")
+    log_shared: Optional[Union[bool, int]] = None
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
-    log_dir_allow_dirty: Optional[bool] = Field(
-        default=None, title="Log Dir Allow Dirty"
-    )
+    log_dir_allow_dirty: Optional[bool] = None
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
-class FlowModel(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    name: str = Field(..., title="Name")
+@dataclass
+class FlowModel:
+    name: str
     """Name of the model to use."""
-    role: Optional[str] = Field(default=None, title="Role")
+    role: Optional[str] = None
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: Optional[str] = Field(default=None, title="Default")
+    default: Optional[str] = None
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-    base_url: Optional[str] = Field(default=None, title="Base Url")
+    base_url: Optional[str] = None
     """Optional. Alternate base URL for model."""
-    api_key: Optional[str] = Field(default=None, title="Api Key")
+    api_key: Optional[str] = None
     """Optional. API key for model."""
-    memoize: Optional[bool] = Field(default=True, title="Memoize")
+    memoize: Optional[bool] = True
     """Use/store a cached version of the model based on the parameters to get_model()."""
-    model_args: Optional[Mapping[str, Any]] = Field(default=None, title="Model Args")
+    model_args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to model constructor."""
 
 
-class FlowTask(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    name: str = Field(..., title="Name")
+@dataclass
+class FlowTask:
+    name: str
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
-    args: Optional[Mapping[str, Any]] = Field(default=None, title="Args")
+    args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to task constructor"""
     solver: Optional[
         Union[
@@ -557,7 +538,7 @@ class FlowTask(BaseModel):
             FlowAgentDict,
             FlowAgent,
         ]
-    ] = Field(default=None, title="Solver")
+    ] = None
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
     model: Optional[Union[FModel, FlowModelDict, FlowModel, str]] = None
     """Default model for task (Optional, defaults to eval model)."""
@@ -565,61 +546,51 @@ class FlowTask(BaseModel):
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
     model_roles: Optional[
         Mapping[str, Union[FModel, str, FlowModelDict, FlowModel]]
-    ] = Field(default=None, title="Model Roles")
+    ] = None
     """Named roles for use in `get_model()`."""
     sandbox: Optional[
         Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-    ] = Field(default=None, title="Sandbox")
+    ] = None
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
     approval: Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]] = (
-        Field(default=None, title="Approval")
+        None
     )
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: Optional[Union[int, FEpochs, FlowEpochsDict, FlowEpochs]] = Field(
-        default=None, title="Epochs"
-    )
+    epochs: Optional[Union[int, FEpochs, FlowEpochsDict, FlowEpochs]] = None
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
-    fail_on_error: Optional[Union[bool, float]] = Field(
-        default=None, title="Fail On Error"
-    )
+    fail_on_error: Optional[Union[bool, float]] = None
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: Optional[bool] = Field(default=None, title="Continue On Fail")
+    continue_on_fail: Optional[bool] = None
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    message_limit: Optional[int] = Field(default=None, title="Message Limit")
+    message_limit: Optional[int] = None
     """Limit on total messages used for each sample."""
-    token_limit: Optional[int] = Field(default=None, title="Token Limit")
+    token_limit: Optional[int] = None
     """Limit on total tokens used for each sample."""
-    time_limit: Optional[int] = Field(default=None, title="Time Limit")
+    time_limit: Optional[int] = None
     """Limit on clock time (in seconds) for samples."""
-    working_limit: Optional[int] = Field(default=None, title="Working Limit")
+    working_limit: Optional[int] = None
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: Optional[int] = Field(default=None, title="Version")
+    version: Optional[int] = None
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
-    metadata: Optional[Mapping[str, Any]] = Field(default=None, title="Metadata")
+    metadata: Optional[Mapping[str, Any]] = None
     """Additional metadata to associate with the task."""
-    sample_id: Optional[Union[str, int, Sequence[Union[str, int]]]] = Field(
-        default=None, title="Sample Id"
-    )
+    sample_id: Optional[Union[str, int, Sequence[Union[str, int]]]] = None
     """Evaluate specific sample(s) from the dataset."""
 
 
-class FlowConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    flow_dir: Optional[str] = Field(default="logs/flow", title="Flow Dir")
+@dataclass
+class FlowConfig:
+    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]
+    """Tasks to run"""
+    flow_dir: Optional[str] = "logs/flow"
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
-    python_version: Optional[str] = Field(default=None, title="Python Version")
+    python_version: Optional[str] = None
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: Optional[Union[FOptions, FlowOptionsDict, FlowOptions]] = None
     """Arguments for calls to eval_set."""
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    dependencies: Optional[Sequence[str]] = Field(default=None, title="Dependencies")
+    dependencies: Optional[Sequence[str]] = None
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]] = Field(
-        ..., title="Tasks"
-    )
-    """Tasks to run"""
-    env: Optional[Mapping[str, str]] = Field(default=None, title="Env")
+    env: Optional[Mapping[str, str]] = None
     """Environment variables to set when running tasks."""
