@@ -30,8 +30,19 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
+    "from inspect_flow._types.flow_types import FAgent, FEpochs, FModel, FOptions, FSolver, FTask\n",
 ]
 
+FLOW_TYPES = [
+    "FConfig",
+    "FAgent",
+    "FModel",
+    "FSolver",
+    "FTask",
+    "FEpochs",
+    "FTask",
+    "FOptions",
+]
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
 MATRIX_CLASS_FIELDS = {
@@ -150,22 +161,30 @@ def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) ->
         type: str = field_schema["$ref"]
         split = type.split("/")
         type_name = split[-1]
-        if type_name.startswith("F"):
-            type_name = "Flow" + type_name[1:]
         split[-1] = "Ignore" + type_name
         ignore_ref = "/".join(split)
+        ignore_flow_ref = None
+        if type_name in FLOW_TYPES:
+            type_name = "Flow" + type_name[1:]
+            split[-1] = "Ignore" + type_name
+            ignore_flow_ref = "/".join(split)
         split[-1] = type_name + "Dict"
         dict_ref = "/".join(split)
-        field_schema["$ref"] = ignore_ref
         if parent_list:
+            field_schema["$ref"] = ignore_ref
             parent_list.append({"$ref": dict_ref})
+            if ignore_flow_ref:
+                parent_list.append({"$ref": ignore_flow_ref})
             if type_name in STR_AS_CLASS:
                 parent_list.append({"type": "string"})
         else:
             del field_schema["$ref"]
-            field_schema["anyOf"] = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
+            ref_list = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
+            if ignore_flow_ref:
+                ref_list.append({"$ref": ignore_flow_ref})
             if type_name in STR_AS_CLASS:
-                field_schema["anyOf"].append({"type": "string"})
+                ref_list.append({"type": "string"})
+            field_schema["anyOf"] = ref_list
 
 
 def update_refs(type_def: Schema) -> None:

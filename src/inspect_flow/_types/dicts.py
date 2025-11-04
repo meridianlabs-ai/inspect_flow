@@ -10,6 +10,15 @@ from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec
 from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import NotRequired, TypedDict
 
+from inspect_flow._types.flow_types import (
+    FAgent,
+    FEpochs,
+    FModel,
+    FOptions,
+    FSolver,
+    FTask,
+)
+
 
 class ApproverPolicyConfigDict(TypedDict):
     """
@@ -194,22 +203,24 @@ class FlowTaskDict(TypedDict):
     solver: NotRequired[
         Optional[
             Union[
-                FlowSolver,
-                Sequence[Union[FlowSolver, FlowSolverDict, str]],
-                FlowAgent,
+                FSolver,
+                Sequence[Union[FSolver, FlowSolverDict, FlowSolver, str]],
+                FAgent,
                 FlowSolverDict,
+                FlowSolver,
                 str,
                 FlowAgentDict,
+                FlowAgent,
             ]
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Union[FlowModel, FlowModelDict, str]]]
+    model: NotRequired[Optional[Union[FModel, FlowModelDict, FlowModel, str]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
+        Optional[Mapping[str, Union[FModel, str, FlowModelDict, FlowModel]]]
     ]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
@@ -222,7 +233,7 @@ class FlowTaskDict(TypedDict):
         Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FEpochs, FlowEpochsDict, FlowEpochs]]]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
@@ -251,23 +262,25 @@ class FlowTaskMatrixDict(TypedDict):
         Optional[
             Sequence[
                 Union[
-                    FlowSolver,
-                    Sequence[Union[FlowSolver, FlowSolverDict, str]],
-                    FlowAgent,
+                    FSolver,
+                    Sequence[Union[FSolver, FlowSolverDict, FlowSolver, str]],
+                    FAgent,
                     FlowSolverDict,
+                    FlowSolver,
                     str,
                     FlowAgentDict,
+                    FlowAgent,
                 ]
             ]
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Sequence[Union[FlowModel, FlowModelDict, str]]]]
+    model: NotRequired[Optional[Sequence[Union[FModel, FlowModelDict, FlowModel, str]]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Optional[Sequence[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]
+        Optional[Sequence[Mapping[str, Union[FModel, str, FlowModelDict, FlowModel]]]]
     ]
     """Named roles for use in `get_model()`."""
 
@@ -376,13 +389,13 @@ class FlowConfigDict(TypedDict):
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
+    options: NotRequired[Optional[Union[FOptions, FlowOptionsDict, FlowOptions]]]
     """Arguments for calls to eval_set."""
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: NotRequired[Optional[Sequence[str]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: NotRequired[Sequence[Union[FlowTask, FlowTaskDict, str]]]
+    tasks: NotRequired[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]
     """Tasks to run"""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
@@ -531,22 +544,24 @@ class FlowTask(BaseModel):
     """Additional args to pass to task constructor"""
     solver: Optional[
         Union[
-            FlowSolver,
-            Sequence[Union[FlowSolver, FlowSolverDict, str]],
-            FlowAgent,
+            FSolver,
+            Sequence[Union[FSolver, FlowSolverDict, FlowSolver, str]],
+            FAgent,
             FlowSolverDict,
+            FlowSolver,
             str,
             FlowAgentDict,
+            FlowAgent,
         ]
     ] = Field(default=None, title="Solver")
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: Optional[Union[FlowModel, FlowModelDict, str]] = None
+    model: Optional[Union[FModel, FlowModelDict, FlowModel, str]] = None
     """Default model for task (Optional, defaults to eval model)."""
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
-    model_roles: Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]] = Field(
-        default=None, title="Model Roles"
-    )
+    model_roles: Optional[
+        Mapping[str, Union[FModel, str, FlowModelDict, FlowModel]]
+    ] = Field(default=None, title="Model Roles")
     """Named roles for use in `get_model()`."""
     sandbox: Optional[
         Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
@@ -556,7 +571,7 @@ class FlowTask(BaseModel):
         Field(default=None, title="Approval")
     )
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: Optional[Union[int, FlowEpochs, FlowEpochsDict]] = Field(
+    epochs: Optional[Union[int, FEpochs, FlowEpochsDict, FlowEpochs]] = Field(
         default=None, title="Epochs"
     )
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
@@ -592,13 +607,15 @@ class FlowConfig(BaseModel):
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
     python_version: Optional[str] = Field(default=None, title="Python Version")
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: Optional[Union[FlowOptions, FlowOptionsDict]] = None
+    options: Optional[Union[FOptions, FlowOptionsDict, FlowOptions]] = None
     """Arguments for calls to eval_set."""
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: Optional[Sequence[str]] = Field(default=None, title="Dependencies")
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: Sequence[Union[FlowTask, FlowTaskDict, str]] = Field(..., title="Tasks")
+    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]] = Field(
+        ..., title="Tasks"
+    )
     """Tasks to run"""
     env: Optional[Mapping[str, str]] = Field(default=None, title="Env")
     """Environment variables to set when running tasks."""

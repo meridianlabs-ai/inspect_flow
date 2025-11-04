@@ -52,11 +52,11 @@ def flow_agent(config: FlowAgentDict) -> FAgent:
 
 BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, GenerateConfig)
 
-AgentInput: TypeAlias = str | FlowAgent | FlowAgentDict
+AgentInput: TypeAlias = str | FAgent | FlowAgent | FlowAgentDict
 ConfigInput: TypeAlias = GenerateConfig | GenerateConfigDict
-ModelInput: TypeAlias = str | FlowModel | FlowModelDict
-SolverInput: TypeAlias = str | FlowSolver | FlowSolverDict
-TaskInput: TypeAlias = str | FlowTask | FlowTaskDict
+ModelInput: TypeAlias = str | FModel | FlowModel | FlowModelDict
+SolverInput: TypeAlias = str | FSolver | FlowSolver | FlowSolverDict
+TaskInput: TypeAlias = str | FTask | FlowTask | FlowTaskDict
 
 BaseInput: TypeAlias = str | BaseModel | Mapping[str, Any]
 
