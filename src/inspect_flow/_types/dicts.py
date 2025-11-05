@@ -56,12 +56,12 @@ class BatchConfigDict(TypedDict):
 
 
 class FlowAgentDict(TypedDict):
-    type: NotRequired[Literal["agent"]]
-    """Type needed to differentiated solvers and agents in solver lists."""
     name: NotRequired[Optional[str]]
     """Name of the agent. Required to be set by the time the agent is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
+    type: NotRequired[Literal["agent"]]
+    """Type needed to differentiated solvers and agents in solver lists."""
 
 
 class FlowAgentMatrixDict(TypedDict):
@@ -437,12 +437,12 @@ class FlowConfigDict(TypedDict):
 
 @dataclass
 class FlowAgent:
-    type: Literal["agent"] = "agent"
-    """Type needed to differentiated solvers and agents in solver lists."""
     name: Optional[str] = None
     """Name of the agent. Required to be set by the time the agent is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to agent constructor."""
+    type: Literal["agent"] = "agent"
+    """Type needed to differentiated solvers and agents in solver lists."""
 
 
 @dataclass

@@ -93,30 +93,43 @@ def create_model_roles(config: ModelRolesConfig, flow_config: FConfig) -> ModelR
     return roles
 
 
-def create_single_solver(config: FSolver) -> Solver:
+def create_single_solver(config: FSolver, flow_config: FConfig) -> Solver:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.solver, defaults.solver_prefix)
+
     if not config.name:
         raise ValueError(f"Solver name is required. Solver: {config}")
 
     return registry_create(type="solver", name=config.name, **(config.args or {}))
 
 
+def create_agent(config: FAgent, flow_config: FConfig) -> Agent:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.agent, defaults.agent_prefix)
+
+    if not config.name:
+        raise ValueError(f"Agent name is required. Agent: {config}")
+
+    return registry_create(type="agent", name=config.name, **(config.args or {}))
+
+
 def create_solver(
-    config: FSolver | list[FSolver] | FAgent,
+    config: FSolver | list[FSolver] | FAgent, flow_config: FConfig
 ) -> SingleSolver:
     if isinstance(config, FSolver):
-        return create_single_solver(config)
+        return create_single_solver(config, flow_config)
     if isinstance(config, FAgent):
-        if not config.name:
-            raise ValueError(f"Agent name is required. Agent: {config}")
-        return registry_create(type="agent", name=config.name, **(config.args or {}))
-    return [create_single_solver(single_config) for single_config in config]
+        return create_agent(config, flow_config)
+    return [
+        create_single_solver(single_config, flow_config) for single_config in config
+    ]
 
 
 def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
     defaults = flow_config.defaults or FDefaults()
     config = merge_defaults(config, defaults.task, defaults.task_prefix)
     model = create_model(config.model, flow_config) if config.model else None
-    solver = create_solver(config.solver) if config.solver else None
+    solver = create_solver(config.solver, flow_config) if config.solver else None
     model_roles = (
         create_model_roles(config.model_roles, flow_config)
         if config.model_roles

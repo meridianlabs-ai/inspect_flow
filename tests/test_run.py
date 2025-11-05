@@ -3,7 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from inspect_ai import Task
+from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.solver import Solver
 from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.dicts import (
@@ -574,6 +576,69 @@ def test_task_defaults() -> None:
         assert isinstance(tasks_arg[0].model, Model)
         assert tasks_arg[0].model.name == "mock-llm"
         assert tasks_arg[0].metadata["subset"] == "original"
+
+
+def test_solver_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        solver=FlowSolver(args={"template": "Default"}),
+                        solver_prefix={
+                            "inspect_ai": FlowSolver(args={"template": "Prefix"})
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@noop",
+                            model="mockllm/mock-llm",
+                            solver="inspect_ai/system_message",
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].solver, Solver)
+
+
+def test_agent_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        agent=FlowAgent(args={"description": "Default Description"}),
+                        solver_prefix={
+                            "inspect_ai": FlowSolver(args={"prompt": "Prefix Prompt"})
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@noop",
+                            model="mockllm/mock-llm",
+                            solver=FlowAgent("inspect_ai/react"),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].solver, Agent)
+        # TODO:ransom this doesn't test the args - probably need to write an agent to do that
 
 
 def test_dry_run():

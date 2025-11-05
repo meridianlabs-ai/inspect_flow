@@ -79,11 +79,6 @@ class FSolver(BaseModel, extra="forbid"):
 
 
 class FAgent(BaseModel, extra="forbid"):
-    type: Literal["agent"] = Field(
-        default="agent",
-        description="Type needed to differentiated solvers and agents in solver lists.",
-    )
-
     name: str | None = Field(
         default=None,
         description="Name of the agent. Required to be set by the time the agent is created.",
@@ -92,6 +87,11 @@ class FAgent(BaseModel, extra="forbid"):
     args: CreateArgs | None = Field(
         default=None,
         description="Additional args to pass to agent constructor.",
+    )
+
+    type: Literal["agent"] = Field(
+        default="agent",
+        description="Type needed to differentiated solvers and agents in solver lists.",
     )
 
 
