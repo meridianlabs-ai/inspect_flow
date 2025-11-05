@@ -14,6 +14,7 @@ from inspect_ai.util import registry_create
 from inspect_flow._types.flow_types import (
     FAgent,
     FConfig,
+    FDefaults,
     FEpochs,
     FModel,
     FSolver,
@@ -67,6 +68,7 @@ def create_solver(
 
 
 def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
+    defaults = flow_config.defaults or FDefaults()
     model = create_model(config.model) if config.model else None
     solver = create_solver(config.solver) if config.solver else None
     model_roles = create_model_roles(config.model_roles) if config.model_roles else None
@@ -91,7 +93,7 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
                 reducer=epochs.reducer,
             )
 
-        generate_config = flow_config.config or GenerateConfig()
+        generate_config = defaults.config or GenerateConfig()
         if config.config:
             generate_config = generate_config.merge(config.config)
         if model:

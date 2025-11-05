@@ -6,7 +6,7 @@ from inspect_ai import Task
 from inspect_ai.model import GenerateConfig, Model
 from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.dicts import FlowSolver, FlowTask
+from inspect_flow._types.dicts import FlowDefaults, FlowSolver, FlowTask
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -302,10 +302,12 @@ def test_config_generate_config() -> None:
             config=fc(
                 FlowConfig(
                     flow_dir="test_log_dir",
-                    config=GenerateConfig(
-                        system_message=config_system_message,
-                        temperature=config_temperature,
-                        max_tokens=config_max_tokens,
+                    defaults=FlowDefaults(
+                        config=GenerateConfig(
+                            system_message=config_system_message,
+                            temperature=config_temperature,
+                            max_tokens=config_max_tokens,
+                        )
                     ),
                     tasks=[
                         FlowTask(
