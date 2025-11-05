@@ -160,9 +160,9 @@ providers = {
 def get_model_dependencies(config: FConfig) -> List[str]:
     model_dependencies: set[str] = set()
 
-    def collect_dependency(model_name: str) -> None:
+    def collect_dependency(model_name: str | None) -> None:
         """Extract provider from model name like 'openai/gpt-4o-mini' -> 'openai'"""
-        if "/" in model_name:
+        if model_name and "/" in model_name:
             dependency = providers.get(model_name.split("/")[0])
             if dependency:
                 model_dependencies.add(dependency)

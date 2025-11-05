@@ -25,7 +25,10 @@ ModelRolesConfig: TypeAlias = Mapping[str, Union["FModel", str]]
 
 
 class FModel(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the model to use.")
+    name: str | None = Field(
+        default=None,
+        description="Name of the model to use. Required to be set by the time the model is created.",
+    )
 
     role: str | None = Field(
         default=None,
@@ -64,7 +67,10 @@ class FModel(BaseModel, extra="forbid"):
 
 
 class FSolver(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the solver.")
+    name: str | None = Field(
+        default=None,
+        description="Name of the solver. Required to be set by the time the solver is created.",
+    )
 
     args: CreateArgs | None = Field(
         default=None,
@@ -73,16 +79,19 @@ class FSolver(BaseModel, extra="forbid"):
 
 
 class FAgent(BaseModel, extra="forbid"):
-    type: Literal["agent"] = Field(
-        default="agent",
-        description="Type needed to differentiated solvers and agents in solver lists.",
+    name: str | None = Field(
+        default=None,
+        description="Name of the agent. Required to be set by the time the agent is created.",
     )
-
-    name: str = Field(description="Name of the agent.")
 
     args: CreateArgs | None = Field(
         default=None,
         description="Additional args to pass to agent constructor.",
+    )
+
+    type: Literal["agent"] = Field(
+        default="agent",
+        description="Type needed to differentiated solvers and agents in solver lists.",
     )
 
 
@@ -96,8 +105,9 @@ class FEpochs(BaseModel):
 
 
 class FTask(BaseModel, extra="forbid"):
-    name: str = Field(
-        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name").',
+    name: str | None = Field(
+        default=None,
+        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
     )
 
     args: CreateArgs | None = Field(
@@ -341,6 +351,45 @@ class FOptions(BaseModel, extra="forbid"):
     )
 
 
+class FDefaults(BaseModel, extra="forbid"):
+    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
+    )
+
+    agent: FAgent | None = Field(default=None, description="Field defaults for agents.")
+
+    agent_prefix: dict[str, FAgent] | None = Field(
+        default=None,
+        description="Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}",
+    )
+
+    model: FModel | None = Field(default=None, description="Field defaults for models.")
+
+    model_prefix: dict[str, FModel] | None = Field(
+        default=None,
+        description="Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}",
+    )
+
+    solver: FSolver | None = Field(
+        default=None, description="Field defaults for solvers."
+    )
+
+    solver_prefix: dict[str, FSolver] | None = Field(
+        default=None,
+        description="Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}",
+    )
+
+    task: FTask | None = Field(default=None, description="Field defaults for tasks.")
+
+    task_prefix: dict[str, FTask] | None = Field(
+        default=None,
+        description="Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}",
+    )
+
+
 class FConfig(BaseModel, extra="forbid"):
     flow_dir: str = Field(
         default="logs/flow",
@@ -356,22 +405,21 @@ class FConfig(BaseModel, extra="forbid"):
         default=None, description="Arguments for calls to eval_set."
     )
 
-    config: GenerateConfig | None = Field(
-        default=None,
-        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
-    )
-
     dependencies: list[str] | None = Field(
         # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
-    tasks: list[FTask] = Field(description="Tasks to run")
-
     env: dict[str, str] | None = Field(
         default=None, description="Environment variables to set when running tasks."
     )
+
+    defaults: FDefaults | None = Field(
+        default=None, description="Defaults values for Inspect objects."
+    )
+
+    tasks: list[FTask] = Field(description="Tasks to run")
 
     # Convert single items to lists
     @field_validator("dependencies", mode="before")

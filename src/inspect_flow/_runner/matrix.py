@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import TypeAlias
+from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
@@ -10,10 +10,13 @@ from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
+from pydantic import BaseModel
 
+from inspect_flow._types.factories import merge_dicts_with_config
 from inspect_flow._types.flow_types import (
     FAgent,
     FConfig,
+    FDefaults,
     FEpochs,
     FModel,
     FSolver,
@@ -26,10 +29,51 @@ from inspect_flow._util.path_util import find_file
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 
-matrix_fields = ["args", "models", "model_roles", "solvers"]
+_T = TypeVar("_T", bound=BaseModel)
 
 
-def create_model(model_config: FModel) -> Model:
+def merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
+    default_dict = defaults.model_dump(mode="json", exclude_none=True)
+    return merge_dicts_with_config(default_dict, config_dict)
+
+
+def merge_defaults(
+    config: _T,
+    defaults: _T | None,
+    prefix_defaults: dict[str, _T] | None,
+) -> _T:
+    if not defaults and not prefix_defaults:
+        return config
+
+    config_dict = config.model_dump(mode="json", exclude_none=True)
+
+    if prefix_defaults:
+        # Filter the prefix defaults to only those that match the config name
+        prefix_defaults = {
+            prefix: prefix_default
+            for prefix, prefix_default in prefix_defaults.items()
+            if config_dict.get("name", "").startswith(prefix)
+        }
+        # Sort prefixes by length descending to match longest prefix first
+        prefix_defaults = dict(
+            sorted(prefix_defaults.items(), key=lambda item: -len(item[0]))
+        )
+        for vals in prefix_defaults.values():
+            config_dict = merge_default(config_dict, vals)
+
+    if defaults:
+        config_dict = merge_default(config_dict, defaults)
+
+    return config.__class__.model_validate(config_dict)
+
+
+def create_model(model_config: FModel, config: FConfig) -> Model:
+    defaults = config.defaults or FDefaults()
+    model_config = merge_defaults(model_config, defaults.model, defaults.model_prefix)
+
+    if not model_config.name:
+        raise ValueError(f"Model name is required. Model: {model_config}")
+
     return get_model(
         model=model_config.name,
         role=model_config.role,
@@ -42,34 +86,58 @@ def create_model(model_config: FModel) -> Model:
     )
 
 
-def create_model_roles(config: ModelRolesConfig) -> ModelRoles:
+def create_model_roles(config: ModelRolesConfig, flow_config: FConfig) -> ModelRoles:
     roles = {}
     for role, model_config in config.items():
         model = model_config
         if isinstance(model, FModel):
-            model = create_model(model_config=model)
+            model = create_model(model_config=model, config=flow_config)
         roles[role] = model
     return roles
 
 
-def create_single_solver(config: FSolver) -> Solver:
+def create_single_solver(config: FSolver, flow_config: FConfig) -> Solver:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.solver, defaults.solver_prefix)
+
+    if not config.name:
+        raise ValueError(f"Solver name is required. Solver: {config}")
+
     return registry_create(type="solver", name=config.name, **(config.args or {}))
 
 
+def create_agent(config: FAgent, flow_config: FConfig) -> Agent:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.agent, defaults.agent_prefix)
+
+    if not config.name:
+        raise ValueError(f"Agent name is required. Agent: {config}")
+
+    return registry_create(type="agent", name=config.name, **(config.args or {}))
+
+
 def create_solver(
-    config: FSolver | list[FSolver] | FAgent,
+    config: FSolver | list[FSolver] | FAgent, flow_config: FConfig
 ) -> SingleSolver:
     if isinstance(config, FSolver):
-        return create_single_solver(config)
+        return create_single_solver(config, flow_config)
     if isinstance(config, FAgent):
-        return registry_create(type="agent", name=config.name, **(config.args or {}))
-    return [create_single_solver(single_config) for single_config in config]
+        return create_agent(config, flow_config)
+    return [
+        create_single_solver(single_config, flow_config) for single_config in config
+    ]
 
 
 def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
-    model = create_model(config.model) if config.model else None
-    solver = create_solver(config.solver) if config.solver else None
-    model_roles = create_model_roles(config.model_roles) if config.model_roles else None
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.task, defaults.task_prefix)
+    model = create_model(config.model, flow_config) if config.model else None
+    solver = create_solver(config.solver, flow_config) if config.solver else None
+    model_roles = (
+        create_model_roles(config.model_roles, flow_config)
+        if config.model_roles
+        else None
+    )
     tasks = []
     for task_func in get_task_creators(config):
         if model:
@@ -91,7 +159,7 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
                 reducer=epochs.reducer,
             )
 
-        generate_config = flow_config.config or GenerateConfig()
+        generate_config = defaults.config or GenerateConfig()
         if config.config:
             generate_config = generate_config.merge(config.config)
         if model:
@@ -163,6 +231,10 @@ def get_task_creators_from_file(
 
 
 def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
+    if not config.name:
+        raise ValueError(f"Task name is required. Task: {config}")
+    config_name = config.name
+
     if config.name.find("@") != -1:
         file, attr = config.name.split("@", 1)
         return get_task_creators_from_file(file, attr, config)
@@ -177,7 +249,7 @@ def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
             raise LookupError(f"{config.name} was not found in the registry")
 
         def task_func(**kwargs):
-            return registry_create(type="task", name=config.name, **kwargs)
+            return registry_create(type="task", name=config_name, **kwargs)
 
         task_funcs = [task_func]
 

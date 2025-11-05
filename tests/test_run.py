@@ -3,10 +3,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from inspect_ai import Task
+from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.solver import Solver
 from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.dicts import FlowSolver, FlowTask
+from inspect_flow._types.dicts import (
+    FlowDefaults,
+    FlowSolver,
+    FlowTask,
+)
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -302,10 +308,12 @@ def test_config_generate_config() -> None:
             config=fc(
                 FlowConfig(
                     flow_dir="test_log_dir",
-                    config=GenerateConfig(
-                        system_message=config_system_message,
-                        temperature=config_temperature,
-                        max_tokens=config_max_tokens,
+                    defaults=FlowDefaults(
+                        config=GenerateConfig(
+                            system_message=config_system_message,
+                            temperature=config_temperature,
+                            max_tokens=config_max_tokens,
+                        ),
                     ),
                     tasks=[
                         FlowTask(
@@ -342,6 +350,295 @@ def test_config_generate_config() -> None:
         assert model_config.system_message == model_system_message
         assert model_config.temperature is None
         assert model_config.max_tokens is None
+
+
+def test_config_model_overrides() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        config=GenerateConfig(
+                            system_message="Global Default",
+                        ),
+                        model=FlowModel(
+                            config=GenerateConfig(system_message="Model Default")
+                        ),
+                        model_prefix={
+                            "mockllm/": FlowModel(
+                                config=GenerateConfig(
+                                    system_message="Model Prefix Default"
+                                )
+                            )
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            config=GenerateConfig(
+                                system_message="Task",
+                            ),
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                                config=GenerateConfig(system_message="Model"),
+                            ),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+
+        task_config: GenerateConfig = tasks_arg[0].config
+        assert task_config.system_message == "Model"
+
+        model_config: GenerateConfig = tasks_arg[0].model.config
+        assert model_config.system_message == "Model"
+
+
+def test_config_model_prefix_default_overrides() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        config=GenerateConfig(
+                            system_message="Global Default",
+                        ),
+                        model=FlowModel(
+                            config=GenerateConfig(system_message="Model Default")
+                        ),
+                        model_prefix={
+                            "mockllm/": FlowModel(
+                                config=GenerateConfig(
+                                    system_message="Model Prefix Default"
+                                )
+                            )
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            config=GenerateConfig(
+                                system_message="Task",
+                            ),
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                            ),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+
+        task_config: GenerateConfig = tasks_arg[0].config
+        assert task_config.system_message == "Model Prefix Default"
+
+        model_config: GenerateConfig = tasks_arg[0].model.config
+        assert model_config.system_message == "Model Prefix Default"
+
+
+def test_config_model_default_overrides() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        config=GenerateConfig(
+                            system_message="Global Default",
+                        ),
+                        model=FlowModel(
+                            config=GenerateConfig(system_message="Model Default")
+                        ),
+                        model_prefix={
+                            "NOMATCH/": FlowModel(
+                                config=GenerateConfig(
+                                    system_message="Model Prefix Default"
+                                )
+                            )
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            config=GenerateConfig(
+                                system_message="Task",
+                            ),
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                            ),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+
+        task_config: GenerateConfig = tasks_arg[0].config
+        assert task_config.system_message == "Model Default"
+
+        model_config: GenerateConfig = tasks_arg[0].model.config
+        assert model_config.system_message == "Model Default"
+
+
+def test_config_model_prefixes() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        model_prefix={
+                            "mockllm/": FlowModel(
+                                config=GenerateConfig(
+                                    system_message="Model Provider Prefix Default"
+                                )
+                            ),
+                            "mockllm/mock-": FlowModel(
+                                config=GenerateConfig(
+                                    system_message="Model Class Prefix Default"
+                                )
+                            ),
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@noop",
+                            model=FlowModel(
+                                name="mockllm/mock-llm",
+                            ),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+
+        task_config: GenerateConfig = tasks_arg[0].config
+        assert task_config.system_message == "Model Class Prefix Default"
+
+        model_config: GenerateConfig = tasks_arg[0].model.config
+        assert model_config.system_message == "Model Class Prefix Default"
+
+
+def test_task_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        task=FlowTask(model="mockllm/mock-llm"),
+                        task_prefix={task_file: FlowTask(args={"subset": "original"})},
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@task_with_params",
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+        assert tasks_arg[0].model.name == "mock-llm"
+        assert tasks_arg[0].metadata["subset"] == "original"
+
+
+def test_solver_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        solver=FlowSolver(args={"template": "Default"}),
+                        solver_prefix={
+                            "inspect_ai": FlowSolver(args={"template": "Prefix"})
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@noop",
+                            model="mockllm/mock-llm",
+                            solver="inspect_ai/system_message",
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].solver, Solver)
+
+
+def test_agent_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        agent=FlowAgent(args={"description": "Default Description"}),
+                        solver_prefix={
+                            "inspect_ai": FlowSolver(args={"prompt": "Prefix Prompt"})
+                        },
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@noop",
+                            model="mockllm/mock-llm",
+                            solver=FlowAgent("inspect_ai/react"),
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].solver, Agent)
+        # TODO:ransom this doesn't test the args - probably need to write an agent to do that
 
 
 def test_dry_run():
