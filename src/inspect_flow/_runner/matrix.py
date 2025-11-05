@@ -71,6 +71,9 @@ def create_model(model_config: FModel, config: FConfig) -> Model:
     defaults = config.defaults or FDefaults()
     model_config = merge_defaults(model_config, defaults.model, defaults.model_prefix)
 
+    if not model_config.name:
+        raise ValueError(f"Model name is required. Model: {model_config}")
+
     return get_model(
         model=model_config.name,
         role=model_config.role,
