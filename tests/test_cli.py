@@ -2,7 +2,7 @@ import os
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
-from inspect_flow._cli.submit import run_command
+from inspect_flow._cli.run import run_command
 
 CONFIG_FILE = "./examples/model_and_task_flow.py"
 
@@ -10,8 +10,8 @@ CONFIG_FILE = "./examples/model_and_task_flow.py"
 def test_submit_command_dry_run() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.submit.submit") as mock_submit,
-        patch("inspect_flow._cli.submit.load_config") as mock_config,
+        patch("inspect_flow._cli.run.submit") as mock_submit,
+        patch("inspect_flow._cli.run.load_config") as mock_config,
     ):
         # Mock the config object
         mock_config_obj = MagicMock()
