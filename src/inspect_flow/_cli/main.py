@@ -1,8 +1,5 @@
-import sys
-
 import click
 from dotenv import find_dotenv, load_dotenv
-from pydantic import ValidationError
 
 from inspect_flow._cli.config import config_command
 
@@ -38,11 +35,7 @@ flow.add_command(config_command)
 
 def main() -> None:
     load_dotenv(find_dotenv(usecwd=True))
-    try:
-        flow(auto_envvar_prefix="INSPECT_FLOW")
-    except ValidationError as e:
-        click.echo(e, err=True)
-        sys.exit(1)
+    flow(auto_envvar_prefix="INSPECT_FLOW")
 
 
 if __name__ == "__main__":
