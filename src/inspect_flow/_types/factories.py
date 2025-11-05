@@ -86,6 +86,19 @@ MatrixDict = TypeVar(
 )
 
 
+def merge_dicts_with_config(
+    base_dict: dict[str, Any],
+    add_dict: dict[str, Any],
+) -> dict[str, Any]:
+    result = base_dict | add_dict
+    if "config" in add_dict and "config" in base_dict:
+        base_config = base_dict["config"]
+        if not isinstance(base_config, GenerateConfig):
+            base_config = GenerateConfig(**base_config)
+        result["config"] = base_config.merge(add_dict["config"])
+    return result
+
+
 def _with_base(
     base: BaseInputType,
     values: Mapping[str, Any],
@@ -100,10 +113,12 @@ def _with_base(
         base_dict = dict(base)
 
     for key in values.keys():
-        if key in base_dict:
+        if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(base_dict | dict(values))
+    return pydantic_type.model_validate(
+        merge_dicts_with_config(base_dict, dict(values))
+    )
 
 
 def _with(
@@ -136,15 +151,17 @@ def _matrix_with_base(
         base_dict = to_jsonable_python(base, exclude_none=True)
 
     for key in matrix.keys():
-        if key in base_dict and base_dict[key] is not None:
+        if key != "config" and key in base_dict and base_dict[key] is not None:
             raise ValueError(f"{key} provided in both base and matrix")
 
     matrix = to_jsonable_python(matrix, exclude_none=True)
     matrix_keys = matrix.keys()
     result = []
     for matrix_values in product(*matrix.values()):
-        item_dict = base_dict | dict(zip(matrix_keys, matrix_values, strict=True))
-        result.append(pydantic_type.model_validate(item_dict))
+        add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
+        result.append(
+            pydantic_type.model_validate(merge_dicts_with_config(base_dict, add_dict))
+        )
     return result
 
 

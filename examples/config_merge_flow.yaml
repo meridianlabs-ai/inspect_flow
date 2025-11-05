@@ -1,0 +1,32 @@
+flow_dir: ./logs/local_logs
+options:
+  limit: 1
+dependencies:
+- ./examples/local_eval
+tasks:
+- name: local_eval/noop
+  model:
+    name: mockllm/mock-llm1
+  config:
+    max_connections: 10
+    reasoning_effort: low
+- name: local_eval/noop
+  model:
+    name: mockllm/mock-llm1
+  config:
+    max_connections: 10
+    reasoning_effort: high
+- name: local_eval/noop2
+  model:
+    name: mockllm/mock-llm1
+  config:
+    max_connections: 10
+    system_message: Be concise.
+    reasoning_effort: low
+- name: local_eval/noop2
+  model:
+    name: mockllm/mock-llm1
+  config:
+    max_connections: 10
+    system_message: Be concise.
+    reasoning_effort: high
