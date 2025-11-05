@@ -97,3 +97,10 @@ def test_configs():
     assert result[1].name == "task1"
     assert result[1].config
     assert result[1].config.system_message == "message2"
+
+
+def test_config_default():
+    result = configs_matrix(
+        reasoning_effort=["low", "high"], reasoning_tokens=[100, 200]
+    )
+    assert len(result) == 4

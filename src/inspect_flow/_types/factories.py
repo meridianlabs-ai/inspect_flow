@@ -235,9 +235,10 @@ def agents_matrix(
 
 def configs_matrix(
     *,
-    config: ConfigInput | Sequence[ConfigInput],
+    config: ConfigInput | Sequence[ConfigInput] | None = None,
     **kwargs: Unpack[GenerateConfigMatrixDict],
 ) -> list[GenerateConfig]:
+    config = config or GenerateConfig()
     return _matrix(config, kwargs, GenerateConfig)
 
 
