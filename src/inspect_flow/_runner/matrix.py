@@ -32,7 +32,7 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def merge_default(config_dict: dict[str, Any], defaults: _T) -> dict[str, Any]:
+def merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
     default_dict = defaults.model_dump(mode="json", exclude_none=True)
     return merge_dicts_with_config(default_dict, config_dict)
 
