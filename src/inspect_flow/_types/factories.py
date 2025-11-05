@@ -91,11 +91,12 @@ def merge_dicts_with_config(
     add_dict: dict[str, Any],
 ) -> dict[str, Any]:
     result = base_dict | add_dict
-    if "config" in add_dict and "config" in base_dict:
-        base_config = base_dict["config"]
+    if (add_config := add_dict.get("config")) and (
+        base_config := base_dict.get("config")
+    ):
         if not isinstance(base_config, GenerateConfig):
             base_config = GenerateConfig(**base_config)
-        result["config"] = base_config.merge(add_dict["config"])
+        result["config"] = base_config.merge(add_config)
     return result
 
 
