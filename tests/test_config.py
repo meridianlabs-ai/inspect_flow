@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 from inspect_ai.model import GenerateConfig
-from inspect_flow import flow_task, models_matrix, tasks_matrix
+from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.config import load_config
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow.types import (
@@ -214,3 +214,31 @@ def test_config_nested_matrix() -> None:
         ),
     )
     validate_config(config, "nested_matrix_flow.yaml")
+
+
+def test_merge_config():
+    config = FlowConfig(
+        flow_dir="./logs/local_logs",
+        options=FlowOptions(limit=1),
+        dependencies=[
+            "./examples/local_eval",
+        ],
+        tasks=tasks_with(
+            task=tasks_matrix(
+                task=[
+                    "local_eval/noop",
+                    FlowTask(
+                        "local_eval/noop2",
+                        config=GenerateConfig(system_message="Be concise."),
+                    ),
+                ],
+                config=[
+                    GenerateConfig(reasoning_effort="low"),
+                    GenerateConfig(reasoning_effort="high"),
+                ],
+            ),
+            config=GenerateConfig(max_connections=10),
+            model="mockllm/mock-llm1",
+        ),
+    )
+    validate_config(config, "config_merge_flow.yaml")
