@@ -15,7 +15,6 @@ from inspect_flow._types.flow_types import (
     FDefaults,
     FEpochs,
     FModel,
-    FModelDefaults,
     FOptions,
     FSolver,
     FTask,
@@ -180,15 +179,17 @@ class FlowDefaultsDict(TypedDict):
 
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    model: NotRequired[
-        Optional[Union[FModelDefaults, FlowModelDefaultsDict, FlowModelDefaults]]
-    ]
+    model: NotRequired[Optional[Union[FModel, FlowModelDict, FlowModel, str]]]
     """Field defaults for models"""
+    model_prefix: NotRequired[
+        Optional[Mapping[str, Union[FModel, FlowModelDict, FlowModel, str]]]
+    ]
+    """Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}"""
 
 
 class FlowModelDict(TypedDict):
     name: NotRequired[Optional[str]]
-    """Name of the model to use."""
+    """Name of the model to use. Required to be set by the time the model is created."""
     role: NotRequired[Optional[str]]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: NotRequired[Optional[str]]
@@ -208,25 +209,6 @@ class FlowModelDict(TypedDict):
 class FlowModelMatrixDict(TypedDict):
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-
-
-class FlowModelDefaultsDict(TypedDict):
-    name: NotRequired[str]
-    """Name of the model to use."""
-    role: NotRequired[Optional[str]]
-    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[Optional[str]]
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-    base_url: NotRequired[Optional[str]]
-    """Optional. Alternate base URL for model."""
-    api_key: NotRequired[Optional[str]]
-    """Optional. API key for model."""
-    memoize: NotRequired[bool]
-    """Use/store a cached version of the model based on the parameters to get_model()."""
-    model_args: NotRequired[Optional[Mapping[str, Any]]]
-    """Additional args to pass to model constructor."""
 
 
 class FlowTaskDict(TypedDict):
@@ -539,36 +521,18 @@ class FlowDefaults:
 
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    model: Optional[Union[FModelDefaults, FlowModelDefaultsDict, FlowModelDefaults]] = (
-        None
-    )
+    model: Optional[Union[FModel, FlowModelDict, FlowModel, str]] = None
     """Field defaults for models"""
+    model_prefix: Optional[
+        Mapping[str, Union[FModel, FlowModelDict, FlowModel, str]]
+    ] = None
+    """Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}"""
 
 
 @dataclass
 class FlowModel:
-    name: str
-    """Name of the model to use."""
-    role: Optional[str] = None
-    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: Optional[str] = None
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
-    config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-    base_url: Optional[str] = None
-    """Optional. Alternate base URL for model."""
-    api_key: Optional[str] = None
-    """Optional. API key for model."""
-    memoize: Optional[bool] = True
-    """Use/store a cached version of the model based on the parameters to get_model()."""
-    model_args: Optional[Mapping[str, Any]] = None
-    """Additional args to pass to model constructor."""
-
-
-@dataclass
-class FlowModelDefaults:
-    name: Optional[str] = ""
-    """Name of the model to use."""
+    name: Optional[str] = None
+    """Name of the model to use. Required to be set by the time the model is created."""
     role: Optional[str] = None
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: Optional[str] = None

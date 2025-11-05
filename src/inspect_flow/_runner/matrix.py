@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import TypeAlias
+from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
@@ -10,7 +10,9 @@ from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
+from pydantic import BaseModel
 
+from inspect_flow._types.factories import merge_dicts_with_config
 from inspect_flow._types.flow_types import (
     FAgent,
     FConfig,
@@ -27,10 +29,48 @@ from inspect_flow._util.path_util import find_file
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 
-matrix_fields = ["args", "models", "model_roles", "solvers"]
+_T = TypeVar("_T", bound=BaseModel)
 
 
-def create_model(model_config: FModel) -> Model:
+def merge_default(config_dict: dict[str, Any], defaults: _T) -> dict[str, Any]:
+    default_dict = defaults.model_dump(mode="json", exclude_none=True)
+    return merge_dicts_with_config(default_dict, config_dict)
+
+
+def merge_defaults(
+    config: _T,
+    defaults: _T | None,
+    prefix_defaults: dict[str, _T] | None,
+) -> _T:
+    if not defaults and not prefix_defaults:
+        return config
+
+    config_dict = config.model_dump(mode="json", exclude_none=True)
+
+    if prefix_defaults:
+        # Filter the prefix defaults to only those that match the config name
+        prefix_defaults = {
+            prefix: prefix_default
+            for prefix, prefix_default in prefix_defaults.items()
+            if config_dict.get("name", "").startswith(prefix)
+        }
+        # Sort prefixes by length descending to match longest prefix first
+        prefix_defaults = dict(
+            sorted(prefix_defaults.items(), key=lambda item: -len(item[0]))
+        )
+        for vals in prefix_defaults.values():
+            config_dict = merge_default(config_dict, vals)
+
+    if defaults:
+        config_dict = merge_default(config_dict, defaults)
+
+    return config.__class__.model_validate(config_dict)
+
+
+def create_model(model_config: FModel, config: FConfig) -> Model:
+    defaults = config.defaults or FDefaults()
+    model_config = merge_defaults(model_config, defaults.model, defaults.model_prefix)
+
     return get_model(
         model=model_config.name,
         role=model_config.role,
@@ -43,12 +83,12 @@ def create_model(model_config: FModel) -> Model:
     )
 
 
-def create_model_roles(config: ModelRolesConfig) -> ModelRoles:
+def create_model_roles(config: ModelRolesConfig, flow_config: FConfig) -> ModelRoles:
     roles = {}
     for role, model_config in config.items():
         model = model_config
         if isinstance(model, FModel):
-            model = create_model(model_config=model)
+            model = create_model(model_config=model, config=flow_config)
         roles[role] = model
     return roles
 
@@ -69,9 +109,13 @@ def create_solver(
 
 def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
     defaults = flow_config.defaults or FDefaults()
-    model = create_model(config.model) if config.model else None
+    model = create_model(config.model, flow_config) if config.model else None
     solver = create_solver(config.solver) if config.solver else None
-    model_roles = create_model_roles(config.model_roles) if config.model_roles else None
+    model_roles = (
+        create_model_roles(config.model_roles, flow_config)
+        if config.model_roles
+        else None
+    )
     tasks = []
     for task_func in get_task_creators(config):
         if model:

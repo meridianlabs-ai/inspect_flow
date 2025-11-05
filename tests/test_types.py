@@ -8,7 +8,7 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
-from inspect_flow._types.dicts import FlowDefaults, FlowModelDefaults
+from inspect_flow._types.dicts import FlowDefaults
 from inspect_flow._types.flow_types import FSolver
 from inspect_flow.types import (
     FlowAgent,
@@ -132,5 +132,21 @@ def test_single_items():
 def test_defaults():
     FlowDefaults(
         config=GenerateConfig(max_connections=50),
-        model=FlowModelDefaults(config=GenerateConfig(temperature=0.3)),
+        model=FlowModel(config=GenerateConfig(temperature=0.3)),
     )
+
+
+def test_merge_none_does_not_override():
+    """Test that None fields in add_dict do not override set fields in base_dict."""
+    from inspect_flow._types.factories import merge_dicts_with_config
+
+    base_dict = {"name": "base_name", "temperature": 0.5, "max_tokens": 100}
+    add_dict = {"temperature": None, "top_p": 0.9}
+
+    result = merge_dicts_with_config(base_dict, add_dict)
+
+    # None value in add_dict should not override the set value in base_dict
+    assert result["name"] == "base_name"
+    assert result["temperature"] == 0.5  # Should NOT be None
+    assert result["max_tokens"] == 100
+    assert result["top_p"] == 0.9

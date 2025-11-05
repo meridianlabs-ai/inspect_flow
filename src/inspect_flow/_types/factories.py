@@ -90,7 +90,9 @@ def merge_dicts_with_config(
     base_dict: dict[str, Any],
     add_dict: dict[str, Any],
 ) -> dict[str, Any]:
-    result = base_dict | add_dict
+    # Filter out None values from add_dict to prevent overriding set values in base_dict
+    filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
+    result = base_dict | filtered_add_dict
     if (add_config := add_dict.get("config")) and (
         base_config := base_dict.get("config")
     ):

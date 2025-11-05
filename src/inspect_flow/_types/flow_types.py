@@ -25,7 +25,10 @@ ModelRolesConfig: TypeAlias = Mapping[str, Union["FModel", str]]
 
 
 class FModel(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the model to use.")
+    name: str | None = Field(
+        default=None,
+        description="Name of the model to use. Required to be set by the time the model is created.",
+    )
 
     role: str | None = Field(
         default=None,
@@ -341,10 +344,6 @@ class FOptions(BaseModel, extra="forbid"):
     )
 
 
-class FModelDefaults(FModel):
-    name: str = Field(default="", description="Name of the model to use.")
-
-
 class FDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
@@ -353,8 +352,11 @@ class FDefaults(BaseModel, extra="forbid"):
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )
 
-    model: FModelDefaults | None = Field(
-        default=None, description="Field defaults for models"
+    model: FModel | None = Field(default=None, description="Field defaults for models")
+
+    model_prefix: dict[str, FModel] | None = Field(
+        default=None,
+        description="Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}",
     )
 
 
