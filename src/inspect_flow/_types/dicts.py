@@ -59,7 +59,7 @@ class FlowAgentDict(TypedDict):
     type: NotRequired[Literal["agent"]]
     """Type needed to differentiated solvers and agents in solver lists."""
     name: NotRequired[Optional[str]]
-    """Name of the agent."""
+    """Name of the agent. Required to be set by the time the agent is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
 
@@ -78,7 +78,7 @@ class FlowEpochsDict(TypedDict):
 
 class FlowSolverDict(TypedDict):
     name: NotRequired[Optional[str]]
-    """Name of the solver."""
+    """Name of the solver. Required to be set by the time the solver is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to solver constructor."""
 
@@ -179,12 +179,30 @@ class FlowDefaultsDict(TypedDict):
 
     config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
+    agent: NotRequired[Optional[Union[FAgent, FlowAgentDict, FlowAgent, str]]]
+    """Field defaults for agents."""
+    agent_prefix: NotRequired[
+        Optional[Mapping[str, Union[FAgent, FlowAgentDict, FlowAgent, str]]]
+    ]
+    """Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}"""
     model: NotRequired[Optional[Union[FModel, FlowModelDict, FlowModel, str]]]
-    """Field defaults for models"""
+    """Field defaults for models."""
     model_prefix: NotRequired[
         Optional[Mapping[str, Union[FModel, FlowModelDict, FlowModel, str]]]
     ]
-    """Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}"""
+    """Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}"""
+    solver: NotRequired[Optional[Union[FSolver, FlowSolverDict, FlowSolver, str]]]
+    """Field defaults for solvers."""
+    solver_prefix: NotRequired[
+        Optional[Mapping[str, Union[FSolver, FlowSolverDict, FlowSolver, str]]]
+    ]
+    """Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}"""
+    task: NotRequired[Optional[Union[FTask, FlowTaskDict, FlowTask, str]]]
+    """Field defaults for tasks."""
+    task_prefix: NotRequired[
+        Optional[Mapping[str, Union[FTask, FlowTaskDict, FlowTask, str]]]
+    ]
+    """Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}"""
 
 
 class FlowModelDict(TypedDict):
@@ -213,7 +231,7 @@ class FlowModelMatrixDict(TypedDict):
 
 class FlowTaskDict(TypedDict):
     name: NotRequired[Optional[str]]
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
+    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
@@ -419,10 +437,10 @@ class FlowConfigDict(TypedDict):
 
 @dataclass
 class FlowAgent:
-    name: str
-    """Name of the agent."""
     type: Literal["agent"] = "agent"
     """Type needed to differentiated solvers and agents in solver lists."""
+    name: Optional[str] = None
+    """Name of the agent. Required to be set by the time the agent is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to agent constructor."""
 
@@ -437,8 +455,8 @@ class FlowEpochs:
 
 @dataclass
 class FlowSolver:
-    name: str
-    """Name of the solver."""
+    name: Optional[str] = None
+    """Name of the solver. Required to be set by the time the solver is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to solver constructor."""
 
@@ -521,12 +539,30 @@ class FlowDefaults:
 
     config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
+    agent: Optional[Union[FAgent, FlowAgentDict, FlowAgent, str]] = None
+    """Field defaults for agents."""
+    agent_prefix: Optional[
+        Mapping[str, Union[FAgent, FlowAgentDict, FlowAgent, str]]
+    ] = None
+    """Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}"""
     model: Optional[Union[FModel, FlowModelDict, FlowModel, str]] = None
-    """Field defaults for models"""
+    """Field defaults for models."""
     model_prefix: Optional[
         Mapping[str, Union[FModel, FlowModelDict, FlowModel, str]]
     ] = None
-    """Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}"""
+    """Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}"""
+    solver: Optional[Union[FSolver, FlowSolverDict, FlowSolver, str]] = None
+    """Field defaults for solvers."""
+    solver_prefix: Optional[
+        Mapping[str, Union[FSolver, FlowSolverDict, FlowSolver, str]]
+    ] = None
+    """Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}"""
+    task: Optional[Union[FTask, FlowTaskDict, FlowTask, str]] = None
+    """Field defaults for tasks."""
+    task_prefix: Optional[Mapping[str, Union[FTask, FlowTaskDict, FlowTask, str]]] = (
+        None
+    )
+    """Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}"""
 
 
 @dataclass
@@ -551,8 +587,8 @@ class FlowModel:
 
 @dataclass
 class FlowTask:
-    name: str
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name")."""
+    name: Optional[str] = None
+    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to task constructor"""
     solver: Optional[

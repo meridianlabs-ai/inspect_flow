@@ -40,7 +40,6 @@ FLOW_TYPES = [
     "FSolver",
     "FTask",
     "FEpochs",
-    "FTask",
     "FOptions",
     "FDefaults",
 ]

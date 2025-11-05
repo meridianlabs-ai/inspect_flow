@@ -67,7 +67,10 @@ class FModel(BaseModel, extra="forbid"):
 
 
 class FSolver(BaseModel, extra="forbid"):
-    name: str = Field(description="Name of the solver.")
+    name: str | None = Field(
+        default=None,
+        description="Name of the solver. Required to be set by the time the solver is created.",
+    )
 
     args: CreateArgs | None = Field(
         default=None,
@@ -81,7 +84,10 @@ class FAgent(BaseModel, extra="forbid"):
         description="Type needed to differentiated solvers and agents in solver lists.",
     )
 
-    name: str = Field(description="Name of the agent.")
+    name: str | None = Field(
+        default=None,
+        description="Name of the agent. Required to be set by the time the agent is created.",
+    )
 
     args: CreateArgs | None = Field(
         default=None,
@@ -99,8 +105,9 @@ class FEpochs(BaseModel):
 
 
 class FTask(BaseModel, extra="forbid"):
-    name: str = Field(
-        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name").',
+    name: str | None = Field(
+        default=None,
+        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
     )
 
     args: CreateArgs | None = Field(
@@ -352,11 +359,34 @@ class FDefaults(BaseModel, extra="forbid"):
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )
 
-    model: FModel | None = Field(default=None, description="Field defaults for models")
+    agent: FAgent | None = Field(default=None, description="Field defaults for agents.")
+
+    agent_prefix: dict[str, FAgent] | None = Field(
+        default=None,
+        description="Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}",
+    )
+
+    model: FModel | None = Field(default=None, description="Field defaults for models.")
 
     model_prefix: dict[str, FModel] | None = Field(
         default=None,
-        description="Model defaults for model name prefixes. E.g. {'openai/': FModelDefaults(...)}",
+        description="Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}",
+    )
+
+    solver: FSolver | None = Field(
+        default=None, description="Field defaults for solvers."
+    )
+
+    solver_prefix: dict[str, FSolver] | None = Field(
+        default=None,
+        description="Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}",
+    )
+
+    task: FTask | None = Field(default=None, description="Field defaults for tasks.")
+
+    task_prefix: dict[str, FTask] | None = Field(
+        default=None,
+        description="Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}",
     )
 
 
