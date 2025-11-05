@@ -547,6 +547,35 @@ def test_config_model_prefixes() -> None:
         assert model_config.system_message == "Model Class Prefix Default"
 
 
+def test_task_defaults() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(
+            config=fc(
+                FlowConfig(
+                    flow_dir="test_log_dir",
+                    defaults=FlowDefaults(
+                        task=FlowTask(model="mockllm/mock-llm"),
+                        task_prefix={task_file: FlowTask(args={"subset": "original"})},
+                    ),
+                    tasks=[
+                        FlowTask(
+                            task_file + "@task_with_params",
+                        )
+                    ],
+                )
+            )
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+        assert tasks_arg[0].model.name == "mock-llm"
+        assert tasks_arg[0].metadata["subset"] == "original"
+
+
 def test_dry_run():
     assert not os.environ.get("INSPECT_FLOW_DRY_RUN")
     os.environ["INSPECT_FLOW_DRY_RUN"] = "1"

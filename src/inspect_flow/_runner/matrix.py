@@ -94,6 +94,9 @@ def create_model_roles(config: ModelRolesConfig, flow_config: FConfig) -> ModelR
 
 
 def create_single_solver(config: FSolver) -> Solver:
+    if not config.name:
+        raise ValueError(f"Solver name is required. Solver: {config}")
+
     return registry_create(type="solver", name=config.name, **(config.args or {}))
 
 
@@ -103,12 +106,15 @@ def create_solver(
     if isinstance(config, FSolver):
         return create_single_solver(config)
     if isinstance(config, FAgent):
+        if not config.name:
+            raise ValueError(f"Agent name is required. Agent: {config}")
         return registry_create(type="agent", name=config.name, **(config.args or {}))
     return [create_single_solver(single_config) for single_config in config]
 
 
 def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
     defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.task, defaults.task_prefix)
     model = create_model(config.model, flow_config) if config.model else None
     solver = create_solver(config.solver) if config.solver else None
     model_roles = (
@@ -209,6 +215,10 @@ def get_task_creators_from_file(
 
 
 def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
+    if not config.name:
+        raise ValueError(f"Task name is required. Task: {config}")
+    config_name = config.name
+
     if config.name.find("@") != -1:
         file, attr = config.name.split("@", 1)
         return get_task_creators_from_file(file, attr, config)
@@ -223,7 +233,7 @@ def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
             raise LookupError(f"{config.name} was not found in the registry")
 
         def task_func(**kwargs):
-            return registry_create(type="task", name=config.name, **kwargs)
+            return registry_create(type="task", name=config_name, **kwargs)
 
         task_funcs = [task_func]
 
