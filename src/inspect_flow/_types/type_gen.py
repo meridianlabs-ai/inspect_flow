@@ -30,7 +30,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FAgent, FEpochs, FModel, FOptions, FSolver, FTask\n",
+    "from inspect_flow._types.flow_types import FAgent, FEpochs, FModel, FOptions, FSolver, FTask, FDefaults, FModelDefaults\n",
 ]
 
 FLOW_TYPES = [
@@ -42,6 +42,8 @@ FLOW_TYPES = [
     "FEpochs",
     "FTask",
     "FOptions",
+    "FDefaults",
+    "FModelDefaults",
 ]
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 

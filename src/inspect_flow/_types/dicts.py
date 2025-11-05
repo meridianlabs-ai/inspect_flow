@@ -12,8 +12,10 @@ from typing_extensions import NotRequired, TypedDict
 
 from inspect_flow._types.flow_types import (
     FAgent,
+    FDefaults,
     FEpochs,
     FModel,
+    FModelDefaults,
     FOptions,
     FSolver,
     FTask,
@@ -173,6 +175,17 @@ class FlowOptionsDict(TypedDict):
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
+class FlowDefaultsDict(TypedDict):
+    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
+    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
+    model: NotRequired[
+        Optional[Union[FModelDefaults, FlowModelDefaultsDict, FlowModelDefaults]]
+    ]
+    """Field defaults for models"""
+
+
 class FlowModelDict(TypedDict):
     name: NotRequired[Optional[str]]
     """Name of the model to use."""
@@ -195,6 +208,25 @@ class FlowModelDict(TypedDict):
 class FlowModelMatrixDict(TypedDict):
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, GenerateConfigDict]]]]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+
+
+class FlowModelDefaultsDict(TypedDict):
+    name: NotRequired[str]
+    """Name of the model to use."""
+    role: NotRequired[Optional[str]]
+    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
+    default: NotRequired[Optional[str]]
+    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
+    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    base_url: NotRequired[Optional[str]]
+    """Optional. Alternate base URL for model."""
+    api_key: NotRequired[Optional[str]]
+    """Optional. API key for model."""
+    memoize: NotRequired[bool]
+    """Use/store a cached version of the model based on the parameters to get_model()."""
+    model_args: NotRequired[Optional[Mapping[str, Any]]]
+    """Additional args to pass to model constructor."""
 
 
 class FlowTaskDict(TypedDict):
@@ -393,14 +425,14 @@ class FlowConfigDict(TypedDict):
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[Union[FOptions, FlowOptionsDict, FlowOptions]]]
     """Arguments for calls to eval_set."""
-    config: NotRequired[Optional[Union[GenerateConfig, GenerateConfigDict]]]
-    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: NotRequired[Optional[Sequence[str]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    tasks: NotRequired[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]
-    """Tasks to run"""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
+    defaults: NotRequired[Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]]]
+    """Defaults values for Inspect objects."""
+    tasks: NotRequired[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]
+    """Tasks to run"""
 
 
 @dataclass
@@ -502,8 +534,40 @@ class FlowOptions:
 
 
 @dataclass
+class FlowDefaults:
+    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+
+    config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
+    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
+    model: Optional[Union[FModelDefaults, FlowModelDefaultsDict, FlowModelDefaults]] = (
+        None
+    )
+    """Field defaults for models"""
+
+
+@dataclass
 class FlowModel:
     name: str
+    """Name of the model to use."""
+    role: Optional[str] = None
+    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
+    default: Optional[str] = None
+    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
+    config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    base_url: Optional[str] = None
+    """Optional. Alternate base URL for model."""
+    api_key: Optional[str] = None
+    """Optional. API key for model."""
+    memoize: Optional[bool] = True
+    """Use/store a cached version of the model based on the parameters to get_model()."""
+    model_args: Optional[Mapping[str, Any]] = None
+    """Additional args to pass to model constructor."""
+
+
+@dataclass
+class FlowModelDefaults:
+    name: Optional[str] = ""
     """Name of the model to use."""
     role: Optional[str] = None
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
@@ -588,9 +652,9 @@ class FlowConfig:
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: Optional[Union[FOptions, FlowOptionsDict, FlowOptions]] = None
     """Arguments for calls to eval_set."""
-    config: Optional[Union[GenerateConfig, GenerateConfigDict]] = None
-    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
     dependencies: Optional[Sequence[str]] = None
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
     env: Optional[Mapping[str, str]] = None
     """Environment variables to set when running tasks."""
+    defaults: Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]] = None
+    """Defaults values for Inspect objects."""

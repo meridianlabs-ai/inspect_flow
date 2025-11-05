@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     flow_agent,
     flow_config,
@@ -7,6 +8,7 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
+from inspect_flow._types.dicts import FlowDefaults, FlowModelDefaults
 from inspect_flow._types.flow_types import FSolver
 from inspect_flow.types import (
     FlowAgent,
@@ -125,3 +127,10 @@ def test_single_items():
     flow_solver({"name": "solver_name", "args": {}})
 
     flow_model({"name": "model_name", "config": {}})
+
+
+def test_defaults():
+    FlowDefaults(
+        config=GenerateConfig(max_connections=50),
+        model=FlowModelDefaults(config=GenerateConfig(temperature=0.3)),
+    )

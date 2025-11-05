@@ -341,6 +341,23 @@ class FOptions(BaseModel, extra="forbid"):
     )
 
 
+class FModelDefaults(FModel):
+    name: str = Field(default="", description="Name of the model to use.")
+
+
+class FDefaults(BaseModel, extra="forbid"):
+    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+
+    config: GenerateConfig | None = Field(
+        default=None,
+        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
+    )
+
+    model: FModelDefaults | None = Field(
+        default=None, description="Field defaults for models"
+    )
+
+
 class FConfig(BaseModel, extra="forbid"):
     flow_dir: str = Field(
         default="logs/flow",
@@ -356,22 +373,21 @@ class FConfig(BaseModel, extra="forbid"):
         default=None, description="Arguments for calls to eval_set."
     )
 
-    config: GenerateConfig | None = Field(
-        default=None,
-        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
-    )
-
     dependencies: list[str] | None = Field(
         # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
-    tasks: list[FTask] = Field(description="Tasks to run")
-
     env: dict[str, str] | None = Field(
         default=None, description="Environment variables to set when running tasks."
     )
+
+    defaults: FDefaults | None = Field(
+        default=None, description="Defaults values for Inspect objects."
+    )
+
+    tasks: list[FTask] = Field(description="Tasks to run")
 
     # Convert single items to lists
     @field_validator("dependencies", mode="before")
