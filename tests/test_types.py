@@ -8,6 +8,7 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
+from inspect_flow._types.factories import configs_matrix
 from inspect_flow._types.flow_types import FSolver
 from inspect_flow._types.generated import FlowDefaults
 from inspect_flow.types import (
@@ -150,3 +151,10 @@ def test_merge_none_does_not_override():
     assert result["temperature"] == 0.5  # Should NOT be None
     assert result["max_tokens"] == 100
     assert result["top_p"] == 0.9
+
+
+def test_none_in_list():
+    configs = configs_matrix(reasoning_tokens=[None, 2048])
+    assert len(configs) == 2
+    assert configs[0].reasoning_tokens is None
+    assert configs[1].reasoning_tokens == 2048

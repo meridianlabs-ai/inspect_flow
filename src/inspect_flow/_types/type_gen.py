@@ -81,10 +81,6 @@ MATRIX_CLASS_FIELDS = {
 Schema: TypeAlias = dict[str, Any]
 
 
-def remove_none_option(any_of: list[Schema]) -> list[Schema]:
-    return [v for v in any_of if v.get("type") != "null"]
-
-
 def field_type_to_list(field_schema: Schema) -> None:
     field_type: Schema
     if "type" in field_schema:
@@ -98,7 +94,6 @@ def field_type_to_list(field_schema: Schema) -> None:
     elif "anyOf" in field_schema:
         any_of: list[Schema] = field_schema["anyOf"]
         del field_schema["anyOf"]
-        any_of = remove_none_option(any_of)
         field_type = {"anyOf": any_of}
     else:
         # Any type
