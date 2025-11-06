@@ -42,6 +42,10 @@ def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[Eva
 
     options = config.options or FOptions()
     assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
+    log_dir_allow_dirty = (
+        options.log_dir_allow_dirty if options.log_dir_allow_dirty is not None else True
+    )
+
     return inspect_ai.eval_set(
         tasks=tasks,
         log_dir=config.flow_dir,
@@ -89,6 +93,7 @@ def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[Eva
         log_shared=options.log_shared,
         # bundle_dir= Not supported
         # bundle_overwrite= Not supported
+        log_dir_allow_dirty=log_dir_allow_dirty,
         # kwargs= FlowConfig, FlowTask, and FlowModel allow setting the generate config
     )
 

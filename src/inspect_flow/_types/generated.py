@@ -197,7 +197,7 @@ class FlowOptionsDict(TypedDict):
     log_shared: NotRequired[Optional[Union[bool, int]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
+    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
 
 
 class GenerateConfigDict(TypedDict):
@@ -560,7 +560,7 @@ class FlowOptions:
     log_shared: Optional[Union[bool, int]] = None
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
     log_dir_allow_dirty: Optional[bool] = None
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
+    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
 
 
 @dataclass

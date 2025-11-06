@@ -354,7 +354,7 @@ class FOptions(BaseModel, extra="forbid"):
 
     log_dir_allow_dirty: bool | None = Field(
         default=None,
-        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True).",
     )
 
 
