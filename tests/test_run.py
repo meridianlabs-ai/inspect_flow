@@ -7,12 +7,12 @@ from inspect_ai.model import GenerateConfig, Model
 from inspect_ai.solver import Solver
 from inspect_flow import solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.dicts import (
+from inspect_flow._types.factories import models_matrix
+from inspect_flow._types.generated import (
     FlowDefaults,
     FlowSolver,
     FlowTask,
 )
-from inspect_flow._types.factories import models_matrix
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,

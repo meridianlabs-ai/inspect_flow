@@ -8,8 +8,9 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
-from inspect_flow._types.dicts import FlowDefaults
+from inspect_flow._types.factories import configs_matrix
 from inspect_flow._types.flow_types import FSolver
+from inspect_flow._types.generated import FlowDefaults
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -58,12 +59,14 @@ def test_contructors():
 def test_task_from_string():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [task_name]})
+    assert config.tasks
     assert config.tasks[0].name == task_name
 
 
 def test_task_from_dict():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [{"name": task_name}]})
+    assert config.tasks
     assert config.tasks[0].name == task_name
 
 
@@ -82,6 +85,7 @@ def test_model_from_string():
             ]
         }
     )
+    assert config.tasks
     assert config.tasks[0].model
     assert config.tasks[0].model.name == model_name
     assert config.tasks[0].model_roles
@@ -100,6 +104,7 @@ def test_solver_from_string():
             ],
         }
     )
+    assert config.tasks
     assert config.tasks[0].solver
     assert isinstance(config.tasks[0].solver, FSolver)
     assert config.tasks[0].solver.name == solver_name
@@ -150,3 +155,10 @@ def test_merge_none_does_not_override():
     assert result["temperature"] == 0.5  # Should NOT be None
     assert result["max_tokens"] == 100
     assert result["top_p"] == 0.9
+
+
+def test_none_in_list():
+    configs = configs_matrix(reasoning_tokens=[None, 2048])
+    assert len(configs) == 2
+    assert configs[0].reasoning_tokens is None
+    assert configs[1].reasoning_tokens == 2048

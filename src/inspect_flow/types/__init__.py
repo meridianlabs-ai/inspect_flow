@@ -1,6 +1,6 @@
 from inspect_ai.model import GenerateConfig
 
-from inspect_flow._types.dicts import (
+from inspect_flow._types.generated import (
     ApprovalPolicyConfigDict,
     ApproverPolicyConfigDict,
     BatchConfigDict,

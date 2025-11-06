@@ -81,11 +81,7 @@ MATRIX_CLASS_FIELDS = {
 Schema: TypeAlias = dict[str, Any]
 
 
-def remove_none_option(any_of: list[Schema]) -> list[Schema]:
-    return [v for v in any_of if v.get("type") != "null"]
-
-
-def field_type_to_list(field_schema: Schema) -> None:
+def _field_type_to_list(field_schema: Schema) -> None:
     field_type: Schema
     if "type" in field_schema:
         type = field_schema["type"]
@@ -98,7 +94,6 @@ def field_type_to_list(field_schema: Schema) -> None:
     elif "anyOf" in field_schema:
         any_of: list[Schema] = field_schema["anyOf"]
         del field_schema["anyOf"]
-        any_of = remove_none_option(any_of)
         field_type = {"anyOf": any_of}
     else:
         # Any type
@@ -109,7 +104,8 @@ def field_type_to_list(field_schema: Schema) -> None:
         field_schema["default"] = None
 
 
-def root_type_as_def(schema: Schema) -> None:
+def _root_type_as_def(schema: Schema) -> None:
+    """Move the root type to $defs. This ensures all types can be handled uniformly."""
     defs: Schema = schema["$defs"]
     del schema["$defs"]
     root_type = copy(schema)
@@ -118,7 +114,7 @@ def root_type_as_def(schema: Schema) -> None:
     schema["$defs"] = defs
 
 
-def create_dict(dict_def: Schema) -> None:
+def _create_dict(dict_def: Schema) -> None:
     properties: Schema = dict_def["properties"]
     if "name" in properties:
         value = properties["name"]
@@ -128,123 +124,92 @@ def create_dict(dict_def: Schema) -> None:
             value["default"] = None
 
 
-def create_matrix_dict(dict_def: Schema, title: str) -> None:
+def _create_matrix_dict(dict_def: Schema, title: str) -> None:
     properties: Schema = dict_def["properties"]
     for name, value in list(properties.items()):
         if name in MATRIX_CLASS_FIELDS[title]:
-            field_type_to_list(value)
+            _field_type_to_list(value)
         else:
             del properties[name]
 
 
-def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
+def _create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> None:
     dict_def = deepcopy(base_type)
-    dict_def.pop("required", None)
     if type == "Dict":
-        create_dict(dict_def)
+        _create_dict(dict_def)
     else:
-        create_matrix_dict(dict_def, title)
+        _create_matrix_dict(dict_def, title)
 
     new_title = title + type
     dict_def["title"] = new_title
     defs[new_title] = dict_def
 
 
-def ignore_type(defs: Schema, title: str, ignore_type: Schema) -> None:
-    del defs[title]
-    new_title = "Ignore" + title
-    ignore_type[title] = new_title
-    defs[new_title] = ignore_type
-
-
-def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -> None:
+def _update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -> None:
     if "anyOf" in field_schema:
         any_of_list: list[Schema] = field_schema["anyOf"]
         for field in list(any_of_list):
-            update_field_refs(field, any_of_list)
+            _update_field_refs(field, any_of_list)
     if "items" in field_schema:
         items_def = field_schema["items"]
-        update_field_refs(items_def, None)
+        _update_field_refs(items_def, None)
     if "additionalProperties" in field_schema:
         additional_properties = field_schema["additionalProperties"]
         if isinstance(additional_properties, dict):
-            update_field_refs(additional_properties, None)
+            _update_field_refs(additional_properties, None)
     if "$ref" in field_schema:
         type: str = field_schema["$ref"]
         split = type.split("/")
         type_name = split[-1]
-        split[-1] = "Ignore" + type_name
-        ignore_ref = "/".join(split)
-        ignore_flow_ref = None
+        f_ref = "/".join(split)
+        flow_ref = None
         if type_name in FLOW_TYPES:
             type_name = "Flow" + type_name[1:]
-            split[-1] = "Ignore" + type_name
-            ignore_flow_ref = "/".join(split)
+            split[-1] = type_name
+            flow_ref = "/".join(split)
         split[-1] = type_name + "Dict"
         dict_ref = "/".join(split)
         if parent_list:
-            field_schema["$ref"] = ignore_ref
+            field_schema["$ref"] = f_ref
             parent_list.append({"$ref": dict_ref})
-            if ignore_flow_ref:
-                parent_list.append({"$ref": ignore_flow_ref})
+            if flow_ref:
+                parent_list.append({"$ref": flow_ref})
             if type_name in STR_AS_CLASS:
                 parent_list.append({"type": "string"})
         else:
             del field_schema["$ref"]
-            ref_list = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
-            if ignore_flow_ref:
-                ref_list.append({"$ref": ignore_flow_ref})
+            ref_list = [{"$ref": f_ref}, {"$ref": dict_ref}]
+            if flow_ref:
+                ref_list.append({"$ref": flow_ref})
             if type_name in STR_AS_CLASS:
                 ref_list.append({"type": "string"})
             field_schema["anyOf"] = ref_list
 
 
-def update_refs(type_def: Schema) -> None:
+def _update_refs(type_def: Schema) -> None:
     properties: Schema = type_def["properties"]
     for field_value in properties.values():
-        update_field_refs(field_value, None)
+        _update_field_refs(field_value, None)
 
 
-def create_dict_types(schema: Schema) -> None:
+def _create_dict_types(schema: Schema, initial_defs: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, v in list(defs.items()):
+    for title, type_def in initial_defs.items():
         new_title = title
-        if title.startswith("F"):
-            new_title = "Flow" + title[1:]
-        update_refs(v)
-        create_type(defs, new_title, v, "Dict")
+        _create_type(defs, new_title, type_def, "Dict")
         if new_title in MATRIX_CLASS_FIELDS:
-            create_type(defs, new_title, v, "MatrixDict")
-        ignore_type(defs, title, v)
+            _create_type(defs, new_title, type_def, "MatrixDict")
 
 
-def fix_none_defaults(schema: Schema) -> None:
-    """Recursively fix 'None' string literals to null in default values."""
-    if isinstance(schema, dict):
-        if "default" in schema and schema["default"] == "None":
-            schema["default"] = None
-        if "properties" in schema:
-            for prop_schema in schema["properties"].values():
-                fix_none_defaults(prop_schema)
-        if "$defs" in schema:
-            for def_schema in schema["$defs"].values():
-                fix_none_defaults(def_schema)
-        if "items" in schema:
-            fix_none_defaults(schema["items"])
-        if "anyOf" in schema:
-            for item in schema["anyOf"]:
-                fix_none_defaults(item)
-
-
-def prepare_for_pydantic_generation(schema: Schema) -> Schema:
+def _update_def_titles_and_refs(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, v in dict(defs).items():
-        if title.startswith("IgnoreF"):
+    for title, type_def in dict(defs).items():
+        _update_refs(type_def)
+        if title in FLOW_TYPES:
             del defs[title]
-            new_title = "Flow" + title[len("IgnoreF") :]
-            defs[new_title] = v
-            v["title"] = new_title
-    return schema
+            new_title = "Flow" + title[1:]
+            defs[new_title] = type_def
+            type_def["title"] = new_title
 
 
 class GeneratedCode:
@@ -256,10 +221,13 @@ class GeneratedCode:
         return self.comment + self.imports + self.classes
 
 
-def generate_dict_code() -> GeneratedCode:
+def _generate_dict_code() -> GeneratedCode:
     schema = FConfig.model_json_schema()
-    root_type_as_def(schema)
-    create_dict_types(schema)
+    _root_type_as_def(schema)
+    _update_def_titles_and_refs(schema)
+    initial_defs: dict[str, Schema] = schema["$defs"]
+    schema["$defs"] = {}
+    _create_dict_types(schema, initial_defs)
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
@@ -281,9 +249,10 @@ def generate_dict_code() -> GeneratedCode:
             dict_lines = f.readlines()
 
         code = GeneratedCode()
-        add_generated_code(code, dict_lines, "dict")
+        _add_generated_code(code, dict_lines, "dict")
 
-        schema = prepare_for_pydantic_generation(schema)
+        flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
+        schema["$defs"] = flow_type_defs
 
         generate(
             json.dumps(schema),
@@ -301,18 +270,18 @@ def generate_dict_code() -> GeneratedCode:
         with open(generated_type_file, "r") as f:
             pydantic_lines = f.readlines()
 
-        add_generated_code(code, pydantic_lines, "pydantic")
+        _add_generated_code(code, pydantic_lines, "pydantic")
 
     return code
 
 
-def add_docstr_line(line: str, result: list[str]) -> None:
+def _add_docstr_line(line: str, result: list[str]) -> None:
     indent = line[: len(line) - len(line.lstrip())]
     split = line.strip().split("\\n")
     result.extend([f"{indent}{li}\n" if li else "\n" for li in split])
 
 
-def expand_docstring_newlines(lines: list[str]) -> list[str]:
+def _expand_docstring_newlines(lines: list[str]) -> list[str]:
     r"""Convert literal \\n in docstrings to actual newlines."""
     result: list[str] = []
     in_docstring = False
@@ -324,18 +293,18 @@ def expand_docstring_newlines(lines: list[str]) -> list[str]:
         if not in_docstring and stripped.startswith('"""'):
             if not (stripped.endswith('"""') and len(stripped) >= 6):
                 in_docstring = True
-            add_docstr_line(line, result)
+            _add_docstr_line(line, result)
         elif in_docstring:
             if stripped.endswith('"""'):
                 in_docstring = False
-            add_docstr_line(line, result)
+            _add_docstr_line(line, result)
         else:
             result.append(line)
 
     return result
 
 
-def convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
+def _convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
     """Convert multi-line docstrings to single-line format when they contain only one line of text."""
     result: list[str] = []
     in_docstring = False
@@ -387,17 +356,7 @@ def convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
     return result
 
 
-def should_skip_class(line: str, mode: Literal["dict", "pydantic"]) -> bool:
-    if line.startswith("class Model"):
-        return True
-    if line.find("Ignore") != -1:
-        return True
-    if mode == "pydantic" and line.find("Dict") != -1:
-        return True
-    return False
-
-
-def add_generated_code(
+def _add_generated_code(
     code: GeneratedCode, lines: list[str], mode: Literal["dict", "pydantic"]
 ) -> None:
     section = "comment"
@@ -413,35 +372,23 @@ def add_generated_code(
                 # Remove TypedDict from the import line but keep other imports
                 modified_line = re.sub(r"\s*TypedDict\s*,?", "", line)
                 code.imports.append(modified_line)
-        elif section == "ignore class":
-            if line.strip().startswith("class"):
-                section = "classes"
 
         if section == "classes":
             if line.strip().startswith("class"):
-                if should_skip_class(line, mode):
-                    section = "ignore class"
-                else:
-                    code.classes.append(line)
+                code.classes.append(line)
             elif line[0].isspace() or line[0] == "@":
-                # Replace IgnoreClassName with ClassName
-                modified_line = re.sub(
-                    r"\bIgnore(\w+)\b",
-                    lambda m: m.group(1),
-                    line,
-                )
-                code.classes.append(modified_line)
+                code.classes.append(line)
 
 
-def fix_docstrings(code: GeneratedCode) -> None:
+def _fix_docstrings(code: GeneratedCode) -> None:
     # First pass: expand literal \n in docstrings to actual newlines
-    code.classes = expand_docstring_newlines(code.classes)
+    code.classes = _expand_docstring_newlines(code.classes)
 
     # Second pass: convert multi-line docstrings to single-line when they contain only one line
-    code.classes = convert_multiline_docstrings_to_single_line(code.classes)
+    code.classes = _convert_multiline_docstrings_to_single_line(code.classes)
 
 
-def write_generated_code(file_name: str, code: GeneratedCode) -> None:
+def _write_generated_code(file_name: str, code: GeneratedCode) -> None:
     output_file = Path(__file__).parent / file_name
 
     with open(output_file, "w") as f:
@@ -451,9 +398,9 @@ def write_generated_code(file_name: str, code: GeneratedCode) -> None:
 
 
 def main():
-    code = generate_dict_code()
-    fix_docstrings(code)
-    write_generated_code("dicts.py", code)
+    code = _generate_dict_code()
+    _fix_docstrings(code)
+    _write_generated_code("generated.py", code)
 
 
 if __name__ == "__main__":

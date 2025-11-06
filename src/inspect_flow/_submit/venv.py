@@ -177,7 +177,7 @@ def get_model_dependencies(config: FConfig) -> List[str]:
                 else:
                     collect_dependency(model_role)
 
-    for task in config.tasks:
+    for task in config.tasks or []:
         collect_model_dependencies(task)
 
     return sorted(model_dependencies)

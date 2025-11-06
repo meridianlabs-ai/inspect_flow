@@ -5,7 +5,14 @@ from inspect_ai.model import GenerateConfig
 from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
 
-from inspect_flow._types.dicts import (
+from inspect_flow._types.flow_types import (
+    FAgent,
+    FConfig,
+    FModel,
+    FSolver,
+    FTask,
+)
+from inspect_flow._types.generated import (
     FlowAgent,
     FlowAgentDict,
     FlowAgentMatrixDict,
@@ -22,13 +29,6 @@ from inspect_flow._types.dicts import (
     FlowTaskMatrixDict,
     GenerateConfigDict,
     GenerateConfigMatrixDict,
-)
-from inspect_flow._types.flow_types import (
-    FAgent,
-    FConfig,
-    FModel,
-    FSolver,
-    FTask,
 )
 
 
