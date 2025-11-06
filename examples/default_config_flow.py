@@ -15,7 +15,7 @@ config_temperature = 0.0
 task_temperature = 0.2
 config_max_tokens = 100
 
-task_dir = (Path("local_eval") / "src" / "local_eval").resolve()
+task_dir = (Path("examples") / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
 
 FlowConfig(
