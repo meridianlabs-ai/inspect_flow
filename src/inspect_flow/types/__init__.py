@@ -1,3 +1,5 @@
+from inspect_ai.model import GenerateConfig
+
 from inspect_flow._types.dicts import (
     ApprovalPolicyConfigDict,
     ApproverPolicyConfigDict,
@@ -49,6 +51,7 @@ __all__ = [
     "FlowTask",
     "FlowTaskDict",
     "FlowTaskMatrixDict",
+    "GenerateConfig",
     "GenerateConfigDict",
     "GenerateConfigMatrixDict",
     "JSONSchemaDict",

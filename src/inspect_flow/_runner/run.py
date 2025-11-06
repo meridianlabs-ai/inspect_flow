@@ -1,4 +1,4 @@
-import os
+from typing import Literal
 
 import click
 import inspect_ai
@@ -18,11 +18,26 @@ def read_config() -> FConfig:
         return FConfig(**data)
 
 
-def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
+def run_eval_set(
+    config: FConfig, mode: Literal["run", "dry-run", "config"] = "run"
+) -> tuple[bool, list[EvalLog]]:
     tasks = instantiate_tasks(config)
 
-    if os.environ.get("INSPECT_FLOW_DRY_RUN") == "1":
+    if mode == "dry-run":
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
+        return False, []
+    elif mode == "config":
+        dump = yaml.dump(
+            config.model_dump(
+                mode="json",
+                exclude_unset=True,
+                exclude_defaults=True,
+                exclude_none=True,
+            ),
+            default_flow_style=False,
+            sort_keys=False,
+        )
+        click.echo(dump)
         return False, []
 
     options = config.options or FOptions()
@@ -78,9 +93,40 @@ def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
     )
 
 
+@click.group(invoke_without_command=True)
+@click.option(
+    "--dry-run",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Dry run.",
+)
+@click.option(
+    "--config",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Output the resolved config and do not run.",
+)
+@click.pass_context
+def flow_run(ctx: click.Context, dry_run: bool, config: bool) -> None:
+    # if this was a subcommand then allow it to execute
+    if ctx.invoked_subcommand is not None:
+        return
+
+    if config:
+        mode = "config"
+    elif dry_run:
+        mode = "dry-run"
+    else:
+        mode = "run"
+
+    cfg = read_config()
+    run_eval_set(cfg, mode)
+
+
 def main() -> None:
-    config = read_config()
-    run_eval_set(config)
+    flow_run()
 
 
 if __name__ == "__main__":

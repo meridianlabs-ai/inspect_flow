@@ -13,7 +13,11 @@ from inspect_flow._types.flow_types import FConfig
 from inspect_flow._util.path_util import set_path_env_vars
 
 
-def submit(config: FConfig | FlowConfig, config_file_path: str | None = None) -> None:
+def submit(
+    config: FConfig | FlowConfig,
+    config_file_path: str | None = None,
+    run_args: list[str] | None = None,
+) -> None:
     if not isinstance(config, FConfig):
         config = FConfig.model_validate(to_jsonable_python(config))
 
@@ -32,7 +36,7 @@ def submit(config: FConfig | FlowConfig, config_file_path: str | None = None) ->
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         try:
             subprocess.run(
-                [str(python_path), str(run_path)],
+                [str(python_path), str(run_path), *(run_args or [])],
                 cwd=temp_dir,
                 check=True,
                 env=env,
