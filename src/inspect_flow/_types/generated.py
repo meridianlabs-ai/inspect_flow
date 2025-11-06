@@ -441,7 +441,7 @@ class FlowConfigDict(TypedDict):
     """Environment variables to set when running tasks."""
     defaults: NotRequired[Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]]]
     """Defaults values for Inspect objects."""
-    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]
+    tasks: NotRequired[Optional[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]]
     """Tasks to run"""
 
 
@@ -654,8 +654,6 @@ class FlowDefaults:
 
 @dataclass
 class FlowConfig:
-    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]
-    """Tasks to run"""
     flow_dir: Optional[str] = None
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: Optional[str] = None
@@ -668,3 +666,5 @@ class FlowConfig:
     """Environment variables to set when running tasks."""
     defaults: Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]] = None
     """Defaults values for Inspect objects."""
+    tasks: Optional[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]] = None
+    """Tasks to run"""

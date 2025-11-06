@@ -426,7 +426,7 @@ class FConfig(BaseModel, extra="forbid"):
         default=None, description="Defaults values for Inspect objects."
     )
 
-    tasks: list[FTask] = Field(description="Tasks to run")
+    tasks: list[FTask] | None = Field(default=None, description="Tasks to run")
 
     # Convert single items to lists
     @field_validator("dependencies", mode="before")
