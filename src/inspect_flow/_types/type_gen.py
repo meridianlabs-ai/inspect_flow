@@ -356,14 +356,6 @@ def _convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
     return result
 
 
-def _should_skip_class(line: str, mode: Literal["dict", "pydantic"]) -> bool:
-    if line.startswith("class Model"):
-        return True
-    if mode == "pydantic" and line.find("Dict") != -1:
-        return True
-    return False
-
-
 def add_generated_code(
     code: GeneratedCode, lines: list[str], mode: Literal["dict", "pydantic"]
 ) -> None:
@@ -380,24 +372,12 @@ def add_generated_code(
                 # Remove TypedDict from the import line but keep other imports
                 modified_line = re.sub(r"\s*TypedDict\s*,?", "", line)
                 code.imports.append(modified_line)
-        elif section == "ignore class":
-            if line.strip().startswith("class"):
-                section = "classes"
 
         if section == "classes":
             if line.strip().startswith("class"):
-                if _should_skip_class(line, mode):
-                    section = "ignore class"
-                else:
-                    code.classes.append(line)
+                code.classes.append(line)
             elif line[0].isspace() or line[0] == "@":
-                # Replace IgnoreClassName with ClassName
-                modified_line = re.sub(
-                    r"\bIgnore(\w+)\b",
-                    lambda m: m.group(1),
-                    line,
-                )
-                code.classes.append(modified_line)
+                code.classes.append(line)
 
 
 def fix_docstrings(code: GeneratedCode) -> None:
