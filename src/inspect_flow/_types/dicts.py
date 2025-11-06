@@ -132,7 +132,7 @@ class FlowOptionsDict(TypedDict):
         Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
     ]
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
-    score: NotRequired[bool]
+    score: NotRequired[Optional[bool]]
     """Score output (defaults to True)"""
     log_level: NotRequired[Optional[str]]
     """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
@@ -218,8 +218,8 @@ class FlowModelDict(TypedDict):
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[Optional[str]]
     """Optional. API key for model."""
-    memoize: NotRequired[bool]
-    """Use/store a cached version of the model based on the parameters to get_model()."""
+    memoize: NotRequired[Optional[bool]]
+    """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
     model_args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to model constructor."""
 
@@ -419,8 +419,8 @@ class ResponseSchemaDict(TypedDict):
 
 
 class FlowConfigDict(TypedDict):
-    flow_dir: NotRequired[str]
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
+    flow_dir: NotRequired[Optional[str]]
+    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[Union[FOptions, FlowOptionsDict, FlowOptions]]]
@@ -491,7 +491,7 @@ class FlowOptions:
         None
     )
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
-    score: Optional[bool] = True
+    score: Optional[bool] = None
     """Score output (defaults to True)"""
     log_level: Optional[str] = None
     """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
@@ -579,8 +579,8 @@ class FlowModel:
     """Optional. Alternate base URL for model."""
     api_key: Optional[str] = None
     """Optional. API key for model."""
-    memoize: Optional[bool] = True
-    """Use/store a cached version of the model based on the parameters to get_model()."""
+    memoize: Optional[bool] = None
+    """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
     model_args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to model constructor."""
 
@@ -646,8 +646,8 @@ class FlowTask:
 class FlowConfig:
     tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]
     """Tasks to run"""
-    flow_dir: Optional[str] = "logs/flow"
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned)."""
+    flow_dir: Optional[str] = None
+    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: Optional[str] = None
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: Optional[Union[FOptions, FlowOptionsDict, FlowOptions]] = None

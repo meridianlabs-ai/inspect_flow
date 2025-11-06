@@ -1,3 +1,8 @@
+# Type definitions for flow config files.
+
+# Important: All default values should be None. This supports merging of partial configs as None values are not merged.
+# But a different default value would override more specific settings.
+
 from typing import (
     Any,
     Literal,
@@ -56,9 +61,9 @@ class FModel(BaseModel, extra="forbid"):
         description="Optional. API key for model.",
     )
 
-    memoize: bool = Field(
-        default=True,
-        description="Use/store a cached version of the model based on the parameters to get_model().",
+    memoize: bool | None = Field(
+        default=None,
+        description="Use/store a cached version of the model based on the parameters to get_model(). Defaults to True.",
     )
 
     model_args: CreateArgs | None = Field(
@@ -255,7 +260,9 @@ class FOptions(BaseModel, extra="forbid"):
         description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )
 
-    score: bool = Field(default=True, description="Score output (defaults to True)")
+    score: bool | None = Field(
+        default=None, description="Score output (defaults to True)"
+    )
 
     log_level: str | None = Field(
         default=None,
@@ -391,9 +398,9 @@ class FDefaults(BaseModel, extra="forbid"):
 
 
 class FConfig(BaseModel, extra="forbid"):
-    flow_dir: str = Field(
-        default="logs/flow",
-        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned).",
+    flow_dir: str | None = Field(
+        default=None,
+        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'",
     )
 
     python_version: str | None = Field(

@@ -26,6 +26,7 @@ def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
         return False, []
 
     options = config.options or FOptions()
+    assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
     return inspect_ai.eval_set(
         tasks=tasks,
         log_dir=config.flow_dir,
@@ -46,7 +47,7 @@ def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
         trace=options.trace,
         display=options.display,
         approval=options.approval,  # type: ignore TODO:ransom
-        score=options.score,
+        score=options.score or True,
         log_level=options.log_level,
         log_level_transcript=options.log_level_transcript,
         log_format=options.log_format,
