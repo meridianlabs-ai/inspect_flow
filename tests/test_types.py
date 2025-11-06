@@ -8,8 +8,8 @@ from inspect_flow import (
     flow_solver,
     flow_task,
 )
-from inspect_flow._types.dicts import FlowDefaults
 from inspect_flow._types.flow_types import FSolver
+from inspect_flow._types.generated import FlowDefaults
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,

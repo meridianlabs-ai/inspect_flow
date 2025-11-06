@@ -150,13 +150,6 @@ def create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> N
     defs[new_title] = dict_def
 
 
-def ignore_type(defs: Schema, title: str, ignore_type: Schema) -> None:
-    del defs[title]
-    new_title = "Ignore" + title
-    ignore_type[title] = new_title
-    defs[new_title] = ignore_type
-
-
 def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -> None:
     if "anyOf" in field_schema:
         any_of_list: list[Schema] = field_schema["anyOf"]
@@ -173,27 +166,26 @@ def update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) ->
         type: str = field_schema["$ref"]
         split = type.split("/")
         type_name = split[-1]
-        split[-1] = "Ignore" + type_name
-        ignore_ref = "/".join(split)
-        ignore_flow_ref = None
+        f_ref = "/".join(split)
+        flow_ref = None
         if type_name in FLOW_TYPES:
             type_name = "Flow" + type_name[1:]
-            split[-1] = "Ignore" + type_name
-            ignore_flow_ref = "/".join(split)
+            split[-1] = type_name
+            flow_ref = "/".join(split)
         split[-1] = type_name + "Dict"
         dict_ref = "/".join(split)
         if parent_list:
-            field_schema["$ref"] = ignore_ref
+            field_schema["$ref"] = f_ref
             parent_list.append({"$ref": dict_ref})
-            if ignore_flow_ref:
-                parent_list.append({"$ref": ignore_flow_ref})
+            if flow_ref:
+                parent_list.append({"$ref": flow_ref})
             if type_name in STR_AS_CLASS:
                 parent_list.append({"type": "string"})
         else:
             del field_schema["$ref"]
-            ref_list = [{"$ref": ignore_ref}, {"$ref": dict_ref}]
-            if ignore_flow_ref:
-                ref_list.append({"$ref": ignore_flow_ref})
+            ref_list = [{"$ref": f_ref}, {"$ref": dict_ref}]
+            if flow_ref:
+                ref_list.append({"$ref": flow_ref})
             if type_name in STR_AS_CLASS:
                 ref_list.append({"type": "string"})
             field_schema["anyOf"] = ref_list
@@ -205,17 +197,13 @@ def update_refs(type_def: Schema) -> None:
         update_field_refs(field_value, None)
 
 
-def create_dict_types(schema: Schema) -> None:
+def create_dict_types(schema: Schema, initial_defs: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, v in list(defs.items()):
+    for title, type_def in initial_defs.items():
         new_title = title
-        if title.startswith("F"):
-            new_title = "Flow" + title[1:]
-        update_refs(v)
-        create_type(defs, new_title, v, "Dict")
+        create_type(defs, new_title, type_def, "Dict")
         if new_title in MATRIX_CLASS_FIELDS:
-            create_type(defs, new_title, v, "MatrixDict")
-        ignore_type(defs, title, v)
+            create_type(defs, new_title, type_def, "MatrixDict")
 
 
 def fix_none_defaults(schema: Schema) -> None:
@@ -236,15 +224,15 @@ def fix_none_defaults(schema: Schema) -> None:
                 fix_none_defaults(item)
 
 
-def prepare_for_pydantic_generation(schema: Schema) -> Schema:
+def update_def_titles_and_refs(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, v in dict(defs).items():
-        if title.startswith("IgnoreF"):
+    for title, type_def in dict(defs).items():
+        update_refs(type_def)
+        if title in FLOW_TYPES:
             del defs[title]
-            new_title = "Flow" + title[len("IgnoreF") :]
-            defs[new_title] = v
-            v["title"] = new_title
-    return schema
+            new_title = "Flow" + title[1:]
+            defs[new_title] = type_def
+            type_def["title"] = new_title
 
 
 class GeneratedCode:
@@ -259,7 +247,10 @@ class GeneratedCode:
 def generate_dict_code() -> GeneratedCode:
     schema = FConfig.model_json_schema()
     root_type_as_def(schema)
-    create_dict_types(schema)
+    update_def_titles_and_refs(schema)
+    initial_defs: dict[str, Schema] = schema["$defs"]
+    schema["$defs"] = {}
+    create_dict_types(schema, initial_defs)
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:
         generated_type_file = Path(tmp_file.name)
@@ -283,7 +274,8 @@ def generate_dict_code() -> GeneratedCode:
         code = GeneratedCode()
         add_generated_code(code, dict_lines, "dict")
 
-        schema = prepare_for_pydantic_generation(schema)
+        flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
+        schema["$defs"] = flow_type_defs
 
         generate(
             json.dumps(schema),
@@ -390,8 +382,6 @@ def convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
 def should_skip_class(line: str, mode: Literal["dict", "pydantic"]) -> bool:
     if line.startswith("class Model"):
         return True
-    if line.find("Ignore") != -1:
-        return True
     if mode == "pydantic" and line.find("Dict") != -1:
         return True
     return False
@@ -453,7 +443,7 @@ def write_generated_code(file_name: str, code: GeneratedCode) -> None:
 def main():
     code = generate_dict_code()
     fix_docstrings(code)
-    write_generated_code("dicts.py", code)
+    write_generated_code("generated.py", code)
 
 
 if __name__ == "__main__":

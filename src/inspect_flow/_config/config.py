@@ -7,8 +7,8 @@ import click
 import yaml
 from pydantic_core import ValidationError, to_jsonable_python
 
-from inspect_flow._types.dicts import FlowConfig
 from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 
 

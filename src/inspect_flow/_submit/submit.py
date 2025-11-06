@@ -8,8 +8,8 @@ from inspect_ai._util.file import absolute_file_path
 from pydantic_core import to_jsonable_python
 
 from inspect_flow._submit.venv import create_venv
-from inspect_flow._types.dicts import FlowConfig
 from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.path_util import set_path_env_vars
 
 
