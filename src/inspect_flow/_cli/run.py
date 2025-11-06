@@ -1,5 +1,3 @@
-import os
-
 import click
 
 from inspect_flow._config.config import load_config
@@ -19,7 +17,6 @@ def run_command(
     config_file: str,
     dry_run: bool,
 ) -> None:
-    if dry_run:
-        os.environ["INSPECT_FLOW_DRY_RUN"] = "1"
+    run_args = ["--dry-run"] if dry_run else []
     config = load_config(config_file)
-    submit(config, config_file)
+    submit(config, config_file, run_args)

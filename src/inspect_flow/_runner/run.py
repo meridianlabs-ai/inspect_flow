@@ -1,11 +1,10 @@
-import os
-
 import click
 import inspect_ai
 import yaml
 from inspect_ai.log import EvalLog
 
-from inspect_flow._runner.matrix import instantiate_tasks
+from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._runner.resolve import resolve_config
 from inspect_flow._types.flow_types import (
     FConfig,
     FOptions,
@@ -18,10 +17,26 @@ def read_config() -> FConfig:
         return FConfig(**data)
 
 
-def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
-    tasks = instantiate_tasks(config)
+def print_resolved_config(config: FConfig) -> None:
+    resolved_config = resolve_config(config)
+    dump = yaml.dump(
+        resolved_config.model_dump(
+            mode="json",
+            exclude_unset=True,
+            exclude_defaults=True,
+            exclude_none=True,
+        ),
+        default_flow_style=False,
+        sort_keys=False,
+    )
+    click.echo(dump)
 
-    if os.environ.get("INSPECT_FLOW_DRY_RUN") == "1":
+
+def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
+    resolved_config = resolve_config(config)
+    tasks = instantiate_tasks(resolved_config)
+
+    if dry_run:
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
 
@@ -78,9 +93,36 @@ def run_eval_set(config: FConfig) -> tuple[bool, list[EvalLog]]:
     )
 
 
+@click.group(invoke_without_command=True)
+@click.option(
+    "--dry-run",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Dry run.",
+)
+@click.option(
+    "--config",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Output the resolved config and do not run.",
+)
+@click.pass_context
+def flow_run(ctx: click.Context, dry_run: bool, config: bool) -> None:
+    # if this was a subcommand then allow it to execute
+    if ctx.invoked_subcommand is not None:
+        return
+
+    cfg = read_config()
+    if config:
+        print_resolved_config(cfg)
+    else:
+        run_eval_set(cfg, dry_run=dry_run)
+
+
 def main() -> None:
-    config = read_config()
-    run_eval_set(config)
+    flow_run()
 
 
 if __name__ == "__main__":

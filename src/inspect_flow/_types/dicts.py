@@ -281,7 +281,7 @@ class FlowTaskDict(TypedDict):
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[Optional[int]]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: NotRequired[Optional[int]]
+    version: NotRequired[Optional[Union[int, str]]]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
     metadata: NotRequired[Optional[Mapping[str, Any]]]
     """Additional metadata to associate with the task."""
@@ -634,7 +634,7 @@ class FlowTask:
     """Limit on clock time (in seconds) for samples."""
     working_limit: Optional[int] = None
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: Optional[int] = None
+    version: Optional[Union[int, str]] = None
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
     metadata: Optional[Mapping[str, Any]] = None
     """Additional metadata to associate with the task."""

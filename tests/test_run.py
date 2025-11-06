@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -277,12 +276,13 @@ def test_sample_id() -> None:
 
 
 def test_all_tasks_in_file() -> None:
+    file = str(task_dir / "three_tasks.py")
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=fc(
                 FlowConfig(
                     flow_dir="test_log_dir",
-                    tasks=[str(task_dir / "three_tasks.py")],
+                    tasks=[file],
                 ),
             )
         )
@@ -291,9 +291,9 @@ def test_all_tasks_in_file() -> None:
         call_args = mock_eval_set.call_args
         tasks_arg = call_args.kwargs["tasks"]
         assert len(tasks_arg) == 3
-        assert tasks_arg[0].name == "noop1"
-        assert tasks_arg[1].name == "noop2"
-        assert tasks_arg[2].name == "noop3"
+        assert tasks_arg[0].name == file + "@noop1"
+        assert tasks_arg[1].name == file + "@noop2"
+        assert tasks_arg[2].name == file + "@noop3"
 
 
 def test_config_generate_config() -> None:
@@ -643,8 +643,6 @@ def test_agent_defaults() -> None:
 
 
 def test_dry_run():
-    assert not os.environ.get("INSPECT_FLOW_DRY_RUN")
-    os.environ["INSPECT_FLOW_DRY_RUN"] = "1"
     with patch("inspect_ai.eval_set") as mock_eval_set:
         run_eval_set(
             config=fc(
@@ -657,10 +655,10 @@ def test_dry_run():
                         )
                     ],
                 )
-            )
+            ),
+            dry_run=True,
         )
 
-    del os.environ["INSPECT_FLOW_DRY_RUN"]
     mock_eval_set.assert_not_called()
 
 
