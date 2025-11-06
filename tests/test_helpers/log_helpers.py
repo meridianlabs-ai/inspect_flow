@@ -10,8 +10,8 @@ from pydantic_core import to_jsonable_python
 
 
 def init_test_logs() -> str:
-    # Remove logs/local_logs directory if it exists
-    log_dir = (Path.cwd() / "logs" / "local_logs").resolve()
+    # Remove logs/flow_test directory if it exists
+    log_dir = (Path.cwd() / "logs" / "flow_test").resolve()
     if log_dir.exists():
         shutil.rmtree(log_dir)
     return str(log_dir)
@@ -20,7 +20,7 @@ def init_test_logs() -> str:
 def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
     if isinstance(config, FlowConfig):
         config = FConfig.model_validate(to_jsonable_python(config))
-    # Check that logs/local_logs directory was created
+    # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 

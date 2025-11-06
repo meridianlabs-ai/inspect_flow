@@ -2,7 +2,7 @@ from inspect_flow import tasks_matrix
 from inspect_flow.types import FlowConfig, FlowOptions
 
 FlowConfig(
-    flow_dir="./logs/local_logs",
+    flow_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     dependencies=[
         "./examples/local_eval",

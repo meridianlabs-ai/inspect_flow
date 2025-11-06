@@ -1,8 +1,11 @@
 import click
 import inspect_ai
 import yaml
+from inspect_ai._util.dateutil import iso_now
+from inspect_ai._util.file import clean_filename_component, file
 from inspect_ai.log import EvalLog
 
+from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_config
 from inspect_flow._types.flow_types import (
@@ -19,17 +22,15 @@ def read_config() -> FConfig:
 
 def print_resolved_config(config: FConfig) -> None:
     resolved_config = resolve_config(config)
-    dump = yaml.dump(
-        resolved_config.model_dump(
-            mode="json",
-            exclude_unset=True,
-            exclude_defaults=True,
-            exclude_none=True,
-        ),
-        default_flow_style=False,
-        sort_keys=False,
-    )
+    dump = config_to_yaml(resolved_config)
     click.echo(dump)
+
+
+def write_config_file(config: FConfig) -> None:
+    filename = f"{config.flow_dir}/{clean_filename_component(iso_now())}_flow.yaml"
+    yaml = config_to_yaml(config)
+    with file(filename, "w") as f:
+        f.write(yaml)
 
 
 def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
@@ -42,13 +43,17 @@ def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[Eva
 
     options = config.options or FOptions()
     assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
+
+    write_config_file(resolved_config)
+
+    log_dir = config.flow_dir + "/logs"
     log_dir_allow_dirty = (
         options.log_dir_allow_dirty if options.log_dir_allow_dirty is not None else True
     )
 
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=config.flow_dir,
+        log_dir=log_dir,
         retry_attempts=options.retry_attempts,
         retry_wait=options.retry_wait,
         retry_connections=options.retry_connections,
