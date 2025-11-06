@@ -5,6 +5,7 @@ import inspect_ai
 import yaml
 from inspect_ai.log import EvalLog
 
+from inspect_flow._config.resolved import config_with_tasks
 from inspect_flow._runner.matrix import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FConfig,
@@ -18,15 +19,35 @@ def read_config() -> FConfig:
         return FConfig(**data)
 
 
+def print_resolved_config(config: FConfig) -> None:
+    tasks = resolve_tasks(config)
+    resolved_config = config_with_tasks(config, tasks)
+    dump = yaml.dump(
+        config.model_dump(
+            mode="json",
+            exclude_unset=True,
+            exclude_defaults=True,
+            exclude_none=True,
+        ),
+        default_flow_style=False,
+        sort_keys=False,
+    )
+    click.echo(dump)
+
+
 def run_eval_set(
     config: FConfig, mode: Literal["run", "dry-run", "config"] = "run"
 ) -> tuple[bool, list[EvalLog]]:
+    if mode == "config":
+        task_configs = 
+
     tasks = instantiate_tasks(config)
 
     if mode == "dry-run":
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
     elif mode == "config":
+        resolved_config = config_with_tasks(config, tasks)
         dump = yaml.dump(
             config.model_dump(
                 mode="json",
