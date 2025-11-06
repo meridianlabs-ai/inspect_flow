@@ -39,8 +39,8 @@ class ApproverPolicyConfigDict(TypedDict):
     ```
     """
 
-    name: NotRequired[Optional[str]]
-    tools: NotRequired[Union[str, Sequence[str]]]
+    name: Optional[str]
+    tools: Union[str, Sequence[str]]
     params: NotRequired[Mapping[str, Any]]
 
 
@@ -58,7 +58,7 @@ class BatchConfigDict(TypedDict):
 class SandboxEnvironmentSpecDict(TypedDict):
     """Specification of a SandboxEnvironment."""
 
-    type: NotRequired[str]
+    type: str
     config: NotRequired[Any]
 
 
@@ -77,7 +77,7 @@ class FlowAgentMatrixDict(TypedDict):
 
 
 class FlowEpochsDict(TypedDict):
-    epochs: NotRequired[int]
+    epochs: int
     """Number of epochs."""
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
     """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
@@ -96,9 +96,7 @@ class FlowSolverMatrixDict(TypedDict):
 
 
 class ApprovalPolicyConfigDict(TypedDict):
-    approvers: NotRequired[
-        Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
-    ]
+    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
 
 
 class JSONSchemaDict(TypedDict):
@@ -123,8 +121,8 @@ class JSONSchemaDict(TypedDict):
 class ResponseSchemaDict(TypedDict):
     """Schema for model response when using Structured Output."""
 
-    name: NotRequired[Optional[str]]
-    json_schema: NotRequired[Union[JSONSchema, JSONSchemaDict]]
+    name: Optional[str]
+    json_schema: Union[JSONSchema, JSONSchemaDict]
     description: NotRequired[Optional[str]]
     strict: NotRequired[Optional[bool]]
 
@@ -443,7 +441,7 @@ class FlowConfigDict(TypedDict):
     """Environment variables to set when running tasks."""
     defaults: NotRequired[Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]]]
     """Defaults values for Inspect objects."""
-    tasks: NotRequired[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]
+    tasks: Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]
     """Tasks to run"""
 
 
