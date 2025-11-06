@@ -249,7 +249,7 @@ def _generate_dict_code() -> GeneratedCode:
             dict_lines = f.readlines()
 
         code = GeneratedCode()
-        add_generated_code(code, dict_lines, "dict")
+        _add_generated_code(code, dict_lines, "dict")
 
         flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
         schema["$defs"] = flow_type_defs
@@ -270,7 +270,7 @@ def _generate_dict_code() -> GeneratedCode:
         with open(generated_type_file, "r") as f:
             pydantic_lines = f.readlines()
 
-        add_generated_code(code, pydantic_lines, "pydantic")
+        _add_generated_code(code, pydantic_lines, "pydantic")
 
     return code
 
@@ -356,7 +356,7 @@ def _convert_multiline_docstrings_to_single_line(lines: list[str]) -> list[str]:
     return result
 
 
-def add_generated_code(
+def _add_generated_code(
     code: GeneratedCode, lines: list[str], mode: Literal["dict", "pydantic"]
 ) -> None:
     section = "comment"
@@ -380,7 +380,7 @@ def add_generated_code(
                 code.classes.append(line)
 
 
-def fix_docstrings(code: GeneratedCode) -> None:
+def _fix_docstrings(code: GeneratedCode) -> None:
     # First pass: expand literal \n in docstrings to actual newlines
     code.classes = _expand_docstring_newlines(code.classes)
 
@@ -388,7 +388,7 @@ def fix_docstrings(code: GeneratedCode) -> None:
     code.classes = _convert_multiline_docstrings_to_single_line(code.classes)
 
 
-def write_generated_code(file_name: str, code: GeneratedCode) -> None:
+def _write_generated_code(file_name: str, code: GeneratedCode) -> None:
     output_file = Path(__file__).parent / file_name
 
     with open(output_file, "w") as f:
@@ -399,8 +399,8 @@ def write_generated_code(file_name: str, code: GeneratedCode) -> None:
 
 def main():
     code = _generate_dict_code()
-    fix_docstrings(code)
-    write_generated_code("generated.py", code)
+    _fix_docstrings(code)
+    _write_generated_code("generated.py", code)
 
 
 if __name__ == "__main__":
