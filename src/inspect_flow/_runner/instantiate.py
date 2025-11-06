@@ -191,7 +191,7 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> Task:
 
 
 def instantiate_tasks(config: FConfig) -> list[Task]:
-    return [instantiate_task(config, task_config) for task_config in config.tasks]
+    return [instantiate_task(config, task_config) for task_config in config.tasks or []]
 
 
 def get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task]:

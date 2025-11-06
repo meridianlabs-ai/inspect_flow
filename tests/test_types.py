@@ -59,12 +59,14 @@ def test_contructors():
 def test_task_from_string():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [task_name]})
+    assert config.tasks
     assert config.tasks[0].name == task_name
 
 
 def test_task_from_dict():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [{"name": task_name}]})
+    assert config.tasks
     assert config.tasks[0].name == task_name
 
 
@@ -83,6 +85,7 @@ def test_model_from_string():
             ]
         }
     )
+    assert config.tasks
     assert config.tasks[0].model
     assert config.tasks[0].model.name == model_name
     assert config.tasks[0].model_roles
@@ -101,6 +104,7 @@ def test_solver_from_string():
             ],
         }
     )
+    assert config.tasks
     assert config.tasks[0].solver
     assert isinstance(config.tasks[0].solver, FSolver)
     assert config.tasks[0].solver.name == solver_name

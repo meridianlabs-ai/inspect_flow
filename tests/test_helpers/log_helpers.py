@@ -24,11 +24,14 @@ def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
-    assert len(log_list) == len(config.tasks)
+    assert len(log_list) == len(config.tasks or [])
     logs = [read_eval_log(log) for log in log_list]
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [(task.name, task.model.name if task.model else None) for task in config.tasks]
+        [
+            (task.name, task.model.name if task.model else None)
+            for task in config.tasks or []
+        ]
     )
