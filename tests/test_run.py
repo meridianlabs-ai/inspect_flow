@@ -13,6 +13,7 @@ from inspect_flow._types.dicts import (
     FlowSolver,
     FlowTask,
 )
+from inspect_flow._types.factories import models_matrix
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -661,3 +662,58 @@ def test_dry_run():
 
     del os.environ["INSPECT_FLOW_DRY_RUN"]
     mock_eval_set.assert_not_called()
+
+
+def test_task_with_two_model_configs() -> None:
+    # This test verifies that the tasks have distinct identifiers and eval_set runs correctly
+    # So can not use a mock
+    log_dir = init_test_logs()
+
+    config = FlowConfig(
+        flow_dir=log_dir,
+        tasks=tasks_matrix(
+            task=[FlowTask(name=task_file + "@noop")],
+            model=models_matrix(
+                model="mockllm/mock-llm1",
+                config=[
+                    GenerateConfig(temperature=0),
+                    GenerateConfig(temperature=0.5),
+                ],
+            ),
+        ),
+    )
+    run_eval_set(config=fc(config))
+
+    verify_test_logs(config, log_dir)
+
+
+def test_task_with_two_solvers() -> None:
+    # This test verifies that the tasks have distinct identifiers and eval_set runs correctly
+    # So can not use a mock
+    log_dir = init_test_logs()
+
+    config = FlowConfig(
+        flow_dir=log_dir,
+        tasks=tasks_matrix(
+            task=FlowTask(name=task_file + "@noop", model="mockllm/mock-llm"),
+            solver=[
+                *solvers_matrix(
+                    solver="inspect_ai/system_message",
+                    args=[
+                        {"template": "test system message"},
+                        {"template": "another test system message"},
+                    ],
+                ),
+                [
+                    FlowSolver(
+                        name="inspect_ai/system_message",
+                        args={"template": "another test system message"},
+                    ),
+                    FlowSolver(name="inspect_ai/generate"),
+                ],
+            ],
+        ),
+    )
+    run_eval_set(config=fc(config))
+
+    verify_test_logs(config, log_dir)
