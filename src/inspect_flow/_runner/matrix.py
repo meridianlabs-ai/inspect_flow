@@ -81,7 +81,7 @@ def create_model(model_config: FModel, config: FConfig) -> Model:
         config=model_config.config or GenerateConfig(),
         base_url=model_config.base_url,
         api_key=model_config.api_key,
-        memoize=model_config.memoize,
+        memoize=model_config.memoize or True,
         **(model_config.model_args or {}),
     )
 
