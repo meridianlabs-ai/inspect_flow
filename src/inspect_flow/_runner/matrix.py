@@ -1,29 +1,27 @@
 from collections.abc import Callable
-from itertools import product
-from typing import TypeAlias
+from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
+from inspect_ai._util.registry import registry_lookup  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
+from pydantic import BaseModel
 
+from inspect_flow._types.factories import merge_dicts_with_config
 from inspect_flow._types.flow_types import (
-    AgentConfig,
-    CreateArgs,
-    EpochsConfig,
-    Matrix,
-    ModelConfig,
+    FAgent,
+    FConfig,
+    FDefaults,
+    FEpochs,
+    FModel,
+    FSolver,
+    FTask,
     ModelRolesConfig,
-    SolverConfig,
-    TaskConfig,
-)
-from inspect_flow._util.list_util import (
-    ensure_list,
-    ensure_non_empty_list,
 )
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
@@ -31,123 +29,56 @@ from inspect_flow._util.path_util import find_file
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 
-matrix_fields = ["args", "models", "model_roles", "solvers"]
+_T = TypeVar("_T", bound=BaseModel)
 
 
-class MatrixImpl:
-    matrix: Matrix
+def merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
+    default_dict = defaults.model_dump(mode="json", exclude_none=True)
+    return merge_dicts_with_config(default_dict, config_dict)
 
-    _models: list[Model] | None = None
-    _args: list[CreateArgs] | None = None
-    _model_roles: list[ModelRoles] | None = None
-    _solvers: list[SingleSolver] | None = None
 
-    def __init__(self, matrix: Matrix):
-        self.matrix = matrix
-        self.validate_config()
-        self.create_matrix()
+def merge_defaults(
+    config: _T,
+    defaults: _T | None,
+    prefix_defaults: dict[str, _T] | None,
+) -> _T:
+    if not defaults and not prefix_defaults:
+        return config
 
-    def validate_config(self) -> None:
-        for task in self.matrix.tasks:
-            for field in matrix_fields:
-                if getattr(task, field, None) and getattr(self.matrix, field, None):
-                    raise ValueError(f"Only one of matrix and task may specify {field}")
+    config_dict = config.model_dump(mode="json", exclude_none=True)
 
-    def create_matrix(self) -> None:
-        self._args = self.matrix.args
-        if self.matrix.models:
-            self._models = create_models(self.matrix.models)
-        if self.matrix.model_roles:
-            self._model_roles = create_model_roles(self.matrix.model_roles)
-        if self.matrix.solvers:
-            self._solvers = create_solvers(self.matrix.solvers)
-
-    def tasks(self) -> list[Task]:
-        return [
-            task
-            for config in self.matrix.tasks
-            for task in self.create_single_config_tasks(config)
-        ]
-
-    def create_single_config_tasks(self, config: TaskConfig) -> list[Task]:
-        models = self._models or create_models(ensure_list(config.models))
-        args_list = self._args or config.args
-        model_role_list = self._model_roles or create_model_roles(
-            ensure_list(config.model_roles)
+    if prefix_defaults:
+        # Filter the prefix defaults to only those that match the config name
+        prefix_defaults = {
+            prefix: prefix_default
+            for prefix, prefix_default in prefix_defaults.items()
+            if config_dict.get("name", "").startswith(prefix)
+        }
+        # Sort prefixes by length descending to match longest prefix first
+        prefix_defaults = dict(
+            sorted(prefix_defaults.items(), key=lambda item: -len(item[0]))
         )
-        solvers = self._solvers or create_solvers(ensure_list(config.solvers))
+        for vals in prefix_defaults.values():
+            config_dict = merge_default(config_dict, vals)
 
-        task_funcs = get_task_creators(config)
+    if defaults:
+        config_dict = merge_default(config_dict, defaults)
 
-        tasks = []
-        matrix = product(
-            ensure_non_empty_list(models),
-            ensure_non_empty_list(args_list),
-            ensure_non_empty_list(model_role_list),
-            ensure_non_empty_list(solvers),
-            task_funcs,
-        )
-
-        for model, args, model_roles, solver, task_func in matrix:
-            if model:
-                # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-                init_active_model(model, GenerateConfig())
-            task = task_func(**(args or {}))
-
-            if config.sample_id is not None:
-                task.dataset = slice_dataset(
-                    task.dataset,
-                    limit=None,
-                    sample_id=config.sample_id,
-                )
-
-            epochs = config.epochs
-            if isinstance(epochs, EpochsConfig):
-                epochs = Epochs(
-                    epochs=epochs.epochs,
-                    reducer=epochs.reducer,
-                )
-
-            def ng(arg):
-                """Pass NOT_GIVEN for args that are None"""
-                return arg if arg is not None else NOT_GIVEN
-
-            task_with(
-                task,
-                # dataset= Not Supported
-                # setup= Not Supported
-                solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
-                # cleanup= Not Supported
-                # scorer= Not Supported
-                # metrics= Not Supported
-                model=ng(model),
-                config=ng(config.config),
-                model_roles=ng(model_roles),
-                sandbox=ng(config.sandbox),
-                approval=ng(config.approval),  # type: ignore TODO:ransom
-                epochs=ng(epochs),
-                fail_on_error=ng(config.fail_on_error),
-                continue_on_fail=ng(config.continue_on_fail),
-                message_limit=ng(config.message_limit),
-                token_limit=ng(config.token_limit),
-                time_limit=ng(config.time_limit),
-                working_limit=ng(config.working_limit),
-                name=ng(config.name),
-                version=ng(config.version),
-                metadata=ng(config.metadata),
-            )
-            tasks.append(task)
-        return tasks
+    return config.__class__.model_validate(config_dict)
 
 
-def create_model(
-    model_config: ModelConfig, generate_config: GenerateConfig | None
-) -> Model:
+def create_model(model_config: FModel, config: FConfig) -> Model:
+    defaults = config.defaults or FDefaults()
+    model_config = merge_defaults(model_config, defaults.model, defaults.model_prefix)
+
+    if not model_config.name:
+        raise ValueError(f"Model name is required. Model: {model_config}")
+
     return get_model(
         model=model_config.name,
         role=model_config.role,
         default=model_config.default,
-        config=generate_config or GenerateConfig(),
+        config=model_config.config or GenerateConfig(),
         base_url=model_config.base_url,
         api_key=model_config.api_key,
         memoize=model_config.memoize,
@@ -155,101 +86,170 @@ def create_model(
     )
 
 
-def create_single_config_models(model_config: ModelConfig) -> list[Model]:
-    generate_config_list = ensure_non_empty_list(model_config.config)
+def create_model_roles(config: ModelRolesConfig, flow_config: FConfig) -> ModelRoles:
+    roles = {}
+    for role, model_config in config.items():
+        model = model_config
+        if isinstance(model, FModel):
+            model = create_model(model_config=model, config=flow_config)
+        roles[role] = model
+    return roles
+
+
+def create_single_solver(config: FSolver, flow_config: FConfig) -> Solver:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.solver, defaults.solver_prefix)
+
+    if not config.name:
+        raise ValueError(f"Solver name is required. Solver: {config}")
+
+    return registry_create(type="solver", name=config.name, **(config.args or {}))
+
+
+def create_agent(config: FAgent, flow_config: FConfig) -> Agent:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.agent, defaults.agent_prefix)
+
+    if not config.name:
+        raise ValueError(f"Agent name is required. Agent: {config}")
+
+    return registry_create(type="agent", name=config.name, **(config.args or {}))
+
+
+def create_solver(
+    config: FSolver | list[FSolver] | FAgent, flow_config: FConfig
+) -> SingleSolver:
+    if isinstance(config, FSolver):
+        return create_single_solver(config, flow_config)
+    if isinstance(config, FAgent):
+        return create_agent(config, flow_config)
     return [
-        create_model(model_config, generate_config)
-        for generate_config in generate_config_list
+        create_single_solver(single_config, flow_config) for single_config in config
     ]
 
 
-def create_models(config: list[ModelConfig]) -> list[Model]:
-    return [
-        model
-        for model_config in config
-        for model in create_single_config_models(model_config)
-    ]
+def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
+    defaults = flow_config.defaults or FDefaults()
+    config = merge_defaults(config, defaults.task, defaults.task_prefix)
+    model = create_model(config.model, flow_config) if config.model else None
+    solver = create_solver(config.solver, flow_config) if config.solver else None
+    model_roles = (
+        create_model_roles(config.model_roles, flow_config)
+        if config.model_roles
+        else None
+    )
+    tasks = []
+    for task_func in get_task_creators(config):
+        if model:
+            # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+            init_active_model(model, model.config)
+        task = task_func(**(config.args or {}))
 
-
-def create_single_config_solvers(
-    config: SolverConfig | list[SolverConfig] | AgentConfig,
-) -> list[SingleSolver]:
-    if isinstance(config, SolverConfig):
-        args_list = ensure_non_empty_list(config.args)
-        return [
-            registry_create(type="solver", name=config.name, **(args or {}))
-            for args in args_list
-        ]
-    if isinstance(config, AgentConfig):
-        args_list = ensure_non_empty_list(config.args)
-        return [
-            registry_create(type="agent", name=config.name, **(args or {}))
-            for args in args_list
-        ]
-    solver_chain = []
-    for single_config in config:
-        if single_config.args and len(single_config.args) > 1:
-            raise ValueError("chained solvers may not provide multiple sets of args")
-        solver_chain.extend(create_single_config_solvers(single_config))
-    return [solver_chain]
-
-
-def create_solvers(
-    config: list[SolverConfig | list[SolverConfig] | AgentConfig],
-) -> list[SingleSolver]:
-    return [
-        solver
-        for solver_config in config
-        for solver in create_single_config_solvers(solver_config)
-    ]
-
-
-def create_model_roles(config: list[ModelRolesConfig]) -> list[ModelRoles]:
-    roles_list = []
-    for roles_config in config:
-        roles = {}
-        for role, model_config in roles_config.items():
-            model = model_config
-            if isinstance(model, ModelConfig):
-                if model.config and len(model.config) > 1:
-                    raise ValueError(
-                        "at most one config may be specified for models in model_roles"
-                    )
-                model = create_model(
-                    model_config=model,
-                    generate_config=model.config[0] if model.config else None,
-                )
-            roles[role] = model
-        roles_list.append(roles)
-    return roles_list
-
-
-def get_task_creators(config: TaskConfig) -> list[Callable[..., Task]]:
-    if config.file:
-        file_attr = config.file_attr or config.name
-        file = find_file(config.file)
-        module = get_module_from_file(file)
-        if file_attr:
-            task_funcs = [getattr(module, file_attr)]
-        else:
-            # load all task decorated functions and ensure only one exists
-            task_funcs = [
-                getattr(module, attr)
-                for attr in dir(module)
-                if hasattr(getattr(module, attr), "__registry_info__")
-                and getattr(module, attr).__registry_info__.type == "task"
-            ]
-            if not task_funcs:
-                raise ValueError("No task functions found in file {file}")
-    else:
-        registry_name = config.registry_name or config.name
-        if not registry_name:
-            raise ValueError(
-                "registry_name or name not specified for task without file"
+        if config.sample_id is not None:
+            task.dataset = slice_dataset(
+                task.dataset,
+                limit=None,
+                sample_id=config.sample_id,
             )
 
+        epochs = config.epochs
+        if isinstance(epochs, FEpochs):
+            epochs = Epochs(
+                epochs=epochs.epochs,
+                reducer=epochs.reducer,
+            )
+
+        generate_config = defaults.config or GenerateConfig()
+        if config.config:
+            generate_config = generate_config.merge(config.config)
+        if model:
+            generate_config = generate_config.merge(model.config)
+
+        def ng(arg):
+            """Pass NOT_GIVEN for args that are None"""
+            return arg if arg is not None else NOT_GIVEN
+
+        task_with(
+            task,
+            # dataset= Not Supported
+            # setup= Not Supported
+            solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+            # cleanup= Not Supported
+            # scorer= Not Supported
+            # metrics= Not Supported
+            model=ng(model),
+            config=generate_config,
+            model_roles=ng(model_roles),
+            sandbox=ng(config.sandbox),
+            approval=ng(config.approval),  # type: ignore TODO:ransom
+            epochs=ng(epochs),
+            fail_on_error=ng(config.fail_on_error),
+            continue_on_fail=ng(config.continue_on_fail),
+            message_limit=ng(config.message_limit),
+            token_limit=ng(config.token_limit),
+            time_limit=ng(config.time_limit),
+            working_limit=ng(config.working_limit),
+            name=ng(config.name),
+            version=ng(config.version),
+            metadata=ng(config.metadata),
+        )
+        tasks.append(task)
+    return tasks
+
+
+def instantiate_tasks(config: FConfig) -> list[Task]:
+    return [
+        task
+        for task_config in config.tasks
+        for task in instantiate_task(config, task_config)
+    ]
+
+
+def get_task_creators_from_file(
+    file_path: str, attr: str | None, config: FTask
+) -> list[Callable[..., Task]]:
+    file = find_file(file_path)
+    if not file:
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    module = get_module_from_file(file)
+    if attr:
+        task_funcs = [getattr(module, attr)]
+    else:
+        # load all task decorated functions and ensure only one exists
+        task_funcs = [
+            getattr(module, attr)
+            for attr in dir(module)
+            if hasattr(getattr(module, attr), "__registry_info__")
+            and getattr(module, attr).__registry_info__.type == "task"
+        ]
+        if not task_funcs:
+            raise ValueError("No task functions found in file {file}")
+        if len(task_funcs) > 1:
+            config.name = None  # Clear the name so it will be set to the name of the attr  # type: ignore
+    return task_funcs
+
+
+def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
+    if not config.name:
+        raise ValueError(f"Task name is required. Task: {config}")
+    config_name = config.name
+
+    if config.name.find("@") != -1:
+        file, attr = config.name.split("@", 1)
+        return get_task_creators_from_file(file, attr, config)
+    if config.name.find(".py") != -1:
+        result = get_task_creators_from_file(config.name, None, config)
+        return result
+    else:
+        if not registry_lookup(type="task", name=config.name):
+            # Check if name is a file name
+            if file := find_file(config.name):
+                return get_task_creators_from_file(file, None, config)
+            raise LookupError(f"{config.name} was not found in the registry")
+
         def task_func(**kwargs):
-            return registry_create(type="task", name=registry_name, **kwargs)
+            return registry_create(type="task", name=config_name, **kwargs)
 
         task_funcs = [task_func]
 

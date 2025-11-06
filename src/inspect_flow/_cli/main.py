@@ -1,8 +1,10 @@
 import click
 from dotenv import find_dotenv, load_dotenv
 
+from inspect_flow._cli.config import config_command
+
 from .. import __version__
-from .submit import submit_command
+from .run import run_command
 
 
 @click.group(invoke_without_command=True)
@@ -27,7 +29,8 @@ def flow(ctx: click.Context, version: bool) -> None:
         ctx.exit()
 
 
-flow.add_command(submit_command)
+flow.add_command(run_command)
+flow.add_command(config_command)
 
 
 def main() -> None:

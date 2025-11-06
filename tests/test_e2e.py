@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from inspect_flow import flow_config
 from inspect_flow._config.config import load_config
 from inspect_flow._submit.submit import submit
-from inspect_flow._types.flow_types import FlowConfig
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -10,7 +10,7 @@ from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 def test_local_e2e() -> None:
     log_dir = init_test_logs()
 
-    config_path = Path(__file__).parents[1] / "examples" / "e2e_test_flow.yaml"
+    config_path = Path(__file__).parents[1] / "examples" / "e2e_test_flow.py"
     config = load_config(str(config_path))
 
     submit(config=config)
@@ -32,22 +32,17 @@ def test_relative_py_file() -> None:
 def test_cwd_relative_py_file() -> None:
     log_dir = init_test_logs()
 
-    config = FlowConfig(
+    config = flow_config(
         {
-            "log_dir": "logs/local_logs",
-            "eval_set_options": {"limit": 1},
-            "matrix": [
+            "flow_dir": "logs/local_logs",
+            "options": {"limit": 1},
+            "tasks": [
                 {
-                    "tasks": [
-                        {
-                            "name": "noop",
-                            "file": "examples/local_eval/src/local_eval/noop.py",
-                        }
-                    ],
-                    "models": ["mockllm/mock-llm"],
-                },
+                    "name": "examples/local_eval/src/local_eval/noop.py@noop",
+                    "model": "mockllm/mock-llm",
+                }
             ],
-        }
+        },
     )
 
     submit(config=config)

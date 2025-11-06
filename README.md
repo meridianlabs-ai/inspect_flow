@@ -18,6 +18,12 @@ cd inspect_flow
 uv sync
 ```
 
+Optionally install pre-commit hooks via
+
+```bash
+make hooks
+```
+
 Run linting, formatting, and tests via
 
 ```bash
