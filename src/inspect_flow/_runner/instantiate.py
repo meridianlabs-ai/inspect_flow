@@ -4,7 +4,6 @@ from typing import Any, TypeAlias, TypeVar
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
 from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
-from inspect_ai._util.registry import registry_lookup  # TODO:ransom private import
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -128,9 +127,11 @@ def create_solver(
     ]
 
 
-def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
-    defaults = flow_config.defaults or FDefaults()
-    config = merge_defaults(config, defaults.task, defaults.task_prefix)
+def instantiate_task(flow_config: FConfig, config: FTask) -> Task:
+    assert flow_config.defaults is None, (
+        "config must be resolved before calling instantiate_task"
+    )
+
     model = create_model(config.model, flow_config) if config.model else None
     solver = create_solver(config.solver, flow_config) if config.solver else None
     model_roles = (
@@ -138,119 +139,81 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> list[Task]:
         if config.model_roles
         else None
     )
-    tasks = []
-    for task_func in get_task_creators(config):
-        if model:
-            # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
-            init_active_model(model, model.config)
-        task = task_func(**(config.args or {}))
+    task_func = get_task_creator(config)
+    if model:
+        # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
+        init_active_model(model, model.config)
+    task = task_func(**(config.args or {}))
 
-        if config.sample_id is not None:
-            task.dataset = slice_dataset(
-                task.dataset,
-                limit=None,
-                sample_id=config.sample_id,
-            )
-
-        epochs = config.epochs
-        if isinstance(epochs, FEpochs):
-            epochs = Epochs(
-                epochs=epochs.epochs,
-                reducer=epochs.reducer,
-            )
-
-        generate_config = defaults.config or GenerateConfig()
-        if config.config:
-            generate_config = generate_config.merge(config.config)
-        if model:
-            generate_config = generate_config.merge(model.config)
-
-        def ng(arg):
-            """Pass NOT_GIVEN for args that are None"""
-            return arg if arg is not None else NOT_GIVEN
-
-        task_with(
-            task,
-            # dataset= Not Supported
-            # setup= Not Supported
-            solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
-            # cleanup= Not Supported
-            # scorer= Not Supported
-            # metrics= Not Supported
-            model=ng(model),
-            config=generate_config,
-            model_roles=ng(model_roles),
-            sandbox=ng(config.sandbox),
-            approval=ng(config.approval),  # type: ignore TODO:ransom
-            epochs=ng(epochs),
-            fail_on_error=ng(config.fail_on_error),
-            continue_on_fail=ng(config.continue_on_fail),
-            message_limit=ng(config.message_limit),
-            token_limit=ng(config.token_limit),
-            time_limit=ng(config.time_limit),
-            working_limit=ng(config.working_limit),
-            name=ng(config.name),
-            version=ng(config.version),
-            metadata=ng(config.metadata),
+    if config.sample_id is not None:
+        task.dataset = slice_dataset(
+            task.dataset,
+            limit=None,
+            sample_id=config.sample_id,
         )
-        tasks.append(task)
-    return tasks
+
+    epochs = config.epochs
+    if isinstance(epochs, FEpochs):
+        epochs = Epochs(
+            epochs=epochs.epochs,
+            reducer=epochs.reducer,
+        )
+
+    def ng(arg):
+        """Pass NOT_GIVEN for args that are None"""
+        return arg if arg is not None else NOT_GIVEN
+
+    task_with(
+        task,
+        # dataset= Not Supported
+        # setup= Not Supported
+        solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+        # cleanup= Not Supported
+        # scorer= Not Supported
+        # metrics= Not Supported
+        model=ng(model),
+        config=task.config,
+        model_roles=ng(model_roles),
+        sandbox=ng(config.sandbox),
+        approval=ng(config.approval),  # type: ignore TODO:ransom
+        epochs=ng(epochs),
+        fail_on_error=ng(config.fail_on_error),
+        continue_on_fail=ng(config.continue_on_fail),
+        message_limit=ng(config.message_limit),
+        token_limit=ng(config.token_limit),
+        time_limit=ng(config.time_limit),
+        working_limit=ng(config.working_limit),
+        name=ng(config.name),
+        version=ng(config.version),  # type: ignore
+        metadata=ng(config.metadata),
+    )
+    return task
 
 
 def instantiate_tasks(config: FConfig) -> list[Task]:
-    return [
-        task
-        for task_config in config.tasks
-        for task in instantiate_task(config, task_config)
-    ]
+    return [instantiate_task(config, task_config) for task_config in config.tasks]
 
 
-def get_task_creators_from_file(
-    file_path: str, attr: str | None, config: FTask
-) -> list[Callable[..., Task]]:
+def get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task]:
     file = find_file(file_path)
     if not file:
         raise FileNotFoundError(f"File not found: {file_path}")
 
     module = get_module_from_file(file)
-    if attr:
-        task_funcs = [getattr(module, attr)]
-    else:
-        # load all task decorated functions and ensure only one exists
-        task_funcs = [
-            getattr(module, attr)
-            for attr in dir(module)
-            if hasattr(getattr(module, attr), "__registry_info__")
-            and getattr(module, attr).__registry_info__.type == "task"
-        ]
-        if not task_funcs:
-            raise ValueError("No task functions found in file {file}")
-        if len(task_funcs) > 1:
-            config.name = None  # Clear the name so it will be set to the name of the attr  # type: ignore
-    return task_funcs
+    return getattr(module, attr)
 
 
-def get_task_creators(config: FTask) -> list[Callable[..., Task]]:
+def get_task_creator(config: FTask) -> Callable[..., Task]:
     if not config.name:
         raise ValueError(f"Task name is required. Task: {config}")
     config_name = config.name
 
     if config.name.find("@") != -1:
         file, attr = config.name.split("@", 1)
-        return get_task_creators_from_file(file, attr, config)
-    if config.name.find(".py") != -1:
-        result = get_task_creators_from_file(config.name, None, config)
-        return result
+        return get_task_creator_from_file(file, attr)
     else:
-        if not registry_lookup(type="task", name=config.name):
-            # Check if name is a file name
-            if file := find_file(config.name):
-                return get_task_creators_from_file(file, None, config)
-            raise LookupError(f"{config.name} was not found in the registry")
 
         def task_func(**kwargs):
             return registry_create(type="task", name=config_name, **kwargs)
 
-        task_funcs = [task_func]
-
-    return task_funcs
+        return task_func

@@ -1,12 +1,10 @@
-from typing import Literal
-
 import click
 import inspect_ai
 import yaml
 from inspect_ai.log import EvalLog
 
-from inspect_flow._config.resolved import config_with_tasks
-from inspect_flow._runner.matrix import instantiate_tasks
+from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._runner.resolve import resolve_config
 from inspect_flow._types.flow_types import (
     FConfig,
     FOptions,
@@ -20,10 +18,9 @@ def read_config() -> FConfig:
 
 
 def print_resolved_config(config: FConfig) -> None:
-    tasks = resolve_tasks(config)
-    resolved_config = config_with_tasks(config, tasks)
+    resolved_config = resolve_config(config)
     dump = yaml.dump(
-        config.model_dump(
+        resolved_config.model_dump(
             mode="json",
             exclude_unset=True,
             exclude_defaults=True,
@@ -35,30 +32,12 @@ def print_resolved_config(config: FConfig) -> None:
     click.echo(dump)
 
 
-def run_eval_set(
-    config: FConfig, mode: Literal["run", "dry-run", "config"] = "run"
-) -> tuple[bool, list[EvalLog]]:
-    if mode == "config":
-        task_configs = 
+def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
+    resolved_config = resolve_config(config)
+    tasks = instantiate_tasks(resolved_config)
 
-    tasks = instantiate_tasks(config)
-
-    if mode == "dry-run":
+    if dry_run:
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
-        return False, []
-    elif mode == "config":
-        resolved_config = config_with_tasks(config, tasks)
-        dump = yaml.dump(
-            config.model_dump(
-                mode="json",
-                exclude_unset=True,
-                exclude_defaults=True,
-                exclude_none=True,
-            ),
-            default_flow_style=False,
-            sort_keys=False,
-        )
-        click.echo(dump)
         return False, []
 
     options = config.options or FOptions()
@@ -135,15 +114,11 @@ def flow_run(ctx: click.Context, dry_run: bool, config: bool) -> None:
     if ctx.invoked_subcommand is not None:
         return
 
-    if config:
-        mode = "config"
-    elif dry_run:
-        mode = "dry-run"
-    else:
-        mode = "run"
-
     cfg = read_config()
-    run_eval_set(cfg, mode)
+    if config:
+        print_resolved_config(cfg)
+    else:
+        run_eval_set(cfg, dry_run=dry_run)
 
 
 def main() -> None:

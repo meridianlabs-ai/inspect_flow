@@ -129,6 +129,15 @@ def resolve_task(flow_config: FConfig, config: FTask) -> list[FTask]:
     return tasks
 
 
+def resolve_config(config: FConfig) -> FConfig:
+    resolved_tasks = []
+    for task_config in config.tasks or []:
+        resolved = resolve_task(config, task_config)
+        resolved_tasks.extend(resolved)
+
+    return config.model_copy(update={"tasks": resolved_tasks, "defaults": None})
+
+
 def get_task_creator_names_from_file(file_path: str) -> list[str]:
     file = find_file(file_path)
     if not file:

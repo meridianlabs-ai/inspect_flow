@@ -182,7 +182,7 @@ class FTask(BaseModel, extra="forbid"):
         description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
     )
 
-    version: int | None = Field(
+    version: int | str | None = Field(
         default=None,
         description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
     )

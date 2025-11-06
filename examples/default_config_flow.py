@@ -29,7 +29,7 @@ FlowConfig(
     ),
     tasks=[
         FlowTask(
-            name=task_file + "@noop",
+            name=task_file,
             config=GenerateConfig(
                 system_message=task_system_message,
                 temperature=task_temperature,
