@@ -10,6 +10,7 @@ from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.factories import models_matrix
 from inspect_flow._types.generated import (
     FlowDefaults,
+    FlowOptions,
     FlowSolver,
     FlowTask,
 )
@@ -744,3 +745,27 @@ def test_default_model_roles() -> None:
     assert isinstance(tasks_arg[0], Task)
     assert tasks_arg[0].model_roles.keys() == default_model_roles.keys()
     assert tasks_arg[1].model_roles.keys() == task_model_roles.keys()
+
+
+def test_log_dir_allow_dirty() -> None:
+    config = FlowConfig(
+        flow_dir="test_log_dir",
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(config=fc(config))
+
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    assert call_args.kwargs["log_dir_allow_dirty"] is True
+
+    config.options = FlowOptions(log_dir_allow_dirty=False)
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        run_eval_set(config=fc(config))
+
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    assert call_args.kwargs["log_dir_allow_dirty"] is False
