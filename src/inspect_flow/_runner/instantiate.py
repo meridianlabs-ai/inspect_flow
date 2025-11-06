@@ -172,7 +172,7 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         # scorer= Not Supported
         # metrics= Not Supported
         model=ng(model),
-        config=task.config,
+        config=ng(config.config),
         model_roles=ng(model_roles),
         sandbox=ng(config.sandbox),
         approval=ng(config.approval),  # type: ignore TODO:ransom
