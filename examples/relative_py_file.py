@@ -2,7 +2,7 @@ from inspect_flow import flow_config
 
 flow_config(
     {
-        "flow_dir": "logs/local_logs",
+        "flow_dir": "logs/flow_test",
         "options": {"limit": 1},
         "tasks": [
             {

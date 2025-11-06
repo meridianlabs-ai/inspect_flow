@@ -218,7 +218,7 @@ def test_config_nested_matrix() -> None:
 
 def test_merge_config():
     config = FlowConfig(
-        flow_dir="./logs/local_logs",
+        flow_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         dependencies=[
             "./examples/local_eval",

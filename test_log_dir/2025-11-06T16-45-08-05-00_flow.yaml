@@ -1,0 +1,5 @@
+flow_dir: test_log_dir
+options:
+  log_dir_allow_dirty: false
+tasks:
+- name: /Users/ransomrichardson/git/inspect_flow/examples/local_eval/src/local_eval/noop.py@noop
