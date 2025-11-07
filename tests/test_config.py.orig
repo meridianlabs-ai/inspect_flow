@@ -333,6 +333,17 @@ def test_overrides_of_dicts():
     assert "key1" not in config.options.metadata
 
 
+<<<<<<< HEAD
+def test_overrides_invalid_config_key():
+    config = FlowConfig()
+    with pytest.raises(ValueError):
+        config = _apply_overrides(
+            fc(config),
+            [
+                "defaults.config.key1=val1",
+            ],
+        )
+=======
 def test_metadata():
     models = [
         FlowModel("mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
@@ -355,14 +366,4 @@ def test_metadata():
         )
     )
     validate_config(config, "metadata_flow.yaml")
-
-
-def test_overrides_invalid_config_key():
-    config = FlowConfig()
-    with pytest.raises(ValueError):
-        config = _apply_overrides(
-            fc(config),
-            [
-                "defaults.config.key1=val1",
-            ],
-        )
+>>>>>>> origin/main
