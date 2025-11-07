@@ -93,3 +93,26 @@ def test_run_command_dry_run() -> None:
 
         # Verify that submit was called with the config object and file path
         mock_submit.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--dry-run"])
+
+
+def test_config_command_resolve() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.config.submit") as mock_submit,
+        patch("inspect_flow._cli.config.load_config") as mock_config,
+    ):
+        # Mock the config object
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        # Run the command with --dry-run flag
+        result = runner.invoke(config_command, [CONFIG_FILE, "--resolve"])
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Verify that load_config was called with the correct file
+        mock_config.assert_called_once_with(CONFIG_FILE, overrides=[])
+
+        # Verify that submit was called with the config object and file path
+        mock_submit.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--config"])
