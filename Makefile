@@ -9,6 +9,10 @@ check:
 test:
 	uv tool run pytest
 
+.PHONY: cov
+cov:
+	uv run pytest --cov=inspect_flow --cov-report=html --cov-branch
+
 .PHONY: hooks
 hooks:
 	pre-commit install
