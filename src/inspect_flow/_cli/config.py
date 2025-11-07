@@ -1,7 +1,13 @@
 import click
-import yaml
+from typing_extensions import Unpack
 
+from inspect_flow._cli.options import (
+    ConfigOptionArgs,
+    config_options,
+    options_to_overrides,
+)
 from inspect_flow._config.config import load_config
+from inspect_flow._config.write import config_to_yaml
 from inspect_flow._submit.submit import submit
 
 
@@ -13,22 +19,16 @@ from inspect_flow._submit.submit import submit
     is_flag=True,
     help="Fully resolve the config. Will create a venv and create all objects.",
 )
+@config_options
 def config_command(
     config_file: str,
     resolve: bool,
+    **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
-    config = load_config(config_file)
+    overrides = options_to_overrides(**kwargs)
+    config = load_config(config_file, overrides)
     if resolve:
         submit(config, config_file, ["--config"])
     else:
-        dump = yaml.dump(
-            config.model_dump(
-                mode="json",
-                exclude_unset=True,
-                exclude_defaults=True,
-                exclude_none=True,
-            ),
-            default_flow_style=False,
-            sort_keys=False,
-        )
+        dump = config_to_yaml(config)
         click.echo(dump)

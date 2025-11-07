@@ -12,7 +12,7 @@ from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 
 
-def load_config(config_file: str) -> FConfig:
+def _load_config_from_file(config_file: str) -> FConfig:
     config_path = Path(config_file)
 
     if not config_path.exists():
@@ -48,6 +48,25 @@ def load_config(config_file: str) -> FConfig:
         sys.exit(1)
 
     return FConfig(**data)
+
+
+def _apply_overrides(config: FConfig, overrides: list[str]) -> None:
+    for override in overrides:
+        key_path, value = override.split("=", 1)
+        keys = key_path.split("/")
+        obj = config
+        for key in keys[:-1]:
+            obj = getattr(obj, key)
+            if obj is None:
+                setattr(obj, key, {})
+                obj = getattr(obj, key)
+        setattr(obj, keys[-1], value)
+
+
+def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
+    config = _load_config_from_file(config_file)
+    _apply_overrides(config, overrides or [])
+    return config
 
 
 def print_filtered_traceback(e: ValidationError, config_path: Path) -> None:
