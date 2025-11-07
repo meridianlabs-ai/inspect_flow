@@ -70,6 +70,11 @@ class FModel(BaseModel, extra="forbid"):
         default=None, description="Additional args to pass to model constructor."
     )
 
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the model.",
+    )
+
 
 class FSolver(BaseModel, extra="forbid"):
     name: str | None = Field(
@@ -82,6 +87,11 @@ class FSolver(BaseModel, extra="forbid"):
         description="Additional args to pass to solver constructor.",
     )
 
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the solver.",
+    )
+
 
 class FAgent(BaseModel, extra="forbid"):
     name: str | None = Field(
@@ -92,6 +102,11 @@ class FAgent(BaseModel, extra="forbid"):
     args: CreateArgs | None = Field(
         default=None,
         description="Additional args to pass to agent constructor.",
+    )
+
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the agent.",
     )
 
     type: Literal["agent"] = Field(
@@ -194,6 +209,11 @@ class FTask(BaseModel, extra="forbid"):
     sample_id: str | int | list[str | int] | None = Field(
         default=None,
         description="Evaluate specific sample(s) from the dataset.",
+    )
+
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
 
     @field_validator("model", mode="before")
