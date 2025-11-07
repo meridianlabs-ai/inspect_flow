@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import flow_config
-from inspect_flow._submit.submit import submit
+from inspect_flow._launcher.launch import submit
 
 
 def test_submit() -> None:

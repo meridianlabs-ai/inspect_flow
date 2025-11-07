@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from inspect_flow import flow_config
-from inspect_flow._submit.venv import create_venv
+from inspect_flow._launcher.venv import create_venv
 from inspect_flow.types import FlowConfig, FlowTask
 
 from tests.test_helpers.type_helpers import fc

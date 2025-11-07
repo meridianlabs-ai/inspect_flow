@@ -8,7 +8,7 @@ from inspect_flow._cli.options import (
 )
 from inspect_flow._config.config import load_config
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._submit.submit import submit
+from inspect_flow._launcher.launch import submit
 
 
 @click.command("config", help="Output config")

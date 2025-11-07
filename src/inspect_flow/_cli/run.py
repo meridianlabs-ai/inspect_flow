@@ -7,7 +7,7 @@ from inspect_flow._cli.options import (
     options_to_overrides,
 )
 from inspect_flow._config.config import load_config
-from inspect_flow._submit.submit import submit
+from inspect_flow._launcher.launch import submit
 
 
 @click.command("run", help="Run a job")
