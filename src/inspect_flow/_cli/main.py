@@ -15,34 +15,10 @@ from .run import run_command
     default=False,
     help="Print the flow version.",
 )
-@click.option(
-    "--flow-dir",
-    type=str,
-    default=None,
-    help="Override the flow directory specified in the config.",
-    envvar="INSPECT_FLOW_DIR",
-)
-@click.option(
-    "--limit",
-    type=int,
-    default=None,
-    help="Limit the number of tasks to run.",
-    envvar="INSPECT_FLOW_LIMIT",
-)
-@click.option(
-    "--set",
-    "-s",
-    multiple=True,
-    type=str,
-    help="Set config overrides, e.g. 'defaults/solver/args/tool_calls=none'",
-)
 @click.pass_context
 def flow(
     ctx: click.Context,
     version: bool,
-    flow_dir: str | None,
-    limit: int | None,
-    set: list[str],
 ) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:

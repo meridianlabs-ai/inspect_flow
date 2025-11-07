@@ -242,3 +242,21 @@ def test_merge_config():
         ),
     )
     validate_config(config, "config_merge_flow.yaml")
+
+
+def test_overrides():
+    config = load_config(
+        str(Path(__file__).parents[1] / "examples" / "model_and_task_flow.py"),
+        overrides=[
+            "flow_dir=./logs/overridden_flow",
+            "options.limit=2",
+            "defaults.solver.args.tool_calls=none",
+        ],
+    )
+    assert config.flow_dir == "./logs/overridden_flow"
+    assert config.options
+    assert config.options.limit == 2
+    assert config.defaults
+    assert config.defaults.solver
+    assert config.defaults.solver.args
+    assert config.defaults.solver.args["tool_calls"] == "none"

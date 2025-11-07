@@ -2,6 +2,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
+from typing import Any
 
 import click
 import yaml
@@ -43,33 +44,47 @@ def _load_config_from_file(config_file: str) -> FConfig:
                     "Supported formats: .yaml, .yml, .json"
                 )
     except ValidationError as e:
-        print_filtered_traceback(e, config_path)
+        _print_filtered_traceback(e, config_path)
         click.echo(e, err=True)
         sys.exit(1)
 
     return FConfig(**data)
 
 
-def _apply_overrides(config: FConfig, overrides: list[str]) -> None:
+def _overrides_to_dict(overrides: list[str]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
     for override in overrides:
         key_path, value = override.split("=", 1)
-        keys = key_path.split("/")
-        obj = config
+        keys = key_path.split(".")
+        obj = result
         for key in keys[:-1]:
-            obj = getattr(obj, key)
-            if obj is None:
-                setattr(obj, key, {})
-                obj = getattr(obj, key)
-        setattr(obj, keys[-1], value)
+            obj = obj.setdefault(key, {})
+        obj[keys[-1]] = value
+    return result
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    for k, v in override.items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
+def _apply_overrides(config: FConfig, overrides: list[str]) -> FConfig:
+    overrides_dict = _overrides_to_dict(overrides)
+    base_dict = config.model_dump(mode="json", exclude_none=True)
+    merged_dict = _deep_merge(base_dict, overrides_dict)
+    return FConfig.model_validate(merged_dict)
 
 
 def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
     config = _load_config_from_file(config_file)
-    _apply_overrides(config, overrides or [])
-    return config
+    return _apply_overrides(config, overrides or [])
 
 
-def print_filtered_traceback(e: ValidationError, config_path: Path) -> None:
+def _print_filtered_traceback(e: ValidationError, config_path: Path) -> None:
     tb = e.__traceback__
     stack_summary = traceback.extract_tb(tb)
     config_file = str(config_path.resolve())

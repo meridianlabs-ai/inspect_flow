@@ -9,7 +9,7 @@ def config_options(f):
         "-s",
         multiple=True,
         type=str,
-        help="Set config overrides, e.g. 'defaults/solver/args/tool_calls=none'",
+        help="Set config overrides, e.g. 'defaults.solver.args.tool_calls=none'",
     )(f)
     f = click.option(
         "--limit",
@@ -40,5 +40,5 @@ def options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     if flow_dir := kwargs.get("flow_dir"):
         overrides.append(f"flow_dir={flow_dir}")
     if limit := kwargs.get("limit"):
-        overrides.append(f"options/limit={limit}")
+        overrides.append(f"options.limit={limit}")
     return overrides
