@@ -293,3 +293,39 @@ def test_overrides_of_lists():
     )
     assert config.dependencies == ["new_dep1", "new_dep2"]
     # There is no way to append multiple values to a list via overrides
+
+
+def test_overrides_of_dicts():
+    config = FlowConfig()
+    config = _apply_overrides(
+        fc(config),
+        [
+            "options.metadata.key1=val1",
+            "options.metadata.key2=val2",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["key1"] == "val1"
+    assert config.options.metadata["key2"] == "val2"
+    config = _apply_overrides(
+        fc(config),
+        [
+            "options.metadata.key1=val1_updated",
+            "options.metadata.key3=val3",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["key1"] == "val1_updated"
+    assert config.options.metadata["key2"] == "val2"
+    assert config.options.metadata["key3"] == "val3"
+    # Can set a dict directly
+    config = _apply_overrides(
+        fc(config),
+        [
+            'options.metadata={"new_key1": "new_val1", "new_key2": "new_val2"}',
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["new_key1"] == "new_val1"
+    assert config.options.metadata["new_key2"] == "new_val2"
+    assert "key1" not in config.options.metadata
