@@ -1,12 +1,78 @@
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
+from inspect_flow._cli.config import config_command
 from inspect_flow._cli.run import run_command
+from inspect_flow._types.flow_types import FConfig
 
 CONFIG_FILE = "./examples/model_and_task_flow.py"
 
 
-def test_submit_command_dry_run() -> None:
+def test_run_command_overrides() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.submit") as mock_submit,
+        patch("inspect_flow._cli.run.load_config") as mock_config,
+    ):
+        # Mock the config object
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command,
+            [
+                CONFIG_FILE,
+                "--set",
+                "dependencies=dep1",
+                "--set",
+                "defaults.solver.args.tool_calls=none",
+            ],
+            catch_exceptions=False,
+        )
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Verify that load_config was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE,
+            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+        )
+
+        # Verify that submit was called with the config object and file path
+        mock_submit.assert_called_once_with(mock_config_obj, CONFIG_FILE, [])
+
+
+def test_config_command_overrides() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.config.load_config") as mock_config,
+    ):
+        mock_config.return_value = FConfig()
+
+        result = runner.invoke(
+            config_command,
+            [
+                CONFIG_FILE,
+                "--set",
+                "dependencies=dep1",
+                "--set",
+                "defaults.solver.args.tool_calls=none",
+            ],
+            catch_exceptions=False,
+        )
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Verify that load_config was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE,
+            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+        )
+
+
+def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.submit") as mock_submit,
@@ -23,7 +89,7 @@ def test_submit_command_dry_run() -> None:
         assert result.exit_code == 0
 
         # Verify that load_config was called with the correct file
-        mock_config.assert_called_once_with(CONFIG_FILE)
+        mock_config.assert_called_once_with(CONFIG_FILE, overrides=[])
 
         # Verify that submit was called with the config object and file path
         mock_submit.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--dry-run"])

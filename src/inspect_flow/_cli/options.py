@@ -36,7 +36,7 @@ class ConfigOptionArgs(TypedDict, total=False):
 
 def options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     """Create a list of config overrides from CLI options."""
-    overrides = kwargs.get("set") or []
+    overrides = list(kwargs.get("set") or [])  # set may be a tuple (at least in tests)
     if flow_dir := kwargs.get("flow_dir"):
         overrides.append(f"flow_dir={flow_dir}")
     if limit := kwargs.get("limit"):

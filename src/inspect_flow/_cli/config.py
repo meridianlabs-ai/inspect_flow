@@ -26,7 +26,7 @@ def config_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     overrides = options_to_overrides(**kwargs)
-    config = load_config(config_file, overrides)
+    config = load_config(config_file, overrides=overrides)
     if resolve:
         submit(config, config_file, ["--config"])
     else:
