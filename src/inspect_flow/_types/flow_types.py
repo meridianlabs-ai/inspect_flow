@@ -34,6 +34,8 @@ class FGenerateConfig(GenerateConfig, extra="forbid"):
 
 
 class FModel(BaseModel, extra="forbid"):
+    """Configuration for a Model."""
+
     name: str | None = Field(
         default=None,
         description="Name of the model to use. Required to be set by the time the model is created.",
@@ -80,6 +82,8 @@ class FModel(BaseModel, extra="forbid"):
 
 
 class FSolver(BaseModel, extra="forbid"):
+    """Configuration for a Solver."""
+
     name: str | None = Field(
         default=None,
         description="Name of the solver. Required to be set by the time the solver is created.",
@@ -97,6 +101,8 @@ class FSolver(BaseModel, extra="forbid"):
 
 
 class FAgent(BaseModel, extra="forbid"):
+    """Configuration for an Agent."""
+
     name: str | None = Field(
         default=None,
         description="Name of the agent. Required to be set by the time the agent is created.",
@@ -119,6 +125,13 @@ class FAgent(BaseModel, extra="forbid"):
 
 
 class FEpochs(BaseModel):
+    """Configuration for task epochs.
+
+    Number of epochs to repeat samples over and optionally one or more
+    reducers used to combine scores from samples across epochs. If not
+    specified the "mean" score reducer is used.
+    """
+
     epochs: int = Field(description="Number of epochs.")
 
     reducer: str | list[str] | None = Field(
@@ -128,6 +141,11 @@ class FEpochs(BaseModel):
 
 
 class FTask(BaseModel, extra="forbid"):
+    """Configuration for an evaluation task.
+
+    Tasks are the basis for defining and running evaluations.
+    """
+
     name: str | None = Field(
         default=None,
         description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
@@ -222,15 +240,17 @@ class FTask(BaseModel, extra="forbid"):
     @field_validator("model", mode="before")
     @classmethod
     def convert_string_model(cls, v):
-        return convert_str_to_class(FModel, v)
+        return _convert_str_to_class(FModel, v)
 
     @field_validator("solver", mode="before")
     @classmethod
     def convert_string_solvers(cls, v):
-        return convert_str_to_solver(v)
+        return _convert_str_to_solver(v)
 
 
 class FOptions(BaseModel, extra="forbid"):
+    """Evaluation options."""
+
     retry_attempts: int | None = Field(
         default=None,
         description="Maximum number of retry attempts before giving up (defaults to 10).",
@@ -421,6 +441,8 @@ class FDefaults(BaseModel, extra="forbid"):
 
 
 class FConfig(BaseModel, extra="forbid"):
+    """Configuration for a flow run."""
+
     flow_dir: str | None = Field(
         default=None,
         description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'",
@@ -459,10 +481,10 @@ class FConfig(BaseModel, extra="forbid"):
     @field_validator("tasks", mode="before")
     @classmethod
     def convert_string_tasks(cls, v):
-        return convert_to_task_list(v)
+        return _convert_to_task_list(v)
 
 
-def convert_to_task_list(
+def _convert_to_task_list(
     v: str | FTask | list[str | FTask] | None,
 ) -> list[FTask] | None:
     if v is None:
@@ -472,26 +494,26 @@ def convert_to_task_list(
     return [FTask(name=task) if isinstance(task, str) else task for task in v]
 
 
-T = TypeVar("T", FModel, FSolver)
+_T = TypeVar("_T", FModel, FSolver)
 
 
 @overload
-def convert_str_to_class(cls: type[T], v: None) -> None: ...
+def _convert_str_to_class(cls: type[_T], v: None) -> None: ...
 
 
 @overload
-def convert_str_to_class(cls: type[T], v: str | T) -> T: ...
+def _convert_str_to_class(cls: type[_T], v: str | _T) -> _T: ...
 
 
-def convert_str_to_class(cls: type[T], v: str | T | None) -> T | None:
+def _convert_str_to_class(cls: type[_T], v: str | _T | None) -> _T | None:
     return cls(name=v) if isinstance(v, str) else v
 
 
-def convert_str_to_solver(
+def _convert_str_to_solver(
     v: str | FSolver | list[str | FSolver] | None,
 ) -> FSolver | list[FSolver] | None:
     if v is None:
         return None
     if isinstance(v, list):
-        return [convert_str_to_class(FSolver, solver) for solver in v]
-    return convert_str_to_class(FSolver, v)
+        return [_convert_str_to_class(FSolver, solver) for solver in v]
+    return _convert_str_to_class(FSolver, v)
