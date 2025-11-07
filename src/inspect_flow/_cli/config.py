@@ -8,7 +8,7 @@ from inspect_flow._cli.options import (
 )
 from inspect_flow._config.config import load_config
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._launcher.launch import submit
+from inspect_flow._launcher.launch import launch
 
 
 @click.command("config", help="Output config")
@@ -28,7 +28,7 @@ def config_command(
     overrides = options_to_overrides(**kwargs)
     config = load_config(config_file, overrides=overrides)
     if resolve:
-        submit(config, config_file, ["--config"])
+        launch(config, config_file, ["--config"])
     else:
         dump = config_to_yaml(config)
         click.echo(dump)
