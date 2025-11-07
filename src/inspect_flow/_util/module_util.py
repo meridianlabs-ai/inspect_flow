@@ -27,14 +27,20 @@ def execute_file_and_get_last_result(path: Path) -> object | None:
         return None
 
     *prefix, last = mod.body
+    target_id = "_"
     if isinstance(last, ast.Expr):
         # rewrite final expression:  _ = <expr>
-        last = ast.Assign(targets=[ast.Name(id="_", ctx=ast.Store())], value=last.value)
+        last = ast.Assign(
+            targets=[ast.Name(id=target_id, ctx=ast.Store())], value=last.value
+        )
         mod = ast.Module(body=[*prefix, last], type_ignores=[])
     elif isinstance(last, ast.Assign):
-        # rewrite final assignment to use name "_"
-        last.targets = [ast.Name(id="_", ctx=ast.Store())]
-        mod = ast.Module(body=[*prefix, last], type_ignores=[])
+        target_ids = [t.id for t in last.targets if isinstance(t, ast.Name)]
+        if len(target_ids) != 1:
+            raise ValueError(
+                "Only single target assignments are supported in config files"
+            )
+        target_id = target_ids[0]
     else:
         return None
     # else: leave as-is; result will be None
@@ -42,4 +48,4 @@ def execute_file_and_get_last_result(path: Path) -> object | None:
     code = compile(ast.fix_missing_locations(mod), path, "exec")
     g = {"__name__": "__main__", "__builtins__": builtins.__dict__}
     exec(code, g, g)
-    return g.get("_")
+    return g.get(target_id)

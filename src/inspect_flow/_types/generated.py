@@ -64,6 +64,8 @@ class SandboxEnvironmentSpecDict(TypedDict):
 
 
 class FlowAgentDict(TypedDict):
+    """Configuration for an Agent."""
+
     name: NotRequired[Optional[str]]
     """Name of the agent. Required to be set by the time the agent is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
@@ -75,11 +77,21 @@ class FlowAgentDict(TypedDict):
 
 
 class FlowAgentMatrixDict(TypedDict):
+    """Configuration for an Agent."""
+
     args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
     """Additional args to pass to agent constructor."""
 
 
 class FlowEpochsDict(TypedDict):
+    """
+    Configuration for task epochs.
+
+    Number of epochs to repeat samples over and optionally one or more
+    reducers used to combine scores from samples across epochs. If not
+    specified the "mean" score reducer is used.
+    """
+
     epochs: int
     """Number of epochs."""
     reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
@@ -87,6 +99,8 @@ class FlowEpochsDict(TypedDict):
 
 
 class FlowSolverDict(TypedDict):
+    """Configuration for a Solver."""
+
     name: NotRequired[Optional[str]]
     """Name of the solver. Required to be set by the time the solver is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
@@ -96,6 +110,8 @@ class FlowSolverDict(TypedDict):
 
 
 class FlowSolverMatrixDict(TypedDict):
+    """Configuration for a Solver."""
+
     args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
     """Additional args to pass to solver constructor."""
 
@@ -204,6 +220,8 @@ class FlowGenerateConfigMatrixDict(TypedDict):
 
 
 class FlowModelDict(TypedDict):
+    """Configuration for a Model."""
+
     name: NotRequired[Optional[str]]
     """Name of the model to use. Required to be set by the time the model is created."""
     role: NotRequired[Optional[str]]
@@ -227,6 +245,8 @@ class FlowModelDict(TypedDict):
 
 
 class FlowModelMatrixDict(TypedDict):
+    """Configuration for a Model."""
+
     config: NotRequired[
         Optional[
             Sequence[
@@ -240,6 +260,8 @@ class FlowModelMatrixDict(TypedDict):
 
 
 class FlowOptionsDict(TypedDict):
+    """Evaluation options."""
+
     retry_attempts: NotRequired[Optional[int]]
     """Maximum number of retry attempts before giving up (defaults to 10)."""
     retry_wait: NotRequired[Optional[float]]
@@ -313,6 +335,12 @@ class FlowOptionsDict(TypedDict):
 
 
 class FlowTaskDict(TypedDict):
+    """
+    Configuration for an evaluation task.
+
+    Tasks are the basis for defining and running evaluations.
+    """
+
     name: NotRequired[Optional[str]]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
@@ -377,6 +405,12 @@ class FlowTaskDict(TypedDict):
 
 
 class FlowTaskMatrixDict(TypedDict):
+    """
+    Configuration for an evaluation task.
+
+    Tasks are the basis for defining and running evaluations.
+    """
+
     args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
@@ -456,6 +490,8 @@ class FlowDefaultsDict(TypedDict):
 
 
 class FlowConfigDict(TypedDict):
+    """Configuration for a flow run."""
+
     flow_dir: NotRequired[Optional[str]]
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: NotRequired[Optional[str]]
@@ -474,6 +510,8 @@ class FlowConfigDict(TypedDict):
 
 @dataclass
 class FlowAgent:
+    """Configuration for an Agent."""
+
     name: Optional[str] = None
     """Name of the agent. Required to be set by the time the agent is created."""
     args: Optional[Mapping[str, Any]] = None
@@ -486,6 +524,14 @@ class FlowAgent:
 
 @dataclass
 class FlowEpochs:
+    """
+    Configuration for task epochs.
+
+    Number of epochs to repeat samples over and optionally one or more
+    reducers used to combine scores from samples across epochs. If not
+    specified the "mean" score reducer is used.
+    """
+
     epochs: int
     """Number of epochs."""
     reducer: Optional[Union[str, Sequence[str]]] = None
@@ -494,6 +540,8 @@ class FlowEpochs:
 
 @dataclass
 class FlowSolver:
+    """Configuration for a Solver."""
+
     name: Optional[str] = None
     """Name of the solver. Required to be set by the time the solver is created."""
     args: Optional[Mapping[str, Any]] = None
@@ -539,6 +587,8 @@ class FlowGenerateConfig:
 
 @dataclass
 class FlowModel:
+    """Configuration for a Model."""
+
     name: Optional[str] = None
     """Name of the model to use. Required to be set by the time the model is created."""
     role: Optional[str] = None
@@ -563,6 +613,8 @@ class FlowModel:
 
 @dataclass
 class FlowOptions:
+    """Evaluation options."""
+
     retry_attempts: Optional[int] = None
     """Maximum number of retry attempts before giving up (defaults to 10)."""
     retry_wait: Optional[float] = None
@@ -635,6 +687,12 @@ class FlowOptions:
 
 @dataclass
 class FlowTask:
+    """
+    Configuration for an evaluation task.
+
+    Tasks are the basis for defining and running evaluations.
+    """
+
     name: Optional[str] = None
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: Optional[Mapping[str, Any]] = None
@@ -730,6 +788,8 @@ class FlowDefaults:
 
 @dataclass
 class FlowConfig:
+    """Configuration for a flow run."""
+
     flow_dir: Optional[str] = None
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: Optional[str] = None

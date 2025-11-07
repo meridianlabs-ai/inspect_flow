@@ -3,7 +3,8 @@ try:
 except ImportError:
     __version__ = "unknown"
 
-from inspect_flow._submit.submit import submit
+from inspect_flow._config.config import load_config
+from inspect_flow._launcher.launch import launch
 from inspect_flow._types.factories import (
     agents_matrix,
     agents_with,
@@ -33,11 +34,12 @@ __all__ = [
     "flow_model",
     "flow_solver",
     "flow_task",
+    "load_config",
     "models_matrix",
     "models_with",
     "solvers_matrix",
     "solvers_with",
-    "submit",
+    "launch",
     "tasks_matrix",
     "tasks_with",
 ]

@@ -7,7 +7,7 @@ from inspect_flow._cli.options import (
     options_to_overrides,
 )
 from inspect_flow._config.config import load_config
-from inspect_flow._submit.submit import submit
+from inspect_flow._launcher.launch import launch
 
 
 @click.command("run", help="Run a job")
@@ -29,4 +29,4 @@ def run_command(
     config = load_config(config_file, overrides=overrides)
 
     run_args = ["--dry-run"] if dry_run else []
-    submit(config, config_file, run_args)
+    launch(config, config_file, run_args)

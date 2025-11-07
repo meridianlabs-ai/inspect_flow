@@ -1,6 +1,6 @@
 from inspect_flow import flow_config
 
-flow_config(
+my_config = flow_config(
     {
         "flow_dir": "logs/model_and_task",
         "options": {"limit": 1},

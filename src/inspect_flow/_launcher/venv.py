@@ -11,31 +11,73 @@ from pydantic import BaseModel, Field
 from inspect_flow._types.flow_types import FConfig, FModel, FTask
 
 
-class VcsInfo(BaseModel):
+def create_venv(config: FConfig, temp_dir: str) -> dict[str, str]:
+    flow_yaml_path = Path(temp_dir) / "flow.yaml"
+    with open(flow_yaml_path, "w") as f:
+        yaml.dump(
+            config.model_dump(mode="json", exclude_unset=True),
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
+    # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
+    env = os.environ.copy()
+    env.pop("VIRTUAL_ENV", None)
+
+    command = ["uv", "venv"]
+    if config.python_version:
+        command.extend(["--python", config.python_version])
+    subprocess.run(
+        command,
+        cwd=temp_dir,
+        check=True,
+        env=env,
+    )
+
+    dependencies: List[str] = config.dependencies or []
+    dependencies = [
+        dep if not dep.startswith(".") else str(Path(dep).resolve())
+        for dep in dependencies
+    ]
+    dependencies.extend(_get_model_dependencies(config))
+    dependencies.append(_get_pip_string("inspect-flow"))
+
+    subprocess.run(
+        ["uv", "pip", "install", *sorted(dependencies)],
+        cwd=temp_dir,
+        check=True,
+        env=env,
+    )
+
+    return env
+
+
+class _VcsInfo(BaseModel):
     vcs: Literal["git", "hg", "bzr", "svn"]
     commit_id: str
     requested_revision: str | None = None
     resolved_revision: str | None = None
 
 
-class ArchiveInfo(BaseModel):
+class _ArchiveInfo(BaseModel):
     hash: str | None = None  # Deprecated format: "<algorithm>=<hash>"
     hashes: dict[str, str] | None = None  # New format: {"sha256": "<hex>"}
 
 
-class DirInfo(BaseModel):
+class _DirInfo(BaseModel):
     editable: bool = Field(default=False)  # Default: False
 
 
-class DirectUrl(BaseModel):
+class _DirectUrl(BaseModel):
     url: str
-    vcs_info: VcsInfo | None = None
-    archive_info: ArchiveInfo | None = None
-    dir_info: DirInfo | None = None
+    vcs_info: _VcsInfo | None = None
+    archive_info: _ArchiveInfo | None = None
+    dir_info: _DirInfo | None = None
     subdirectory: str | None = None
 
 
-def get_package_direct_url(package: str) -> DirectUrl | None:
+def _get_package_direct_url(package: str) -> _DirectUrl | None:
     """Retrieve the PEP 610 direct_url.json
 
     `direct_url.json` is a metadata file created by pip (and other Python package
@@ -60,20 +102,12 @@ def get_package_direct_url(package: str) -> DirectUrl | None:
         return None
 
     try:
-        return DirectUrl.model_validate_json(json_text)
+        return _DirectUrl.model_validate_json(json_text)
     except (json.JSONDecodeError, ValueError):
         return None
 
 
-def package_is_installed_editable(package: str) -> bool:
-    return (
-        (direct_url := get_package_direct_url(package)) is not None
-        and direct_url.dir_info is not None
-        and direct_url.dir_info.editable
-    )
-
-
-def direct_url_to_pip_string(direct_url: DirectUrl) -> str:
+def _direct_url_to_pip_string(direct_url: _DirectUrl) -> str:
     """Convert a DirectUrl object to a pip install argument string."""
     # VCS install (git, hg, bzr, svn)
     if direct_url.vcs_info:
@@ -117,8 +151,8 @@ def direct_url_to_pip_string(direct_url: DirectUrl) -> str:
     return direct_url.url
 
 
-def get_pip_string(package: str) -> str:
-    direct_url = get_package_direct_url(package)
+def _get_pip_string(package: str) -> str:
+    direct_url = _get_package_direct_url(package)
     # If DirectURL is None, could be running in dev mode or installed from PyPI.
     if direct_url is None:
         package_path = Path(__file__).parents[3]
@@ -127,11 +161,11 @@ def get_pip_string(package: str) -> str:
             return package
         return str(package_path)
     # package is installed - copy the installed package to the new venv
-    return direct_url_to_pip_string(direct_url)
+    return _direct_url_to_pip_string(direct_url)
 
 
 # TODO:ransom how do we keep in sync with inspect_ai - should probably export from there
-providers = {
+_providers = {
     "groq": "groq",
     "openai": "openai",
     "anthropic": "anthropic",
@@ -157,13 +191,13 @@ providers = {
 }
 
 
-def get_model_dependencies(config: FConfig) -> List[str]:
+def _get_model_dependencies(config: FConfig) -> List[str]:
     model_dependencies: set[str] = set()
 
     def collect_dependency(model_name: str | None) -> None:
         """Extract provider from model name like 'openai/gpt-4o-mini' -> 'openai'"""
         if model_name and "/" in model_name:
-            dependency = providers.get(model_name.split("/")[0])
+            dependency = _providers.get(model_name.split("/")[0])
             if dependency:
                 model_dependencies.add(dependency)
 
@@ -181,45 +215,3 @@ def get_model_dependencies(config: FConfig) -> List[str]:
         collect_model_dependencies(task)
 
     return sorted(model_dependencies)
-
-
-def create_venv(config: FConfig, temp_dir: str) -> dict[str, str]:
-    flow_yaml_path = Path(temp_dir) / "flow.yaml"
-    with open(flow_yaml_path, "w") as f:
-        yaml.dump(
-            config.model_dump(mode="json", exclude_unset=True),
-            f,
-            default_flow_style=False,
-            sort_keys=False,
-        )
-
-    # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
-    env = os.environ.copy()
-    env.pop("VIRTUAL_ENV", None)
-
-    command = ["uv", "venv"]
-    if config.python_version:
-        command.extend(["--python", config.python_version])
-    subprocess.run(
-        command,
-        cwd=temp_dir,
-        check=True,
-        env=env,
-    )
-
-    dependencies: List[str] = config.dependencies or []
-    dependencies = [
-        dep if not dep.startswith(".") else str(Path(dep).resolve())
-        for dep in dependencies
-    ]
-    dependencies.extend(get_model_dependencies(config))
-    dependencies.append(get_pip_string("inspect-flow"))
-
-    subprocess.run(
-        ["uv", "pip", "install", *sorted(dependencies)],
-        cwd=temp_dir,
-        check=True,
-        env=env,
-    )
-
-    return env

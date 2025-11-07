@@ -23,7 +23,6 @@ GENERATED_CODE_COMMENT = [
     "\n",
 ]
 
-# TODO:ransom private import
 ADDITIONAL_IMPORTS = [
     "from __future__ import annotations\n",
     "from typing_extensions import TypedDict\n",
