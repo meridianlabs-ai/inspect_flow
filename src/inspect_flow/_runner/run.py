@@ -14,26 +14,26 @@ from inspect_flow._types.flow_types import (
 )
 
 
-def read_config() -> FConfig:
+def _read_config() -> FConfig:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
         return FConfig(**data)
 
 
-def print_resolved_config(config: FConfig) -> None:
+def _print_resolved_config(config: FConfig) -> None:
     resolved_config = resolve_config(config)
     dump = config_to_yaml(resolved_config)
     click.echo(dump)
 
 
-def write_config_file(config: FConfig) -> None:
+def _write_config_file(config: FConfig) -> None:
     filename = f"{config.flow_dir}/{clean_filename_component(iso_now())}_flow.yaml"
     yaml = config_to_yaml(config)
     with file(filename, "w") as f:
         f.write(yaml)
 
 
-def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
+def _run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_config(config)
     tasks = instantiate_tasks(resolved_config)
 
@@ -44,7 +44,7 @@ def run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[Eva
     options = config.options or FOptions()
     assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
 
-    write_config_file(resolved_config)
+    _write_config_file(resolved_config)
 
     log_dir = config.flow_dir + "/logs"
     log_dir_allow_dirty = (
@@ -124,11 +124,11 @@ def flow_run(ctx: click.Context, dry_run: bool, config: bool) -> None:
     if ctx.invoked_subcommand is not None:
         return
 
-    cfg = read_config()
+    cfg = _read_config()
     if config:
-        print_resolved_config(cfg)
+        _print_resolved_config(cfg)
     else:
-        run_eval_set(cfg, dry_run=dry_run)
+        _run_eval_set(cfg, dry_run=dry_run)
 
 
 def main() -> None:
