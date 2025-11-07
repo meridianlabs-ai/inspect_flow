@@ -5,6 +5,7 @@ from inspect_ai.model import GenerateConfig
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.config import _apply_overrides, load_config
 from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.generated import FlowAgent, FlowSolver
 from inspect_flow.types import (
     FlowConfig,
     FlowModel,
@@ -329,3 +330,27 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+
+
+def test_metadata():
+    models = [
+        FlowModel("mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
+        FlowModel("mockllm/mock-llm2", flow_metadata={"context_window": 2048}),
+    ]
+    models_to_use = [
+        m
+        for m in models
+        if m.flow_metadata and m.flow_metadata.get("context_window", 0) >= 2000
+    ]
+    assert len(list(models_to_use)) == 1
+    agent = FlowAgent("agentname", flow_metadata={"agent": "1"})
+    solver = FlowSolver("solvername", flow_metadata={"solver": "2"})
+    task = FlowTask("taskname", flow_metadata={"task": "3"})
+    config = FlowConfig(
+        tasks=tasks_matrix(
+            task=task,
+            model=models_to_use,
+            solver=[solver, agent],
+        )
+    )
+    validate_config(config, "metadata_flow.yaml")

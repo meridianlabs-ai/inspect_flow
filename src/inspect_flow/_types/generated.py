@@ -67,6 +67,8 @@ class FlowAgentDict(TypedDict):
     """Name of the agent. Required to be set by the time the agent is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to agent constructor."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the agent."""
     type: NotRequired[Literal["agent"]]
     """Type needed to differentiated solvers and agents in solver lists."""
 
@@ -88,6 +90,8 @@ class FlowSolverDict(TypedDict):
     """Name of the solver. Required to be set by the time the solver is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to solver constructor."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the solver."""
 
 
 class FlowSolverMatrixDict(TypedDict):
@@ -288,6 +292,8 @@ class FlowModelDict(TypedDict):
     """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
     model_args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to model constructor."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the model."""
 
 
 class FlowModelMatrixDict(TypedDict):
@@ -355,6 +361,8 @@ class FlowTaskDict(TypedDict):
     """Additional metadata to associate with the task."""
     sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
     """Evaluate specific sample(s) from the dataset."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the task."""
 
 
 class FlowTaskMatrixDict(TypedDict):
@@ -451,6 +459,8 @@ class FlowAgent:
     """Name of the agent. Required to be set by the time the agent is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to agent constructor."""
+    flow_metadata: Optional[Mapping[str, Any]] = None
+    """Optional. Metadata stored in the flow config. Not passed to the agent."""
     type: Literal["agent"] = "agent"
     """Type needed to differentiated solvers and agents in solver lists."""
 
@@ -469,6 +479,8 @@ class FlowSolver:
     """Name of the solver. Required to be set by the time the solver is created."""
     args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to solver constructor."""
+    flow_metadata: Optional[Mapping[str, Any]] = None
+    """Optional. Metadata stored in the flow config. Not passed to the solver."""
 
 
 @dataclass
@@ -489,6 +501,8 @@ class FlowModel:
     """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
     model_args: Optional[Mapping[str, Any]] = None
     """Additional args to pass to model constructor."""
+    flow_metadata: Optional[Mapping[str, Any]] = None
+    """Optional. Metadata stored in the flow config. Not passed to the model."""
 
 
 @dataclass
@@ -618,6 +632,8 @@ class FlowTask:
     """Additional metadata to associate with the task."""
     sample_id: Optional[Union[str, int, Sequence[Union[str, int]]]] = None
     """Evaluate specific sample(s) from the dataset."""
+    flow_metadata: Optional[Mapping[str, Any]] = None
+    """Optional. Metadata stored in the flow config. Not passed to the task."""
 
 
 @dataclass

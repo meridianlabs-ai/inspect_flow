@@ -1,0 +1,23 @@
+tasks:
+- name: taskname
+  solver:
+    name: solvername
+    flow_metadata:
+      solver: '2'
+  model:
+    name: mockllm/mock-llm2
+    flow_metadata:
+      context_window: 2048
+  flow_metadata:
+    task: '3'
+- name: taskname
+  solver:
+    name: agentname
+    flow_metadata:
+      agent: '1'
+  model:
+    name: mockllm/mock-llm2
+    flow_metadata:
+      context_window: 2048
+  flow_metadata:
+    task: '3'
