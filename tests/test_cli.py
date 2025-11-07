@@ -1,4 +1,3 @@
-import subprocess
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
@@ -7,19 +6,12 @@ from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._types.flow_types import FConfig
+from inspect_flow._version import __version__
 
 CONFIG_FILE = "./examples/model_and_task_flow.py"
 
 
-def test_main_run() -> None:
-    result = subprocess.run(
-        ["python", "-m", "inspect_flow._cli.main", "--version"], check=True
-    )
-    assert result.returncode == 0
-    # for some reason the stdout is not set
-
-
-def test_main_help() -> None:
+def test_flow_help() -> None:
     runner = CliRunner()
     result = runner.invoke(
         flow,
@@ -28,6 +20,17 @@ def test_main_help() -> None:
     )
     assert result.exit_code == 0
     assert result.output.startswith("Usage:")
+
+
+def test_flow_version() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        flow,
+        ["--version"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert result.output == __version__ + "\n"
 
 
 def test_run_command_overrides() -> None:
