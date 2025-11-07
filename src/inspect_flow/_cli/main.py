@@ -16,7 +16,10 @@ from .run import run_command
     help="Print the flow version.",
 )
 @click.pass_context
-def flow(ctx: click.Context, version: bool) -> None:
+def flow(
+    ctx: click.Context,
+    version: bool,
+) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         return

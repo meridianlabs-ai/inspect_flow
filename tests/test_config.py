@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 from inspect_ai.model import GenerateConfig
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
-from inspect_flow._config.config import load_config
+from inspect_flow._config.config import _apply_overrides, load_config
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow.types import (
     FlowConfig,
@@ -12,6 +12,8 @@ from inspect_flow.types import (
     FlowTask,
 )
 from pydantic_core import to_jsonable_python
+
+from tests.test_helpers.type_helpers import fc
 
 update_examples = False
 
@@ -242,3 +244,88 @@ def test_merge_config():
         ),
     )
     validate_config(config, "config_merge_flow.yaml")
+
+
+def test_load_config_overrides():
+    config = load_config(
+        str(Path(__file__).parents[1] / "examples" / "model_and_task_flow.py"),
+        overrides=[
+            "flow_dir=./logs/overridden_flow",
+            "options.limit=2",
+            "defaults.solver.args.tool_calls=none",
+        ],
+    )
+    assert config.flow_dir == "./logs/overridden_flow"
+    assert config.options
+    assert config.options.limit == 2
+    assert config.defaults
+    assert config.defaults.solver
+    assert config.defaults.solver.args
+    assert config.defaults.solver.args["tool_calls"] == "none"
+
+
+def test_overrides_of_lists():
+    config = FlowConfig()
+    # Within a single override, later values replace earlier ones
+    config = _apply_overrides(
+        fc(config),
+        [
+            "dependencies=dep1",
+            "dependencies=dep2",
+        ],
+    )
+    assert config.dependencies == ["dep2"]
+    # Within a single override, later values replace earlier ones - even when the type is already a list
+    config = _apply_overrides(
+        fc(config),
+        [
+            "dependencies=dep3",
+            "dependencies=dep4",
+        ],
+    )
+    assert config.dependencies == ["dep2", "dep4"]
+    # Can set a list directly
+    config = _apply_overrides(
+        fc(config),
+        [
+            'dependencies=["new_dep1", "new_dep2"]',
+        ],
+    )
+    assert config.dependencies == ["new_dep1", "new_dep2"]
+    # There is no way to append multiple values to a list via overrides
+
+
+def test_overrides_of_dicts():
+    config = FlowConfig()
+    config = _apply_overrides(
+        fc(config),
+        [
+            "options.metadata.key1=val1",
+            "options.metadata.key2=val2",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["key1"] == "val1"
+    assert config.options.metadata["key2"] == "val2"
+    config = _apply_overrides(
+        fc(config),
+        [
+            "options.metadata.key1=val1_updated",
+            "options.metadata.key3=val3",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["key1"] == "val1_updated"
+    assert config.options.metadata["key2"] == "val2"
+    assert config.options.metadata["key3"] == "val3"
+    # Can set a dict directly
+    config = _apply_overrides(
+        fc(config),
+        [
+            'options.metadata={"new_key1": "new_val1", "new_key2": "new_val2"}',
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["new_key1"] == "new_val1"
+    assert config.options.metadata["new_key2"] == "new_val2"
+    assert "key1" not in config.options.metadata
