@@ -23,7 +23,7 @@ from tests.test_helpers.type_helpers import fc
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 task_dir = (
-    Path(__file__).parents[1] / "examples" / "local_eval" / "src" / "local_eval"
+    Path(__file__).parent / "config" / "local_eval" / "src" / "local_eval"
 ).resolve()
 task_file = str(task_dir / "noop.py")
 
