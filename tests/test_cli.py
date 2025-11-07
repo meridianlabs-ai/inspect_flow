@@ -1,11 +1,33 @@
+import subprocess
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 from inspect_flow._cli.config import config_command
+from inspect_flow._cli.main import flow
+from inspect_flow._cli.options import options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._types.flow_types import FConfig
 
 CONFIG_FILE = "./examples/model_and_task_flow.py"
+
+
+def test_main_run() -> None:
+    result = subprocess.run(
+        ["python", "-m", "inspect_flow._cli.main", "--version"], check=True
+    )
+    assert result.returncode == 0
+    # for some reason the stdout is not set
+
+
+def test_main_help() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        flow,
+        [],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert result.output.startswith("Usage:")
 
 
 def test_run_command_overrides() -> None:
@@ -116,3 +138,20 @@ def test_config_command_resolve() -> None:
 
         # Verify that launch was called with the config object and file path
         mock_launch.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--config"])
+
+
+def test_options_to_overrides() -> None:
+    overrides = options_to_overrides(
+        flow_dir="option_dir",
+        limit=1,
+        set=["flow_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],
+    )
+
+    assert len(overrides) == 5
+    assert overrides == [
+        "flow_dir=set_dir",
+        "options.limit=5",
+        "options.log_dir_allow_dirty=True",
+        "flow_dir=option_dir",
+        "options.limit=1",
+    ]
