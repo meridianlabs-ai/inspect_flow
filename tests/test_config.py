@@ -39,7 +39,7 @@ def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
 def validate_config(config: FlowConfig | FConfig, file_name: str) -> None:
     config = FConfig.model_validate(to_jsonable_python(config))
     # Load the example config file
-    example_path = Path(__file__).parents[1] / "examples" / file_name
+    example_path = Path(__file__).parent / "config" / file_name
     with open(example_path, "r") as f:
         expected_config = yaml.safe_load(f)
 
@@ -119,14 +119,14 @@ def test_config_model_and_task() -> None:
 
 def test_py_config() -> None:
     config = load_config(
-        str(Path(__file__).parents[1] / "examples" / "model_and_task_flow.py")
+        str(Path(__file__).parent / "config" / "model_and_task_flow.py")
     )
     validate_config(config, "model_and_task_flow.yaml")
 
 
 def test_py_config_with_assign() -> None:
     config = load_config(
-        str(Path(__file__).parents[1] / "examples" / "model_and_task2_flow.py")
+        str(Path(__file__).parent / "config" / "model_and_task2_flow.py")
     )
     validate_config(config, "model_and_task_flow.yaml")
 
@@ -250,7 +250,7 @@ def test_merge_config():
 
 def test_load_config_overrides():
     config = load_config(
-        str(Path(__file__).parents[1] / "examples" / "model_and_task_flow.py"),
+        str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
         overrides=[
             "flow_dir=./logs/overridden_flow",
             "options.limit=2",
