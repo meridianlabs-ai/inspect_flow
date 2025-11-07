@@ -11,7 +11,7 @@ from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
 
-from inspect_flow._types.factories import merge_dicts_with_config
+from inspect_flow._types.factories import _merge_dicts_with_config
 from inspect_flow._types.flow_types import (
     FAgent,
     FConfig,
@@ -33,7 +33,7 @@ _T = TypeVar("_T", bound=BaseModel)
 
 def merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
     default_dict = defaults.model_dump(mode="json", exclude_none=True)
-    return merge_dicts_with_config(default_dict, config_dict)
+    return _merge_dicts_with_config(default_dict, config_dict)
 
 
 def merge_defaults(

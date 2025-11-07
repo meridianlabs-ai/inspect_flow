@@ -1,7 +1,6 @@
 from itertools import product
 from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
-from inspect_ai.model import GenerateConfig
 from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
 
@@ -88,19 +87,21 @@ MatrixDict = TypeVar(
 )
 
 
-def merge_dicts_with_config(
+def _merge_dicts_with_config(
     base_dict: dict[str, Any],
     add_dict: dict[str, Any],
 ) -> dict[str, Any]:
-    # Filter out None values from add_dict to prevent overriding set values in base_dict
     filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
     result = base_dict | filtered_add_dict
     if (add_config := add_dict.get("config")) and (
         base_config := base_dict.get("config")
     ):
-        if not isinstance(base_config, GenerateConfig):
-            base_config = GenerateConfig(**base_config)
-        result["config"] = base_config.merge(add_config)
+        if not isinstance(base_config, dict):
+            base_config = to_jsonable_python(base_config, exclude_none=True)
+        if not isinstance(add_config, dict):
+            add_config = to_jsonable_python(add_config, exclude_none=True)
+        filtered_add_dict = {k: v for k, v in add_config.items() if v is not None}
+        result["config"] = base_config | filtered_add_dict
     return result
 
 
@@ -122,7 +123,7 @@ def _with_base(
             raise ValueError(f"{key} provided in both base and values")
 
     return pydantic_type.model_validate(
-        merge_dicts_with_config(base_dict, dict(values))
+        _merge_dicts_with_config(base_dict, dict(values))
     )
 
 
@@ -165,7 +166,7 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(merge_dicts_with_config(base_dict, add_dict))
+            pydantic_type.model_validate(_merge_dicts_with_config(base_dict, add_dict))
         )
     return result
 

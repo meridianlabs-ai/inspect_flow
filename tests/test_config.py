@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.config import _apply_overrides, load_config
@@ -333,11 +334,10 @@ def test_overrides_of_dicts():
 
 def test_overrides_invalid_config_key():
     config = FlowConfig()
-    config = _apply_overrides(
-        fc(config),
-        [
-            "defaults.config.key1=val1",
-        ],
-    )
-    assert config.defaults and config.defaults.config
-    print(f"config.defaults.config: {config.defaults.config}")
+    with pytest.raises(ValueError):
+        config = _apply_overrides(
+            fc(config),
+            [
+                "defaults.config.key1=val1",
+            ],
+        )
