@@ -9,7 +9,19 @@ def config_options(f):
         "-s",
         multiple=True,
         type=str,
-        help="Set config overrides, e.g. 'defaults.solver.args.tool_calls=none'",
+        help="""
+    Set config overrides.
+
+    Examples:
+      --set defaults.solver.args.tool_calls=none
+      --set options.limit=10
+      --set options.metadata={"key1": "val1", "key2": "val2"}
+
+    The specified value may be a string or json parsable list or dict.
+    If string is provided then it will be appended to existing list values.
+    If json list or dict is provided then it will replace existing values.
+    If the same key is provided multiple times, later values will override earlier ones.
+    """,
     )(f)
     f = click.option(
         "--limit",
