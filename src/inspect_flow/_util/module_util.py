@@ -48,4 +48,4 @@ def execute_file_and_get_last_result(path: Path) -> object | None:
     code = compile(ast.fix_missing_locations(mod), path, "exec")
     g = {"__name__": "__main__", "__builtins__": builtins.__dict__}
     exec(code, g, g)
-    return g.get("_")
+    return g.get(target_id)
