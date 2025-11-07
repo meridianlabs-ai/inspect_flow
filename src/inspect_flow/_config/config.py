@@ -2,7 +2,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import click
 import yaml
@@ -11,6 +11,13 @@ from pydantic_core import ValidationError, to_jsonable_python
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
+
+
+def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
+    config = _load_config_from_file(config_file)
+    if overrides:
+        return _apply_overrides(config, overrides or [])
+    return config
 
 
 def _load_config_from_file(config_file: str) -> FConfig:
@@ -51,7 +58,18 @@ def _load_config_from_file(config_file: str) -> FConfig:
     return FConfig(**data)
 
 
-def _overrides_to_dict(overrides: list[str]) -> dict[str, Any]:
+def _maybe_json(value: str) -> Any:
+    try:
+        print(f"Trying to parse JSON value: {value}")
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+_OverrideDict: TypeAlias = dict[str, "str | _OverrideDict"]
+
+
+def _overrides_to_dict(overrides: list[str]) -> _OverrideDict:
     result: dict[str, Any] = {}
     for override in overrides:
         key_path, value = override.split("=", 1)
@@ -63,12 +81,26 @@ def _overrides_to_dict(overrides: list[str]) -> dict[str, Any]:
     return result
 
 
-def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: _OverrideDict) -> dict[str, Any]:
     for k, v in override.items():
-        if isinstance(v, dict) and isinstance(base.get(k), dict):
-            _deep_merge(base[k], v)
+        base_v = base.get(k)
+        if isinstance(v, dict):
+            if isinstance(base_v, dict):
+                _deep_merge(base_v, v)
+            else:
+                base[k] = v
+        elif isinstance(base_v, list):
+            json_v = _maybe_json(v)
+            if isinstance(json_v, list):
+                base[k] = json_v
+            else:
+                base_v.append(v)
         else:
-            base[k] = v
+            json_v = _maybe_json(v)
+            if isinstance(json_v, list | dict):
+                base[k] = json_v
+            else:
+                base[k] = v
     return base
 
 
@@ -77,11 +109,6 @@ def _apply_overrides(config: FConfig, overrides: list[str]) -> FConfig:
     base_dict = config.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge(base_dict, overrides_dict)
     return FConfig.model_validate(merged_dict)
-
-
-def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
-    config = _load_config_from_file(config_file)
-    return _apply_overrides(config, overrides or [])
 
 
 def _print_filtered_traceback(e: ValidationError, config_path: Path) -> None:
