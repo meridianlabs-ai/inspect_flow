@@ -1,11 +1,11 @@
 from pathlib import Path
 
+from inspect_flow._types.generated import FlowGenerateConfig
 from inspect_flow.types import (
     FlowConfig,
     FlowDefaults,
     FlowModel,
     FlowTask,
-    GenerateConfig,
 )
 
 config_system_message = "Config System Message"
@@ -21,7 +21,7 @@ task_file = str(task_dir / "noop.py")
 FlowConfig(
     flow_dir="logs/flow_test",
     defaults=FlowDefaults(
-        config=GenerateConfig(
+        config=FlowGenerateConfig(
             system_message=config_system_message,
             temperature=config_temperature,
             max_tokens=config_max_tokens,
@@ -30,13 +30,13 @@ FlowConfig(
     tasks=[
         FlowTask(
             name=task_file,
-            config=GenerateConfig(
+            config=FlowGenerateConfig(
                 system_message=task_system_message,
                 temperature=task_temperature,
             ),
             model=FlowModel(
                 name="mockllm/mock-llm",
-                config=GenerateConfig(system_message=model_system_message),
+                config=FlowGenerateConfig(system_message=model_system_message),
             ),
         )
     ],

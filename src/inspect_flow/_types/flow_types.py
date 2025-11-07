@@ -29,6 +29,12 @@ CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, Union["FModel", str]]
 
 
+class FGenerateConfig(GenerateConfig, extra="forbid"):
+    """Model generation options."""
+
+    pass
+
+
 class FModel(BaseModel, extra="forbid"):
     name: str | None = Field(
         default=None,
@@ -45,8 +51,7 @@ class FModel(BaseModel, extra="forbid"):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    # TODO:ransom should we forbid extra on GenerateConfig?
-    config: GenerateConfig | None = Field(
+    config: FGenerateConfig | None = Field(
         default=None,
         description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
     )
@@ -130,7 +135,7 @@ class FTask(BaseModel, extra="forbid"):
         description="Default model for task (Optional, defaults to eval model).",
     )
 
-    config: GenerateConfig | None = Field(
+    config: FGenerateConfig | None = Field(
         default=None,
         description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
     )
@@ -361,7 +366,7 @@ class FOptions(BaseModel, extra="forbid"):
 class FDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
-    config: GenerateConfig | None = Field(
+    config: FGenerateConfig | None = Field(
         default=None,
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )

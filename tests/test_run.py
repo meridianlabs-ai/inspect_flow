@@ -5,19 +5,17 @@ from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model
 from inspect_ai.solver import Solver
-from inspect_flow import solvers_matrix, tasks_matrix
+from inspect_flow import models_matrix, solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import run_eval_set
-from inspect_flow._types.factories import models_matrix
-from inspect_flow._types.generated import (
-    FlowDefaults,
-    FlowOptions,
-    FlowSolver,
-    FlowTask,
-)
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
+    FlowDefaults,
+    FlowGenerateConfig,
     FlowModel,
+    FlowOptions,
+    FlowSolver,
+    FlowTask,
 )
 
 from tests.test_helpers.type_helpers import fc
@@ -85,7 +83,9 @@ def test_model_generate_config() -> None:
                             name=task_file + "@noop",
                             model=FlowModel(
                                 name="mockllm/mock-llm",
-                                config=GenerateConfig(system_message=system_message),
+                                config=FlowGenerateConfig(
+                                    system_message=system_message
+                                ),
                             ),
                         )
                     ],
@@ -184,7 +184,7 @@ def test_matrix_model_roles() -> None:
             "mark": "mockllm/mock-mark2",
             "conartist": FlowModel(
                 name="mockllm/mock-conartist2",
-                config=GenerateConfig(system_message=system_message),
+                config=FlowGenerateConfig(system_message=system_message),
             ),
         }
         run_eval_set(
@@ -311,7 +311,7 @@ def test_config_generate_config() -> None:
                 FlowConfig(
                     flow_dir="logs/flow_test",
                     defaults=FlowDefaults(
-                        config=GenerateConfig(
+                        config=FlowGenerateConfig(
                             system_message=config_system_message,
                             temperature=config_temperature,
                             max_tokens=config_max_tokens,
@@ -320,13 +320,13 @@ def test_config_generate_config() -> None:
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
-                            config=GenerateConfig(
+                            config=FlowGenerateConfig(
                                 system_message=task_system_message,
                                 temperature=task_temperature,
                             ),
                             model=FlowModel(
                                 name="mockllm/mock-llm",
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message=model_system_message
                                 ),
                             ),
@@ -361,15 +361,15 @@ def test_config_model_overrides() -> None:
                 FlowConfig(
                     flow_dir="logs/flow_test",
                     defaults=FlowDefaults(
-                        config=GenerateConfig(
+                        config=FlowGenerateConfig(
                             system_message="Global Default",
                         ),
                         model=FlowModel(
-                            config=GenerateConfig(system_message="Model Default")
+                            config=FlowGenerateConfig(system_message="Model Default")
                         ),
                         model_prefix={
                             "mockllm/": FlowModel(
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message="Model Prefix Default"
                                 )
                             )
@@ -378,12 +378,12 @@ def test_config_model_overrides() -> None:
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
-                            config=GenerateConfig(
+                            config=FlowGenerateConfig(
                                 system_message="Task",
                             ),
                             model=FlowModel(
                                 name="mockllm/mock-llm",
-                                config=GenerateConfig(system_message="Model"),
+                                config=FlowGenerateConfig(system_message="Model"),
                             ),
                         )
                     ],
@@ -412,15 +412,15 @@ def test_config_model_prefix_default_overrides() -> None:
                 FlowConfig(
                     flow_dir="logs/flow_test",
                     defaults=FlowDefaults(
-                        config=GenerateConfig(
+                        config=FlowGenerateConfig(
                             system_message="Global Default",
                         ),
                         model=FlowModel(
-                            config=GenerateConfig(system_message="Model Default")
+                            config=FlowGenerateConfig(system_message="Model Default")
                         ),
                         model_prefix={
                             "mockllm/": FlowModel(
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message="Model Prefix Default"
                                 )
                             )
@@ -429,7 +429,7 @@ def test_config_model_prefix_default_overrides() -> None:
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
-                            config=GenerateConfig(
+                            config=FlowGenerateConfig(
                                 system_message="Task",
                             ),
                             model=FlowModel(
@@ -462,15 +462,15 @@ def test_config_model_default_overrides() -> None:
                 FlowConfig(
                     flow_dir="logs/flow_test",
                     defaults=FlowDefaults(
-                        config=GenerateConfig(
+                        config=FlowGenerateConfig(
                             system_message="Global Default",
                         ),
                         model=FlowModel(
-                            config=GenerateConfig(system_message="Model Default")
+                            config=FlowGenerateConfig(system_message="Model Default")
                         ),
                         model_prefix={
                             "NOMATCH/": FlowModel(
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message="Model Prefix Default"
                                 )
                             )
@@ -479,7 +479,7 @@ def test_config_model_default_overrides() -> None:
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
-                            config=GenerateConfig(
+                            config=FlowGenerateConfig(
                                 system_message="Task",
                             ),
                             model=FlowModel(
@@ -514,12 +514,12 @@ def test_config_model_prefixes() -> None:
                     defaults=FlowDefaults(
                         model_prefix={
                             "mockllm/": FlowModel(
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message="Model Provider Prefix Default"
                                 )
                             ),
                             "mockllm/mock-": FlowModel(
-                                config=GenerateConfig(
+                                config=FlowGenerateConfig(
                                     system_message="Model Class Prefix Default"
                                 )
                             ),
@@ -675,8 +675,8 @@ def test_task_with_two_model_configs() -> None:
             model=models_matrix(
                 model="mockllm/mock-llm1",
                 config=[
-                    GenerateConfig(temperature=0),
-                    GenerateConfig(temperature=0.5),
+                    FlowGenerateConfig(temperature=0),
+                    FlowGenerateConfig(temperature=0.5),
                 ],
             ),
         ),

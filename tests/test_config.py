@@ -1,12 +1,12 @@
 from pathlib import Path
 
 import yaml
-from inspect_ai.model import GenerateConfig
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.config import _apply_overrides, load_config
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow.types import (
     FlowConfig,
+    FlowGenerateConfig,
     FlowModel,
     FlowOptions,
     FlowTask,
@@ -160,8 +160,8 @@ def test_config_model_config() -> None:
                 *models_matrix(
                     model={"name": "openai/gpt-5-nano"},
                     config=[
-                        GenerateConfig(reasoning_effort="minimal"),
-                        GenerateConfig(reasoning_effort="low"),
+                        FlowGenerateConfig(reasoning_effort="minimal"),
+                        FlowGenerateConfig(reasoning_effort="low"),
                     ],
                 ),
             ],
@@ -231,15 +231,15 @@ def test_merge_config():
                     "local_eval/noop",
                     FlowTask(
                         "local_eval/noop2",
-                        config=GenerateConfig(system_message="Be concise."),
+                        config=FlowGenerateConfig(system_message="Be concise."),
                     ),
                 ],
                 config=[
-                    GenerateConfig(reasoning_effort="low"),
-                    GenerateConfig(reasoning_effort="high"),
+                    FlowGenerateConfig(reasoning_effort="low"),
+                    FlowGenerateConfig(reasoning_effort="high"),
                 ],
             ),
-            config=GenerateConfig(max_connections=10),
+            config=FlowGenerateConfig(max_connections=10),
             model="mockllm/mock-llm1",
         ),
     )
@@ -329,3 +329,15 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+
+
+def test_overrides_invalid_config_key():
+    config = FlowConfig()
+    config = _apply_overrides(
+        fc(config),
+        [
+            "defaults.config.key1=val1",
+        ],
+    )
+    assert config.defaults and config.defaults.config
+    print(f"config.defaults.config: {config.defaults.config}")
