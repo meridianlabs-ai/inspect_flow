@@ -1,6 +1,6 @@
 from typing import Any, TypeAlias, TypeVar
 
-from inspect_ai._util.registry import registry_lookup  # TODO:ransom private import
+from inspect_ai._util.registry import registry_lookup
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model
 from inspect_ai.solver import Solver

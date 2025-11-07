@@ -2,8 +2,8 @@ from collections.abc import Callable
 from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
-from inspect_ai._eval.task.util import slice_dataset  # TODO:ransom private import
-from inspect_ai._util.notgiven import NOT_GIVEN  # TODO:ransom private import
+from inspect_ai._eval.task.util import slice_dataset
+from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -141,7 +141,6 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> Task:
     )
     task_func = get_task_creator(config)
     if model:
-        # TODO:ransom avoid calling private API - inspect should support creating tasks with a model
         init_active_model(model, model.config)
     task = task_func(**(config.args or {}))
 
@@ -184,7 +183,7 @@ def instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         time_limit=ng(config.time_limit),
         working_limit=ng(config.working_limit),
         name=ng(config.name),
-        version=ng(config.version),  # type: ignore
+        version=ng(config.version),  # type: ignore TODO:ransom
         metadata=ng(config.metadata),
     )
     return task

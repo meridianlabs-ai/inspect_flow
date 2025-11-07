@@ -13,9 +13,7 @@ from typing import (
     overload,
 )
 
-from inspect_ai.approval._policy import (
-    ApprovalPolicyConfig,
-)  # TODO:ransom private import
+from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import (
     DisplayType,
@@ -438,7 +436,6 @@ class FConfig(BaseModel, extra="forbid"):
     )
 
     dependencies: list[str] | None = Field(
-        # TODO:ransom support requirements.txt/pyproj.toml for specifying dependencies
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )

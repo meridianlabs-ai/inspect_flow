@@ -144,7 +144,6 @@ def test_task_model() -> None:
         assert len(tasks_arg) == 1
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
-        # TODO:ransom name has different meanings
         assert tasks_arg[0].model.name == "mock-llm"
 
 
