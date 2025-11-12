@@ -10,6 +10,7 @@ from inspect_flow import (
 from inspect_flow._types.factories import configs_matrix
 from inspect_flow._types.flow_types import FSolver
 from inspect_flow._types.generated import FlowDefaults, FlowGenerateConfig
+from inspect_flow._types.merge import merge_with_config
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
@@ -140,12 +141,10 @@ def test_defaults():
 
 def test_merge_none_does_not_override():
     """Test that None fields in add_dict do not override set fields in base_dict."""
-    from inspect_flow._types.factories import _merge_dicts_with_config
-
     base_dict = {"name": "base_name", "temperature": 0.5, "max_tokens": 100}
     add_dict = {"temperature": None, "top_p": 0.9}
 
-    result = _merge_dicts_with_config(base_dict, add_dict)
+    result = merge_with_config(base_dict, add_dict)
 
     # None value in add_dict should not override the set value in base_dict
     assert result["name"] == "base_name"

@@ -6,7 +6,6 @@ from inspect_ai.model import GenerateConfig, Model
 from inspect_ai.solver import Solver
 from pydantic import BaseModel
 
-from inspect_flow._types.factories import _merge_dicts_with_config
 from inspect_flow._types.flow_types import (
     FAgent,
     FConfig,
@@ -16,6 +15,7 @@ from inspect_flow._types.flow_types import (
     FTask,
     ModelRolesConfig,
 )
+from inspect_flow._types.merge import merge_with_config
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
 
@@ -36,7 +36,7 @@ def resolve_config(config: FConfig) -> FConfig:
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
     default_dict = defaults.model_dump(mode="json", exclude_none=True)
-    return _merge_dicts_with_config(default_dict, config_dict)
+    return merge_with_config(default_dict, config_dict)
 
 
 def _merge_defaults(
