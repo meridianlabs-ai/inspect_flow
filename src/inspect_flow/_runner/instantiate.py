@@ -120,7 +120,7 @@ def _instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         task,
         # dataset= Not Supported
         # setup= Not Supported
-        solver=ng(solver),  # pyright: ignore[reportArgumentType] TODO:ransom
+        solver=ng(solver),
         # cleanup= Not Supported
         # scorer= Not Supported
         # metrics= Not Supported
@@ -128,7 +128,7 @@ def _instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         config=ng(config.config),
         model_roles=ng(model_roles),
         sandbox=ng(config.sandbox),
-        approval=ng(config.approval),  # type: ignore TODO:ransom
+        approval=ng(config.approval),
         epochs=ng(epochs),
         fail_on_error=ng(config.fail_on_error),
         continue_on_fail=ng(config.continue_on_fail),
@@ -137,7 +137,7 @@ def _instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         time_limit=ng(config.time_limit),
         working_limit=ng(config.working_limit),
         name=ng(config.name),
-        version=ng(config.version),  # type: ignore TODO:ransom
+        version=ng(config.version),
         metadata=ng(config.metadata),
     )
     return task

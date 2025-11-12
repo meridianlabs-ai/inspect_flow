@@ -175,7 +175,9 @@ class FlowGenerateConfigDict(TypedDict):
     cache_prompt: NotRequired[Optional[Union[str, bool]]]
     reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
     reasoning_tokens: NotRequired[Optional[int]]
-    reasoning_summary: NotRequired[Optional[Literal["concise", "detailed", "auto"]]]
+    reasoning_summary: NotRequired[
+        Optional[Literal["none", "concise", "detailed", "auto"]]
+    ]
     reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
     response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
     extra_body: NotRequired[Optional[Mapping[str, Any]]]
@@ -208,7 +210,7 @@ class FlowGenerateConfigMatrixDict(TypedDict):
     ]
     reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
     reasoning_summary: NotRequired[
-        Optional[Sequence[Optional[Literal["concise", "detailed", "auto"]]]]
+        Optional[Sequence[Optional[Literal["none", "concise", "detailed", "auto"]]]]
     ]
     reasoning_history: NotRequired[
         Optional[Sequence[Optional[Literal["none", "all", "last", "auto"]]]]
@@ -580,7 +582,7 @@ class FlowGenerateConfig:
     cache_prompt: Optional[Union[str, bool]] = None
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None
     reasoning_tokens: Optional[int] = None
-    reasoning_summary: Optional[Literal["concise", "detailed", "auto"]] = None
+    reasoning_summary: Optional[Literal["none", "concise", "detailed", "auto"]] = None
     reasoning_history: Optional[Literal["none", "all", "last", "auto"]] = None
     response_schema: Optional[Union[ResponseSchema, ResponseSchemaDict]] = None
     extra_body: Optional[Mapping[str, Any]] = None
