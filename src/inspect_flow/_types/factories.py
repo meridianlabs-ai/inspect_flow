@@ -31,6 +31,7 @@ from inspect_flow._types.generated import (
     FlowTaskDict,
     FlowTaskMatrixDict,
 )
+from inspect_flow._types.merge import merge_recursive, to_dict
 
 
 def flow_config(config: FlowConfigDict | FlowConfig) -> FConfig:
@@ -55,16 +56,25 @@ def flow_agent(config: FlowAgentDict | FlowAgent) -> FAgent:
 
 BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, FGenerateConfig)
 
-AgentInput: TypeAlias = str | FAgent | FlowAgent | FlowAgentDict
-ConfigInput: TypeAlias = FlowGenerateConfig | FlowGenerateConfigDict
-ModelInput: TypeAlias = str | FModel | FlowModel | FlowModelDict
-SolverInput: TypeAlias = str | FSolver | FlowSolver | FlowSolverDict
-TaskInput: TypeAlias = str | FTask | FlowTask | FlowTaskDict
+AgentType: TypeAlias = FAgent | FlowAgent | FlowAgentDict
+GenerateConfigType: TypeAlias = (
+    FGenerateConfig | FlowGenerateConfig | FlowGenerateConfigDict
+)
+ModelType: TypeAlias = FModel | FlowModel | FlowModelDict
+SolverType: TypeAlias = FSolver | FlowSolver | FlowSolverDict
+TaskType: TypeAlias = FTask | FlowTask | FlowTaskDict
+
+AgentInput: TypeAlias = str | AgentType
+GenerateConfigInput: TypeAlias = GenerateConfigType
+ModelInput: TypeAlias = str | ModelType
+SolverInput: TypeAlias = str | SolverType
+TaskInput: TypeAlias = str | TaskType
 
 BaseInputType: TypeAlias = (
     str
     | FAgent
     | FlowAgent
+    | FGenerateConfig
     | FlowGenerateConfig
     | FModel
     | FlowModel
@@ -87,24 +97,6 @@ MatrixDict = TypeVar(
 )
 
 
-def _merge_dicts_with_config(
-    base_dict: dict[str, Any],
-    add_dict: dict[str, Any],
-) -> dict[str, Any]:
-    filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
-    result = base_dict | filtered_add_dict
-    if (add_config := add_dict.get("config")) and (
-        base_config := base_dict.get("config")
-    ):
-        if not isinstance(base_config, dict):
-            base_config = to_jsonable_python(base_config, exclude_none=True)
-        if not isinstance(add_config, dict):
-            add_config = to_jsonable_python(add_config, exclude_none=True)
-        filtered_add_dict = {k: v for k, v in add_config.items() if v is not None}
-        result["config"] = base_config | filtered_add_dict
-    return result
-
-
 def _with_base(
     base: BaseInputType,
     values: Mapping[str, Any],
@@ -113,18 +105,14 @@ def _with_base(
     base_dict: dict[str, Any] = {}
     if isinstance(base, str):
         base_dict = {"name": base}
-    elif not isinstance(base, Mapping):
-        base_dict = to_jsonable_python(base, exclude_none=True)
     else:
-        base_dict = dict(base)
+        base_dict = to_dict(base)
 
     for key in values.keys():
         if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(
-        _merge_dicts_with_config(base_dict, dict(values))
-    )
+    return pydantic_type.model_validate(merge_recursive(base_dict, values))
 
 
 def _with(
@@ -154,7 +142,7 @@ def _matrix_with_base(
     if isinstance(base, str):
         base_dict = {"name": base}
     else:
-        base_dict = to_jsonable_python(base, exclude_none=True)
+        base_dict = to_dict(base)
 
     for key in matrix.keys():
         if key != "config" and key in base_dict and base_dict[key] is not None:
@@ -166,7 +154,7 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(_merge_dicts_with_config(base_dict, add_dict))
+            pydantic_type.model_validate(merge_recursive(base_dict, add_dict))
         )
     return result
 
@@ -200,7 +188,7 @@ def agents_with(
 
 def configs_with(
     *,
-    config: ConfigInput | Sequence[ConfigInput],
+    config: GenerateConfigInput | Sequence[GenerateConfigInput],
     **kwargs: Unpack[FlowGenerateConfigDict],
 ) -> list[FGenerateConfig]:
     return _with(config, kwargs, FGenerateConfig)
@@ -240,7 +228,7 @@ def agents_matrix(
 
 def configs_matrix(
     *,
-    config: ConfigInput | Sequence[ConfigInput] | None = None,
+    config: GenerateConfigInput | Sequence[GenerateConfigInput] | None = None,
     **kwargs: Unpack[FlowGenerateConfigMatrixDict],
 ) -> list[FGenerateConfig]:
     config = config or FlowGenerateConfig()

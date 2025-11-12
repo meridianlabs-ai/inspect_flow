@@ -138,22 +138,6 @@ def test_defaults():
     )
 
 
-def test_merge_none_does_not_override():
-    """Test that None fields in add_dict do not override set fields in base_dict."""
-    from inspect_flow._types.factories import _merge_dicts_with_config
-
-    base_dict = {"name": "base_name", "temperature": 0.5, "max_tokens": 100}
-    add_dict = {"temperature": None, "top_p": 0.9}
-
-    result = _merge_dicts_with_config(base_dict, add_dict)
-
-    # None value in add_dict should not override the set value in base_dict
-    assert result["name"] == "base_name"
-    assert result["temperature"] == 0.5  # Should NOT be None
-    assert result["max_tokens"] == 100
-    assert result["top_p"] == 0.9
-
-
 def test_none_in_list():
     configs = configs_matrix(reasoning_tokens=[None, 2048])
     assert len(configs) == 2
