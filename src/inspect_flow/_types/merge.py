@@ -45,24 +45,27 @@ def _merge_dicts(
     return base_dict | filtered_add_dict
 
 
-def _merge_untyped(
+def _merge(
     base: Any,
     add: Any,
 ) -> dict[str, Any]:
     return _merge_dicts(to_dict(base), to_dict(add))
 
 
-def merge_with_config(
+# Note that current recursive merges do not go deeper than one level
+_RECURSIVE_KEYS = {"config", "flow_metadata"}
+
+
+def merge_recursive(
     base: Any,
     add: Any,
 ) -> dict[str, Any]:
     base_dict = to_dict(base)
     add_dict = to_dict(add)
     result = _merge_dicts(base_dict, add_dict)
-    if (add_config := add_dict.get("config")) and (
-        base_config := base_dict.get("config")
-    ):
-        result["config"] = _merge_untyped(base_config, add_config)
+    for key in _RECURSIVE_KEYS:
+        if (add_value := add_dict.get(key)) and (base_value := base_dict.get(key)):
+            result[key] = _merge(base_value, add_value)
     return result
 
 
@@ -70,32 +73,32 @@ def agent_merge(
     base: AgentType,
     add: AgentType,
 ) -> FAgent:
-    return FAgent.model_validate(merge_with_config(base, add))
+    return FAgent.model_validate(merge_recursive(base, add))
 
 
 def config_merge(
     base: GenerateConfigType,
     add: GenerateConfigType,
 ) -> FGenerateConfig:
-    return FGenerateConfig.model_validate(_merge_untyped(base, add))
+    return FGenerateConfig.model_validate(_merge(base, add))
 
 
 def model_merge(
     base: ModelType,
     add: ModelType,
 ) -> FModel:
-    return FModel.model_validate(merge_with_config(base, add))
+    return FModel.model_validate(merge_recursive(base, add))
 
 
 def solver_merge(
     base: SolverType,
     add: SolverType,
 ) -> FSolver:
-    return FSolver.model_validate(merge_with_config(base, add))
+    return FSolver.model_validate(merge_recursive(base, add))
 
 
 def task_merge(
     base: TaskType,
     add: TaskType,
 ) -> FTask:
-    return FTask.model_validate(merge_with_config(base, add))
+    return FTask.model_validate(merge_recursive(base, add))

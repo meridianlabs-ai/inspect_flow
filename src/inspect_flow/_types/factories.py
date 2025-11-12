@@ -31,7 +31,7 @@ from inspect_flow._types.generated import (
     FlowTaskDict,
     FlowTaskMatrixDict,
 )
-from inspect_flow._types.merge import merge_with_config, to_dict
+from inspect_flow._types.merge import merge_recursive, to_dict
 
 
 def flow_config(config: FlowConfigDict | FlowConfig) -> FConfig:
@@ -112,7 +112,7 @@ def _with_base(
         if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(merge_with_config(base_dict, values))
+    return pydantic_type.model_validate(merge_recursive(base_dict, values))
 
 
 def _with(
@@ -154,7 +154,7 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(merge_with_config(base_dict, add_dict))
+            pydantic_type.model_validate(merge_recursive(base_dict, add_dict))
         )
     return result
 
