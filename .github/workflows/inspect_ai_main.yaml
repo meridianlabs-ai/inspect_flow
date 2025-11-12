@@ -1,13 +1,10 @@
-name: Build
+name: Scheduled Task
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-      - "release/**"
+  schedule:
+    # Runs every 3 hours
+    - cron: "0 */3 * * *"
+  # Allow manual triggering from the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -20,6 +17,8 @@ jobs:
       - uses: ./.github/workflows/setup.yaml
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install inspect-ai main
+        run: uv pip install https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Lint with Ruff
         run: uv run ruff check .
       - name: Format with Ruff
@@ -34,6 +33,8 @@ jobs:
       - uses: ./.github/workflows/setup.yaml
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install inspect-ai main
+        run: uv pip install https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Type check with pyright
         run: uv run pyright
 
@@ -46,30 +47,10 @@ jobs:
       - uses: ./.github/workflows/setup.yaml
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install inspect-ai main
+        run: uv pip install https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Run tests
         run: uv run pytest
-
-  py-build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-      - name: Install build dependencies
-        run: uv pip install --system build
-      - name: Build package
-        run: python -m build
-      - name: Verify package
-        run: |
-          uv pip install --system dist/*.whl
-          python -c "import inspect_flow; print('Package imported successfully')"
 
   check-type-gen:
     runs-on: ubuntu-latest
@@ -80,6 +61,8 @@ jobs:
       - uses: ./.github/workflows/setup.yaml
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install inspect-ai main
+        run: uv pip install https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Generate types
         run: uv run python src/inspect_flow/_types/type_gen.py
       - name: Ensure schema and types changes are checked in
