@@ -11,8 +11,8 @@ These generated types are in [generated.py](./_types/generated.py).
 These user-facing types are more flexible, for example by allowing named objects to be specified with strings and accepting values as dicts as well as classes.
 This makes them user friendly for specifying configurations.
 
-`FlowTask` and other types without a `Dict` suffix are dataclasses corresponding to the internal pydantic types.
-`FlowTaskDict` and other types with a `Dict` suffix are TypedDicts corresponding to the user-facing generated types.
+`FlowTask` and other types without a `Dict` suffix are user-facing dataclasses corresponding to the internal pydantic types.
+`FlowTaskDict` and other types with a `Dict` suffix are TypedDicts corresponding to the user-facing generated dataclasses.
 `FlowTaskMatrixDict` and the other types with a `MatrixDict` suffix are TypedDicts for use in the matrix functions with lists for their field types.
 
 [factories.py](./_types/factories.py) defines three types of functions.
