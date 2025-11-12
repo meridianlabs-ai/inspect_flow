@@ -352,7 +352,8 @@ def test_metadata():
             task=task,
             model=models_to_use,
             solver=[solver, agent],
-        )
+        ),
+        flow_metadata={"config": "4"},
     )
     validate_config(config, "metadata_flow.yaml")
 

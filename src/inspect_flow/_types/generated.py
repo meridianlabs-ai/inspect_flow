@@ -504,6 +504,8 @@ class FlowConfigDict(TypedDict):
     """Environment variables to set when running tasks."""
     defaults: NotRequired[Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]]]
     """Defaults values for Inspect objects."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the model."""
     tasks: NotRequired[Optional[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]]]
     """Tasks to run"""
 
@@ -802,5 +804,7 @@ class FlowConfig:
     """Environment variables to set when running tasks."""
     defaults: Optional[Union[FDefaults, FlowDefaultsDict, FlowDefaults]] = None
     """Defaults values for Inspect objects."""
+    flow_metadata: Optional[Mapping[str, Any]] = None
+    """Optional. Metadata stored in the flow config. Not passed to the model."""
     tasks: Optional[Sequence[Union[FTask, FlowTaskDict, FlowTask, str]]] = None
     """Tasks to run"""
