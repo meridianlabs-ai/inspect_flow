@@ -1,3 +1,5 @@
+flow_metadata:
+  config: '4'
 tasks:
 - name: taskname
   solver:

@@ -470,6 +470,11 @@ class FConfig(BaseModel, extra="forbid"):
         default=None, description="Defaults values for Inspect objects."
     )
 
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the model.",
+    )
+
     tasks: list[FTask] | None = Field(default=None, description="Tasks to run")
 
     # Convert single items to lists
