@@ -3,8 +3,6 @@ try:
 except ImportError:
     __version__ = "unknown"
 
-from inspect_flow._config.config import config, load_config
-from inspect_flow._launcher.launch import run
 from inspect_flow._types.factories import (
     agents_matrix,
     agents_with,
@@ -35,7 +33,6 @@ __all__ = [
     "agent_merge",
     "agents_matrix",
     "agents_with",
-    "config",
     "config_merge",
     "configs_matrix",
     "configs_with",
@@ -44,14 +41,12 @@ __all__ = [
     "flow_model",
     "flow_solver",
     "flow_task",
-    "load_config",
     "model_merge",
     "models_matrix",
     "models_with",
     "solver_merge",
     "solvers_matrix",
     "solvers_with",
-    "run",
     "task_merge",
     "tasks_matrix",
     "tasks_with",

@@ -1,12 +1,13 @@
 import click
 from typing_extensions import Unpack
 
+from inspect_flow._api.api import config
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
     options_to_overrides,
 )
-from inspect_flow._config.config import config, load_config
+from inspect_flow._config.load import load_config
 
 
 @click.command("config", help="Output config")
@@ -25,4 +26,4 @@ def config_command(
 ) -> None:
     overrides = options_to_overrides(**kwargs)
     fconfig = load_config(config_file, overrides=overrides)
-    config(fconfig, config_file_path=config_file, resolve=resolve)
+    config(fconfig, resolve=resolve)

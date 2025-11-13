@@ -5,11 +5,12 @@ config_path_key = "INSPECT_FLOW_CONFIG_PATH"
 cwd_path_key = "INSPECT_FLOW_CWD"
 
 
-def set_path_env_vars(env: dict[str, str], config_path: str | None) -> None:
-    """Set environment variables for config path and cwd."""
-    if config_path is not None:
-        env[config_path_key] = str(Path(config_path).resolve())
-    env[cwd_path_key] = str(Path.cwd().resolve())
+def set_config_path_env_var(config_path: str) -> None:
+    os.environ[config_path_key] = str(Path(config_path).resolve())
+
+
+def set_cwd_env_var() -> None:
+    os.environ[cwd_path_key] = str(Path.cwd().resolve())
 
 
 def find_file(file_path: str) -> str | None:

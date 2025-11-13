@@ -36,7 +36,7 @@ def test_flow_version() -> None:
 def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_launch,
+        patch("inspect_flow._cli.run.run") as mock_run,
         patch("inspect_flow._cli.run.load_config") as mock_config,
     ):
         # Mock the config object
@@ -64,8 +64,8 @@ def test_run_command_overrides() -> None:
             overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
         )
 
-        # Verify that launch was called with the config object and file path
-        mock_launch.assert_called_once_with(mock_config_obj, CONFIG_FILE, [])
+        # Verify that run was called with the config object and file path
+        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
 
 
 def test_config_command_overrides() -> None:
@@ -100,47 +100,37 @@ def test_config_command_overrides() -> None:
 def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_launch,
+        patch("inspect_flow._cli.run.run") as mock_run,
         patch("inspect_flow._cli.run.load_config") as mock_config,
     ):
-        # Mock the config object
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
 
-        # Run the command with --dry-run flag
         result = runner.invoke(run_command, [CONFIG_FILE, "--dry-run"])
 
-        # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(CONFIG_FILE, overrides=[])
 
-        # Verify that launch was called with the config object and file path
-        mock_launch.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--dry-run"])
+        mock_run.assert_called_once_with(mock_config_obj, dry_run=True)
 
 
 def test_config_command_resolve() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.config.launch") as mock_launch,
-        patch("inspect_flow._cli.config.load_config") as mock_config,
+        patch("inspect_flow._cli.config.config") as mock_config,
+        patch("inspect_flow._cli.config.load_config") as mock_load,
     ):
-        # Mock the config object
         mock_config_obj = MagicMock()
-        mock_config.return_value = mock_config_obj
+        mock_load.return_value = mock_config_obj
 
-        # Run the command with --dry-run flag
         result = runner.invoke(config_command, [CONFIG_FILE, "--resolve"])
 
-        # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
-        mock_config.assert_called_once_with(CONFIG_FILE, overrides=[])
+        mock_load.assert_called_once_with(CONFIG_FILE, overrides=[])
 
-        # Verify that launch was called with the config object and file path
-        mock_launch.assert_called_once_with(mock_config_obj, CONFIG_FILE, ["--config"])
+        mock_config.assert_called_once_with(mock_config_obj, resolve=True)
 
 
 def test_options_to_overrides() -> None:
