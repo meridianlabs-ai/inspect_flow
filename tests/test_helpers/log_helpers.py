@@ -10,11 +10,12 @@ from pydantic_core import to_jsonable_python
 
 
 def init_test_logs() -> str:
+    relative_log_dir = "logs/flow_test"
     # Remove logs/flow_test directory if it exists
-    log_dir = (Path.cwd() / "logs" / "flow_test").resolve()
+    log_dir = (Path.cwd() / relative_log_dir).resolve()
     if log_dir.exists():
         shutil.rmtree(log_dir)
-    return str(log_dir)
+    return relative_log_dir
 
 
 def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:

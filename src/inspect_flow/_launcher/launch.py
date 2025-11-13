@@ -1,9 +1,11 @@
+import os
 import pathlib
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+import click
 from inspect_ai._util.file import absolute_file_path
 from pydantic_core import to_jsonable_python
 
@@ -23,13 +25,14 @@ def launch(
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     set_cwd_env_var()
+    config.flow_dir = _resolve_flow_dir(config, env=dict(os.environ))
+    click.echo(f"Using flow_dir: {config.flow_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
         if config.env:
             env.update(**config.env)
 
-        config.flow_dir = _resolve_flow_dir(config, env)
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         try:

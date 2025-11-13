@@ -39,9 +39,9 @@ def load_config(
     """
     config_options = config_options or ConfigOptions()
     config = _load_config_from_file(config_file, config_options.flow_vars)
+    set_config_path_env_var(config_file)
     if config_options.overrides:
         return _apply_overrides(config, config_options.overrides)
-    set_config_path_env_var(config_file)
     return config
 
 
