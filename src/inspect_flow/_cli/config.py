@@ -5,7 +5,7 @@ from inspect_flow._api.api import config
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
-    options_to_overrides,
+    parse_config_options,
 )
 from inspect_flow._config.load import load_config
 
@@ -24,6 +24,6 @@ def config_command(
     resolve: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
-    overrides = options_to_overrides(**kwargs)
-    fconfig = load_config(config_file, overrides=overrides)
+    config_options = parse_config_options(**kwargs)
+    fconfig = load_config(config_file, config_options=config_options)
     config(fconfig, resolve=resolve)

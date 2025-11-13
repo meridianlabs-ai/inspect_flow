@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
-from inspect_flow._config.load import _apply_overrides, load_config
+from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowAgent, FlowSolver
 from inspect_flow.types import (
@@ -251,11 +251,13 @@ def test_merge_config():
 def test_load_config_overrides():
     config = load_config(
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
-        overrides=[
-            "flow_dir=./logs/overridden_flow",
-            "options.limit=2",
-            "defaults.solver.args.tool_calls=none",
-        ],
+        ConfigOptions(
+            overrides=[
+                "flow_dir=./logs/overridden_flow",
+                "options.limit=2",
+                "defaults.solver.args.tool_calls=none",
+            ]
+        ),
     )
     assert config.flow_dir == "./logs/overridden_flow"
     assert config.options
@@ -331,6 +333,16 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+
+
+def test_load_config_flow_vars():
+    config = load_config(
+        str(Path(__file__).parent / "config" / "flow_vars_flow.py"),
+        ConfigOptions(flow_vars={"model": "model_from_flow_vars"}),
+    )
+    assert config.tasks
+    assert config.tasks[0].model
+    assert config.tasks[0].model.name == "model_from_flow_vars"
 
 
 def test_metadata():

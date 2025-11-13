@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
-from inspect_flow._cli.options import options_to_overrides
+from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
+from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._version import __version__
 
@@ -61,7 +62,9 @@ def test_run_command_overrides() -> None:
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            config_options=ConfigOptions(
+                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
+            ),
         )
 
         # Verify that run was called with the config object and file path
@@ -93,7 +96,9 @@ def test_config_command_overrides() -> None:
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            config_options=ConfigOptions(
+                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
+            ),
         )
 
 
@@ -110,9 +115,34 @@ def test_run_command_dry_run() -> None:
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once_with(CONFIG_FILE, overrides=[])
+        mock_config.assert_called_once_with(CONFIG_FILE, config_options=ConfigOptions())
 
         mock_run.assert_called_once_with(mock_config_obj, dry_run=True)
+
+
+def test_run_command_flow_vars() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.run") as mock_run,
+        patch("inspect_flow._cli.run.load_config") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command, [CONFIG_FILE, "--var", "var1=value1", "--var", "var2=value2"]
+        )
+
+        assert result.exit_code == 0
+
+        mock_config.assert_called_once_with(
+            CONFIG_FILE,
+            config_options=ConfigOptions(
+                flow_vars={"var1": "value1", "var2": "value2"}
+            ),
+        )
+
+        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
 
 
 def test_config_command_resolve() -> None:
@@ -128,13 +158,13 @@ def test_config_command_resolve() -> None:
 
         assert result.exit_code == 0
 
-        mock_load.assert_called_once_with(CONFIG_FILE, overrides=[])
+        mock_load.assert_called_once_with(CONFIG_FILE, config_options=ConfigOptions())
 
         mock_config.assert_called_once_with(mock_config_obj, resolve=True)
 
 
 def test_options_to_overrides() -> None:
-    overrides = options_to_overrides(
+    overrides = _options_to_overrides(
         flow_dir="option_dir",
         limit=1,
         set=["flow_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],

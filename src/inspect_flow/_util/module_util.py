@@ -20,7 +20,9 @@ def get_module_from_file(file: str) -> ModuleType:
     return module
 
 
-def execute_file_and_get_last_result(path: Path) -> object | None:
+def execute_file_and_get_last_result(
+    path: Path, flow_vars: dict[str, str]
+) -> object | None:
     src = open(path, "r", encoding="utf-8").read()
     mod = ast.parse(src, filename=path, mode="exec")
     if not mod.body:
@@ -46,6 +48,10 @@ def execute_file_and_get_last_result(path: Path) -> object | None:
     # else: leave as-is; result will be None
 
     code = compile(ast.fix_missing_locations(mod), path, "exec")
-    g = {"__name__": "__main__", "__builtins__": builtins.__dict__}
+    g = {
+        "__name__": "__main__",
+        "__builtins__": builtins.__dict__,
+        "__flow_vars__": flow_vars,
+    }
     exec(code, g, g)
     return g.get(target_id)
