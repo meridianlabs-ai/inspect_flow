@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
-from inspect_flow._config.config import _apply_overrides, load_config
+from inspect_flow._config.load import _apply_overrides, load_config
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowAgent, FlowSolver
 from inspect_flow.types import (

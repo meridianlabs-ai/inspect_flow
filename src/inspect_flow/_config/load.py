@@ -11,12 +11,20 @@ from pydantic_core import ValidationError, to_jsonable_python
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
+from inspect_flow._util.path_util import set_config_path_env_var
 
 
 def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
+    """Load a configuration file and apply any overrides.
+
+    Args:
+        config_file: The path to the configuration file.
+        overrides: A list of overrides in the format "key1.key2=val".
+    """
     config = _load_config_from_file(config_file)
     if overrides:
         return _apply_overrides(config, overrides or [])
+    set_config_path_env_var(config_file)
     return config
 
 

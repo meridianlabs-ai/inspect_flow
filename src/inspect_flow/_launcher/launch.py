@@ -10,12 +10,11 @@ from pydantic_core import to_jsonable_python
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowConfig
-from inspect_flow._util.path_util import set_path_env_vars
+from inspect_flow._util.path_util import set_cwd_env_var
 
 
 def launch(
     config: FConfig | FlowConfig,
-    config_file_path: str | None = None,
     run_args: list[str] | None = None,
 ) -> None:
     if not isinstance(config, FConfig):
@@ -23,12 +22,12 @@ def launch(
 
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
+    set_cwd_env_var()
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
         if config.env:
             env.update(**config.env)
-        set_path_env_vars(env, config_file_path)
 
         config.flow_dir = _resolve_flow_dir(config, env)
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"

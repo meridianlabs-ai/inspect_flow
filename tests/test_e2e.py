@@ -2,7 +2,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 from inspect_flow._cli.main import flow
-from inspect_flow._config.config import load_config
+from inspect_flow._config.load import load_config
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 

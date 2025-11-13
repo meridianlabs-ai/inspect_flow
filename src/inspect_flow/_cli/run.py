@@ -1,13 +1,13 @@
 import click
 from typing_extensions import Unpack
 
+from inspect_flow._api.api import run
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
     options_to_overrides,
 )
-from inspect_flow._config.config import load_config
-from inspect_flow._launcher.launch import launch
+from inspect_flow._config.load import load_config
 
 
 @click.command("run", help="Run a job")
@@ -27,6 +27,4 @@ def run_command(
 ) -> None:
     overrides = options_to_overrides(**kwargs)
     config = load_config(config_file, overrides=overrides)
-
-    run_args = ["--dry-run"] if dry_run else []
-    launch(config, config_file, run_args)
+    run(config, dry_run=dry_run)
