@@ -24,14 +24,13 @@ def launch(
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
 
-    config.flow_dir = absolute_file_path(config.flow_dir or "logs/flow")
-
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
         if config.env:
             env.update(**config.env)
         set_path_env_vars(env, config_file_path)
 
+        config.flow_dir = _resolve_flow_dir(config, env)
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         try:
@@ -43,3 +42,15 @@ def launch(
             )
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
+
+
+def _resolve_flow_dir(config: FConfig, env: dict[str, str]) -> str:
+    if config.flow_dir:
+        flow_dir = config.flow_dir
+    elif "INSPECT_FLOW_DIR" in env:
+        flow_dir = env["INSPECT_FLOW_DIR"]
+    elif "INSPECT_LOG_DIR" in env:
+        flow_dir = env["INSPECT_LOG_DIR"] + "/flow"
+    else:
+        flow_dir = "logs/flow"
+    return absolute_file_path(flow_dir)
