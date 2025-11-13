@@ -6,6 +6,7 @@ from typing import Any, TypeAlias
 
 import click
 import yaml
+from attr import dataclass
 from pydantic_core import ValidationError, to_jsonable_python
 
 from inspect_flow._types.flow_types import FConfig
@@ -14,21 +15,37 @@ from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import set_config_path_env_var
 
 
-def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
+@dataclass
+class ConfigOptions:
+    """Options for loading a configuration file.
+
+    Attributes:
+        overrides: A list of configuration overrides in the form of "key1.key2=value" strings.
+        flow_vars: A dictionary available as '__flow_vars__' when loading the config.
+    """
+
+    overrides: list[str] = []
+    flow_vars: dict[str, str] = {}
+
+
+def load_config(
+    config_file: str, config_options: ConfigOptions | None = None
+) -> FConfig:
     """Load a configuration file and apply any overrides.
 
     Args:
         config_file: The path to the configuration file.
-        overrides: A list of overrides in the format "key1.key2=val".
+        config_options: Options for loading the config.
     """
-    config = _load_config_from_file(config_file)
-    if overrides:
-        return _apply_overrides(config, overrides or [])
+    config_options = config_options or ConfigOptions()
+    config = _load_config_from_file(config_file, config_options.flow_vars)
+    if config_options.overrides:
+        return _apply_overrides(config, config_options.overrides)
     set_config_path_env_var(config_file)
     return config
 
 
-def _load_config_from_file(config_file: str) -> FConfig:
+def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FConfig:
     config_path = Path(config_file)
 
     if not config_path.exists():
@@ -37,7 +54,7 @@ def _load_config_from_file(config_file: str) -> FConfig:
     try:
         with open(config_path, "r") as f:
             if config_path.suffix == ".py":
-                result = execute_file_and_get_last_result(config_path)
+                result = execute_file_and_get_last_result(config_path, flow_vars)
                 if result is None:
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
