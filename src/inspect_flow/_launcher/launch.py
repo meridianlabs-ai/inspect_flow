@@ -13,7 +13,16 @@ from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.path_util import set_path_env_vars
 
 
-def launch(
+def run(
+    config: FConfig | FlowConfig,
+    config_file_path: str | None = None,
+    dry_run: bool = False,
+) -> None:
+    run_args = ["--dry-run"] if dry_run else []
+    _launch(config, config_file_path, run_args)
+
+
+def _launch(
     config: FConfig | FlowConfig,
     config_file_path: str | None = None,
     run_args: list[str] | None = None,

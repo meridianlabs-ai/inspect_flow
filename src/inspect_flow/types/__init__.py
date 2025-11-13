@@ -1,3 +1,13 @@
+from inspect_flow._types.flow_types import (
+    FAgent,
+    FDefaults,
+    FEpochs,
+    FGenerateConfig,
+    FModel,
+    FOptions,
+    FSolver,
+    FTask,
+)
 from inspect_flow._types.generated import (
     ApprovalPolicyConfigDict,
     ApproverPolicyConfigDict,
@@ -32,6 +42,14 @@ __all__ = [
     "ApprovalPolicyConfigDict",
     "ApproverPolicyConfigDict",
     "BatchConfigDict",
+    "FAgent",
+    "FDefaults",
+    "FEpochs",
+    "FGenerateConfig",
+    "FModel",
+    "FOptions",
+    "FSolver",
+    "FTask",
     "FlowAgent",
     "FlowAgentDict",
     "FlowConfig",

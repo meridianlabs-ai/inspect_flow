@@ -8,9 +8,23 @@ import click
 import yaml
 from pydantic_core import ValidationError, to_jsonable_python
 
+from inspect_flow._config.write import config_to_yaml
+from inspect_flow._launcher.launch import _launch
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowConfig
 from inspect_flow._util.module_util import execute_file_and_get_last_result
+
+
+def config(
+    config: FConfig,
+    config_file_path: str,
+    resolve: bool = False,
+) -> None:
+    if resolve:
+        _launch(config, config_file_path, ["--config"])
+    else:
+        dump = config_to_yaml(config)
+        click.echo(dump)
 
 
 def load_config(config_file: str, overrides: list[str] | None = None) -> FConfig:
