@@ -225,7 +225,7 @@ def test_merge_config():
         flow_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         dependencies=[
-            "./examples/local_eval",
+            "./tests/config/local_eval",
         ],
         tasks=tasks_with(
             task=tasks_matrix(
