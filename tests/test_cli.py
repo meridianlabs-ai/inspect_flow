@@ -9,7 +9,7 @@ from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FConfig
 from inspect_flow._version import __version__
 
-CONFIG_FILE = "./examples/model_and_task_flow.py"
+CONFIG_FILE = "./tests/config/model_and_task_flow.py"
 
 
 def test_flow_help() -> None:

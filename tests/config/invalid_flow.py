@@ -5,7 +5,7 @@ FlowConfig(
     flow_dir="./logs/flow_test",
     options={"limit": 1},
     dependencies=[
-        "./examples/local_eval",
+        "./tests/config/local_eval",
     ],
     tasks=tasks_matrix(
         task=[

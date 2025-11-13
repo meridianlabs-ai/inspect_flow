@@ -6,6 +6,8 @@ from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 from types import ModuleType
 
+from inspect_ai._util.file import file
+
 
 @lru_cache(maxsize=None)
 def get_module_from_file(file: str) -> ModuleType:
@@ -21,9 +23,10 @@ def get_module_from_file(file: str) -> ModuleType:
 
 
 def execute_file_and_get_last_result(
-    path: Path, flow_vars: dict[str, str]
+    path: str, flow_vars: dict[str, str]
 ) -> object | None:
-    src = open(path, "r", encoding="utf-8").read()
+    with file(path, "r", encoding="utf-8") as f:
+        src = f.read()
     mod = ast.parse(src, filename=path, mode="exec")
     if not mod.body:
         return None

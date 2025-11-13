@@ -7,6 +7,7 @@ from typing import Any, TypeAlias
 import click
 import yaml
 from attr import dataclass
+from inspect_ai._util.file import file
 from pydantic_core import ValidationError, to_jsonable_python
 
 from inspect_flow._types.flow_types import FConfig
@@ -48,13 +49,10 @@ def load_config(
 def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FConfig:
     config_path = Path(config_file)
 
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_file}")
-
     try:
-        with open(config_path, "r") as f:
+        with file(config_file, "r") as f:
             if config_path.suffix == ".py":
-                result = execute_file_and_get_last_result(config_path, flow_vars)
+                result = execute_file_and_get_last_result(config_file, flow_vars)
                 if result is None:
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
@@ -76,7 +74,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FConf
                     "Supported formats: .yaml, .yml, .json"
                 )
     except ValidationError as e:
-        _print_filtered_traceback(e, config_path)
+        _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
         sys.exit(1)
 
@@ -136,10 +134,9 @@ def _apply_overrides(config: FConfig, overrides: list[str]) -> FConfig:
     return FConfig.model_validate(merged_dict)
 
 
-def _print_filtered_traceback(e: ValidationError, config_path: Path) -> None:
+def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
     tb = e.__traceback__
     stack_summary = traceback.extract_tb(tb)
-    config_file = str(config_path.resolve())
     filtered_frames = [
         frame for frame in stack_summary if frame.filename in config_file
     ]
