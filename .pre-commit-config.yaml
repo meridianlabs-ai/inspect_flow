@@ -40,3 +40,9 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: check-docstrings
+        name: Check public API docstrings
+        entry: python scripts/check_public_docstrings.py
+        language: system
+        pass_filenames: false
+        always_run: true

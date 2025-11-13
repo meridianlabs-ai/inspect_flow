@@ -25,6 +25,8 @@ jobs:
         run: uv run ruff check .
       - name: Format with Ruff
         run: uv run ruff format --check .
+      - name: Check public API docstrings
+        run: uv run python scripts/check_public_docstrings.py
 
   py-type:
     runs-on: ubuntu-latest

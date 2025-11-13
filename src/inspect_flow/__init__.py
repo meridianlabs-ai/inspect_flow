@@ -1,3 +1,5 @@
+"""inspect_flow methods for constructing flow configs."""
+
 try:
     from ._version import __version__
 except ImportError:

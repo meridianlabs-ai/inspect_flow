@@ -1,3 +1,5 @@
+"""inspect_flow types for constructing flow configs."""
+
 from inspect_flow._types.flow_types import (
     FAgent,
     FDefaults,
