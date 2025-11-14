@@ -6,17 +6,13 @@ from inspect_flow._types.generated import (
     FlowTask,
 )
 from inspect_flow._types.merge import (
-    agent_merge,
-    config_merge,
+    merge,
     merge_recursive,
-    model_merge,
-    solver_merge,
-    task_merge,
 )
 
 
 def test_merge():
-    agent = agent_merge(
+    agent = merge(
         FlowAgent(
             name="base_agent",
             args={"temperature": 0.0},
@@ -31,12 +27,14 @@ def test_merge():
     assert agent.flow_metadata["base"] == "agent"
     assert agent.flow_metadata["add"] == "agent"
 
-    config = config_merge(FlowGenerateConfig(max_tokens=100), {"top_p": 0.9})
+    config = merge(FlowGenerateConfig(max_tokens=100), FlowGenerateConfig(top_p=0.9))
     assert config.max_tokens == 100
     assert config.top_p == 0.9
 
-    model = model_merge(
-        {"name": "base_model", "role": "mark", "config": {"temperature": 0.3}},
+    model = merge(
+        FlowModel(
+            name="base_model", role="mark", config=FlowGenerateConfig(temperature=0.3)
+        ),
         FlowModel(config=FlowGenerateConfig(top_p=0.8), role="updated_mark"),
     )
     assert model.name == "base_model"
@@ -45,12 +43,12 @@ def test_merge():
     assert model.config.temperature == 0.3
     assert model.config.top_p == 0.8
 
-    solver = solver_merge(FlowSolver(name="base_solver"), {"args": {"max_retries": 3}})
+    solver = merge(FlowSolver(name="base_solver"), FlowSolver(args={"max_retries": 3}))
     assert solver.name == "base_solver"
     assert solver.args
     assert solver.args["max_retries"] == 3
 
-    task = task_merge(
+    task = merge(
         FlowTask(
             name="base_task",
             config=FlowGenerateConfig(timeout=30),

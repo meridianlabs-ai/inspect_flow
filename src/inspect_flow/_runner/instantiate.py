@@ -5,7 +5,7 @@ from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai.agent import Agent
-from inspect_ai.model import GenerateConfig, Model, get_model
+from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
@@ -15,6 +15,7 @@ from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowConfig,
     FlowEpochs,
+    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -43,7 +44,7 @@ def _create_model(config: FlowModel) -> Model:
         model=config.name,
         role=config.role,
         default=config.default,
-        config=config.config or GenerateConfig(),
+        config=config.config or FlowGenerateConfig(),
         base_url=config.base_url,
         api_key=config.api_key,
         memoize=config.memoize or True,

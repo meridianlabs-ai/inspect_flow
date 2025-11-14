@@ -23,19 +23,13 @@ from inspect_flow._types.factories import (
     tasks_with,
 )
 from inspect_flow._types.merge import (
-    agent_merge,
-    config_merge,
-    model_merge,
-    solver_merge,
-    task_merge,
+    merge,
 )
 
 __all__ = [
     "__version__",
-    "agent_merge",
     "agents_matrix",
     "agents_with",
-    "config_merge",
     "configs_matrix",
     "configs_with",
     "flow_agent",
@@ -43,13 +37,11 @@ __all__ = [
     "flow_model",
     "flow_solver",
     "flow_task",
-    "model_merge",
+    "merge",
     "models_matrix",
     "models_with",
-    "solver_merge",
     "solvers_matrix",
     "solvers_with",
-    "task_merge",
     "tasks_matrix",
     "tasks_with",
 ]

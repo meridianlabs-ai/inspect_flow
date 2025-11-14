@@ -2,7 +2,7 @@ from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai._util.registry import registry_lookup
 from inspect_ai.agent import Agent
-from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.model import Model
 from inspect_ai.solver import Solver
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowConfig,
     FlowDefaults,
+    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -128,7 +129,7 @@ def _resolve_task(flow_config: FlowConfig, config: str | FlowTask) -> list[FlowT
         if config.model_roles
         else None
     )
-    generate_config = defaults.config or GenerateConfig()
+    generate_config = defaults.config or FlowGenerateConfig()
     if config.config:
         generate_config = generate_config.merge(config.config)
     if model and model.config:

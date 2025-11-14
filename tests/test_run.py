@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from inspect_ai import Task
 from inspect_ai.agent import Agent
-from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.model import Model
 from inspect_ai.solver import Solver
 from inspect_flow import models_matrix, solvers_matrix, tasks_matrix
 from inspect_flow._runner.run import _run_eval_set
@@ -256,11 +256,9 @@ def test_matrix_solvers() -> None:
 def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
-                FlowConfig(
-                    flow_dir="logs/flow_test",
-                    tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
-                )
+            config=FlowConfig(
+                flow_dir="logs/flow_test",
+                tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
             )
         )
 
@@ -338,12 +336,12 @@ def test_config_generate_config() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
 
-        task_config: GenerateConfig = tasks_arg[0].config
+        task_config = tasks_arg[0].config
         assert task_config.system_message == model_system_message
         assert task_config.temperature == task_temperature
         assert task_config.max_tokens == config_max_tokens
 
-        model_config: GenerateConfig = tasks_arg[0].model.config
+        model_config = tasks_arg[0].model.config
         assert model_config.system_message == model_system_message
         assert model_config.temperature is None
         assert model_config.max_tokens is None
@@ -393,10 +391,10 @@ def test_config_model_overrides() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
 
-        task_config: GenerateConfig = tasks_arg[0].config
+        task_config = tasks_arg[0].config
         assert task_config.system_message == "Model"
 
-        model_config: GenerateConfig = tasks_arg[0].model.config
+        model_config = tasks_arg[0].model.config
         assert model_config.system_message == "Model"
 
 
@@ -443,10 +441,10 @@ def test_config_model_prefix_default_overrides() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
 
-        task_config: GenerateConfig = tasks_arg[0].config
+        task_config = tasks_arg[0].config
         assert task_config.system_message == "Model Prefix Default"
 
-        model_config: GenerateConfig = tasks_arg[0].model.config
+        model_config = tasks_arg[0].model.config
         assert model_config.system_message == "Model Prefix Default"
 
 
@@ -493,10 +491,10 @@ def test_config_model_default_overrides() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
 
-        task_config: GenerateConfig = tasks_arg[0].config
+        task_config = tasks_arg[0].config
         assert task_config.system_message == "Model Default"
 
-        model_config: GenerateConfig = tasks_arg[0].model.config
+        model_config = tasks_arg[0].model.config
         assert model_config.system_message == "Model Default"
 
 
@@ -539,10 +537,10 @@ def test_config_model_prefixes() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
 
-        task_config: GenerateConfig = tasks_arg[0].config
+        task_config = tasks_arg[0].config
         assert task_config.system_message == "Model Class Prefix Default"
 
-        model_config: GenerateConfig = tasks_arg[0].model.config
+        model_config = tasks_arg[0].model.config
         assert model_config.system_message == "Model Class Prefix Default"
 
 
