@@ -2,7 +2,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from inspect_flow import flow_config
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow.types import FlowConfig, FlowTask
 
@@ -53,21 +52,19 @@ def test_model_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=flow_config(
-                    {
-                        "tasks": [
-                            {
-                                "name": "task_name",
-                                "model": "anthropic/claude-2",
-                                "model_roles": {"mark": "groq/somemodel"},
-                            },
-                            {
-                                "name": "task_name",
-                                "model": "openai/gpt-4o-mini",
-                                "model_roles": {"mark": "google/gemini-1"},
-                            },
-                        ]
-                    }
+                config=FlowConfig(
+                    tasks=[
+                        FlowTask(
+                            name="task_name",
+                            model="anthropic/claude-2",
+                            model_roles={"mark": "groq/somemodel"},
+                        ),
+                        FlowTask(
+                            name="task_name",
+                            model="openai/gpt-4o-mini",
+                            model_roles={"mark": "google/gemini-1"},
+                        ),
+                    ]
                 ),
                 temp_dir=temp_dir,
             )

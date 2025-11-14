@@ -1,5 +1,4 @@
-from inspect_flow._types.factories import flow_task
-from inspect_flow.types import FlowConfig, FlowOptions
+from inspect_flow.types import FlowConfig, FlowOptions, FlowTask
 
 FlowConfig(
     flow_dir="./logs/flow_test",
@@ -8,7 +7,7 @@ FlowConfig(
         "./tests/config/local_eval",
     ],
     tasks=[
-        flow_task({"name": "local_eval/noop", "model": "mockllm/mock-llm1"}),
-        flow_task({"name": "local_eval/noop", "model": "mockllm/mock-llm1"}),
+        FlowTask(name="local_eval/noop", model="mockllm/mock-llm1"),
+        FlowTask(name="local_eval/noop", model="mockllm/mock-llm1"),
     ],
 )

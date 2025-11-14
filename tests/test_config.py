@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
+from inspect_flow import models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
 from inspect_flow._types.generated import FlowAgent, FlowSolver
 from inspect_flow.types import (
@@ -105,11 +105,7 @@ def test_config_model_and_task() -> None:
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
-        tasks=[
-            flow_task(
-                {"name": "inspect_evals/mmlu_0_shot", "model": "openai/gpt-4o-mini"}
-            )
-        ],
+        tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
     validate_config(config, "model_and_task_flow.yaml")
 

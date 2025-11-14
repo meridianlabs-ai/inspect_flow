@@ -6,7 +6,6 @@ from typing_extensions import Unpack
 
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowConfig,
     FlowGenerateConfig,
     FlowModel,
     FlowSolver,
@@ -15,7 +14,6 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._types.generated import (
     FlowAgentDict,
     FlowAgentMatrixDict,
-    FlowConfigDict,
     FlowGenerateConfigDict,
     FlowGenerateConfigMatrixDict,
     FlowModelDict,
@@ -26,52 +24,6 @@ from inspect_flow._types.generated import (
     FlowTaskMatrixDict,
 )
 from inspect_flow._types.merge import merge_recursive, to_dict
-
-
-def flow_agent(config: FlowAgentDict | FlowAgent) -> FlowAgent:
-    """Create an FAgent.
-
-    Args:
-        config: The FlowAgent or FlowAgentDict to convert.
-    """
-    return FlowAgent.model_validate(to_jsonable_python(config))
-
-
-def flow_config(config: FlowConfigDict | FlowConfig) -> FlowConfig:
-    """Create an FConfig.
-
-    Args:
-        config: The FlowConfig or FlowConfigDict to convert.
-    """
-    return FlowConfig.model_validate(to_jsonable_python(config))
-
-
-def flow_model(config: FlowModelDict | FlowModel) -> FlowModel:
-    """Create an FModel.
-
-    Args:
-        config: The FlowModel or FlowModelDict to convert.
-    """
-    return FlowModel.model_validate(to_jsonable_python(config))
-
-
-def flow_solver(config: FlowSolverDict | FlowSolver) -> FlowSolver:
-    """Create an FSolver.
-
-    Args:
-        config: The FlowSolver or FlowSolverDict to convert.
-    """
-    return FlowSolver.model_validate(to_jsonable_python(config))
-
-
-def flow_task(config: FlowTaskDict | FlowTask) -> FlowTask:
-    """Create an FTask.
-
-    Args:
-        config: The FlowTask or FlowTaskDict to convert.
-    """
-    return FlowTask.model_validate(to_jsonable_python(config))
-
 
 BaseType = TypeVar(
     "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, FlowGenerateConfig
