@@ -340,7 +340,7 @@ class FlowTaskDict(TypedDict):
     epochs: NotRequired[Optional[Union[int, FlowEpochs]]]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
-    """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
+    """`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
     continue_on_fail: NotRequired[Optional[bool]]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
     message_limit: NotRequired[Optional[int]]

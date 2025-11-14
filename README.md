@@ -94,6 +94,7 @@ To work on development of Inspect Flow, clone the repository and install with th
 git clone https://github.com/meridianlabs-ai/inspect_flow
 cd inspect_flow
 uv sync
+source .venv/bin/activate
 ```
 
 Optionally install pre-commit hooks via
