@@ -219,27 +219,6 @@ def _generate_dict_code() -> GeneratedCode:
         code = GeneratedCode()
         _add_generated_code(code, dict_lines, "dict")
 
-        # flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
-        # schema["$defs"] = flow_type_defs
-
-        # generate(
-        #     json.dumps(schema),
-        #     input_file_type=InputFileType.JsonSchema,
-        #     output=generated_type_file,
-        #     output_model_type=DataModelType.DataclassesDataclass,
-        #     target_python_version=PythonVersion.PY_310,
-        #     use_generic_container_types=True,
-        #     use_field_description=True,
-        #     use_schema_description=True,
-        #     use_default_kwarg=True,
-        #     enum_field_as_literal=LiteralType.All,
-        # )
-
-        # with open(generated_type_file, "r") as f:
-        #     pydantic_lines = f.readlines()
-
-        # _add_generated_code(code, pydantic_lines, "pydantic")
-
     return code
 
 
