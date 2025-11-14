@@ -17,7 +17,7 @@ from inspect_flow._types.flow_types import (
 def _read_config() -> FlowConfig:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
-        return FlowConfig(**data)
+        return FlowConfig.model_validate(data)
 
 
 def _print_resolved_config(config: FlowConfig) -> None:

@@ -72,12 +72,11 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
                     f"Unsupported config file format: {config_path.suffix}. "
                     "Supported formats: .yaml, .yml, .json"
                 )
+            return FlowConfig.model_validate(data)
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
         sys.exit(1)
-
-    return FlowConfig(**data)
 
 
 def _maybe_json(value: str) -> Any:

@@ -6,7 +6,7 @@ from inspect_flow._types.flow_types import FlowConfig
 
 
 def run(
-    config: FlowConfig | FlowConfig,
+    config: FlowConfig,
     dry_run: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.

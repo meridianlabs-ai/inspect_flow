@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 from inspect_ai._util.file import absolute_file_path
-from pydantic_core import to_jsonable_python
 
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowConfig
@@ -15,12 +14,9 @@ from inspect_flow._util.path_util import set_cwd_env_var
 
 
 def launch(
-    config: FlowConfig | FlowConfig,
+    config: FlowConfig,
     run_args: list[str] | None = None,
 ) -> None:
-    if not isinstance(config, FlowConfig):
-        config = FlowConfig.model_validate(to_jsonable_python(config))
-
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     set_cwd_env_var()
