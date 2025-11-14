@@ -1,23 +1,22 @@
-from inspect_flow import tasks_matrix
-from inspect_flow.types import FlowConfig
+from inspect_flow import FlowConfig, FlowModel, FlowOptions, FlowTask, tasks_matrix
 
 FlowConfig(
     flow_dir="./logs/flow_test",
-    options={"limit": 1},
+    options=FlowOptions(limit=1),
     dependencies=[
         "./tests/config/local_eval",
     ],
     tasks=tasks_matrix(
         task=[
-            {"args": {"fail": True}},
+            FlowTask(args={"fail": True}),
             "local_eval/noop",
             "local_eval/noop2",
         ],
         model=[
             "mockllm/mock-llm1",
             "mockllm/mock-llm2",
-            {"name": "mockllm/mock-llm3"},
-            {"base_url": "http://localhost:8000"},  # Missing 'name' field
+            FlowModel(name="mockllm/mock-llm3"),
+            FlowModel(base_url="http://localhost:8000"),  # Missing 'name' field
         ],
     ),
 )
