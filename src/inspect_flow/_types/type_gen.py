@@ -14,7 +14,7 @@ from datamodel_code_generator import (
     generate,
 )
 
-from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.flow_types import FlowConfig
 
 GenType = Literal["Dict", "MatrixDict"]
 
@@ -29,7 +29,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FAgent, FEpochs, FModel, FOptions, FSolver, FTask, FDefaults, FGenerateConfig\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowOptions, FlowSolver, FlowTask, FlowDefaults, FlowGenerateConfig\n",
 ]
 
 FLOW_TYPES = [
@@ -222,7 +222,7 @@ class GeneratedCode:
 
 
 def _generate_dict_code() -> GeneratedCode:
-    schema = FConfig.model_json_schema()
+    schema = FlowConfig.model_json_schema()
     _root_type_as_def(schema)
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]
@@ -251,26 +251,26 @@ def _generate_dict_code() -> GeneratedCode:
         code = GeneratedCode()
         _add_generated_code(code, dict_lines, "dict")
 
-        flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
-        schema["$defs"] = flow_type_defs
+        # flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
+        # schema["$defs"] = flow_type_defs
 
-        generate(
-            json.dumps(schema),
-            input_file_type=InputFileType.JsonSchema,
-            output=generated_type_file,
-            output_model_type=DataModelType.DataclassesDataclass,
-            target_python_version=PythonVersion.PY_310,
-            use_generic_container_types=True,
-            use_field_description=True,
-            use_schema_description=True,
-            use_default_kwarg=True,
-            enum_field_as_literal=LiteralType.All,
-        )
+        # generate(
+        #     json.dumps(schema),
+        #     input_file_type=InputFileType.JsonSchema,
+        #     output=generated_type_file,
+        #     output_model_type=DataModelType.DataclassesDataclass,
+        #     target_python_version=PythonVersion.PY_310,
+        #     use_generic_container_types=True,
+        #     use_field_description=True,
+        #     use_schema_description=True,
+        #     use_default_kwarg=True,
+        #     enum_field_as_literal=LiteralType.All,
+        # )
 
-        with open(generated_type_file, "r") as f:
-            pydantic_lines = f.readlines()
+        # with open(generated_type_file, "r") as f:
+        #     pydantic_lines = f.readlines()
 
-        _add_generated_code(code, pydantic_lines, "pydantic")
+        # _add_generated_code(code, pydantic_lines, "pydantic")
 
     return code
 

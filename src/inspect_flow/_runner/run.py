@@ -9,31 +9,33 @@ from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_config
 from inspect_flow._types.flow_types import (
-    FConfig,
-    FOptions,
+    FlowConfig,
+    FlowOptions,
 )
 
 
-def _read_config() -> FConfig:
+def _read_config() -> FlowConfig:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
-        return FConfig(**data)
+        return FlowConfig(**data)
 
 
-def _print_resolved_config(config: FConfig) -> None:
+def _print_resolved_config(config: FlowConfig) -> None:
     resolved_config = resolve_config(config)
     dump = config_to_yaml(resolved_config)
     click.echo(dump)
 
 
-def _write_config_file(config: FConfig) -> None:
+def _write_config_file(config: FlowConfig) -> None:
     filename = f"{config.flow_dir}/{clean_filename_component(iso_now())}_flow.yaml"
     yaml = config_to_yaml(config)
     with file(filename, "w") as f:
         f.write(yaml)
 
 
-def _run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
+def _run_eval_set(
+    config: FlowConfig, dry_run: bool = False
+) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_config(config)
     tasks = instantiate_tasks(resolved_config)
 
@@ -41,7 +43,7 @@ def _run_eval_set(config: FConfig, dry_run: bool = False) -> tuple[bool, list[Ev
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
 
-    options = config.options or FOptions()
+    options = config.options or FlowOptions()
     assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
 
     _write_config_file(resolved_config)

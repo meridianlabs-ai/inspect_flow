@@ -12,12 +12,12 @@ from inspect_ai.util import registry_create
 from pydantic import BaseModel
 
 from inspect_flow._types.flow_types import (
-    FAgent,
-    FConfig,
-    FEpochs,
-    FModel,
-    FSolver,
-    FTask,
+    FlowAgent,
+    FlowConfig,
+    FlowEpochs,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
     ModelRolesConfig,
 )
 from inspect_flow._util.module_util import get_module_from_file
@@ -29,13 +29,13 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def instantiate_tasks(config: FConfig) -> list[Task]:
+def instantiate_tasks(config: FlowConfig) -> list[Task]:
     return [
         _instantiate_task(config, task_config) for task_config in config.tasks or []
     ]
 
 
-def _create_model(config: FModel) -> Model:
+def _create_model(config: FlowModel) -> Model:
     if not config.name:
         raise ValueError(f"Model name is required. Model: {config}")
 
@@ -55,35 +55,35 @@ def _create_model_roles(config: ModelRolesConfig) -> ModelRoles:
     roles = {}
     for role, model_config in config.items():
         model = model_config
-        if isinstance(model, FModel):
+        if isinstance(model, FlowModel):
             model = _create_model(config=model)
         roles[role] = model
     return roles
 
 
-def _create_single_solver(config: FSolver) -> Solver:
+def _create_single_solver(config: FlowSolver) -> Solver:
     if not config.name:
         raise ValueError(f"Solver name is required. Solver: {config}")
 
     return registry_create(type="solver", name=config.name, **(config.args or {}))
 
 
-def _create_agent(config: FAgent) -> Agent:
+def _create_agent(config: FlowAgent) -> Agent:
     if not config.name:
         raise ValueError(f"Agent name is required. Agent: {config}")
 
     return registry_create(type="agent", name=config.name, **(config.args or {}))
 
 
-def _create_solver(config: FSolver | list[FSolver] | FAgent) -> SingleSolver:
-    if isinstance(config, FSolver):
+def _create_solver(config: FlowSolver | list[FlowSolver] | FlowAgent) -> SingleSolver:
+    if isinstance(config, FlowSolver):
         return _create_single_solver(config)
-    if isinstance(config, FAgent):
+    if isinstance(config, FlowAgent):
         return _create_agent(config)
     return [_create_single_solver(single_config) for single_config in config]
 
 
-def _instantiate_task(flow_config: FConfig, config: FTask) -> Task:
+def _instantiate_task(flow_config: FlowConfig, config: FlowTask) -> Task:
     assert flow_config.defaults is None, (
         "config must be resolved before calling instantiate_task"
     )
@@ -106,7 +106,7 @@ def _instantiate_task(flow_config: FConfig, config: FTask) -> Task:
         )
 
     epochs = config.epochs
-    if isinstance(epochs, FEpochs):
+    if isinstance(epochs, FlowEpochs):
         epochs = Epochs(
             epochs=epochs.epochs,
             reducer=epochs.reducer,
@@ -152,7 +152,7 @@ def _get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task
     return getattr(module, attr)
 
 
-def _get_task_creator(config: FTask) -> Callable[..., Task]:
+def _get_task_creator(config: FlowTask) -> Callable[..., Task]:
     if not config.name:
         raise ValueError(f"Task name is required. Task: {config}")
     config_name = config.name

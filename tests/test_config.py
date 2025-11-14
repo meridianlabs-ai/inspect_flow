@@ -4,7 +4,6 @@ import pytest
 import yaml
 from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
 from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
-from inspect_flow._types.flow_types import FConfig
 from inspect_flow._types.generated import FlowAgent, FlowSolver
 from inspect_flow.types import (
     FlowConfig,
@@ -20,8 +19,8 @@ from tests.test_helpers.type_helpers import fc
 update_examples = False
 
 
-def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
-    config = FConfig.model_validate(to_jsonable_python(config))
+def write_flow_yaml(config: FlowConfig | FlowConfig, file_path: Path) -> None:
+    config = FlowConfig.model_validate(to_jsonable_python(config))
     with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(
@@ -36,8 +35,8 @@ def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
         )
 
 
-def validate_config(config: FlowConfig | FConfig, file_name: str) -> None:
-    config = FConfig.model_validate(to_jsonable_python(config))
+def validate_config(config: FlowConfig | FlowConfig, file_name: str) -> None:
+    config = FlowConfig.model_validate(to_jsonable_python(config))
     # Load the example config file
     example_path = Path(__file__).parent / "config" / file_name
     with open(example_path, "r") as f:

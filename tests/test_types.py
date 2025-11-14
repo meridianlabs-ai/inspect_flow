@@ -8,11 +8,11 @@ from inspect_flow import (
     flow_task,
 )
 from inspect_flow._types.factories import configs_matrix
-from inspect_flow._types.flow_types import FSolver
-from inspect_flow._types.generated import FlowDefaults, FlowGenerateConfig
 from inspect_flow.types import (
     FlowAgent,
     FlowConfig,
+    FlowDefaults,
+    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -105,7 +105,7 @@ def test_solver_from_string():
     )
     assert config.tasks
     assert config.tasks[0].solver
-    assert isinstance(config.tasks[0].solver, FSolver)
+    assert isinstance(config.tasks[0].solver, FlowSolver)
     assert config.tasks[0].solver.name == solver_name
     assert isinstance(config.tasks[1].solver, list)
     assert config.tasks[1].solver[0].name == solver_name2

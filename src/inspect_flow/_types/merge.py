@@ -3,32 +3,24 @@ from typing import Any, Mapping, TypeAlias
 from pydantic_core import to_jsonable_python
 
 from inspect_flow._types.flow_types import (
-    FAgent,
-    FGenerateConfig,
-    FModel,
-    FSolver,
-    FTask,
+    FlowAgent,
+    FlowGenerateConfig,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
 )
 from inspect_flow._types.generated import (
-    FlowAgent,
     FlowAgentDict,
-    FlowGenerateConfig,
-    FlowGenerateConfigDict,
-    FlowModel,
     FlowModelDict,
-    FlowSolver,
     FlowSolverDict,
-    FlowTask,
     FlowTaskDict,
 )
 
-AgentType: TypeAlias = FAgent | FlowAgent | FlowAgentDict
-GenerateConfigType: TypeAlias = (
-    FGenerateConfig | FlowGenerateConfig | FlowGenerateConfigDict
-)
-ModelType: TypeAlias = FModel | FlowModel | FlowModelDict
-SolverType: TypeAlias = FSolver | FlowSolver | FlowSolverDict
-TaskType: TypeAlias = FTask | FlowTask | FlowTaskDict
+AgentType: TypeAlias = FlowAgent | FlowAgent | FlowAgentDict
+GenerateConfigType: TypeAlias = FlowGenerateConfig | FlowGenerateConfig
+ModelType: TypeAlias = FlowModel | FlowModel | FlowModelDict
+SolverType: TypeAlias = FlowSolver | FlowSolver | FlowSolverDict
+TaskType: TypeAlias = FlowTask | FlowTask | FlowTaskDict
 
 
 def to_dict(input: Any) -> dict[str, Any]:
@@ -72,7 +64,7 @@ def merge_recursive(
 def agent_merge(
     base: AgentType,
     add: AgentType,
-) -> FAgent:
+) -> FlowAgent:
     """Merge two agent configs.
 
     Args:
@@ -80,13 +72,13 @@ def agent_merge(
         add: The agent config to merge into the base. Values in this config
             will override those in the base.
     """
-    return FAgent.model_validate(merge_recursive(base, add))
+    return FlowAgent.model_validate(merge_recursive(base, add))
 
 
 def config_merge(
     base: GenerateConfigType,
     add: GenerateConfigType,
-) -> FGenerateConfig:
+) -> FlowGenerateConfig:
     """Merge two generate configs.
 
     Args:
@@ -94,13 +86,13 @@ def config_merge(
         add: The generate config to merge into the base. Values in this config
             will override those in the base.
     """
-    return FGenerateConfig.model_validate(_merge(base, add))
+    return FlowGenerateConfig.model_validate(_merge(base, add))
 
 
 def model_merge(
     base: ModelType,
     add: ModelType,
-) -> FModel:
+) -> FlowModel:
     """Merge two model configs.
 
     Args:
@@ -108,13 +100,13 @@ def model_merge(
         add: The model config to merge into the base. Values in this config
             will override those in the base.
     """
-    return FModel.model_validate(merge_recursive(base, add))
+    return FlowModel.model_validate(merge_recursive(base, add))
 
 
 def solver_merge(
     base: SolverType,
     add: SolverType,
-) -> FSolver:
+) -> FlowSolver:
     """Merge two solver configs.
 
     Args:
@@ -122,13 +114,13 @@ def solver_merge(
         add: The solver config to merge into the base. Values in this config
             will override those in the base.
     """
-    return FSolver.model_validate(merge_recursive(base, add))
+    return FlowSolver.model_validate(merge_recursive(base, add))
 
 
 def task_merge(
     base: TaskType,
     add: TaskType,
-) -> FTask:
+) -> FlowTask:
     """Merge two task configs.
 
     Args:
@@ -136,4 +128,4 @@ def task_merge(
         add: The task config to merge into the base. Values in this config
             will override those in the base.
     """
-    return FTask.model_validate(merge_recursive(base, add))
+    return FlowTask.model_validate(merge_recursive(base, add))
