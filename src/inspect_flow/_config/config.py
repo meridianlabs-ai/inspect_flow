@@ -48,7 +48,7 @@ def _load_config_from_file(config_file: str) -> FConfig:
             else:
                 raise ValueError(
                     f"Unsupported config file format: {config_path.suffix}. "
-                    "Supported formats: .yaml, .yml, .json"
+                    "Supported formats: .py, .yaml, .yml, .json"
                 )
     except ValidationError as e:
         _print_filtered_traceback(e, config_path)

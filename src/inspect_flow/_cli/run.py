@@ -16,7 +16,7 @@ from inspect_flow._launcher.launch import launch
     "--dry-run",
     type=bool,
     is_flag=True,
-    help="Do not run eval, but show a count of tasks that would be run.",
+    help="Do not run job, but show a count of tasks that would be run.",
     envvar="INSPECT_FLOW_DRY_RUN",
 )
 @config_options

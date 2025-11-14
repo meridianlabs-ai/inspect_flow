@@ -27,7 +27,7 @@ def config_options(f):
         "--limit",
         type=int,
         default=None,
-        help="Limit the number of tasks to run.",
+        help="Limit the number of samples to run.",
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
     f = click.option(
