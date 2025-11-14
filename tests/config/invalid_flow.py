@@ -1,9 +1,9 @@
 from inspect_flow import tasks_matrix
-from inspect_flow.types import FlowConfig
+from inspect_flow.types import FlowConfig, FlowOptions
 
 FlowConfig(
     flow_dir="./logs/flow_test",
-    options={"limit": 1},
+    options=FlowOptions(limit=1),
     dependencies=[
         "./tests/config/local_eval",
     ],

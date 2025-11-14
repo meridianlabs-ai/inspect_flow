@@ -33,11 +33,11 @@ def test_contructors():
     config = flow_task({"name": task_name, "model": model_name})
     assert config.name == task_name
     assert config.model
-    assert config.model.name == model_name
+    assert config.model_name == model_name
     config = flow_task(FlowTask(name=task_name, model=FlowModel(name=model_name)))
     assert config.name == task_name
     assert config.model
-    assert config.model.name == model_name
+    assert config.model_name == model_name
 
     config = flow_model({"name": model_name, "role": "mark"})
     assert config.name == model_name
@@ -59,6 +59,7 @@ def test_task_from_string():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [task_name]})
     assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].name == task_name
 
 
@@ -66,6 +67,7 @@ def test_task_from_dict():
     task_name = "one_module/one_task"
     config = flow_config({"tasks": [{"name": task_name}]})
     assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].name == task_name
 
 
@@ -85,8 +87,9 @@ def test_model_from_string():
         }
     )
     assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].model
-    assert config.tasks[0].model.name == model_name
+    assert config.tasks[0].model_name == model_name
     assert config.tasks[0].model_roles
     assert config.tasks[0].model_roles[model_role] == model_name2
 
@@ -104,10 +107,14 @@ def test_solver_from_string():
         }
     )
     assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].solver
     assert isinstance(config.tasks[0].solver, FlowSolver)
     assert config.tasks[0].solver.name == solver_name
+    assert isinstance(config.tasks[1], FlowTask)
     assert isinstance(config.tasks[1].solver, list)
+    assert isinstance(config.tasks[1].solver[0], FlowSolver)
+    assert isinstance(config.tasks[1].solver[1], FlowSolver)
     assert config.tasks[1].solver[0].name == solver_name2
     assert config.tasks[1].solver[1].name == solver_name3
 
