@@ -7,6 +7,7 @@ from typing import (
     Any,
     Literal,
     Mapping,
+    Sequence,
     TypeAlias,
     TypeVar,
     overload,
@@ -491,7 +492,9 @@ class FlowConfig(BaseModel, extra="forbid"):
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
-    tasks: list[str | FlowTask] | None = Field(default=None, description="Tasks to run")
+    tasks: Sequence[str | FlowTask] | None = Field(
+        default=None, description="Tasks to run"
+    )
 
     # Convert single items to lists
     @field_validator("dependencies", mode="before")

@@ -14,8 +14,6 @@ from inspect_flow.types import (
 )
 from pydantic_core import to_jsonable_python
 
-from tests.test_helpers.type_helpers import fc
-
 update_examples = False
 
 
@@ -231,7 +229,7 @@ def test_merge_config():
                 task=[
                     "local_eval/noop",
                     FlowTask(
-                        "local_eval/noop2",
+                        name="local_eval/noop2",
                         config=FlowGenerateConfig(system_message="Be concise."),
                     ),
                 ],
@@ -271,7 +269,7 @@ def test_overrides_of_lists():
     config = FlowConfig()
     # Within a single override, later values replace earlier ones
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "dependencies=dep1",
             "dependencies=dep2",
@@ -280,7 +278,7 @@ def test_overrides_of_lists():
     assert config.dependencies == ["dep2"]
     # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "dependencies=dep3",
             "dependencies=dep4",
@@ -289,7 +287,7 @@ def test_overrides_of_lists():
     assert config.dependencies == ["dep2", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             'dependencies=["new_dep1", "new_dep2"]',
         ],
@@ -301,7 +299,7 @@ def test_overrides_of_lists():
 def test_overrides_of_dicts():
     config = FlowConfig()
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "options.metadata.key1=val1",
             "options.metadata.key2=val2",
@@ -311,7 +309,7 @@ def test_overrides_of_dicts():
     assert config.options.metadata["key1"] == "val1"
     assert config.options.metadata["key2"] == "val2"
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "options.metadata.key1=val1_updated",
             "options.metadata.key3=val3",
@@ -323,7 +321,7 @@ def test_overrides_of_dicts():
     assert config.options.metadata["key3"] == "val3"
     # Can set a dict directly
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             'options.metadata={"new_key1": "new_val1", "new_key2": "new_val2"}',
         ],
@@ -340,14 +338,15 @@ def test_load_config_flow_vars():
         ConfigOptions(flow_vars={"model": "model_from_flow_vars"}),
     )
     assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].model
-    assert config.tasks[0].model.name == "model_from_flow_vars"
+    assert config.tasks[0].model_name == "model_from_flow_vars"
 
 
 def test_metadata():
     models = [
-        FlowModel("mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
-        FlowModel("mockllm/mock-llm2", flow_metadata={"context_window": 2048}),
+        FlowModel(name="mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
+        FlowModel(name="mockllm/mock-llm2", flow_metadata={"context_window": 2048}),
     ]
     models_to_use = [
         m
@@ -355,9 +354,9 @@ def test_metadata():
         if m.flow_metadata and m.flow_metadata.get("context_window", 0) >= 2000
     ]
     assert len(list(models_to_use)) == 1
-    agent = FlowAgent("agentname", flow_metadata={"agent": "1"})
-    solver = FlowSolver("solvername", flow_metadata={"solver": "2"})
-    task = FlowTask("taskname", flow_metadata={"task": "3"})
+    agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
+    solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
+    task = FlowTask(name="taskname", flow_metadata={"task": "3"})
     config = FlowConfig(
         tasks=tasks_matrix(
             task=task,
@@ -373,7 +372,7 @@ def test_overrides_invalid_config_key():
     config = FlowConfig()
     with pytest.raises(ValueError):
         config = _apply_overrides(
-            fc(config),
+            config,
             [
                 "defaults.config.key1=val1",
             ],

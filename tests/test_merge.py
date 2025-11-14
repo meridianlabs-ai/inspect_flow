@@ -37,7 +37,7 @@ def test_merge():
 
     model = model_merge(
         {"name": "base_model", "role": "mark", "config": {"temperature": 0.3}},
-        FlowModel(config={"top_p": 0.8}, role="updated_mark"),
+        FlowModel(config=FlowGenerateConfig(top_p=0.8), role="updated_mark"),
     )
     assert model.name == "base_model"
     assert model.role == "updated_mark"
@@ -53,7 +53,7 @@ def test_merge():
     task = task_merge(
         FlowTask(
             name="base_task",
-            config={"timeout": 30},
+            config=FlowGenerateConfig(timeout=30),
             flow_metadata={"base": "task", "both": "base"},
         ),
         FlowTask(

@@ -11,13 +11,16 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._types.generated import (
     FlowAgentDict,
+    FlowGenerateConfigDict,
     FlowModelDict,
     FlowSolverDict,
     FlowTaskDict,
 )
 
 AgentType: TypeAlias = FlowAgent | FlowAgent | FlowAgentDict
-GenerateConfigType: TypeAlias = FlowGenerateConfig | FlowGenerateConfig
+GenerateConfigType: TypeAlias = (
+    FlowGenerateConfig | FlowGenerateConfig | FlowGenerateConfigDict
+)
 ModelType: TypeAlias = FlowModel | FlowModel | FlowModelDict
 SolverType: TypeAlias = FlowSolver | FlowSolver | FlowSolverDict
 TaskType: TypeAlias = FlowTask | FlowTask | FlowTaskDict

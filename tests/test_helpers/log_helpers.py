@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
+from inspect_flow._types.flow_types import FlowTask
 from inspect_flow.types import FlowConfig
 from pydantic_core import to_jsonable_python
 
@@ -13,6 +14,13 @@ def init_test_logs() -> str:
     if log_dir.exists():
         shutil.rmtree(log_dir)
     return relative_log_dir
+
+
+def _task_and_model(config: str | FlowTask) -> tuple[str | None, str | None]:
+    if isinstance(config, str):
+        return config, None
+    else:
+        return config.name, config.model_name
 
 
 def verify_test_logs(config: FlowConfig | FlowConfig, log_dir: str) -> None:
@@ -28,8 +36,5 @@ def verify_test_logs(config: FlowConfig | FlowConfig, log_dir: str) -> None:
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [
-            (task.name, task.model.name if task.model else None)
-            for task in config.tasks or []
-        ]
+        [_task_and_model(task) for task in config.tasks or []]
     )
