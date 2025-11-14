@@ -32,17 +32,6 @@ ADDITIONAL_IMPORTS = [
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowOptions, FlowSolver, FlowTask, FlowDefaults, FlowGenerateConfig\n",
 ]
 
-FLOW_TYPES = [
-    "FConfig",
-    "FAgent",
-    "FModel",
-    "FSolver",
-    "FTask",
-    "FEpochs",
-    "FOptions",
-    "FDefaults",
-    "FGenerateConfig",
-]
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
 MATRIX_CLASS_FIELDS = {
@@ -161,29 +150,13 @@ def _update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -
         type: str = field_schema["$ref"]
         split = type.split("/")
         type_name = split[-1]
-        f_ref = "/".join(split)
-        flow_ref = None
-        if type_name in FLOW_TYPES:
-            type_name = "Flow" + type_name[1:]
-            split[-1] = type_name
-            flow_ref = "/".join(split)
-        split[-1] = type_name + "Dict"
-        dict_ref = "/".join(split)
-        if parent_list:
-            field_schema["$ref"] = f_ref
-            parent_list.append({"$ref": dict_ref})
-            if flow_ref:
-                parent_list.append({"$ref": flow_ref})
-            if type_name in STR_AS_CLASS:
+        if type_name in STR_AS_CLASS:
+            if parent_list:
                 parent_list.append({"type": "string"})
-        else:
-            del field_schema["$ref"]
-            ref_list = [{"$ref": f_ref}, {"$ref": dict_ref}]
-            if flow_ref:
-                ref_list.append({"$ref": flow_ref})
-            if type_name in STR_AS_CLASS:
-                ref_list.append({"type": "string"})
-            field_schema["anyOf"] = ref_list
+            else:
+                del field_schema["$ref"]
+                ref_list = [{"$ref": type}, {"type": "string"}]
+                field_schema["anyOf"] = ref_list
 
 
 def _update_refs(type_def: Schema) -> None:
@@ -203,13 +176,8 @@ def _create_dict_types(schema: Schema, initial_defs: Schema) -> None:
 
 def _update_def_titles_and_refs(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, type_def in dict(defs).items():
+    for type_def in dict(defs).values():
         _update_refs(type_def)
-        if title in FLOW_TYPES:
-            del defs[title]
-            new_title = "Flow" + title[1:]
-            defs[new_title] = type_def
-            type_def["title"] = new_title
 
 
 class GeneratedCode:

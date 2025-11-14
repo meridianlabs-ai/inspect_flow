@@ -1,4 +1,4 @@
-from inspect_flow import FlowConfig, FlowOptions, FlowTask, tasks_matrix
+from inspect_flow import FlowConfig, FlowModel, FlowOptions, FlowTask, tasks_matrix
 
 FlowConfig(
     flow_dir="./logs/flow_test",
@@ -15,8 +15,8 @@ FlowConfig(
         model=[
             "mockllm/mock-llm1",
             "mockllm/mock-llm2",
-            {"name": "mockllm/mock-llm3"},
-            {"base_url": "http://localhost:8000"},  # Missing 'name' field
+            FlowModel(name="mockllm/mock-llm3"),
+            FlowModel(base_url="http://localhost:8000"),  # Missing 'name' field
         ],
     ),
 )

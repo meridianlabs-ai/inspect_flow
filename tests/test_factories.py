@@ -1,6 +1,12 @@
 import pytest
-from inspect_flow import FlowModel, FlowTask, configs_matrix, tasks_matrix, tasks_with
-from inspect_flow._types.flow_types import FlowGenerateConfig
+from inspect_flow import (
+    FlowGenerateConfig,
+    FlowModel,
+    FlowTask,
+    configs_matrix,
+    tasks_matrix,
+    tasks_with,
+)
 from pydantic import ValidationError
 
 
@@ -55,11 +61,11 @@ def test_nested_types():
     result = tasks_matrix(
         task=FlowTask(name="task1"),
         model=[
-            {
-                "name": "model1",
-                "config": {"system_message": "test system message"},
-            },
-            {"name": "model2"},
+            FlowModel(
+                name="model1",
+                config=FlowGenerateConfig(system_message="test system message"),
+            ),
+            FlowModel(name="model2"),
         ],
     )
     assert len(result) == 2

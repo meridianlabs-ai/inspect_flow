@@ -116,7 +116,131 @@ class SandboxEnvironmentSpecDict(TypedDict):
 
 
 class ApprovalPolicyConfigDict(TypedDict):
-    approvers: Sequence[Union[ApproverPolicyConfig, ApproverPolicyConfigDict]]
+    approvers: Sequence[ApproverPolicyConfig]
+
+
+class FlowDefaultsDict(TypedDict):
+    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+
+    config: NotRequired[Optional[FlowGenerateConfig]]
+    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
+    agent: NotRequired[Optional[Union[FlowAgent, str]]]
+    """Field defaults for agents."""
+    agent_prefix: NotRequired[Optional[Mapping[str, Union[FlowAgent, str]]]]
+    """Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}"""
+    model: NotRequired[Optional[Union[FlowModel, str]]]
+    """Field defaults for models."""
+    model_prefix: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
+    """Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}"""
+    solver: NotRequired[Optional[Union[FlowSolver, str]]]
+    """Field defaults for solvers."""
+    solver_prefix: NotRequired[Optional[Mapping[str, Union[FlowSolver, str]]]]
+    """Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}"""
+    task: NotRequired[Optional[Union[FlowTask, str]]]
+    """Field defaults for tasks."""
+    task_prefix: NotRequired[Optional[Mapping[str, Union[FlowTask, str]]]]
+    """Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}"""
+
+
+class FlowGenerateConfigDict(TypedDict):
+    """Model generation options."""
+
+    max_retries: NotRequired[Optional[int]]
+    timeout: NotRequired[Optional[int]]
+    attempt_timeout: NotRequired[Optional[int]]
+    max_connections: NotRequired[Optional[int]]
+    system_message: NotRequired[Optional[str]]
+    max_tokens: NotRequired[Optional[int]]
+    top_p: NotRequired[Optional[float]]
+    temperature: NotRequired[Optional[float]]
+    stop_seqs: NotRequired[Optional[Sequence[str]]]
+    best_of: NotRequired[Optional[int]]
+    frequency_penalty: NotRequired[Optional[float]]
+    presence_penalty: NotRequired[Optional[float]]
+    logit_bias: NotRequired[Optional[Mapping[str, float]]]
+    seed: NotRequired[Optional[int]]
+    top_k: NotRequired[Optional[int]]
+    num_choices: NotRequired[Optional[int]]
+    logprobs: NotRequired[Optional[bool]]
+    top_logprobs: NotRequired[Optional[int]]
+    parallel_tool_calls: NotRequired[Optional[bool]]
+    internal_tools: NotRequired[Optional[bool]]
+    max_tool_output: NotRequired[Optional[int]]
+    cache_prompt: NotRequired[Optional[Union[str, bool]]]
+    reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
+    reasoning_tokens: NotRequired[Optional[int]]
+    reasoning_summary: NotRequired[
+        Optional[Literal["none", "concise", "detailed", "auto"]]
+    ]
+    reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
+    response_schema: NotRequired[Optional[ResponseSchema]]
+    extra_body: NotRequired[Optional[Mapping[str, Any]]]
+    batch: NotRequired[Optional[Union[bool, int, BatchConfig]]]
+
+
+class FlowGenerateConfigMatrixDict(TypedDict):
+    """Model generation options."""
+
+    system_message: NotRequired[Optional[Sequence[Optional[str]]]]
+    max_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
+    top_p: NotRequired[Optional[Sequence[Optional[float]]]]
+    temperature: NotRequired[Optional[Sequence[Optional[float]]]]
+    stop_seqs: NotRequired[Optional[Sequence[Optional[Sequence[str]]]]]
+    best_of: NotRequired[Optional[Sequence[Optional[int]]]]
+    frequency_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
+    presence_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
+    logit_bias: NotRequired[Optional[Sequence[Optional[Mapping[str, float]]]]]
+    seed: NotRequired[Optional[Sequence[Optional[int]]]]
+    top_k: NotRequired[Optional[Sequence[Optional[int]]]]
+    num_choices: NotRequired[Optional[Sequence[Optional[int]]]]
+    logprobs: NotRequired[Optional[Sequence[Optional[bool]]]]
+    top_logprobs: NotRequired[Optional[Sequence[Optional[int]]]]
+    parallel_tool_calls: NotRequired[Optional[Sequence[Optional[bool]]]]
+    internal_tools: NotRequired[Optional[Sequence[Optional[bool]]]]
+    max_tool_output: NotRequired[Optional[Sequence[Optional[int]]]]
+    cache_prompt: NotRequired[Optional[Sequence[Optional[Union[str, bool]]]]]
+    reasoning_effort: NotRequired[
+        Optional[Sequence[Optional[Literal["minimal", "low", "medium", "high"]]]]
+    ]
+    reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
+    reasoning_summary: NotRequired[
+        Optional[Sequence[Optional[Literal["none", "concise", "detailed", "auto"]]]]
+    ]
+    reasoning_history: NotRequired[
+        Optional[Sequence[Optional[Literal["none", "all", "last", "auto"]]]]
+    ]
+    response_schema: NotRequired[Optional[Sequence[Optional[ResponseSchema]]]]
+    extra_body: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
+
+
+class FlowModelDict(TypedDict):
+    """Configuration for a Model."""
+
+    name: NotRequired[Optional[str]]
+    """Name of the model to use. Required to be set by the time the model is created."""
+    role: NotRequired[Optional[str]]
+    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
+    default: NotRequired[Optional[str]]
+    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
+    config: NotRequired[Optional[FlowGenerateConfig]]
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    base_url: NotRequired[Optional[str]]
+    """Optional. Alternate base URL for model."""
+    api_key: NotRequired[Optional[str]]
+    """Optional. API key for model."""
+    memoize: NotRequired[Optional[bool]]
+    """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
+    model_args: NotRequired[Optional[Mapping[str, Any]]]
+    """Additional args to pass to model constructor."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the model."""
+
+
+class FlowModelMatrixDict(TypedDict):
+    """Configuration for a Model."""
+
+    config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -130,11 +254,7 @@ class FlowOptionsDict(TypedDict):
     """Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction)."""
     retry_cleanup: NotRequired[Optional[bool]]
     """Cleanup failed log files after retries (defaults to True)."""
-    sandbox: NotRequired[
-        Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-        ]
-    ]
+    sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
     sandbox_cleanup: NotRequired[Optional[bool]]
     """Cleanup sandbox environments after task completes (defaults to True)"""
@@ -148,9 +268,7 @@ class FlowOptionsDict(TypedDict):
         Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
     ]
     """Task display type (defaults to 'full')."""
-    approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
-    ]
+    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
     score: NotRequired[Optional[bool]]
     """Score output (defaults to True)"""
@@ -194,139 +312,6 @@ class FlowOptionsDict(TypedDict):
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
 
 
-class JSONSchemaDict(TypedDict):
-    """JSON Schema for type."""
-
-    type: NotRequired[
-        Optional[
-            Literal["string", "integer", "number", "boolean", "array", "object", "null"]
-        ]
-    ]
-    format: NotRequired[Optional[str]]
-    description: NotRequired[Optional[str]]
-    default: NotRequired[Any]
-    enum: NotRequired[Optional[Sequence]]
-    items: NotRequired[Optional[Union[JSONSchema, JSONSchemaDict]]]
-    properties: NotRequired[Optional[Mapping[str, Union[JSONSchema, JSONSchemaDict]]]]
-    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool, JSONSchemaDict]]]
-    anyOf: NotRequired[Optional[Sequence[Union[JSONSchema, JSONSchemaDict]]]]
-    required: NotRequired[Optional[Sequence[str]]]
-
-
-class ResponseSchemaDict(TypedDict):
-    """Schema for model response when using Structured Output."""
-
-    name: Optional[str]
-    json_schema: Union[JSONSchema, JSONSchemaDict]
-    description: NotRequired[Optional[str]]
-    strict: NotRequired[Optional[bool]]
-
-
-class FlowGenerateConfigDict(TypedDict):
-    """Model generation options."""
-
-    max_retries: NotRequired[Optional[int]]
-    timeout: NotRequired[Optional[int]]
-    attempt_timeout: NotRequired[Optional[int]]
-    max_connections: NotRequired[Optional[int]]
-    system_message: NotRequired[Optional[str]]
-    max_tokens: NotRequired[Optional[int]]
-    top_p: NotRequired[Optional[float]]
-    temperature: NotRequired[Optional[float]]
-    stop_seqs: NotRequired[Optional[Sequence[str]]]
-    best_of: NotRequired[Optional[int]]
-    frequency_penalty: NotRequired[Optional[float]]
-    presence_penalty: NotRequired[Optional[float]]
-    logit_bias: NotRequired[Optional[Mapping[str, float]]]
-    seed: NotRequired[Optional[int]]
-    top_k: NotRequired[Optional[int]]
-    num_choices: NotRequired[Optional[int]]
-    logprobs: NotRequired[Optional[bool]]
-    top_logprobs: NotRequired[Optional[int]]
-    parallel_tool_calls: NotRequired[Optional[bool]]
-    internal_tools: NotRequired[Optional[bool]]
-    max_tool_output: NotRequired[Optional[int]]
-    cache_prompt: NotRequired[Optional[Union[str, bool]]]
-    reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
-    reasoning_tokens: NotRequired[Optional[int]]
-    reasoning_summary: NotRequired[
-        Optional[Literal["none", "concise", "detailed", "auto"]]
-    ]
-    reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[Optional[Union[ResponseSchema, ResponseSchemaDict]]]
-    extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    batch: NotRequired[Optional[Union[bool, int, BatchConfig, BatchConfigDict]]]
-
-
-class FlowGenerateConfigMatrixDict(TypedDict):
-    """Model generation options."""
-
-    system_message: NotRequired[Optional[Sequence[Optional[str]]]]
-    max_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
-    top_p: NotRequired[Optional[Sequence[Optional[float]]]]
-    temperature: NotRequired[Optional[Sequence[Optional[float]]]]
-    stop_seqs: NotRequired[Optional[Sequence[Optional[Sequence[str]]]]]
-    best_of: NotRequired[Optional[Sequence[Optional[int]]]]
-    frequency_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
-    presence_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
-    logit_bias: NotRequired[Optional[Sequence[Optional[Mapping[str, float]]]]]
-    seed: NotRequired[Optional[Sequence[Optional[int]]]]
-    top_k: NotRequired[Optional[Sequence[Optional[int]]]]
-    num_choices: NotRequired[Optional[Sequence[Optional[int]]]]
-    logprobs: NotRequired[Optional[Sequence[Optional[bool]]]]
-    top_logprobs: NotRequired[Optional[Sequence[Optional[int]]]]
-    parallel_tool_calls: NotRequired[Optional[Sequence[Optional[bool]]]]
-    internal_tools: NotRequired[Optional[Sequence[Optional[bool]]]]
-    max_tool_output: NotRequired[Optional[Sequence[Optional[int]]]]
-    cache_prompt: NotRequired[Optional[Sequence[Optional[Union[str, bool]]]]]
-    reasoning_effort: NotRequired[
-        Optional[Sequence[Optional[Literal["minimal", "low", "medium", "high"]]]]
-    ]
-    reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
-    reasoning_summary: NotRequired[
-        Optional[Sequence[Optional[Literal["none", "concise", "detailed", "auto"]]]]
-    ]
-    reasoning_history: NotRequired[
-        Optional[Sequence[Optional[Literal["none", "all", "last", "auto"]]]]
-    ]
-    response_schema: NotRequired[
-        Optional[Sequence[Optional[Union[ResponseSchema, ResponseSchemaDict]]]]
-    ]
-    extra_body: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
-
-
-class FlowModelDict(TypedDict):
-    """Configuration for a Model."""
-
-    name: NotRequired[Optional[str]]
-    """Name of the model to use. Required to be set by the time the model is created."""
-    role: NotRequired[Optional[str]]
-    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[Optional[str]]
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
-    config: NotRequired[Optional[Union[FlowGenerateConfig, FlowGenerateConfigDict]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-    base_url: NotRequired[Optional[str]]
-    """Optional. Alternate base URL for model."""
-    api_key: NotRequired[Optional[str]]
-    """Optional. API key for model."""
-    memoize: NotRequired[Optional[bool]]
-    """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
-    model_args: NotRequired[Optional[Mapping[str, Any]]]
-    """Additional args to pass to model constructor."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
-    """Optional. Metadata stored in the flow config. Not passed to the model."""
-
-
-class FlowModelMatrixDict(TypedDict):
-    """Configuration for a Model."""
-
-    config: NotRequired[
-        Optional[Sequence[Optional[Union[FlowGenerateConfig, FlowGenerateConfigDict]]]]
-    ]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
-
-
 class FlowTaskDict(TypedDict):
     """
     Configuration for an evaluation task.
@@ -339,37 +324,20 @@ class FlowTaskDict(TypedDict):
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        Optional[
-            Union[
-                str,
-                FlowSolver,
-                Sequence[Union[str, FlowSolver, FlowSolverDict]],
-                FlowAgent,
-                FlowSolverDict,
-                FlowAgentDict,
-            ]
-        ]
+        Optional[Union[str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent]]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Union[str, FlowModel, FlowModelDict]]]
+    model: NotRequired[Optional[Union[str, FlowModel]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[Union[FlowGenerateConfig, FlowGenerateConfigDict]]]
+    config: NotRequired[Optional[FlowGenerateConfig]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
-    model_roles: NotRequired[
-        Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]
-    ]
+    model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
     """Named roles for use in `get_model()`."""
-    sandbox: NotRequired[
-        Optional[
-            Union[str, Sequence, SandboxEnvironmentSpec, SandboxEnvironmentSpecDict]
-        ]
-    ]
+    sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    approval: NotRequired[
-        Optional[Union[str, ApprovalPolicyConfig, ApprovalPolicyConfigDict]]
-    ]
+    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Union[int, FlowEpochs, FlowEpochsDict]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs]]]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
     fail_on_error: NotRequired[Optional[Union[bool, float]]]
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
@@ -406,60 +374,48 @@ class FlowTaskMatrixDict(TypedDict):
         Optional[
             Sequence[
                 Optional[
-                    Union[
-                        str,
-                        FlowSolver,
-                        Sequence[Union[str, FlowSolver, FlowSolverDict]],
-                        FlowAgent,
-                        FlowSolverDict,
-                        FlowAgentDict,
-                    ]
+                    Union[str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent]
                 ]
             ]
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[
-        Optional[Sequence[Optional[Union[str, FlowModel, FlowModelDict]]]]
-    ]
+    model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[
-        Optional[Sequence[Optional[Union[FlowGenerateConfig, FlowGenerateConfigDict]]]]
-    ]
+    config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str, FlowModelDict]]]]]
+        Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
     ]
     """Named roles for use in `get_model()`."""
 
 
-class FlowDefaultsDict(TypedDict):
-    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+class JSONSchemaDict(TypedDict):
+    """JSON Schema for type."""
 
-    config: NotRequired[Optional[Union[FlowGenerateConfig, FlowGenerateConfigDict]]]
-    """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    agent: NotRequired[Optional[Union[FlowAgent, FlowAgentDict, str]]]
-    """Field defaults for agents."""
-    agent_prefix: NotRequired[
-        Optional[Mapping[str, Union[FlowAgent, FlowAgentDict, str]]]
+    type: NotRequired[
+        Optional[
+            Literal["string", "integer", "number", "boolean", "array", "object", "null"]
+        ]
     ]
-    """Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}"""
-    model: NotRequired[Optional[Union[FlowModel, FlowModelDict, str]]]
-    """Field defaults for models."""
-    model_prefix: NotRequired[
-        Optional[Mapping[str, Union[FlowModel, FlowModelDict, str]]]
-    ]
-    """Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}"""
-    solver: NotRequired[Optional[Union[FlowSolver, FlowSolverDict, str]]]
-    """Field defaults for solvers."""
-    solver_prefix: NotRequired[
-        Optional[Mapping[str, Union[FlowSolver, FlowSolverDict, str]]]
-    ]
-    """Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}"""
-    task: NotRequired[Optional[Union[FlowTask, FlowTaskDict, str]]]
-    """Field defaults for tasks."""
-    task_prefix: NotRequired[Optional[Mapping[str, Union[FlowTask, FlowTaskDict, str]]]]
-    """Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}"""
+    format: NotRequired[Optional[str]]
+    description: NotRequired[Optional[str]]
+    default: NotRequired[Any]
+    enum: NotRequired[Optional[Sequence]]
+    items: NotRequired[Optional[JSONSchema]]
+    properties: NotRequired[Optional[Mapping[str, JSONSchema]]]
+    additionalProperties: NotRequired[Optional[Union[JSONSchema, bool]]]
+    anyOf: NotRequired[Optional[Sequence[JSONSchema]]]
+    required: NotRequired[Optional[Sequence[str]]]
+
+
+class ResponseSchemaDict(TypedDict):
+    """Schema for model response when using Structured Output."""
+
+    name: Optional[str]
+    json_schema: JSONSchema
+    description: NotRequired[Optional[str]]
+    strict: NotRequired[Optional[bool]]
 
 
 class FlowConfigDict(TypedDict):
@@ -469,15 +425,15 @@ class FlowConfigDict(TypedDict):
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: NotRequired[Optional[Union[FlowOptions, FlowOptionsDict]]]
+    options: NotRequired[Optional[FlowOptions]]
     """Arguments for calls to eval_set."""
     dependencies: NotRequired[Optional[Sequence[str]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
-    defaults: NotRequired[Optional[Union[FlowDefaults, FlowDefaultsDict]]]
+    defaults: NotRequired[Optional[FlowDefaults]]
     """Defaults values for Inspect objects."""
     flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
     """Optional. Metadata stored in the flow config. Not passed to the model."""
-    tasks: NotRequired[Optional[Sequence[Union[str, FlowTask, FlowTaskDict]]]]
+    tasks: NotRequired[Optional[Sequence[Union[str, FlowTask]]]]
     """Tasks to run"""
