@@ -89,7 +89,7 @@ def _create_solver(
 
 def _instantiate_task(flow_config: FlowConfig, config: str | FlowTask) -> Task:
     if (
-        flow_config.defaults is None
+        flow_config.defaults is not None
         or not isinstance(config, FlowTask)
         or isinstance(config.model, str)
         or isinstance(config.solver, str)
