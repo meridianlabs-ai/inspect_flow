@@ -17,12 +17,32 @@ from inspect_flow._types.factories import (
     tasks_matrix,
     tasks_with,
 )
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowConfig,
+    FlowDefaults,
+    FlowEpochs,
+    FlowGenerateConfig,
+    FlowModel,
+    FlowOptions,
+    FlowSolver,
+    FlowTask,
+)
 from inspect_flow._types.merge import (
     merge,
 )
 
 __all__ = [
     "__version__",
+    "FlowAgent",
+    "FlowConfig",
+    "FlowDefaults",
+    "FlowEpochs",
+    "FlowGenerateConfig",
+    "FlowModel",
+    "FlowOptions",
+    "FlowSolver",
+    "FlowTask",
     "agents_matrix",
     "agents_with",
     "configs_matrix",

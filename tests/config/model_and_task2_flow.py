@@ -1,4 +1,4 @@
-from inspect_flow.types import FlowConfig, FlowOptions, FlowTask
+from inspect_flow import FlowConfig, FlowOptions, FlowTask
 
 FlowConfig(
     flow_dir="logs/model_and_task",

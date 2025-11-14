@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from inspect_flow._types.generated import FlowGenerateConfig
-from inspect_flow.types import (
+from inspect_flow import (
     FlowConfig,
     FlowDefaults,
+    FlowGenerateConfig,
     FlowModel,
     FlowTask,
 )

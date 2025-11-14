@@ -2,16 +2,19 @@ from pathlib import Path
 
 import pytest
 import yaml
-from inspect_flow import models_matrix, tasks_matrix, tasks_with
-from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
-from inspect_flow._types.generated import FlowAgent, FlowSolver
-from inspect_flow.types import (
+from inspect_flow import (
+    FlowAgent,
     FlowConfig,
     FlowGenerateConfig,
     FlowModel,
     FlowOptions,
+    FlowSolver,
     FlowTask,
+    models_matrix,
+    tasks_matrix,
+    tasks_with,
 )
+from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
 from pydantic_core import to_jsonable_python
 
 update_examples = False

@@ -2,8 +2,7 @@ import shutil
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow._types.flow_types import FlowTask
-from inspect_flow.types import FlowConfig
+from inspect_flow import FlowConfig, FlowTask
 from pydantic_core import to_jsonable_python
 
 

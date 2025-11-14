@@ -1,4 +1,4 @@
-from inspect_flow.types import FlowConfig, FlowOptions, FlowTask
+from inspect_flow import FlowConfig, FlowOptions, FlowTask
 
 model_variable = globals().get("__flow_vars__", {}).get("model", None)
 assert model_variable == locals().get("__flow_vars__", {}).get("model", None)

@@ -5,9 +5,7 @@ from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
 from inspect_ai.solver import Solver
-from inspect_flow import models_matrix, solvers_matrix, tasks_matrix
-from inspect_flow._runner.run import _run_eval_set
-from inspect_flow.types import (
+from inspect_flow import (
     FlowAgent,
     FlowConfig,
     FlowDefaults,
@@ -16,7 +14,11 @@ from inspect_flow.types import (
     FlowOptions,
     FlowSolver,
     FlowTask,
+    models_matrix,
+    solvers_matrix,
+    tasks_matrix,
 )
+from inspect_flow._runner.run import _run_eval_set
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 

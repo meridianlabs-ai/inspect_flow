@@ -3,8 +3,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from inspect_flow import FlowConfig
 from inspect_flow._launcher.launch import launch
-from inspect_flow.types import FlowConfig
 
 
 def test_launch() -> None:

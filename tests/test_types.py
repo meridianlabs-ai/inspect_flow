@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from inspect_flow._types.factories import configs_matrix
-from inspect_flow.types import (
+from inspect_flow import (
     FlowConfig,
     FlowDefaults,
     FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
+    configs_matrix,
 )
 
 
