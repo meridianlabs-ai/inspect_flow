@@ -246,6 +246,19 @@ class FlowTask(BaseModel, extra="forbid"):
     def convert_string_solvers(cls, v):
         return _convert_str_to_solver(v)
 
+    @property
+    def model_name(self) -> str | None:
+        """Get the model name from the model field.
+
+        Returns:
+            The model name if set, otherwise None.
+        """
+        if isinstance(self.model, str):
+            return self.model
+        elif isinstance(self.model, FlowModel):
+            return self.model.name
+        return None
+
 
 class FlowOptions(BaseModel, extra="forbid"):
     """Evaluation options."""

@@ -203,7 +203,7 @@ def _get_model_dependencies(config: FlowConfig) -> List[str]:
 
     def collect_model_dependencies(config: FlowTask) -> None:
         if config.model:
-            collect_dependency(config.model.name)
+            collect_dependency(config.model_name)
         if config.model_roles:
             for model_role in config.model_roles.values():
                 if isinstance(model_role, FlowModel):
@@ -212,6 +212,7 @@ def _get_model_dependencies(config: FlowConfig) -> List[str]:
                     collect_dependency(model_role)
 
     for task in config.tasks or []:
-        collect_model_dependencies(task)
+        if isinstance(task, FlowTask):
+            collect_model_dependencies(task)
 
     return sorted(model_dependencies)

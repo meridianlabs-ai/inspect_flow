@@ -61,7 +61,9 @@ def _create_model_roles(config: ModelRolesConfig) -> ModelRoles:
     return roles
 
 
-def _create_single_solver(config: FlowSolver) -> Solver:
+def _create_single_solver(config: str | FlowSolver) -> Solver:
+    if not isinstance(config, FlowSolver):
+        raise ValueError(f"Solver should have been resolved. Solver: {config}")
     if not config.name:
         raise ValueError(f"Solver name is required. Solver: {config}")
 
@@ -75,7 +77,9 @@ def _create_agent(config: FlowAgent) -> Agent:
     return registry_create(type="agent", name=config.name, **(config.args or {}))
 
 
-def _create_solver(config: FlowSolver | list[FlowSolver] | FlowAgent) -> SingleSolver:
+def _create_solver(
+    config: FlowSolver | list[str | FlowSolver] | FlowAgent,
+) -> SingleSolver:
     if isinstance(config, FlowSolver):
         return _create_single_solver(config)
     if isinstance(config, FlowAgent):
@@ -83,10 +87,14 @@ def _create_solver(config: FlowSolver | list[FlowSolver] | FlowAgent) -> SingleS
     return [_create_single_solver(single_config) for single_config in config]
 
 
-def _instantiate_task(flow_config: FlowConfig, config: FlowTask) -> Task:
-    assert flow_config.defaults is None, (
-        "config must be resolved before calling instantiate_task"
-    )
+def _instantiate_task(flow_config: FlowConfig, config: str | FlowTask) -> Task:
+    if (
+        flow_config.defaults is None
+        or not isinstance(config, FlowTask)
+        or isinstance(config.model, str)
+        or isinstance(config.solver, str)
+    ):
+        raise ValueError("config must be resolved before calling instantiate_task")
 
     model = _create_model(config.model) if config.model else None
     solver = _create_solver(config.solver) if config.solver else None
