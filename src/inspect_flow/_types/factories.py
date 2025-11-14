@@ -1,81 +1,33 @@
 from itertools import product
-from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
+from typing import Any, Mapping, Sequence, TypeVar
 
 from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
 
 from inspect_flow._types.flow_types import (
-    FAgent,
-    FConfig,
-    FGenerateConfig,
-    FModel,
-    FSolver,
-    FTask,
+    FlowAgent,
+    FlowGenerateConfig,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
 )
 from inspect_flow._types.generated import (
-    FlowAgent,
     FlowAgentDict,
     FlowAgentMatrixDict,
-    FlowConfig,
-    FlowConfigDict,
-    FlowGenerateConfig,
     FlowGenerateConfigDict,
     FlowGenerateConfigMatrixDict,
-    FlowModel,
     FlowModelDict,
     FlowModelMatrixDict,
-    FlowSolver,
     FlowSolverDict,
     FlowSolverMatrixDict,
-    FlowTask,
     FlowTaskDict,
     FlowTaskMatrixDict,
 )
+from inspect_flow._types.merge import merge_recursive, to_dict
 
-
-def flow_config(config: FlowConfigDict | FlowConfig) -> FConfig:
-    return FConfig.model_validate(to_jsonable_python(config))
-
-
-def flow_task(config: FlowTaskDict | FlowTask) -> FTask:
-    return FTask.model_validate(to_jsonable_python(config))
-
-
-def flow_model(config: FlowModelDict | FlowModel) -> FModel:
-    return FModel.model_validate(to_jsonable_python(config))
-
-
-def flow_solver(config: FlowSolverDict | FlowSolver) -> FSolver:
-    return FSolver.model_validate(to_jsonable_python(config))
-
-
-def flow_agent(config: FlowAgentDict | FlowAgent) -> FAgent:
-    return FAgent.model_validate(to_jsonable_python(config))
-
-
-BaseType = TypeVar("BaseType", FAgent, FModel, FSolver, FTask, FGenerateConfig)
-
-AgentInput: TypeAlias = str | FAgent | FlowAgent | FlowAgentDict
-ConfigInput: TypeAlias = FlowGenerateConfig | FlowGenerateConfigDict
-ModelInput: TypeAlias = str | FModel | FlowModel | FlowModelDict
-SolverInput: TypeAlias = str | FSolver | FlowSolver | FlowSolverDict
-TaskInput: TypeAlias = str | FTask | FlowTask | FlowTaskDict
-
-BaseInputType: TypeAlias = (
-    str
-    | FAgent
-    | FlowAgent
-    | FlowGenerateConfig
-    | FModel
-    | FlowModel
-    | FSolver
-    | FlowSolver
-    | FTask
-    | FlowTask
-    | Mapping[str, Any]
+BaseType = TypeVar(
+    "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, FlowGenerateConfig
 )
-
-BaseInput: TypeAlias = BaseInputType | Sequence[BaseInputType]
 
 MatrixDict = TypeVar(
     "MatrixDict",
@@ -87,57 +39,34 @@ MatrixDict = TypeVar(
 )
 
 
-def _merge_dicts_with_config(
-    base_dict: dict[str, Any],
-    add_dict: dict[str, Any],
-) -> dict[str, Any]:
-    filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
-    result = base_dict | filtered_add_dict
-    if (add_config := add_dict.get("config")) and (
-        base_config := base_dict.get("config")
-    ):
-        if not isinstance(base_config, dict):
-            base_config = to_jsonable_python(base_config, exclude_none=True)
-        if not isinstance(add_config, dict):
-            add_config = to_jsonable_python(add_config, exclude_none=True)
-        filtered_add_dict = {k: v for k, v in add_config.items() if v is not None}
-        result["config"] = base_config | filtered_add_dict
-    return result
-
-
 def _with_base(
-    base: BaseInputType,
+    base: str | BaseType,
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> BaseType:
     base_dict: dict[str, Any] = {}
     if isinstance(base, str):
         base_dict = {"name": base}
-    elif not isinstance(base, Mapping):
-        base_dict = to_jsonable_python(base, exclude_none=True)
     else:
-        base_dict = dict(base)
+        base_dict = to_dict(base)
 
     for key in values.keys():
         if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(
-        _merge_dicts_with_config(base_dict, dict(values))
-    )
+    return pydantic_type.model_validate(merge_recursive(base_dict, values))
 
 
 def _with(
-    base: BaseInput,
+    base: str | BaseType | Sequence[str | BaseType],
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
-    matrix_dict = dict(values)
     if isinstance(base, Sequence) and not isinstance(base, str):
         return [
             _with_base(
                 b,
-                matrix_dict,
+                values,
                 pydantic_type,
             )
             for b in base
@@ -146,7 +75,7 @@ def _with(
 
 
 def _matrix_with_base(
-    base: BaseInputType,
+    base: str | BaseType,
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -154,7 +83,7 @@ def _matrix_with_base(
     if isinstance(base, str):
         base_dict = {"name": base}
     else:
-        base_dict = to_jsonable_python(base, exclude_none=True)
+        base_dict = to_dict(base)
 
     for key in matrix.keys():
         if key != "config" and key in base_dict and base_dict[key] is not None:
@@ -166,13 +95,13 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(_merge_dicts_with_config(base_dict, add_dict))
+            pydantic_type.model_validate(merge_recursive(base_dict, add_dict))
         )
     return result
 
 
 def _matrix(
-    base: BaseInput,
+    base: str | BaseType | Sequence[str | BaseType],
     matrix: MatrixDict,
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -192,80 +121,140 @@ def _matrix(
 
 def agents_with(
     *,
-    agent: AgentInput | Sequence[AgentInput],
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
     **kwargs: Unpack[FlowAgentDict],
-) -> list[FAgent]:
-    return _with(agent, kwargs, FAgent)
+) -> list[FlowAgent]:
+    """Set fields on a list of agents.
+
+    Args:
+        agent: The agent or list of agents to set fields on.
+        **kwargs: The fields to set on each agent.
+    """
+    return _with(agent, kwargs, FlowAgent)
 
 
 def configs_with(
     *,
-    config: ConfigInput | Sequence[ConfigInput],
+    config: FlowGenerateConfig | Sequence[FlowGenerateConfig],
     **kwargs: Unpack[FlowGenerateConfigDict],
-) -> list[FGenerateConfig]:
-    return _with(config, kwargs, FGenerateConfig)
+) -> list[FlowGenerateConfig]:
+    """Set fields on a list of generate configs.
+
+    Args:
+        config: The config or list of configs to set fields on.
+        **kwargs: The fields to set on each config.
+    """
+    return _with(config, kwargs, FlowGenerateConfig)
 
 
 def models_with(
     *,
-    model: ModelInput | Sequence[ModelInput],
+    model: str | FlowModel | Sequence[str | FlowModel],
     **kwargs: Unpack[FlowModelDict],
-) -> list[FModel]:
-    return _with(model, kwargs, FModel)
+) -> list[FlowModel]:
+    """Set fields on a list of models.
+
+    Args:
+        model: The model or list of models to set fields on.
+        **kwargs: The fields to set on each model.
+    """
+    return _with(model, kwargs, FlowModel)
 
 
 def solvers_with(
     *,
-    solver: SolverInput | Sequence[SolverInput],
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
     **kwargs: Unpack[FlowSolverDict],
-) -> list[FSolver]:
-    return _with(solver, kwargs, FSolver)
+) -> list[FlowSolver]:
+    """Set fields on a list of solvers.
+
+    Args:
+        solver: The solver or list of solvers to set fields on.
+        **kwargs: The fields to set on each solver.
+    """
+    return _with(solver, kwargs, FlowSolver)
 
 
 def tasks_with(
     *,
-    task: TaskInput | Sequence[TaskInput],
+    task: str | FlowTask | Sequence[str | FlowTask],
     **kwargs: Unpack[FlowTaskDict],
-) -> list[FTask]:
-    return _with(task, kwargs, FTask)
+) -> list[FlowTask]:
+    """Set fields on a list of tasks.
+
+    Args:
+        task: The task or list of tasks to set fields on.
+        **kwargs: The fields to set on each task.
+    """
+    return _with(task, kwargs, FlowTask)
 
 
 def agents_matrix(
     *,
-    agent: AgentInput | Sequence[AgentInput],
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
     **kwargs: Unpack[FlowAgentMatrixDict],
-) -> list[FAgent]:
-    return _matrix(agent, kwargs, FAgent)
+) -> list[FlowAgent]:
+    """Create a list of agents from the product of lists of field values.
+
+    Args:
+        agent: The agent or list of agents to matrix.
+        **kwargs: The lists of field values to matrix.
+    """
+    return _matrix(agent, kwargs, FlowAgent)
 
 
 def configs_matrix(
     *,
-    config: ConfigInput | Sequence[ConfigInput] | None = None,
+    config: FlowGenerateConfig | Sequence[FlowGenerateConfig] | None = None,
     **kwargs: Unpack[FlowGenerateConfigMatrixDict],
-) -> list[FGenerateConfig]:
+) -> list[FlowGenerateConfig]:
+    """Create a list of generate configs from the product of lists of field values.
+
+    Args:
+        config: The config or list of configs to matrix.
+        **kwargs: The lists of field values to matrix.
+    """
     config = config or FlowGenerateConfig()
-    return _matrix(config, kwargs, FGenerateConfig)
+    return _matrix(config, kwargs, FlowGenerateConfig)
 
 
 def models_matrix(
     *,
-    model: ModelInput | Sequence[ModelInput],
+    model: str | FlowModel | Sequence[str | FlowModel],
     **kwargs: Unpack[FlowModelMatrixDict],
-) -> list[FModel]:
-    return _matrix(model, kwargs, FModel)
+) -> list[FlowModel]:
+    """Create a list of models from the product of lists of field values.
+
+    Args:
+        model: The model or list of models to matrix.
+        **kwargs: The lists of field values to matrix.
+    """
+    return _matrix(model, kwargs, FlowModel)
 
 
 def solvers_matrix(
     *,
-    solver: SolverInput | Sequence[SolverInput],
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
     **kwargs: Unpack[FlowSolverMatrixDict],
-) -> list[FSolver]:
-    return _matrix(solver, kwargs, FSolver)
+) -> list[FlowSolver]:
+    """Create a list of solvers from the product of lists of field values.
+
+    Args:
+        solver: The solver or list of solvers to matrix.
+        **kwargs: The lists of field values to matrix.
+    """
+    return _matrix(solver, kwargs, FlowSolver)
 
 
 def tasks_matrix(
     *,
-    task: TaskInput | Sequence[TaskInput],
+    task: str | FlowTask | Sequence[str | FlowTask],
     **kwargs: Unpack[FlowTaskMatrixDict],
-) -> list[FTask]:
-    return _matrix(task, kwargs, FTask)
+) -> list[FlowTask]:
+    """Create a list of tasks from the product of lists of field values.
+
+    Args:
+        task: The task or list of tasks to matrix.
+        **kwargs: The lists of field values to matrix.
+    """
+    return _matrix(task, kwargs, FlowTask)

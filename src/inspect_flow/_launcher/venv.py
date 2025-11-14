@@ -8,10 +8,10 @@ from typing import List, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.flow_types import FConfig, FModel, FTask
+from inspect_flow._types.flow_types import FlowConfig, FlowModel, FlowTask
 
 
-def create_venv(config: FConfig, temp_dir: str) -> dict[str, str]:
+def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
@@ -191,7 +191,7 @@ _providers = {
 }
 
 
-def _get_model_dependencies(config: FConfig) -> List[str]:
+def _get_model_dependencies(config: FlowConfig) -> List[str]:
     model_dependencies: set[str] = set()
 
     def collect_dependency(model_name: str | None) -> None:
@@ -201,17 +201,18 @@ def _get_model_dependencies(config: FConfig) -> List[str]:
             if dependency:
                 model_dependencies.add(dependency)
 
-    def collect_model_dependencies(config: FTask) -> None:
+    def collect_model_dependencies(config: FlowTask) -> None:
         if config.model:
-            collect_dependency(config.model.name)
+            collect_dependency(config.model_name)
         if config.model_roles:
             for model_role in config.model_roles.values():
-                if isinstance(model_role, FModel):
+                if isinstance(model_role, FlowModel):
                     collect_dependency(model_role.name)
                 else:
                     collect_dependency(model_role)
 
     for task in config.tasks or []:
-        collect_model_dependencies(task)
+        if isinstance(task, FlowTask):
+            collect_model_dependencies(task)
 
     return sorted(model_dependencies)

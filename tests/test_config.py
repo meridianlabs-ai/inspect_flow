@@ -2,26 +2,26 @@ from pathlib import Path
 
 import pytest
 import yaml
-from inspect_flow import flow_task, models_matrix, tasks_matrix, tasks_with
-from inspect_flow._config.config import _apply_overrides, load_config
-from inspect_flow._types.flow_types import FConfig
-from inspect_flow._types.generated import FlowAgent, FlowSolver
-from inspect_flow.types import (
+from inspect_flow import (
+    FlowAgent,
     FlowConfig,
     FlowGenerateConfig,
     FlowModel,
     FlowOptions,
+    FlowSolver,
     FlowTask,
+    models_matrix,
+    tasks_matrix,
+    tasks_with,
 )
+from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
 from pydantic_core import to_jsonable_python
-
-from tests.test_helpers.type_helpers import fc
 
 update_examples = False
 
 
-def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
-    config = FConfig.model_validate(to_jsonable_python(config))
+def write_flow_yaml(config: FlowConfig | FlowConfig, file_path: Path) -> None:
+    config = FlowConfig.model_validate(to_jsonable_python(config))
     with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(
@@ -36,8 +36,8 @@ def write_flow_yaml(config: FlowConfig | FConfig, file_path: Path) -> None:
         )
 
 
-def validate_config(config: FlowConfig | FConfig, file_name: str) -> None:
-    config = FConfig.model_validate(to_jsonable_python(config))
+def validate_config(config: FlowConfig | FlowConfig, file_name: str) -> None:
+    config = FlowConfig.model_validate(to_jsonable_python(config))
     # Load the example config file
     example_path = Path(__file__).parent / "config" / file_name
     with open(example_path, "r") as f:
@@ -91,7 +91,7 @@ def test_config_two_models_one_task() -> None:
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         tasks=tasks_matrix(
-            task={"name": "inspect_evals/mmlu_0_shot"},
+            task=FlowTask(name="inspect_evals/mmlu_0_shot"),
             model=[
                 FlowModel(name="openai/gpt-4o-mini"),
                 FlowModel(name="openai/gpt-5-nano"),
@@ -108,11 +108,7 @@ def test_config_model_and_task() -> None:
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
-        tasks=[
-            flow_task(
-                {"name": "inspect_evals/mmlu_0_shot", "model": "openai/gpt-4o-mini"}
-            )
-        ],
+        tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
     validate_config(config, "model_and_task_flow.yaml")
 
@@ -160,7 +156,7 @@ def test_config_model_config() -> None:
             model=[
                 "openai/gpt-4o-mini",
                 *models_matrix(
-                    model={"name": "openai/gpt-5-nano"},
+                    model=FlowModel(name="openai/gpt-5-nano"),
                     config=[
                         FlowGenerateConfig(reasoning_effort="minimal"),
                         FlowGenerateConfig(reasoning_effort="low"),
@@ -225,14 +221,14 @@ def test_merge_config():
         flow_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         dependencies=[
-            "./examples/local_eval",
+            "./tests/config/local_eval",
         ],
         tasks=tasks_with(
             task=tasks_matrix(
                 task=[
                     "local_eval/noop",
                     FlowTask(
-                        "local_eval/noop2",
+                        name="local_eval/noop2",
                         config=FlowGenerateConfig(system_message="Be concise."),
                     ),
                 ],
@@ -251,11 +247,13 @@ def test_merge_config():
 def test_load_config_overrides():
     config = load_config(
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
-        overrides=[
-            "flow_dir=./logs/overridden_flow",
-            "options.limit=2",
-            "defaults.solver.args.tool_calls=none",
-        ],
+        ConfigOptions(
+            overrides=[
+                "flow_dir=./logs/overridden_flow",
+                "options.limit=2",
+                "defaults.solver.args.tool_calls=none",
+            ]
+        ),
     )
     assert config.flow_dir == "./logs/overridden_flow"
     assert config.options
@@ -270,7 +268,7 @@ def test_overrides_of_lists():
     config = FlowConfig()
     # Within a single override, later values replace earlier ones
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "dependencies=dep1",
             "dependencies=dep2",
@@ -279,7 +277,7 @@ def test_overrides_of_lists():
     assert config.dependencies == ["dep2"]
     # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "dependencies=dep3",
             "dependencies=dep4",
@@ -288,7 +286,7 @@ def test_overrides_of_lists():
     assert config.dependencies == ["dep2", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             'dependencies=["new_dep1", "new_dep2"]',
         ],
@@ -300,7 +298,7 @@ def test_overrides_of_lists():
 def test_overrides_of_dicts():
     config = FlowConfig()
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "options.metadata.key1=val1",
             "options.metadata.key2=val2",
@@ -310,7 +308,7 @@ def test_overrides_of_dicts():
     assert config.options.metadata["key1"] == "val1"
     assert config.options.metadata["key2"] == "val2"
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             "options.metadata.key1=val1_updated",
             "options.metadata.key3=val3",
@@ -322,7 +320,7 @@ def test_overrides_of_dicts():
     assert config.options.metadata["key3"] == "val3"
     # Can set a dict directly
     config = _apply_overrides(
-        fc(config),
+        config,
         [
             'options.metadata={"new_key1": "new_val1", "new_key2": "new_val2"}',
         ],
@@ -333,10 +331,21 @@ def test_overrides_of_dicts():
     assert "key1" not in config.options.metadata
 
 
+def test_load_config_flow_vars():
+    config = load_config(
+        str(Path(__file__).parent / "config" / "flow_vars_flow.py"),
+        ConfigOptions(flow_vars={"model": "model_from_flow_vars"}),
+    )
+    assert config.tasks
+    assert isinstance(config.tasks[0], FlowTask)
+    assert config.tasks[0].model
+    assert config.tasks[0].model_name == "model_from_flow_vars"
+
+
 def test_metadata():
     models = [
-        FlowModel("mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
-        FlowModel("mockllm/mock-llm2", flow_metadata={"context_window": 2048}),
+        FlowModel(name="mockllm/mock-llm1", flow_metadata={"context_window": 1024}),
+        FlowModel(name="mockllm/mock-llm2", flow_metadata={"context_window": 2048}),
     ]
     models_to_use = [
         m
@@ -344,15 +353,16 @@ def test_metadata():
         if m.flow_metadata and m.flow_metadata.get("context_window", 0) >= 2000
     ]
     assert len(list(models_to_use)) == 1
-    agent = FlowAgent("agentname", flow_metadata={"agent": "1"})
-    solver = FlowSolver("solvername", flow_metadata={"solver": "2"})
-    task = FlowTask("taskname", flow_metadata={"task": "3"})
+    agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
+    solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
+    task = FlowTask(name="taskname", flow_metadata={"task": "3"})
     config = FlowConfig(
         tasks=tasks_matrix(
             task=task,
             model=models_to_use,
             solver=[solver, agent],
-        )
+        ),
+        flow_metadata={"config": "4"},
     )
     validate_config(config, "metadata_flow.yaml")
 
@@ -361,7 +371,7 @@ def test_overrides_invalid_config_key():
     config = FlowConfig()
     with pytest.raises(ValueError):
         config = _apply_overrides(
-            fc(config),
+            config,
             [
                 "defaults.config.key1=val1",
             ],

@@ -1,5 +1,4 @@
-from inspect_flow import tasks_matrix
-from inspect_flow.types import FlowConfig, FlowOptions
+from inspect_flow import FlowConfig, FlowOptions, tasks_matrix
 
 FlowConfig(
     flow_dir="./logs/flow_test",

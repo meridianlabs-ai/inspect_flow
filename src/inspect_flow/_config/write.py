@@ -1,9 +1,9 @@
 import yaml
 
-from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.flow_types import FlowConfig
 
 
-def config_to_yaml(config: FConfig) -> str:
+def config_to_yaml(config: FlowConfig) -> str:
     return yaml.dump(
         config.model_dump(
             mode="json",

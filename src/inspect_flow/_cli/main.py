@@ -25,7 +25,7 @@ def flow(
         return
 
     if version:
-        print(__version__)
+        click.echo(__version__)
         ctx.exit()
     else:
         click.echo(ctx.get_help())

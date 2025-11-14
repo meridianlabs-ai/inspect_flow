@@ -1,14 +1,13 @@
 import click
 from typing_extensions import Unpack
 
+from inspect_flow._api.api import config
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
-    options_to_overrides,
+    parse_config_options,
 )
-from inspect_flow._config.config import load_config
-from inspect_flow._config.write import config_to_yaml
-from inspect_flow._launcher.launch import launch
+from inspect_flow._config.load import load_config
 
 
 @click.command("config", help="Output config")
@@ -25,10 +24,6 @@ def config_command(
     resolve: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
-    overrides = options_to_overrides(**kwargs)
-    config = load_config(config_file, overrides=overrides)
-    if resolve:
-        launch(config, config_file, ["--config"])
-    else:
-        dump = config_to_yaml(config)
-        click.echo(dump)
+    config_options = parse_config_options(**kwargs)
+    fconfig = load_config(config_file, config_options=config_options)
+    config(fconfig, resolve=resolve)

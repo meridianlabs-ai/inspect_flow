@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from click.testing import CliRunner
-from inspect_flow._cli.run import run_command
-from inspect_flow._config.config import load_config
+from inspect_flow._cli.main import flow
+from inspect_flow._config.load import load_config
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -15,8 +15,9 @@ def test_local_e2e() -> None:
     runner = CliRunner()
 
     result = runner.invoke(
-        run_command,
+        flow,
         [
+            "run",
             str(config_path),
             "--set",
             f"flow_dir={flow_dir}",

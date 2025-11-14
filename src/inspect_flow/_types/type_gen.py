@@ -14,7 +14,7 @@ from datamodel_code_generator import (
     generate,
 )
 
-from inspect_flow._types.flow_types import FConfig
+from inspect_flow._types.flow_types import FlowConfig
 
 GenType = Literal["Dict", "MatrixDict"]
 
@@ -26,23 +26,12 @@ GENERATED_CODE_COMMENT = [
 ADDITIONAL_IMPORTS = [
     "from __future__ import annotations\n",
     "from typing_extensions import TypedDict\n",
-    "from inspect_ai.model import BatchConfig, GenerateConfig, ResponseSchema\n",
+    "from inspect_ai.model import BatchConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FAgent, FEpochs, FModel, FOptions, FSolver, FTask, FDefaults, FGenerateConfig\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowOptions, FlowSolver, FlowTask, FlowDefaults, FlowGenerateConfig\n",
 ]
 
-FLOW_TYPES = [
-    "FConfig",
-    "FAgent",
-    "FModel",
-    "FSolver",
-    "FTask",
-    "FEpochs",
-    "FOptions",
-    "FDefaults",
-    "FGenerateConfig",
-]
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 
 MATRIX_CLASS_FIELDS = {
@@ -161,29 +150,13 @@ def _update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -
         type: str = field_schema["$ref"]
         split = type.split("/")
         type_name = split[-1]
-        f_ref = "/".join(split)
-        flow_ref = None
-        if type_name in FLOW_TYPES:
-            type_name = "Flow" + type_name[1:]
-            split[-1] = type_name
-            flow_ref = "/".join(split)
-        split[-1] = type_name + "Dict"
-        dict_ref = "/".join(split)
-        if parent_list:
-            field_schema["$ref"] = f_ref
-            parent_list.append({"$ref": dict_ref})
-            if flow_ref:
-                parent_list.append({"$ref": flow_ref})
-            if type_name in STR_AS_CLASS:
+        if type_name in STR_AS_CLASS:
+            if parent_list:
                 parent_list.append({"type": "string"})
-        else:
-            del field_schema["$ref"]
-            ref_list = [{"$ref": f_ref}, {"$ref": dict_ref}]
-            if flow_ref:
-                ref_list.append({"$ref": flow_ref})
-            if type_name in STR_AS_CLASS:
-                ref_list.append({"type": "string"})
-            field_schema["anyOf"] = ref_list
+            else:
+                del field_schema["$ref"]
+                ref_list = [{"$ref": type}, {"type": "string"}]
+                field_schema["anyOf"] = ref_list
 
 
 def _update_refs(type_def: Schema) -> None:
@@ -203,13 +176,8 @@ def _create_dict_types(schema: Schema, initial_defs: Schema) -> None:
 
 def _update_def_titles_and_refs(schema: Schema) -> None:
     defs: Schema = schema["$defs"]
-    for title, type_def in dict(defs).items():
+    for type_def in dict(defs).values():
         _update_refs(type_def)
-        if title in FLOW_TYPES:
-            del defs[title]
-            new_title = "Flow" + title[1:]
-            defs[new_title] = type_def
-            type_def["title"] = new_title
 
 
 class GeneratedCode:
@@ -222,7 +190,7 @@ class GeneratedCode:
 
 
 def _generate_dict_code() -> GeneratedCode:
-    schema = FConfig.model_json_schema()
+    schema = FlowConfig.model_json_schema()
     _root_type_as_def(schema)
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]
@@ -250,27 +218,6 @@ def _generate_dict_code() -> GeneratedCode:
 
         code = GeneratedCode()
         _add_generated_code(code, dict_lines, "dict")
-
-        flow_type_defs = {k: v for k, v in initial_defs.items() if k.startswith("Flow")}
-        schema["$defs"] = flow_type_defs
-
-        generate(
-            json.dumps(schema),
-            input_file_type=InputFileType.JsonSchema,
-            output=generated_type_file,
-            output_model_type=DataModelType.DataclassesDataclass,
-            target_python_version=PythonVersion.PY_310,
-            use_generic_container_types=True,
-            use_field_description=True,
-            use_schema_description=True,
-            use_default_kwarg=True,
-            enum_field_as_literal=LiteralType.All,
-        )
-
-        with open(generated_type_file, "r") as f:
-            pydantic_lines = f.readlines()
-
-        _add_generated_code(code, pydantic_lines, "pydantic")
 
     return code
 

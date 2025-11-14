@@ -6,6 +6,8 @@ from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 from types import ModuleType
 
+from inspect_ai._util.file import file
+
 
 @lru_cache(maxsize=None)
 def get_module_from_file(file: str) -> ModuleType:
@@ -20,8 +22,11 @@ def get_module_from_file(file: str) -> ModuleType:
     return module
 
 
-def execute_file_and_get_last_result(path: Path) -> object | None:
-    src = open(path, "r", encoding="utf-8").read()
+def execute_file_and_get_last_result(
+    path: str, flow_vars: dict[str, str]
+) -> object | None:
+    with file(path, "r", encoding="utf-8") as f:
+        src = f.read()
     mod = ast.parse(src, filename=path, mode="exec")
     if not mod.body:
         return None
@@ -46,6 +51,10 @@ def execute_file_and_get_last_result(path: Path) -> object | None:
     # else: leave as-is; result will be None
 
     code = compile(ast.fix_missing_locations(mod), path, "exec")
-    g = {"__name__": "__main__", "__builtins__": builtins.__dict__}
+    g = {
+        "__name__": "__main__",
+        "__builtins__": builtins.__dict__,
+        "__flow_vars__": flow_vars,
+    }
     exec(code, g, g)
     return g.get(target_id)

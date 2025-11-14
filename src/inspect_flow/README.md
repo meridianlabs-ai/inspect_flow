@@ -4,21 +4,25 @@
 
 [_types](./_types) defines the types used in inspect flow configurations. 
 
-[flow_config.py](./_types/flow_config.py) defines the pydantic types that are the internal representation of the configuration. These types have a "F" prefix, e.g. `FTask`.
+[flow_config.py](./_types/flow_config.py) defines the pydantic types for the configuration. These types have a "Flow" prefix, e.g. `FlowTask`.
 
-[type_gen.py](./_types/type_gen.py) defines the code generation logic that generates the user-facing types from the internal pydantic types.
+[type_gen.py](./_types/type_gen.py) defines the code generation logic that generates TypedDict classes based on the pydantic types.
 These generated types are in [generated.py](./_types/generated.py).
-These user-facing types are more flexible, for example by allowing named objects to be specified with strings and accepting values as dicts as well as classes.
-This makes them user friendly for specifying configurations.
 
-`FlowTask` and other types without a `Dict` suffix are dataclasses corresponding to the internal pydantic types.
-`FlowTaskDict` and other types with a `Dict` suffix are TypedDicts corresponding to the user-facing generated types.
-`FlowTaskMatrixDict` and the other types with a `MatrixDict` suffix are TypedDicts for use in the matrix functions with lists for their field types.
+`FlowTaskDict` and other types with a `Dict` suffix are TypedDicts corresponding to the Pydantic types.
+These are used primarily to unpack kwargs in the _with functions.
+`FlowTaskMatrixDict` and the other types with a `MatrixDict` suffix are TypedDicts that store lists instead of single values.
+These are for use in the matrix functions with lists for their field types.
 
 [factories.py](./_types/factories.py) defines three types of functions.
-The `flow_` functions, like `flow_config`, can convert from the user facting types and typed dicts to the internal pydantic types.
 The `_with` functions apply fields to all objects in a list. For example `task_with` sets fields on a list of tasks (specified as a list of string, `FTask`, `FlowTask`, and `FlowTaskDict`).
 The `_matrix` functions, like `tasks_matrix` generate lists of types from the product of lists of field values. 
+
+## _api Module
+
+[_api](./_api) defines the public API for inspect flow. 
+This includes the main entry points for running flows and interacting with the framework.
+These functions correspond to the CLI commands defined in the [_cli](./_cli) module.
 
 ## _cli Module
 

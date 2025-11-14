@@ -78,7 +78,17 @@ select = [
     # "RET", # flake8-return
     # "RUF", # ruff rules
 ]
-ignore = ["E203", "E501", "D10", "D212", "D415"]
+ignore = [
+    "E203",  # whitespace before ':'
+    "E501",  # line too long
+    "D105",  # missing docstring in magic method
+    "D107",  # missing docstring in __init__
+    "D212",  # multi-line docstring summary should start at the first line
+    "D415",  # first line should end with a period, question mark, or exclamation point
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

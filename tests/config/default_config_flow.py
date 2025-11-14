@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from inspect_flow._types.generated import FlowGenerateConfig
-from inspect_flow.types import (
+from inspect_flow import (
     FlowConfig,
     FlowDefaults,
+    FlowGenerateConfig,
     FlowModel,
     FlowTask,
 )
@@ -15,7 +15,7 @@ config_temperature = 0.0
 task_temperature = 0.2
 config_max_tokens = 100
 
-task_dir = (Path("examples") / "local_eval" / "src" / "local_eval").resolve()
+task_dir = (Path("tests") / "config" / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
 
 FlowConfig(

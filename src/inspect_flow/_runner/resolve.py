@@ -2,20 +2,21 @@ from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai._util.registry import registry_lookup
 from inspect_ai.agent import Agent
-from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.model import Model
 from inspect_ai.solver import Solver
 from pydantic import BaseModel
 
-from inspect_flow._types.factories import _merge_dicts_with_config
 from inspect_flow._types.flow_types import (
-    FAgent,
-    FConfig,
-    FDefaults,
-    FModel,
-    FSolver,
-    FTask,
+    FlowAgent,
+    FlowConfig,
+    FlowDefaults,
+    FlowGenerateConfig,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
     ModelRolesConfig,
 )
+from inspect_flow._types.merge import merge_recursive
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
 
@@ -25,7 +26,7 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def resolve_config(config: FConfig) -> FConfig:
+def resolve_config(config: FlowConfig) -> FlowConfig:
     resolved_tasks = []
     for task_config in config.tasks or []:
         resolved = _resolve_task(config, task_config)
@@ -36,7 +37,7 @@ def resolve_config(config: FConfig) -> FConfig:
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
     default_dict = defaults.model_dump(mode="json", exclude_none=True)
-    return _merge_dicts_with_config(default_dict, config_dict)
+    return merge_recursive(default_dict, config_dict)
 
 
 def _merge_defaults(
@@ -69,47 +70,57 @@ def _merge_defaults(
     return config.__class__.model_validate(config_dict)
 
 
-def _resolve_model(config: FModel, flow_config: FConfig) -> FModel:
-    defaults = flow_config.defaults or FDefaults()
+def _resolve_model(config: str | FlowModel, flow_config: FlowConfig) -> FlowModel:
+    if isinstance(config, str):
+        config = FlowModel(name=config)
+    defaults = flow_config.defaults or FlowDefaults()
     return _merge_defaults(config, defaults.model, defaults.model_prefix)
 
 
 def _resolve_model_roles(
-    config: ModelRolesConfig, flow_config: FConfig
+    config: ModelRolesConfig, flow_config: FlowConfig
 ) -> ModelRolesConfig:
     roles = {}
     for role, model_config in config.items():
         model = model_config
-        if isinstance(model, FModel):
+        if isinstance(model, FlowModel):
             model = _resolve_model(config=model, flow_config=flow_config)
         roles[role] = model
     return roles
 
 
-def _resolve_single_solver(config: FSolver, flow_config: FConfig) -> FSolver:
-    defaults = flow_config.defaults or FDefaults()
+def _resolve_single_solver(
+    config: str | FlowSolver, flow_config: FlowConfig
+) -> FlowSolver:
+    if isinstance(config, str):
+        config = FlowSolver(name=config)
+    defaults = flow_config.defaults or FlowDefaults()
     return _merge_defaults(config, defaults.solver, defaults.solver_prefix)
 
 
-def _resolve_agent(config: FAgent, flow_config: FConfig) -> FAgent:
-    defaults = flow_config.defaults or FDefaults()
+def _resolve_agent(config: FlowAgent, flow_config: FlowConfig) -> FlowAgent:
+    defaults = flow_config.defaults or FlowDefaults()
     return _merge_defaults(config, defaults.agent, defaults.agent_prefix)
 
 
 def _resolve_solver(
-    config: FSolver | list[FSolver] | FAgent, flow_config: FConfig
-) -> FSolver | list[FSolver] | FAgent:
-    if isinstance(config, FSolver):
+    config: str | FlowSolver | list[str | FlowSolver] | FlowAgent,
+    flow_config: FlowConfig,
+) -> FlowSolver | list[FlowSolver] | FlowAgent:
+    if isinstance(config, str | FlowSolver):
         return _resolve_single_solver(config, flow_config)
-    if isinstance(config, FAgent):
+    if isinstance(config, FlowAgent):
         return _resolve_agent(config, flow_config)
     return [
         _resolve_single_solver(single_config, flow_config) for single_config in config
     ]
 
 
-def _resolve_task(flow_config: FConfig, config: FTask) -> list[FTask]:
-    defaults = flow_config.defaults or FDefaults()
+def _resolve_task(flow_config: FlowConfig, config: str | FlowTask) -> list[FlowTask]:
+    if isinstance(config, str):
+        config = FlowTask(name=config)
+
+    defaults = flow_config.defaults or FlowDefaults()
     config = _merge_defaults(config, defaults.task, defaults.task_prefix)
     model = _resolve_model(config.model, flow_config) if config.model else None
     solver = _resolve_solver(config.solver, flow_config) if config.solver else None
@@ -118,13 +129,13 @@ def _resolve_task(flow_config: FConfig, config: FTask) -> list[FTask]:
         if config.model_roles
         else None
     )
+    generate_config = defaults.config or FlowGenerateConfig()
+    if config.config:
+        generate_config = generate_config.merge(config.config)
+    if model and model.config:
+        generate_config = generate_config.merge(model.config)
     tasks = []
     for task_func_name in _get_task_creator_names(config):
-        generate_config = defaults.config or GenerateConfig()
-        if config.config:
-            generate_config = generate_config.merge(config.config)
-        if model and model.config:
-            generate_config = generate_config.merge(model.config)
         task = config.model_copy(
             update={
                 "name": task_func_name,
@@ -155,7 +166,7 @@ def _get_task_creator_names_from_file(file_path: str) -> list[str]:
     return task_names
 
 
-def _get_task_creator_names(config: FTask) -> list[str]:
+def _get_task_creator_names(config: FlowTask) -> list[str]:
     if not config.name:
         raise ValueError(f"Task name is required. Task: {config}")
 

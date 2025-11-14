@@ -2,24 +2,29 @@ import shutil
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow._types.flow_types import (
-    FConfig,
-)
-from inspect_flow.types import FlowConfig
+from inspect_flow import FlowConfig, FlowTask
 from pydantic_core import to_jsonable_python
 
 
 def init_test_logs() -> str:
+    relative_log_dir = "logs/flow_test"
     # Remove logs/flow_test directory if it exists
-    log_dir = (Path.cwd() / "logs" / "flow_test").resolve()
+    log_dir = (Path.cwd() / relative_log_dir).resolve()
     if log_dir.exists():
         shutil.rmtree(log_dir)
-    return str(log_dir)
+    return relative_log_dir
 
 
-def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
+def _task_and_model(config: str | FlowTask) -> tuple[str | None, str | None]:
+    if isinstance(config, str):
+        return config, None
+    else:
+        return config.name, config.model_name
+
+
+def verify_test_logs(config: FlowConfig | FlowConfig, log_dir: str) -> None:
     if isinstance(config, FlowConfig):
-        config = FConfig.model_validate(to_jsonable_python(config))
+        config = FlowConfig.model_validate(to_jsonable_python(config))
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
@@ -30,8 +35,5 @@ def verify_test_logs(config: FConfig | FlowConfig, log_dir: str) -> None:
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [
-            (task.name, task.model.name if task.model else None)
-            for task in config.tasks or []
-        ]
+        [_task_and_model(task) for task in config.tasks or []]
     )

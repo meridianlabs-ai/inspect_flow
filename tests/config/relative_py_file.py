@@ -1,14 +1,12 @@
-from inspect_flow import flow_config
+from inspect_flow import FlowConfig, FlowOptions, FlowTask
 
-flow_config(
-    {
-        "flow_dir": "logs/flow_test",
-        "options": {"limit": 1},
-        "tasks": [
-            {
-                "name": "local_eval/src/local_eval/noop.py@noop",
-                "model": "mockllm/mock-llm",
-            },
-        ],
-    }
+FlowConfig(
+    flow_dir="logs/flow_test",
+    options=FlowOptions(limit=1),
+    tasks=[
+        FlowTask(
+            name="local_eval/src/local_eval/noop.py@noop",
+            model="mockllm/mock-llm",
+        ),
+    ],
 )

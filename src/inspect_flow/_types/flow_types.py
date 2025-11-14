@@ -7,9 +7,9 @@ from typing import (
     Any,
     Literal,
     Mapping,
+    Sequence,
     TypeAlias,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -24,16 +24,16 @@ from pydantic import BaseModel, Field, field_validator
 from inspect_flow._util.list_util import ensure_list_or_none
 
 CreateArgs: TypeAlias = Mapping[str, Any]
-ModelRolesConfig: TypeAlias = Mapping[str, Union["FModel", str]]
+ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
 
 
-class FGenerateConfig(GenerateConfig, extra="forbid"):
+class FlowGenerateConfig(GenerateConfig, extra="forbid"):
     """Model generation options."""
 
     pass
 
 
-class FModel(BaseModel, extra="forbid"):
+class FlowModel(BaseModel, extra="forbid"):
     """Configuration for a Model."""
 
     name: str | None = Field(
@@ -51,7 +51,7 @@ class FModel(BaseModel, extra="forbid"):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    config: FGenerateConfig | None = Field(
+    config: FlowGenerateConfig | None = Field(
         default=None,
         description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
     )
@@ -81,7 +81,7 @@ class FModel(BaseModel, extra="forbid"):
     )
 
 
-class FSolver(BaseModel, extra="forbid"):
+class FlowSolver(BaseModel, extra="forbid"):
     """Configuration for a Solver."""
 
     name: str | None = Field(
@@ -100,7 +100,7 @@ class FSolver(BaseModel, extra="forbid"):
     )
 
 
-class FAgent(BaseModel, extra="forbid"):
+class FlowAgent(BaseModel, extra="forbid"):
     """Configuration for an Agent."""
 
     name: str | None = Field(
@@ -124,7 +124,7 @@ class FAgent(BaseModel, extra="forbid"):
     )
 
 
-class FEpochs(BaseModel):
+class FlowEpochs(BaseModel):
     """Configuration for task epochs.
 
     Number of epochs to repeat samples over and optionally one or more
@@ -140,7 +140,7 @@ class FEpochs(BaseModel):
     )
 
 
-class FTask(BaseModel, extra="forbid"):
+class FlowTask(BaseModel, extra="forbid"):
     """Configuration for an evaluation task.
 
     Tasks are the basis for defining and running evaluations.
@@ -156,17 +156,17 @@ class FTask(BaseModel, extra="forbid"):
         description="Additional args to pass to task constructor",
     )
 
-    solver: FSolver | list[FSolver] | FAgent | None = Field(
+    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None = Field(
         default=None,
         description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    model: FModel | None = Field(
+    model: str | FlowModel | None = Field(
         default=None,
         description="Default model for task (Optional, defaults to eval model).",
     )
 
-    config: FGenerateConfig | None = Field(
+    config: FlowGenerateConfig | None = Field(
         default=None,
         description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
     )
@@ -186,7 +186,7 @@ class FTask(BaseModel, extra="forbid"):
         description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
     )
 
-    epochs: int | FEpochs | None = Field(
+    epochs: int | FlowEpochs | None = Field(
         default=None,
         description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
     )
@@ -240,15 +240,28 @@ class FTask(BaseModel, extra="forbid"):
     @field_validator("model", mode="before")
     @classmethod
     def convert_string_model(cls, v):
-        return _convert_str_to_class(FModel, v)
+        return _convert_str_to_class(FlowModel, v)
 
     @field_validator("solver", mode="before")
     @classmethod
     def convert_string_solvers(cls, v):
         return _convert_str_to_solver(v)
 
+    @property
+    def model_name(self) -> str | None:
+        """Get the model name from the model field.
 
-class FOptions(BaseModel, extra="forbid"):
+        Returns:
+            The model name if set, otherwise None.
+        """
+        if isinstance(self.model, str):
+            return self.model
+        elif isinstance(self.model, FlowModel):
+            return self.model.name
+        return None
+
+
+class FlowOptions(BaseModel, extra="forbid"):
     """Evaluation options."""
 
     retry_attempts: int | None = Field(
@@ -401,46 +414,50 @@ class FOptions(BaseModel, extra="forbid"):
     )
 
 
-class FDefaults(BaseModel, extra="forbid"):
+class FlowDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
-    config: FGenerateConfig | None = Field(
+    config: FlowGenerateConfig | None = Field(
         default=None,
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )
 
-    agent: FAgent | None = Field(default=None, description="Field defaults for agents.")
+    agent: FlowAgent | None = Field(
+        default=None, description="Field defaults for agents."
+    )
 
-    agent_prefix: dict[str, FAgent] | None = Field(
+    agent_prefix: dict[str, FlowAgent] | None = Field(
         default=None,
         description="Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}",
     )
 
-    model: FModel | None = Field(default=None, description="Field defaults for models.")
+    model: FlowModel | None = Field(
+        default=None, description="Field defaults for models."
+    )
 
-    model_prefix: dict[str, FModel] | None = Field(
+    model_prefix: dict[str, FlowModel] | None = Field(
         default=None,
         description="Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}",
     )
 
-    solver: FSolver | None = Field(
+    solver: FlowSolver | None = Field(
         default=None, description="Field defaults for solvers."
     )
 
-    solver_prefix: dict[str, FSolver] | None = Field(
+    solver_prefix: dict[str, FlowSolver] | None = Field(
         default=None,
         description="Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}",
     )
 
-    task: FTask | None = Field(default=None, description="Field defaults for tasks.")
+    task: FlowTask | None = Field(default=None, description="Field defaults for tasks.")
 
-    task_prefix: dict[str, FTask] | None = Field(
+    task_prefix: dict[str, FlowTask] | None = Field(
         default=None,
         description="Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}",
     )
 
 
-class FConfig(BaseModel, extra="forbid"):
+class FlowConfig(BaseModel, extra="forbid"):
     """Configuration for a flow run."""
 
     flow_dir: str | None = Field(
@@ -453,7 +470,7 @@ class FConfig(BaseModel, extra="forbid"):
         description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
-    options: FOptions | None = Field(
+    options: FlowOptions | None = Field(
         default=None, description="Arguments for calls to eval_set."
     )
 
@@ -466,11 +483,18 @@ class FConfig(BaseModel, extra="forbid"):
         default=None, description="Environment variables to set when running tasks."
     )
 
-    defaults: FDefaults | None = Field(
+    defaults: FlowDefaults | None = Field(
         default=None, description="Defaults values for Inspect objects."
     )
 
-    tasks: list[FTask] | None = Field(default=None, description="Tasks to run")
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the model.",
+    )
+
+    tasks: Sequence[str | FlowTask] | None = Field(
+        default=None, description="Tasks to run"
+    )
 
     # Convert single items to lists
     @field_validator("dependencies", mode="before")
@@ -485,16 +509,16 @@ class FConfig(BaseModel, extra="forbid"):
 
 
 def _convert_to_task_list(
-    v: str | FTask | list[str | FTask] | None,
-) -> list[FTask] | None:
+    v: str | FlowTask | list[str | FlowTask] | None,
+) -> list[FlowTask] | None:
     if v is None:
         return v
     if not isinstance(v, list):
         v = [v]
-    return [FTask(name=task) if isinstance(task, str) else task for task in v]
+    return [FlowTask(name=task) if isinstance(task, str) else task for task in v]
 
 
-_T = TypeVar("_T", FModel, FSolver)
+_T = TypeVar("_T", FlowModel, FlowSolver)
 
 
 @overload
@@ -510,10 +534,10 @@ def _convert_str_to_class(cls: type[_T], v: str | _T | None) -> _T | None:
 
 
 def _convert_str_to_solver(
-    v: str | FSolver | list[str | FSolver] | None,
-) -> FSolver | list[FSolver] | None:
+    v: str | FlowSolver | list[str | FlowSolver] | None,
+) -> FlowSolver | list[FlowSolver] | None:
     if v is None:
         return None
     if isinstance(v, list):
-        return [_convert_str_to_class(FSolver, solver) for solver in v]
-    return _convert_str_to_class(FSolver, v)
+        return [_convert_str_to_class(FlowSolver, solver) for solver in v]
+    return _convert_str_to_class(FlowSolver, v)
