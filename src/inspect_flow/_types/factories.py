@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
+from typing import Any, Mapping, Sequence, TypeVar
 
 from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
@@ -29,35 +29,6 @@ BaseType = TypeVar(
     "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, FlowGenerateConfig
 )
 
-AgentType: TypeAlias = FlowAgent | FlowAgent | FlowAgentDict
-GenerateConfigType: TypeAlias = FlowGenerateConfig | FlowGenerateConfig
-ModelType: TypeAlias = FlowModel | FlowModel | FlowModelDict
-SolverType: TypeAlias = FlowSolver | FlowSolver | FlowSolverDict
-TaskType: TypeAlias = FlowTask | FlowTask | FlowTaskDict
-
-AgentInput: TypeAlias = str | AgentType
-GenerateConfigInput: TypeAlias = GenerateConfigType
-ModelInput: TypeAlias = str | ModelType
-SolverInput: TypeAlias = str | SolverType
-TaskInput: TypeAlias = str | TaskType
-
-BaseInputType: TypeAlias = (
-    str
-    | FlowAgent
-    | FlowAgent
-    | FlowGenerateConfig
-    | FlowGenerateConfig
-    | FlowModel
-    | FlowModel
-    | FlowSolver
-    | FlowSolver
-    | FlowTask
-    | FlowTask
-    | Mapping[str, Any]
-)
-
-BaseInput: TypeAlias = BaseInputType | Sequence[BaseInputType]
-
 MatrixDict = TypeVar(
     "MatrixDict",
     FlowAgentMatrixDict,
@@ -69,7 +40,7 @@ MatrixDict = TypeVar(
 
 
 def _with_base(
-    base: BaseInputType,
+    base: str | BaseType,
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> BaseType:
@@ -87,16 +58,15 @@ def _with_base(
 
 
 def _with(
-    base: BaseInput,
+    base: str | BaseType | Sequence[str | BaseType],
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
-    matrix_dict = dict(values)
     if isinstance(base, Sequence) and not isinstance(base, str):
         return [
             _with_base(
                 b,
-                matrix_dict,
+                values,
                 pydantic_type,
             )
             for b in base
@@ -105,7 +75,7 @@ def _with(
 
 
 def _matrix_with_base(
-    base: BaseInputType,
+    base: str | BaseType,
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -131,7 +101,7 @@ def _matrix_with_base(
 
 
 def _matrix(
-    base: BaseInput,
+    base: str | BaseType | Sequence[str | BaseType],
     matrix: MatrixDict,
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
@@ -151,7 +121,7 @@ def _matrix(
 
 def agents_with(
     *,
-    agent: AgentInput | Sequence[AgentInput],
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
     **kwargs: Unpack[FlowAgentDict],
 ) -> list[FlowAgent]:
     """Set fields on a list of agents.
@@ -165,7 +135,7 @@ def agents_with(
 
 def configs_with(
     *,
-    config: GenerateConfigInput | Sequence[GenerateConfigInput],
+    config: FlowGenerateConfig | Sequence[FlowGenerateConfig],
     **kwargs: Unpack[FlowGenerateConfigDict],
 ) -> list[FlowGenerateConfig]:
     """Set fields on a list of generate configs.
@@ -179,7 +149,7 @@ def configs_with(
 
 def models_with(
     *,
-    model: ModelInput | Sequence[ModelInput],
+    model: str | FlowModel | Sequence[str | FlowModel],
     **kwargs: Unpack[FlowModelDict],
 ) -> list[FlowModel]:
     """Set fields on a list of models.
@@ -193,7 +163,7 @@ def models_with(
 
 def solvers_with(
     *,
-    solver: SolverInput | Sequence[SolverInput],
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
     **kwargs: Unpack[FlowSolverDict],
 ) -> list[FlowSolver]:
     """Set fields on a list of solvers.
@@ -207,7 +177,7 @@ def solvers_with(
 
 def tasks_with(
     *,
-    task: TaskInput | Sequence[TaskInput],
+    task: str | FlowTask | Sequence[str | FlowTask],
     **kwargs: Unpack[FlowTaskDict],
 ) -> list[FlowTask]:
     """Set fields on a list of tasks.
@@ -221,7 +191,7 @@ def tasks_with(
 
 def agents_matrix(
     *,
-    agent: AgentInput | Sequence[AgentInput],
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
     **kwargs: Unpack[FlowAgentMatrixDict],
 ) -> list[FlowAgent]:
     """Create a list of agents from the product of lists of field values.
@@ -235,7 +205,7 @@ def agents_matrix(
 
 def configs_matrix(
     *,
-    config: GenerateConfigInput | Sequence[GenerateConfigInput] | None = None,
+    config: FlowGenerateConfig | Sequence[FlowGenerateConfig] | None = None,
     **kwargs: Unpack[FlowGenerateConfigMatrixDict],
 ) -> list[FlowGenerateConfig]:
     """Create a list of generate configs from the product of lists of field values.
@@ -250,7 +220,7 @@ def configs_matrix(
 
 def models_matrix(
     *,
-    model: ModelInput | Sequence[ModelInput],
+    model: str | FlowModel | Sequence[str | FlowModel],
     **kwargs: Unpack[FlowModelMatrixDict],
 ) -> list[FlowModel]:
     """Create a list of models from the product of lists of field values.
@@ -264,7 +234,7 @@ def models_matrix(
 
 def solvers_matrix(
     *,
-    solver: SolverInput | Sequence[SolverInput],
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
     **kwargs: Unpack[FlowSolverMatrixDict],
 ) -> list[FlowSolver]:
     """Create a list of solvers from the product of lists of field values.
@@ -278,7 +248,7 @@ def solvers_matrix(
 
 def tasks_matrix(
     *,
-    task: TaskInput | Sequence[TaskInput],
+    task: str | FlowTask | Sequence[str | FlowTask],
     **kwargs: Unpack[FlowTaskMatrixDict],
 ) -> list[FlowTask]:
     """Create a list of tasks from the product of lists of field values.

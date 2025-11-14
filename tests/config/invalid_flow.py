@@ -1,4 +1,4 @@
-from inspect_flow import FlowConfig, FlowOptions, tasks_matrix
+from inspect_flow import FlowConfig, FlowOptions, FlowTask, tasks_matrix
 
 FlowConfig(
     flow_dir="./logs/flow_test",
@@ -8,7 +8,7 @@ FlowConfig(
     ],
     tasks=tasks_matrix(
         task=[
-            {"args": {"fail": True}},
+            FlowTask(args={"fail": True}),
             "local_eval/noop",
             "local_eval/noop2",
         ],

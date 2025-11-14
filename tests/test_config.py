@@ -91,7 +91,7 @@ def test_config_two_models_one_task() -> None:
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
         ],
         tasks=tasks_matrix(
-            task={"name": "inspect_evals/mmlu_0_shot"},
+            task=FlowTask(name="inspect_evals/mmlu_0_shot"),
             model=[
                 FlowModel(name="openai/gpt-4o-mini"),
                 FlowModel(name="openai/gpt-5-nano"),
@@ -156,7 +156,7 @@ def test_config_model_config() -> None:
             model=[
                 "openai/gpt-4o-mini",
                 *models_matrix(
-                    model={"name": "openai/gpt-5-nano"},
+                    model=FlowModel(name="openai/gpt-5-nano"),
                     config=[
                         FlowGenerateConfig(reasoning_effort="minimal"),
                         FlowGenerateConfig(reasoning_effort="low"),
