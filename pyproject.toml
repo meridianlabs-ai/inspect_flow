@@ -39,6 +39,9 @@ dev = [
     "datamodel-code-generator",
     "pre-commit",
 ]
+doc = [
+    "jupyter",
+]
 
 
 [tool.hatch.build]

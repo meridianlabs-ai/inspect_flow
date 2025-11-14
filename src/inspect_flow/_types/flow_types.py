@@ -193,7 +193,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     fail_on_error: bool | float | None = Field(
         default=None,
-        description="`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
+        description="`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
     )
 
     continue_on_fail: bool | None = Field(

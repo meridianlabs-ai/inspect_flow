@@ -1,0 +1,95 @@
+project:
+   type: website
+
+metadata-files:
+  - reference/_sidebar.yml
+
+website:
+   title: "Inspect Flow"
+   description: "Workflow orchestration for Inspect AI"
+   bread-crumbs: true
+   page-navigation: true
+   repo-url: https://github.com/meridianlabs-ai/inspect_flow
+   site-url: https://meridianlabs-ai.github.io/inspect_flow
+   repo-actions: [issue]
+   twitter-card:
+      title: "Inspect Flow"
+      description: "Workflow orchestration for Inspect AI"
+   open-graph: 
+      title: "Inspect Flow"
+      description: "Workflow orchestration for Inspect AI"
+   navbar:
+      title: "Inspect Flow"
+      background: light
+      search: true
+      left:
+          - text: "Welcome"
+            href: index.qmd
+          - text: "Tutorial"
+            href: tutorial.qmd
+          - text: "Reference"
+            href: reference/index.qmd
+
+      right:
+          - icon: github
+            href: https://github.com/meridianlabs-ai/inspect_flow
+
+   sidebar:
+      - title: Main
+        style: docked
+        contents:
+           - text: Welcome
+             href: index.qmd
+             contents:
+                - text: Introduction
+                  href: index.qmd#introduction
+                - text: Getting Started
+                  href: index.qmd#getting-started
+                - text: Basic Examples
+                  href: index.qmd#basic-examples
+           - text: Using Flow
+             href: tutorial.qmd
+             contents:
+                - text: Core Concepts
+                  href: tutorial.qmd#core-concepts
+                - text: Creating Flow Configs
+                  href: tutorial.qmd#creating-flow-configs
+                - text: Dependency Management
+                  href: tutorial.qmd#dependency-management
+                - text: Defaults and Overrides
+                  href: tutorial.qmd#defaults-and-overrides
+                - text: Parameter Sweeping
+                  href: tutorial.qmd#parameter-sweeping
+                - text: Running Evaluations
+                  href: tutorial.qmd#running-evaluations
+                - text: Advanced Features
+                  href: tutorial.qmd#advanced-features
+
+   page-footer:
+      left:
+         - text: Meridian Labs
+           href: https://github.com/meridianlabs-ai/
+      center:
+         - text: Code
+           href: https://github.com/meridianlabs-ai/inspect_flow
+         - text: License
+           href: https://github.com/meridianlabs-ai/inspect_flow/blob/main/LICENSE
+         - text: Issues
+           href: https://github.com/meridianlabs-ai/inspect_flow/issues
+
+      right:
+         - icon: github
+           href: https://github.com/meridianlabs-ai/inspect_flow
+           aria-label: Inspect Flow on GitHub
+
+format:
+   html:
+     theme: [cosmo, theme.scss]
+     toc: true
+     toc-depth: 3
+     code-overflow: wrap
+     code-annotations: select
+     fig-width: 8
+     fig-height: 4
+     syntax-definitions: 
+        - jinja2.xml

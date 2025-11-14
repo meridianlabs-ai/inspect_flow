@@ -70,7 +70,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
             else:
                 raise ValueError(
                     f"Unsupported config file format: {config_path.suffix}. "
-                    "Supported formats: .yaml, .yml, .json"
+                    "Supported formats: .py, .yaml, .yml, .json"
                 )
             return FlowConfig.model_validate(data)
     except ValidationError as e:
