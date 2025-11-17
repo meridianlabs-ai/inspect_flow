@@ -13,9 +13,9 @@ from pydantic import BaseModel
 
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowConfig,
     FlowEpochs,
     FlowGenerateConfig,
+    FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -30,7 +30,7 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def instantiate_tasks(config: FlowConfig) -> list[Task]:
+def instantiate_tasks(config: FlowJob) -> list[Task]:
     return [
         _instantiate_task(config, task_config) for task_config in config.tasks or []
     ]
@@ -88,7 +88,7 @@ def _create_solver(
     return [_create_single_solver(single_config) for single_config in config]
 
 
-def _instantiate_task(flow_config: FlowConfig, config: str | FlowTask) -> Task:
+def _instantiate_task(flow_config: FlowJob, config: str | FlowTask) -> Task:
     if (
         flow_config.defaults is not None
         or not isinstance(config, FlowTask)

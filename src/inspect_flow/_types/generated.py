@@ -418,8 +418,8 @@ class ResponseSchemaDict(TypedDict):
     strict: NotRequired[Optional[bool]]
 
 
-class FlowConfigDict(TypedDict):
-    """Configuration for a flow run."""
+class FlowJobDict(TypedDict):
+    """Configuration for a flow job."""
 
     flow_dir: NotRequired[Optional[str]]
     """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""

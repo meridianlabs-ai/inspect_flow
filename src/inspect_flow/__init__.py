@@ -19,10 +19,10 @@ from inspect_flow._types.factories import (
 )
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowConfig,
     FlowDefaults,
     FlowEpochs,
     FlowGenerateConfig,
+    FlowJob,
     FlowModel,
     FlowOptions,
     FlowSolver,
@@ -35,7 +35,7 @@ from inspect_flow._types.merge import (
 __all__ = [
     "__version__",
     "FlowAgent",
-    "FlowConfig",
+    "FlowJob",
     "FlowDefaults",
     "FlowEpochs",
     "FlowGenerateConfig",

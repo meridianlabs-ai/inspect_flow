@@ -4,8 +4,8 @@ import pytest
 import yaml
 from inspect_flow import (
     FlowAgent,
-    FlowConfig,
     FlowGenerateConfig,
+    FlowJob,
     FlowModel,
     FlowOptions,
     FlowSolver,
@@ -20,8 +20,8 @@ from pydantic_core import to_jsonable_python
 update_examples = False
 
 
-def write_flow_yaml(config: FlowConfig | FlowConfig, file_path: Path) -> None:
-    config = FlowConfig.model_validate(to_jsonable_python(config))
+def write_flow_yaml(config: FlowJob | FlowJob, file_path: Path) -> None:
+    config = FlowJob.model_validate(to_jsonable_python(config))
     with open(file_path, "w") as f:
         yaml.dump(
             config.model_dump(
@@ -36,8 +36,8 @@ def write_flow_yaml(config: FlowConfig | FlowConfig, file_path: Path) -> None:
         )
 
 
-def validate_config(config: FlowConfig | FlowConfig, file_name: str) -> None:
-    config = FlowConfig.model_validate(to_jsonable_python(config))
+def validate_config(config: FlowJob | FlowJob, file_name: str) -> None:
+    config = FlowJob.model_validate(to_jsonable_python(config))
     # Load the example config file
     example_path = Path(__file__).parent / "config" / file_name
     with open(example_path, "r") as f:
@@ -54,7 +54,7 @@ def validate_config(config: FlowConfig | FlowConfig, file_name: str) -> None:
 
 
 def test_config_one_task() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -67,7 +67,7 @@ def test_config_one_task() -> None:
 
 
 def test_config_two_tasks() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -83,7 +83,7 @@ def test_config_two_tasks() -> None:
 
 
 def test_config_two_models_one_task() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -102,7 +102,7 @@ def test_config_two_models_one_task() -> None:
 
 
 def test_config_model_and_task() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -128,7 +128,7 @@ def test_py_config_with_assign() -> None:
 
 
 def test_config_two_models_two_tasks() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -144,7 +144,7 @@ def test_config_two_models_two_tasks() -> None:
 
 
 def test_config_model_config() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -169,7 +169,7 @@ def test_config_model_config() -> None:
 
 
 def test_config_matrix_and_task() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -188,7 +188,7 @@ def test_config_matrix_and_task() -> None:
 
 
 def test_config_nested_matrix() -> None:
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -217,7 +217,7 @@ def test_config_nested_matrix() -> None:
 
 
 def test_merge_config():
-    config = FlowConfig(
+    config = FlowJob(
         flow_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         dependencies=[
@@ -265,7 +265,7 @@ def test_load_config_overrides():
 
 
 def test_overrides_of_lists():
-    config = FlowConfig()
+    config = FlowJob()
     # Within a single override, later values replace earlier ones
     config = _apply_overrides(
         config,
@@ -296,7 +296,7 @@ def test_overrides_of_lists():
 
 
 def test_overrides_of_dicts():
-    config = FlowConfig()
+    config = FlowJob()
     config = _apply_overrides(
         config,
         [
@@ -356,7 +356,7 @@ def test_metadata():
     agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
     solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
     task = FlowTask(name="taskname", flow_metadata={"task": "3"})
-    config = FlowConfig(
+    config = FlowJob(
         tasks=tasks_matrix(
             task=task,
             model=models_to_use,
@@ -368,7 +368,7 @@ def test_metadata():
 
 
 def test_overrides_invalid_config_key():
-    config = FlowConfig()
+    config = FlowJob()
     with pytest.raises(ValueError):
         config = _apply_overrides(
             config,

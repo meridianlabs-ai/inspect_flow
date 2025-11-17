@@ -10,7 +10,7 @@ from attr import dataclass
 from inspect_ai._util.file import file
 from pydantic_core import ValidationError, to_jsonable_python
 
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import set_config_path_env_var
 
@@ -30,7 +30,7 @@ class ConfigOptions:
 
 def load_config(
     config_file: str, config_options: ConfigOptions | None = None
-) -> FlowConfig:
+) -> FlowJob:
     """Load a configuration file and apply any overrides.
 
     Args:
@@ -45,7 +45,7 @@ def load_config(
     return config
 
 
-def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowConfig:
+def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
     config_path = Path(config_file)
 
     try:
@@ -56,9 +56,9 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
                     )
-                if isinstance(result, FlowConfig):
-                    result = FlowConfig.model_validate(to_jsonable_python(result))
-                elif not isinstance(result, FlowConfig):
+                if isinstance(result, FlowJob):
+                    result = FlowJob.model_validate(to_jsonable_python(result))
+                elif not isinstance(result, FlowJob):
                     raise TypeError(
                         f"Expected FlowConfig from Python config file, got {type(result)}"
                     )
@@ -72,7 +72,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
                     f"Unsupported config file format: {config_path.suffix}. "
                     "Supported formats: .yaml, .yml, .json"
                 )
-            return FlowConfig.model_validate(data)
+            return FlowJob.model_validate(data)
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
@@ -124,11 +124,11 @@ def _deep_merge(base: dict[str, Any], override: _OverrideDict) -> dict[str, Any]
     return base
 
 
-def _apply_overrides(config: FlowConfig, overrides: list[str]) -> FlowConfig:
+def _apply_overrides(config: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
     base_dict = config.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge(base_dict, overrides_dict)
-    return FlowConfig.model_validate(merged_dict)
+    return FlowJob.model_validate(merged_dict)
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

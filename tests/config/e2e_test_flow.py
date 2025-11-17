@@ -1,6 +1,6 @@
-from inspect_flow import FlowConfig, FlowOptions, tasks_matrix
+from inspect_flow import FlowJob, FlowOptions, tasks_matrix
 
-FlowConfig(
+FlowJob(
     flow_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     dependencies=[
