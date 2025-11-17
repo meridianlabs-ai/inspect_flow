@@ -410,7 +410,7 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     log_dir_allow_dirty: bool | None = Field(
         default=None,
-        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True).",
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
 
@@ -460,9 +460,9 @@ class FlowDefaults(BaseModel, extra="forbid"):
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
-    flow_dir: str | None = Field(
+    log_dir: str | None = Field(
         default=None,
-        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job.",
     )
 
     python_version: str | None = Field(

@@ -309,7 +309,7 @@ class FlowOptionsDict(TypedDict):
     log_shared: NotRequired[Optional[Union[bool, int]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
+    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
 class FlowTaskDict(TypedDict):
@@ -421,8 +421,8 @@ class ResponseSchemaDict(TypedDict):
 class FlowJobDict(TypedDict):
     """Configuration for a flow job."""
 
-    flow_dir: NotRequired[Optional[str]]
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
+    log_dir: NotRequired[Optional[str]]
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[FlowOptions]]

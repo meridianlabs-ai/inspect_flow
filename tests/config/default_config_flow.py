@@ -19,7 +19,7 @@ task_dir = (Path("tests") / "config" / "local_eval" / "src" / "local_eval").reso
 task_file = str(task_dir / "noop.py")
 
 FlowJob(
-    flow_dir="logs/flow_test",
+    log_dir="logs/flow_test",
     defaults=FlowDefaults(
         config=FlowGenerateConfig(
             system_message=config_system_message,

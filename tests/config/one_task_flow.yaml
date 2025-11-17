@@ -1,4 +1,4 @@
-flow_dir: example_logs
+log_dir: example_logs
 options:
   limit: 1
 dependencies:

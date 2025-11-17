@@ -36,7 +36,7 @@ def test_task_with_get_model() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
                             name=task_file + "@task_with_get_model",
@@ -60,7 +60,7 @@ def test_task_with_two_models() -> None:
     log_dir = init_test_logs()
 
     config = FlowJob(
-        flow_dir=log_dir,
+        log_dir=log_dir,
         tasks=tasks_matrix(
             task=task_file + "@noop",
             model=[
@@ -80,7 +80,7 @@ def test_model_generate_config() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
@@ -111,7 +111,7 @@ def test_default_model_config() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=[FlowTask(name=task_file + "@noop")],
                 )
             )
@@ -130,7 +130,7 @@ def test_task_model() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
                             name=task_file + "@noop",
@@ -154,7 +154,7 @@ def test_write_config() -> None:
     log_dir = init_test_logs()
 
     job = FlowJob(
-        flow_dir=log_dir,
+        log_dir=log_dir,
         tasks=[
             FlowTask(
                 name=task_file + "@noop",
@@ -192,7 +192,7 @@ def test_matrix_args() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
                             name=task_file + "@task_with_params",
@@ -229,7 +229,7 @@ def test_matrix_model_roles() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
                             name=task_file + "@task_with_model_roles",
@@ -260,7 +260,7 @@ def test_matrix_solvers() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
                             name=task_file + "@noop",
@@ -299,7 +299,7 @@ def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             config=FlowJob(
-                flow_dir="logs/flow_test",
+                log_dir="logs/flow_test",
                 tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
             )
         )
@@ -318,7 +318,7 @@ def test_all_tasks_in_file() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             config=FlowJob(
-                flow_dir="logs/flow_test",
+                log_dir="logs/flow_test",
                 tasks=[file],
             ),
         )
@@ -344,7 +344,7 @@ def test_config_generate_config() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=FlowGenerateConfig(
                             system_message=config_system_message,
@@ -394,7 +394,7 @@ def test_config_model_overrides() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=FlowGenerateConfig(
                             system_message="Global Default",
@@ -445,7 +445,7 @@ def test_config_model_prefix_default_overrides() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=FlowGenerateConfig(
                             system_message="Global Default",
@@ -495,7 +495,7 @@ def test_config_model_default_overrides() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=FlowGenerateConfig(
                             system_message="Global Default",
@@ -545,7 +545,7 @@ def test_config_model_prefixes() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         model_prefix={
                             "mockllm/": FlowModel(
@@ -591,7 +591,7 @@ def test_task_defaults() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         task=FlowTask(model="mockllm/mock-llm"),
                         task_prefix={task_file: FlowTask(args={"subset": "original"})},
@@ -620,7 +620,7 @@ def test_solver_defaults() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         solver=FlowSolver(args={"template": "Default"}),
                         solver_prefix={
@@ -651,7 +651,7 @@ def test_agent_defaults() -> None:
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         agent=FlowAgent(args={"description": "Default Description"}),
                         solver_prefix={
@@ -683,7 +683,7 @@ def test_dry_run():
         _run_eval_set(
             config=(
                 FlowJob(
-                    flow_dir="logs/flow_test",
+                    log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
                             name=task_file + "@task_with_get_model",
@@ -704,7 +704,7 @@ def test_task_with_two_model_configs() -> None:
     log_dir = init_test_logs()
 
     config = FlowJob(
-        flow_dir=log_dir,
+        log_dir=log_dir,
         tasks=tasks_matrix(
             task=[FlowTask(name=task_file + "@noop")],
             model=models_matrix(
@@ -727,7 +727,7 @@ def test_task_with_two_solvers() -> None:
     log_dir = init_test_logs()
 
     config = FlowJob(
-        flow_dir=log_dir,
+        log_dir=log_dir,
         tasks=tasks_matrix(
             task=FlowTask(name=task_file + "@noop", model="mockllm/mock-llm"),
             solver=[
@@ -757,7 +757,7 @@ def test_default_model_roles() -> None:
     default_model_roles = {"grader": "mockllm/default-grader"}
     task_model_roles = {"mark": "mockllm/mark"}
     config = FlowJob(
-        flow_dir="logs/flow_test",
+        log_dir="logs/flow_test",
         defaults=FlowDefaults(
             task=FlowTask(model_roles=default_model_roles),
         ),
@@ -784,7 +784,7 @@ def test_default_model_roles() -> None:
 
 def test_logs_allow_dirty() -> None:
     config = FlowJob(
-        flow_dir="logs/flow_test",
+        log_dir="logs/flow_test",
         tasks=[
             task_file + "@noop",
         ],

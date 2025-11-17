@@ -17,11 +17,14 @@ def launch(
     config: FlowJob,
     run_args: list[str] | None = None,
 ) -> None:
+    if not config.log_dir:
+        raise ValueError("log_dir must be set before launching the flow job")
+
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     set_cwd_env_var()
-    config.flow_dir = _resolve_flow_dir(config, env=dict(os.environ))
-    click.echo(f"Using flow_dir: {config.flow_dir}")
+    config.log_dir = _resolve_log_dir(config, env=dict(os.environ))
+    click.echo(f"Using log_dir: {config.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
         env = create_venv(config, temp_dir)
@@ -41,13 +44,17 @@ def launch(
             sys.exit(e.returncode)
 
 
-def _resolve_flow_dir(config: FlowJob, env: dict[str, str]) -> str:
-    if config.flow_dir:
-        flow_dir = config.flow_dir
-    elif "INSPECT_FLOW_DIR" in env:
-        flow_dir = env["INSPECT_FLOW_DIR"]
-    elif "INSPECT_LOG_DIR" in env:
-        flow_dir = env["INSPECT_LOG_DIR"] + "/flow"
-    else:
-        flow_dir = "logs/flow"
-    return absolute_file_path(flow_dir)
+def _resolve_log_dir(config: FlowJob, env: dict[str, str]) -> str:
+    assert config.log_dir
+    absolute_log_dir = absolute_file_path(config.log_dir)
+    if absolute_log_dir == config.log_dir:
+        # Already an absolute path
+        return absolute_log_dir
+
+    # Resolve relative path based on config path if set
+    if config_path := env.get("INSPECT_FLOW_CONFIG_PATH"):
+        config_relative_path = Path(config_path).parent / config.log_dir
+        return absolute_file_path(str(config_relative_path))
+
+    # Resolve relative path based on cwd
+    return absolute_log_dir

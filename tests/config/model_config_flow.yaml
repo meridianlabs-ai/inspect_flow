@@ -1,33 +1,33 @@
-flow_dir: example_logs
+log_dir: example_logs
 options:
   limit: 1
 dependencies:
-- openai
-- git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
+  - openai
+  - git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
 tasks:
-- name: inspect_evals/mmlu_0_shot
-  model:
-    name: openai/gpt-4o-mini
-- name: inspect_evals/mmlu_0_shot
-  model:
-    name: openai/gpt-5-nano
-    config:
-      reasoning_effort: minimal
-- name: inspect_evals/mmlu_0_shot
-  model:
-    name: openai/gpt-5-nano
-    config:
-      reasoning_effort: low
-- name: inspect_evals/mmlu_5_shot
-  model:
-    name: openai/gpt-4o-mini
-- name: inspect_evals/mmlu_5_shot
-  model:
-    name: openai/gpt-5-nano
-    config:
-      reasoning_effort: minimal
-- name: inspect_evals/mmlu_5_shot
-  model:
-    name: openai/gpt-5-nano
-    config:
-      reasoning_effort: low
+  - name: inspect_evals/mmlu_0_shot
+    model:
+      name: openai/gpt-4o-mini
+  - name: inspect_evals/mmlu_0_shot
+    model:
+      name: openai/gpt-5-nano
+      config:
+        reasoning_effort: minimal
+  - name: inspect_evals/mmlu_0_shot
+    model:
+      name: openai/gpt-5-nano
+      config:
+        reasoning_effort: low
+  - name: inspect_evals/mmlu_5_shot
+    model:
+      name: openai/gpt-4o-mini
+  - name: inspect_evals/mmlu_5_shot
+    model:
+      name: openai/gpt-5-nano
+      config:
+        reasoning_effort: minimal
+  - name: inspect_evals/mmlu_5_shot
+    model:
+      name: openai/gpt-5-nano
+      config:
+        reasoning_effort: low

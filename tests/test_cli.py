@@ -165,16 +165,16 @@ def test_config_command_resolve() -> None:
 
 def test_options_to_overrides() -> None:
     overrides = _options_to_overrides(
-        flow_dir="option_dir",
+        log_dir="option_dir",
         limit=1,
-        set=["flow_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],
+        set=["log_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],
     )
 
     assert len(overrides) == 5
     assert overrides == [
-        "flow_dir=set_dir",
+        "log_dir=set_dir",
         "options.limit=5",
         "options.log_dir_allow_dirty=True",
-        "flow_dir=option_dir",
+        "log_dir=option_dir",
         "options.limit=1",
     ]

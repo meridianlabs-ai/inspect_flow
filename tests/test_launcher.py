@@ -61,35 +61,35 @@ def test_env() -> None:
     assert env["myenv2"] == "value2"
 
 
-def test_relative_flow_dir() -> None:
-    flow_dir = "./logs/flow"
+def test_relative_log_dir() -> None:
+    log_dir = "./logs/flow"
     with (
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
             config=FlowJob(
-                flow_dir=flow_dir,
+                log_dir=log_dir,
                 tasks=["task_name"],
             )
         )
     mock_venv.assert_called_once()
-    assert mock_venv.mock_calls[0].args[0].flow_dir == str(Path(flow_dir).resolve())
+    assert mock_venv.mock_calls[0].args[0].log_dir == str(Path(log_dir).resolve())
     assert mock_run.call_count == 1
 
 
 def test_s3() -> None:
-    flow_dir = "s3://my-bucket/flow-logs"
+    log_dir = "s3://my-bucket/flow-logs"
     with (
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
             config=FlowJob(
-                flow_dir=flow_dir,
+                log_dir=log_dir,
                 tasks=["task_name"],
             )
         )
     mock_venv.assert_called_once()
-    assert mock_venv.mock_calls[0].args[0].flow_dir == flow_dir
+    assert mock_venv.mock_calls[0].args[0].log_dir == log_dir
     assert mock_run.call_count == 1
