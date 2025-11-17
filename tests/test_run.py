@@ -1,6 +1,9 @@
+import glob
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import yaml
 from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
@@ -145,6 +148,43 @@ def test_task_model() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert isinstance(tasks_arg[0].model, Model)
         assert tasks_arg[0].model.name == "mock-llm"
+
+
+def test_write_config() -> None:
+    log_dir = init_test_logs()
+
+    job = FlowJob(
+        flow_dir=log_dir,
+        tasks=[
+            FlowTask(
+                name=task_file + "@noop",
+                model=FlowModel(name="mockllm/mock-llm"),
+            )
+        ],
+    )
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(config=job)
+
+    mock_eval_set.assert_called_once()
+    # Verify that the config file was written with timestamp prefix
+    config_files = glob.glob(f"{log_dir}/*_flow.yaml")
+    assert len(config_files) == 1, f"Expected 1 config file, found {len(config_files)}"
+
+    # Read the file, parse the yaml, and convert to FlowJob
+    with open(config_files[0], "r") as f:
+        data = yaml.safe_load(f)
+        loaded_job = FlowJob.model_validate(data)
+        assert (
+            loaded_job.python_version
+            == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
+        loaded_job.python_version = None
+        assert loaded_job.tasks
+        assert isinstance(loaded_job.tasks[0], FlowTask)
+        # Loading the job results in an empty config, so clear it for comparison
+        loaded_job.tasks[0].config = None
+
+        assert loaded_job == job
 
 
 def test_matrix_args() -> None:
