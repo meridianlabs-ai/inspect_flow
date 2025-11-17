@@ -81,7 +81,6 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
 
 def _maybe_json(value: str) -> Any:
     try:
-        print(f"Trying to parse JSON value: {value}")
         return json.loads(value)
     except json.JSONDecodeError:
         return value

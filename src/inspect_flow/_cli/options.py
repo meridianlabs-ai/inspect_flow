@@ -49,7 +49,13 @@ def config_options(f):
     )(f)
     f = click.option(
         "--flow-dir",
-        type=str,
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
         default=None,
         help="Override the flow directory specified in the config.",
         envvar="INSPECT_FLOW_DIR",
