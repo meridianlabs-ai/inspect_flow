@@ -1,3 +1,4 @@
+import sys
 from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai._util.registry import registry_lookup
@@ -26,13 +27,23 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
+def _resolve_python_version() -> str:
+    return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+
 def resolve_config(config: FlowJob) -> FlowJob:
     resolved_tasks = []
     for task_config in config.tasks or []:
         resolved = _resolve_task(config, task_config)
         resolved_tasks.extend(resolved)
 
-    return config.model_copy(update={"tasks": resolved_tasks, "defaults": None})
+    return config.model_copy(
+        update={
+            "tasks": resolved_tasks,
+            "defaults": None,
+            "python_version": _resolve_python_version(),
+        }
+    )
 
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
