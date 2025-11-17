@@ -9,7 +9,7 @@ from inspect_flow._launcher.launch import launch
 
 def test_launch() -> None:
     with patch("subprocess.run") as mock_run:
-        launch(config=FlowJob(tasks=["task_name"]))
+        launch(config=FlowJob(log_dir="logs", tasks=["task_name"]))
 
         assert mock_run.call_count == 3
         args = mock_run.mock_calls[2].args[0]
@@ -39,7 +39,7 @@ def test_launch_handles_subprocess_error() -> None:
             subprocess.CalledProcessError(42, "cmd"),  # Third call fails
         ]
 
-        launch(config=FlowJob(tasks=["task_name"]))
+        launch(config=FlowJob(log_dir="logs", tasks=["task_name"]))
 
     # Verify sys.exit was called with the subprocess's return code
     assert exc_info.value.code == 42
@@ -50,6 +50,7 @@ def test_env() -> None:
     with patch("subprocess.run") as mock_run:
         launch(
             config=FlowJob(
+                log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
             )

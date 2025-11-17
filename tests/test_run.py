@@ -795,12 +795,12 @@ def test_logs_allow_dirty() -> None:
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
-    assert call_args.kwargs["log_dir_allow_dirty"] is True
+    assert call_args.kwargs["log_dir_allow_dirty"] is None
 
-    config.options = FlowOptions(log_dir_allow_dirty=False)
+    config.options = FlowOptions(log_dir_allow_dirty=True)
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(config=(config))
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
-    assert call_args.kwargs["log_dir_allow_dirty"] is False
+    assert call_args.kwargs["log_dir_allow_dirty"] is True
