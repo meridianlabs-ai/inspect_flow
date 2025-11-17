@@ -3,13 +3,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from inspect_flow import FlowConfig
+from inspect_flow import FlowJob
 from inspect_flow._launcher.launch import launch
 
 
 def test_launch() -> None:
     with patch("subprocess.run") as mock_run:
-        launch(config=FlowConfig(tasks=["task_name"]))
+        launch(config=FlowJob(tasks=["task_name"]))
 
         assert mock_run.call_count == 3
         args = mock_run.mock_calls[2].args[0]
@@ -39,7 +39,7 @@ def test_launch_handles_subprocess_error() -> None:
             subprocess.CalledProcessError(42, "cmd"),  # Third call fails
         ]
 
-        launch(config=FlowConfig(tasks=["task_name"]))
+        launch(config=FlowJob(tasks=["task_name"]))
 
     # Verify sys.exit was called with the subprocess's return code
     assert exc_info.value.code == 42
@@ -49,7 +49,7 @@ def test_env() -> None:
     """Test that CalledProcessError causes sys.exit without stack trace."""
     with patch("subprocess.run") as mock_run:
         launch(
-            config=FlowConfig(
+            config=FlowJob(
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
             )
@@ -68,7 +68,7 @@ def test_relative_flow_dir() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            config=FlowConfig(
+            config=FlowJob(
                 flow_dir=flow_dir,
                 tasks=["task_name"],
             )
@@ -85,7 +85,7 @@ def test_s3() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            config=FlowConfig(
+            config=FlowJob(
                 flow_dir=flow_dir,
                 tasks=["task_name"],
             )

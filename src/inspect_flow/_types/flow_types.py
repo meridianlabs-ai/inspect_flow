@@ -457,8 +457,8 @@ class FlowDefaults(BaseModel, extra="forbid"):
     )
 
 
-class FlowConfig(BaseModel, extra="forbid"):
-    """Configuration for a flow run."""
+class FlowJob(BaseModel, extra="forbid"):
+    """Configuration for a flow job."""
 
     flow_dir: str | None = Field(
         default=None,

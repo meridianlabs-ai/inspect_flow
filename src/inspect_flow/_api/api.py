@@ -2,11 +2,11 @@ import click
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.launch import launch
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import FlowJob
 
 
 def run(
-    config: FlowConfig,
+    config: FlowJob,
     dry_run: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
@@ -20,7 +20,7 @@ def run(
 
 
 def config(
-    config: FlowConfig,
+    config: FlowJob,
     resolve: bool = False,
 ) -> None:
     """Print the flow configuration.

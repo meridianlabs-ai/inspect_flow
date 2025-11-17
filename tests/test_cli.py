@@ -6,7 +6,7 @@ from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._config.load import ConfigOptions
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._version import __version__
 
 CONFIG_FILE = "./tests/config/model_and_task_flow.py"
@@ -76,7 +76,7 @@ def test_config_command_overrides() -> None:
     with (
         patch("inspect_flow._cli.config.load_config") as mock_config,
     ):
-        mock_config.return_value = FlowConfig()
+        mock_config.return_value = FlowJob()
 
         result = runner.invoke(
             config_command,

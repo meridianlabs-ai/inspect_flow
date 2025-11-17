@@ -1,9 +1,9 @@
-from inspect_flow import FlowConfig, FlowOptions, FlowTask
+from inspect_flow import FlowJob, FlowOptions, FlowTask
 
 model_variable = globals().get("__flow_vars__", {}).get("model", None)
 assert model_variable == locals().get("__flow_vars__", {}).get("model", None)
 
-my_config = FlowConfig(
+my_config = FlowJob(
     flow_dir="logs/model_and_task",
     options=FlowOptions(limit=1),
     dependencies=[

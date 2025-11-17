@@ -19,8 +19,8 @@ def test_local_e2e() -> None:
         [
             "run",
             str(config_path),
-            "--set",
-            f"flow_dir={flow_dir}",
+            "--flow-dir",
+            flow_dir,
         ],
         catch_exceptions=False,
     )
