@@ -77,14 +77,16 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
         # epochs= FlowTask
         fail_on_error=options.fail_on_error,
         continue_on_fail=options.continue_on_fail,
-        retry_on_error=options.retry_on_error,
+        retry_on_error=options.retry_on_error
+        if options.retry_on_error is not None
+        else 3,
         debug_errors=options.debug_errors,
         # message_limit= FlowTask
         # token_limit= FlowTask
         # time_limit= FlowTask
         # working_limit= FlowTask
         max_samples=options.max_samples,
-        max_tasks=options.max_tasks,
+        max_tasks=options.max_tasks if options.max_tasks is not None else 10,
         max_subprocesses=options.max_subprocesses,
         max_sandboxes=options.max_sandboxes,
         log_samples=options.log_samples,

@@ -52,6 +52,9 @@ def test_task_with_get_model() -> None:
         tasks_arg = call_args.kwargs["tasks"]
         assert len(tasks_arg) == 1
         assert isinstance(tasks_arg[0], Task)
+        # verify default values
+        assert call_args.kwargs["retry_on_error"] == 3
+        assert call_args.kwargs["max_tasks"] == 10
 
 
 def test_task_with_two_models() -> None:
