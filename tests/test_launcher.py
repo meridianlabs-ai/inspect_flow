@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import FlowJob
+from inspect_flow._config.load import load_config
 from inspect_flow._launcher.launch import launch
 
 
@@ -94,4 +95,19 @@ def test_s3() -> None:
         )
     mock_venv.assert_called_once()
     assert mock_venv.mock_calls[0].args[0].log_dir == log_dir
+    assert mock_run.call_count == 1
+
+
+def test_config_relative_log_dir() -> None:
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+    ):
+        job = load_config("./tests/config/e2e_test_flow.py")
+        launch(config=job)
+
+    mock_venv.assert_called_once()
+    assert job.log_dir
+    expected_log_dir = Path("./tests/config/") / job.log_dir
+    assert mock_venv.mock_calls[0].args[0].log_dir == str(expected_log_dir)
     assert mock_run.call_count == 1
