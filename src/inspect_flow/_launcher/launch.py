@@ -1,4 +1,3 @@
-import os
 import pathlib
 import re
 import subprocess
@@ -7,11 +6,11 @@ import tempfile
 from pathlib import Path
 
 import click
-from inspect_ai._util.file import absolute_file_path, exists
+from inspect_ai._util.file import exists
 
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowJob
-from inspect_flow._util.path_util import set_cwd_env_var
+from inspect_flow._util.path_util import absolute_path, set_cwd_env_var
 
 
 def launch(
@@ -24,7 +23,9 @@ def launch(
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     set_cwd_env_var()
-    config.log_dir = _resolve_log_dir(config, env=dict(os.environ))
+    config.log_dir = _resolve_log_dir(config)
+    if config.options and config.options.bundle_dir:
+        config.options.bundle_dir = absolute_path(config.options.bundle_dir)
     click.echo(f"Using log_dir: {config.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
@@ -45,8 +46,10 @@ def launch(
             sys.exit(e.returncode)
 
 
-def _resolve_log_dir(config: FlowJob, env: dict[str, str]) -> str:
-    absolute_log_dir = _absolute_log_dir(config, env)
+def _resolve_log_dir(config: FlowJob) -> str:
+    assert config.log_dir
+    absolute_log_dir = absolute_path(config.log_dir)
+
     if config.new_log_dir:
         return _new_log_dir(absolute_log_dir)
     else:
@@ -72,19 +75,3 @@ def _new_log_dir(log_dir: str) -> str:
         suffix += 1
         current_dir = f"{base_log_dir}_{suffix}"
     return current_dir
-
-
-def _absolute_log_dir(config: FlowJob, env: dict[str, str]) -> str:
-    assert config.log_dir
-    absolute_log_dir = absolute_file_path(config.log_dir)
-    if absolute_log_dir == config.log_dir:
-        # Already an absolute path
-        return absolute_log_dir
-
-    # Resolve relative path based on config path if set
-    if config_path := env.get("INSPECT_FLOW_CONFIG_PATH"):
-        config_relative_path = Path(config_path).parent / config.log_dir
-        return absolute_file_path(str(config_relative_path))
-
-    # Resolve relative path based on cwd
-    return absolute_log_dir

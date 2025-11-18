@@ -807,3 +807,22 @@ def test_logs_allow_dirty() -> None:
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
     assert call_args.kwargs["log_dir_allow_dirty"] is True
+
+
+def test_bundle_url_map(capsys) -> None:
+    path = Path.cwd().as_posix()
+    config = FlowJob(
+        log_dir="logs/flow_test",
+        options=FlowOptions(bundle_dir=path + "logs/bundle_test"),
+        bundle_url_map={path: "http://example.com/bundle"},
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(config=(config))
+
+    mock_eval_set.assert_called_once()
+    captured = capsys.readouterr()
+    assert "http://example.com/bundle" in captured.out

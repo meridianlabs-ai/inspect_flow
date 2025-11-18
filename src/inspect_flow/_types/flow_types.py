@@ -511,6 +511,11 @@ class FlowJob(BaseModel, extra="forbid"):
         default=None, description="Tasks to run"
     )
 
+    bundle_url_map: dict[str, str] | None = Field(
+        default=None,
+        description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
+    )
+
     # Convert single items to lists
     @field_validator("dependencies", mode="before")
     @classmethod
