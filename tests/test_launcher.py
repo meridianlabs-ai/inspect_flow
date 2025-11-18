@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import FlowJob
-from inspect_flow._config.load import load_config
+from inspect_flow._config.load import ConfigOptions, load_config
 from inspect_flow._launcher.launch import _new_log_dir, launch
 
 
@@ -146,4 +146,23 @@ def test_launch_new_log_dir() -> None:
     mock_venv.assert_called_once()
     assert mock_exists.call_count == 3
     assert mock_venv.mock_calls[0].args[0].log_dir == log_dir + "_2"
+    assert mock_run.call_count == 1
+
+
+def test_relative_bundle_dir() -> None:
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+    ):
+        job = load_config(
+            "./tests/config/e2e_test_flow.py",
+            config_options=ConfigOptions(overrides=["options.bundle_dir=bundle_dir"]),
+        )
+        launch(config=job)
+
+    mock_venv.assert_called_once()
+    job: FlowJob = mock_venv.mock_calls[0].args[0]
+    assert (
+        job.options.bundle_dir == Path("tests/config/bundle_dir").resolve().as_posix()
+    )
     assert mock_run.call_count == 1
