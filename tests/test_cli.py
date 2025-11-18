@@ -72,6 +72,38 @@ def test_run_command_overrides() -> None:
         mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
 
 
+def test_run_command_new_log_dir() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.run") as mock_run,
+        patch("inspect_flow._cli.run.load_config") as mock_config,
+    ):
+        # Mock the config object
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command,
+            [
+                CONFIG_FILE,
+                "--new-log-dir",
+            ],
+            catch_exceptions=False,
+        )
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Verify that load_config was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE,
+            config_options=ConfigOptions(overrides=["new_log_dir=True"]),
+        )
+
+        # Verify that run was called with the config object and file path
+        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
+
+
 def test_config_command_overrides() -> None:
     runner = CliRunner()
     with (

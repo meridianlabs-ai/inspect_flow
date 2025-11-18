@@ -62,11 +62,19 @@ def config_options(f):
         help="Set the log directory. Will override the log_dir specified in the config.",
         envvar="INSPECT_FLOW_LOG_DIR",
     )(f)
+    f = click.option(
+        "--new-log-dir",
+        type=bool,
+        is_flag=True,
+        help="If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).",
+        envvar="INSPECT_FLOW_NEW_LOG_DIR",
+    )(f)
     return f
 
 
 class ConfigOptionArgs(TypedDict, total=False):
     log_dir: str | None
+    new_log_dir: bool | None
     limit: int | None
     set: list[str] | None
     var: list[str] | None
@@ -78,6 +86,8 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
+    if kwargs.get("new_log_dir"):
+        overrides.append("new_log_dir=True")
     return overrides
 
 
