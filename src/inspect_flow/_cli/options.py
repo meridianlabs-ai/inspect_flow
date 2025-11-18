@@ -11,6 +11,7 @@ def config_options(f):
         "-s",
         multiple=True,
         type=str,
+        envvar="INSPECT_FLOW_SET",
         help="""
     Set config overrides.
 
@@ -29,6 +30,7 @@ def config_options(f):
         "--var",
         multiple=True,
         type=str,
+        envvar="INSPECT_FLOW_VAR",
         help="""
     Set variables accessible to code executing in the config file through the variable `__flow_vars__`:
     `task_min_priority = __flow_vars__.get("task_min_priority", 1)`

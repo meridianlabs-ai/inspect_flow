@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from click.testing import CliRunner
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
@@ -87,6 +88,35 @@ def test_config_command_overrides() -> None:
                 "--set",
                 "defaults.solver.args.tool_calls=none",
             ],
+            catch_exceptions=False,
+        )
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Verify that load_config was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE,
+            config_options=ConfigOptions(
+                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
+            ),
+        )
+
+
+def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = CliRunner()
+    monkeypatch.setenv(
+        "INSPECT_FLOW_SET",
+        "dependencies=dep1 defaults.solver.args.tool_calls=none",
+    )
+    with (
+        patch("inspect_flow._cli.config.load_config") as mock_config,
+    ):
+        mock_config.return_value = FlowJob()
+
+        result = runner.invoke(
+            config_command,
+            [CONFIG_FILE],
             catch_exceptions=False,
         )
 

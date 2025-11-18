@@ -16,6 +16,7 @@ from inspect_flow._config.load import load_config
     "--resolve",
     type=bool,
     is_flag=True,
+    envvar="INSPECT_FLOW_RESOLVE",
     help="Fully resolve the config. Will create a venv and create all objects.",
 )
 @config_options
