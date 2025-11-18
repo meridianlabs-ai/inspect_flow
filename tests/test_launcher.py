@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from inspect_flow import FlowJob
 from inspect_flow._config.load import load_config
-from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.launch import _new_log_dir, launch
 
 
 def test_launch() -> None:
@@ -110,4 +110,40 @@ def test_config_relative_log_dir() -> None:
     assert job.log_dir
     expected_log_dir = Path("./tests/config/") / job.log_dir
     assert mock_venv.mock_calls[0].args[0].log_dir == str(expected_log_dir)
+    assert mock_run.call_count == 1
+
+
+def test_new_log_dir() -> None:
+    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
+        mock_exists.return_value = False
+        assert _new_log_dir("log_dir") == "log_dir"
+        assert mock_exists.call_count == 1
+    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
+        mock_exists.side_effect = [True, True, False]
+        assert _new_log_dir("log_dir") == "log_dir_2"
+        assert mock_exists.call_count == 3
+    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
+        mock_exists.side_effect = [True, True, False]
+        assert _new_log_dir("log_dir_12") == "log_dir_14"
+        assert mock_exists.call_count == 3
+
+
+def test_launch_new_log_dir() -> None:
+    log_dir = "/etc/logs/flow"
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.launch.exists") as mock_exists,
+    ):
+        mock_exists.side_effect = [True, True, False]
+        launch(
+            config=FlowJob(
+                log_dir=log_dir,
+                new_log_dir=True,
+                tasks=["task_name"],
+            )
+        )
+    mock_venv.assert_called_once()
+    assert mock_exists.call_count == 3
+    assert mock_venv.mock_calls[0].args[0].log_dir == log_dir + "_2"
     assert mock_run.call_count == 1
