@@ -48,23 +48,23 @@ def config_options(f):
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
     f = click.option(
-        "--flow-dir",
+        "--log-dir",
         type=click.Path(
             file_okay=False,
             dir_okay=True,
             writable=True,
             readable=True,
-            resolve_path=False,
+            resolve_path=True,
         ),
         default=None,
-        help="Override the flow directory specified in the config.",
-        envvar="INSPECT_FLOW_DIR",
+        help="Set the log directory. Will override the log_dir specified in the config.",
+        envvar="INSPECT_FLOW_LOG_DIR",
     )(f)
     return f
 
 
 class ConfigOptionArgs(TypedDict, total=False):
-    flow_dir: str | None
+    log_dir: str | None
     limit: int | None
     set: list[str] | None
     var: list[str] | None
@@ -72,8 +72,8 @@ class ConfigOptionArgs(TypedDict, total=False):
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     overrides = list(kwargs.get("set") or [])  # set may be a tuple (at least in tests)
-    if flow_dir := kwargs.get("flow_dir"):
-        overrides.append(f"flow_dir={flow_dir}")
+    if log_dir := kwargs.get("log_dir"):
+        overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
     return overrides

@@ -60,7 +60,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJ
                     result = FlowJob.model_validate(to_jsonable_python(result))
                 elif not isinstance(result, FlowJob):
                     raise TypeError(
-                        f"Expected FlowConfig from Python config file, got {type(result)}"
+                        f"Expected FlowJob from Python config file, got {type(result)}"
                     )
                 return result
             elif config_path.suffix in [".yaml", ".yml"]:

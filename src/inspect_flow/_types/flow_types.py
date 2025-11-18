@@ -53,7 +53,7 @@ class FlowModel(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
     )
 
     base_url: str | None = Field(
@@ -168,7 +168,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None = Field(
@@ -410,7 +410,7 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     log_dir_allow_dirty: bool | None = Field(
         default=None,
-        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True).",
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
 
@@ -460,9 +460,9 @@ class FlowDefaults(BaseModel, extra="forbid"):
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
-    flow_dir: str | None = Field(
+    log_dir: str | None = Field(
         default=None,
-        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job.",
     )
 
     python_version: str | None = Field(

@@ -4,6 +4,15 @@ import subprocess
 from typing import Any, Callable, TypeVar, cast
 
 import pytest
+from inspect_flow._util.path_util import config_path_key, cwd_path_key
+
+
+@pytest.fixture(autouse=True)
+def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clean environment variables before each test."""
+    env_vars_to_clear = [config_path_key, cwd_path_key]
+    for var in env_vars_to_clear:
+        monkeypatch.delenv(var, raising=False)
 
 
 def pytest_addoption(parser: pytest.Parser):

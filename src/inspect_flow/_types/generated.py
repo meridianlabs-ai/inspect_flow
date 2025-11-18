@@ -223,7 +223,7 @@ class FlowModelDict(TypedDict):
     default: NotRequired[Optional[str]]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
     base_url: NotRequired[Optional[str]]
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[Optional[str]]
@@ -240,7 +240,7 @@ class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -309,7 +309,7 @@ class FlowOptionsDict(TypedDict):
     log_shared: NotRequired[Optional[Union[bool, int]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
+    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
 class FlowTaskDict(TypedDict):
@@ -330,7 +330,7 @@ class FlowTaskDict(TypedDict):
     model: NotRequired[Optional[Union[str, FlowModel]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
@@ -383,7 +383,7 @@ class FlowTaskMatrixDict(TypedDict):
     model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
     ]
@@ -421,8 +421,8 @@ class ResponseSchemaDict(TypedDict):
 class FlowJobDict(TypedDict):
     """Configuration for a flow job."""
 
-    flow_dir: NotRequired[Optional[str]]
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
+    log_dir: NotRequired[Optional[str]]
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[FlowOptions]]

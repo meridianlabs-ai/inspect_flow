@@ -17,7 +17,7 @@ from inspect_flow import (
 from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
 from pydantic_core import to_jsonable_python
 
-update_examples = False
+update_examples = True
 
 
 def write_flow_yaml(config: FlowJob | FlowJob, file_path: Path) -> None:
@@ -55,7 +55,7 @@ def validate_config(config: FlowJob | FlowJob, file_name: str) -> None:
 
 def test_config_one_task() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -68,7 +68,7 @@ def test_config_one_task() -> None:
 
 def test_config_two_tasks() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -84,7 +84,7 @@ def test_config_two_tasks() -> None:
 
 def test_config_two_models_one_task() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -103,7 +103,7 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowJob(
-        flow_dir="logs/model_and_task",
+        log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
         dependencies=[
             "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
@@ -129,7 +129,7 @@ def test_py_config_with_assign() -> None:
 
 def test_config_two_models_two_tasks() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -145,7 +145,7 @@ def test_config_two_models_two_tasks() -> None:
 
 def test_config_model_config() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -170,7 +170,7 @@ def test_config_model_config() -> None:
 
 def test_config_matrix_and_task() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -189,7 +189,7 @@ def test_config_matrix_and_task() -> None:
 
 def test_config_nested_matrix() -> None:
     config = FlowJob(
-        flow_dir="example_logs",
+        log_dir="example_logs",
         options=FlowOptions(limit=1),
         dependencies=[
             "openai",
@@ -218,7 +218,7 @@ def test_config_nested_matrix() -> None:
 
 def test_merge_config():
     config = FlowJob(
-        flow_dir="./logs/flow_test",
+        log_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         dependencies=[
             "./tests/config/local_eval",
@@ -249,13 +249,13 @@ def test_load_config_overrides():
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
         ConfigOptions(
             overrides=[
-                "flow_dir=./logs/overridden_flow",
+                "log_dir=./logs/overridden_flow",
                 "options.limit=2",
                 "defaults.solver.args.tool_calls=none",
             ]
         ),
     )
-    assert config.flow_dir == "./logs/overridden_flow"
+    assert config.log_dir == "./logs/overridden_flow"
     assert config.options
     assert config.options.limit == 2
     assert config.defaults

@@ -27,7 +27,7 @@ def _print_resolved_config(config: FlowJob) -> None:
 
 
 def _write_config_file(config: FlowJob) -> None:
-    filename = f"{config.flow_dir}/{clean_filename_component(iso_now())}_flow.yaml"
+    filename = f"{config.log_dir}/{clean_filename_component(iso_now())}_flow.yaml"
     yaml = config_to_yaml(config)
     with file(filename, "w") as f:
         f.write(yaml)
@@ -41,19 +41,15 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
 
-    options = config.options or FlowOptions()
-    assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
+    options = resolved_config.options or FlowOptions()
+    if not resolved_config.log_dir:
+        raise ValueError("log_dir must be set before running the flow job")
 
     _write_config_file(resolved_config)
 
-    log_dir = config.flow_dir + "/logs"
-    log_dir_allow_dirty = (
-        options.log_dir_allow_dirty if options.log_dir_allow_dirty is not None else True
-    )
-
     return inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=log_dir,
+        log_dir=resolved_config.log_dir,
         retry_attempts=options.retry_attempts,
         retry_wait=options.retry_wait,
         retry_connections=options.retry_connections,
@@ -98,8 +94,8 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
         log_shared=options.log_shared,
         # bundle_dir= Not supported
         # bundle_overwrite= Not supported
-        log_dir_allow_dirty=log_dir_allow_dirty,
-        # kwargs= FlowConfig, FlowTask, and FlowModel allow setting the generate config
+        log_dir_allow_dirty=options.log_dir_allow_dirty,
+        # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
     )
 
 
