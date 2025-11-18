@@ -443,3 +443,5 @@ class FlowJobDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the model."""
     tasks: NotRequired[Optional[Sequence[Union[str, FlowTask]]]]
     """Tasks to run"""
+    bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
+    """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""

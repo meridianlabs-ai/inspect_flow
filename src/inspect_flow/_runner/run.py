@@ -47,7 +47,7 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
 
     _write_config_file(resolved_config)
 
-    return inspect_ai.eval_set(
+    result = inspect_ai.eval_set(
         tasks=tasks,
         log_dir=resolved_config.log_dir,
         retry_attempts=options.retry_attempts,
@@ -99,6 +99,20 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
         log_dir_allow_dirty=options.log_dir_allow_dirty,
         # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
     )
+
+    if result[0]:
+        _print_bundle_url(resolved_config)
+
+    return result
+
+
+def _print_bundle_url(job: FlowJob) -> None:
+    if job.bundle_url_map and job.options and job.options.bundle_dir:
+        bundle_url = job.options.bundle_dir
+        for local, url in job.bundle_url_map.items():
+            bundle_url = bundle_url.replace(local, url)
+        if bundle_url != job.options.bundle_dir:
+            click.echo(f"Bundle URL: {bundle_url}")
 
 
 @click.group(invoke_without_command=True)
