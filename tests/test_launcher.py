@@ -162,6 +162,7 @@ def test_relative_bundle_dir() -> None:
 
     mock_venv.assert_called_once()
     job: FlowJob = mock_venv.mock_calls[0].args[0]
+    assert job.options
     assert (
         job.options.bundle_dir == Path("tests/config/bundle_dir").resolve().as_posix()
     )
