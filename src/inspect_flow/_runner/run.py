@@ -95,7 +95,7 @@ def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[Ev
         # bundle_dir= Not supported
         # bundle_overwrite= Not supported
         log_dir_allow_dirty=options.log_dir_allow_dirty,
-        # kwargs= FlowConfig, FlowTask, and FlowModel allow setting the generate config
+        # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
     )
 
 

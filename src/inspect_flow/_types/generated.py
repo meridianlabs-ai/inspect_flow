@@ -223,7 +223,7 @@ class FlowModelDict(TypedDict):
     default: NotRequired[Optional[str]]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
     base_url: NotRequired[Optional[str]]
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[Optional[str]]
@@ -240,7 +240,7 @@ class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -330,7 +330,7 @@ class FlowTaskDict(TypedDict):
     model: NotRequired[Optional[Union[str, FlowModel]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
@@ -383,7 +383,7 @@ class FlowTaskMatrixDict(TypedDict):
     model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
     ]

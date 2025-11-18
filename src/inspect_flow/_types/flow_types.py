@@ -53,7 +53,7 @@ class FlowModel(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
     )
 
     base_url: str | None = Field(
@@ -168,7 +168,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None = Field(
