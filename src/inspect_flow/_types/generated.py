@@ -255,9 +255,9 @@ class FlowOptionsDict(TypedDict):
     retry_cleanup: NotRequired[Optional[bool]]
     """Cleanup failed log files after retries (defaults to True)."""
     sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
-    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
+    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)."""
     sandbox_cleanup: NotRequired[Optional[bool]]
-    """Cleanup sandbox environments after task completes (defaults to True)"""
+    """Cleanup sandbox environments after task completes (defaults to True)."""
     tags: NotRequired[Optional[Sequence[str]]]
     """Tags to associate with this evaluation run."""
     metadata: NotRequired[Optional[Mapping[str, Any]]]
@@ -271,11 +271,11 @@ class FlowOptionsDict(TypedDict):
     approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
     score: NotRequired[Optional[bool]]
-    """Score output (defaults to True)"""
+    """Score output (defaults to True)."""
     log_level: NotRequired[Optional[str]]
-    """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
+    """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")."""
     log_level_transcript: NotRequired[Optional[str]]
-    """Level for logging to the log file (defaults to "info")"""
+    """Level for logging to the log file (defaults to "info")."""
     log_format: NotRequired[Optional[Literal["eval", "json"]]]
     """Format for writing log files (defaults to "eval", the native high-performance format)."""
     limit: NotRequired[Optional[int]]
@@ -287,23 +287,23 @@ class FlowOptionsDict(TypedDict):
     continue_on_fail: NotRequired[Optional[bool]]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
     retry_on_error: NotRequired[Optional[int]]
-    """Number of times to retry samples if they encounter errors (by default, no retries occur)."""
+    """Number of times to retry samples if they encounter errors (defaults to 3)."""
     debug_errors: NotRequired[Optional[bool]]
     """Raise task errors (rather than logging them) so they can be debugged (defaults to False)."""
     max_samples: NotRequired[Optional[int]]
-    """Maximum number of samples to run in parallel (default is max_connections)"""
+    """Maximum number of samples to run in parallel (default is max_connections)."""
     max_tasks: NotRequired[Optional[int]]
-    """Maximum number of tasks to run in parallel (defaults to the greater of 4 and the number of models being evaluated)"""
+    """Maximum number of tasks to run in parallel (defaults is 10)."""
     max_subprocesses: NotRequired[Optional[int]]
-    """Maximum number of subprocesses to run in parallel (default is os.cpu_count())"""
+    """Maximum number of subprocesses to run in parallel (default is os.cpu_count())."""
     max_sandboxes: NotRequired[Optional[int]]
     """Maximum number of sandboxes (per-provider) to run in parallel."""
     log_samples: NotRequired[Optional[bool]]
-    """Log detailed samples and scores (defaults to True)"""
+    """Log detailed samples and scores (defaults to True)."""
     log_realtime: NotRequired[Optional[bool]]
-    """Log events in realtime (enables live viewing of samples in inspect view). Defaults to True."""
+    """Log events in realtime (enables live viewing of samples in inspect view) (defaults to True)."""
     log_images: NotRequired[Optional[bool]]
-    """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)"""
+    """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)."""
     log_buffer: NotRequired[Optional[int]]
     """Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems)."""
     log_shared: NotRequired[Optional[Union[bool, int]]]

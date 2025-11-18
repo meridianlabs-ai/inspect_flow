@@ -286,12 +286,12 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     sandbox: SandboxEnvironmentType | None = Field(
         default=None,
-        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec).",
     )
 
     sandbox_cleanup: bool | None = Field(
         default=None,
-        description="Cleanup sandbox environments after task completes (defaults to True)",
+        description="Cleanup sandbox environments after task completes (defaults to True).",
     )
 
     tags: list[str] | None = Field(
@@ -317,17 +317,17 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
     score: bool | None = Field(
-        default=None, description="Score output (defaults to True)"
+        default=None, description="Score output (defaults to True)."
     )
 
     log_level: str | None = Field(
         default=None,
-        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")',
+        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning").',
     )
 
     log_level_transcript: str | None = Field(
         default=None,
-        description='Level for logging to the log file (defaults to "info")',
+        description='Level for logging to the log file (defaults to "info").',
     )
 
     log_format: Literal["eval", "json"] | None = Field(
@@ -356,7 +356,7 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     retry_on_error: int | None = Field(
         default=None,
-        description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
+        description="Number of times to retry samples if they encounter errors (defaults to 3).",
     )
 
     debug_errors: bool | None = Field(
@@ -366,17 +366,17 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     max_samples: int | None = Field(
         default=None,
-        description="Maximum number of samples to run in parallel (default is max_connections)",
+        description="Maximum number of samples to run in parallel (default is max_connections).",
     )
 
     max_tasks: int | None = Field(
         default=None,
-        description="Maximum number of tasks to run in parallel (defaults to the greater of 4 and the number of models being evaluated)",
+        description="Maximum number of tasks to run in parallel (defaults is 10).",
     )
 
     max_subprocesses: int | None = Field(
         default=None,
-        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count())",
+        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count()).",
     )
 
     max_sandboxes: int | None = Field(
@@ -385,17 +385,17 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
     log_samples: bool | None = Field(
-        default=None, description="Log detailed samples and scores (defaults to True)"
+        default=None, description="Log detailed samples and scores (defaults to True)."
     )
 
     log_realtime: bool | None = Field(
         default=None,
-        description="Log events in realtime (enables live viewing of samples in inspect view). Defaults to True.",
+        description="Log events in realtime (enables live viewing of samples in inspect view) (defaults to True).",
     )
 
     log_images: bool | None = Field(
         default=None,
-        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)",
+        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False).",
     )
 
     log_buffer: int | None = Field(
