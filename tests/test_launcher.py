@@ -27,7 +27,6 @@ def test_launch() -> None:
 
 
 def test_launch_handles_subprocess_error() -> None:
-    """Test that CalledProcessError causes sys.exit without stack trace."""
     with (
         patch("subprocess.run") as mock_run,
         pytest.raises(SystemExit) as exc_info,
@@ -45,8 +44,10 @@ def test_launch_handles_subprocess_error() -> None:
     assert exc_info.value.code == 42
 
 
-def test_env() -> None:
-    """Test that CalledProcessError causes sys.exit without stack trace."""
+def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("myenv1", raising=False)
+    monkeypatch.delenv("myenv2", raising=False)
+
     with patch("subprocess.run") as mock_run:
         launch(
             config=FlowJob(
