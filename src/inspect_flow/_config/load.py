@@ -37,10 +37,50 @@ def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     config_options = ConfigOptions(**kwargs)
     config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
     set_config_path_env_var(config_file)
+    config = apply_includes(config, **kwargs)
     overrides = config_options.get("overrides", [])
     if overrides:
         return _apply_overrides(config, overrides)
     return config
+
+
+def apply_includes(job: FlowJob, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
+    """Apply includes in the job config."""
+    options = ConfigOptions(**kwargs)
+    while job.includes:
+        include = job.includes.pop(0)
+        if not include.config_file_path:
+            raise ValueError("Include must have a config_file_path set.")
+        included_job = _load_config_from_file(
+            include.config_file_path, options.get("flow_vars", {})
+        )
+        job = _apply_include(job, included_job)
+    return job
+
+
+def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
+    job_dict = job.model_dump(mode="json", exclude_none=True)
+    include_dict = included_job.model_dump(mode="json", exclude_none=True)
+    merged_dict = _deep_merge_include(include_dict, job_dict)
+    return FlowJob.model_validate(merged_dict)
+
+
+def _deep_merge_include(
+    base: dict[str, Any], override: dict[str, Any]
+) -> dict[str, Any]:
+    result = base.copy()
+    for k, override_v in override.items():
+        if k not in result:
+            result[k] = override_v
+        else:
+            base_v = result[k]
+            if isinstance(override_v, dict) and isinstance(base_v, dict):
+                result[k] = _deep_merge_include(base_v, override_v)
+            elif isinstance(override_v, list) and isinstance(base_v, list):
+                result[k] = base_v + override_v
+            else:
+                result[k] = override_v
+    return result
 
 
 def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
@@ -99,12 +139,14 @@ def _overrides_to_dict(overrides: list[str]) -> _OverrideDict:
     return result
 
 
-def _deep_merge(base: dict[str, Any], override: _OverrideDict) -> dict[str, Any]:
+def _deep_merge_override(
+    base: dict[str, Any], override: _OverrideDict
+) -> dict[str, Any]:
     for k, v in override.items():
         base_v = base.get(k)
         if isinstance(v, dict):
             if isinstance(base_v, dict):
-                _deep_merge(base_v, v)
+                _deep_merge_override(base_v, v)
             else:
                 base[k] = v
         elif isinstance(base_v, list):
@@ -125,7 +167,7 @@ def _deep_merge(base: dict[str, Any], override: _OverrideDict) -> dict[str, Any]
 def _apply_overrides(config: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
     base_dict = config.model_dump(mode="json", exclude_none=True)
-    merged_dict = _deep_merge(base_dict, overrides_dict)
+    merged_dict = _deep_merge_override(base_dict, overrides_dict)
     return FlowJob.model_validate(merged_dict)
 
 
