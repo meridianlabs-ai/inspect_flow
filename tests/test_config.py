@@ -18,7 +18,7 @@ from inspect_flow import (
 from inspect_flow._config.load import _apply_overrides, expand_includes, load_config
 from pydantic_core import to_jsonable_python
 
-update_examples = False
+update_examples = True
 
 
 def write_flow_yaml(config: FlowJob | FlowJob, file_path: Path) -> None:
@@ -391,3 +391,17 @@ def test_recursive_include() -> None:
         FlowJob(includes=[FlowInclude(config_file_path=include_path)])
     )
     validate_config(job, "recursive_include_flow.yaml")
+
+
+def test_multiple_includes() -> None:
+    job = expand_includes(
+        FlowJob(
+            includes=[
+                FlowInclude(config_file_path="defaults_flow.py"),
+                FlowInclude(config_file_path="e2e_test_flow.py"),
+                FlowInclude(config_file_path="model_and_task_flow.py"),
+            ]
+        ),
+        base_path=str(Path(__file__).parent / "config"),
+    )
+    validate_config(job, "multiple_includes_flow.yaml")
