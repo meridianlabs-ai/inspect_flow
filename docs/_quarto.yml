@@ -6,6 +6,10 @@ project:
 metadata-files:
   - reference/_sidebar.yml
 
+filters:
+  - at: pre-quarto
+    path: reference/filter/interlink.lua
+
 website:
   title: "Inspect Flow"
   description: "Workflow orchestration for Inspect AI"
@@ -92,3 +96,6 @@ format:
     fig-height: 4
     syntax-definitions: 
       - jinja2.xml
+
+execute: 
+  enabled: false
