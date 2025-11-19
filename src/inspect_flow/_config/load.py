@@ -130,7 +130,7 @@ def _apply_auto_includes(
     job: FlowJob, config_file: str, config_options: ConfigOptions
 ) -> FlowJob:
     parent_dir = Path(config_file).parent
-    while exists(str(parent_dir)):
+    while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
         if exists(auto_file):
             auto_job = _load_config_from_file(
