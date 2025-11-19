@@ -223,7 +223,7 @@ class FlowModelDict(TypedDict):
     default: NotRequired[Optional[str]]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
     base_url: NotRequired[Optional[str]]
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[Optional[str]]
@@ -240,7 +240,7 @@ class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowConfig."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -255,9 +255,9 @@ class FlowOptionsDict(TypedDict):
     retry_cleanup: NotRequired[Optional[bool]]
     """Cleanup failed log files after retries (defaults to True)."""
     sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
-    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
+    """Sandbox environment type (or optionally a str or tuple with a shorthand spec)."""
     sandbox_cleanup: NotRequired[Optional[bool]]
-    """Cleanup sandbox environments after task completes (defaults to True)"""
+    """Cleanup sandbox environments after task completes (defaults to True)."""
     tags: NotRequired[Optional[Sequence[str]]]
     """Tags to associate with this evaluation run."""
     metadata: NotRequired[Optional[Mapping[str, Any]]]
@@ -271,11 +271,11 @@ class FlowOptionsDict(TypedDict):
     approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
     score: NotRequired[Optional[bool]]
-    """Score output (defaults to True)"""
+    """Score output (defaults to True)."""
     log_level: NotRequired[Optional[str]]
-    """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")"""
+    """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")."""
     log_level_transcript: NotRequired[Optional[str]]
-    """Level for logging to the log file (defaults to "info")"""
+    """Level for logging to the log file (defaults to "info")."""
     log_format: NotRequired[Optional[Literal["eval", "json"]]]
     """Format for writing log files (defaults to "eval", the native high-performance format)."""
     limit: NotRequired[Optional[int]]
@@ -287,29 +287,33 @@ class FlowOptionsDict(TypedDict):
     continue_on_fail: NotRequired[Optional[bool]]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
     retry_on_error: NotRequired[Optional[int]]
-    """Number of times to retry samples if they encounter errors (by default, no retries occur)."""
+    """Number of times to retry samples if they encounter errors (defaults to 3)."""
     debug_errors: NotRequired[Optional[bool]]
     """Raise task errors (rather than logging them) so they can be debugged (defaults to False)."""
     max_samples: NotRequired[Optional[int]]
-    """Maximum number of samples to run in parallel (default is max_connections)"""
+    """Maximum number of samples to run in parallel (default is max_connections)."""
     max_tasks: NotRequired[Optional[int]]
-    """Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)"""
+    """Maximum number of tasks to run in parallel (defaults is 10)."""
     max_subprocesses: NotRequired[Optional[int]]
-    """Maximum number of subprocesses to run in parallel (default is os.cpu_count())"""
+    """Maximum number of subprocesses to run in parallel (default is os.cpu_count())."""
     max_sandboxes: NotRequired[Optional[int]]
     """Maximum number of sandboxes (per-provider) to run in parallel."""
     log_samples: NotRequired[Optional[bool]]
-    """Log detailed samples and scores (defaults to True)"""
+    """Log detailed samples and scores (defaults to True)."""
     log_realtime: NotRequired[Optional[bool]]
-    """Log events in realtime (enables live viewing of samples in inspect view). Defaults to True."""
+    """Log events in realtime (enables live viewing of samples in inspect view) (defaults to True)."""
     log_images: NotRequired[Optional[bool]]
-    """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)"""
+    """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)."""
     log_buffer: NotRequired[Optional[int]]
     """Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems)."""
     log_shared: NotRequired[Optional[Union[bool, int]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
+    bundle_dir: NotRequired[Optional[str]]
+    """If specified, the log viewer and logs generated by this eval set will be bundled into this directory."""
+    bundle_overwrite: NotRequired[Optional[bool]]
+    """Whether to overwrite files in the bundle_dir. (defaults to False)."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
-    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True)."""
+    """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
 
 
 class FlowTaskDict(TypedDict):
@@ -330,7 +334,7 @@ class FlowTaskDict(TypedDict):
     model: NotRequired[Optional[Union[str, FlowModel]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[FlowGenerateConfig]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
@@ -383,7 +387,7 @@ class FlowTaskMatrixDict(TypedDict):
     model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Sequence[Optional[FlowGenerateConfig]]]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
     ]
@@ -418,11 +422,13 @@ class ResponseSchemaDict(TypedDict):
     strict: NotRequired[Optional[bool]]
 
 
-class FlowConfigDict(TypedDict):
-    """Configuration for a flow run."""
+class FlowJobDict(TypedDict):
+    """Configuration for a flow job."""
 
-    flow_dir: NotRequired[Optional[str]]
-    """Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'"""
+    log_dir: NotRequired[Optional[str]]
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job."""
+    new_log_dir: NotRequired[Optional[bool]]
+    """If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[FlowOptions]]
@@ -437,3 +443,5 @@ class FlowConfigDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the model."""
     tasks: NotRequired[Optional[Sequence[Union[str, FlowTask]]]]
     """Tasks to run"""
+    bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
+    """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""

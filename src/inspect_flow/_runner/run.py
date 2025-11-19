@@ -9,33 +9,31 @@ from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_config
 from inspect_flow._types.flow_types import (
-    FlowConfig,
+    FlowJob,
     FlowOptions,
 )
 
 
-def _read_config() -> FlowConfig:
+def _read_config() -> FlowJob:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
-        return FlowConfig.model_validate(data)
+        return FlowJob.model_validate(data)
 
 
-def _print_resolved_config(config: FlowConfig) -> None:
+def _print_resolved_config(config: FlowJob) -> None:
     resolved_config = resolve_config(config)
     dump = config_to_yaml(resolved_config)
     click.echo(dump)
 
 
-def _write_config_file(config: FlowConfig) -> None:
-    filename = f"{config.flow_dir}/{clean_filename_component(iso_now())}_flow.yaml"
+def _write_config_file(config: FlowJob) -> None:
+    filename = f"{config.log_dir}/{clean_filename_component(iso_now())}_flow.yaml"
     yaml = config_to_yaml(config)
     with file(filename, "w") as f:
         f.write(yaml)
 
 
-def _run_eval_set(
-    config: FlowConfig, dry_run: bool = False
-) -> tuple[bool, list[EvalLog]]:
+def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_config(config)
     tasks = instantiate_tasks(resolved_config)
 
@@ -43,19 +41,15 @@ def _run_eval_set(
         click.echo(f"eval_set would be called with {len(tasks)} tasks")
         return False, []
 
-    options = config.options or FlowOptions()
-    assert config.flow_dir, "flow_dir must be set before calling run_eval_set"
+    options = resolved_config.options or FlowOptions()
+    if not resolved_config.log_dir:
+        raise ValueError("log_dir must be set before running the flow job")
 
     _write_config_file(resolved_config)
 
-    log_dir = config.flow_dir + "/logs"
-    log_dir_allow_dirty = (
-        options.log_dir_allow_dirty if options.log_dir_allow_dirty is not None else True
-    )
-
-    return inspect_ai.eval_set(
+    result = inspect_ai.eval_set(
         tasks=tasks,
-        log_dir=log_dir,
+        log_dir=resolved_config.log_dir,
         retry_attempts=options.retry_attempts,
         retry_wait=options.retry_wait,
         retry_connections=options.retry_connections,
@@ -83,14 +77,16 @@ def _run_eval_set(
         # epochs= FlowTask
         fail_on_error=options.fail_on_error,
         continue_on_fail=options.continue_on_fail,
-        retry_on_error=options.retry_on_error,
+        retry_on_error=options.retry_on_error
+        if options.retry_on_error is not None
+        else 3,
         debug_errors=options.debug_errors,
         # message_limit= FlowTask
         # token_limit= FlowTask
         # time_limit= FlowTask
         # working_limit= FlowTask
         max_samples=options.max_samples,
-        max_tasks=options.max_tasks,
+        max_tasks=options.max_tasks if options.max_tasks is not None else 10,
         max_subprocesses=options.max_subprocesses,
         max_sandboxes=options.max_sandboxes,
         log_samples=options.log_samples,
@@ -98,11 +94,25 @@ def _run_eval_set(
         log_images=options.log_images,
         log_buffer=options.log_buffer,
         log_shared=options.log_shared,
-        # bundle_dir= Not supported
-        # bundle_overwrite= Not supported
-        log_dir_allow_dirty=log_dir_allow_dirty,
-        # kwargs= FlowConfig, FlowTask, and FlowModel allow setting the generate config
+        bundle_dir=options.bundle_dir,
+        bundle_overwrite=options.bundle_overwrite or False,
+        log_dir_allow_dirty=options.log_dir_allow_dirty,
+        # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
     )
+
+    if result[0]:
+        _print_bundle_url(resolved_config)
+
+    return result
+
+
+def _print_bundle_url(job: FlowJob) -> None:
+    if job.bundle_url_map and job.options and job.options.bundle_dir:
+        bundle_url = job.options.bundle_dir
+        for local, url in job.bundle_url_map.items():
+            bundle_url = bundle_url.replace(local, url)
+        if bundle_url != job.options.bundle_dir:
+            click.echo(f"Bundle URL: {bundle_url}")
 
 
 @click.group(invoke_without_command=True)

@@ -11,6 +11,7 @@ def config_options(f):
         "-s",
         multiple=True,
         type=str,
+        envvar="INSPECT_FLOW_SET",
         help="""
     Set config overrides.
 
@@ -29,6 +30,7 @@ def config_options(f):
         "--var",
         multiple=True,
         type=str,
+        envvar="INSPECT_FLOW_VAR",
         help="""
     Set variables accessible to code executing in the config file through the variable `__flow_vars__`:
     `task_min_priority = __flow_vars__.get("task_min_priority", 1)`
@@ -48,17 +50,31 @@ def config_options(f):
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
     f = click.option(
-        "--flow-dir",
-        type=str,
+        "--log-dir",
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=True,
+        ),
         default=None,
-        help="Override the flow directory specified in the config.",
-        envvar="INSPECT_FLOW_DIR",
+        help="Set the log directory. Will override the log_dir specified in the config.",
+        envvar="INSPECT_FLOW_LOG_DIR",
+    )(f)
+    f = click.option(
+        "--new-log-dir",
+        type=bool,
+        is_flag=True,
+        help="If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).",
+        envvar="INSPECT_FLOW_NEW_LOG_DIR",
     )(f)
     return f
 
 
 class ConfigOptionArgs(TypedDict, total=False):
-    flow_dir: str | None
+    log_dir: str | None
+    new_log_dir: bool | None
     limit: int | None
     set: list[str] | None
     var: list[str] | None
@@ -66,10 +82,12 @@ class ConfigOptionArgs(TypedDict, total=False):
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     overrides = list(kwargs.get("set") or [])  # set may be a tuple (at least in tests)
-    if flow_dir := kwargs.get("flow_dir"):
-        overrides.append(f"flow_dir={flow_dir}")
+    if log_dir := kwargs.get("log_dir"):
+        overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
+    if kwargs.get("new_log_dir"):
+        overrides.append("new_log_dir=True")
     return overrides
 
 

@@ -16,6 +16,7 @@ from inspect_flow._config.load import load_config
     "--resolve",
     type=bool,
     is_flag=True,
+    envvar="INSPECT_FLOW_RESOLVE",
     help="Fully resolve the config. Will create a venv and create all objects.",
 )
 @config_options
@@ -25,5 +26,5 @@ def config_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     config_options = parse_config_options(**kwargs)
-    fconfig = load_config(config_file, config_options=config_options)
+    fconfig = load_config(config_file, **config_options)
     config(fconfig, resolve=resolve)

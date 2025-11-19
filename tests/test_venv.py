@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from inspect_flow import FlowConfig, FlowTask
+from inspect_flow import FlowJob, FlowTask
 from inspect_flow._launcher.venv import create_venv
 
 
@@ -10,7 +10,7 @@ def test_no_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowConfig(tasks=[FlowTask(name="task_name")]),
+                config=FlowJob(tasks=[FlowTask(name="task_name")]),
                 temp_dir=temp_dir,
             )
 
@@ -29,7 +29,7 @@ def test_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowConfig(
+                config=FlowJob(
                     dependencies=["inspect_evals"],
                     tasks=[FlowTask(name="task_name")],
                 ),
@@ -52,7 +52,7 @@ def test_model_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowConfig(
+                config=FlowJob(
                     tasks=[
                         FlowTask(
                             name="task_name",
@@ -88,7 +88,7 @@ def test_python_version() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowConfig(
+                config=FlowJob(
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
                 ),

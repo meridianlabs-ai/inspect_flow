@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from inspect_ai._util.file import absolute_file_path
+
 config_path_key = "INSPECT_FLOW_CONFIG_PATH"
 cwd_path_key = "INSPECT_FLOW_CWD"
 
@@ -30,3 +32,18 @@ def find_file(file_path: str) -> str | None:
             return str(relative_path.resolve())
 
     return None
+
+
+def absolute_path(path: str) -> str:
+    absolute_path = absolute_file_path(path)
+    if absolute_path == path:
+        # Already an absolute path
+        return absolute_path
+
+    # Resolve relative path based on config path if set
+    if config_path := os.environ.get("INSPECT_FLOW_CONFIG_PATH"):
+        config_relative_path = Path(config_path).parent / path
+        return absolute_file_path(str(config_relative_path))
+
+    # Resolve relative path based on cwd
+    return absolute_path

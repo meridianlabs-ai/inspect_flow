@@ -1,4 +1,4 @@
-flow_dir: ./logs/flow_test
+log_dir: ./logs/flow_test
 options:
   limit: 1
 dependencies:

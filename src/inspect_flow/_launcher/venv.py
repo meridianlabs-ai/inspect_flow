@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
@@ -8,11 +9,16 @@ from typing import List, Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.flow_types import FlowConfig, FlowModel, FlowTask
+from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
 
 
-def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
+def create_venv(config: FlowJob, temp_dir: str) -> dict[str, str]:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
+    config.python_version = (
+        config.python_version
+        or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
             config.model_dump(mode="json", exclude_unset=True),
@@ -26,8 +32,7 @@ def create_venv(config: FlowConfig, temp_dir: str) -> dict[str, str]:
     env.pop("VIRTUAL_ENV", None)
 
     command = ["uv", "venv"]
-    if config.python_version:
-        command.extend(["--python", config.python_version])
+    command.extend(["--python", config.python_version])
     subprocess.run(
         command,
         cwd=temp_dir,
@@ -191,7 +196,7 @@ _providers = {
 }
 
 
-def _get_model_dependencies(config: FlowConfig) -> List[str]:
+def _get_model_dependencies(config: FlowJob) -> List[str]:
     model_dependencies: set[str] = set()
 
     def collect_dependency(model_name: str | None) -> None:

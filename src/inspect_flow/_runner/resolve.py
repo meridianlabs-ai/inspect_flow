@@ -1,3 +1,4 @@
+import sys
 from typing import Any, TypeAlias, TypeVar
 
 from inspect_ai._util.registry import registry_lookup
@@ -8,9 +9,9 @@ from pydantic import BaseModel
 
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowConfig,
     FlowDefaults,
     FlowGenerateConfig,
+    FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -26,13 +27,23 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def resolve_config(config: FlowConfig) -> FlowConfig:
+def _resolve_python_version() -> str:
+    return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+
+def resolve_config(config: FlowJob) -> FlowJob:
     resolved_tasks = []
     for task_config in config.tasks or []:
         resolved = _resolve_task(config, task_config)
         resolved_tasks.extend(resolved)
 
-    return config.model_copy(update={"tasks": resolved_tasks, "defaults": None})
+    return config.model_copy(
+        update={
+            "tasks": resolved_tasks,
+            "defaults": None,
+            "python_version": _resolve_python_version(),
+        }
+    )
 
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
@@ -70,7 +81,7 @@ def _merge_defaults(
     return config.__class__.model_validate(config_dict)
 
 
-def _resolve_model(config: str | FlowModel, flow_config: FlowConfig) -> FlowModel:
+def _resolve_model(config: str | FlowModel, flow_config: FlowJob) -> FlowModel:
     if isinstance(config, str):
         config = FlowModel(name=config)
     defaults = flow_config.defaults or FlowDefaults()
@@ -78,7 +89,7 @@ def _resolve_model(config: str | FlowModel, flow_config: FlowConfig) -> FlowMode
 
 
 def _resolve_model_roles(
-    config: ModelRolesConfig, flow_config: FlowConfig
+    config: ModelRolesConfig, flow_config: FlowJob
 ) -> ModelRolesConfig:
     roles = {}
     for role, model_config in config.items():
@@ -90,7 +101,7 @@ def _resolve_model_roles(
 
 
 def _resolve_single_solver(
-    config: str | FlowSolver, flow_config: FlowConfig
+    config: str | FlowSolver, flow_config: FlowJob
 ) -> FlowSolver:
     if isinstance(config, str):
         config = FlowSolver(name=config)
@@ -98,14 +109,14 @@ def _resolve_single_solver(
     return _merge_defaults(config, defaults.solver, defaults.solver_prefix)
 
 
-def _resolve_agent(config: FlowAgent, flow_config: FlowConfig) -> FlowAgent:
+def _resolve_agent(config: FlowAgent, flow_config: FlowJob) -> FlowAgent:
     defaults = flow_config.defaults or FlowDefaults()
     return _merge_defaults(config, defaults.agent, defaults.agent_prefix)
 
 
 def _resolve_solver(
     config: str | FlowSolver | list[str | FlowSolver] | FlowAgent,
-    flow_config: FlowConfig,
+    flow_config: FlowJob,
 ) -> FlowSolver | list[FlowSolver] | FlowAgent:
     if isinstance(config, str | FlowSolver):
         return _resolve_single_solver(config, flow_config)
@@ -116,7 +127,7 @@ def _resolve_solver(
     ]
 
 
-def _resolve_task(flow_config: FlowConfig, config: str | FlowTask) -> list[FlowTask]:
+def _resolve_task(flow_config: FlowJob, config: str | FlowTask) -> list[FlowTask]:
     if isinstance(config, str):
         config = FlowTask(name=config)
 

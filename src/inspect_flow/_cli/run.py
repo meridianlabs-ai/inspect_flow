@@ -26,5 +26,5 @@ def run_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     config_options = parse_config_options(**kwargs)
-    config = load_config(config_file, config_options=config_options)
+    config = load_config(config_file, **config_options)
     run(config, dry_run=dry_run)

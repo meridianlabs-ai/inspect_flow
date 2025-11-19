@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow import FlowConfig, FlowTask
+from inspect_flow import FlowJob, FlowTask
 from pydantic_core import to_jsonable_python
 
 
@@ -22,9 +22,9 @@ def _task_and_model(config: str | FlowTask) -> tuple[str | None, str | None]:
         return config.name, config.model_name
 
 
-def verify_test_logs(config: FlowConfig | FlowConfig, log_dir: str) -> None:
-    if isinstance(config, FlowConfig):
-        config = FlowConfig.model_validate(to_jsonable_python(config))
+def verify_test_logs(config: FlowJob | FlowJob, log_dir: str) -> None:
+    if isinstance(config, FlowJob):
+        config = FlowJob.model_validate(to_jsonable_python(config))
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)

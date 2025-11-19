@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from inspect_flow import (
-    FlowConfig,
     FlowDefaults,
     FlowGenerateConfig,
+    FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
@@ -13,7 +13,7 @@ from inspect_flow import (
 
 def test_task_from_string():
     task_name = "one_module/one_task"
-    config = FlowConfig(tasks=[task_name])
+    config = FlowJob(tasks=[task_name])
     assert config.tasks
     assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].name == task_name
@@ -23,7 +23,7 @@ def test_model_from_string():
     model_name = "module/model"
     model_role = "mark"
     model_name2 = "module/model2"
-    config = FlowConfig(
+    config = FlowJob(
         tasks=[
             FlowTask(
                 name="module/task",
@@ -44,7 +44,7 @@ def test_solver_from_string():
     solver_name = "module/solver"
     solver_name2 = "module/solver2"
     solver_name3 = "module/solver3"
-    config = FlowConfig(
+    config = FlowJob(
         tasks=[
             FlowTask(name="module/task", solver=solver_name),
             FlowTask(name="module/task", solver=[solver_name2, solver_name3]),

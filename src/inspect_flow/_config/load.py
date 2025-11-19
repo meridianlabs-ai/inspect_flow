@@ -6,17 +6,16 @@ from typing import Any, TypeAlias
 
 import click
 import yaml
-from attr import dataclass
 from inspect_ai._util.file import file
 from pydantic_core import ValidationError, to_jsonable_python
+from typing_extensions import TypedDict, Unpack
 
-from inspect_flow._types.flow_types import FlowConfig
+from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import set_config_path_env_var
 
 
-@dataclass
-class ConfigOptions:
+class ConfigOptions(TypedDict, total=False):
     """Options for loading a configuration file.
 
     Attributes:
@@ -24,28 +23,27 @@ class ConfigOptions:
         flow_vars: A dictionary available as '__flow_vars__' when loading the config.
     """
 
-    overrides: list[str] = []
-    flow_vars: dict[str, str] = {}
+    overrides: list[str]
+    flow_vars: dict[str, str]
 
 
-def load_config(
-    config_file: str, config_options: ConfigOptions | None = None
-) -> FlowConfig:
+def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     """Load a configuration file and apply any overrides.
 
     Args:
         config_file: The path to the configuration file.
-        config_options: Options for loading the config.
+        **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
-    config_options = config_options or ConfigOptions()
-    config = _load_config_from_file(config_file, config_options.flow_vars)
+    config_options = ConfigOptions(**kwargs)
+    config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
     set_config_path_env_var(config_file)
-    if config_options.overrides:
-        return _apply_overrides(config, config_options.overrides)
+    overrides = config_options.get("overrides", [])
+    if overrides:
+        return _apply_overrides(config, overrides)
     return config
 
 
-def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowConfig:
+def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
     config_path = Path(config_file)
 
     try:
@@ -56,11 +54,11 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
                     )
-                if isinstance(result, FlowConfig):
-                    result = FlowConfig.model_validate(to_jsonable_python(result))
-                elif not isinstance(result, FlowConfig):
+                if isinstance(result, FlowJob):
+                    result = FlowJob.model_validate(to_jsonable_python(result))
+                elif not isinstance(result, FlowJob):
                     raise TypeError(
-                        f"Expected FlowConfig from Python config file, got {type(result)}"
+                        f"Expected FlowJob from Python config file, got {type(result)}"
                     )
                 return result
             elif config_path.suffix in [".yaml", ".yml"]:
@@ -72,7 +70,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
                     f"Unsupported config file format: {config_path.suffix}. "
                     "Supported formats: .py, .yaml, .yml, .json"
                 )
-            return FlowConfig.model_validate(data)
+            return FlowJob.model_validate(data)
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
@@ -81,7 +79,6 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowC
 
 def _maybe_json(value: str) -> Any:
     try:
-        print(f"Trying to parse JSON value: {value}")
         return json.loads(value)
     except json.JSONDecodeError:
         return value
@@ -125,11 +122,11 @@ def _deep_merge(base: dict[str, Any], override: _OverrideDict) -> dict[str, Any]
     return base
 
 
-def _apply_overrides(config: FlowConfig, overrides: list[str]) -> FlowConfig:
+def _apply_overrides(config: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
     base_dict = config.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge(base_dict, overrides_dict)
-    return FlowConfig.model_validate(merged_dict)
+    return FlowJob.model_validate(merged_dict)
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

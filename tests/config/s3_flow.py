@@ -1,7 +1,7 @@
-from inspect_flow import FlowConfig, FlowOptions, tasks_matrix
+from inspect_flow import FlowJob, FlowOptions, tasks_matrix
 
-FlowConfig(
-    flow_dir="s3://inspect-flow-test/flow_logs/test2",
+FlowJob(
+    log_dir="s3://inspect-flow-test/flow_logs/test2",
     options=FlowOptions(limit=1),
     dependencies=[
         "./tests/config/local_eval",

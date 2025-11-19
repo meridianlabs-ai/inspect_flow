@@ -53,7 +53,7 @@ class FlowModel(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowConfig.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
     )
 
     base_url: str | None = Field(
@@ -168,7 +168,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: FlowGenerateConfig | None = Field(
         default=None,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowConfig. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None = Field(
@@ -286,12 +286,12 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     sandbox: SandboxEnvironmentType | None = Field(
         default=None,
-        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
+        description="Sandbox environment type (or optionally a str or tuple with a shorthand spec).",
     )
 
     sandbox_cleanup: bool | None = Field(
         default=None,
-        description="Cleanup sandbox environments after task completes (defaults to True)",
+        description="Cleanup sandbox environments after task completes (defaults to True).",
     )
 
     tags: list[str] | None = Field(
@@ -317,17 +317,17 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
     score: bool | None = Field(
-        default=None, description="Score output (defaults to True)"
+        default=None, description="Score output (defaults to True)."
     )
 
     log_level: str | None = Field(
         default=None,
-        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")',
+        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning").',
     )
 
     log_level_transcript: str | None = Field(
         default=None,
-        description='Level for logging to the log file (defaults to "info")',
+        description='Level for logging to the log file (defaults to "info").',
     )
 
     log_format: Literal["eval", "json"] | None = Field(
@@ -356,7 +356,7 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     retry_on_error: int | None = Field(
         default=None,
-        description="Number of times to retry samples if they encounter errors (by default, no retries occur).",
+        description="Number of times to retry samples if they encounter errors (defaults to 3).",
     )
 
     debug_errors: bool | None = Field(
@@ -366,17 +366,17 @@ class FlowOptions(BaseModel, extra="forbid"):
 
     max_samples: int | None = Field(
         default=None,
-        description="Maximum number of samples to run in parallel (default is max_connections)",
+        description="Maximum number of samples to run in parallel (default is max_connections).",
     )
 
     max_tasks: int | None = Field(
         default=None,
-        description="Maximum number of tasks to run in parallel(defaults to the greater of 4 and the number of models being evaluated)",
+        description="Maximum number of tasks to run in parallel (defaults is 10).",
     )
 
     max_subprocesses: int | None = Field(
         default=None,
-        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count())",
+        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count()).",
     )
 
     max_sandboxes: int | None = Field(
@@ -385,17 +385,17 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
     log_samples: bool | None = Field(
-        default=None, description="Log detailed samples and scores (defaults to True)"
+        default=None, description="Log detailed samples and scores (defaults to True)."
     )
 
     log_realtime: bool | None = Field(
         default=None,
-        description="Log events in realtime (enables live viewing of samples in inspect view). Defaults to True.",
+        description="Log events in realtime (enables live viewing of samples in inspect view) (defaults to True).",
     )
 
     log_images: bool | None = Field(
         default=None,
-        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)",
+        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False).",
     )
 
     log_buffer: int | None = Field(
@@ -408,9 +408,19 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
     )
 
+    bundle_dir: str | None = Field(
+        default=None,
+        description="If specified, the log viewer and logs generated by this eval set will be bundled into this directory.",
+    )
+
+    bundle_overwrite: bool | None = Field(
+        default=None,
+        description="Whether to overwrite files in the bundle_dir. (defaults to False).",
+    )
+
     log_dir_allow_dirty: bool | None = Field(
         default=None,
-        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to True).",
+        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
 
@@ -457,12 +467,17 @@ class FlowDefaults(BaseModel, extra="forbid"):
     )
 
 
-class FlowConfig(BaseModel, extra="forbid"):
-    """Configuration for a flow run."""
+class FlowJob(BaseModel, extra="forbid"):
+    """Configuration for a flow job."""
 
-    flow_dir: str | None = Field(
+    log_dir: str | None = Field(
         default=None,
-        description="Output path for flow data and logging results (required to ensure that a unique storage scope is assigned). Defaults to 'logs/flow'",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job.",
+    )
+
+    new_log_dir: bool | None = Field(
+        default=None,
+        description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
     )
 
     python_version: str | None = Field(
@@ -494,6 +509,11 @@ class FlowConfig(BaseModel, extra="forbid"):
 
     tasks: Sequence[str | FlowTask] | None = Field(
         default=None, description="Tasks to run"
+    )
+
+    bundle_url_map: dict[str, str] | None = Field(
+        default=None,
+        description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
     )
 
     # Convert single items to lists
