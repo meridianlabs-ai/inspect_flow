@@ -49,7 +49,7 @@ def render_docs(elem: pf.Header, docs: DocObject) -> list[pf.Element]:
     return elements
 
 
-def render_attributes(attribs: list[DocAttribute]) -> pf.Table:
+def render_attributes(attribs: list[DocAttribute]) -> pf.Table | pf.DefinitionList:
     return render_element_list(attribs)
 
 
@@ -79,7 +79,7 @@ def render_method_definition_item(method: DocFunction) -> pf.DefinitionItem:
     )
 
 
-def render_params(params: list[DocParameter]) -> pf.Table | pf.Div:
+def render_params(params: list[DocParameter]) -> pf.Table | pf.Div | pf.DefinitionList:
     if len(params) > 0:
         return render_element_list(params)
     else:
