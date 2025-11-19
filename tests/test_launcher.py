@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import FlowJob
-from inspect_flow._config.load import ConfigOptions, load_config
+from inspect_flow._config.load import load_config
 from inspect_flow._launcher.launch import _new_log_dir, launch
 
 
@@ -156,7 +156,7 @@ def test_relative_bundle_dir() -> None:
     ):
         job = load_config(
             "./tests/config/e2e_test_flow.py",
-            config_options=ConfigOptions(overrides=["options.bundle_dir=bundle_dir"]),
+            overrides=["options.bundle_dir=bundle_dir"],
         )
         launch(config=job)
 

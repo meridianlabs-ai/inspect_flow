@@ -6,17 +6,16 @@ from typing import Any, TypeAlias
 
 import click
 import yaml
-from attr import dataclass
 from inspect_ai._util.file import file
 from pydantic_core import ValidationError, to_jsonable_python
+from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import set_config_path_env_var
 
 
-@dataclass
-class ConfigOptions:
+class ConfigOptions(TypedDict, total=False):
     """Options for loading a configuration file.
 
     Attributes:
@@ -24,24 +23,23 @@ class ConfigOptions:
         flow_vars: A dictionary available as '__flow_vars__' when loading the config.
     """
 
-    overrides: list[str] = []
-    flow_vars: dict[str, str] = {}
+    overrides: list[str]
+    flow_vars: dict[str, str]
 
 
-def load_config(
-    config_file: str, config_options: ConfigOptions | None = None
-) -> FlowJob:
+def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     """Load a configuration file and apply any overrides.
 
     Args:
         config_file: The path to the configuration file.
-        config_options: Options for loading the config.
+        **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
-    config_options = config_options or ConfigOptions()
-    config = _load_config_from_file(config_file, config_options.flow_vars)
+    config_options = ConfigOptions(**kwargs)
+    config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
     set_config_path_env_var(config_file)
-    if config_options.overrides:
-        return _apply_overrides(config, config_options.overrides)
+    overrides = config_options.get("overrides", [])
+    if overrides:
+        return _apply_overrides(config, overrides)
     return config
 
 

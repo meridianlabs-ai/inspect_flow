@@ -6,7 +6,6 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
-from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._version import __version__
 
@@ -63,9 +62,8 @@ def test_run_command_overrides() -> None:
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            config_options=ConfigOptions(
-                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
-            ),
+            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            flow_vars={},
         )
 
         # Verify that run was called with the config object and file path
@@ -97,7 +95,8 @@ def test_run_command_new_log_dir() -> None:
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            config_options=ConfigOptions(overrides=["new_log_dir=True"]),
+            overrides=["new_log_dir=True"],
+            flow_vars={},
         )
 
         # Verify that run was called with the config object and file path
@@ -129,9 +128,8 @@ def test_config_command_overrides() -> None:
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            config_options=ConfigOptions(
-                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
-            ),
+            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            flow_vars={},
         )
 
 
@@ -158,9 +156,8 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         # Verify that load_config was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            config_options=ConfigOptions(
-                overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"]
-            ),
+            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            flow_vars={},
         )
 
 
@@ -177,7 +174,7 @@ def test_run_command_dry_run() -> None:
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once_with(CONFIG_FILE, config_options=ConfigOptions())
+        mock_config.assert_called_once_with(CONFIG_FILE, flow_vars={}, overrides=[])
 
         mock_run.assert_called_once_with(mock_config_obj, dry_run=True)
 
@@ -198,10 +195,7 @@ def test_run_command_flow_vars() -> None:
         assert result.exit_code == 0
 
         mock_config.assert_called_once_with(
-            CONFIG_FILE,
-            config_options=ConfigOptions(
-                flow_vars={"var1": "value1", "var2": "value2"}
-            ),
+            CONFIG_FILE, flow_vars={"var1": "value1", "var2": "value2"}, overrides=[]
         )
 
         mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
@@ -220,7 +214,7 @@ def test_config_command_resolve() -> None:
 
         assert result.exit_code == 0
 
-        mock_load.assert_called_once_with(CONFIG_FILE, config_options=ConfigOptions())
+        mock_load.assert_called_once_with(CONFIG_FILE, flow_vars={}, overrides=[])
 
         mock_config.assert_called_once_with(mock_config_obj, resolve=True)
 
