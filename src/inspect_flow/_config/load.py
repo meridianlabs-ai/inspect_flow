@@ -68,7 +68,7 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJ
             else:
                 raise ValueError(
                     f"Unsupported config file format: {config_path.suffix}. "
-                    "Supported formats: .yaml, .yml, .json"
+                    "Supported formats: .py, .yaml, .yml, .json"
                 )
             return FlowJob.model_validate(data)
     except ValidationError as e:

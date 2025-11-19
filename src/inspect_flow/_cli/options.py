@@ -16,9 +16,9 @@ def config_options(f):
     Set config overrides.
 
     Examples:
-      --set defaults.solver.args.tool_calls=none
-      --set options.limit=10
-      --set options.metadata={"key1": "val1", "key2": "val2"}
+      `--set defaults.solver.args.tool_calls=none`
+      `--set options.limit=10`
+      `--set options.metadata={"key1": "val1", "key2": "val2"}`
 
     The specified value may be a string or json parsable list or dict.
     If string is provided then it will be appended to existing list values.
@@ -35,9 +35,8 @@ def config_options(f):
     Set variables accessible to code executing in the config file through the variable `__flow_vars__`:
     `task_min_priority = __flow_vars__.get("task_min_priority", 1)`
 
-
     Examples:
-      --var task_min_priority=2
+      `--var task_min_priority=2`
 
     If the same key is provided multiple times, later values will override earlier ones.
     """,
@@ -46,7 +45,7 @@ def config_options(f):
         "--limit",
         type=int,
         default=None,
-        help="Limit the number of tasks to run.",
+        help="Limit the number of samples to run.",
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
     f = click.option(

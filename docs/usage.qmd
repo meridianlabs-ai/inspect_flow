@@ -1,0 +1,992 @@
+---
+title: "Using Flow"
+tbl-colwidths: [30,70]
+---
+
+## Core Concepts
+
+### Flow Type System
+
+Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
+
+-   **`FlowJob`** — The top-level job definition. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html). Contains a list of tasks and job settings.
+-   **`FlowTask`** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
+-   **`FlowModel`** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
+-   **`FlowGenerateConfig`** — Model generation parameters. Maps to Inspect AI [GenerateConfig](https://inspect.aisi.org.uk/models.html#generation-config).
+-   **`FlowSolver`** and **`FlowAgent`** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
+-   **`FlowOptions`** — Runtime execution options like concurrency limits, error handling, and logging preferences. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/eval-sets.html) parameters.
+-   **`FlowDefaults`** — System for setting default values across tasks, models, solvers, and agents.
+
+### Flow Config Structure
+
+`FlowJob` is the primary interface for defining Flow workflows. All Flow operations—including [parameter sweeps and matrix expansions](#parameter-sweeping)—ultimately produce a list of tasks that `FlowJob` executes.
+
+**Required fields:**
+
+-   **`tasks`** — List of `FlowTask` objects defining the evaluations to run
+
+**Optional fields:**
+
+| Field | Description | Default |
+|------------------|--------------------------------|----------------------|
+| `flow_dir` | Directory for logs and resolved config. Supports S3 paths (e.g., `s3://bucket/path`) | `"logs/flow"` |
+| `python_version` | Python version for the isolated virtual environment (e.g., `"3.11"`) | Same as current environment |
+| `dependencies` | PyPI packages, Git URLs, or local paths to install | `[]` |
+| `env` | Environment variables to set in the workflow execution context | `{}` |
+| `options` | Runtime options (see `FlowOptions` reference) | `None` |
+| `defaults` | Default values applied across tasks, models, and solvers | `None` |
+
+## Creating Flow Configs
+
+### Your First Config
+
+In [Basic Examples](index.qmd#basic-examples), we showed a simple `FlowJob`. Let's break down what's happening:
+
+``` {.python filename="config.py"}
+from inspect_flow import FlowJob, FlowTask
+
+
+FlowJob(
+    dependencies=["inspect-evals"],             # <1>
+    tasks=[                                     # <2>
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",  # <3>
+            model="openai/gpt-5",               # <4>
+        ),
+    ],
+)
+```
+
+1.  Install [`inspect-evals`](https://pypi.org/project/inspect-evals/) Python package
+
+2.  List evaluation tasks to run
+
+3.  Specify task from registry by name
+
+4.  Specify model to evaluate by name
+
+To run the task, run the following command in your shell.
+
+``` bash
+flow run config.py
+```
+
+**What happens when you run this?**
+
+1.  Flow creates an isolated virtual environment
+2.  Installs `inspect-evals` and `openai` (inferred from model)
+3.  Loads the `gpqa_diamond` task from the `inspect_evals` registry
+4.  Runs the evaluation with GPT-5
+5.  Stores results in `logs/flow/` (default log directory)
+
+::: callout-note
+### Config File Evaluation
+
+Python config files are evaluated as normal Python code. The last expression in the file is used as the `FlowJob`. This means you can:
+
+-   Define variables and reuse them
+-   Use loops or comprehensions to generate task lists
+-   Import helper functions
+-   Add comments and documentation
+
+Flow configs are just Python!
+:::
+
+### Task Specification
+
+In the example above, we used a registry name (`"inspect_evals/gpqa_diamond"`). Flow supports multiple ways to reference tasks:
+
+::: {.panel-tabset .code-tabset}
+#### Registry Name
+
+``` python
+FlowTask(
+    name="inspect_evals/gpqa_diamond",
+    model="openai/gpt-5"
+)
+```
+
+Tasks from installed packages.
+
+#### File Path
+
+``` python
+FlowTask(
+    name="./my_task.py",
+    model="openai/gpt-5"
+)
+```
+
+Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them.
+
+#### File with Function
+
+``` python
+FlowTask(
+    name="./my_task.py@custom_eval",
+    model="openai/gpt-5"
+)
+```
+
+Explicitly selects a specific function from the file.
+:::
+
+### Task Configuration
+
+`FlowTask` accepts parameters that map to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) fields:
+
+``` python
+FlowTask(
+    name="inspect_evals/mmlu_0_shot",   # <1>
+    model="openai/gpt-5",               # <2>
+    epochs=3,                           # <3>
+    config=FlowGenerateConfig(          # <4>
+        temperature=0.7,                # <4>
+        max_tokens=1000,                # <4>
+    ),                                  # <4>
+    solver="chain_of_thought",          # <5>
+    args={"subject": "physics"},        # <6>
+    sandbox="docker",                   # <7>
+    sample_id=[0, 1, 2],                # <8>
+)
+```
+
+1.  **Task name** — Maps to Inspect AI `Task.name`. Can be a registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`).
+
+2.  **Model** — Maps to Inspect AI `Task.model`. Optional model for this task. If not specified, uses the model from `INSPECT_EVAL_MODEL` environment variable. Can be a string (`"openai/gpt-5"`) or a `FlowModel` object for advanced configuration.
+
+3.  **Epochs** — Maps to Inspect AI `Task.epochs`. Number of times to repeat evaluation over the dataset samples. Can be an integer (`epochs=3`) or a `FlowEpochs` object to specify custom reducer functions (`FlowEpochs(epochs=3, reducer="median")`). By default, scores are combined using the `"mean"` reducer across epochs.
+
+4.  **Generation config** — Maps to Inspect AI `Task.config` (`GenerateConfig`). Model generation parameters like `temperature`, `max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override config on `FlowJob.config` but are overridden by settings on `FlowModel.config`.
+
+5.  **Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s) for solving the task. Can be a string (`"chain_of_thought"`), `FlowSolver` object, `FlowAgent` object, or a list of solvers for chaining. Defaults to `generate()` if not specified.
+
+6.  **Task arguments** — Maps to task function parameters. Dictionary of arguments passed to the task constructor or `@task` decorated function. Enables parameterization of tasks (e.g., selecting dataset subsets, configuring difficulty levels).
+
+7.  **Sandbox environment** — Maps to Inspect AI `Task.sandbox`. Can be a string (`"docker"`, `"local"`), a tuple with additional config, or a `SandboxEnvironmentType` object.
+
+8.  **Sample selection** — Evaluate specific samples from the dataset. Accepts a single ID (`sample_id=0`), list of IDs (`sample_id=[0, 1, 2]`), or list of string IDs.
+
+### Model Specification
+
+Models can be specified as simple strings or as `FlowModel` objects for more control:
+
+::: {.panel-tabset .code-tabset}
+#### Simple string
+
+For simple use cases:
+
+``` python
+FlowTask(name="task", model="openai/gpt-5")
+```
+
+#### FlowModel
+
+For advanced config:
+
+``` python
+from inspect_flow.types import FlowModel, FlowGenerateConfig
+
+FlowTask(
+    name="task",
+    model=FlowModel(
+        name="openai/gpt-5",
+        config=FlowGenerateConfig(
+            reasoning_effort="medium",
+            max_connections=10,
+        ),
+        base_url="https://custom-endpoint.com",
+        api_key="${CUSTOM_API_KEY}",
+    )
+)
+```
+
+#### Multi-model tasks
+
+For agent evaluations with multiple roles:
+
+``` python
+FlowTask(
+    name="multi_agent_task",
+    model_roles={
+        "assistant": "openai/gpt-5",
+        "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+:::
+
+::: callout-tip
+### When to use FlowModel
+
+Use `FlowModel` when you need to:
+
+-   Set model-specific generation configs
+-   Use custom API endpoints
+-   Configure API keys per model
+-   Organize complex multi-model setups
+:::
+
+## Dependency Management
+
+Inspect Flow automatically creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.
+
+### How Virtual Environments Work
+
+When you run `flow run config.py`, Flow:
+
+1.  Creates a temporary virtual environment in `~/.cache/inspect-flow/` with [`uv`](https://github.com/astral-sh/uv)
+2.  Installs your specified dependencies plus auto-detected model provider packages
+3.  Executes your evaluations in this isolated environment
+4.  Cleans up the temporary environment after completion (logs persist in `flow_dir`)
+
+### Specifying Dependencies
+
+The `dependencies` field in `FlowJob` accepts multiple types of package specifiers:
+
+::: {.panel-tabset .code-tabset}
+#### PyPI Packages
+
+``` python
+FlowJob(
+    dependencies=[
+        "inspect-evals",
+        "pandas==2.0.0",
+    ],
+    tasks=[...]
+)
+```
+
+Standard PyPI package names with optional version specifiers.
+
+#### Git Repositories
+
+``` python
+FlowJob(
+    dependencies=[
+        "git+https://github.com/UKGovernmentBEIS/inspect_evals@ef181cd",
+    ],
+    tasks=[...]
+)
+```
+
+Install directly from Git repositories. Use `@commit_hash` to pin to specific versions for repeatability.
+
+#### Local Packages
+
+``` python
+FlowJob(
+    dependencies=[
+        "./my_custom_eval",
+        "../shared/utils",
+    ],
+    tasks=[...]
+)
+```
+
+Install local packages using relative or absolute paths.
+:::
+
+### Python Version Control
+
+Specify the Python version for your job's virtual environment:
+
+``` python
+FlowJob(
+    python_version="3.11",
+    dependencies=["inspect-evals"],
+    tasks=[...]
+)
+```
+
+::: callout-tip
+### Checking Python Version
+
+To verify which Python version will be used, run:
+
+``` bash
+flow config config.py --resolve
+```
+
+This shows the resolved configuration including the Python version that will be used.
+:::
+
+::: callout-tip
+### Repeatability Best Practices
+
+For repeatable workflows:
+
+-   Pin PyPI package versions: `"inspect-evals==0.3.15"`
+-   Pin Git commits: `"git+https://github.com/user/repo@commit_hash"`
+-   Specify `python_version` explicitly
+:::
+
+## Defaults and Overrides {#defaults-and-overrides}
+
+Inspect Flow provides a powerful defaults system to avoid repetition when configuring evaluations. The `FlowDefaults` field lets you set default values that cascade across tasks, models, solvers, and agents—with more specific settings overriding less specific ones.
+
+### The FlowDefaults System
+
+`FlowDefaults` supports multiple levels of default configuration:
+
+``` python
+from inspect_flow import FlowJob, FlowDefaults, FlowGenerateConfig, FlowModel
+
+FlowJob(
+    defaults=FlowDefaults(
+        config=FlowGenerateConfig(                      # <1>
+            max_connections=10,                         # <1>
+        ),                                              # <1>
+        model=FlowModel(                                # <2>
+            model_args={"arg": "foo"},                  # <2>
+        ),                                              # <2>
+        model_prefix={                                  # <3>
+            "openai/": FlowModel(                       # <3>
+                config=FlowGenerateConfig(              # <3>
+                    max_connections=20                  # <3>
+                ),                                      # <3>
+            ),                                          # <3>
+        },                                              # <3>
+        solver=FlowSolver(...),                         # <4>
+        solver_prefix={"chain_of_thought": ...},        # <5>
+        agent=FlowAgent(...),                           # <6>
+        agent_prefix={"inspect/": ...},                 # <7>
+        task=FlowTask(...),                             # <8>
+        task_prefix={"inspect_evals/": ...},            # <9>
+    ),
+    tasks=[...]
+)
+```
+
+1.  Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.
+
+2.  Field defaults for models.
+
+3.  Model defaults for model name prefixes. Overrides `FlowDefaults.config` and `FlowDefaults.model`. If multiple prefixes match, **longest prefix wins**.
+
+4.  Field defaults for solvers.
+
+5.  Solver defaults for solver name prefixes. Overrides `FlowDefaults.solver`.
+
+6.  Field defaults for tasks.
+
+7.  Task defaults for task name prefixes. Overrides `FlowDefaults.config` and `FlowDefaults.task`. If multiple prefixes match, **longest prefix wins**.
+
+### Merge Priority and Behavior
+
+Defaults follow a clear hierarchy where **more specific settings override less specific ones**:
+
+**For Models:**
+
+1.  Global config defaults (`defaults.config`)
+2.  Global model defaults (`defaults.model`)
+3.  Model prefix defaults (`defaults.model_prefix`)
+4.  Task-specific config (`task.config`)
+5.  Model-specific config (`model.config`) — **highest priority**
+
+**Example hierarchy in action:**
+
+``` python
+FlowJob(
+    defaults=FlowDefaults(
+        config=FlowGenerateConfig(
+            temperature=0.0,        # <1>
+            max_tokens=100,         # <1>
+        ),
+        model_prefix={
+            "openai/": FlowModel(
+                config=FlowGenerateConfig(temperature=0.5)  # <2>
+            )
+        },
+    ),
+    tasks=[
+        FlowTask(
+            name="task",
+            config=FlowGenerateConfig(temperature=0.7),  # <3>
+            model=FlowModel(
+                name="openai/gpt-4o",
+                config=FlowGenerateConfig(temperature=1.0)  # <4>
+            ),
+        )
+    ]
+)
+```
+
+1.  Global defaults: `temperature=0.0, max_tokens=100`
+2.  Prefix defaults override: `temperature=0.5` (for OpenAI models)
+3.  Task config overrides: `temperature=0.7`
+4.  **Model config wins**: `temperature=1.0, max_tokens=100`
+
+**Final result:** `temperature=1.0` (most specific), `max_tokens=100` (from global defaults)
+
+::: callout-note
+### None Values Don't Override
+
+Setting a field to `None` means "not specified" — it won't override existing values from defaults. This allows partial configs to merge cleanly:
+
+``` python
+FlowTask(
+    config=FlowGenerateConfig(temperature=0.5, max_tokens=None)
+)
+```
+
+The `max_tokens=None` doesn't override a default `max_tokens` value; it's simply not set at this level.
+:::
+
+### CLI Overrides {#cli-overrides}
+
+Override config values at runtime using the `--set` flag:
+
+**Basic usage:**
+
+``` bash
+flow run config.py --set flow_dir=./custom_logs
+```
+
+**Nested paths:**
+
+``` bash
+flow run config.py --set options.limit=10
+flow run config.py --set defaults.solver.args.tool_calls=none
+```
+
+**JSON dicts:**
+
+``` bash
+flow run config.py --set 'options.metadata={"experiment": "baseline", "version": "v1"}'
+```
+
+**Multiple overrides:**
+
+``` bash
+flow run config.py \
+  --set flow_dir=./logs/experiment1 \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5
+```
+
+::: callout-note
+### Override Behavior
+
+-   **Strings**: Replace existing values
+-   **Dicts**: Replace existing values
+-   **Lists**:
+    -   String values append to existing list
+    -   Lists replace existing list
+
+**Examples:**
+
+``` bash
+# Appends to list
+--set dependencies=new_package
+
+# Replaces list
+--set 'dependencies=["pkg1", "pkg2"]'
+```
+:::
+
+### Environment Variables
+
+Set config values via environment variables:
+
+``` bash
+export INSPECT_FLOW_DIR=./logs/custom
+export INSPECT_FLOW_LIMIT=50
+flow run config.py
+```
+
+**Supported environment variables:**
+
+| Variable             | Equivalent Flag | Description             |
+|----------------------|-----------------|-------------------------|
+| `INSPECT_FLOW_DIR`   | `--flow-dir`    | Override log directory  |
+| `INSPECT_FLOW_LIMIT` | `--limit`       | Limit number of samples |
+
+::: callout-tip
+### Override Priority
+
+Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
+
+Dedicated environment variables (see **Supported environment variables** above) and corresponding CLI flags will override the `--set` flag.
+
+Dedicated CLI flags have the highest priority.
+
+Priority order of `flow-dir` and `limit`:
+
+1.  FlowJob defaults
+2.  Explicit setting on the FlowJob
+3.  CLI `--set` flags
+4.  Environment variables
+5.  Explitic `--flow-dir` and `--limit` CLI flags
+
+All other settings follow the priority order:
+
+1.  FlowJob defaults
+2.  Explicit setting on the FlowJob
+3.  CLI `--set` flags
+
+:::
+
+### Debugging Defaults Resolution
+
+To see the fully resolved configuration with all defaults applied:
+
+``` bash
+flow config config.py --resolve
+```
+
+This shows exactly what settings each task will use after applying all defaults and overrides.
+
+## Parameter Sweeping {#parameter-sweeping}
+
+Parameter sweeping lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and "with" functions to declaratively generate evaluation grids.
+
+### Matrix Functions (Cartesian Products)
+
+Matrix functions generate all combinations of their parameters using Cartesian products.
+
+#### tasks_matrix()
+
+Generate task configurations by combining tasks with models, configs, solvers, and arguments:
+
+``` python
+from inspect_flow import FlowJob, tasks_matrix
+
+
+FlowJob(
+    tasks=tasks_matrix(
+        task=["inspect_evals/gpqa_diamond", "inspect_evals/mmlu_0_shot"],
+        model=["openai/gpt-4o", "anthropic/claude-3-5-sonnet"],
+    )
+)
+```
+
+This creates **4 tasks** (2 tasks × 2 models).
+
+**Available parameters:**
+
+-   `task`: Single task or list of tasks (required)
+-   `model`: Single model or list of models
+-   `config`: List of `FlowGenerateConfig` objects
+-   `solver`: List of solvers
+-   `args`: List of argument dictionaries for task constructors
+-   `model_roles`: List of role-to-model mappings (for multi-model tasks)
+
+#### models_matrix()
+
+Generate model configurations with different generation settings:
+
+``` python
+from inspect_flow import FlowJob, FlowGenerateConfig, tasks_matrix, models_matrix
+
+
+FlowJob(
+    tasks=tasks_matrix(
+        task="inspect_evals/gpqa_diamond",
+        model=models_matrix(
+            model=["openai/gpt-4o", "openai/gpt-4o-mini"],
+            config=[
+                FlowGenerateConfig(temperature=0.0),
+                FlowGenerateConfig(temperature=0.5),
+                FlowGenerateConfig(temperature=1.0),
+            ]
+        )
+    )
+)
+```
+
+This creates **6 tasks** (1 task × 2 models × 3 temperatures).
+
+#### configs_matrix()
+
+Generate generation config combinations by specifying individual parameters:
+
+``` python
+from inspect_flow import FlowJob, tasks_matrix, models_matrix, configs_matrix
+
+
+FlowJob(
+    tasks=tasks_matrix(
+        task="inspect_evals/gpqa_diamond",
+        model=models_matrix(
+            model=["openai/gpt-4o", "openai/gpt-4o-mini"],
+            config=configs_matrix(
+                temperature=[0.0, 0.5, 1.0],
+                max_tokens=[1000, 2000],
+            )
+        )
+    )
+)
+```
+
+This creates **12 tasks** (1 task × 2 models × 3 temperatures × 2 max_tokens).
+
+#### solvers_matrix() and agents_matrix()
+
+Generate solver or agent configurations with different arguments:
+
+``` python
+from inspect_flow import FlowJob, tasks_matrix, solvers_matrix
+
+FlowJob(
+    tasks=tasks_matrix(
+        task="my_task",
+        solver=solvers_matrix(
+            solver="chain_of_thought",
+            args=[
+                {"max_iterations": 3},
+                {"max_iterations": 5},
+                {"max_iterations": 10},
+            ]
+        )
+    )
+)
+```
+
+This creates **3 tasks** (1 task × 3 solver configurations).
+
+### With Functions (Apply to All)
+
+"With" functions apply the same value to all items in a list. Use these when you want to sweep over some parameters while keeping others constant.
+
+#### tasks_with()
+
+Apply common settings to multiple tasks:
+
+``` python
+from inspect_flow import FlowJob, FlowGenerateConfig, tasks_with
+
+
+FlowJob(
+    tasks=tasks_with(
+        task=["inspect_evals/gpqa_diamond", "inspect_evals/mmlu_0_shot"],
+        model="openai/gpt-4o",  # Same model for both tasks
+        config=FlowGenerateConfig(temperature=0.7),  # Same config for both
+    )
+)
+```
+
+This creates **2 tasks** (2 tasks, each with the same model and config).
+
+#### Combining Matrix and With
+
+Mix parameter sweeps with common settings:
+
+``` python
+from inspect_flow import FlowJob, FlowGenerateConfig, tasks_with, tasks_matrix, configs_matrix
+
+
+FlowJob(
+    tasks=tasks_with(
+        task=tasks_matrix(
+            task=["task1", "task2"],
+            config=configs_matrix(
+                temperature=[0.0, 0.5, 1.0]
+            )
+        ),  # Creates 6 tasks (2 × 3)
+        model="openai/gpt-4o",  # Applied to all 6 tasks
+        sandbox="docker",  # Applied to all 6 tasks
+    )
+)
+```
+
+### Nested Sweeps
+
+Matrix functions can be nested to create complex parameter grids. Use the unpacking operator `*` to expand inner matrix results:
+
+**Example: Tasks with nested model sweep**
+
+``` python
+from inspect_flow import FlowJob, FlowGenerateConfig, tasks_matrix, models_matrix
+
+
+FlowJob(
+    tasks=tasks_matrix(
+        task=["inspect_evals/mmlu_0_shot", "inspect_evals/gpqa_diamond"],
+        model=[
+            "anthropic/claude-3-5-sonnet",  # Single model
+            *models_matrix(  # Unpacks list of 4 model configs
+                model=["openai/gpt-4o", "openai/gpt-4o-mini"],
+                config=[
+                    FlowGenerateConfig(reasoning_effort="low"),
+                    FlowGenerateConfig(reasoning_effort="high"),
+                ]
+            ),
+        ],  # Total: 1 + 4 = 5 models
+    )
+)
+```
+
+This creates **10 tasks** (2 tasks × 5 model configurations).
+
+**Example: Tasks with nested task sweep**
+
+``` python
+from inspect_flow import FlowJob, FlowTask, tasks_matrix
+
+
+FlowJob(
+    tasks=tasks_matrix(
+        task=[
+            FlowTask(name="task1", args={"subset": "test"}),  # Single task
+            *tasks_matrix(  # Unpacks list of 3 tasks
+                task="task2",
+                args=[
+                    {"language": "en"},
+                    {"language": "de"},
+                    {"language": "fr"},
+                ]
+            ),
+        ],  # Total: 1 + 3 = 4 tasks
+        model=["model1", "model2"],
+    )
+)
+```
+
+This creates **8 tasks** (4 task variants × 2 models).
+
+::: callout-warning
+### Watch Out for Combinatorial Explosion
+
+Parameter sweeps grow multiplicatively. A sweep with: - 3 tasks - 4 models - 5 temperature values - 3 solver configurations
+
+Results in 3 × 4 × 5 × 3 = **180 evaluations**.
+
+Always use `--dry-run` to check the number of evaluations before running expensive grids.
+:::
+
+### Config Merging Behavior
+
+When base objects already have values, matrix parameters are merged:
+
+``` python
+# Config fields merge recursively
+tasks_matrix(
+    task=FlowTask(
+        name="task",
+        config=FlowGenerateConfig(temperature=0.5)  # Base value
+    ),
+    config=[
+        FlowGenerateConfig(max_tokens=1000),  # Adds max_tokens, keeps temperature=0.5
+        FlowGenerateConfig(max_tokens=2000),  # Adds max_tokens, keeps temperature=0.5
+    ]
+)
+```
+
+## Running Evaluations
+
+Once you've defined your Flow configuration, you can execute evaluations using the `flow run` command. Flow also provides tools for previewing configurations and controlling runtime behavior.
+
+### The flow run Command
+
+Execute your evaluation workflow:
+
+``` bash
+flow run config.py
+```
+
+**What happens when you run this:**
+
+1.  Flow loads your configuration file
+2.  Creates an isolated virtual environment in `~/.cache/inspect-flow/`
+3.  Installs dependencies
+4.  Resolves all defaults and matrix expansions
+5.  Executes evaluations via Inspect AI's `eval_set()`
+6.  Stores logs in `flow_dir` (default: `logs/flow/`)
+7.  Cleans up the temporary environment
+
+#### Common CLI Flags
+
+**Preview without running:**
+
+``` bash
+flow run config.py --dry-run
+```
+
+Shows how many tasks would be executed without actually running them. Useful for validating large parameter sweeps.
+
+```         
+eval_set would be called with 24 tasks
+```
+
+**Limit samples for testing:**
+
+``` bash
+flow run config.py --limit 10
+```
+
+Only evaluates the first 10 samples per task. Perfect for quick testing before running expensive evaluations.
+
+**Override log directory:**
+
+``` bash
+flow run config.py --flow-dir ./experiments/baseline
+```
+
+Changes where logs and results are stored.
+
+**Runtime overrides:**
+
+``` bash
+flow run config.py \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5 \
+  --set flow_dir=./logs/experiment1
+```
+
+Override any configuration value at runtime. See [CLI Overrides](#cli-overrides) for more details.
+
+### The flow config Command
+
+Preview your configuration before running:
+
+**Basic usage:**
+
+``` bash
+flow config config.py
+```
+
+Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.
+
+**Full resolution:**
+
+``` bash
+flow config config.py --resolve
+```
+
+Shows the completely resolved configuration: - Creates virtual environment - Applies all defaults - Expands all matrix functions - Instantiates all Python objects
+
+This is invaluable for debugging what settings will actually be used in your evaluations.
+
+::: callout-tip
+### When to Use Each Command
+
+-   **`flow config`** - Quick syntax check, verify overrides
+-   **`flow config --resolve`** - Debug defaults resolution, inspect final settings
+-   **`flow run --dry-run`** - Count tasks in parameter sweeps, validate before expensive runs
+-   **`flow run`** - Execute evaluations
+:::
+
+### Results and Logs
+
+#### Flow Directory Structure
+
+Evaluation results are stored in the `flow_dir` (default: `logs/flow/`):
+
+```         
+logs/flow/
+├── logs/
+│   ├── 2025-11-11T10-44-39+01-00_gpqa-diamond_XuAMHBzFSPgCE5M6mDzuBM.eval
+│   ├── 2025-11-11T10-44-39+01-00_mmlu-0-shot_Vnu2A3M2wPet5yobLiCQmZ.eval
+│   └── ...
+└── 2025-11-11T10-44-39+01-00_flow.yaml
+```
+
+**Directory structure:**
+
+-   Flow controls the `flow_dir` path and passes `{flow_dir}/logs/` to Inspect AI
+-   Inspect AI handles the actual evaluation log file naming and storage
+-   Log file naming conventions follow Inspect AI's standards (see [Inspect AI logging docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
+-   Flow automatically saves the resolved configuration before execution as `{timestamp}_flow.yaml`
+
+**Log formats:**
+
+-   `.eval` - Binary Inspect AI log format (default, high-performance)
+-   `.json` - JSON format (if `log_format="json"` in FlowOptions)
+
+#### Viewing Results
+
+**Using Inspect View:**
+
+``` bash
+inspect view
+```
+
+Opens the Inspect AI viewer to explore evaluation logs interactively.
+
+#### S3 Support
+
+Store logs directly to S3:
+
+``` python
+FlowJob(
+    flow_dir="s3://my-bucket/experiments/baseline",
+    tasks=[...]
+)
+```
+
+## Advanced Features
+
+### Metadata Management
+
+Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
+
+#### metadata (Inspect AI Metadata)
+
+The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI's log viewer and analysis tools.
+
+**Example:**
+
+``` python
+from inspect_flow.types import FlowJob, FlowTask, FlowOptions
+
+FlowJob(
+    options=FlowOptions(
+        metadata={
+            "experiment": "baseline_v1",
+            "hypothesis": "Higher temperature improves creative tasks",
+            "hardware": "A100-80GB",
+        }
+    ),
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+            metadata={
+                "task_variant": "chemistry_subset",
+                "note": "Testing with reduced context",
+            }
+        )
+    ]
+)
+```
+
+The metadata from `FlowOptions` is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task.
+
+#### flow_metadata (Flow-Only Metadata)
+
+The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
+
+**Use cases:**
+
+-   Filtering or selecting configurations based on properties
+-   Organizing complex configuration generation logic
+-   Documenting configuration decisions
+-   Annotating configs without polluting Inspect AI logs
+
+**Example: Configuration-time filtering**
+
+``` python
+from inspect_flow import FlowJob, FlowModel, tasks_matrix
+
+
+# Define models with metadata about capabilities
+models = [
+    FlowModel("openai/gpt-4o", flow_metadata={"context_window": 128000}),
+    FlowModel("openai/gpt-4o-mini", flow_metadata={"context_window": 128000}),
+    FlowModel("anthropic/claude-3-5-sonnet", flow_metadata={"context_window": 200000}),
+]
+
+# Filter to only long-context models
+long_context_models = [
+    m for m in models
+    if m.flow_metadata and m.flow_metadata.get("context_window", 0) >= 128000
+]
+
+FlowJob(
+    tasks=tasks_matrix(
+        task="long_context_task",
+        model=long_context_models,
+    )
+)
+```

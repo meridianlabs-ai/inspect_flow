@@ -16,7 +16,7 @@ from inspect_flow._config.load import load_config
     "--dry-run",
     type=bool,
     is_flag=True,
-    help="Do not run eval, but show a count of tasks that would be run.",
+    help="Do not run job, but show a count of tasks that would be run.",
     envvar="INSPECT_FLOW_DRY_RUN",
 )
 @config_options
@@ -25,6 +25,7 @@ def run_command(
     dry_run: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
+    """CLI command to run a job."""
     config_options = parse_config_options(**kwargs)
     config = load_config(config_file, **config_options)
     run(config, dry_run=dry_run)

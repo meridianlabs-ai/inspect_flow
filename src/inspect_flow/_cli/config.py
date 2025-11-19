@@ -25,6 +25,7 @@ def config_command(
     resolve: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
+    """CLI command to output config."""
     config_options = parse_config_options(**kwargs)
     fconfig = load_config(config_file, **config_options)
     config(fconfig, resolve=resolve)
