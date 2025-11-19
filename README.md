@@ -87,7 +87,7 @@ Visit the [documentation site](https://meridianlabs-ai.github.io/inspect_flow/) 
 
 ## Development
 
-To work on development of Inspect Flow, clone the repository and install with the `-e` flag and `[dev]` optional dependencies:
+To work on development of Inspect Flow, clone the repository and install with the `-e` flag and `[dev, doc]` optional dependencies:
 
 ```bash
 git clone https://github.com/meridianlabs-ai/inspect_flow

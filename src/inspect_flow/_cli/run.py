@@ -25,6 +25,7 @@ def run_command(
     dry_run: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
+    """CLI command to run a job."""
     config_options = parse_config_options(**kwargs)
     config = load_config(config_file, **config_options)
     run(config, dry_run=dry_run)
