@@ -18,7 +18,7 @@ from inspect_flow import (
 from inspect_flow._config.load import _apply_overrides, expand_includes, load_config
 from pydantic_core import to_jsonable_python
 
-update_examples = True
+update_examples = False
 
 
 def write_flow_yaml(config: FlowJob | FlowJob, file_path: Path) -> None:
@@ -405,3 +405,12 @@ def test_multiple_includes() -> None:
         base_path=str(Path(__file__).parent / "config"),
     )
     validate_config(job, "multiple_includes_flow.yaml")
+
+
+def test_auto_include() -> None:
+    job = load_config(
+        str(
+            Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
+        )
+    )
+    validate_config(job, "auto_include_flow.yaml")

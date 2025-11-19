@@ -6,7 +6,7 @@ from typing import Any, TypeAlias
 
 import click
 import yaml
-from inspect_ai._util.file import file
+from inspect_ai._util.file import exists, file
 from pydantic_core import ValidationError
 from typing_extensions import TypedDict, Unpack
 
@@ -16,6 +16,8 @@ from inspect_flow._util.path_util import (
     absolute_path_relative_to,
     set_config_path_env_var,
 )
+
+AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
 class ConfigOptions(TypedDict, total=False):
@@ -39,11 +41,13 @@ def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     """
     config_options = ConfigOptions(**kwargs)
     set_config_path_env_var(config_file)
-    config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
+    job = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
+    job = _apply_auto_includes(job, config_file, config_options)
+
     overrides = config_options.get("overrides", [])
     if overrides:
-        return _apply_overrides(config, overrides)
-    return config
+        return _apply_overrides(job, overrides)
+    return job
 
 
 def expand_includes(
@@ -120,6 +124,23 @@ def _deep_merge_include(
             else:
                 result[k] = override_v
     return result
+
+
+def _apply_auto_includes(
+    job: FlowJob, config_file: str, config_options: ConfigOptions
+) -> FlowJob:
+    parent_dir = Path(config_file).parent
+    while exists(str(parent_dir)):
+        auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
+        if exists(auto_file):
+            auto_job = _load_config_from_file(
+                auto_file, config_options.get("flow_vars", {})
+            )
+            job = _apply_include(job, auto_job)
+        if parent_dir.parent == parent_dir:
+            break
+        parent_dir = parent_dir.parent
+    return job
 
 
 def _maybe_json(value: str) -> Any:
