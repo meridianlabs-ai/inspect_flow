@@ -1,0 +1,71 @@
+website:
+  sidebar:
+  - title: Reference
+    style: docked
+    collapse-level: 2
+    contents:
+    - reference/index.qmd
+    - section: Python API
+      href: reference/inspect_flow.qmd
+      contents:
+      - section: inspect_flow
+        href: reference/inspect_flow.qmd
+        contents:
+        - text: FlowAgent
+          href: reference/inspect_flow.qmd#flowagent
+        - text: FlowJob
+          href: reference/inspect_flow.qmd#flowjob
+        - text: FlowDefaults
+          href: reference/inspect_flow.qmd#flowdefaults
+        - text: FlowEpochs
+          href: reference/inspect_flow.qmd#flowepochs
+        - text: FlowGenerateConfig
+          href: reference/inspect_flow.qmd#flowgenerateconfig
+        - text: FlowModel
+          href: reference/inspect_flow.qmd#flowmodel
+        - text: FlowOptions
+          href: reference/inspect_flow.qmd#flowoptions
+        - text: FlowSolver
+          href: reference/inspect_flow.qmd#flowsolver
+        - text: FlowTask
+          href: reference/inspect_flow.qmd#flowtask
+        - text: agents_matrix
+          href: reference/inspect_flow.qmd#agents_matrix
+        - text: agents_with
+          href: reference/inspect_flow.qmd#agents_with
+        - text: configs_matrix
+          href: reference/inspect_flow.qmd#configs_matrix
+        - text: configs_with
+          href: reference/inspect_flow.qmd#configs_with
+        - text: merge
+          href: reference/inspect_flow.qmd#merge
+        - text: models_matrix
+          href: reference/inspect_flow.qmd#models_matrix
+        - text: models_with
+          href: reference/inspect_flow.qmd#models_with
+        - text: solvers_matrix
+          href: reference/inspect_flow.qmd#solvers_matrix
+        - text: solvers_with
+          href: reference/inspect_flow.qmd#solvers_with
+        - text: tasks_matrix
+          href: reference/inspect_flow.qmd#tasks_matrix
+        - text: tasks_with
+          href: reference/inspect_flow.qmd#tasks_with
+      - section: inspect_flow.api
+        href: reference/inspect_flow.api.qmd
+        contents:
+        - text: ConfigOptions
+          href: reference/inspect_flow.api.qmd#configoptions
+        - text: config
+          href: reference/inspect_flow.api.qmd#config
+        - text: load_config
+          href: reference/inspect_flow.api.qmd#load_config
+        - text: run
+          href: reference/inspect_flow.api.qmd#run
+    - section: Inspect CLI
+      href: reference/flow_config.qmd
+      contents:
+      - text: flow config
+        href: reference/flow_config.qmd
+      - text: flow run
+        href: reference/flow_run.qmd

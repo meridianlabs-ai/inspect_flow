@@ -41,6 +41,11 @@ dev = [
 ]
 doc = [
     "jupyter",
+    "quarto-cli",
+    "griffe",
+    "panflute",
+    "markdown",
+    "click",
 ]
 
 

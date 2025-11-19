@@ -1,13 +1,13 @@
 # Inspect Flow
 
-Workflow orchestration for [Inspect AI](https://inspect.aisi.org.uk/) that enables you to run evaluations at scale with reproducibility and maintainability.
+Workflow orchestration for [Inspect AI](https://inspect.aisi.org.uk/) that enables you to run evaluations at scale with repeatability and maintainability.
 
 ## Why Inspect Flow?
 
 As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
 
 - **Declarative Configuration**: Define your entire evaluation pipeline in type-safe Pydantic schemas
-- **Reproducibility**: Encapsulated Python dependencies for each workflow
+- **Repeatability**: Encapsulated Python dependencies for each workflow
 - **Parameter Sweeping**: Matrix execution patterns for systematic exploration across tasks and models
 
 Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.
@@ -25,9 +25,9 @@ pip install git+https://github.com/meridianlabs-ai/inspect_flow
 Create a `config.py` file:
 
 ```python
-from inspect_flow.types import FlowConfig, FlowTask
+from inspect_flow.types import FlowJob, FlowTask
 
-FlowConfig(
+FlowJob(
     dependencies=["inspect-evals"],
     tasks=[
         FlowTask(
@@ -55,10 +55,9 @@ This creates a virtual environment, installs dependencies (including model-speci
 Want to test multiple models across multiple tasks? Use `tasks_matrix`:
 
 ```python
-from inspect_flow import tasks_matrix
-from inspect_flow.types import FlowConfig
+from inspect_flow import FlowJob, tasks_matrix
 
-FlowConfig(
+FlowJob(
     dependencies=["inspect-evals"],
     tasks=tasks_matrix(
         task=[
@@ -81,7 +80,7 @@ flow config config.py
 
 ## Documentation
 
-- **Tutorial**: End-to-end guide for developing and running Flow jobs
+- **Usage**: End-to-end guide for developing and running Flow jobs
 - **Reference**: Detailed API and CLI documentation
 
 Visit the [documentation site](https://meridianlabs-ai.github.io/inspect_flow/) for more information.
