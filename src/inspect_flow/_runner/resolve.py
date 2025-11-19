@@ -31,13 +31,13 @@ def _resolve_python_version() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
-def resolve_config(config: FlowJob) -> FlowJob:
+def resolve_job(job: FlowJob) -> FlowJob:
     resolved_tasks = []
-    for task_config in config.tasks or []:
-        resolved = _resolve_task(config, task_config)
+    for task_config in job.tasks or []:
+        resolved = _resolve_task(job, task_config)
         resolved_tasks.extend(resolved)
 
-    return config.model_copy(
+    return job.model_copy(
         update={
             "tasks": resolved_tasks,
             "defaults": None,
@@ -81,73 +81,66 @@ def _merge_defaults(
     return config.__class__.model_validate(config_dict)
 
 
-def _resolve_model(config: str | FlowModel, flow_config: FlowJob) -> FlowModel:
-    if isinstance(config, str):
-        config = FlowModel(name=config)
-    defaults = flow_config.defaults or FlowDefaults()
-    return _merge_defaults(config, defaults.model, defaults.model_prefix)
+def _resolve_model(model: str | FlowModel, job: FlowJob) -> FlowModel:
+    if isinstance(model, str):
+        model = FlowModel(name=model)
+    defaults = job.defaults or FlowDefaults()
+    return _merge_defaults(model, defaults.model, defaults.model_prefix)
 
 
 def _resolve_model_roles(
-    config: ModelRolesConfig, flow_config: FlowJob
+    model_roles: ModelRolesConfig, job: FlowJob
 ) -> ModelRolesConfig:
     roles = {}
-    for role, model_config in config.items():
-        model = model_config
+    for role, model in model_roles.items():
         if isinstance(model, FlowModel):
-            model = _resolve_model(config=model, flow_config=flow_config)
+            model = _resolve_model(model=model, job=job)
         roles[role] = model
     return roles
 
 
-def _resolve_single_solver(
-    config: str | FlowSolver, flow_config: FlowJob
-) -> FlowSolver:
-    if isinstance(config, str):
-        config = FlowSolver(name=config)
-    defaults = flow_config.defaults or FlowDefaults()
-    return _merge_defaults(config, defaults.solver, defaults.solver_prefix)
+def _resolve_single_solver(solver: str | FlowSolver, job: FlowJob) -> FlowSolver:
+    if isinstance(solver, str):
+        solver = FlowSolver(name=solver)
+    defaults = job.defaults or FlowDefaults()
+    return _merge_defaults(solver, defaults.solver, defaults.solver_prefix)
 
 
-def _resolve_agent(config: FlowAgent, flow_config: FlowJob) -> FlowAgent:
-    defaults = flow_config.defaults or FlowDefaults()
-    return _merge_defaults(config, defaults.agent, defaults.agent_prefix)
+def _resolve_agent(agent: FlowAgent, job: FlowJob) -> FlowAgent:
+    defaults = job.defaults or FlowDefaults()
+    return _merge_defaults(agent, defaults.agent, defaults.agent_prefix)
 
 
 def _resolve_solver(
-    config: str | FlowSolver | list[str | FlowSolver] | FlowAgent,
-    flow_config: FlowJob,
+    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent,
+    job: FlowJob,
 ) -> FlowSolver | list[FlowSolver] | FlowAgent:
-    if isinstance(config, str | FlowSolver):
-        return _resolve_single_solver(config, flow_config)
-    if isinstance(config, FlowAgent):
-        return _resolve_agent(config, flow_config)
-    return [
-        _resolve_single_solver(single_config, flow_config) for single_config in config
-    ]
+    if isinstance(solver, str | FlowSolver):
+        return _resolve_single_solver(solver, job)
+    if isinstance(solver, FlowAgent):
+        return _resolve_agent(solver, job)
+    return [_resolve_single_solver(single_config, job) for single_config in solver]
 
 
-def _resolve_task(flow_config: FlowJob, config: str | FlowTask) -> list[FlowTask]:
-    if isinstance(config, str):
-        config = FlowTask(name=config)
+def _resolve_task(job: FlowJob, task: str | FlowTask) -> list[FlowTask]:
+    if isinstance(task, str):
+        task = FlowTask(name=task)
 
-    defaults = flow_config.defaults or FlowDefaults()
-    config = _merge_defaults(config, defaults.task, defaults.task_prefix)
-    model = _resolve_model(config.model, flow_config) if config.model else None
-    solver = _resolve_solver(config.solver, flow_config) if config.solver else None
+    defaults = job.defaults or FlowDefaults()
+    task = _merge_defaults(task, defaults.task, defaults.task_prefix)
+    model = _resolve_model(task.model, job) if task.model else None
+    solver = _resolve_solver(task.solver, job) if task.solver else None
     model_roles = (
-        _resolve_model_roles(config.model_roles, flow_config)
-        if config.model_roles
-        else None
+        _resolve_model_roles(task.model_roles, job) if task.model_roles else None
     )
     generate_config = defaults.config or FlowGenerateConfig()
-    if config.config:
-        generate_config = generate_config.merge(config.config)
+    if task.config:
+        generate_config = generate_config.merge(task.config)
     if model and model.config:
         generate_config = generate_config.merge(model.config)
     tasks = []
-    for task_func_name in _get_task_creator_names(config):
-        task = config.model_copy(
+    for task_func_name in _get_task_creator_names(task):
+        task = task.model_copy(
             update={
                 "name": task_func_name,
                 "model": model,
@@ -177,20 +170,20 @@ def _get_task_creator_names_from_file(file_path: str) -> list[str]:
     return task_names
 
 
-def _get_task_creator_names(config: FlowTask) -> list[str]:
-    if not config.name:
-        raise ValueError(f"Task name is required. Task: {config}")
+def _get_task_creator_names(task: FlowTask) -> list[str]:
+    if not task.name:
+        raise ValueError(f"Task name is required. Task: {task}")
 
-    if config.name.find("@") != -1:
-        return [config.name]
-    if config.name.find(".py") != -1:
-        result = _get_task_creator_names_from_file(config.name)
+    if task.name.find("@") != -1:
+        return [task.name]
+    if task.name.find(".py") != -1:
+        result = _get_task_creator_names_from_file(task.name)
         return result
     else:
-        if registry_lookup(type="task", name=config.name):
-            return [config.name]
+        if registry_lookup(type="task", name=task.name):
+            return [task.name]
         else:
             # Check if name is a file name
-            if file := find_file(config.name):
+            if file := find_file(task.name):
                 return _get_task_creator_names_from_file(file)
-            raise LookupError(f"{config.name} was not found in the registry")
+            raise LookupError(f"{task.name} was not found in the registry")

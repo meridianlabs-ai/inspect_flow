@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from click.testing import CliRunner
 from inspect_flow._cli.main import flow
-from inspect_flow._config.load import load_config
+from inspect_flow._config.load import load_job
 from inspect_flow._types.flow_types import FlowJob
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
@@ -30,8 +30,8 @@ def test_local_e2e() -> None:
     )
     assert result.exit_code == 0
 
-    config = load_config(str(config_path))
-    verify_test_logs(config=config, log_dir=log_dir)
+    config = load_job(str(config_path))
+    verify_test_logs(job=config, log_dir=log_dir)
 
     # Verify that the config file was written with timestamp prefix
     config_files = glob.glob(f"{log_dir}/*_flow.yaml")

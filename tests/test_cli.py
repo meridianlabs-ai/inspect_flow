@@ -38,7 +38,7 @@ def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.run") as mock_run,
-        patch("inspect_flow._cli.run.load_config") as mock_config,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
     ):
         # Mock the config object
         mock_config_obj = MagicMock()
@@ -59,7 +59,7 @@ def test_run_command_overrides() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
+        # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
             overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
@@ -74,7 +74,7 @@ def test_run_command_new_log_dir() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.run") as mock_run,
-        patch("inspect_flow._cli.run.load_config") as mock_config,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
     ):
         # Mock the config object
         mock_config_obj = MagicMock()
@@ -92,7 +92,7 @@ def test_run_command_new_log_dir() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
+        # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
             overrides=["new_log_dir=True"],
@@ -106,7 +106,7 @@ def test_run_command_new_log_dir() -> None:
 def test_config_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.config.load_config") as mock_config,
+        patch("inspect_flow._cli.config.load_job") as mock_config,
     ):
         mock_config.return_value = FlowJob()
 
@@ -125,7 +125,7 @@ def test_config_command_overrides() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
+        # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
             overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
@@ -140,7 +140,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         "dependencies=dep1 defaults.solver.args.tool_calls=none",
     )
     with (
-        patch("inspect_flow._cli.config.load_config") as mock_config,
+        patch("inspect_flow._cli.config.load_job") as mock_config,
     ):
         mock_config.return_value = FlowJob()
 
@@ -153,7 +153,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_config was called with the correct file
+        # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
             overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
@@ -165,7 +165,7 @@ def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.run") as mock_run,
-        patch("inspect_flow._cli.run.load_config") as mock_config,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
@@ -183,7 +183,7 @@ def test_run_command_flow_vars() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.run") as mock_run,
-        patch("inspect_flow._cli.run.load_config") as mock_config,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
@@ -205,7 +205,7 @@ def test_config_command_resolve() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.config.config") as mock_config,
-        patch("inspect_flow._cli.config.load_config") as mock_load,
+        patch("inspect_flow._cli.config.load_job") as mock_load,
     ):
         mock_config_obj = MagicMock()
         mock_load.return_value = mock_config_obj

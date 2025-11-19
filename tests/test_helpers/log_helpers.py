@@ -3,7 +3,6 @@ from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow import FlowJob, FlowTask
-from pydantic_core import to_jsonable_python
 
 
 def init_test_logs() -> str:
@@ -15,25 +14,23 @@ def init_test_logs() -> str:
     return relative_log_dir
 
 
-def _task_and_model(config: str | FlowTask) -> tuple[str | None, str | None]:
-    if isinstance(config, str):
-        return config, None
+def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None]:
+    if isinstance(task, str):
+        return task, None
     else:
-        return config.name, config.model_name
+        return task.name, task.model_name
 
 
-def verify_test_logs(config: FlowJob | FlowJob, log_dir: str) -> None:
-    if isinstance(config, FlowJob):
-        config = FlowJob.model_validate(to_jsonable_python(config))
+def verify_test_logs(job: FlowJob, log_dir: str) -> None:
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
-    assert len(log_list) == len(config.tasks or [])
+    assert len(log_list) == len(job.tasks or [])
     logs = [read_eval_log(log) for log in log_list]
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [_task_and_model(task) for task in config.tasks or []]
+        [_task_and_model(task) for task in job.tasks or []]
     )

@@ -15,17 +15,17 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
-from inspect_flow._config.load import _apply_overrides, expand_includes, load_config
+from inspect_flow._config.load import _apply_overrides, expand_includes, load_job
 from pydantic_core import to_jsonable_python
 
 update_examples = False
 
 
-def write_flow_yaml(config: FlowJob | FlowJob, file_path: Path) -> None:
-    config = FlowJob.model_validate(to_jsonable_python(config))
+def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
+    job = FlowJob.model_validate(to_jsonable_python(job))
     with open(file_path, "w") as f:
         yaml.dump(
-            config.model_dump(
+            job.model_dump(
                 mode="json",
                 exclude_unset=True,
                 exclude_defaults=True,
@@ -115,16 +115,12 @@ def test_config_model_and_task() -> None:
 
 
 def test_py_config() -> None:
-    config = load_config(
-        str(Path(__file__).parent / "config" / "model_and_task_flow.py")
-    )
+    config = load_job(str(Path(__file__).parent / "config" / "model_and_task_flow.py"))
     validate_config(config, "model_and_task_flow.yaml")
 
 
 def test_py_config_with_assign() -> None:
-    config = load_config(
-        str(Path(__file__).parent / "config" / "model_and_task2_flow.py")
-    )
+    config = load_job(str(Path(__file__).parent / "config" / "model_and_task2_flow.py"))
     validate_config(config, "model_and_task_flow.yaml")
 
 
@@ -246,7 +242,7 @@ def test_merge_config():
 
 
 def test_load_config_overrides():
-    config = load_config(
+    config = load_job(
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
         overrides=[
             "log_dir=./logs/overridden_flow",
@@ -331,7 +327,7 @@ def test_overrides_of_dicts():
 
 
 def test_load_config_flow_vars():
-    config = load_config(
+    config = load_job(
         str(Path(__file__).parent / "config" / "flow_vars_flow.py"),
         flow_vars={"model": "model_from_flow_vars"},
     )
@@ -408,7 +404,7 @@ def test_multiple_includes() -> None:
 
 
 def test_auto_include() -> None:
-    job = load_config(
+    job = load_job(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
         )

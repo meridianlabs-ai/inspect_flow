@@ -4,13 +4,13 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import FlowJob
-from inspect_flow._config.load import load_config
+from inspect_flow._config.load import load_job
 from inspect_flow._launcher.launch import _new_log_dir, launch
 
 
 def test_launch() -> None:
     with patch("subprocess.run") as mock_run:
-        launch(config=FlowJob(log_dir="logs", tasks=["task_name"]))
+        launch(job=FlowJob(log_dir="logs", tasks=["task_name"]))
 
         assert mock_run.call_count == 3
         args = mock_run.mock_calls[2].args[0]
@@ -39,7 +39,7 @@ def test_launch_handles_subprocess_error() -> None:
             subprocess.CalledProcessError(42, "cmd"),  # Third call fails
         ]
 
-        launch(config=FlowJob(log_dir="logs", tasks=["task_name"]))
+        launch(job=FlowJob(log_dir="logs", tasks=["task_name"]))
 
     # Verify sys.exit was called with the subprocess's return code
     assert exc_info.value.code == 42
@@ -51,7 +51,7 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with patch("subprocess.run") as mock_run:
         launch(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
@@ -71,7 +71,7 @@ def test_relative_log_dir() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir=log_dir,
                 tasks=["task_name"],
             )
@@ -88,7 +88,7 @@ def test_s3() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir=log_dir,
                 tasks=["task_name"],
             )
@@ -103,8 +103,8 @@ def test_config_relative_log_dir() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        job = load_config("./tests/config/e2e_test_flow.py")
-        launch(config=job)
+        job = load_job("./tests/config/e2e_test_flow.py")
+        launch(job=job)
 
     mock_venv.assert_called_once()
     assert job.log_dir
@@ -137,7 +137,7 @@ def test_launch_new_log_dir() -> None:
     ):
         mock_exists.side_effect = [True, True, False]
         launch(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir=log_dir,
                 new_log_dir=True,
                 tasks=["task_name"],
@@ -154,11 +154,11 @@ def test_relative_bundle_dir() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        job = load_config(
+        job = load_job(
             "./tests/config/e2e_test_flow.py",
             overrides=["options.bundle_dir=bundle_dir"],
         )
-        launch(config=job)
+        launch(job=job)
 
     mock_venv.assert_called_once()
     job: FlowJob = mock_venv.mock_calls[0].args[0]

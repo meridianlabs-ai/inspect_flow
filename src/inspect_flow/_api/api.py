@@ -6,31 +6,31 @@ from inspect_flow._types.flow_types import FlowJob
 
 
 def run(
-    config: FlowJob,
+    job: FlowJob,
     dry_run: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
 
     Args:
-        config: The flow configuration.
+        job: The flow job configuration.
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
     """
     run_args = ["--dry-run"] if dry_run else []
-    launch(config=config, run_args=run_args)
+    launch(job=job, run_args=run_args)
 
 
 def config(
-    config: FlowJob,
+    job: FlowJob,
     resolve: bool = False,
 ) -> None:
-    """Print the flow configuration.
+    """Print the flow job configuration.
 
     Args:
-        config: The flow configuration.
+        job: The flow job configuration.
         resolve: If True, resolve the configuration before printing.
     """
     if resolve:
-        launch(config=config, run_args=["--config"])
+        launch(job=job, run_args=["--config"])
     else:
-        dump = config_to_yaml(config)
+        dump = config_to_yaml(job)
         click.echo(dump)

@@ -34,7 +34,7 @@ task_file = str(task_dir / "noop.py")
 def test_task_with_get_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=[
@@ -72,7 +72,7 @@ def test_task_with_two_models() -> None:
             ],
         ),
     )
-    _run_eval_set(config=(config))
+    _run_eval_set(job=(config))
 
     verify_test_logs(config, log_dir)
 
@@ -81,7 +81,7 @@ def test_model_generate_config() -> None:
     system_message = "Test System Message"
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=[
@@ -112,7 +112,7 @@ def test_model_generate_config() -> None:
 def test_default_model_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=[FlowTask(name=task_file + "@noop")],
@@ -131,7 +131,7 @@ def test_default_model_config() -> None:
 def test_task_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=[
@@ -166,7 +166,7 @@ def test_write_config() -> None:
         ],
     )
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(config=job)
+        _run_eval_set(job=job)
 
     mock_eval_set.assert_called_once()
     # Verify that the config file was written with timestamp prefix
@@ -193,7 +193,7 @@ def test_write_config() -> None:
 def test_matrix_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
@@ -230,7 +230,7 @@ def test_matrix_model_roles() -> None:
             ),
         }
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
@@ -261,7 +261,7 @@ def test_matrix_model_roles() -> None:
 def test_matrix_solvers() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
@@ -301,7 +301,7 @@ def test_matrix_solvers() -> None:
 def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir="logs/flow_test",
                 tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
             )
@@ -320,7 +320,7 @@ def test_all_tasks_in_file() -> None:
     file = str(task_dir / "three_tasks.py")
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=FlowJob(
+            job=FlowJob(
                 log_dir="logs/flow_test",
                 tasks=[file],
             ),
@@ -345,7 +345,7 @@ def test_config_generate_config() -> None:
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -395,7 +395,7 @@ def test_config_generate_config() -> None:
 def test_config_model_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -446,7 +446,7 @@ def test_config_model_overrides() -> None:
 def test_config_model_prefix_default_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -496,7 +496,7 @@ def test_config_model_prefix_default_overrides() -> None:
 def test_config_model_default_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -546,7 +546,7 @@ def test_config_model_default_overrides() -> None:
 def test_config_model_prefixes() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -592,7 +592,7 @@ def test_config_model_prefixes() -> None:
 def test_task_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -621,7 +621,7 @@ def test_task_defaults() -> None:
 def test_solver_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -652,7 +652,7 @@ def test_solver_defaults() -> None:
 def test_agent_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
@@ -684,7 +684,7 @@ def test_agent_defaults() -> None:
 def test_dry_run():
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            config=(
+            job=(
                 FlowJob(
                     log_dir="logs/flow_test",
                     tasks=[
@@ -719,7 +719,7 @@ def test_task_with_two_model_configs() -> None:
             ),
         ),
     )
-    _run_eval_set(config=(config))
+    _run_eval_set(job=(config))
 
     verify_test_logs(config, log_dir)
 
@@ -751,7 +751,7 @@ def test_task_with_two_solvers() -> None:
             ],
         ),
     )
-    _run_eval_set(config=(config))
+    _run_eval_set(job=(config))
 
     verify_test_logs(config, log_dir)
 
@@ -774,7 +774,7 @@ def test_default_model_roles() -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(config=(config))
+        _run_eval_set(job=(config))
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -794,7 +794,7 @@ def test_logs_allow_dirty() -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(config=(config))
+        _run_eval_set(job=(config))
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -802,7 +802,7 @@ def test_logs_allow_dirty() -> None:
 
     config.options = FlowOptions(log_dir_allow_dirty=True)
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(config=(config))
+        _run_eval_set(job=(config))
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -821,7 +821,7 @@ def test_bundle_url_map(capsys) -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(config=(config))
+        _run_eval_set(job=(config))
 
     mock_eval_set.assert_called_once()
     captured = capsys.readouterr()

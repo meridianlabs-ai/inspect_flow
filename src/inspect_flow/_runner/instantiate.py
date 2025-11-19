@@ -30,91 +30,88 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def instantiate_tasks(config: FlowJob) -> list[Task]:
-    return [
-        _instantiate_task(config, task_config) for task_config in config.tasks or []
-    ]
+def instantiate_tasks(job: FlowJob) -> list[Task]:
+    return [_instantiate_task(job, task_config) for task_config in job.tasks or []]
 
 
-def _create_model(config: FlowModel) -> Model:
-    if not config.name:
-        raise ValueError(f"Model name is required. Model: {config}")
+def _create_model(model: FlowModel) -> Model:
+    if not model.name:
+        raise ValueError(f"Model name is required. Model: {model}")
 
     return get_model(
-        model=config.name,
-        role=config.role,
-        default=config.default,
-        config=config.config or FlowGenerateConfig(),
-        base_url=config.base_url,
-        api_key=config.api_key,
-        memoize=config.memoize or True,
-        **(config.model_args or {}),
+        model=model.name,
+        role=model.role,
+        default=model.default,
+        config=model.config or FlowGenerateConfig(),
+        base_url=model.base_url,
+        api_key=model.api_key,
+        memoize=model.memoize or True,
+        **(model.model_args or {}),
     )
 
 
-def _create_model_roles(config: ModelRolesConfig) -> ModelRoles:
+def _create_model_roles(model_roles: ModelRolesConfig) -> ModelRoles:
     roles = {}
-    for role, model_config in config.items():
-        model = model_config
+    for role, model in model_roles.items():
         if isinstance(model, FlowModel):
-            model = _create_model(config=model)
+            model = _create_model(model=model)
         roles[role] = model
     return roles
 
 
-def _create_single_solver(config: str | FlowSolver) -> Solver:
-    if not isinstance(config, FlowSolver):
-        raise ValueError(f"Solver should have been resolved. Solver: {config}")
-    if not config.name:
-        raise ValueError(f"Solver name is required. Solver: {config}")
+def _create_single_solver(solver: str | FlowSolver) -> Solver:
+    if not isinstance(solver, FlowSolver):
+        raise ValueError(f"Solver should have been resolved. Solver: {solver}")
+    if not solver.name:
+        raise ValueError(f"Solver name is required. Solver: {solver}")
 
-    return registry_create(type="solver", name=config.name, **(config.args or {}))
+    return registry_create(type="solver", name=solver.name, **(solver.args or {}))
 
 
-def _create_agent(config: FlowAgent) -> Agent:
-    if not config.name:
-        raise ValueError(f"Agent name is required. Agent: {config}")
+def _create_agent(agent: FlowAgent) -> Agent:
+    if not agent.name:
+        raise ValueError(f"Agent name is required. Agent: {agent}")
 
-    return registry_create(type="agent", name=config.name, **(config.args or {}))
+    return registry_create(type="agent", name=agent.name, **(agent.args or {}))
 
 
 def _create_solver(
-    config: FlowSolver | list[str | FlowSolver] | FlowAgent,
+    solver: FlowSolver | list[str | FlowSolver] | FlowAgent,
 ) -> SingleSolver:
-    if isinstance(config, FlowSolver):
-        return _create_single_solver(config)
-    if isinstance(config, FlowAgent):
-        return _create_agent(config)
-    return [_create_single_solver(single_config) for single_config in config]
+    if isinstance(solver, FlowSolver):
+        return _create_single_solver(solver)
+    if isinstance(solver, FlowAgent):
+        return _create_agent(solver)
+    return [_create_single_solver(single_solver) for single_solver in solver]
 
 
-def _instantiate_task(flow_config: FlowJob, config: str | FlowTask) -> Task:
+def _instantiate_task(job: FlowJob, flow_task: str | FlowTask) -> Task:
     if (
-        flow_config.defaults is not None
-        or not isinstance(config, FlowTask)
-        or isinstance(config.model, str)
-        or isinstance(config.solver, str)
+        job.defaults is not None
+        or not isinstance(flow_task, FlowTask)
+        or isinstance(flow_task.model, str)
+        or isinstance(flow_task.solver, str)
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    model = _create_model(config.model) if config.model else None
-    solver = _create_solver(config.solver) if config.solver else None
+    model = _create_model(flow_task.model) if flow_task.model else None
+    solver = _create_solver(flow_task.solver) if flow_task.solver else None
     model_roles = (
-        _create_model_roles(config.model_roles) if config.model_roles else None
+        _create_model_roles(flow_task.model_roles) if flow_task.model_roles else None
     )
-    task_func = _get_task_creator(config)
+    task_func = _get_task_creator(flow_task)
     if model:
         init_active_model(model, model.config)
-    task = task_func(**(config.args or {}))
+    task = task_func(**(flow_task.args or {}))
 
-    if config.sample_id is not None:
+    if flow_task.sample_id is not None:
         task.dataset = slice_dataset(
             task.dataset,
             limit=None,
-            sample_id=config.sample_id,
+            sample_id=flow_task.sample_id,
         )
 
-    epochs = config.epochs
+    epochs = flow_task.epochs
     if isinstance(epochs, FlowEpochs):
         epochs = Epochs(
             epochs=epochs.epochs,
@@ -134,20 +131,20 @@ def _instantiate_task(flow_config: FlowJob, config: str | FlowTask) -> Task:
         # scorer= Not Supported
         # metrics= Not Supported
         model=ng(model),
-        config=ng(config.config),
+        config=ng(flow_task.config),
         model_roles=ng(model_roles),
-        sandbox=ng(config.sandbox),
-        approval=ng(config.approval),
+        sandbox=ng(flow_task.sandbox),
+        approval=ng(flow_task.approval),
         epochs=ng(epochs),
-        fail_on_error=ng(config.fail_on_error),
-        continue_on_fail=ng(config.continue_on_fail),
-        message_limit=ng(config.message_limit),
-        token_limit=ng(config.token_limit),
-        time_limit=ng(config.time_limit),
-        working_limit=ng(config.working_limit),
-        name=ng(config.name),
-        version=ng(config.version),
-        metadata=ng(config.metadata),
+        fail_on_error=ng(flow_task.fail_on_error),
+        continue_on_fail=ng(flow_task.continue_on_fail),
+        message_limit=ng(flow_task.message_limit),
+        token_limit=ng(flow_task.token_limit),
+        time_limit=ng(flow_task.time_limit),
+        working_limit=ng(flow_task.working_limit),
+        name=ng(flow_task.name),
+        version=ng(flow_task.version),
+        metadata=ng(flow_task.metadata),
     )
     return task
 
@@ -161,13 +158,13 @@ def _get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task
     return getattr(module, attr)
 
 
-def _get_task_creator(config: FlowTask) -> Callable[..., Task]:
-    if not config.name:
-        raise ValueError(f"Task name is required. Task: {config}")
-    config_name = config.name
+def _get_task_creator(task: FlowTask) -> Callable[..., Task]:
+    if not task.name:
+        raise ValueError(f"Task name is required. Task: {task}")
+    config_name = task.name
 
-    if config.name.find("@") != -1:
-        file, attr = config.name.split("@", 1)
+    if task.name.find("@") != -1:
+        file, attr = task.name.split("@", 1)
         return _get_task_creator_from_file(file, attr)
     else:
 

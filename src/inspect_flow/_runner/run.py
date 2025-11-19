@@ -7,7 +7,7 @@ from inspect_ai.log import EvalLog
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
-from inspect_flow._runner.resolve import resolve_config
+from inspect_flow._runner.resolve import resolve_job
 from inspect_flow._types.flow_types import (
     FlowJob,
     FlowOptions,
@@ -20,21 +20,21 @@ def _read_config() -> FlowJob:
         return FlowJob.model_validate(data)
 
 
-def _print_resolved_config(config: FlowJob) -> None:
-    resolved_config = resolve_config(config)
+def _print_resolved_config(job: FlowJob) -> None:
+    resolved_config = resolve_job(job)
     dump = config_to_yaml(resolved_config)
     click.echo(dump)
 
 
-def _write_config_file(config: FlowJob) -> None:
-    filename = f"{config.log_dir}/{clean_filename_component(iso_now())}_flow.yaml"
-    yaml = config_to_yaml(config)
+def _write_config_file(job: FlowJob) -> None:
+    filename = f"{job.log_dir}/{clean_filename_component(iso_now())}_flow.yaml"
+    yaml = config_to_yaml(job)
     with file(filename, "w") as f:
         f.write(yaml)
 
 
-def _run_eval_set(config: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
-    resolved_config = resolve_config(config)
+def _run_eval_set(job: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalLog]]:
+    resolved_config = resolve_job(job)
     tasks = instantiate_tasks(resolved_config)
 
     if dry_run:

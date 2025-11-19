@@ -14,24 +14,24 @@ from inspect_flow._util.path_util import absolute_path, set_cwd_env_var
 
 
 def launch(
-    config: FlowJob,
+    job: FlowJob,
     run_args: list[str] | None = None,
 ) -> None:
-    if not config.log_dir:
+    if not job.log_dir:
         raise ValueError("log_dir must be set before launching the flow job")
 
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
     set_cwd_env_var()
-    config.log_dir = _resolve_log_dir(config)
-    if config.options and config.options.bundle_dir:
-        config.options.bundle_dir = absolute_path(config.options.bundle_dir)
-    click.echo(f"Using log_dir: {config.log_dir}")
+    job.log_dir = _resolve_log_dir(job)
+    if job.options and job.options.bundle_dir:
+        job.options.bundle_dir = absolute_path(job.options.bundle_dir)
+    click.echo(f"Using log_dir: {job.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
-        env = create_venv(config, temp_dir)
-        if config.env:
-            env.update(**config.env)
+        env = create_venv(job, temp_dir)
+        if job.env:
+            env.update(**job.env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
@@ -46,11 +46,11 @@ def launch(
             sys.exit(e.returncode)
 
 
-def _resolve_log_dir(config: FlowJob) -> str:
-    assert config.log_dir
-    absolute_log_dir = absolute_path(config.log_dir)
+def _resolve_log_dir(job: FlowJob) -> str:
+    assert job.log_dir
+    absolute_log_dir = absolute_path(job.log_dir)
 
-    if config.new_log_dir:
+    if job.new_log_dir:
         return _new_log_dir(absolute_log_dir)
     else:
         return absolute_log_dir

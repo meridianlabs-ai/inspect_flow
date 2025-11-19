@@ -7,7 +7,7 @@ from inspect_flow._cli.options import (
     config_options,
     parse_config_options,
 )
-from inspect_flow._config.load import load_config
+from inspect_flow._config.load import load_job
 
 
 @click.command("config", help="Output config")
@@ -27,5 +27,5 @@ def config_command(
 ) -> None:
     """CLI command to output config."""
     config_options = parse_config_options(**kwargs)
-    fconfig = load_config(config_file, **config_options)
+    fconfig = load_job(config_file, **config_options)
     config(fconfig, resolve=resolve)
