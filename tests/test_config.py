@@ -14,7 +14,7 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
-from inspect_flow._config.load import ConfigOptions, _apply_overrides, load_config
+from inspect_flow._config.load import _apply_overrides, load_config
 from pydantic_core import to_jsonable_python
 
 update_examples = True
@@ -247,13 +247,11 @@ def test_merge_config():
 def test_load_config_overrides():
     config = load_config(
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
-        ConfigOptions(
-            overrides=[
-                "log_dir=./logs/overridden_flow",
-                "options.limit=2",
-                "defaults.solver.args.tool_calls=none",
-            ]
-        ),
+        overrides=[
+            "log_dir=./logs/overridden_flow",
+            "options.limit=2",
+            "defaults.solver.args.tool_calls=none",
+        ],
     )
     assert config.log_dir == "./logs/overridden_flow"
     assert config.options
@@ -334,7 +332,7 @@ def test_overrides_of_dicts():
 def test_load_config_flow_vars():
     config = load_config(
         str(Path(__file__).parent / "config" / "flow_vars_flow.py"),
-        ConfigOptions(flow_vars={"model": "model_from_flow_vars"}),
+        flow_vars={"model": "model_from_flow_vars"},
     )
     assert config.tasks
     assert isinstance(config.tasks[0], FlowTask)
