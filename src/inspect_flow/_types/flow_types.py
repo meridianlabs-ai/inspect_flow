@@ -467,8 +467,21 @@ class FlowDefaults(BaseModel, extra="forbid"):
     )
 
 
+class FlowInclude(BaseModel, extra="forbid"):
+    """Configuration for including other flow configs."""
+
+    config_file_path: str | None = Field(
+        default=None, description="Path to the flow config to include."
+    )
+
+
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
+
+    includes: list[FlowInclude] | None = Field(
+        default=None,
+        description="List of other flow configs to include.",
+    )
 
     log_dir: str | None = Field(
         default=None,
