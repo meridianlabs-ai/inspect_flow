@@ -29,7 +29,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowOptions, FlowSolver, FlowTask, FlowDefaults, FlowGenerateConfig\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowInclude, FlowModel, FlowOptions, FlowSolver, FlowTask, FlowDefaults, FlowGenerateConfig\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
