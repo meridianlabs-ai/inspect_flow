@@ -15,7 +15,7 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
-from inspect_flow._config.load import _apply_overrides, apply_includes, load_config
+from inspect_flow._config.load import _apply_overrides, expand_includes, load_config
 from pydantic_core import to_jsonable_python
 
 update_examples = False
@@ -379,11 +379,15 @@ def test_overrides_invalid_config_key():
 
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
-    job = apply_includes(FlowJob(includes=[FlowInclude(config_file_path=include_path)]))
+    job = expand_includes(
+        FlowJob(includes=[FlowInclude(config_file_path=include_path)])
+    )
     validate_config(job, "absolute_include_flow.yaml")
 
 
 def test_recursive_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "include_flow.py")
-    job = apply_includes(FlowJob(includes=[FlowInclude(config_file_path=include_path)]))
+    job = expand_includes(
+        FlowJob(includes=[FlowInclude(config_file_path=include_path)])
+    )
     validate_config(job, "recursive_include_flow.yaml")

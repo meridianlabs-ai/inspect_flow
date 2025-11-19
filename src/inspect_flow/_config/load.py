@@ -38,52 +38,29 @@ def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
         **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
     config_options = ConfigOptions(**kwargs)
-    config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
     set_config_path_env_var(config_file)
-    config = apply_includes(config, **kwargs)
+    config = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
     overrides = config_options.get("overrides", [])
     if overrides:
         return _apply_overrides(config, overrides)
     return config
 
 
-def apply_includes(job: FlowJob, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
+def expand_includes(
+    job: FlowJob, base_path: str = "", flow_vars: dict[str, str] | None = None
+) -> FlowJob:
     """Apply includes in the job config."""
-    options = ConfigOptions(**kwargs)
+    if flow_vars is None:
+        flow_vars = dict()
     while job.includes:
         include = job.includes.pop(0)
         if not include.config_file_path:
             raise ValueError("Include must have a config_file_path set.")
-        included_job = _load_config_from_file(
-            include.config_file_path, options.get("flow_vars", {})
-        )
+        include_path = absolute_path_relative_to(include.config_file_path, base_path)
+        included_job = _load_config_from_file(include_path, flow_vars)
         job = _apply_include(job, included_job)
+    job.includes = None
     return job
-
-
-def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
-    job_dict = job.model_dump(mode="json", exclude_none=True)
-    include_dict = included_job.model_dump(mode="json", exclude_none=True)
-    merged_dict = _deep_merge_include(include_dict, job_dict)
-    return FlowJob.model_validate(merged_dict)
-
-
-def _deep_merge_include(
-    base: dict[str, Any], override: dict[str, Any]
-) -> dict[str, Any]:
-    result = base.copy()
-    for k, override_v in override.items():
-        if k not in result:
-            result[k] = override_v
-        else:
-            base_v = result[k]
-            if isinstance(override_v, dict) and isinstance(base_v, dict):
-                result[k] = _deep_merge_include(base_v, override_v)
-            elif isinstance(override_v, list) and isinstance(base_v, list):
-                result[k] = base_v + override_v
-            else:
-                result[k] = override_v
-    return result
 
 
 def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
@@ -117,17 +94,32 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJ
         click.echo(e, err=True)
         sys.exit(1)
 
-    _includes_to_absolute_paths(job, str(config_path.parent))
-
-    return job
+    return expand_includes(job, str(config_path.parent), flow_vars)
 
 
-def _includes_to_absolute_paths(job: FlowJob, base_path: str) -> None:
-    for include in job.includes or []:
-        if include.config_file_path:
-            include.config_file_path = absolute_path_relative_to(
-                include.config_file_path, base_path
-            )
+def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
+    job_dict = job.model_dump(mode="json", exclude_none=True)
+    include_dict = included_job.model_dump(mode="json", exclude_none=True)
+    merged_dict = _deep_merge_include(include_dict, job_dict)
+    return FlowJob.model_validate(merged_dict)
+
+
+def _deep_merge_include(
+    base: dict[str, Any], override: dict[str, Any]
+) -> dict[str, Any]:
+    result = base.copy()
+    for k, override_v in override.items():
+        if k not in result:
+            result[k] = override_v
+        else:
+            base_v = result[k]
+            if isinstance(override_v, dict) and isinstance(base_v, dict):
+                result[k] = _deep_merge_include(base_v, override_v)
+            elif isinstance(override_v, list) and isinstance(base_v, list):
+                result[k] = base_v + override_v
+            else:
+                result[k] = override_v
+    return result
 
 
 def _maybe_json(value: str) -> Any:
