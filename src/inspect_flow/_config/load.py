@@ -6,6 +6,7 @@ from typing import Any, TypeAlias
 
 import click
 import yaml
+from fsspec.core import split_protocol
 from inspect_ai._util.file import exists, file
 from pydantic_core import ValidationError
 from typing_extensions import TypedDict, Unpack
@@ -129,9 +130,13 @@ def _deep_merge_include(
 def _apply_auto_includes(
     job: FlowJob, config_file: str, config_options: ConfigOptions
 ) -> FlowJob:
-    parent_dir = Path(config_file).parent
+    protocol, path = split_protocol(config_file)
+
+    parent_dir = Path(path).parent
     while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
+        if protocol:
+            auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
             auto_job = _load_config_from_file(
                 auto_file, config_options.get("flow_vars", {})
