@@ -3,9 +3,9 @@ import yaml
 from inspect_flow._types.flow_types import FlowJob
 
 
-def config_to_yaml(config: FlowJob) -> str:
+def config_to_yaml(job: FlowJob) -> str:
     return yaml.dump(
-        config.model_dump(
+        job.model_dump(
             mode="json",
             exclude_unset=True,
             exclude_defaults=True,

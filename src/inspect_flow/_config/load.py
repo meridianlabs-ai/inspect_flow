@@ -33,17 +33,17 @@ class ConfigOptions(TypedDict, total=False):
     flow_vars: dict[str, str]
 
 
-def load_config(config_file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
-    """Load a configuration file and apply any overrides.
+def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
+    """Load a job file and apply any overrides.
 
     Args:
-        config_file: The path to the configuration file.
+        file: The path to the job configuration file.
         **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
     config_options = ConfigOptions(**kwargs)
-    set_config_path_env_var(config_file)
-    job = _load_config_from_file(config_file, config_options.get("flow_vars", {}))
-    job = _apply_auto_includes(job, config_file, config_options)
+    set_config_path_env_var(file)
+    job = _load_job_from_file(file, config_options.get("flow_vars", {}))
+    job = _apply_auto_includes(job, file, config_options)
 
     overrides = config_options.get("overrides", [])
     if overrides:
@@ -62,13 +62,13 @@ def expand_includes(
         if not path:
             raise ValueError("Include must have a config_file_path set.")
         include_path = absolute_path_relative_to(path, base_path)
-        included_job = _load_config_from_file(include_path, flow_vars)
+        included_job = _load_job_from_file(include_path, flow_vars)
         job = _apply_include(job, included_job)
     job.includes = None
     return job
 
 
-def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
+def _load_job_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
     config_path = Path(config_file)
 
     try:
@@ -138,7 +138,7 @@ def _apply_auto_includes(
         if protocol:
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
-            auto_job = _load_config_from_file(
+            auto_job = _load_job_from_file(
                 auto_file, config_options.get("flow_vars", {})
             )
             job = _apply_include(job, auto_job)
@@ -195,9 +195,9 @@ def _deep_merge_override(
     return base
 
 
-def _apply_overrides(config: FlowJob, overrides: list[str]) -> FlowJob:
+def _apply_overrides(job: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
-    base_dict = config.model_dump(mode="json", exclude_none=True)
+    base_dict = job.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
     return FlowJob.model_validate(merged_dict)
 
