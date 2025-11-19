@@ -227,7 +227,3 @@ logs/
 
 # MacOS
 .DS_Store
-
-# Quarto
-/.quarto/
-/_site/
