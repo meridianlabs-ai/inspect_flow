@@ -380,4 +380,10 @@ def test_overrides_invalid_config_key():
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
     job = apply_includes(FlowJob(includes=[FlowInclude(config_file_path=include_path)]))
-    validate_config(job, "absolute_include.yaml")
+    validate_config(job, "absolute_include_flow.yaml")
+
+
+def test_recursive_include() -> None:
+    include_path = str(Path(__file__).parent / "config" / "include_flow.py")
+    job = apply_includes(FlowJob(includes=[FlowInclude(config_file_path=include_path)]))
+    validate_config(job, "recursive_include_flow.yaml")

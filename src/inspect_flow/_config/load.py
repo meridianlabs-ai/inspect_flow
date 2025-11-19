@@ -7,12 +7,15 @@ from typing import Any, TypeAlias
 import click
 import yaml
 from inspect_ai._util.file import file
-from pydantic_core import ValidationError, to_jsonable_python
+from pydantic_core import ValidationError
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.module_util import execute_file_and_get_last_result
-from inspect_flow._util.path_util import set_config_path_env_var
+from inspect_flow._util.path_util import (
+    absolute_path_relative_to,
+    set_config_path_env_var,
+)
 
 
 class ConfigOptions(TypedDict, total=False):
@@ -89,32 +92,42 @@ def _load_config_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJ
     try:
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
-                result = execute_file_and_get_last_result(config_file, flow_vars)
-                if result is None:
+                job = execute_file_and_get_last_result(config_file, flow_vars)
+                if job is None:
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
                     )
-                if isinstance(result, FlowJob):
-                    result = FlowJob.model_validate(to_jsonable_python(result))
-                elif not isinstance(result, FlowJob):
+                if not isinstance(job, FlowJob):
                     raise TypeError(
-                        f"Expected FlowJob from Python config file, got {type(result)}"
+                        f"Expected FlowJob from Python config file, got {type(job)}"
                     )
-                return result
-            elif config_path.suffix in [".yaml", ".yml"]:
-                data = yaml.safe_load(f)
-            elif config_path.suffix == ".json":
-                data = json.load(f)
             else:
-                raise ValueError(
-                    f"Unsupported config file format: {config_path.suffix}. "
-                    "Supported formats: .py, .yaml, .yml, .json"
-                )
-            return FlowJob.model_validate(data)
+                if config_path.suffix in [".yaml", ".yml"]:
+                    data = yaml.safe_load(f)
+                elif config_path.suffix == ".json":
+                    data = json.load(f)
+                else:
+                    raise ValueError(
+                        f"Unsupported config file format: {config_path.suffix}. "
+                        "Supported formats: .py, .yaml, .yml, .json"
+                    )
+                job = FlowJob.model_validate(data)
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
         sys.exit(1)
+
+    _includes_to_absolute_paths(job, str(config_path.parent))
+
+    return job
+
+
+def _includes_to_absolute_paths(job: FlowJob, base_path: str) -> None:
+    for include in job.includes or []:
+        if include.config_file_path:
+            include.config_file_path = absolute_path_relative_to(
+                include.config_file_path, base_path
+            )
 
 
 def _maybe_json(value: str) -> Any:
