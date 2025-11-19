@@ -52,11 +52,11 @@ def expand_includes(
     """Apply includes in the job config."""
     if flow_vars is None:
         flow_vars = dict()
-    while job.includes:
-        include = job.includes.pop(0)
-        if not include.config_file_path:
+    for include in job.includes or []:
+        path = include if isinstance(include, str) else include.config_file_path
+        if not path:
             raise ValueError("Include must have a config_file_path set.")
-        include_path = absolute_path_relative_to(include.config_file_path, base_path)
+        include_path = absolute_path_relative_to(path, base_path)
         included_job = _load_config_from_file(include_path, flow_vars)
         job = _apply_include(job, included_job)
     job.includes = None

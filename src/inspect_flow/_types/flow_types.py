@@ -478,7 +478,7 @@ class FlowInclude(BaseModel, extra="forbid"):
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
-    includes: list[FlowInclude] | None = Field(
+    includes: Sequence[str | FlowInclude] | None = Field(
         default=None,
         description="List of other flow configs to include.",
     )
@@ -540,6 +540,11 @@ class FlowJob(BaseModel, extra="forbid"):
     def convert_string_tasks(cls, v):
         return _convert_to_task_list(v)
 
+    @field_validator("includes", mode="before")
+    @classmethod
+    def convert_string_includes(cls, v):
+        return _convert_to_include_list(v)
+
 
 def _convert_to_task_list(
     v: str | FlowTask | list[str | FlowTask] | None,
@@ -549,6 +554,19 @@ def _convert_to_task_list(
     if not isinstance(v, list):
         v = [v]
     return [FlowTask(name=task) if isinstance(task, str) else task for task in v]
+
+
+def _convert_to_include_list(
+    v: str | FlowInclude | list[str | FlowInclude] | None,
+) -> list[FlowInclude] | None:
+    if v is None:
+        return v
+    if not isinstance(v, list):
+        v = [v]
+    return [
+        FlowInclude(config_file_path=include) if isinstance(include, str) else include
+        for include in v
+    ]
 
 
 _T = TypeVar("_T", FlowModel, FlowSolver)

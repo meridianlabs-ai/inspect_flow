@@ -433,7 +433,7 @@ class ResponseSchemaDict(TypedDict):
 class FlowJobDict(TypedDict):
     """Configuration for a flow job."""
 
-    includes: NotRequired[Optional[Sequence[FlowInclude]]]
+    includes: NotRequired[Optional[Sequence[Union[str, FlowInclude]]]]
     """List of other flow configs to include."""
     log_dir: NotRequired[Optional[str]]
     """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job."""

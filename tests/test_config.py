@@ -397,9 +397,9 @@ def test_multiple_includes() -> None:
     job = expand_includes(
         FlowJob(
             includes=[
-                FlowInclude(config_file_path="defaults_flow.py"),
-                FlowInclude(config_file_path="e2e_test_flow.py"),
-                FlowInclude(config_file_path="model_and_task_flow.py"),
+                "defaults_flow.py",
+                "e2e_test_flow.py",
+                "model_and_task_flow.py",
             ]
         ),
         base_path=str(Path(__file__).parent / "config"),
