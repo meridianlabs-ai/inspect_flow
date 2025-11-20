@@ -1,0 +1,15 @@
+dependencies:
+- inspect-evals
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model:
+    name: openai/gpt-4o
+- name: inspect_evals/gpqa_diamond
+  model:
+    name: openai/gpt-4o-mini
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o-mini
