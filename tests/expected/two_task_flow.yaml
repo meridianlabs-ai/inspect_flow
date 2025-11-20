@@ -1,0 +1,9 @@
+log_dir: example_logs
+options:
+  limit: 1
+dependencies:
+- openai
+- git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
+tasks:
+- name: inspect_evals/mmlu_0_shot
+- name: inspect_evals/mmlu_5_shot

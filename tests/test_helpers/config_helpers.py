@@ -26,7 +26,7 @@ def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
 def validate_config(config: FlowJob, file_name: str) -> None:
     config = FlowJob.model_validate(to_jsonable_python(config))
     # Load the example config file
-    example_path = Path(__file__).parents[1] / "config" / file_name
+    example_path = Path(__file__).parents[1] / "expected" / file_name
     if example_path.exists():
         with open(example_path, "r") as f:
             expected_config = yaml.safe_load(f)
