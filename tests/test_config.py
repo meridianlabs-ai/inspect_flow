@@ -488,3 +488,21 @@ def test_221_format_map_file() -> None:
     assert job.options
     assert job.options.bundle_dir == "logs/bundle_flow/bundle"
     validate_config(job, "bundle_flow.yaml")
+
+
+def test_222_including_jobs_check() -> None:
+    include_path = str(Path(__file__).parent / "config" / "including_jobs_flow.py")
+    job = FlowJob(
+        includes=[include_path],
+        options=FlowOptions(limit=1),
+    )
+    job2 = expand_includes(job)
+    assert job2.options
+    assert job2.options.max_samples == 16
+
+    job3 = FlowJob(
+        includes=[include_path],
+        options=FlowOptions(limit=1, max_samples=1024),
+    )
+    with pytest.raises(ValueError):
+        expand_includes(job3)

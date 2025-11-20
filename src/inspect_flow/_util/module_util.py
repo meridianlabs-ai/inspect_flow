@@ -8,6 +8,8 @@ from types import ModuleType
 
 from inspect_ai._util.file import file
 
+from inspect_flow._types.flow_types import FlowJob
+
 
 @lru_cache(maxsize=None)
 def get_module_from_file(file: str) -> ModuleType:
@@ -23,7 +25,7 @@ def get_module_from_file(file: str) -> ModuleType:
 
 
 def execute_file_and_get_last_result(
-    path: str, flow_vars: dict[str, str]
+    path: str, flow_vars: dict[str, str], including_jobs: list[FlowJob] | None
 ) -> object | None:
     with file(path, "r", encoding="utf-8") as f:
         src = f.read()
@@ -55,6 +57,7 @@ def execute_file_and_get_last_result(
         "__name__": "__main__",
         "__builtins__": builtins.__dict__,
         "__flow_vars__": flow_vars,
+        "__flow_including_jobs__": including_jobs or [],
     }
     exec(code, g, g)
     return g.get(target_id)
