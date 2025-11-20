@@ -29,7 +29,16 @@ def execute_file_and_get_last_result(
 ) -> object | None:
     with file(path, "r", encoding="utf-8") as f:
         src = f.read()
-    mod = ast.parse(src, filename=path, mode="exec")
+    return execute_src_and_get_last_result(src, path, flow_vars, including_jobs)
+
+
+def execute_src_and_get_last_result(
+    src: str,
+    filename: str,
+    flow_vars: dict[str, str],
+    including_jobs: list[FlowJob] | None,
+) -> object | None:
+    mod = ast.parse(src, filename=filename, mode="exec")
     if not mod.body:
         return None
 
@@ -52,7 +61,7 @@ def execute_file_and_get_last_result(
         return None
     # else: leave as-is; result will be None
 
-    code = compile(ast.fix_missing_locations(mod), path, "exec")
+    code = compile(ast.fix_missing_locations(mod), filename=filename, mode="exec")
     g = {
         "__name__": "__main__",
         "__builtins__": builtins.__dict__,

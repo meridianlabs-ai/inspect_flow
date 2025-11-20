@@ -25,7 +25,7 @@ pip install git+https://github.com/meridianlabs-ai/inspect_flow
 Create a `config.py` file:
 
 ```python
-from inspect_flow.types import FlowJob, FlowTask
+from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
     dependencies=["inspect-evals"],
