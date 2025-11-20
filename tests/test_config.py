@@ -476,5 +476,11 @@ def test_206_dirty_repo_check() -> None:
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
-    with pytest.raises(RuntimeError):
-        expand_includes(job)
+
+    dirty_file = Path(__file__).parent / "test_dirty_file.txt"
+    dirty_file.touch()
+    try:
+        with pytest.raises(RuntimeError):
+            expand_includes(job)
+    finally:
+        dirty_file.unlink()
