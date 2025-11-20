@@ -25,6 +25,16 @@ dependencies = [
 [project.scripts]
 flow = "inspect_flow._cli.main:main"
 
+[project.optional-dependencies]
+doc = [
+    "jupyter",
+    "quarto-cli",
+    "griffe",
+    "panflute",
+    "markdown",
+    "click",
+]
+
 [dependency-groups]
 dev = [
     "ruff",
@@ -39,14 +49,6 @@ dev = [
     "datamodel-code-generator",
     "pre-commit",
     "ty",
-]
-doc = [
-    "jupyter",
-    "quarto-cli",
-    "griffe",
-    "panflute",
-    "markdown",
-    "click",
 ]
 
 
@@ -66,7 +68,7 @@ local_scheme = "no-local-version" # Important for PyPI compatibility
 [tool.uv]
 managed = true
 add-bounds = "lower"
-default-groups = ["dev", "doc"]
+default-groups = ["dev"]
 
 [tool.ruff]
 extend-exclude = ["docs"]
