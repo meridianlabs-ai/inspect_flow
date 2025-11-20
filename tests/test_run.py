@@ -1,4 +1,3 @@
-import glob
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -169,12 +168,12 @@ def test_write_config() -> None:
         _run_eval_set(job=job)
 
     mock_eval_set.assert_called_once()
-    # Verify that the config file was written with timestamp prefix
-    config_files = glob.glob(f"{log_dir}/*_flow.yaml")
-    assert len(config_files) == 1, f"Expected 1 config file, found {len(config_files)}"
+
+    config_file = Path(log_dir) / "flow.yaml"
+    assert config_file.exists()
 
     # Read the file, parse the yaml, and convert to FlowJob
-    with open(config_files[0], "r") as f:
+    with open(config_file, "r") as f:
         data = yaml.safe_load(f)
         loaded_job = FlowJob.model_validate(data)
         assert (

@@ -1,4 +1,3 @@
-import glob
 import sys
 from pathlib import Path
 
@@ -33,11 +32,11 @@ def test_local_e2e() -> None:
     config = load_job(str(config_path))
     verify_test_logs(job=config, log_dir=log_dir)
 
-    # Verify that the config file was written with timestamp prefix
-    config_files = glob.glob(f"{log_dir}/*_flow.yaml")
-    assert len(config_files) == 1, f"Expected 1 config file, found {len(config_files)}"
+    # Verify that the config file was written
+    config_file = Path(log_dir) / "flow.yaml"
+    assert config_file.exists()
 
-    with open(config_files[0], "r") as f:
+    with open(config_file, "r") as f:
         data = yaml.safe_load(f)
     loaded_job = FlowJob.model_validate(data)
     # The python_version should match the current version
