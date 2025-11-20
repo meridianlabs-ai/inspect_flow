@@ -1,3 +1,10 @@
+"""Test to ensure that included configs are in clean git repos.
+
+Note that this will not catch all dirty repo cases, as it only checks the includes that are currently being resolved.
+Because a file may include multiple includes, the includes are a tree.
+Only the path from the root config to this config is checked for dirty repos.
+However, it should catch the most common cases where included files have uncommitted changes."""
+
 import subprocess
 from pathlib import Path
 
