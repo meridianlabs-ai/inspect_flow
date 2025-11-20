@@ -42,7 +42,9 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     """
     config_options = ConfigOptions(**kwargs)
     set_config_path_env_var(file)
-    job = _load_job_from_file(file, config_options.get("flow_vars", {}))
+    job = _load_job_from_file(
+        file, flow_vars=config_options.get("flow_vars", {}), including_jobs=[]
+    )
     job = _apply_auto_includes(job, file, config_options)
 
     overrides = config_options.get("overrides", [])
@@ -55,17 +57,24 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
 
 
 def expand_includes(
-    job: FlowJob, base_path: str = "", flow_vars: dict[str, str] | None = None
+    job: FlowJob,
+    base_path: str = "",
+    flow_vars: dict[str, str] | None = None,
+    including_jobs: list[FlowJob] | None = None,
 ) -> FlowJob:
     """Apply includes in the job config."""
     if flow_vars is None:
         flow_vars = dict()
+    if including_jobs is None:
+        including_jobs = []
     for include in job.includes or []:
         path = include if isinstance(include, str) else include.config_file_path
         if not path:
             raise ValueError("Include must have a config_file_path set.")
         include_path = absolute_path_relative_to(path, base_path)
-        included_job = _load_job_from_file(include_path, flow_vars)
+        included_job = _load_job_from_file(
+            include_path, flow_vars, including_jobs + [job]
+        )
         job = _apply_include(job, included_job)
     job.includes = None
     return job
@@ -101,13 +110,17 @@ def apply_substitions(job: FlowJob) -> FlowJob:
     return FlowJob.model_validate(substituted_dict)
 
 
-def _load_job_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
+def _load_job_from_file(
+    config_file: str, flow_vars: dict[str, str], including_jobs: list[FlowJob] | None
+) -> FlowJob:
     config_path = Path(config_file)
 
     try:
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
-                job = execute_file_and_get_last_result(config_file, flow_vars)
+                job = execute_file_and_get_last_result(
+                    config_file, flow_vars, including_jobs
+                )
                 if job is None:
                     raise ValueError(
                         f"No value returned from Python config file: {config_file}"
@@ -132,7 +145,7 @@ def _load_job_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
         click.echo(e, err=True)
         sys.exit(1)
 
-    return expand_includes(job, str(config_path.parent), flow_vars)
+    return expand_includes(job, str(config_path.parent), flow_vars, including_jobs)
 
 
 def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
@@ -173,7 +186,9 @@ def _apply_auto_includes(
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
             auto_job = _load_job_from_file(
-                auto_file, config_options.get("flow_vars", {})
+                auto_file,
+                config_options.get("flow_vars", {}),
+                including_jobs=[job],
             )
             job = _apply_include(job, auto_job)
         if parent_dir.parent == parent_dir:
