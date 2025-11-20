@@ -421,3 +421,11 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     )  # Change to sub-directory to test relative includes
     job = load_job("model_and_task_flow.py")
     validate_config(job, "auto_include_flow.yaml")
+
+
+def test_219_include_remove_duplicates() -> None:
+    include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
+    job = expand_includes(
+        FlowJob(dependencies=["inspect_evals"], includes=[include_path])
+    )
+    assert job.dependencies == ["inspect_evals"]  # No duplicates

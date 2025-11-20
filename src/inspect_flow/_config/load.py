@@ -121,7 +121,7 @@ def _deep_merge_include(
             if isinstance(override_v, dict) and isinstance(base_v, dict):
                 result[k] = _deep_merge_include(base_v, override_v)
             elif isinstance(override_v, list) and isinstance(base_v, list):
-                result[k] = base_v + override_v
+                result[k] = base_v + [item for item in override_v if item not in base_v]
             else:
                 result[k] = override_v
     return result
