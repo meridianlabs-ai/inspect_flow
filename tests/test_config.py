@@ -410,3 +410,14 @@ def test_auto_include() -> None:
         )
     )
     validate_config(job, "auto_include_flow.yaml")
+
+
+def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    flow_file = (
+        Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
+    )
+    monkeypatch.chdir(
+        flow_file.parent
+    )  # Change to sub-directory to test relative includes
+    job = load_job("model_and_task_flow.py")
+    validate_config(job, "auto_include_flow.yaml")
