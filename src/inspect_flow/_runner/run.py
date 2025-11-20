@@ -125,9 +125,9 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
 
 
 def _print_bundle_url(job: FlowJob) -> None:
-    if job.bundle_url_map and job.options and job.options.bundle_dir:
+    if job.options and job.options.bundle_url_map and job.options.bundle_dir:
         bundle_url = job.options.bundle_dir
-        for local, url in job.bundle_url_map.items():
+        for local, url in job.options.bundle_url_map.items():
             bundle_url = bundle_url.replace(local, url)
         if bundle_url != job.options.bundle_dir:
             click.echo(f"Bundle URL: {bundle_url}")

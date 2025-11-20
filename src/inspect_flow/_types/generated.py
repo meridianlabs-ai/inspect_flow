@@ -322,6 +322,8 @@ class FlowOptionsDict(TypedDict):
     """Whether to overwrite files in the bundle_dir. (defaults to False)."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
+    bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
+    """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""
 
 
 class FlowTaskDict(TypedDict):
@@ -453,5 +455,3 @@ class FlowJobDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the model."""
     tasks: NotRequired[Optional[Sequence[Union[str, FlowTask]]]]
     """Tasks to run"""
-    bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
-    """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""
