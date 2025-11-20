@@ -15,3 +15,8 @@ cov:
 .PHONY: hooks
 hooks:
 	pre-commit install
+
+.PHONY: docs
+docs:
+	uv sync --extra doc
+	uv run quarto render docs

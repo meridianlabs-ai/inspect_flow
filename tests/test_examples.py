@@ -1,9 +1,10 @@
-"""Test that Python code blocks in README.md are valid and executable."""
+"""Test that Python code blocks in README.md and examples are valid and executable."""
 
 from pathlib import Path
 
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow import FlowJob
 from inspect_flow._util.module_util import execute_src_and_get_last_result
+from inspect_flow.api import load_job
 
 from tests.test_helpers.config_helpers import validate_config
 
@@ -51,3 +52,13 @@ def test_readme_python_blocks() -> None:
             f"Code block at README.md:line {line_num} did not return an object"
         )
         validate_config(job, f"readme_example_{i + 1}.yaml")
+
+
+def test_examples() -> None:
+    """Test that all example Python config files are valid and produce expected results."""
+    examples_dir = Path(__file__).parent.parent / "examples"
+    example_files = [f for f in examples_dir.glob("*.py")]
+
+    for file in example_files:
+        job = load_job(str(file))
+        validate_config(job, f"{file.stem}.yaml")

@@ -58,8 +58,8 @@ website:
           href: reference/inspect_flow.api.qmd#configoptions
         - text: config
           href: reference/inspect_flow.api.qmd#config
-        - text: load_config
-          href: reference/inspect_flow.api.qmd#load_config
+        - text: load_job
+          href: reference/inspect_flow.api.qmd#load_job
         - text: run
           href: reference/inspect_flow.api.qmd#run
     - section: Inspect CLI

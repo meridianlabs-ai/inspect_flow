@@ -1,5 +1,3 @@
-"""Example configuration file for inspect_flow."""
-
 from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
