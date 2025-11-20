@@ -368,7 +368,7 @@ def test_multiple_includes() -> None:
                 "model_and_task_flow.py",
             ]
         ),
-        base_path=str(Path(__file__).parent / "config"),
+        including_job_path=str(Path(__file__).parent / "config" / "nofile.py"),
     )
     validate_config(job, "multiple_includes_flow.yaml")
 
@@ -468,3 +468,13 @@ def test_222_including_jobs_check() -> None:
     )
     with pytest.raises(ValueError):
         expand_includes(job3)
+
+
+def test_206_dirty_repo_check() -> None:
+    include_path = str(Path(__file__).parent / "config" / "dirty_repo_flow.py")
+    job = FlowJob(
+        includes=[include_path],
+        options=FlowOptions(limit=1),
+    )
+    with pytest.raises(RuntimeError):
+        expand_includes(job)
