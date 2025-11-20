@@ -813,8 +813,10 @@ def test_bundle_url_map(capsys) -> None:
     path = Path.cwd().as_posix()
     config = FlowJob(
         log_dir="logs/flow_test",
-        options=FlowOptions(bundle_dir=path + "logs/bundle_test"),
-        bundle_url_map={path: "http://example.com/bundle"},
+        options=FlowOptions(
+            bundle_dir=path + "logs/bundle_test",
+            bundle_url_map={path: "http://example.com/bundle"},
+        ),
         tasks=[
             task_file + "@noop",
         ],

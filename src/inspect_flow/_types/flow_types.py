@@ -423,6 +423,11 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
+    bundle_url_map: dict[str, str] | None = Field(
+        default=None,
+        description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
+    )
+
 
 class FlowDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
@@ -522,11 +527,6 @@ class FlowJob(BaseModel, extra="forbid"):
 
     tasks: Sequence[str | FlowTask] | None = Field(
         default=None, description="Tasks to run"
-    )
-
-    bundle_url_map: dict[str, str] | None = Field(
-        default=None,
-        description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
     )
 
     # Convert single items to lists
