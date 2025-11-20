@@ -1,9 +1,8 @@
 import click
 import inspect_ai
 import yaml
-from inspect_ai._util.dateutil import iso_now
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.file import clean_filename_component, file
+from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 
 from inspect_flow._config.write import config_to_yaml
@@ -28,7 +27,7 @@ def _print_resolved_config(job: FlowJob) -> None:
 
 
 def _write_config_file(job: FlowJob) -> None:
-    filename = f"{job.log_dir}/{clean_filename_component(iso_now())}_flow.yaml"
+    filename = f"{job.log_dir}/flow.yaml"
     yaml = config_to_yaml(job)
     with file(filename, "w") as f:
         f.write(yaml)
