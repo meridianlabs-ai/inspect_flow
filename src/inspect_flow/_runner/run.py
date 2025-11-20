@@ -113,7 +113,11 @@ def _run_eval_set(job: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalL
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
     # Issue #217 - update error message to use 'bundle_overwrite' instead of 'overwrite'
-    e.message = str(e.message).replace("'overwrite'", "'bundle_overwrite'")
+    original_message = str(e.message)
+    modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
+    if original_message != modified_message:
+        e.message = modified_message
+
     if e.args:
         original_message = str(e.args[0])
         modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
