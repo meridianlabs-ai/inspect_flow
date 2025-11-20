@@ -15,7 +15,12 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
-from inspect_flow._config.load import _apply_overrides, expand_includes, load_job
+from inspect_flow._config.load import (
+    _apply_overrides,
+    apply_substitions,
+    expand_includes,
+    load_job,
+)
 from pydantic_core import to_jsonable_python
 
 update_examples = False
@@ -41,8 +46,11 @@ def validate_config(config: FlowJob | FlowJob, file_name: str) -> None:
     config = FlowJob.model_validate(to_jsonable_python(config))
     # Load the example config file
     example_path = Path(__file__).parent / "config" / file_name
-    with open(example_path, "r") as f:
-        expected_config = yaml.safe_load(f)
+    if example_path.exists():
+        with open(example_path, "r") as f:
+            expected_config = yaml.safe_load(f)
+    else:
+        expected_config = {}
 
     # Compare the generated config with the example
     generated_config = config.model_dump(
@@ -429,3 +437,54 @@ def test_219_include_remove_duplicates() -> None:
         FlowJob(dependencies=["inspect_evals"], includes=[include_path])
     )
     assert job.dependencies == ["inspect_evals"]  # No duplicates
+
+
+def test_221_format_map() -> None:
+    job = FlowJob(
+        log_dir="./logs/flow_test",
+        options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
+        dependencies=[
+            "./tests/config/local_eval",
+        ],
+        tasks=tasks_matrix(
+            task=[
+                "local_eval/noop",
+            ],
+            model=[
+                FlowModel(
+                    name="mockllm/mock-llm1",
+                ),
+            ],
+        ),
+    )
+    job2 = apply_substitions(job)
+    assert job2.options
+    assert job2.options.bundle_dir == "./logs/flow_test/bundle"
+
+
+def test_221_format_map_nested() -> None:
+    job = FlowJob(
+        log_dir="{flow_metadata[dir]}/flow_test",
+        flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
+    )
+    job2 = apply_substitions(job)
+    assert job2.log_dir == "tests/logs/flow_test"
+
+
+def test_221_format_map_recursive() -> None:
+    job = FlowJob(
+        flow_metadata={
+            "one": "{flow_metadata[two]}/a",
+            "two": "{flow_metadata[one]}/b",
+        },
+    )
+    with pytest.raises(ValueError):
+        apply_substitions(job)
+
+
+def test_221_format_map_file() -> None:
+    include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
+    job = load_job(include_path)
+    assert job.options
+    assert job.options.bundle_dir == "logs/bundle_flow/bundle"
+    validate_config(job, "bundle_flow.yaml")

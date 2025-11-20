@@ -48,6 +48,9 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     overrides = config_options.get("overrides", [])
     if overrides:
         return _apply_overrides(job, overrides)
+
+    job = apply_substitions(job)
+
     return job
 
 
@@ -66,6 +69,36 @@ def expand_includes(
         job = _apply_include(job, included_job)
     job.includes = None
     return job
+
+
+def apply_substitions(job: FlowJob) -> FlowJob:
+    """Apply any substitutions to the job config."""
+    # Convert job to dict for use as the format_map dictionary
+    job_dict = job.model_dump(mode="json", exclude_none=True)
+
+    # Recursively apply substitutions to all string fields
+    def substitute_strings(obj: Any) -> Any:
+        if isinstance(obj, str):
+            last = obj
+            new = obj.format_map(job_dict)
+            # Repeat until no more substitutions occur
+            while new != last:
+                if obj in new:
+                    raise ValueError(
+                        f"Circular substitution detected for string: {obj}"
+                    )
+                last = new
+                new = last.format_map(job_dict)
+            return new
+        elif isinstance(obj, dict):
+            return {k: substitute_strings(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [substitute_strings(item) for item in obj]
+        else:
+            return obj
+
+    substituted_dict = substitute_strings(job_dict)
+    return FlowJob.model_validate(substituted_dict)
 
 
 def _load_job_from_file(config_file: str, flow_vars: dict[str, str]) -> FlowJob:
