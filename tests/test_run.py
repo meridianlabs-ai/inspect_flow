@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import yaml
 from inspect_ai import Task
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
 from inspect_ai.solver import Solver
@@ -825,3 +826,29 @@ def test_bundle_url_map(capsys) -> None:
     mock_eval_set.assert_called_once()
     captured = capsys.readouterr()
     assert "http://example.com/bundle" in captured.out
+
+
+def test_217_bundle_error_message() -> None:
+    log_dir = init_test_logs()
+
+    bundle_dir = log_dir + "/bundle_test"
+    config = FlowJob(
+        log_dir=log_dir,
+        options=FlowOptions(bundle_dir=bundle_dir),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+
+    _run_eval_set(job=(config))
+
+    assert config.tasks
+    config.tasks = list(config.tasks) + [
+        FlowTask(name=task_file + "@noop", model="mockllm/mock-llm2")
+    ]
+
+    try:
+        _run_eval_set(job=(config))
+    except PrerequisiteError as e:
+        assert "'bundle_overwrite'" in str(e)
+        assert "'bundle_overwrite'" in str(e.message)
+    else:
+        raise AssertionError("Expected PrerequisiteError was not raised")
