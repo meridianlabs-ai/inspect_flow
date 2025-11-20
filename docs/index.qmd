@@ -100,22 +100,7 @@ Let's walk through creating your first Flow configuration. We'll use `FlowJob` (
 `FlowJob` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
 
 ``` {.python filename="config.py"}
-from inspect_flow.types import FlowJob, FlowTask
-
-
-FlowJob(
-    dependencies=["inspect-evals"],
-    tasks=[
-        FlowTask(
-            name="inspect_evals/gpqa_diamond",
-            model="openai/gpt-5",
-        ),
-        FlowTask(
-            name="inspect_evals/mmlu_0_shot",
-            model="openai/gpt-5",
-        ),
-    ],
-)
+{{< include ../examples/config.py >}}
 ```
 
 To run the evaluations, run the following command in your shell. This will create a virtual environment for this job run and install the dependencies. Note that model dependencies (like the openai Python package) are inferred and installed automatically.
@@ -131,22 +116,7 @@ This will run both tasks and display progress in your terminal.
 Often you'll want to evaluate multiple tasks across multiple models. Rather than manually defining every combination, use `tasks_matrix` to generate all task-model pairs:
 
 ``` {.python filename="matrix.py"}
-from inspect_flow import FlowJob, tasks_matrix
-
-
-FlowJob(
-    dependencies=["inspect-evals"],
-    tasks=tasks_matrix(
-        task=[
-            "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmlu_0_shot",
-        ],
-        model=[
-            "openai/gpt-5",
-            "openai/gpt-5-mini",
-        ],
-    ),
-)
+{{< include ../examples/matrix.py >}}
 ```
 
 To preview the expanded config before running it, you can run the following command in your shell to ensure the generated config is the one that you intend to run.
@@ -159,57 +129,14 @@ This command outputs the expanded configuration showing all 4 task-model combina
 
 `tasks_matrix` and `models_matrix` are powerful functions that can operate on multiple levels of nested matrixes which enable sophisticated parameter sweeping. Let's say you want to explore different reasoning efforts across models—you can achieve this with the `models_matrix` function.
 
-``` {.python filename="matrix.py"}
-from inspect_flow import FlowJob, FlowGenerateConfig, tasks_matrix, models_matrix
-
-
-FlowJob(
-    dependencies=["inspect-evals"],
-    tasks=tasks_matrix(
-        task=[
-            "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmlu_0_shot",
-        ],
-        model=models_matrix(
-            model=[
-                "openai/gpt-5",
-                "openai/gpt-5-mini",
-            ],
-            config=[
-                FlowGenerateConfig(reasoning_effort="minimal"),
-                FlowGenerateConfig(reasoning_effort="low"),
-                FlowGenerateConfig(reasoning_effort="medium"),
-                FlowGenerateConfig(reasoning_effort="high"),
-            ],
-        ),
-    ),
-)
+``` {.python filename="models_matrix.py"}
+{{< include ../examples/models_matrix.py >}}
 ```
 
 For even more concise parameter sweeping, use `configs_matrix` to generate configuration variants. This produces the same 16 evaluations (2 tasks × 2 models × 4 reasoning levels) as above, but with less boilerplate:
 
-``` {.python filename="matrix.py"}
-from inspect_flow import FlowJob, FlowGenerateConfig, tasks_matrix, models_matrix, configs_matrix
-
-
-FlowJob(
-    dependencies=["inspect-evals"],
-    tasks=tasks_matrix(
-        task=[
-            "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmlu_0_shot",
-        ],
-        model=models_matrix(
-            model=[
-                "openai/gpt-5",
-                "openai/gpt-5-mini",
-            ],
-            config=configs_matrix(
-                reasoning_effort=["minimal", "low", "medium", "high"],
-            ),
-        ),
-    ),
-)
+``` {.python filename="configs_matrix.py"}
+{{< include ../examples/configs_matrix.py >}}
 ```
 
 To run the config:

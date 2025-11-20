@@ -4,7 +4,7 @@ import yaml
 from inspect_flow import FlowJob
 from pydantic_core import to_jsonable_python
 
-update_examples = True
+update_examples = False
 
 
 def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
