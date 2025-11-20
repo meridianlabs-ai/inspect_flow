@@ -71,7 +71,7 @@ add-bounds = "lower"
 default-groups = ["dev"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "examples"]
 
 [tool.ruff]
 extend-exclude = ["docs"]

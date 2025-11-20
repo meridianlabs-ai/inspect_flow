@@ -24,22 +24,10 @@ pip install git+https://github.com/meridianlabs-ai/inspect_flow
 
 Create a `config.py` file:
 
-```python
-from inspect_flow.types import FlowJob, FlowTask
+--8<-- examples/config.py
 
-FlowJob(
-    dependencies=["inspect-evals"],
-    tasks=[
-        FlowTask(
-            name="inspect_evals/gpqa_diamond",
-            model="openai/gpt-4o",
-        ),
-        FlowTask(
-            name="inspect_evals/mmlu_0_shot",
-            model="openai/gpt-4o",
-        ),
-    ],
-)
+```python
+--8<-- examples/config.py
 ```
 
 Run it:
