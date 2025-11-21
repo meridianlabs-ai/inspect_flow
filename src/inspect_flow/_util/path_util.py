@@ -21,12 +21,12 @@ def find_file(file_path: str) -> str | None:
     if path.exists():
         return str(path.resolve())
 
-    if config_path := os.environ.get("INSPECT_FLOW_CONFIG_PATH"):
+    if config_path := os.environ.get(config_path_key):
         relative_path = Path(config_path).parent / file_path
         if relative_path.exists():
             return str(relative_path.resolve())
 
-    if cwd := os.environ.get("INSPECT_FLOW_CWD"):
+    if cwd := os.environ.get(cwd_path_key):
         relative_path = Path(cwd) / file_path
         if relative_path.exists():
             return str(relative_path.resolve())

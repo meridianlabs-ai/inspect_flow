@@ -45,6 +45,7 @@ def check_repo(path: str) -> None:
         raise RuntimeError("Git command not found. Is git installed?") from e
 
 
+check_repo(__file__)
 for path in including_jobs.keys():
     check_repo(path)
 

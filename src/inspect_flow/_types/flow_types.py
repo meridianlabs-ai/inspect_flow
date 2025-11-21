@@ -495,7 +495,7 @@ class FlowJob(BaseModel, extra="forbid"):
 
     log_dir: str | None = Field(
         default=None,
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job.",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. If a relative path, it will be resolved relative to the most recent config file loaded with 'load_job' or the current working directory if 'load_job' was not used.",
     )
 
     new_log_dir: bool | None = Field(
