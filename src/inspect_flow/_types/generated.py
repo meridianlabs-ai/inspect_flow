@@ -12,6 +12,7 @@ from typing_extensions import NotRequired, TypedDict
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
+    FlowDependencies,
     FlowEpochs,
     FlowGenerateConfig,
     FlowInclude,
@@ -82,6 +83,19 @@ class FlowAgentMatrixDict(TypedDict):
 
     args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
     """Additional args to pass to agent constructor."""
+
+
+class FlowDependenciesDict(TypedDict):
+    """Configuration for flow dependencies to install in the venv."""
+
+    additional_dependencies: NotRequired[Optional[Sequence[str]]]
+    """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
+    requirements_txt: NotRequired[Optional[str]]
+    """Path to a requirements.txt file to install dependencies from. If 'auto' will look for requirements.txt parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto')."""
+    pyproject_toml: NotRequired[Optional[str]]
+    """Path to a pyproject.toml file to install dependencies from. If 'auto' will look for pyproject.toml parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto')."""
+    auto_detect_dependencies: NotRequired[Optional[bool]]
+    """If True, automatically detect and install dependencies from names of objects in the config (defaults to True)."""
 
 
 class FlowEpochsDict(TypedDict):
@@ -460,8 +474,8 @@ class FlowJobDict(TypedDict):
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
     options: NotRequired[Optional[FlowOptions]]
     """Arguments for calls to eval_set."""
-    dependencies: NotRequired[Optional[Sequence[str]]]
-    """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
+    dependencies: NotRequired[Optional[FlowDependencies]]
+    """Dependencies to install in the venv. Defaults to auto-detecting dependencies from requirements.txt, pyproject.toml, and object names in the config."""
     env: NotRequired[Optional[Mapping[str, str]]]
     """Environment variables to set when running tasks."""
     defaults: NotRequired[Optional[FlowDefaults]]

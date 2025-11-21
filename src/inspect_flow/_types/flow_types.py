@@ -485,6 +485,30 @@ class FlowInclude(BaseModel, extra="forbid"):
     )
 
 
+class FlowDependencies(BaseModel, extra="forbid"):
+    """Configuration for flow dependencies to install in the venv."""
+
+    additional_dependencies: list[str] | None = Field(
+        default=None,
+        description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
+    )
+
+    requirements_txt: str | None = Field(
+        default=None,
+        description="Path to a requirements.txt file to install dependencies from. If 'auto' will look for requirements.txt parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto').",
+    )
+
+    pyproject_toml: str | None = Field(
+        default=None,
+        description="Path to a pyproject.toml file to install dependencies from. If 'auto' will look for pyproject.toml parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto').",
+    )
+
+    auto_detect_dependencies: bool | None = Field(
+        default=None,
+        description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True).",
+    )
+
+
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
@@ -512,9 +536,9 @@ class FlowJob(BaseModel, extra="forbid"):
         default=None, description="Arguments for calls to eval_set."
     )
 
-    dependencies: list[str] | None = Field(
+    dependencies: FlowDependencies | None = Field(
         default=None,
-        description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
+        description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from requirements.txt, pyproject.toml, and object names in the config.",
     )
 
     env: dict[str, str] | None = Field(
