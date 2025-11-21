@@ -7,6 +7,7 @@ from griffe import (
     Alias,
     Attribute,
     Class,
+    Docstring,
     DocstringSection,
     DocstringSectionExamples,
     DocstringSectionParameters,
@@ -105,6 +106,43 @@ def parse_attribute_docs(attrib: Attribute, options: DocParseOptions) -> DocObje
     )
 
 
+def field_description_to_docstring(attribute: Attribute) -> None:
+    if attribute.docstring is not None:
+        # nothing to do
+        return
+
+    if attribute.value is None:
+        return
+    
+    value_str = str(attribute.value)
+    # Look for Field(description="...") pattern
+    if not ("Field(" in value_str and "description=" in value_str):
+        return
+    
+    try:
+        # Parse the Field call to extract description
+        import ast
+        value_str = value_str.strip()
+        if not value_str.startswith("Field("):
+            return
+
+        tree = ast.parse(f"x = {value_str}")
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg == "description" and isinstance(keyword.value, ast.Constant):
+                    attribute.docstring = Docstring(
+                        str(keyword.value.value),
+                        lineno=attribute.lineno,
+                        endlineno=attribute.endlineno,
+                    )
+                    return
+    except Exception:
+        # If parsing fails, fall through
+        pass
+
+
 def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
     # if this is a protocol then amend the declaration w/ the __call__
     is_protocol = clz.bases and str(clz.bases[0]) == "Protocol"
@@ -124,7 +162,12 @@ def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
         methods: list[DocFunction] = []
         for member in clz.members.values():
             if member.docstring is None:
-                continue
+                if not isinstance(member, Attribute):
+                    continue
+
+                field_description_to_docstring(member)
+                if member.docstring is None:
+                    continue
 
             if isinstance(member, Attribute):
                 if not isinstance(member.annotation, Expr):
