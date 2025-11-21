@@ -498,7 +498,7 @@ class FlowJob(BaseModel, extra="forbid"):
         description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. If a relative path, it will be resolved relative to the most recent config file loaded with 'load_job' or the current working directory if 'load_job' was not used.",
     )
 
-    new_log_dir: bool | None = Field(
+    log_dir_create_unique: bool | None = Field(
         default=None,
         description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
     )

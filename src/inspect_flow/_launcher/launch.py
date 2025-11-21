@@ -50,13 +50,13 @@ def _resolve_log_dir(job: FlowJob) -> str:
     assert job.log_dir
     absolute_log_dir = absolute_path(job.log_dir)
 
-    if job.new_log_dir:
-        return _new_log_dir(absolute_log_dir)
+    if job.log_dir_create_unique:
+        return _log_dir_create_unique(absolute_log_dir)
     else:
         return absolute_log_dir
 
 
-def _new_log_dir(log_dir: str) -> str:
+def _log_dir_create_unique(log_dir: str) -> str:
     if not exists(log_dir):
         return log_dir
 
