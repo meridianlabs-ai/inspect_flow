@@ -40,11 +40,13 @@ def create_venv(job: FlowJob, temp_dir: str) -> dict[str, str]:
         env=env,
     )
 
-    dependencies: List[str] = job.dependencies or []
-    dependencies = [
-        dep if not dep.startswith(".") else str(Path(dep).resolve())
-        for dep in dependencies
-    ]
+    dependencies: List[str] = []
+    if job.dependencies and job.dependencies.additional_dependencies:
+        dependencies.extend(job.dependencies.additional_dependencies)
+        dependencies = [
+            dep if not dep.startswith(".") else str(Path(dep).resolve())
+            for dep in dependencies
+        ]
     dependencies.extend(_get_model_dependencies(job))
     dependencies.append(_get_pip_string("inspect-flow"))
 
