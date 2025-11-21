@@ -7,13 +7,18 @@ from inspect_flow import FlowJob
 from inspect_flow._config.load import load_job
 from inspect_flow._launcher.launch import _log_dir_create_unique, launch
 
+CREATE_VENV_RUN_CALLS = 3
+
 
 def test_launch() -> None:
     with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
         launch(job=FlowJob(log_dir="logs", tasks=["task_name"]))
 
-        assert mock_run.call_count == 3
-        args = mock_run.mock_calls[2].args[0]
+        assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
+        args = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].args[0]
         assert len(args) == 2
         assert str(args[0]).endswith("/.venv/bin/python")
         assert args[1] == str(
@@ -36,7 +41,8 @@ def test_launch_handles_subprocess_error() -> None:
         mock_run.side_effect = [
             None,  # First call succeeds
             None,  # Second call succeeds
-            subprocess.CalledProcessError(42, "cmd"),  # Third call fails
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
+            subprocess.CalledProcessError(42, "cmd"),  # Fourth call fails
         ]
 
         launch(job=FlowJob(log_dir="logs", tasks=["task_name"]))
@@ -50,6 +56,10 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv2", raising=False)
 
     with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
         launch(
             job=FlowJob(
                 log_dir="logs",
@@ -58,8 +68,8 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
             )
         )
 
-    assert mock_run.call_count == 3
-    env = mock_run.mock_calls[2].kwargs["env"]
+    assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
+    env = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].kwargs["env"]
     assert env["myenv1"] == "value1"
     assert env["myenv2"] == "value2"
 
