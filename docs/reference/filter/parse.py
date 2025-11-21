@@ -7,6 +7,7 @@ from griffe import (
     Alias,
     Attribute,
     Class,
+    Docstring,
     DocstringSection,
     DocstringSectionExamples,
     DocstringSectionParameters,
@@ -105,43 +106,41 @@ def parse_attribute_docs(attrib: Attribute, options: DocParseOptions) -> DocObje
     )
 
 
-def extract_field_description(attribute: Attribute) -> str | None:
-    """Extract description from Pydantic Field or docstring.
-
-    Args:
-        attribute: The attribute to extract description from.
-
-    Returns:
-        The description if found, otherwise None.
-    """
-    # First, try to get docstring
+def field_description_to_docstring(attribute: Attribute) -> None:
     if attribute.docstring is not None:
-        return attribute.docstring.value
+        # nothing to do
+        return
 
-    # Try to extract from Pydantic Field
-    if attribute.value is not None:
-        value_str = str(attribute.value)
-        # Look for Field(description="...") pattern
-        if "Field(" in value_str and "description=" in value_str:
-            try:
-                # Parse the Field call to extract description
-                import ast
-                # Remove leading/trailing whitespace and try to parse
-                value_str = value_str.strip()
-                # If it's a simple Field call, parse it
-                if value_str.startswith("Field("):
-                    tree = ast.parse(f"x = {value_str}")
-                    for node in ast.walk(tree):
-                        if isinstance(node, ast.Call):
-                            for keyword in node.keywords:
-                                if keyword.arg == "description":
-                                    if isinstance(keyword.value, ast.Constant):
-                                        return str(keyword.value)
-            except Exception:
-                # If parsing fails, fall through
-                pass
+    if attribute.value is None:
+        return
+    
+    value_str = str(attribute.value)
+    # Look for Field(description="...") pattern
+    if not ("Field(" in value_str and "description=" in value_str):
+        return
+    
+    try:
+        # Parse the Field call to extract description
+        import ast
+        value_str = value_str.strip()
+        if not value_str.startswith("Field("):
+            return
 
-    return None
+        tree = ast.parse(f"x = {value_str}")
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg == "description" and isinstance(keyword.value, ast.Constant):
+                    attribute.docstring = Docstring(
+                        str(keyword.value.value),
+                        lineno=attribute.lineno,
+                        endlineno=attribute.endlineno,
+                    )
+                    return
+    except Exception:
+        # If parsing fails, fall through
+        pass
 
 
 def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
@@ -162,26 +161,26 @@ def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
         attributes: list[DocAttribute] = []
         methods: list[DocFunction] = []
         for member in clz.members.values():
+            if member.docstring is None:
+                if not isinstance(member, Attribute):
+                    continue
+
+                field_description_to_docstring(member)
+                if member.docstring is None:
+                    continue
+
             if isinstance(member, Attribute):
                 if not isinstance(member.annotation, Expr):
                     continue
                 if member.name.startswith("_"):
                     continue
-
-                # Try to extract description from Pydantic Field or docstring
-                description = extract_field_description(member)
-
-                if description is None:
+                if "deprecated" in member.docstring.value.lower():
                     continue
-
-                if "deprecated" in description.lower():
-                    continue
-
                 attributes.append(
                     DocAttribute(
                         name=member.name,
                         type=str(member.annotation.modernize()),
-                        description=description,
+                        description=member.docstring.value,
                     )
                 )
             elif isinstance(member, Function) and include_function(member):
