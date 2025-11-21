@@ -162,7 +162,10 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
