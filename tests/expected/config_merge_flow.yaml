@@ -1,8 +1,6 @@
 log_dir: ./logs/flow_test
 options:
   limit: 1
-dependencies:
-- ./tests/config/local_eval
 tasks:
 - name: local_eval/noop
   model:

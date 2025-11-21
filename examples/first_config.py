@@ -1,11 +1,10 @@
 from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
-    dependencies=["inspect-evals"],  # <1>
-    tasks=[  # <2>
+    tasks=[  # <1>
         FlowTask(
-            name="inspect_evals/gpqa_diamond",  # <3>
-            model="openai/gpt-5",  # <4>
+            name="inspect_evals/gpqa_diamond",  # <2>
+            model="openai/gpt-5",  # <3>
         ),
     ],
 )

@@ -1,11 +1,14 @@
 from inspect_flow import FlowJob, FlowOptions, tasks_matrix
+from inspect_flow._types.flow_types import FlowDependencies
 
 FlowJob(
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
-    dependencies=[
-        "./tests/config/local_eval",
-    ],
+    dependencies=FlowDependencies(
+        additional_dependencies=[
+            "./tests/config/local_eval",
+        ]
+    ),
     tasks=tasks_matrix(
         task=[
             "local_eval/noop",  # task from a package

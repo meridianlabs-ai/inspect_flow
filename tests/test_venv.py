@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from inspect_flow import FlowJob, FlowTask
 from inspect_flow._launcher.venv import create_venv
+from inspect_flow._types.flow_types import FlowDependencies
 
 
 def test_no_dependencies() -> None:
@@ -31,7 +32,9 @@ def test_dependencies() -> None:
         with patch("subprocess.run") as mock_run:
             create_venv(
                 job=FlowJob(
-                    dependencies=["inspect_evals"],
+                    dependencies=FlowDependencies(
+                        additional_dependencies=["inspect_evals"]
+                    ),
                     tasks=[FlowTask(name="task_name")],
                 ),
                 temp_dir=temp_dir,

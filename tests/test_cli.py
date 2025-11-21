@@ -49,7 +49,7 @@ def test_run_command_overrides() -> None:
             [
                 CONFIG_FILE,
                 "--set",
-                "dependencies=dep1",
+                "dependencies.additional_dependencies=dep1",
                 "--set",
                 "defaults.solver.args.tool_calls=none",
             ],
@@ -62,7 +62,10 @@ def test_run_command_overrides() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
@@ -115,7 +118,7 @@ def test_config_command_overrides() -> None:
             [
                 CONFIG_FILE,
                 "--set",
-                "dependencies=dep1",
+                "dependencies.additional_dependencies=dep1",
                 "--set",
                 "defaults.solver.args.tool_calls=none",
             ],
@@ -128,7 +131,10 @@ def test_config_command_overrides() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
@@ -137,7 +143,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
     runner = CliRunner()
     monkeypatch.setenv(
         "INSPECT_FLOW_SET",
-        "dependencies=dep1 defaults.solver.args.tool_calls=none",
+        "dependencies.additional_dependencies=dep1 defaults.solver.args.tool_calls=none",
     )
     with (
         patch("inspect_flow._cli.config.load_job") as mock_config,
