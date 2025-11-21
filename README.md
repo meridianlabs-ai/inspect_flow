@@ -28,7 +28,6 @@ Create a `config.py` file:
 from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
-    dependencies=["inspect-evals"],
     tasks=[
         FlowTask(
             name="inspect_evals/gpqa_diamond",
@@ -58,7 +57,6 @@ Want to test multiple models across multiple tasks? Use `tasks_matrix`:
 from inspect_flow import FlowJob, tasks_matrix
 
 FlowJob(
-    dependencies=["inspect-evals"],
     tasks=tasks_matrix(
         task=[
             "inspect_evals/gpqa_diamond",

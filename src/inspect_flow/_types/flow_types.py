@@ -508,6 +508,12 @@ class FlowDependencies(BaseModel, extra="forbid"):
         description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True).",
     )
 
+    # Convert single items to lists
+    @field_validator("additional_dependencies", mode="before")
+    @classmethod
+    def convert_to_list(cls, v):
+        return ensure_list_or_none(v)
+
 
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
@@ -559,11 +565,6 @@ class FlowJob(BaseModel, extra="forbid"):
     )
 
     # Convert single items to lists
-    @field_validator("dependencies", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
-
     @field_validator("tasks", mode="before")
     @classmethod
     def convert_string_tasks(cls, v):

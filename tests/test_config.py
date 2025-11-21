@@ -21,6 +21,7 @@ from inspect_flow._config.load import (
     expand_includes,
     load_job,
 )
+from inspect_flow._types.flow_types import FlowDependencies
 
 from tests.test_helpers.config_helpers import validate_config
 
@@ -365,8 +366,20 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_219_include_remove_duplicates() -> None:
     include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
-    job = expand_includes(FlowJob(includes=[include_path]))
-    assert job.dependencies == ["inspect_evals"]  # No duplicates
+    job = expand_includes(
+        FlowJob(
+            includes=[include_path],
+            dependencies=FlowDependencies(
+                additional_dependencies=[
+                    "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+                ]
+            ),
+        )
+    )
+    assert job.dependencies
+    assert job.dependencies.additional_dependencies == [
+        "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+    ]  # No duplicates
 
 
 def test_221_format_map() -> None:
