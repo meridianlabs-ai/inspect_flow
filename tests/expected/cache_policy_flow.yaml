@@ -1,0 +1,7 @@
+tasks:
+- name: some_task
+  model:
+    name: some_model
+    config:
+      cache:
+        expiry: 1h

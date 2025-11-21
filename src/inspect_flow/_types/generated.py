@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal, Mapping, Optional, Sequence, Union
 
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
-from inspect_ai.model import BatchConfig, ResponseSchema
+from inspect_ai.model import BatchConfig, CachePolicy, ResponseSchema
 from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec
 from typing_extensions import NotRequired, TypedDict
 
@@ -54,6 +54,14 @@ class BatchConfigDict(TypedDict):
     tick: NotRequired[Optional[float]]
     max_batches: NotRequired[Optional[int]]
     max_consecutive_check_failures: NotRequired[Optional[int]]
+
+
+class CachePolicyDict(TypedDict):
+    """Caching options for model generation."""
+
+    expiry: NotRequired[Optional[str]]
+    per_epoch: NotRequired[bool]
+    scopes: NotRequired[Mapping[str, str]]
 
 
 class FlowAgentDict(TypedDict):
@@ -175,7 +183,9 @@ class FlowGenerateConfigDict(TypedDict):
     internal_tools: NotRequired[Optional[bool]]
     max_tool_output: NotRequired[Optional[int]]
     cache_prompt: NotRequired[Optional[Union[str, bool]]]
-    reasoning_effort: NotRequired[Optional[Literal["minimal", "low", "medium", "high"]]]
+    reasoning_effort: NotRequired[
+        Optional[Literal["none", "minimal", "low", "medium", "high"]]
+    ]
     reasoning_tokens: NotRequired[Optional[int]]
     reasoning_summary: NotRequired[
         Optional[Literal["none", "concise", "detailed", "auto"]]
@@ -183,6 +193,7 @@ class FlowGenerateConfigDict(TypedDict):
     reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
     response_schema: NotRequired[Optional[ResponseSchema]]
     extra_body: NotRequired[Optional[Mapping[str, Any]]]
+    cache: NotRequired[Optional[Union[bool, CachePolicy]]]
     batch: NotRequired[Optional[Union[bool, int, BatchConfig]]]
 
 
@@ -208,7 +219,9 @@ class FlowGenerateConfigMatrixDict(TypedDict):
     max_tool_output: NotRequired[Optional[Sequence[Optional[int]]]]
     cache_prompt: NotRequired[Optional[Sequence[Optional[Union[str, bool]]]]]
     reasoning_effort: NotRequired[
-        Optional[Sequence[Optional[Literal["minimal", "low", "medium", "high"]]]]
+        Optional[
+            Sequence[Optional[Literal["none", "minimal", "low", "medium", "high"]]]
+        ]
     ]
     reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
     reasoning_summary: NotRequired[
