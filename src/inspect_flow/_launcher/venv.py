@@ -170,16 +170,16 @@ def _get_pip_string(package: str) -> str:
 
 
 # TODO:ransom how do we keep in sync with inspect_ai - should probably export from there
-_providers = {
+_providers: dict[str, str | list[str] | None] = {
     "groq": "groq",
     "openai": "openai",
     "anthropic": "anthropic",
     "google": "google-genai",
-    "hf": None,
+    "hf": ["torch", "transformers", "accelerate"],
     "vllm": "vllm",
     "cf": None,
     "mistral": "mistralai",
-    "grok": "openai",
+    "grok": "xai_sdk",
     "together": "openai",
     "fireworks": "openai",
     "sambanova": "openai",
@@ -191,7 +191,6 @@ _providers = {
     "bedrock": None,
     "sglang": "openai",
     "transformer_lens": "transformer_lens",
-    "goodfire": "goodfire",
     "hf-inference-providers": "openai",
 }
 
@@ -204,7 +203,10 @@ def _get_model_dependencies(config: FlowJob) -> List[str]:
         if model_name and "/" in model_name:
             dependency = _providers.get(model_name.split("/")[0])
             if dependency:
-                model_dependencies.add(dependency)
+                if isinstance(dependency, list):
+                    model_dependencies.update(dependency)
+                else:
+                    model_dependencies.add(dependency)
 
     def collect_model_dependencies(config: FlowTask) -> None:
         if config.model:
