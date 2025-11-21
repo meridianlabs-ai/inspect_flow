@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from inspect_ai.model import CachePolicy
 from inspect_flow import (
     FlowAgent,
     FlowGenerateConfig,
@@ -484,3 +485,18 @@ def test_206_dirty_repo_check() -> None:
             expand_includes(job)
     finally:
         dirty_file.unlink()
+
+
+def test_154_cache_policy() -> None:
+    config = FlowJob(
+        tasks=[
+            FlowTask(
+                name="some_task",
+                model=FlowModel(
+                    name="some_model",
+                    config=FlowGenerateConfig(cache=CachePolicy(expiry="1h")),
+                ),
+            ),
+        ],
+    )
+    validate_config(config, "cache_policy_flow.yaml")
