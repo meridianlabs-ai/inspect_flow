@@ -322,6 +322,8 @@ class FlowOptionsDict(TypedDict):
     """Whether to overwrite files in the bundle_dir. (defaults to False)."""
     log_dir_allow_dirty: NotRequired[Optional[bool]]
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
+    eval_set_id: NotRequired[Optional[str]]
+    """ID for the eval set. If not specified, a unique ID will be generated."""
     bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
     """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""
 

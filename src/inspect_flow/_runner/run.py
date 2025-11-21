@@ -68,7 +68,7 @@ def _run_eval_set(job: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalL
             trace=options.trace,
             display=options.display,
             approval=options.approval,
-            score=options.score or True,
+            score=options.score if options.score is not None else True,
             log_level=options.log_level,
             log_level_transcript=options.log_level_transcript,
             log_format=options.log_format,
@@ -98,6 +98,7 @@ def _run_eval_set(job: FlowJob, dry_run: bool = False) -> tuple[bool, list[EvalL
             bundle_dir=options.bundle_dir,
             bundle_overwrite=options.bundle_overwrite or False,
             log_dir_allow_dirty=options.log_dir_allow_dirty,
+            eval_set_id=options.eval_set_id,
             # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
         )
     except PrerequisiteError as e:
