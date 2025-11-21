@@ -1,3 +1,4 @@
+import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -10,7 +11,7 @@ def test_no_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowJob(tasks=[FlowTask(name="task_name")]),
+                job=FlowJob(tasks=[FlowTask(name="task_name")]),
                 temp_dir=temp_dir,
             )
 
@@ -29,7 +30,7 @@ def test_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowJob(
+                job=FlowJob(
                     dependencies=["inspect_evals"],
                     tasks=[FlowTask(name="task_name")],
                 ),
@@ -52,7 +53,7 @@ def test_model_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowJob(
+                job=FlowJob(
                     tasks=[
                         FlowTask(
                             name="task_name",
@@ -88,7 +89,7 @@ def test_python_version() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
-                config=FlowJob(
+                job=FlowJob(
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
                 ),
@@ -103,3 +104,33 @@ def test_python_version() -> None:
                 "--python",
                 "3.11",
             ]
+
+
+def test_5_flow_requirements() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+
+            create_venv(
+                job=FlowJob(
+                    python_version="3.11",
+                    log_dir="logs",
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                temp_dir=temp_dir,
+            )
+
+        assert mock_run.call_count == 3
+        args = mock_run.mock_calls[2].args[0]
+        assert args == [
+            "uv",
+            "pip",
+            "freeze",
+        ]
+        requirements_path = Path("logs") / "flow_requirements.txt"
+        assert requirements_path.exists()
+        with open(requirements_path, "r") as f:
+            requirements = f.read()
+            assert requirements == "mocked output"

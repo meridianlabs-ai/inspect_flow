@@ -12,16 +12,16 @@ from pydantic import BaseModel, Field
 from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
 
 
-def create_venv(config: FlowJob, temp_dir: str) -> dict[str, str]:
+def create_venv(job: FlowJob, temp_dir: str) -> dict[str, str]:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
-    config.python_version = (
-        config.python_version
+    job.python_version = (
+        job.python_version
         or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )
 
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
-            config.model_dump(mode="json", exclude_unset=True),
+            job.model_dump(mode="json", exclude_unset=True),
             f,
             default_flow_style=False,
             sort_keys=False,
@@ -32,7 +32,7 @@ def create_venv(config: FlowJob, temp_dir: str) -> dict[str, str]:
     env.pop("VIRTUAL_ENV", None)
 
     command = ["uv", "venv"]
-    command.extend(["--python", config.python_version])
+    command.extend(["--python", job.python_version])
     subprocess.run(
         command,
         cwd=temp_dir,
@@ -40,12 +40,12 @@ def create_venv(config: FlowJob, temp_dir: str) -> dict[str, str]:
         env=env,
     )
 
-    dependencies: List[str] = config.dependencies or []
+    dependencies: List[str] = job.dependencies or []
     dependencies = [
         dep if not dep.startswith(".") else str(Path(dep).resolve())
         for dep in dependencies
     ]
-    dependencies.extend(_get_model_dependencies(config))
+    dependencies.extend(_get_model_dependencies(job))
     dependencies.append(_get_pip_string("inspect-flow"))
 
     subprocess.run(
@@ -54,6 +54,21 @@ def create_venv(config: FlowJob, temp_dir: str) -> dict[str, str]:
         check=True,
         env=env,
     )
+
+    # Freeze installed packages to flow_requirements.txt in log_dir
+    if job.log_dir:
+        freeze_result = subprocess.run(
+            ["uv", "pip", "freeze"],
+            cwd=temp_dir,
+            check=True,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        log_dir_path = Path(job.log_dir)
+        log_dir_path.mkdir(parents=True, exist_ok=True)
+        requirements_path = log_dir_path / "flow_requirements.txt"
+        requirements_path.write_text(freeze_result.stdout)
 
     return env
 
