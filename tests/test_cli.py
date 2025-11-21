@@ -70,7 +70,7 @@ def test_run_command_overrides() -> None:
         mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
 
 
-def test_run_command_new_log_dir() -> None:
+def test_run_command_log_dir_create_unique() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.run") as mock_run,
@@ -84,7 +84,7 @@ def test_run_command_new_log_dir() -> None:
             run_command,
             [
                 CONFIG_FILE,
-                "--new-log-dir",
+                "--log-dir-create-unique",
             ],
             catch_exceptions=False,
         )
@@ -95,7 +95,7 @@ def test_run_command_new_log_dir() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE,
-            overrides=["new_log_dir=True"],
+            overrides=["log_dir_create_unique=True"],
             flow_vars={},
         )
 

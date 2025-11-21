@@ -65,6 +65,7 @@ def execute_src_and_get_last_result(
     g = {
         "__name__": "__main__",
         "__builtins__": builtins.__dict__,
+        "__file__": filename,
         "__flow_vars__": flow_vars,
         "__flow_including_jobs__": including_jobs or {},
     }

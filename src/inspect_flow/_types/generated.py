@@ -453,8 +453,8 @@ class FlowJobDict(TypedDict):
     includes: NotRequired[Optional[Sequence[Union[str, FlowInclude]]]]
     """List of other flow configs to include."""
     log_dir: NotRequired[Optional[str]]
-    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job."""
-    new_log_dir: NotRequired[Optional[bool]]
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. If a relative path, it will be resolved relative to the most recent config file loaded with 'load_job' or the current working directory if 'load_job' was not used."""
+    log_dir_create_unique: NotRequired[Optional[bool]]
     """If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False."""
     python_version: NotRequired[Optional[str]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""

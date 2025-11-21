@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from inspect_flow import FlowJob
 from inspect_flow._config.load import load_job
-from inspect_flow._launcher.launch import _new_log_dir, launch
+from inspect_flow._launcher.launch import _log_dir_create_unique, launch
 
 
 def test_launch() -> None:
@@ -113,22 +113,22 @@ def test_config_relative_log_dir() -> None:
     assert mock_run.call_count == 1
 
 
-def test_new_log_dir() -> None:
+def test_log_dir_create_unique() -> None:
     with patch("inspect_flow._launcher.launch.exists") as mock_exists:
         mock_exists.return_value = False
-        assert _new_log_dir("log_dir") == "log_dir"
+        assert _log_dir_create_unique("log_dir") == "log_dir"
         assert mock_exists.call_count == 1
     with patch("inspect_flow._launcher.launch.exists") as mock_exists:
         mock_exists.side_effect = [True, True, False]
-        assert _new_log_dir("log_dir") == "log_dir_2"
+        assert _log_dir_create_unique("log_dir") == "log_dir_2"
         assert mock_exists.call_count == 3
     with patch("inspect_flow._launcher.launch.exists") as mock_exists:
         mock_exists.side_effect = [True, True, False]
-        assert _new_log_dir("log_dir_12") == "log_dir_14"
+        assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
         assert mock_exists.call_count == 3
 
 
-def test_launch_new_log_dir() -> None:
+def test_launch_log_dir_create_unique() -> None:
     log_dir = "/etc/logs/flow"
     with (
         patch("subprocess.run") as mock_run,
@@ -139,7 +139,7 @@ def test_launch_new_log_dir() -> None:
         launch(
             job=FlowJob(
                 log_dir=log_dir,
-                new_log_dir=True,
+                log_dir_create_unique=True,
                 tasks=["task_name"],
             )
         )
