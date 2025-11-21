@@ -105,6 +105,45 @@ def parse_attribute_docs(attrib: Attribute, options: DocParseOptions) -> DocObje
     )
 
 
+def extract_field_description(attribute: Attribute) -> str | None:
+    """Extract description from Pydantic Field or docstring.
+
+    Args:
+        attribute: The attribute to extract description from.
+
+    Returns:
+        The description if found, otherwise None.
+    """
+    # First, try to get docstring
+    if attribute.docstring is not None:
+        return attribute.docstring.value
+
+    # Try to extract from Pydantic Field
+    if attribute.value is not None:
+        value_str = str(attribute.value)
+        # Look for Field(description="...") pattern
+        if "Field(" in value_str and "description=" in value_str:
+            try:
+                # Parse the Field call to extract description
+                import ast
+                # Remove leading/trailing whitespace and try to parse
+                value_str = value_str.strip()
+                # If it's a simple Field call, parse it
+                if value_str.startswith("Field("):
+                    tree = ast.parse(f"x = {value_str}")
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Call):
+                            for keyword in node.keywords:
+                                if keyword.arg == "description":
+                                    if isinstance(keyword.value, ast.Constant):
+                                        return str(keyword.value)
+            except Exception:
+                # If parsing fails, fall through
+                pass
+
+    return None
+
+
 def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
     # if this is a protocol then amend the declaration w/ the __call__
     is_protocol = clz.bases and str(clz.bases[0]) == "Protocol"
@@ -123,21 +162,26 @@ def parse_class_docs(clz: Class, options: DocParseOptions) -> DocObject:
         attributes: list[DocAttribute] = []
         methods: list[DocFunction] = []
         for member in clz.members.values():
-            if member.docstring is None:
-                continue
-
             if isinstance(member, Attribute):
                 if not isinstance(member.annotation, Expr):
                     continue
                 if member.name.startswith("_"):
                     continue
-                if "deprecated" in member.docstring.value.lower():
+
+                # Try to extract description from Pydantic Field or docstring
+                description = extract_field_description(member)
+
+                if description is None:
                     continue
+
+                if "deprecated" in description.lower():
+                    continue
+
                 attributes.append(
                     DocAttribute(
                         name=member.name,
                         type=str(member.annotation.modernize()),
-                        description=member.docstring.value,
+                        description=description,
                     )
                 )
             elif isinstance(member, Function) and include_function(member):

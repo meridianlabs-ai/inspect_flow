@@ -107,6 +107,7 @@ class FlowAgent(BaseModel, extra="forbid"):
         default=None,
         description="Name of the agent. Required to be set by the time the agent is created.",
     )
+    """Name of the agent. Required to be set by the time the agent is created."""
 
     args: CreateArgs | None = Field(
         default=None,
