@@ -8,6 +8,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
 from inspect_ai.solver import Solver
+from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
@@ -854,3 +855,89 @@ def test_217_bundle_error_message() -> None:
         assert "'bundle_overwrite'" in str(e.message)
     else:
         raise AssertionError("Expected PrerequisiteError was not raised")
+
+
+def test_eval_set_args() -> None:
+    job = FlowJob(
+        log_dir="logs/flow_test",
+        options=FlowOptions(
+            retry_attempts=7,
+            retry_wait=0.5,
+            retry_connections=0.75,
+            retry_cleanup=True,
+            sandbox=SandboxEnvironmentSpec("docker"),
+            sandbox_cleanup=False,
+            tags=["test", "test_project"],
+            metadata={"project": "test_project"},
+            trace=True,
+            display="rich",
+            approval="manual",
+            score=False,
+            log_level="debug",
+            log_level_transcript="info",
+            log_format="json",
+            limit=50,
+            sample_shuffle=1234,
+            fail_on_error=0.1,
+            continue_on_fail=True,
+            retry_on_error=5,
+            debug_errors=True,
+            max_samples=20,
+            max_tasks=15,
+            max_subprocesses=400,
+            max_sandboxes=2,
+            log_samples=False,
+            log_realtime=False,
+            log_images=True,
+            log_buffer=2048,
+            log_shared=15,
+            bundle_dir="logs/bundle_test",
+            bundle_overwrite=True,
+            log_dir_allow_dirty=True,
+            eval_set_id="test_eval_set_001",
+        ),
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(job=job)
+
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    assert job.options
+    assert call_args.kwargs["retry_attempts"] == job.options.retry_attempts
+    assert call_args.kwargs["retry_wait"] == job.options.retry_wait
+    assert call_args.kwargs["retry_connections"] == job.options.retry_connections
+    assert call_args.kwargs["retry_cleanup"] == job.options.retry_cleanup
+    assert call_args.kwargs["sandbox"] == job.options.sandbox
+    assert call_args.kwargs["sandbox_cleanup"] == job.options.sandbox_cleanup
+    assert call_args.kwargs["tags"] == job.options.tags
+    assert call_args.kwargs["metadata"] == job.options.metadata
+    assert call_args.kwargs["trace"] == job.options.trace
+    assert call_args.kwargs["display"] == job.options.display
+    assert call_args.kwargs["approval"] == job.options.approval
+    assert call_args.kwargs["score"] == job.options.score
+    assert call_args.kwargs["log_level"] == job.options.log_level
+    assert call_args.kwargs["log_level_transcript"] == job.options.log_level_transcript
+    assert call_args.kwargs["log_format"] == job.options.log_format
+    assert call_args.kwargs["limit"] == job.options.limit
+    assert call_args.kwargs["sample_shuffle"] == job.options.sample_shuffle
+    assert call_args.kwargs["fail_on_error"] == job.options.fail_on_error
+    assert call_args.kwargs["continue_on_fail"] == job.options.continue_on_fail
+    assert call_args.kwargs["retry_on_error"] == job.options.retry_on_error
+    assert call_args.kwargs["debug_errors"] == job.options.debug_errors
+    assert call_args.kwargs["max_samples"] == job.options.max_samples
+    assert call_args.kwargs["max_tasks"] == job.options.max_tasks
+    assert call_args.kwargs["max_subprocesses"] == job.options.max_subprocesses
+    assert call_args.kwargs["max_sandboxes"] == job.options.max_sandboxes
+    assert call_args.kwargs["log_samples"] == job.options.log_samples
+    assert call_args.kwargs["log_realtime"] == job.options.log_realtime
+    assert call_args.kwargs["log_images"] == job.options.log_images
+    assert call_args.kwargs["log_buffer"] == job.options.log_buffer
+    assert call_args.kwargs["log_shared"] == job.options.log_shared
+    assert call_args.kwargs["bundle_dir"] == job.options.bundle_dir
+    assert call_args.kwargs["bundle_overwrite"] == job.options.bundle_overwrite
+    assert call_args.kwargs["log_dir_allow_dirty"] == job.options.log_dir_allow_dirty
+    assert call_args.kwargs["eval_set_id"] == job.options.eval_set_id
