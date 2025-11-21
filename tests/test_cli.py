@@ -84,7 +84,7 @@ def test_run_command_log_dir_create_unique() -> None:
             run_command,
             [
                 CONFIG_FILE,
-                "--new-log-dir",
+                "--log-dir-create-unique",
             ],
             catch_exceptions=False,
         )
