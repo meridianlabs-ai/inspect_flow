@@ -11,7 +11,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
+      - uses: ./.github/actions/setup
+        with:
+          python-version: 3.11
+      - name: Install doc dependencies with uv
+        run: uv sync --dev --extra doc
+        shell: bash
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
         with:
