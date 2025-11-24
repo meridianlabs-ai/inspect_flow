@@ -145,3 +145,24 @@ def test_5_flow_requirements() -> None:
         with open(requirements_path, "r") as f:
             requirements = f.read()
             assert requirements == "mocked output"
+
+
+def test_241_dependency_file() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        create_venv(
+            job=FlowJob(
+                python_version="3.11",
+                log_dir="logs",
+                dependencies=FlowDependencies(
+                    dependency_file="tests/config/local_eval/pyproject.toml"
+                ),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=".",
+            temp_dir=temp_dir,
+        )
+        requirements_path = Path("logs") / "flow_requirements.txt"
+        assert requirements_path.exists()
+        with open(requirements_path, "r") as f:
+            requirements = f.read()
+            assert requirements == "mocked output"

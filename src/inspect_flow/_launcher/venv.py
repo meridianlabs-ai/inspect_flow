@@ -1,6 +1,4 @@
 import json
-import os
-import shutil
 import subprocess
 import sys
 from importlib.metadata import Distribution, PackageNotFoundError
@@ -13,7 +11,9 @@ from pydantic import BaseModel, Field
 from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
 
 
-def create_venv(job: FlowJob, base_dir: str, temp_dir: str) -> dict[str, str]:
+def create_venv(
+    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+) -> None:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
     job.python_version = (
         job.python_version
@@ -27,10 +27,6 @@ def create_venv(job: FlowJob, base_dir: str, temp_dir: str) -> dict[str, str]:
             default_flow_style=False,
             sort_keys=False,
         )
-
-    # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
-    env = os.environ.copy()
-    env.pop("VIRTUAL_ENV", None)
 
     _create_venv_with_base_dependencies(
         job, base_dir=base_dir, temp_dir=temp_dir, env=env
@@ -63,8 +59,6 @@ def create_venv(job: FlowJob, base_dir: str, temp_dir: str) -> dict[str, str]:
         requirements_path = log_dir_path / "flow_requirements.txt"
         requirements_path.write_text(freeze_result.stdout)
 
-    return env
-
 
 def _create_venv_with_base_dependencies(
     job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
@@ -83,32 +77,18 @@ def _create_venv_with_base_dependencies(
         return
 
     assert job.python_version
-    shutil.copy(file_path, Path(temp_dir) / "pyproject.toml")
-    use_uv_lock = (
-        False if job.dependencies and job.dependencies.use_uv_lock is False else True
-    )
-    uv_lock_file = Path(file_path).parent / "uv.lock"
-    if not uv_lock_file.exists():
-        use_uv_lock = False
-    if use_uv_lock:
-        shutil.copy(uv_lock_file, Path(temp_dir) / "uv.lock")
-    else:
-        subprocess.run(
-            ["uv", "lock", "--python", job.python_version],
-            cwd=temp_dir,
-            check=True,
-            env=env,
-        )
+    project_dir = Path(file_path).parent
+    uv_args = [
+        "--python",
+        job.python_version,
+        "--project",
+        str(project_dir),
+        "--active",
+    ]
+    if (project_dir / "uv.lock").exists():
+        uv_args.append("--frozen")
     subprocess.run(
-        [
-            "uv",
-            "sync",
-            "--no-install-project",
-            "--no-dev",
-            "--frozen",
-            "--python",
-            job.python_version,
-        ],
+        ["uv", "sync", "--no-dev"] + uv_args,
         cwd=temp_dir,
         check=True,
         env=env,
@@ -118,10 +98,8 @@ def _create_venv_with_base_dependencies(
 def _uv_venv(job: FlowJob, temp_dir: str, env: dict[str, str]) -> None:
     """Create a virtual environment using 'uv venv'."""
     assert job.python_version
-    command = ["uv", "venv"]
-    command.extend(["--python", job.python_version])
     subprocess.run(
-        command,
+        ["uv", "venv", "--python", job.python_version],
         cwd=temp_dir,
         check=True,
         env=env,

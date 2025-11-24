@@ -1,3 +1,4 @@
+import os
 import pathlib
 import re
 import subprocess
@@ -31,9 +32,13 @@ def launch(
     click.echo(f"Using log_dir: {job.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
-        env = create_venv(job, base_dir=base_dir, temp_dir=temp_dir)
+        # Set the virtual environment so that it will be created in the temp directory
+        env = os.environ.copy()
         if job.env:
             env.update(**job.env)
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+
+        create_venv(job, base_dir=base_dir, temp_dir=temp_dir, env=env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
