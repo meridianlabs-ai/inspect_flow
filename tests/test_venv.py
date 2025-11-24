@@ -1,3 +1,4 @@
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -15,6 +16,7 @@ def test_no_dependencies() -> None:
                 job=FlowJob(tasks=[FlowTask(name="task_name")]),
                 base_dir=".",
                 temp_dir=temp_dir,
+                env=os.environ.copy(),
             )
 
             assert mock_run.call_count == 2
@@ -40,6 +42,7 @@ def test_dependencies() -> None:
                 ),
                 base_dir=".",
                 temp_dir=temp_dir,
+                env=os.environ.copy(),
             )
 
             assert mock_run.call_count == 2
@@ -74,6 +77,7 @@ def test_model_dependency() -> None:
                 ),
                 base_dir=".",
                 temp_dir=temp_dir,
+                env=os.environ.copy(),
             )
 
             assert mock_run.call_count == 2
@@ -101,6 +105,7 @@ def test_python_version() -> None:
                 ),
                 base_dir=".",
                 temp_dir=temp_dir,
+                env=os.environ.copy(),
             )
 
             assert mock_run.call_count == 2
@@ -108,11 +113,13 @@ def test_python_version() -> None:
             assert args == [
                 "uv",
                 "sync",
-                "--no-install-project",
                 "--no-dev",
-                "--frozen",
                 "--python",
                 "3.11",
+                "--project",
+                Path.cwd().as_posix(),
+                "--active",
+                "--frozen",
             ]
 
 
@@ -131,6 +138,7 @@ def test_5_flow_requirements() -> None:
                 ),
                 base_dir=".",
                 temp_dir=temp_dir,
+                env=os.environ.copy(),
             )
 
         assert mock_run.call_count == 3
@@ -160,6 +168,7 @@ def test_241_dependency_file() -> None:
             ),
             base_dir=".",
             temp_dir=temp_dir,
+            env=os.environ.copy(),
         )
         requirements_path = Path("logs") / "flow_requirements.txt"
         assert requirements_path.exists()

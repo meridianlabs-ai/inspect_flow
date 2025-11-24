@@ -26,9 +26,7 @@ from inspect_flow._runner.run import _run_eval_set
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
-task_dir = (
-    Path(__file__).parent / "config" / "local_eval" / "src" / "local_eval"
-).resolve()
+task_dir = (Path(__file__).parent / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
 
 
