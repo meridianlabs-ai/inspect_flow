@@ -10,9 +10,10 @@ Inspect Flow is a workflow orchestration tool for [Inspect AI](https://inspect.a
 
 **Why Inspect Flow?** As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
 
-1.  **Declarative Configuration**: Define your entire evaluation pipeline in type-safe Pydantic schemas
-2.  **Repeatability**: Encapsulated Python dependencies for each workflow
-3.  **Parameter Sweeping**: Matrix execution patterns for systematic exploration across tasks and models
+1.  **Declarative Configuration**: Define complex evaluations with tasks, models, and parameters in type-safe schemas
+2.  **Repeatable & Shareable**: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
+3.  **Incremental Execution**: Add new models, tasks, or configurations to existing results without re-running completed work
+4.  **Parameter Sweeping**: Matrix patterns for systematic exploration across tasks, models, and hyperparameters
 
 Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.
 
@@ -29,10 +30,10 @@ Before using Inspect Flow, you should:
 
 ### Installation
 
-Install the `inspect_flow` package from GitHub as follows:
+Install the `inspect_flow` package from PyPI as follows:
 
 ``` bash
-pip install git+https://github.com/meridianlabs-ai/inspect_flow
+pip install inspect-flow
 ```
 
 ### Set up API keys
@@ -111,6 +112,8 @@ flow run config.py
 
 This will run both tasks and display progress in your terminal.
 
+![Progress bar in terminal](images/config_progress_terminal.png)
+
 ### Matrix Functions
 
 Often you'll want to evaluate multiple tasks across multiple models. Rather than manually defining every combination, use `tasks_matrix` to generate all task-model pairs:
@@ -126,6 +129,10 @@ flow config matrix.py
 ```
 
 This command outputs the expanded configuration showing all 4 task-model combinations (2 tasks × 2 models).
+
+``` {.yml filename="matrix.yml"}
+{{< include ../examples/matrix.yml >}}
+```
 
 `tasks_matrix` and `models_matrix` are powerful functions that can operate on multiple levels of nested matrixes which enable sophisticated parameter sweeping. Let's say you want to explore different reasoning efforts across models—you can achieve this with the `models_matrix` function.
 
@@ -145,16 +152,21 @@ To run the config:
 flow run matrix.py
 ```
 
-This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). Results are stored in `logs/flow/` by default. When complete, you'll find a link to the logs at the bottom of the task results summary. To view logs interactively, run:
+This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
+
+![Log path printed in terminal](images/matrix_logs_terminal.png)
+
+To view logs interactively, run:
 
 ``` bash
 inspect view
 ```
 
+![Inspect View](images/index_inspect_view.png)
+
 ## Learning More
 
 See the following articles to learn more about using Flow:
 
--   [Usage](usage.qmd): End-to-end guide for developing and running a Flow job.
-
--   [Reference](reference/index.qmd): Detailed documentation on the Flow Python API and CLI commands.
+- [Usage](usage.qmd): End-to-end guide for developing and running a Flow job.
+- [Reference](reference/index.qmd): Detailed documentation on the Flow Python API and CLI commands.

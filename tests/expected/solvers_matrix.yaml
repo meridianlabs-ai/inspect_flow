@@ -1,0 +1,17 @@
+log_dir: logs
+tasks:
+- name: my_task
+  solver:
+    name: chain_of_thought
+    args:
+      max_iterations: 3
+- name: my_task
+  solver:
+    name: chain_of_thought
+    args:
+      max_iterations: 5
+- name: my_task
+  solver:
+    name: chain_of_thought
+    args:
+      max_iterations: 10

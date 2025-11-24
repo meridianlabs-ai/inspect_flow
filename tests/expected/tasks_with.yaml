@@ -1,8 +1,11 @@
-log_dir: logs
 tasks:
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o
+  config:
+    temperature: 0.7
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o
+  config:
+    temperature: 0.7

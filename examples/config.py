@@ -1,6 +1,7 @@
 from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
+    log_dir="logs",
     tasks=[
         FlowTask(
             name="inspect_evals/gpqa_diamond",

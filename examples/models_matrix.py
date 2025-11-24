@@ -1,6 +1,7 @@
 from inspect_flow import FlowGenerateConfig, FlowJob, models_matrix, tasks_matrix
 
 FlowJob(
+    log_dir="logs",
     tasks=tasks_matrix(
         task=[
             "inspect_evals/gpqa_diamond",
