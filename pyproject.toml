@@ -49,6 +49,7 @@ dev = [
     "datamodel-code-generator",
     "pre-commit",
     "ty",
+    "deepdiff",
 ]
 
 

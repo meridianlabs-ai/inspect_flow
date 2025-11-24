@@ -1,3 +1,4 @@
+log_dir: logs
 dependencies:
 - inspect-evals
 tasks:

@@ -1,6 +1,7 @@
 from inspect_flow import FlowJob, tasks_matrix
 
 FlowJob(
+    log_dir="logs",
     dependencies=["inspect-evals"],
     tasks=tasks_matrix(
         task=[

@@ -1,0 +1,16 @@
+defaults:
+  config:
+    max_tokens: 100
+    temperature: 0.0
+  model_prefix:
+    openai/:
+      config:
+        temperature: 0.5
+tasks:
+- name: task
+  model:
+    name: openai/gpt-4o
+    config:
+      temperature: 1.0
+  config:
+    temperature: 0.7

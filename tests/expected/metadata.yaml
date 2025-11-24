@@ -1,0 +1,13 @@
+log_dir: logs
+options:
+  metadata:
+    experiment: baseline_v1
+    hypothesis: Higher temperature improves creative tasks
+    hardware: A100-80GB
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model:
+    name: openai/gpt-4o
+  metadata:
+    task_variant: chemistry_subset
+    note: Testing with reduced context

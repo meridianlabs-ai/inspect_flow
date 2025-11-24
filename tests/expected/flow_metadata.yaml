@@ -1,0 +1,17 @@
+log_dir: logs
+tasks:
+- name: long_context_task
+  model:
+    name: openai/gpt-4o
+    flow_metadata:
+      context_window: 128000
+- name: long_context_task
+  model:
+    name: openai/gpt-4o-mini
+    flow_metadata:
+      context_window: 128000
+- name: long_context_task
+  model:
+    name: anthropic/claude-3-5-sonnet
+    flow_metadata:
+      context_window: 200000

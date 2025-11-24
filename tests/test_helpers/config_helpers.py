@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import yaml
+from deepdiff import DeepDiff
 from inspect_flow import FlowJob
 from pydantic_core import to_jsonable_python
 
@@ -40,4 +41,11 @@ def validate_config(config: FlowJob, file_name: str) -> None:
     if update_examples and generated_config != expected_config:
         write_flow_yaml(config, example_path)
     else:
-        assert generated_config == expected_config
+        if generated_config != expected_config:
+            diff = DeepDiff(expected_config, generated_config, verbose_level=2)
+            error_msg = (
+                f"\nConfig mismatch for: {file_name}\n"
+                f"Expected file: {example_path}\n\n"
+                f"Differences:\n{diff.pretty()}"
+            )
+            raise AssertionError(error_msg)

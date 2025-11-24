@@ -1,0 +1,38 @@
+log_dir: logs
+tasks:
+- name: task1
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 0.0
+  sandbox: docker
+- name: task1
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 0.5
+  sandbox: docker
+- name: task1
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 1.0
+  sandbox: docker
+- name: task2
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 0.0
+  sandbox: docker
+- name: task2
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 0.5
+  sandbox: docker
+- name: task2
+  model:
+    name: openai/gpt-4o
+  config:
+    temperature: 1.0
+  sandbox: docker
