@@ -100,7 +100,15 @@ def _create_venv_with_base_dependencies(
             env=env,
         )
     subprocess.run(
-        ["uv", "sync", "--no-dev", "--frozen", "--python", job.python_version],
+        [
+            "uv",
+            "sync",
+            "--no-install-project",
+            "--no-dev",
+            "--frozen",
+            "--python",
+            job.python_version,
+        ],
         cwd=temp_dir,
         check=True,
         env=env,

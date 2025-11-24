@@ -108,6 +108,7 @@ def test_python_version() -> None:
             assert args == [
                 "uv",
                 "sync",
+                "--no-install-project",
                 "--no-dev",
                 "--frozen",
                 "--python",
