@@ -2,7 +2,6 @@ from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
     log_dir="logs",
-    dependencies=["inspect-evals"],
     tasks=[
         FlowTask(
             name="inspect_evals/gpqa_diamond",

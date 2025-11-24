@@ -6,6 +6,17 @@ from inspect_flow._config.load import ConfigOptions
 
 def config_options(f):
     """Options for overriding the config."""
+    f = click.argument(
+        "config-file",
+        type=click.Path(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=True,
+        ),
+        required=True,
+    )(f)
     f = click.option(
         "--set",
         "-s",

@@ -1,8 +1,10 @@
-src = ["src"]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "local_eval"
-dynamic = ["version"]
+version = "0.1.0"
 description = "Example local evaluation project to demonstrate and test Inspect Flow functionality"
 authors = [{ name = "Meridian Labs" }]
 requires-python = ">=3.10"
@@ -14,3 +16,6 @@ dependencies = [
 
 [project.entry-points.inspect_ai]
 local_eval = "local_eval.noop"
+
+[tool.uv]
+package = true

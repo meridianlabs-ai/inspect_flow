@@ -20,6 +20,7 @@ from inspect_flow._types.factories import (
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
+    FlowDependencies,
     FlowEpochs,
     FlowGenerateConfig,
     FlowInclude,
@@ -38,6 +39,7 @@ __all__ = [
     "FlowAgent",
     "FlowJob",
     "FlowDefaults",
+    "FlowDependencies",
     "FlowEpochs",
     "FlowGenerateConfig",
     "FlowInclude",

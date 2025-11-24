@@ -21,6 +21,7 @@ from inspect_flow._config.load import (
     expand_includes,
     load_job,
 )
+from inspect_flow._types.flow_types import FlowDependencies
 
 from tests.test_helpers.config_helpers import validate_config
 
@@ -29,10 +30,6 @@ def test_config_one_task() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot")],
     )
     validate_config(config, "one_task_flow.yaml")
@@ -42,10 +39,6 @@ def test_config_two_tasks() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=[
             FlowTask(name="inspect_evals/mmlu_0_shot"),
             FlowTask(name="inspect_evals/mmlu_5_shot"),
@@ -58,10 +51,6 @@ def test_config_two_models_one_task() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=tasks_matrix(
             task=FlowTask(name="inspect_evals/mmlu_0_shot"),
             model=[
@@ -77,9 +66,6 @@ def test_config_model_and_task() -> None:
     config = FlowJob(
         log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
     validate_config(config, "model_and_task_flow.yaml")
@@ -99,10 +85,6 @@ def test_config_two_models_two_tasks() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=tasks_matrix(
             task=["inspect_evals/mmlu_0_shot", "inspect_evals/mmlu_5_shot"],
             model=["openai/gpt-4o-mini", "openai/gpt-5-nano"],
@@ -115,10 +97,6 @@ def test_config_model_config() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=tasks_matrix(
             task=["inspect_evals/mmlu_0_shot", "inspect_evals/mmlu_5_shot"],
             model=[
@@ -140,10 +118,6 @@ def test_config_matrix_and_task() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=[
             *tasks_matrix(
                 task="inspect_evals/mmlu_0_shot",
@@ -159,10 +133,6 @@ def test_config_nested_matrix() -> None:
     config = FlowJob(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "openai",
-            "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670",
-        ],
         tasks=tasks_matrix(
             task=[
                 FlowTask(
@@ -188,9 +158,6 @@ def test_merge_config():
     config = FlowJob(
         log_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
-        dependencies=[
-            "./tests/config/local_eval",
-        ],
         tasks=tasks_with(
             task=tasks_matrix(
                 task=[
@@ -236,28 +203,31 @@ def test_overrides_of_lists():
     config = _apply_overrides(
         config,
         [
-            "dependencies=dep1",
-            "dependencies=dep2",
+            "dependencies.additional_dependencies=dep1",
+            "dependencies.additional_dependencies=dep2",
         ],
     )
-    assert config.dependencies == ["dep2"]
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["dep2"]
     # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
         config,
         [
-            "dependencies=dep3",
-            "dependencies=dep4",
+            "dependencies.additional_dependencies=dep3",
+            "dependencies.additional_dependencies=dep4",
         ],
     )
-    assert config.dependencies == ["dep2", "dep4"]
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["dep2", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
         config,
         [
-            'dependencies=["new_dep1", "new_dep2"]',
+            'dependencies.additional_dependencies=["new_dep1", "new_dep2"]',
         ],
     )
-    assert config.dependencies == ["new_dep1", "new_dep2"]
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["new_dep1", "new_dep2"]
     # There is no way to append multiple values to a list via overrides
 
 
@@ -397,18 +367,25 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_219_include_remove_duplicates() -> None:
     include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
     job = expand_includes(
-        FlowJob(dependencies=["inspect_evals"], includes=[include_path])
+        FlowJob(
+            includes=[include_path],
+            dependencies=FlowDependencies(
+                additional_dependencies=[
+                    "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+                ]
+            ),
+        )
     )
-    assert job.dependencies == ["inspect_evals"]  # No duplicates
+    assert job.dependencies
+    assert job.dependencies.additional_dependencies == [
+        "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
+    ]  # No duplicates
 
 
 def test_221_format_map() -> None:
     job = FlowJob(
         log_dir="./logs/flow_test",
         options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
-        dependencies=[
-            "./tests/config/local_eval",
-        ],
         tasks=tasks_matrix(
             task=[
                 "local_eval/noop",

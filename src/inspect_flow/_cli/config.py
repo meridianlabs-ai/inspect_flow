@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 from typing_extensions import Unpack
 
@@ -11,7 +13,6 @@ from inspect_flow._config.load import load_job
 
 
 @click.command("config", help="Output config")
-@click.argument("config-file", type=str, required=True)
 @click.option(
     "--resolve",
     type=bool,
@@ -28,4 +29,4 @@ def config_command(
     """CLI command to output config."""
     config_options = parse_config_options(**kwargs)
     fconfig = load_job(config_file, **config_options)
-    config(fconfig, resolve=resolve)
+    config(fconfig, base_dir=str(Path(config_file).parent), resolve=resolve)

@@ -1,18 +1,21 @@
 import json
-import os
 import subprocess
 import sys
 from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
 
+import click
 import yaml
 from pydantic import BaseModel, Field
 
 from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
+from inspect_flow._util.path_util import absolute_path_relative_to
 
 
-def create_venv(job: FlowJob, temp_dir: str) -> dict[str, str]:
+def create_venv(
+    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+) -> None:
     flow_yaml_path = Path(temp_dir) / "flow.yaml"
     job.python_version = (
         job.python_version
@@ -27,33 +30,21 @@ def create_venv(job: FlowJob, temp_dir: str) -> dict[str, str]:
             sort_keys=False,
         )
 
-    # Remove VIRTUAL_ENV from environment to avoid virtual environment confusion
-    env = os.environ.copy()
-    env.pop("VIRTUAL_ENV", None)
-
-    command = ["uv", "venv"]
-    command.extend(["--python", job.python_version])
-    subprocess.run(
-        command,
-        cwd=temp_dir,
-        check=True,
-        env=env,
+    _create_venv_with_base_dependencies(
+        job, base_dir=base_dir, temp_dir=temp_dir, env=env
     )
 
-    dependencies: List[str] = job.dependencies or []
-    dependencies = [
-        dep if not dep.startswith(".") else str(Path(dep).resolve())
-        for dep in dependencies
-    ]
+    dependencies: List[str] = []
+    if job.dependencies and job.dependencies.additional_dependencies:
+        dependencies.extend(job.dependencies.additional_dependencies)
+        dependencies = [
+            dep if not dep.startswith(".") else str(Path(dep).resolve())
+            for dep in dependencies
+        ]
     dependencies.extend(_get_model_dependencies(job))
     dependencies.append(_get_pip_string("inspect-flow"))
 
-    subprocess.run(
-        ["uv", "pip", "install", *sorted(dependencies)],
-        cwd=temp_dir,
-        check=True,
-        env=env,
-    )
+    _uv_pip_install(sorted(dependencies), temp_dir, env)
 
     # Freeze installed packages to flow_requirements.txt in log_dir
     if job.log_dir:
@@ -70,7 +61,108 @@ def create_venv(job: FlowJob, temp_dir: str) -> dict[str, str]:
         requirements_path = log_dir_path / "flow_requirements.txt"
         requirements_path.write_text(freeze_result.stdout)
 
-    return env
+
+def _create_venv_with_base_dependencies(
+    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+) -> None:
+    file_type: Literal["requirements.txt", "pyproject.toml"] | None = None
+    file_path: str | None = None
+    dependency_file_info = _get_dependency_file(job, base_dir=base_dir)
+    if not dependency_file_info:
+        click.echo("No dependency file found, creating bare venv")
+        _uv_venv(job, temp_dir, env)
+        return
+
+    file_type, file_path = dependency_file_info
+    if file_type == "requirements.txt":
+        click.echo(f"Using requirements.txt to create venv. File: {file_path}")
+        _uv_venv(job, temp_dir, env)
+        _uv_pip_install(["-r", file_path], temp_dir, env)
+        return
+
+    click.echo(f"Using pyproject.toml to create venv. File: {file_path}")
+    assert job.python_version
+    project_dir = Path(file_path).parent
+    uv_args = [
+        "--python",
+        job.python_version,
+        "--project",
+        str(project_dir),
+        "--active",
+    ]
+    if (project_dir / "uv.lock").exists():
+        uv_args.append("--frozen")
+    click.echo(f"Creating venv with uv args: {uv_args}")
+    subprocess.run(
+        ["uv", "sync", "--no-dev"] + uv_args,
+        cwd=temp_dir,
+        check=True,
+        env=env,
+    )
+
+
+def _uv_venv(job: FlowJob, temp_dir: str, env: dict[str, str]) -> None:
+    """Create a virtual environment using 'uv venv'."""
+    assert job.python_version
+    subprocess.run(
+        ["uv", "venv", "--python", job.python_version],
+        cwd=temp_dir,
+        check=True,
+        env=env,
+    )
+
+
+def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None:
+    """Install packages using 'uv pip install'."""
+    subprocess.run(
+        ["uv", "pip", "install"] + args,
+        cwd=temp_dir,
+        check=True,
+        env=env,
+    )
+
+
+def _get_dependency_file(
+    job: FlowJob, base_dir: str
+) -> tuple[Literal["requirements.txt", "pyproject.toml"], str] | None:
+    mode = job.dependencies and job.dependencies.dependency_file_mode or "auto"
+    if mode == "none":
+        return None
+
+    file = job.dependencies and job.dependencies.dependency_file or None
+    if file:
+        file = absolute_path_relative_to(file, base_dir=base_dir)
+        if not Path(file).exists():
+            raise FileNotFoundError(f"Dependency file '{file}' does not exist.")
+        if mode != "auto":
+            return mode, file
+        if file.endswith("requirements.txt"):
+            return "requirements.txt", file
+        if file.endswith("pyproject.toml"):
+            return "pyproject.toml", file
+        raise ValueError(
+            f"Cannot determine dependency file type from '{file}'. "
+            "Please set dependency_file_mode to 'requirements.txt' or 'pyproject.toml'."
+        )
+    files: list[Literal["pyproject.toml", "requirements.txt"]] = (
+        ["pyproject.toml", "requirements.txt"] if mode == "auto" else [mode]
+    )
+
+    # Walk up the directory tree starting from base_dir
+    current_dir = Path(base_dir).resolve()
+    while True:
+        for file_name in files:
+            file_path = current_dir / file_name
+            if file_path.exists():
+                return file_name, str(file_path)
+
+        # Move to parent directory
+        parent = current_dir.parent
+        if parent == current_dir:  # Reached root directory
+            break
+        current_dir = parent
+
+    return None
 
 
 class _VcsInfo(BaseModel):

@@ -13,10 +13,7 @@ from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.module_util import execute_file_and_get_last_result
-from inspect_flow._util.path_util import (
-    absolute_path_relative_to,
-    set_config_path_env_var,
-)
+from inspect_flow._util.path_util import absolute_path_relative_to
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
@@ -41,7 +38,6 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
         **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
     config_options = ConfigOptions(**kwargs)
-    set_config_path_env_var(file)
     job = _load_job_from_file(
         file, flow_vars=config_options.get("flow_vars", {}), including_jobs={}
     )

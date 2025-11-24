@@ -26,9 +26,7 @@ from inspect_flow._runner.run import _run_eval_set
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
-task_dir = (
-    Path(__file__).parent / "config" / "local_eval" / "src" / "local_eval"
-).resolve()
+task_dir = (Path(__file__).parent / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
 
 
@@ -45,7 +43,8 @@ def test_task_with_get_model() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -73,7 +72,7 @@ def test_task_with_two_models() -> None:
             ],
         ),
     )
-    _run_eval_set(job=(config))
+    _run_eval_set(job=(config), base_dir=".")
 
     verify_test_logs(config, log_dir)
 
@@ -97,7 +96,8 @@ def test_model_generate_config() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -118,7 +118,8 @@ def test_default_model_config() -> None:
                     log_dir="logs/flow_test",
                     tasks=[FlowTask(name=task_file + "@noop")],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -142,7 +143,8 @@ def test_task_model() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -167,7 +169,7 @@ def test_write_config() -> None:
         ],
     )
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=job)
+        _run_eval_set(job=job, base_dir=".")
 
     mock_eval_set.assert_called_once()
 
@@ -205,7 +207,8 @@ def test_matrix_args() -> None:
                         args=[{"subset": "original"}, {"subset": "contrast"}],
                     ),
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -242,7 +245,8 @@ def test_matrix_model_roles() -> None:
                         model_roles=[model_roles1, model_roles2],
                     ),
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -289,7 +293,8 @@ def test_matrix_solvers() -> None:
                         ],
                     ),
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -305,7 +310,8 @@ def test_sample_id() -> None:
             job=FlowJob(
                 log_dir="logs/flow_test",
                 tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -325,6 +331,7 @@ def test_all_tasks_in_file() -> None:
                 log_dir="logs/flow_test",
                 tasks=[file],
             ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -372,7 +379,8 @@ def test_config_generate_config() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -427,7 +435,8 @@ def test_config_model_overrides() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -477,7 +486,8 @@ def test_config_model_prefix_default_overrides() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -527,7 +537,8 @@ def test_config_model_default_overrides() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -573,7 +584,8 @@ def test_config_model_prefixes() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -606,7 +618,8 @@ def test_task_defaults() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -639,7 +652,8 @@ def test_solver_defaults() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -670,7 +684,8 @@ def test_agent_defaults() -> None:
                         )
                     ],
                 )
-            )
+            ),
+            base_dir=".",
         )
 
         mock_eval_set.assert_called_once()
@@ -696,6 +711,7 @@ def test_dry_run():
                     ],
                 )
             ),
+            base_dir=".",
             dry_run=True,
         )
 
@@ -720,7 +736,7 @@ def test_task_with_two_model_configs() -> None:
             ),
         ),
     )
-    _run_eval_set(job=(config))
+    _run_eval_set(job=(config), base_dir=".")
 
     verify_test_logs(config, log_dir)
 
@@ -752,7 +768,7 @@ def test_task_with_two_solvers() -> None:
             ],
         ),
     )
-    _run_eval_set(job=(config))
+    _run_eval_set(job=(config), base_dir=".")
 
     verify_test_logs(config, log_dir)
 
@@ -775,7 +791,7 @@ def test_default_model_roles() -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=(config))
+        _run_eval_set(job=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -795,7 +811,7 @@ def test_logs_allow_dirty() -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=(config))
+        _run_eval_set(job=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -803,7 +819,7 @@ def test_logs_allow_dirty() -> None:
 
     config.options = FlowOptions(log_dir_allow_dirty=True)
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=(config))
+        _run_eval_set(job=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args
@@ -824,7 +840,7 @@ def test_bundle_url_map(capsys) -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=(config))
+        _run_eval_set(job=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
     captured = capsys.readouterr()
@@ -841,7 +857,7 @@ def test_217_bundle_error_message() -> None:
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
 
-    _run_eval_set(job=(config))
+    _run_eval_set(job=(config), base_dir=".")
 
     assert config.tasks
     config.tasks = list(config.tasks) + [
@@ -849,7 +865,7 @@ def test_217_bundle_error_message() -> None:
     ]
 
     try:
-        _run_eval_set(job=(config))
+        _run_eval_set(job=(config), base_dir=".")
     except PrerequisiteError as e:
         assert "'bundle_overwrite'" in str(e)
         assert "'bundle_overwrite'" in str(e.message)
@@ -902,7 +918,7 @@ def test_eval_set_args() -> None:
     )
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
-        _run_eval_set(job=job)
+        _run_eval_set(job=job, base_dir=".")
 
     mock_eval_set.assert_called_once()
     call_args = mock_eval_set.call_args

@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,8 @@ from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._version import __version__
 
 CONFIG_FILE = "./tests/config/model_and_task_flow.py"
+CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
+CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 
 def test_flow_help() -> None:
@@ -49,7 +52,7 @@ def test_run_command_overrides() -> None:
             [
                 CONFIG_FILE,
                 "--set",
-                "dependencies=dep1",
+                "dependencies.additional_dependencies=dep1",
                 "--set",
                 "defaults.solver.args.tool_calls=none",
             ],
@@ -61,13 +64,18 @@ def test_run_command_overrides() -> None:
 
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
-            CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            CONFIG_FILE_RESOLVED,
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
         # Verify that run was called with the config object and file path
-        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
+        mock_run.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False
+        )
 
 
 def test_run_command_log_dir_create_unique() -> None:
@@ -94,13 +102,15 @@ def test_run_command_log_dir_create_unique() -> None:
 
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
-            CONFIG_FILE,
+            CONFIG_FILE_RESOLVED,
             overrides=["log_dir_create_unique=True"],
             flow_vars={},
         )
 
         # Verify that run was called with the config object and file path
-        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
+        mock_run.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False
+        )
 
 
 def test_config_command_overrides() -> None:
@@ -115,7 +125,7 @@ def test_config_command_overrides() -> None:
             [
                 CONFIG_FILE,
                 "--set",
-                "dependencies=dep1",
+                "dependencies.additional_dependencies=dep1",
                 "--set",
                 "defaults.solver.args.tool_calls=none",
             ],
@@ -127,8 +137,11 @@ def test_config_command_overrides() -> None:
 
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
-            CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            CONFIG_FILE_RESOLVED,
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
@@ -137,7 +150,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
     runner = CliRunner()
     monkeypatch.setenv(
         "INSPECT_FLOW_SET",
-        "dependencies=dep1 defaults.solver.args.tool_calls=none",
+        "dependencies.additional_dependencies=dep1 defaults.solver.args.tool_calls=none",
     )
     with (
         patch("inspect_flow._cli.config.load_job") as mock_config,
@@ -155,8 +168,11 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
 
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
-            CONFIG_FILE,
-            overrides=["dependencies=dep1", "defaults.solver.args.tool_calls=none"],
+            CONFIG_FILE_RESOLVED,
+            overrides=[
+                "dependencies.additional_dependencies=dep1",
+                "defaults.solver.args.tool_calls=none",
+            ],
             flow_vars={},
         )
 
@@ -174,9 +190,13 @@ def test_run_command_dry_run() -> None:
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once_with(CONFIG_FILE, flow_vars={}, overrides=[])
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED, flow_vars={}, overrides=[]
+        )
 
-        mock_run.assert_called_once_with(mock_config_obj, dry_run=True)
+        mock_run.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=True
+        )
 
 
 def test_run_command_flow_vars() -> None:
@@ -195,10 +215,14 @@ def test_run_command_flow_vars() -> None:
         assert result.exit_code == 0
 
         mock_config.assert_called_once_with(
-            CONFIG_FILE, flow_vars={"var1": "value1", "var2": "value2"}, overrides=[]
+            CONFIG_FILE_RESOLVED,
+            flow_vars={"var1": "value1", "var2": "value2"},
+            overrides=[],
         )
 
-        mock_run.assert_called_once_with(mock_config_obj, dry_run=False)
+        mock_run.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False
+        )
 
 
 def test_config_command_resolve() -> None:
@@ -214,9 +238,13 @@ def test_config_command_resolve() -> None:
 
         assert result.exit_code == 0
 
-        mock_load.assert_called_once_with(CONFIG_FILE, flow_vars={}, overrides=[])
+        mock_load.assert_called_once_with(
+            CONFIG_FILE_RESOLVED, flow_vars={}, overrides=[]
+        )
 
-        mock_config.assert_called_once_with(mock_config_obj, resolve=True)
+        mock_config.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, resolve=True
+        )
 
 
 def test_options_to_overrides() -> None:

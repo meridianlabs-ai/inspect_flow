@@ -2,8 +2,8 @@ log_dir: ./logs/flow_test
 options:
   limit: 1
 dependencies:
-- git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
-- ./tests/config/local_eval
+  additional_dependencies:
+  - ./tests/config/local_eval
 defaults:
   model:
     name: mockllm/mock-llm1
@@ -23,11 +23,5 @@ tasks:
   model:
     name: mockllm/mock-llm1
 - name: local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm2
-- name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm1
-- name: tests/config/local_eval/src/local_eval/noop.py@noop
   model:
     name: mockllm/mock-llm2

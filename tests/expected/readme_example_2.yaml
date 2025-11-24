@@ -1,6 +1,4 @@
 log_dir: logs
-dependencies:
-- inspect-evals
 tasks:
 - name: inspect_evals/gpqa_diamond
   model:
