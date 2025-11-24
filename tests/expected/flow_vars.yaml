@@ -1,0 +1,11 @@
+log_dir: logs
+tasks:
+- name: task_easy
+  flow_metadata:
+    priority: 1
+- name: task_medium
+  flow_metadata:
+    priority: 2
+- name: task_hard
+  flow_metadata:
+    priority: 3

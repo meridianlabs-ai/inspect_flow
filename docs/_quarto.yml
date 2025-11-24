@@ -18,14 +18,16 @@ website:
   repo-url: https://github.com/meridianlabs-ai/inspect_flow
   site-url: https://meridianlabs-ai.github.io/inspect_flow
   repo-actions: [issue]
+  favicon: images/icon-dark.svg
   twitter-card:
     title: "Inspect Flow"
     description: "Workflow orchestration for Inspect AI"
-  open-graph: 
+  open-graph:
     title: "Inspect Flow"
     description: "Workflow orchestration for Inspect AI"
   navbar:
     title: "Inspect Flow"
+    logo: images/icon-dark.svg
     background: light
     search: true
     left:
@@ -62,6 +64,8 @@ website:
               href: usage.qmd#dependency-management
             - text: Defaults and Overrides
               href: usage.qmd#defaults-and-overrides
+            - text: Configuration Inheritance
+              href: usage.qmd#configuration-inheritance
             - text: Parameter Sweeping
               href: usage.qmd#parameter-sweeping
             - text: Running Evaluations
@@ -97,5 +101,5 @@ format:
     syntax-definitions: 
       - jinja2.xml
 
-execute: 
+execute:
   enabled: false
