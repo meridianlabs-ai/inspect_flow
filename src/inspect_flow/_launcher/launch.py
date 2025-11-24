@@ -6,11 +6,11 @@ import tempfile
 from pathlib import Path
 
 import click
-from inspect_ai._util.file import exists
+from inspect_ai._util.file import absolute_file_path, exists
 
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowJob
-from inspect_flow._util.path_util import absolute_path
+from inspect_flow._util.path_util import absolute_path_relative_to
 
 
 def launch(
@@ -23,9 +23,11 @@ def launch(
 
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
-    job.log_dir = _resolve_log_dir(job)
+    job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
     if job.options and job.options.bundle_dir:
-        job.options.bundle_dir = absolute_path(job.options.bundle_dir)
+        job.options.bundle_dir = absolute_path_relative_to(
+            job.options.bundle_dir, base_dir=base_dir
+        )
     click.echo(f"Using log_dir: {job.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
@@ -35,6 +37,7 @@ def launch(
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+        base_dir = absolute_file_path(base_dir)
         try:
             args = ["--base-dir", base_dir] + (run_args or [])
             subprocess.run(
@@ -47,9 +50,9 @@ def launch(
             sys.exit(e.returncode)
 
 
-def _resolve_log_dir(job: FlowJob) -> str:
+def _resolve_log_dir(job: FlowJob, base_dir: str) -> str:
     assert job.log_dir
-    absolute_log_dir = absolute_path(job.log_dir)
+    absolute_log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
 
     if job.log_dir_create_unique:
         return _log_dir_create_unique(absolute_log_dir)

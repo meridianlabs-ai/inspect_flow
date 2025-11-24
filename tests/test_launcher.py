@@ -15,11 +15,11 @@ def test_launch() -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
-        launch(job=FlowJob(log_dir="logs", tasks=["task_name"]))
+        launch(job=FlowJob(log_dir="logs", tasks=["task_name"]), base_dir=".")
 
         assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
         args = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].args[0]
-        assert len(args) == 2
+        assert len(args) == 4
         assert str(args[0]).endswith("/.venv/bin/python")
         assert args[1] == str(
             (
@@ -30,6 +30,8 @@ def test_launch() -> None:
                 / "run.py"
             ).resolve()
         )
+        assert args[2] == "--base-dir"
+        assert args[3] == Path.cwd().as_posix()
 
 
 def test_launch_handles_subprocess_error() -> None:
