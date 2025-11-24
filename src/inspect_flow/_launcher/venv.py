@@ -5,10 +5,12 @@ from importlib.metadata import Distribution, PackageNotFoundError
 from pathlib import Path
 from typing import List, Literal
 
+import click
 import yaml
 from pydantic import BaseModel, Field
 
 from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
+from inspect_flow._util.path_util import absolute_path_relative_to
 
 
 def create_venv(
@@ -67,15 +69,18 @@ def _create_venv_with_base_dependencies(
     file_path: str | None = None
     dependency_file_info = _get_dependency_file(job, base_dir=base_dir)
     if not dependency_file_info:
+        click.echo("No dependency file found, creating bare venv")
         _uv_venv(job, temp_dir, env)
         return
 
     file_type, file_path = dependency_file_info
     if file_type == "requirements.txt":
+        click.echo(f"Using requirements.txt to create venv. File: {file_path}")
         _uv_venv(job, temp_dir, env)
         _uv_pip_install(["-r", file_path], temp_dir, env)
         return
 
+    click.echo(f"Using pyproject.toml to create venv. File: {file_path}")
     assert job.python_version
     project_dir = Path(file_path).parent
     uv_args = [
@@ -87,6 +92,7 @@ def _create_venv_with_base_dependencies(
     ]
     if (project_dir / "uv.lock").exists():
         uv_args.append("--frozen")
+    click.echo(f"Creating venv with uv args: {uv_args}")
     subprocess.run(
         ["uv", "sync", "--no-dev"] + uv_args,
         cwd=temp_dir,
@@ -125,6 +131,9 @@ def _get_dependency_file(
 
     file = job.dependencies and job.dependencies.dependency_file or None
     if file:
+        file = absolute_path_relative_to(file, base_dir=base_dir)
+        if not Path(file).exists():
+            raise FileNotFoundError(f"Dependency file '{file}' does not exist.")
         if mode != "auto":
             return mode, file
         if file.endswith("requirements.txt"):

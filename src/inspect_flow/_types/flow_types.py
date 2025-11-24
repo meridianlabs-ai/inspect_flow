@@ -493,9 +493,9 @@ class FlowDependencies(BaseModel, extra="forbid"):
     ) = Field(
         default=None,
         description="""Whether to use a dependency file to install dependencies.
-              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present (default). Will use the dependency_file if provided. Otherwise will look in the same directory as the flow config (or current working directory if no config path is available).
-              - "requirements.txt": Use requirements.txt. Will use dependency_file if provided, otherwise will look for requirements.txt in the same directory as the flow config (or current working directory if no config path is available).
-              - "pyproject.toml": Use pyproject.toml. Will use dependency_file if provided, otherwise will look for pyproject.toml in the same directory as the flow config (or current working directory if no config path is available).
+              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present (default). Will use the dependency_file if provided. Otherwise will search the path starting from the same directory as the flow config (or current working directory if no config path is available).
+              - "requirements.txt": Use requirements.txt. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
+              - "pyproject.toml": Use pyproject.toml. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
               - "none": Do not use a dependency file.
               """,
     )
@@ -556,7 +556,7 @@ class FlowJob(BaseModel, extra="forbid"):
 
     dependencies: FlowDependencies | None = Field(
         default=None,
-        description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from requirements.txt, pyproject.toml, and object names in the config.",
+        description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.",
     )
 
     env: dict[str, str] | None = Field(
