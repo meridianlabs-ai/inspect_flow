@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.8.26">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -67,6 +67,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../">
 <link href="../reference/inspect_flow.qmd#flowagent" rel="next">
 <link href="../reference/index.html" rel="prev">
+<link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
@@ -74,10 +75,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-22869aebc48a7c55b6e09da1841cdd1b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -123,6 +124,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../images/icon-dark.svg" alt="" class="navbar-logo light-content">
+    <img src="../images/icon-dark.svg" alt="" class="navbar-logo dark-content">
     </a>
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">Inspect Flow</span>
@@ -135,7 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="../index.html" aria-current="page"> 
+    <a class="nav-link" href="../index.html"> 
 <span class="menu-text">Welcome</span></a>
   </li>  
   <li class="nav-item">
@@ -143,7 +146,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Usage</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../reference/index.html"> 
+    <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
 <span class="menu-text">Reference</span></a>
   </li>  
 </ul>
@@ -174,10 +177,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
-    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="../index.html" class="sidebar-logo-link">
-      </a>
-      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -349,8 +348,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#load_config" class="sidebar-item-text sidebar-link">
- <span class="menu-text">load_config</span></a>
+  <a href="../reference/inspect_flow.api.html#load_job" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_job</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -453,40 +452,160 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowagent">FlowAgent</h3>
 <p>Configuration for an Agent.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L103">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L103">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowAgent(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Name of the agent. Required to be set by the time the agent is created.</p>
+</dd>
+<dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Additional args to pass to agent constructor.</p>
+</dd>
+<dt><code class="ref-definition">flow_metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Metadata stored in the flow config. Not passed to the agent.</p>
+</dd>
+<dt><code class="ref-definition">type</code> <span class="element-type"><span class="element-type-name">Literal</span>['agent']</span></dt>
+<dd>
+<p>Type needed to differentiated solvers and agents in solver lists.</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowjob" class="level3">
 <h3 class="anchored" data-anchor-id="flowjob">FlowJob</h3>
 <p>Configuration for a flow job.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L470">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L488">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowJob(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">includes</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name">FlowInclude</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>List of other flow configs to include.</p>
+</dd>
+<dt><code class="ref-definition">log_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. If a relative path, it will be resolved relative to the most recent config file loaded with ‘load_job’ or the current working directory if ‘load_job’ was not used.</p>
+</dd>
+<dt><code class="ref-definition">log_dir_create_unique</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.</p>
+</dd>
+<dt><code class="ref-definition">python_version</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Python version to use in the flow virtual environment (e.g.&nbsp;‘3.11’)</p>
+</dd>
+<dt><code class="ref-definition">options</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowoptions">FlowOptions</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Arguments for calls to eval_set.</p>
+</dd>
+<dt><code class="ref-definition">dependencies</code> <span class="element-type">list[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.</p>
+</dd>
+<dt><code class="ref-definition">env</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Environment variables to set when running tasks.</p>
+</dd>
+<dt><code class="ref-definition">defaults</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Defaults values for Inspect objects.</p>
+</dd>
+<dt><code class="ref-definition">flow_metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Metadata stored in the flow config. Not passed to the model.</p>
+</dd>
+<dt><code class="ref-definition">tasks</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Tasks to run</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowdefaults" class="level3">
 <h3 class="anchored" data-anchor-id="flowdefaults">FlowDefaults</h3>
 <p>Default field values for Inspect objects. Will be overriden by more specific settings.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L427">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L437">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDefaults(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowgenerateconfig">FlowGenerateConfig</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.</p>
+</dd>
+<dt><code class="ref-definition">agent</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Field defaults for agents.</p>
+</dd>
+<dt><code class="ref-definition">agent_prefix</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Agent defaults for agent name prefixes. E.g. {‘inspect/’: FAgent(…)}</p>
+</dd>
+<dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Field defaults for models.</p>
+</dd>
+<dt><code class="ref-definition">model_prefix</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Model defaults for model name prefixes. E.g. {‘openai/’: FModel(…)}</p>
+</dd>
+<dt><code class="ref-definition">solver</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Field defaults for solvers.</p>
+</dd>
+<dt><code class="ref-definition">solver_prefix</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Solver defaults for solver name prefixes. E.g. {‘inspect/’: FSolver(…)}</p>
+</dd>
+<dt><code class="ref-definition">task</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Field defaults for tasks.</p>
+</dd>
+<dt><code class="ref-definition">task_prefix</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Task defaults for task name prefixes. E.g. {‘inspect_evals/’: FTask(…)}</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowepochs" class="level3">
 <h3 class="anchored" data-anchor-id="flowepochs">FlowEpochs</h3>
 <p>Configuration for task epochs.</p>
 <p>Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L127">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L127">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowEpochs(BaseModel)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">epochs</code> <span class="element-type"><span class="element-type-name">int</span></span></dt>
+<dd>
+<p>Number of epochs.</p>
+</dd>
+<dt><code class="ref-definition">reducer</code> <span class="element-type"><span class="element-type-name">str</span> | list[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>One or more reducers used to combine scores from samples across epochs (defaults to “mean”)</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowgenerateconfig" class="level3">
 <h3 class="anchored" data-anchor-id="flowgenerateconfig">FlowGenerateConfig</h3>
 <p>Model generation options.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L30">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L30">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowGenerateConfig(GenerateConfig, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -494,37 +613,316 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowmodel">FlowModel</h3>
 <p>Configuration for a Model.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L36">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L36">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowModel(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Name of the model to use. Required to be set by the time the model is created.</p>
+</dd>
+<dt><code class="ref-definition">role</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional named role for model (e.g.&nbsp;for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn’t been externally specified.</p>
+</dd>
+<dt><code class="ref-definition">default</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g.&nbsp;openai/gpt-4o).</p>
+</dd>
+<dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowgenerateconfig">FlowGenerateConfig</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Configuration for model. Config values will be override settings on the FlowTask and FlowJob.</p>
+</dd>
+<dt><code class="ref-definition">base_url</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Alternate base URL for model.</p>
+</dd>
+<dt><code class="ref-definition">api_key</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. API key for model.</p>
+</dd>
+<dt><code class="ref-definition">memoize</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Use/store a cached version of the model based on the parameters to get_model(). Defaults to True.</p>
+</dd>
+<dt><code class="ref-definition">model_args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Additional args to pass to model constructor.</p>
+</dd>
+<dt><code class="ref-definition">flow_metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Metadata stored in the flow config. Not passed to the model.</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowoptions" class="level3">
 <h3 class="anchored" data-anchor-id="flowoptions">FlowOptions</h3>
 <p>Evaluation options.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L264">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L264">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowOptions(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">retry_attempts</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Maximum number of retry attempts before giving up (defaults to 10).</p>
+</dd>
+<dt><code class="ref-definition">retry_wait</code> <span class="element-type"><span class="element-type-name">float</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour.</p>
+</dd>
+<dt><code class="ref-definition">retry_connections</code> <span class="element-type"><span class="element-type-name">float</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).</p>
+</dd>
+<dt><code class="ref-definition">retry_cleanup</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Cleanup failed log files after retries (defaults to True).</p>
+</dd>
+<dt><code class="ref-definition">sandbox</code> <span class="element-type"><span class="element-type-name">SandboxEnvironmentType</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Sandbox environment type (or optionally a str or tuple with a shorthand spec).</p>
+</dd>
+<dt><code class="ref-definition">sandbox_cleanup</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Cleanup sandbox environments after task completes (defaults to True).</p>
+</dd>
+<dt><code class="ref-definition">tags</code> <span class="element-type">list[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Tags to associate with this evaluation run.</p>
+</dd>
+<dt><code class="ref-definition">metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Metadata to associate with this evaluation run.</p>
+</dd>
+<dt><code class="ref-definition">trace</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Trace message interactions with evaluated model to terminal.</p>
+</dd>
+<dt><code class="ref-definition">display</code> <span class="element-type"><span class="element-type-name">DisplayType</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Task display type (defaults to ‘full’).</p>
+</dd>
+<dt><code class="ref-definition">approval</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ApprovalPolicyConfig</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.</p>
+</dd>
+<dt><code class="ref-definition">score</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Score output (defaults to True).</p>
+</dd>
+<dt><code class="ref-definition">log_level</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Level for logging to the console: “debug”, “http”, “sandbox”, “info”, “warning”, “error”, “critical”, or “notset” (defaults to “warning”).</p>
+</dd>
+<dt><code class="ref-definition">log_level_transcript</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Level for logging to the log file (defaults to “info”).</p>
+</dd>
+<dt><code class="ref-definition">log_format</code> <span class="element-type"><span class="element-type-name">Literal</span>['eval', 'json'] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Format for writing log files (defaults to “eval”, the native high-performance format).</p>
+</dd>
+<dt><code class="ref-definition">limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit evaluated samples (defaults to all samples).</p>
+</dd>
+<dt><code class="ref-definition">sample_shuffle</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Shuffle order of samples (pass a seed to make the order deterministic).</p>
+</dd>
+<dt><code class="ref-definition">fail_on_error</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">float</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p><code>True</code> to fail on first sample error(default); <code>False</code> to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.</p>
+</dd>
+<dt><code class="ref-definition">continue_on_fail</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p><code>True</code> to continue running and only fail at the end if the <code>fail_on_error</code> condition is met. <code>False</code> to fail eval immediately when the <code>fail_on_error</code> condition is met (default).</p>
+</dd>
+<dt><code class="ref-definition">retry_on_error</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Number of times to retry samples if they encounter errors (defaults to 3).</p>
+</dd>
+<dt><code class="ref-definition">debug_errors</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Raise task errors (rather than logging them) so they can be debugged (defaults to False).</p>
+</dd>
+<dt><code class="ref-definition">max_samples</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Maximum number of samples to run in parallel (default is max_connections).</p>
+</dd>
+<dt><code class="ref-definition">max_tasks</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Maximum number of tasks to run in parallel (defaults is 10).</p>
+</dd>
+<dt><code class="ref-definition">max_subprocesses</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Maximum number of subprocesses to run in parallel (default is os.cpu_count()).</p>
+</dd>
+<dt><code class="ref-definition">max_sandboxes</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Maximum number of sandboxes (per-provider) to run in parallel.</p>
+</dd>
+<dt><code class="ref-definition">log_samples</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Log detailed samples and scores (defaults to True).</p>
+</dd>
+<dt><code class="ref-definition">log_realtime</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Log events in realtime (enables live viewing of samples in inspect view) (defaults to True).</p>
+</dd>
+<dt><code class="ref-definition">log_images</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Log base64 encoded version of images, even if specified as a filename or URL (defaults to False).</p>
+</dd>
+<dt><code class="ref-definition">log_buffer</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).</p>
+</dd>
+<dt><code class="ref-definition">log_shared</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify <code>True</code> to sync every 10 seconds, otherwise an integer to sync every <code>n</code> seconds.</p>
+</dd>
+<dt><code class="ref-definition">bundle_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>If specified, the log viewer and logs generated by this eval set will be bundled into this directory.</p>
+</dd>
+<dt><code class="ref-definition">bundle_overwrite</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Whether to overwrite files in the bundle_dir. (defaults to False).</p>
+</dd>
+<dt><code class="ref-definition">log_dir_allow_dirty</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).</p>
+</dd>
+<dt><code class="ref-definition">eval_set_id</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>ID for the eval set. If not specified, a unique ID will be generated.</p>
+</dd>
+<dt><code class="ref-definition">bundle_url_map</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowsolver" class="level3">
 <h3 class="anchored" data-anchor-id="flowsolver">FlowSolver</h3>
 <p>Configuration for a Solver.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L84">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L84">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSolver(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Name of the solver. Required to be set by the time the solver is created.</p>
+</dd>
+<dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Additional args to pass to solver constructor.</p>
+</dd>
+<dt><code class="ref-definition">flow_metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Metadata stored in the flow config. Not passed to the solver.</p>
+</dd>
+</dl>
+</section>
 </section>
 <section id="flowtask" class="level3">
 <h3 class="anchored" data-anchor-id="flowtask">FlowTask</h3>
 <p>Configuration for an evaluation task.</p>
 <p>Tasks are the basis for defining and running evaluations.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/flow_types.py#L143">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/flow_types.py#L143">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowTask(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
+<dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Task name. Any of registry name (“inspect_evals/mbpp”), file name (“./my_task.py”), or a file name and attr (“./<a href="mailto:my_task.py@task" class="email">my_task.py@task</a>_name”). Required to be set by the time the task is created.</p>
+</dd>
+<dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Additional args to pass to task constructor</p>
+</dd>
+<dt><code class="ref-definition">solver</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span> | list[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span>] | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Solver or list of solvers. Defaults to generate(), a normal call to the model.</p>
+</dd>
+<dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Default model for task (Optional, defaults to eval model).</p>
+</dd>
+<dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowgenerateconfig">FlowGenerateConfig</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.</p>
+</dd>
+<dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">ModelRolesConfig</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Named roles for use in <code>get_model()</code>.</p>
+</dd>
+<dt><code class="ref-definition">sandbox</code> <span class="element-type"><span class="element-type-name">SandboxEnvironmentType</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Sandbox environment type (or optionally a str or tuple with a shorthand spec)</p>
+</dd>
+<dt><code class="ref-definition">approval</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ApprovalPolicyConfig</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.</p>
+</dd>
+<dt><code class="ref-definition">epochs</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowepochs">FlowEpochs</a></span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to “mean”)</p>
+</dd>
+<dt><code class="ref-definition">fail_on_error</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">float</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p><code>True</code> to fail on first sample error (default); <code>False</code> to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.</p>
+</dd>
+<dt><code class="ref-definition">continue_on_fail</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p><code>True</code> to continue running and only fail at the end if the <code>fail_on_error</code> condition is met. <code>False</code> to fail eval immediately when the <code>fail_on_error</code> condition is met (default).</p>
+</dd>
+<dt><code class="ref-definition">message_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on total messages used for each sample.</p>
+</dd>
+<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on total tokens used for each sample.</p>
+</dd>
+<dt><code class="ref-definition">time_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on clock time (in seconds) for samples.</p>
+</dd>
+<dt><code class="ref-definition">working_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.</p>
+</dd>
+<dt><code class="ref-definition">version</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Version of task (to distinguish evolutions of the task spec or breaking changes to it)</p>
+</dd>
+<dt><code class="ref-definition">metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Additional metadata to associate with the task.</p>
+</dd>
+<dt><code class="ref-definition">sample_id</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">int</span> | list[<span class="element-type-name">str</span> | <span class="element-type-name">int</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Evaluate specific sample(s) from the dataset.</p>
+</dd>
+<dt><code class="ref-definition">flow_metadata</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Optional. Metadata stored in the flow config. Not passed to the task.</p>
+</dd>
 <dt><code class="ref-definition">model_name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Get the model name from the model field.</p>
@@ -540,7 +938,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="agents_matrix">agents_matrix</h3>
 <p>Create a list of agents from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L192">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L192">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_matrix(</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -562,7 +960,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="agents_with">agents_with</h3>
 <p>Set fields on a list of agents.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L122">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L122">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_with(</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -584,7 +982,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="configs_matrix">configs_matrix</h3>
 <p>Create a list of generate configs from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L206">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L206">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_matrix(</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -606,7 +1004,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="configs_with">configs_with</h3>
 <p>Set fields on a list of generate configs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L136">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L136">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_with(</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -628,7 +1026,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="merge">merge</h3>
 <p>Merge two flow objects.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/merge.py#L55">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/merge.py#L55">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> merge(base: _T, add: _T) <span class="op">-&gt;</span> _T</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -646,7 +1044,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="models_matrix">models_matrix</h3>
 <p>Create a list of models from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L221">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L221">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_matrix(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -668,7 +1066,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="models_with">models_with</h3>
 <p>Set fields on a list of models.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L150">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L150">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_with(</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -690,7 +1088,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="solvers_matrix">solvers_matrix</h3>
 <p>Create a list of solvers from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L235">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L235">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_matrix(</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -712,7 +1110,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="solvers_with">solvers_with</h3>
 <p>Set fields on a list of solvers.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L164">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L164">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_with(</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -734,7 +1132,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="tasks_matrix">tasks_matrix</h3>
 <p>Create a list of tasks from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L249">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L249">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_matrix(</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -756,7 +1154,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="tasks_with">tasks_with</h3>
 <p>Set fields on a list of tasks.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_types/factories.py#L178">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_types/factories.py#L178">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_with(</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.8.26">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -67,6 +67,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../">
 <link href="../reference/inspect_flow.api.qmd#configoptions" rel="next">
 <link href="../reference/inspect_flow.qmd#tasks_with" rel="prev">
+<link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
@@ -74,10 +75,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-22869aebc48a7c55b6e09da1841cdd1b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -123,6 +124,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../images/icon-dark.svg" alt="" class="navbar-logo light-content">
+    <img src="../images/icon-dark.svg" alt="" class="navbar-logo dark-content">
     </a>
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">Inspect Flow</span>
@@ -135,7 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="../index.html" aria-current="page"> 
+    <a class="nav-link" href="../index.html"> 
 <span class="menu-text">Welcome</span></a>
   </li>  
   <li class="nav-item">
@@ -143,7 +146,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Usage</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../reference/index.html"> 
+    <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
 <span class="menu-text">Reference</span></a>
   </li>  
 </ul>
@@ -174,10 +177,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
-    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="../index.html" class="sidebar-logo-link">
-      </a>
-      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -349,8 +348,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#load_config" class="sidebar-item-text sidebar-link">
- <span class="menu-text">load_config</span></a>
+  <a href="../reference/inspect_flow.api.html#load_job" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_job</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -400,7 +399,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#configoptions" id="toc-configoptions" class="nav-link" data-scroll-target="#configoptions">ConfigOptions</a></li>
   <li><a href="#config" id="toc-config" class="nav-link" data-scroll-target="#config">config</a></li>
-  <li><a href="#load_config" id="toc-load_config" class="nav-link" data-scroll-target="#load_config">load_config</a></li>
+  <li><a href="#load_job" id="toc-load_job" class="nav-link" data-scroll-target="#load_job">load_job</a></li>
   <li><a href="#run" id="toc-run" class="nav-link" data-scroll-target="#run">run</a></li>
   </ul></li>
   </ul>
@@ -434,24 +433,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="configoptions">ConfigOptions</h3>
 <p>Options for loading a configuration file.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_config/load.py#L18">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_config/load.py#L24">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ConfigOptions(TypedDict, total<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="config" class="level3">
 <h3 class="anchored" data-anchor-id="config">config</h3>
-<p>Print the flow configuration.</p>
+<p>Print the flow job configuration.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_api/api.py#L22">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_api/api.py#L22">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    config: FlowJob,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    resolve: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
-<dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
+<dt><code class="ref-definition">job</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
 <dd>
-<p>The flow configuration.</p>
+<p>The flow job configuration.</p>
 </dd>
 <dt><code class="ref-definition">resolve</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
 <dd>
@@ -459,17 +458,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
-<section id="load_config" class="level3">
-<h3 class="anchored" data-anchor-id="load_config">load_config</h3>
-<p>Load a configuration file and apply any overrides.</p>
+<section id="load_job" class="level3">
+<h3 class="anchored" data-anchor-id="load_job">load_job</h3>
+<p>Load a job file and apply any overrides.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_config/load.py#L30">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_config/load.py#L36">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_config(config_file: <span class="bu">str</span>, <span class="op">**</span>kwargs: Unpack[ConfigOptions]) <span class="op">-&gt;</span> FlowJob</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_job(<span class="bu">file</span>: <span class="bu">str</span>, <span class="op">**</span>kwargs: Unpack[ConfigOptions]) <span class="op">-&gt;</span> FlowJob</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
-<dt><code class="ref-definition">config_file</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
+<dt><code class="ref-definition">file</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
 <dd>
-<p>The path to the configuration file.</p>
+<p>The path to the job configuration file.</p>
 </dd>
 <dt><code class="ref-definition">**kwargs</code> <span class="element-type"><span class="element-type-name">Unpack</span>[<span class="element-type-name"><a href="../reference/inspect_flow.api.html#configoptions">ConfigOptions</a></span>]</span></dt>
 <dd>
@@ -481,16 +480,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run">run</h3>
 <p>Run an inspect_flow evaluation.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f01ddfd5b475cc82469f36fd4bd1f37969abe88a/src/inspect_flow/_api/api.py#L8">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/0ea39c9703499564cbe938f9b88409385b8cf42b/src/inspect_flow/_api/api.py#L8">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    config: FlowJob,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
-<dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
+<dt><code class="ref-definition">job</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
 <dd>
-<p>The flow configuration.</p>
+<p>The flow job configuration.</p>
 </dd>
 <dt><code class="ref-definition">dry_run</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
 <dd>
