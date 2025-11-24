@@ -13,6 +13,7 @@ def test_no_dependencies() -> None:
         with patch("subprocess.run") as mock_run:
             create_venv(
                 job=FlowJob(tasks=[FlowTask(name="task_name")]),
+                base_dir=".",
                 temp_dir=temp_dir,
             )
 
@@ -37,6 +38,7 @@ def test_dependencies() -> None:
                     ),
                     tasks=[FlowTask(name="task_name")],
                 ),
+                base_dir=".",
                 temp_dir=temp_dir,
             )
 
@@ -70,6 +72,7 @@ def test_model_dependency() -> None:
                         ),
                     ]
                 ),
+                base_dir=".",
                 temp_dir=temp_dir,
             )
 
@@ -96,6 +99,7 @@ def test_python_version() -> None:
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
                 ),
+                base_dir=".",
                 temp_dir=temp_dir,
             )
 
@@ -103,7 +107,9 @@ def test_python_version() -> None:
             args = mock_run.mock_calls[0].args[0]
             assert args == [
                 "uv",
-                "venv",
+                "sync",
+                "--no-dev",
+                "--frozen",
                 "--python",
                 "3.11",
             ]
@@ -122,6 +128,7 @@ def test_5_flow_requirements() -> None:
                     log_dir="logs",
                     tasks=[FlowTask(name="task_name")],
                 ),
+                base_dir=".",
                 temp_dir=temp_dir,
             )
 
