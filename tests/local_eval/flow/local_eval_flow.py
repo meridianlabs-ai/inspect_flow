@@ -1,7 +1,6 @@
 from inspect_flow import FlowJob, FlowOptions, tasks_matrix
 
 FlowJob(
-    python_version="3.11",
     options=FlowOptions(limit=1),
     tasks=tasks_matrix(
         task=[
