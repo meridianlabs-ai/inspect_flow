@@ -3,33 +3,15 @@ from pathlib import Path
 
 from inspect_ai._util.file import absolute_file_path
 
-config_path_key = "INSPECT_FLOW_CONFIG_PATH"
-cwd_path_key = "INSPECT_FLOW_CWD"
 
-
-def set_config_path_env_var(config_path: str) -> None:
-    os.environ[config_path_key] = str(Path(config_path).resolve())
-
-
-def set_cwd_env_var() -> None:
-    os.environ[cwd_path_key] = str(Path.cwd().resolve())
-
-
-def find_file(file_path: str) -> str | None:
-    """Locate a file that may have a path relative to the config file or original cwd."""
+def find_file(file_path: str, base_dir: str) -> str | None:
     path = Path(file_path)
     if path.exists():
         return str(path.resolve())
 
-    if config_path := os.environ.get(config_path_key):
-        relative_path = Path(config_path).parent / file_path
-        if relative_path.exists():
-            return str(relative_path.resolve())
-
-    if cwd := os.environ.get(cwd_path_key):
-        relative_path = Path(cwd) / file_path
-        if relative_path.exists():
-            return str(relative_path.resolve())
+    relative_path = Path(base_dir) / file_path
+    if relative_path.exists():
+        return str(relative_path.resolve())
 
     return None
 

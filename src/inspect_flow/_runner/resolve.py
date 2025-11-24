@@ -31,10 +31,10 @@ def _resolve_python_version() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
-def resolve_job(job: FlowJob) -> FlowJob:
+def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
     resolved_tasks = []
     for task_config in job.tasks or []:
-        resolved = _resolve_task(job, task_config)
+        resolved = _resolve_task(job, task_config, base_dir=base_dir)
         resolved_tasks.extend(resolved)
 
     return job.model_copy(
@@ -122,7 +122,7 @@ def _resolve_solver(
     return [_resolve_single_solver(single_config, job) for single_config in solver]
 
 
-def _resolve_task(job: FlowJob, task: str | FlowTask) -> list[FlowTask]:
+def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[FlowTask]:
     if isinstance(task, str):
         task = FlowTask(name=task)
 
@@ -139,7 +139,7 @@ def _resolve_task(job: FlowJob, task: str | FlowTask) -> list[FlowTask]:
     if model and model.config:
         generate_config = generate_config.merge(model.config)
     tasks = []
-    for task_func_name in _get_task_creator_names(task):
+    for task_func_name in _get_task_creator_names(task, base_dir=base_dir):
         task = task.model_copy(
             update={
                 "name": task_func_name,
@@ -153,8 +153,8 @@ def _resolve_task(job: FlowJob, task: str | FlowTask) -> list[FlowTask]:
     return tasks
 
 
-def _get_task_creator_names_from_file(file_path: str) -> list[str]:
-    file = find_file(file_path)
+def _get_task_creator_names_from_file(file_path: str, base_dir: str) -> list[str]:
+    file = find_file(file_path, base_dir=base_dir)
     if not file:
         raise FileNotFoundError(f"File not found: {file_path}")
 
@@ -170,20 +170,20 @@ def _get_task_creator_names_from_file(file_path: str) -> list[str]:
     return task_names
 
 
-def _get_task_creator_names(task: FlowTask) -> list[str]:
+def _get_task_creator_names(task: FlowTask, base_dir: str) -> list[str]:
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
 
     if task.name.find("@") != -1:
         return [task.name]
     if task.name.find(".py") != -1:
-        result = _get_task_creator_names_from_file(task.name)
+        result = _get_task_creator_names_from_file(task.name, base_dir=base_dir)
         return result
     else:
         if registry_lookup(type="task", name=task.name):
             return [task.name]
         else:
             # Check if name is a file name
-            if file := find_file(task.name):
-                return _get_task_creator_names_from_file(file)
+            if file := find_file(task.name, base_dir=base_dir):
+                return _get_task_creator_names_from_file(file, base_dir=base_dir)
             raise LookupError(f"{task.name} was not found in the registry")

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 from typing_extensions import Unpack
 
@@ -11,7 +13,6 @@ from inspect_flow._config.load import load_job
 
 
 @click.command("run", help="Run a job")
-@click.argument("config-file", type=str, required=True)
 @click.option(
     "--dry-run",
     type=bool,
@@ -28,4 +29,4 @@ def run_command(
     """CLI command to run a job."""
     config_options = parse_config_options(**kwargs)
     config = load_job(config_file, **config_options)
-    run(config, dry_run=dry_run)
+    run(config, base_dir=str(Path(config_file).parent), dry_run=dry_run)

@@ -30,8 +30,11 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def instantiate_tasks(job: FlowJob) -> list[Task]:
-    return [_instantiate_task(job, task_config) for task_config in job.tasks or []]
+def instantiate_tasks(job: FlowJob, base_dir: str) -> list[Task]:
+    return [
+        _instantiate_task(job, task_config, base_dir=base_dir)
+        for task_config in job.tasks or []
+    ]
 
 
 def _create_model(model: FlowModel) -> Model:
@@ -85,7 +88,7 @@ def _create_solver(
     return [_create_single_solver(single_solver) for single_solver in solver]
 
 
-def _instantiate_task(job: FlowJob, flow_task: str | FlowTask) -> Task:
+def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) -> Task:
     if (
         job.defaults is not None
         or not isinstance(flow_task, FlowTask)
@@ -99,7 +102,7 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask) -> Task:
     model_roles = (
         _create_model_roles(flow_task.model_roles) if flow_task.model_roles else None
     )
-    task_func = _get_task_creator(flow_task)
+    task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
         init_active_model(model, model.config)
     task = task_func(**(flow_task.args or {}))
@@ -149,8 +152,10 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask) -> Task:
     return task
 
 
-def _get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task]:
-    file = find_file(file_path)
+def _get_task_creator_from_file(
+    file_path: str, base_dir: str, attr: str
+) -> Callable[..., Task]:
+    file = find_file(file_path, base_dir=base_dir)
     if not file:
         raise FileNotFoundError(f"File not found: {file_path}")
 
@@ -158,14 +163,14 @@ def _get_task_creator_from_file(file_path: str, attr: str) -> Callable[..., Task
     return getattr(module, attr)
 
 
-def _get_task_creator(task: FlowTask) -> Callable[..., Task]:
+def _get_task_creator(task: FlowTask, base_dir: str) -> Callable[..., Task]:
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
     config_name = task.name
 
     if task.name.find("@") != -1:
         file, attr = task.name.split("@", 1)
-        return _get_task_creator_from_file(file, attr)
+        return _get_task_creator_from_file(file, base_dir=base_dir, attr=attr)
     else:
 
         def task_func(**kwargs):

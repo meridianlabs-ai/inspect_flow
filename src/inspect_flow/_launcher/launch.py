@@ -10,11 +10,12 @@ from inspect_ai._util.file import exists
 
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowJob
-from inspect_flow._util.path_util import absolute_path, set_cwd_env_var
+from inspect_flow._util.path_util import absolute_path
 
 
 def launch(
     job: FlowJob,
+    base_dir: str,
     run_args: list[str] | None = None,
 ) -> None:
     if not job.log_dir:
@@ -22,22 +23,22 @@ def launch(
 
     temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
     temp_dir_parent.mkdir(parents=True, exist_ok=True)
-    set_cwd_env_var()
     job.log_dir = _resolve_log_dir(job)
     if job.options and job.options.bundle_dir:
         job.options.bundle_dir = absolute_path(job.options.bundle_dir)
     click.echo(f"Using log_dir: {job.log_dir}")
 
     with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
-        env = create_venv(job, temp_dir)
+        env = create_venv(job, base_dir=base_dir, temp_dir=temp_dir)
         if job.env:
             env.update(**job.env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
         try:
+            args = ["--base-dir", base_dir] + (run_args or [])
             subprocess.run(
-                [str(python_path), str(run_path), *(run_args or [])],
+                [str(python_path), str(run_path), *args],
                 cwd=temp_dir,
                 check=True,
                 env=env,

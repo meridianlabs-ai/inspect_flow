@@ -488,19 +488,31 @@ class FlowInclude(BaseModel, extra="forbid"):
 class FlowDependencies(BaseModel, extra="forbid"):
     """Configuration for flow dependencies to install in the venv."""
 
+    dependency_file_mode: (
+        Literal["auto", "requirements.txt", "pyproject.toml", "none"] | None
+    ) = Field(
+        default=None,
+        description="""Whether to use a dependency file to install dependencies.
+              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present (default). Will use the dependency_file if provided. Otherwise will look in the same directory as the flow config (or current working directory if no config path is available).
+              - "requirements.txt": Use requirements.txt. Will use dependency_file if provided, otherwise will look for requirements.txt in the same directory as the flow config (or current working directory if no config path is available).
+              - "pyproject.toml": Use pyproject.toml. Will use dependency_file if provided, otherwise will look for pyproject.toml in the same directory as the flow config (or current working directory if no config path is available).
+              - "none": Do not use a dependency file.
+              """,
+    )
+
+    dependency_file: str | None = Field(
+        default=None,
+        description="Path to a dependency file (either requirements.txt or pyproject.toml) to install dependencies from.",
+    )
+
+    use_uv_lock: bool | None = Field(
+        default=None,
+        description="If True, use the uv.lock file when using pyproject.toml and uv.lock is present in the same directory (defaults to True).",
+    )
+
     additional_dependencies: list[str] | None = Field(
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
-    )
-
-    requirements_txt: str | None = Field(
-        default=None,
-        description="Path to a requirements.txt file to install dependencies from. If 'auto' will look for requirements.txt parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto').",
-    )
-
-    pyproject_toml: str | None = Field(
-        default=None,
-        description="Path to a pyproject.toml file to install dependencies from. If 'auto' will look for pyproject.toml parents of the config file being loaded with 'load_job' or the current working directory if 'load_job' was not used (defaults to 'auto').",
     )
 
     auto_detect_dependencies: bool | None = Field(
