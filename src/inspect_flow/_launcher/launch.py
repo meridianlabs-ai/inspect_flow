@@ -1,5 +1,4 @@
 import os
-import pathlib
 import re
 import subprocess
 import sys
@@ -22,8 +21,6 @@ def launch(
     if not job.log_dir:
         raise ValueError("log_dir must be set before launching the flow job")
 
-    temp_dir_parent: pathlib.Path = pathlib.Path.home() / ".cache" / "inspect-flow"
-    temp_dir_parent.mkdir(parents=True, exist_ok=True)
     job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
     if job.options and job.options.bundle_dir:
         # Ensure bundle_dir and bundle_url_map are absolute paths
@@ -37,7 +34,7 @@ def launch(
             }
     click.echo(f"Using log_dir: {job.log_dir}")
 
-    with tempfile.TemporaryDirectory(dir=temp_dir_parent) as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_dir:
         # Set the virtual environment so that it will be created in the temp directory
         env = os.environ.copy()
         if job.env:
