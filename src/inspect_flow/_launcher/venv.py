@@ -7,6 +7,13 @@ from typing import List, Literal
 
 import click
 import yaml
+from inspect_ai._util.registry import (
+    registry_find,
+    registry_info,
+    registry_package_name,
+)
+from inspect_ai.util import SandboxEnvironmentType
+from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from pydantic import BaseModel, Field
 
 from inspect_flow._types.flow_types import (
@@ -331,7 +338,7 @@ def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> 
 
     _collect_name_dependencies(task.name, dependencies)
     _collect_solver_dependencies(task.solver, dependencies)
-    # TODO _collect_sandbox_dependencies(task.sandbox, dependencies)
+    _collect_sandbox_dependencies(task.sandbox, dependencies)
     # TODO _collect_approver_dependencies(task.approver, dependencies)
 
     if task.model:
@@ -374,3 +381,31 @@ def _collect_solver_dependencies(
             _collect_solver_dependencies(s, dependencies)
         return
     _collect_name_dependencies(solver.name, dependencies)
+
+
+def _collect_sandbox_dependencies(
+    sandbox: SandboxEnvironmentType | None,
+    dependencies: set[str],
+) -> None:
+    if sandbox is None:
+        return
+    if isinstance(sandbox, str):
+        return _collect_sandbox_type_dependencies(sandbox, dependencies)
+    if isinstance(sandbox, tuple):
+        return _collect_sandbox_type_dependencies(sandbox[0], dependencies)
+    return _collect_sandbox_type_dependencies(sandbox.type, dependencies)
+
+
+def _collect_sandbox_type_dependencies(
+    sandbox_type: str,
+    dependencies: set[str],
+) -> None:
+    entries = registry_find(registry_match_sandboxenv(sandbox_type))
+    if not entries:
+        click.echo(
+            f"No matching sandbox environment found in registry for {sandbox_type}"
+        )
+        return
+    info = registry_info(entries[0])
+    if name := registry_package_name(info.name):
+        dependencies.add(name)
