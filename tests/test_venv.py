@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowJob, FlowModel, FlowSolver, FlowTask
 from inspect_flow._launcher.venv import create_venv
@@ -292,7 +293,8 @@ def test_241_no_uvlock() -> None:
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
-                    dependency_file="tests/local_eval/pyproject.toml"
+                    dependency_file_mode="pyproject.toml",
+                    dependency_file="tests/local_eval/pyproject.toml",
                 ),
                 tasks=[FlowTask(name="task_name")],
             ),
@@ -316,7 +318,7 @@ def test_241_requirements_txt() -> None:
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
-                    dependency_file="tests/local_eval/requirements.txt"
+                    dependency_file="tests/local_eval/requirements.txt",
                 ),
                 tasks=[FlowTask(name="task_name")],
             ),
@@ -329,3 +331,81 @@ def test_241_requirements_txt() -> None:
         with open(requirements_path, "r") as f:
             requirements = f.read()
             assert "local_eval" in requirements
+
+
+def test_241_does_not_exist() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        with pytest.raises(FileNotFoundError):
+            create_venv(
+                job=FlowJob(
+                    python_version="3.11",
+                    log_dir="logs",
+                    dependencies=FlowDependencies(
+                        dependency_file="tests/local_eval/not_there/requirements.txt",
+                    ),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=env,
+            )
+
+
+def test_241_unsupported() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        with pytest.raises(ValueError):
+            create_venv(
+                job=FlowJob(
+                    python_version="3.11",
+                    log_dir="logs",
+                    dependencies=FlowDependencies(
+                        dependency_file="tests/local_eval/flow/local_eval_flow.py",
+                    ),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=env,
+            )
+
+
+def test_241_not_found() -> None:
+    # Assumes no requirements.txt above the current directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        with patch("subprocess.run") as mock_run:
+            create_venv(
+                job=FlowJob(
+                    dependencies=FlowDependencies(
+                        dependency_file_mode="requirements.txt",
+                    ),
+                    python_version="3.11",
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+            )
+
+            assert mock_run.call_count == 2
+            args = mock_run.mock_calls[0].args[0]
+            assert args == [
+                "uv",
+                "venv",
+                "--python",
+                "3.11",
+            ]
+
+            args = mock_run.mock_calls[1].args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert args == [
+                "uv",
+                "pip",
+                "install",
+                f"-e {flow_path}",
+            ]
