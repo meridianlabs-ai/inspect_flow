@@ -223,6 +223,26 @@ def test_run_command_args() -> None:
         )
 
 
+def test_run_command_no_venv() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.run") as mock_run,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(run_command, [CONFIG_FILE, "--no-venv"])
+
+        assert result.exit_code == 0
+
+        mock_config.assert_called_once()
+
+        mock_run.assert_called_once_with(
+            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False, no_venv=True
+        )
+
+
 def test_config_command_resolve() -> None:
     runner = CliRunner()
     with (

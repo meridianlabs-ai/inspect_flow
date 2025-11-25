@@ -29,4 +29,9 @@ def config_command(
     """CLI command to output config."""
     config_options = parse_config_options(**kwargs)
     fconfig = load_job(config_file, **config_options)
-    config(fconfig, base_dir=str(Path(config_file).parent), resolve=resolve)
+    config(
+        fconfig,
+        base_dir=str(Path(config_file).parent),
+        resolve=resolve,
+        no_venv=kwargs.get("no_venv", False) or False,
+    )

@@ -82,6 +82,13 @@ def config_options(f):
         help="If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).",
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
+    f = click.option(
+        "--no-venv",
+        type=bool,
+        is_flag=True,
+        help="If set run the flow in the current environment without creating a virtual environment.",
+        envvar="INSPECT_FLOW_NO_VENV",
+    )(f)
     return f
 
 
@@ -91,6 +98,7 @@ class ConfigOptionArgs(TypedDict, total=False):
     limit: int | None
     set: list[str] | None
     arg: list[str] | None
+    no_venv: bool | None
 
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
