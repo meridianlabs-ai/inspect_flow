@@ -126,5 +126,6 @@ def _collect_sandbox_type_dependencies(
         )
         return
     info = registry_info(entries[0])
-    if name := registry_package_name(info.name):
-        dependencies.add(name)
+    name = registry_package_name(info.name)
+    assert name
+    dependencies.add(name)

@@ -4,9 +4,9 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from inspect_flow import FlowJob, FlowTask
+from inspect_ai.util import SandboxEnvironmentSpec
+from inspect_flow import FlowDependencies, FlowJob, FlowModel, FlowSolver, FlowTask
 from inspect_flow._launcher.venv import create_venv
-from inspect_flow._types.flow_types import FlowDependencies
 
 
 def test_no_dependencies() -> None:
@@ -60,22 +60,43 @@ def test_dependencies() -> None:
 def test_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            job = FlowJob(
+                tasks=[
+                    FlowTask(
+                        name="inspect_evals2/task_name",
+                        model="anthropic/claude-2",
+                        model_roles={"mark": "groq/somemodel"},
+                        sandbox="docker",  # in inspect_ai
+                    ),
+                    FlowTask(
+                        name="inspect_evals3/task_name",
+                        model="openai/gpt-4o-mini",
+                        model_roles={"mark": "google/gemini-1"},
+                        solver=[
+                            "solver_package2/solver_name2",
+                            FlowSolver(name="solver_package3/solver_name3"),
+                        ],
+                        sandbox=("docker", "config"),
+                    ),
+                    FlowTask(
+                        model=FlowModel(),  # no name model
+                        sandbox="unknown_sandbox",
+                    ),
+                    FlowTask(
+                        model="no_package_model",
+                        sandbox=SandboxEnvironmentSpec("docker"),
+                    ),
+                ]
+            )
+            # Add a string task to test that code path
+            assert isinstance(job.tasks, list)
+            job.tasks.append("inspect_evals/task_name")
+            # Add a string solver to test that code path
+            assert isinstance(job.tasks[0], FlowTask)
+            job.tasks[0].solver = "solver_package/solver_name"
+
             create_venv(
-                job=FlowJob(
-                    tasks=[
-                        FlowTask(
-                            name="inspect_evals/task_name",
-                            model="anthropic/claude-2",
-                            model_roles={"mark": "groq/somemodel"},
-                            sandbox="docker",  # in inspect_ai
-                        ),
-                        FlowTask(
-                            name="inspect_evals/task_name",
-                            model="openai/gpt-4o-mini",
-                            model_roles={"mark": "google/gemini-1"},
-                        ),
-                    ]
-                ),
+                job=job,
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
@@ -94,7 +115,12 @@ def test_auto_dependency() -> None:
                 "groq",
                 "inspect_ai",
                 "inspect_evals",
+                "inspect_evals2",
+                "inspect_evals3",
                 "openai",
+                "solver_package",
+                "solver_package2",
+                "solver_package3",
             ]
 
 
