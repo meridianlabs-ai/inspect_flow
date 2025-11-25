@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -21,6 +22,32 @@ def test_launch() -> None:
         args = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].args[0]
         assert len(args) == 4
         assert str(args[0]).endswith("/.venv/bin/python")
+        assert args[1] == str(
+            (
+                Path(__file__).parents[1]
+                / "src"
+                / "inspect_flow"
+                / "_runner"
+                / "run.py"
+            ).resolve()
+        )
+        assert args[2] == "--base-dir"
+        assert args[3] == Path.cwd().as_posix()
+
+
+def test_launch_no_venv() -> None:
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+        launch(
+            job=FlowJob(log_dir="logs", tasks=["task_name"]), base_dir=".", no_venv=True
+        )
+
+        assert mock_run.call_count == 1
+        args = mock_run.mock_calls[0].args[0]
+        assert len(args) == 4
+        assert args[0] == sys.executable
         assert args[1] == str(
             (
                 Path(__file__).parents[1]

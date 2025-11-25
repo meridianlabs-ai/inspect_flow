@@ -8,7 +8,7 @@ from pathlib import Path
 import click
 from inspect_ai._util.file import absolute_file_path, exists
 
-from inspect_flow._launcher.venv import create_venv
+from inspect_flow._launcher.venv import create_venv, write_flow_yaml
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -17,6 +17,7 @@ def launch(
     job: FlowJob,
     base_dir: str,
     run_args: list[str] | None = None,
+    no_venv: bool = False,
 ) -> None:
     if not job.log_dir:
         raise ValueError("log_dir must be set before launching the flow job")
@@ -34,20 +35,34 @@ def launch(
             }
     click.echo(f"Using log_dir: {job.log_dir}")
 
+    run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+    base_dir = absolute_file_path(base_dir)
+    args = ["--base-dir", base_dir] + (run_args or [])
+    env = os.environ.copy()
+    if job.env:
+        env.update(**job.env)
+
+    if no_venv:
+        python_path = sys.executable
+        file = write_flow_yaml(job, ".")
+        try:
+            subprocess.run(
+                [str(python_path), str(run_path), *args], check=True, env=env
+            )
+        except subprocess.CalledProcessError as e:
+            sys.exit(e.returncode)
+        finally:
+            file.unlink(missing_ok=True)
+        return
+
     with tempfile.TemporaryDirectory() as temp_dir:
         # Set the virtual environment so that it will be created in the temp directory
-        env = os.environ.copy()
-        if job.env:
-            env.update(**job.env)
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
 
         create_venv(job, base_dir=base_dir, temp_dir=temp_dir, env=env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
-        run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
-        base_dir = absolute_file_path(base_dir)
         try:
-            args = ["--base-dir", base_dir] + (run_args or [])
             subprocess.run(
                 [str(python_path), str(run_path), *args],
                 cwd=temp_dir,
