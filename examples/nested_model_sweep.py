@@ -1,4 +1,4 @@
-from inspect_flow import FlowGenerateConfig, FlowJob, models_matrix, tasks_matrix
+from inspect_flow import FlowJob, GenerateConfig, models_matrix, tasks_matrix
 
 FlowJob(
     log_dir="logs",
@@ -9,8 +9,8 @@ FlowJob(
             *models_matrix(  # Unpacks list of 4 model configs
                 model=["openai/gpt-4o", "openai/gpt-4o-mini"],
                 config=[
-                    FlowGenerateConfig(reasoning_effort="low"),
-                    FlowGenerateConfig(reasoning_effort="high"),
+                    GenerateConfig(reasoning_effort="low"),
+                    GenerateConfig(reasoning_effort="high"),
                 ],
             ),
         ],  # Total: 1 + 4 = 5 models

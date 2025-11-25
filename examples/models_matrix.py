@@ -1,4 +1,4 @@
-from inspect_flow import FlowGenerateConfig, FlowJob, models_matrix, tasks_matrix
+from inspect_flow import FlowJob, GenerateConfig, models_matrix, tasks_matrix
 
 FlowJob(
     log_dir="logs",
@@ -13,10 +13,10 @@ FlowJob(
                 "openai/gpt-5-mini",
             ],
             config=[
-                FlowGenerateConfig(reasoning_effort="minimal"),
-                FlowGenerateConfig(reasoning_effort="low"),
-                FlowGenerateConfig(reasoning_effort="medium"),
-                FlowGenerateConfig(reasoning_effort="high"),
+                GenerateConfig(reasoning_effort="minimal"),
+                GenerateConfig(reasoning_effort="low"),
+                GenerateConfig(reasoning_effort="medium"),
+                GenerateConfig(reasoning_effort="high"),
             ],
         ),
     ),

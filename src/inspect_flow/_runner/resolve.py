@@ -10,11 +10,11 @@ from pydantic import BaseModel
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
-    FlowGenerateConfig,
     FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
     ModelRolesConfig,
 )
 from inspect_flow._types.merge import merge_recursive
@@ -133,7 +133,7 @@ def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[Flo
     model_roles = (
         _resolve_model_roles(task.model_roles, job) if task.model_roles else None
     )
-    generate_config = defaults.config or FlowGenerateConfig()
+    generate_config = defaults.config or GenerateConfig()
     if task.config:
         generate_config = generate_config.merge(task.config)
     if model and model.config:

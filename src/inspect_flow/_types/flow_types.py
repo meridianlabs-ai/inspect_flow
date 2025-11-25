@@ -27,12 +27,6 @@ CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
 
 
-class FlowGenerateConfig(GenerateConfig, extra="forbid"):
-    """Model generation options."""
-
-    pass
-
-
 class FlowModel(BaseModel, extra="forbid"):
     """Configuration for a Model."""
 
@@ -51,7 +45,7 @@ class FlowModel(BaseModel, extra="forbid"):
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    config: FlowGenerateConfig | None = Field(
+    config: GenerateConfig | None = Field(
         default=None,
         description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
     )
@@ -166,7 +160,7 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Default model for task (Optional, defaults to eval model).",
     )
 
-    config: FlowGenerateConfig | None = Field(
+    config: GenerateConfig | None = Field(
         default=None,
         description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
     )
@@ -437,7 +431,7 @@ class FlowOptions(BaseModel, extra="forbid"):
 class FlowDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
-    config: FlowGenerateConfig | None = Field(
+    config: GenerateConfig | None = Field(
         default=None,
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )

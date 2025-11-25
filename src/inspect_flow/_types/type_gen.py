@@ -26,10 +26,10 @@ GENERATED_CODE_COMMENT = [
 ADDITIONAL_IMPORTS = [
     "from __future__ import annotations\n",
     "from typing_extensions import TypedDict\n",
-    "from inspect_ai.model import BatchConfig, CachePolicy, ResponseSchema\n",
+    "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowDefaults, FlowDependencies, FlowEpochs, FlowGenerateConfig, FlowInclude, FlowModel, FlowOptions, FlowSolver, FlowTask\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowDefaults, FlowDependencies, FlowEpochs, FlowInclude, FlowModel, FlowOptions, FlowSolver, FlowTask\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
@@ -39,7 +39,7 @@ MATRIX_CLASS_FIELDS = {
     "FlowModel": ["config"],
     "FlowSolver": ["args"],
     "FlowAgent": ["args"],
-    "FlowGenerateConfig": [
+    "GenerateConfig": [
         "system_message",
         "max_tokens",
         "top_p",

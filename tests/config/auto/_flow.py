@@ -1,4 +1,4 @@
-from inspect_flow import FlowDefaults, FlowGenerateConfig, FlowJob, FlowModel
+from inspect_flow import FlowDefaults, FlowJob, FlowModel, GenerateConfig
 
 FlowJob(
     includes=["_other_flow.py"],
@@ -6,7 +6,7 @@ FlowJob(
         model_prefix={
             "openai": FlowModel(
                 base_url="https://api.openai.com/v1/",
-                config=FlowGenerateConfig(max_connections=5),
+                config=GenerateConfig(max_connections=5),
             ),
         }
     ),
