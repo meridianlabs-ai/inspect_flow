@@ -339,7 +339,7 @@ def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> 
     _collect_name_dependencies(task.name, dependencies)
     _collect_solver_dependencies(task.solver, dependencies)
     _collect_sandbox_dependencies(task.sandbox, dependencies)
-    # TODO _collect_approver_dependencies(task.approver, dependencies)
+    # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
     if task.model:
         _collect_model_dependencies(task.model, dependencies)

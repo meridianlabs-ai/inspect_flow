@@ -67,6 +67,7 @@ def test_auto_dependency() -> None:
                             name="inspect_evals/task_name",
                             model="anthropic/claude-2",
                             model_roles={"mark": "groq/somemodel"},
+                            sandbox="docker",  # in inspect_ai
                         ),
                         FlowTask(
                             name="inspect_evals/task_name",
@@ -91,6 +92,7 @@ def test_auto_dependency() -> None:
                 "anthropic",
                 "google-genai",
                 "groq",
+                "inspect_ai",
                 "inspect_evals",
                 "openai",
             ]
