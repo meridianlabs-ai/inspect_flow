@@ -490,20 +490,20 @@ class FlowDependencies(BaseModel, extra="forbid"):
     """Configuration for flow dependencies to install in the venv."""
 
     dependency_file_mode: (
-        Literal["auto", "requirements.txt", "pyproject.toml", "none"] | None
+        Literal["auto", "requirements.txt", "pyproject.toml", "no_file"] | None
     ) = Field(
         default=None,
-        description="""Whether to use a dependency file to install dependencies.
-              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present (default). Will use the dependency_file if provided. Otherwise will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API).
+        description="""Whether to use a dependency file to install dependencies (defaults to "auto").
+              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present. Will use the dependency_file if provided. Otherwise will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API).
               - "requirements.txt": Use requirements.txt. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
               - "pyproject.toml": Use pyproject.toml. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
-              - "none": Do not use a dependency file.
+              - "no_file": Do not use a dependency file.
               """,
     )
 
     dependency_file: str | None = Field(
         default=None,
-        description="Path to a dependency file (either requirements.txt or pyproject.toml) to install dependencies from.",
+        description="Path to a dependency file (either requirements.txt or pyproject.toml) to install dependencies from. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
     )
 
     use_uv_lock: bool | None = Field(
@@ -518,7 +518,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
 
     auto_detect_dependencies: bool | None = Field(
         default=None,
-        description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True).",
+        description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed.",
     )
 
     # Convert single items to lists
