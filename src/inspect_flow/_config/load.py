@@ -27,7 +27,7 @@ class ConfigOptions(TypedDict, total=False):
     """
 
     overrides: list[str]
-    flow_vars: dict[str, str]
+    args: dict[str, Any]
 
 
 def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
@@ -39,7 +39,7 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     """
     config_options = ConfigOptions(**kwargs)
     job = _load_job_from_file(
-        file, flow_vars=config_options.get("flow_vars", {}), including_jobs={}
+        file, args=config_options.get("args", {}), including_jobs={}
     )
     job = _apply_auto_includes(job, file, config_options)
 
@@ -110,7 +110,7 @@ def apply_substitions(job: FlowJob) -> FlowJob:
 
 def _load_job_from_file(
     config_file: str,
-    flow_vars: dict[str, str],
+    args: dict[str, Any],
     including_jobs: dict[str, FlowJob] | None,
 ) -> FlowJob:
     config_path = Path(config_file)
@@ -119,7 +119,7 @@ def _load_job_from_file(
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
                 job = execute_file_and_get_last_result(
-                    config_file, flow_vars, including_jobs
+                    config_file, args=args, including_jobs=including_jobs
                 )
                 if job is None:
                     raise ValueError(
@@ -145,7 +145,7 @@ def _load_job_from_file(
         click.echo(e, err=True)
         sys.exit(1)
 
-    return expand_includes(job, str(config_path), flow_vars, including_jobs)
+    return expand_includes(job, str(config_path), args, including_jobs)
 
 
 def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:

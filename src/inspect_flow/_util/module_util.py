@@ -5,6 +5,7 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 from inspect_ai._util.file import file
 
@@ -25,17 +26,17 @@ def get_module_from_file(file: str) -> ModuleType:
 
 
 def execute_file_and_get_last_result(
-    path: str, flow_vars: dict[str, str], including_jobs: dict[str, FlowJob] | None
+    path: str, args: dict[str, Any], including_jobs: dict[str, FlowJob] | None
 ) -> object | None:
     with file(path, "r", encoding="utf-8") as f:
         src = f.read()
-    return execute_src_and_get_last_result(src, path, flow_vars, including_jobs)
+    return execute_src_and_get_last_result(src, path, args, including_jobs)
 
 
 def execute_src_and_get_last_result(
     src: str,
     filename: str,
-    flow_vars: dict[str, str],
+    args: dict[str, Any],
     including_jobs: dict[str, FlowJob] | None,
 ) -> object | None:
     mod = ast.parse(src, filename=filename, mode="exec")
@@ -44,6 +45,7 @@ def execute_src_and_get_last_result(
 
     *prefix, last = mod.body
     target_id = "_"
+    is_function_def = False
     if isinstance(last, ast.Expr):
         # rewrite final expression:  _ = <expr>
         last = ast.Assign(
@@ -57,6 +59,10 @@ def execute_src_and_get_last_result(
                 "Only single target assignments are supported in config files"
             )
         target_id = target_ids[0]
+    elif isinstance(last, ast.FunctionDef):
+        # If the last statement is a function definition, use its name as the target
+        target_id = last.name
+        is_function_def = True
     else:
         return None
     # else: leave as-is; result will be None
@@ -66,8 +72,11 @@ def execute_src_and_get_last_result(
         "__name__": "__main__",
         "__builtins__": builtins.__dict__,
         "__file__": filename,
-        "__flow_vars__": flow_vars,
         "__flow_including_jobs__": including_jobs or {},
     }
     exec(code, g, g)
-    return g.get(target_id)
+    if not is_function_def:
+        return g.get(target_id)
+    function = g.get(target_id)
+    assert function and callable(function)
+    return function(**args)

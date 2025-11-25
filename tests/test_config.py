@@ -267,15 +267,15 @@ def test_overrides_of_dicts():
     assert "key1" not in config.options.metadata
 
 
-def test_load_config_flow_vars():
+def test_load_config_args() -> None:
     config = load_job(
-        str(Path(__file__).parent / "config" / "flow_vars_flow.py"),
-        flow_vars={"model": "model_from_flow_vars"},
+        str(Path(__file__).parent / "config" / "args_flow.py"),
+        args={"model": "model_from_args"},
     )
     assert config.tasks
     assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].model
-    assert config.tasks[0].model_name == "model_from_flow_vars"
+    assert config.tasks[0].model_name == "model_from_args"
 
 
 def test_metadata():
