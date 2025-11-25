@@ -9,7 +9,13 @@ import click
 import yaml
 from pydantic import BaseModel, Field
 
-from inspect_flow._types.flow_types import FlowJob, FlowModel, FlowTask
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowJob,
+    FlowModel,
+    FlowSolver,
+    FlowTask,
+)
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 
@@ -41,7 +47,13 @@ def create_venv(
             dep if not dep.startswith(".") else str(Path(dep).resolve())
             for dep in dependencies
         ]
-    dependencies.extend(_get_model_dependencies(job))
+
+    auto_detect_dependencies = True
+    if job.dependencies and job.dependencies.auto_detect_dependencies is not None:
+        auto_detect_dependencies = job.dependencies.auto_detect_dependencies
+
+    if auto_detect_dependencies:
+        dependencies.extend(_collect_auto_dependencies(job))
     dependencies.append(_get_pip_string("inspect-flow"))
 
     _uv_pip_install(sorted(dependencies), temp_dir, env)
@@ -126,7 +138,7 @@ def _get_dependency_file(
     job: FlowJob, base_dir: str
 ) -> tuple[Literal["requirements.txt", "pyproject.toml"], str] | None:
     mode = job.dependencies and job.dependencies.dependency_file_mode or "auto"
-    if mode == "none":
+    if mode == "no_file":
         return None
 
     file = job.dependencies and job.dependencies.dependency_file or None
@@ -265,68 +277,100 @@ def _direct_url_to_pip_string(direct_url: _DirectUrl) -> str:
 
 def _get_pip_string(package: str) -> str:
     direct_url = _get_package_direct_url(package)
-    # If DirectURL is None, could be running in dev mode or installed from PyPI.
-    if direct_url is None:
-        package_path = Path(__file__).parents[3]
-        if not (package_path / "pyproject.toml").exists():
-            # Assume installed from PyPI
-            return package
-        return str(package_path)
-    # package is installed - copy the installed package to the new venv
-    return _direct_url_to_pip_string(direct_url)
+    if direct_url:
+        # package is installed - copy the installed package to the new venv
+        return _direct_url_to_pip_string(direct_url)
+    if package != "inspect-flow":
+        return package
+    # If DirectURL is None, inspect-flow could be running in dev mode or installed from PyPI.
+    package_path = Path(__file__).parents[3]
+    if not (package_path / "pyproject.toml").exists():
+        # Assume installed from PyPI
+        return package
+    return str(package_path)
 
 
 # TODO:ransom how do we keep in sync with inspect_ai - should probably export from there
-_providers: dict[str, str | list[str] | None] = {
-    "groq": "groq",
-    "openai": "openai",
-    "anthropic": "anthropic",
-    "google": "google-genai",
+_MODEL_PROVIDERS: dict[str, list[str]] = {
+    "groq": ["groq"],
+    "openai": ["openai"],
+    "anthropic": ["anthropic"],
+    "google": ["google-genai"],
     "hf": ["torch", "transformers", "accelerate"],
-    "vllm": "vllm",
-    "cf": None,
-    "mistral": "mistralai",
-    "grok": "xai_sdk",
-    "together": "openai",
-    "fireworks": "openai",
-    "sambanova": "openai",
-    "ollama": "openai",
-    "openrouter": "openai",
-    "perplexity": "openai",
-    "llama-cpp-python": "openai",
-    "azureai": "azure-ai-inference",
-    "bedrock": None,
-    "sglang": "openai",
-    "transformer_lens": "transformer_lens",
-    "hf-inference-providers": "openai",
+    "vllm": ["vllm"],
+    "cf": [],
+    "mistral": ["mistralai"],
+    "grok": ["xai_sdk"],
+    "together": ["openai"],
+    "fireworks": ["openai"],
+    "sambanova": ["openai"],
+    "ollama": ["openai"],
+    "openrouter": ["openai"],
+    "perplexity": ["openai"],
+    "llama-cpp-python": ["openai"],
+    "azureai": ["azure-ai-inference"],
+    "bedrock": [],
+    "sglang": ["openai"],
+    "transformer_lens": ["transformer_lens"],
+    "hf-inference-providers": ["openai"],
 }
 
 
-def _get_model_dependencies(config: FlowJob) -> List[str]:
-    model_dependencies: set[str] = set()
+def _collect_auto_dependencies(job: FlowJob) -> set[str]:
+    result = set()
 
-    def collect_dependency(model_name: str | None) -> None:
-        """Extract provider from model name like 'openai/gpt-4o-mini' -> 'openai'"""
-        if model_name and "/" in model_name:
-            dependency = _providers.get(model_name.split("/")[0])
-            if dependency:
-                if isinstance(dependency, list):
-                    model_dependencies.update(dependency)
-                else:
-                    model_dependencies.add(dependency)
+    for task in job.tasks or []:
+        _collect_task_dependencies(task, result)
 
-    def collect_model_dependencies(config: FlowTask) -> None:
-        if config.model:
-            collect_dependency(config.model_name)
-        if config.model_roles:
-            for model_role in config.model_roles.values():
-                if isinstance(model_role, FlowModel):
-                    collect_dependency(model_role.name)
-                else:
-                    collect_dependency(model_role)
+    return {_get_pip_string(dep) for dep in result}
 
-    for task in config.tasks or []:
-        if isinstance(task, FlowTask):
-            collect_model_dependencies(task)
 
-    return sorted(model_dependencies)
+def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> None:
+    if isinstance(task, str):
+        return _collect_name_dependencies(task, dependencies)
+
+    _collect_name_dependencies(task.name, dependencies)
+    _collect_solver_dependencies(task.solver, dependencies)
+    # TODO _collect_sandbox_dependencies(task.sandbox, dependencies)
+    # TODO _collect_approver_dependencies(task.approver, dependencies)
+
+    if task.model:
+        _collect_model_dependencies(task.model, dependencies)
+    if task.model_roles:
+        for model_role in task.model_roles.values():
+            _collect_model_dependencies(model_role, dependencies)
+
+
+def _collect_name_dependencies(name: str | None, dependencies: set[str]) -> None:
+    if name is None or name.find("@") != -1 or name.find(".py") != -1:
+        # Looks like a file name, not a package name
+        return
+    split = name.split("/", maxsplit=1)
+    if len(split) == 2:
+        dependencies.add(split[0])
+
+
+def _collect_model_dependencies(
+    model: str | FlowModel | None, dependencies: set[str]
+) -> None:
+    name = model.name if isinstance(model, FlowModel) else model
+    if name is None:
+        return
+    split = name.split("/", maxsplit=1)
+    if len(split) == 2:
+        dependencies.update(_MODEL_PROVIDERS.get(split[0], [split[0]]))
+
+
+def _collect_solver_dependencies(
+    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None,
+    dependencies: set[str],
+) -> None:
+    if solver is None:
+        return
+    if isinstance(solver, str):
+        return _collect_name_dependencies(solver, dependencies)
+    if isinstance(solver, list):
+        for s in solver:
+            _collect_solver_dependencies(s, dependencies)
+        return
+    _collect_name_dependencies(solver.name, dependencies)

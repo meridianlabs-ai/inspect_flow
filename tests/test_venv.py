@@ -57,19 +57,19 @@ def test_dependencies() -> None:
             ]
 
 
-def test_model_dependency() -> None:
+def test_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
             create_venv(
                 job=FlowJob(
                     tasks=[
                         FlowTask(
-                            name="task_name",
+                            name="inspect_evals/task_name",
                             model="anthropic/claude-2",
                             model_roles={"mark": "groq/somemodel"},
                         ),
                         FlowTask(
-                            name="task_name",
+                            name="inspect_evals/task_name",
                             model="openai/gpt-4o-mini",
                             model_roles={"mark": "google/gemini-1"},
                         ),
@@ -91,6 +91,7 @@ def test_model_dependency() -> None:
                 "anthropic",
                 "google-genai",
                 "groq",
+                "inspect_evals",
                 "openai",
             ]
 
