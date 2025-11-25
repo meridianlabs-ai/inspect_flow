@@ -8,7 +8,7 @@ from pathlib import Path
 import click
 from inspect_ai._util.file import absolute_file_path, exists
 
-from inspect_flow._launcher.venv import create_venv
+from inspect_flow._launcher.venv import create_venv, write_flow_yaml
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -44,12 +44,15 @@ def launch(
 
     if no_venv:
         python_path = sys.executable
+        file = write_flow_yaml(job, ".")
         try:
             subprocess.run(
                 [str(python_path), str(run_path), *args], check=True, env=env
             )
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
+        finally:
+            file.unlink(missing_ok=True)
         return
 
     with tempfile.TemporaryDirectory() as temp_dir:

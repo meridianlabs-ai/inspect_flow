@@ -14,15 +14,8 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 
-def create_venv(
-    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
-) -> None:
-    flow_yaml_path = Path(temp_dir) / "flow.yaml"
-    job.python_version = (
-        job.python_version
-        or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
-
+def write_flow_yaml(job: FlowJob, dir: str) -> Path:
+    flow_yaml_path = Path(dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
             job.model_dump(mode="json", exclude_unset=True),
@@ -30,6 +23,17 @@ def create_venv(
             default_flow_style=False,
             sort_keys=False,
         )
+    return flow_yaml_path
+
+
+def create_venv(
+    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+) -> None:
+    job.python_version = (
+        job.python_version
+        or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+    write_flow_yaml(job, temp_dir)
 
     _create_venv_with_base_dependencies(
         job, base_dir=base_dir, temp_dir=temp_dir, env=env
