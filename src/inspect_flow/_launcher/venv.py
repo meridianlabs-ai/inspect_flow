@@ -84,7 +84,8 @@ def _create_venv_with_base_dependencies(
     if file_type == "requirements.txt":
         click.echo(f"Using requirements.txt to create venv. File: {file_path}")
         _uv_venv(job, temp_dir, env)
-        _uv_pip_install(["-r", file_path], temp_dir, env)
+        # Need to run in the directory containing the requirements.txt to handle relative paths
+        _uv_pip_install(["-r", file_path], Path(file_path).parent.as_posix(), env)
         return
 
     click.echo(f"Using pyproject.toml to create venv. File: {file_path}")

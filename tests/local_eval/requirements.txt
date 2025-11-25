@@ -1,0 +1,5 @@
+.
+# requirements.txt used for testing - not needed for real projects that have pyproject.toml
+inspect-ai>=0.3.131
+python-dotenv>=1.1.1
+typing_extensions>=4.9.0

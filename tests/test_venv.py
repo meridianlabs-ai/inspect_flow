@@ -124,6 +124,76 @@ def test_auto_dependency() -> None:
             ]
 
 
+def test_no_auto_dependency() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            job = FlowJob(
+                dependencies=FlowDependencies(auto_detect_dependencies=False),
+                tasks=[
+                    FlowTask(
+                        name="inspect_evals2/task_name",
+                        model="anthropic/claude-2",
+                        model_roles={"mark": "groq/somemodel"},
+                        sandbox="docker",  # in inspect_ai
+                    ),
+                ],
+            )
+
+            create_venv(
+                job=job,
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+            )
+
+            assert mock_run.call_count == 2
+            args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert args == [
+                "uv",
+                "pip",
+                "install",
+                f"-e {flow_path}",
+            ]
+
+
+def test_no_file() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            job = FlowJob(
+                dependencies=FlowDependencies(dependency_file_mode="no_file"),
+                tasks=[
+                    FlowTask(
+                        name="inspect_evals2/task_name",
+                        model="anthropic/claude-2",
+                        model_roles={"mark": "groq/somemodel"},
+                        sandbox="docker",  # in inspect_ai
+                    ),
+                ],
+            )
+
+            create_venv(
+                job=job,
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+            )
+
+            assert mock_run.call_count == 2
+            args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert args == [
+                "uv",
+                "pip",
+                "install",
+                f"-e {flow_path}",
+                "anthropic",
+                "groq",
+                "inspect_ai",
+                "inspect_evals2",
+            ]
+
+
 def test_python_version() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
@@ -205,4 +275,57 @@ def test_241_dependency_file() -> None:
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
-            assert requirements.find("local_eval") != -1
+            assert "local_eval" in requirements
+
+
+def test_241_no_uvlock() -> None:
+    # Delete uv.lock if it exists to test behavior without lockfile
+    uv_lock_path = Path("tests/local_eval/uv.lock")
+    if uv_lock_path.exists():
+        uv_lock_path.unlink()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        create_venv(
+            job=FlowJob(
+                python_version="3.11",
+                log_dir="logs",
+                dependencies=FlowDependencies(
+                    dependency_file="tests/local_eval/pyproject.toml"
+                ),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=".",
+            temp_dir=temp_dir,
+            env=env,
+        )
+        requirements_path = Path("logs") / "flow_requirements.txt"
+        assert requirements_path.exists()
+        with open(requirements_path, "r") as f:
+            requirements = f.read()
+            assert "local_eval" in requirements
+
+
+def test_241_requirements_txt() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        create_venv(
+            job=FlowJob(
+                python_version="3.11",
+                log_dir="logs",
+                dependencies=FlowDependencies(
+                    dependency_file="tests/local_eval/requirements.txt"
+                ),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=".",
+            temp_dir=temp_dir,
+            env=env,
+        )
+        requirements_path = Path("logs") / "flow_requirements.txt"
+        assert requirements_path.exists()
+        with open(requirements_path, "r") as f:
+            requirements = f.read()
+            assert "local_eval" in requirements
