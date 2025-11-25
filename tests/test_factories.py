@@ -1,8 +1,8 @@
 import pytest
 from inspect_flow import (
-    FlowGenerateConfig,
     FlowModel,
     FlowTask,
+    GenerateConfig,
     configs_matrix,
     tasks_matrix,
     tasks_with,
@@ -63,7 +63,7 @@ def test_nested_types():
         model=[
             FlowModel(
                 name="model1",
-                config=FlowGenerateConfig(system_message="test system message"),
+                config=GenerateConfig(system_message="test system message"),
             ),
             FlowModel(name="model2"),
         ],
@@ -95,7 +95,7 @@ def test_configs():
     result = tasks_matrix(
         task=FlowTask(name="task1", model=FlowModel(name="model1")),
         config=configs_matrix(
-            config=FlowGenerateConfig(), system_message=["message1", "message2"]
+            config=GenerateConfig(), system_message=["message1", "message2"]
         ),
     )
     assert len(result) == 2

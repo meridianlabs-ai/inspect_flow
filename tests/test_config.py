@@ -4,13 +4,13 @@ import pytest
 from inspect_ai.model import CachePolicy
 from inspect_flow import (
     FlowAgent,
-    FlowGenerateConfig,
     FlowInclude,
     FlowJob,
     FlowModel,
     FlowOptions,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
     models_matrix,
     tasks_matrix,
     tasks_with,
@@ -104,8 +104,8 @@ def test_config_model_config() -> None:
                 *models_matrix(
                     model=FlowModel(name="openai/gpt-5-nano"),
                     config=[
-                        FlowGenerateConfig(reasoning_effort="minimal"),
-                        FlowGenerateConfig(reasoning_effort="low"),
+                        GenerateConfig(reasoning_effort="minimal"),
+                        GenerateConfig(reasoning_effort="low"),
                     ],
                 ),
             ],
@@ -164,15 +164,15 @@ def test_merge_config():
                     "local_eval/noop",
                     FlowTask(
                         name="local_eval/noop2",
-                        config=FlowGenerateConfig(system_message="Be concise."),
+                        config=GenerateConfig(system_message="Be concise."),
                     ),
                 ],
                 config=[
-                    FlowGenerateConfig(reasoning_effort="low"),
-                    FlowGenerateConfig(reasoning_effort="high"),
+                    GenerateConfig(reasoning_effort="low"),
+                    GenerateConfig(reasoning_effort="high"),
                 ],
             ),
-            config=FlowGenerateConfig(max_connections=10),
+            config=GenerateConfig(max_connections=10),
             model="mockllm/mock-llm1",
         ),
     )
@@ -471,7 +471,7 @@ def test_154_cache_policy() -> None:
                 name="some_task",
                 model=FlowModel(
                     name="some_model",
-                    config=FlowGenerateConfig(cache=CachePolicy(expiry="1h")),
+                    config=GenerateConfig(cache=CachePolicy(expiry="1h")),
                 ),
             ),
         ],

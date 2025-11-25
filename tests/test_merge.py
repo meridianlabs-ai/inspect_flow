@@ -1,9 +1,9 @@
 from inspect_flow._types.generated import (
     FlowAgent,
-    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
 )
 from inspect_flow._types.merge import (
     merge,
@@ -27,15 +27,15 @@ def test_merge():
     assert agent.flow_metadata["base"] == "agent"
     assert agent.flow_metadata["add"] == "agent"
 
-    config = merge(FlowGenerateConfig(max_tokens=100), FlowGenerateConfig(top_p=0.9))
+    config = merge(GenerateConfig(max_tokens=100), GenerateConfig(top_p=0.9))
     assert config.max_tokens == 100
     assert config.top_p == 0.9
 
     model = merge(
         FlowModel(
-            name="base_model", role="mark", config=FlowGenerateConfig(temperature=0.3)
+            name="base_model", role="mark", config=GenerateConfig(temperature=0.3)
         ),
-        FlowModel(config=FlowGenerateConfig(top_p=0.8), role="updated_mark"),
+        FlowModel(config=GenerateConfig(top_p=0.8), role="updated_mark"),
     )
     assert model.name == "base_model"
     assert model.role == "updated_mark"
@@ -51,11 +51,11 @@ def test_merge():
     task = merge(
         FlowTask(
             name="base_task",
-            config=FlowGenerateConfig(timeout=30),
+            config=GenerateConfig(timeout=30),
             flow_metadata={"base": "task", "both": "base"},
         ),
         FlowTask(
-            config=FlowGenerateConfig(max_retries=3),
+            config=GenerateConfig(max_retries=3),
             flow_metadata={"add": "task", "both": "add"},
         ),
     )

@@ -4,10 +4,10 @@ from pydantic_core import to_jsonable_python
 
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
 )
 
 
@@ -36,7 +36,7 @@ def _merge(
 _RECURSIVE_KEYS = {"config", "flow_metadata"}
 
 
-_T = TypeVar("_T", FlowAgent, FlowGenerateConfig, FlowModel, FlowSolver, FlowTask)
+_T = TypeVar("_T", FlowAgent, GenerateConfig, FlowModel, FlowSolver, FlowTask)
 
 
 def merge_recursive(
@@ -60,4 +60,4 @@ def merge(base: _T, add: _T) -> _T:
         add: The object to merge into the base. Values in this object
             will override those in the base.
     """
-    return type(base).model_validate(merge_recursive(base, add))
+    return type(base).model_validate(merge_recursive(base, add), extra="forbid")

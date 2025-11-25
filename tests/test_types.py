@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from inspect_flow import (
     FlowDefaults,
-    FlowGenerateConfig,
     FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
     configs_matrix,
 )
 
@@ -65,8 +65,8 @@ def test_solver_from_string():
 
 def test_defaults():
     FlowDefaults(
-        config=FlowGenerateConfig(max_connections=50),
-        model=FlowModel(config=FlowGenerateConfig(temperature=0.3)),
+        config=GenerateConfig(max_connections=50),
+        model=FlowModel(config=GenerateConfig(temperature=0.3)),
     )
 
 

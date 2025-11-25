@@ -6,33 +6,33 @@ from typing_extensions import Unpack
 
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowGenerateConfig,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
 )
 from inspect_flow._types.generated import (
     FlowAgentDict,
     FlowAgentMatrixDict,
-    FlowGenerateConfigDict,
-    FlowGenerateConfigMatrixDict,
     FlowModelDict,
     FlowModelMatrixDict,
     FlowSolverDict,
     FlowSolverMatrixDict,
     FlowTaskDict,
     FlowTaskMatrixDict,
+    GenerateConfigDict,
+    GenerateConfigMatrixDict,
 )
 from inspect_flow._types.merge import merge_recursive, to_dict
 
 BaseType = TypeVar(
-    "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, FlowGenerateConfig
+    "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
 )
 
 MatrixDict = TypeVar(
     "MatrixDict",
     FlowAgentMatrixDict,
-    FlowGenerateConfigMatrixDict,
+    GenerateConfigMatrixDict,
     FlowModelMatrixDict,
     FlowSolverMatrixDict,
     FlowTaskMatrixDict,
@@ -54,7 +54,9 @@ def _with_base(
         if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(merge_recursive(base_dict, values))
+    return pydantic_type.model_validate(
+        merge_recursive(base_dict, values), extra="forbid"
+    )
 
 
 def _with(
@@ -95,7 +97,9 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(merge_recursive(base_dict, add_dict))
+            pydantic_type.model_validate(
+                merge_recursive(base_dict, add_dict), extra="forbid"
+            )
         )
     return result
 
@@ -135,16 +139,16 @@ def agents_with(
 
 def configs_with(
     *,
-    config: FlowGenerateConfig | Sequence[FlowGenerateConfig],
-    **kwargs: Unpack[FlowGenerateConfigDict],
-) -> list[FlowGenerateConfig]:
+    config: GenerateConfig | Sequence[GenerateConfig],
+    **kwargs: Unpack[GenerateConfigDict],
+) -> list[GenerateConfig]:
     """Set fields on a list of generate configs.
 
     Args:
         config: The config or list of configs to set fields on.
         **kwargs: The fields to set on each config.
     """
-    return _with(config, kwargs, FlowGenerateConfig)
+    return _with(config, kwargs, GenerateConfig)
 
 
 def models_with(
@@ -205,17 +209,17 @@ def agents_matrix(
 
 def configs_matrix(
     *,
-    config: FlowGenerateConfig | Sequence[FlowGenerateConfig] | None = None,
-    **kwargs: Unpack[FlowGenerateConfigMatrixDict],
-) -> list[FlowGenerateConfig]:
+    config: GenerateConfig | Sequence[GenerateConfig] | None = None,
+    **kwargs: Unpack[GenerateConfigMatrixDict],
+) -> list[GenerateConfig]:
     """Create a list of generate configs from the product of lists of field values.
 
     Args:
         config: The config or list of configs to matrix.
         **kwargs: The lists of field values to matrix.
     """
-    config = config or FlowGenerateConfig()
-    return _matrix(config, kwargs, FlowGenerateConfig)
+    config = config or GenerateConfig()
+    return _matrix(config, kwargs, GenerateConfig)
 
 
 def models_matrix(

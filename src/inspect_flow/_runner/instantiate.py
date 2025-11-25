@@ -14,11 +14,11 @@ from pydantic import BaseModel
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowEpochs,
-    FlowGenerateConfig,
     FlowJob,
     FlowModel,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
     ModelRolesConfig,
 )
 from inspect_flow._util.module_util import get_module_from_file
@@ -45,7 +45,7 @@ def _create_model(model: FlowModel) -> Model:
         model=model.name,
         role=model.role,
         default=model.default,
-        config=model.config or FlowGenerateConfig(),
+        config=model.config or GenerateConfig(),
         base_url=model.base_url,
         api_key=model.api_key,
         memoize=model.memoize or True,
