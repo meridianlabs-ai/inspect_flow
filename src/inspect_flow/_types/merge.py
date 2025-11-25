@@ -60,4 +60,4 @@ def merge(base: _T, add: _T) -> _T:
         add: The object to merge into the base. Values in this object
             will override those in the base.
     """
-    return type(base).model_validate(merge_recursive(base, add))
+    return type(base).model_validate(merge_recursive(base, add), extra="forbid")

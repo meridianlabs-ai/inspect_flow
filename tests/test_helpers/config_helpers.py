@@ -9,7 +9,7 @@ update_examples = False
 
 
 def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
-    job = FlowJob.model_validate(to_jsonable_python(job))
+    job = FlowJob.model_validate(to_jsonable_python(job), extra="forbid")
     with open(file_path, "w") as f:
         yaml.dump(
             job.model_dump(
@@ -25,7 +25,7 @@ def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
 
 
 def validate_config(config: FlowJob, file_name: str) -> None:
-    config = FlowJob.model_validate(to_jsonable_python(config))
+    config = FlowJob.model_validate(to_jsonable_python(config), extra="forbid")
     # Load the example config file
     example_path = Path(__file__).parents[1] / "expected" / file_name
     if not example_path.exists() and update_examples:

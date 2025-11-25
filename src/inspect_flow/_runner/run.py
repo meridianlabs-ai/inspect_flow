@@ -17,7 +17,7 @@ from inspect_flow._types.flow_types import (
 def _read_config() -> FlowJob:
     with open("flow.yaml", "r") as f:
         data = yaml.safe_load(f)
-        return FlowJob.model_validate(data)
+        return FlowJob.model_validate(data, extra="forbid")
 
 
 def _print_resolved_config(job: FlowJob, base_dir: str) -> None:

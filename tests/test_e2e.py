@@ -38,7 +38,7 @@ def test_local_e2e() -> None:
 
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-    loaded_job = FlowJob.model_validate(data)
+    loaded_job = FlowJob.model_validate(data, extra="forbid")
     # The python_version should match the current version
     assert (
         loaded_job.python_version

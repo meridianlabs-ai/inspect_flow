@@ -105,7 +105,7 @@ def apply_substitions(job: FlowJob) -> FlowJob:
             return obj
 
     substituted_dict = substitute_strings(job_dict)
-    return FlowJob.model_validate(substituted_dict)
+    return FlowJob.model_validate(substituted_dict, extra="forbid")
 
 
 def _load_job_from_file(
@@ -139,7 +139,7 @@ def _load_job_from_file(
                         f"Unsupported config file format: {config_path.suffix}. "
                         "Supported formats: .py, .yaml, .yml, .json"
                     )
-                job = FlowJob.model_validate(data)
+                job = FlowJob.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         click.echo(e, err=True)
@@ -152,7 +152,7 @@ def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
     job_dict = job.model_dump(mode="json", exclude_none=True)
     include_dict = included_job.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge_include(include_dict, job_dict)
-    return FlowJob.model_validate(merged_dict)
+    return FlowJob.model_validate(merged_dict, extra="forbid")
 
 
 def _deep_merge_include(
@@ -248,7 +248,7 @@ def _apply_overrides(job: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
     base_dict = job.model_dump(mode="json", exclude_none=True)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
-    return FlowJob.model_validate(merged_dict)
+    return FlowJob.model_validate(merged_dict, extra="forbid")
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

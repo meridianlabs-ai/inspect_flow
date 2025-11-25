@@ -54,7 +54,9 @@ def _with_base(
         if key != "config" and key in base_dict:
             raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(merge_recursive(base_dict, values))
+    return pydantic_type.model_validate(
+        merge_recursive(base_dict, values), extra="forbid"
+    )
 
 
 def _with(
@@ -95,7 +97,9 @@ def _matrix_with_base(
     for matrix_values in product(*matrix.values()):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
-            pydantic_type.model_validate(merge_recursive(base_dict, add_dict))
+            pydantic_type.model_validate(
+                merge_recursive(base_dict, add_dict), extra="forbid"
+            )
         )
     return result
 

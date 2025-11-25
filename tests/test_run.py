@@ -177,7 +177,7 @@ def test_write_config() -> None:
     # Read the file, parse the yaml, and convert to FlowJob
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-        loaded_job = FlowJob.model_validate(data)
+        loaded_job = FlowJob.model_validate(data, extra="forbid")
         assert (
             loaded_job.python_version
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"

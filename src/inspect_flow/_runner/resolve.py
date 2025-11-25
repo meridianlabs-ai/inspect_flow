@@ -78,7 +78,7 @@ def _merge_defaults(
     if defaults:
         config_dict = _merge_default(config_dict, defaults)
 
-    return config.__class__.model_validate(config_dict)
+    return config.__class__.model_validate(config_dict, extra="forbid")
 
 
 def _resolve_model(model: str | FlowModel, job: FlowJob) -> FlowModel:

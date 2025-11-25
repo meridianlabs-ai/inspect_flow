@@ -27,6 +27,9 @@ CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
 
 
+GenerateConfig.model_config["extra"] = "forbid"
+
+
 class FlowModel(BaseModel, extra="forbid"):
     """Configuration for a Model."""
 
