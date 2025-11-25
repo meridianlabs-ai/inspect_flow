@@ -1,4 +1,7 @@
+from typing import Any
+
 import click
+from inspect_ai._cli.util import parse_cli_args
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
@@ -38,16 +41,16 @@ def config_options(f):
     """,
     )(f)
     f = click.option(
-        "--var",
+        "--arg",
+        "-A",
         multiple=True,
         type=str,
-        envvar="INSPECT_FLOW_VAR",
+        envvar="INSPECT_FLOW_ARG",
         help="""
-    Set variables accessible to code executing in the config file through the variable `__flow_vars__`:
-    `task_min_priority = __flow_vars__.get("task_min_priority", 1)`
+    Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function.
 
     Examples:
-      `--var task_min_priority=2`
+      `--arg task_min_priority=2`
 
     If the same key is provided multiple times, later values will override earlier ones.
     """,
@@ -87,7 +90,7 @@ class ConfigOptionArgs(TypedDict, total=False):
     log_dir_create_unique: bool | None
     limit: int | None
     set: list[str] | None
-    var: list[str] | None
+    arg: list[str] | None
 
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
@@ -101,13 +104,13 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     return overrides
 
 
-def _options_to_flow_vars(**kwargs: Unpack[ConfigOptionArgs]) -> dict[str, str]:
-    flow_vars = list(kwargs.get("var") or [])  # var may be a tuple (at least in tests)
-    return {k: v for k, v in (item.split("=", 1) for item in flow_vars)}
+def _options_to_args(**kwargs: Unpack[ConfigOptionArgs]) -> dict[str, Any]:
+    args = list(kwargs.get("arg") or [])  # arg may be a tuple (at least in tests)
+    return parse_cli_args(args)
 
 
 def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
     return ConfigOptions(
         overrides=_options_to_overrides(**kwargs),
-        flow_vars=_options_to_flow_vars(**kwargs),
+        args=_options_to_args(**kwargs),
     )

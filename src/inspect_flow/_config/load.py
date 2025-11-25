@@ -23,7 +23,7 @@ class ConfigOptions(TypedDict, total=False):
 
     Attributes:
         overrides: A list of configuration overrides in the form of "key1.key2=value" strings.
-        flow_vars: A dictionary available as '__flow_vars__' when loading the config.
+        args: A dictionary of arguments to pass as kwargs to the function in the flow config.
     """
 
     overrides: list[str]
@@ -55,12 +55,12 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
 def expand_includes(
     job: FlowJob,
     including_job_path: str = "",
-    flow_vars: dict[str, str] | None = None,
+    args: dict[str, Any] | None = None,
     including_jobs: dict[str, FlowJob] | None = None,
 ) -> FlowJob:
     """Apply includes in the job config."""
-    if flow_vars is None:
-        flow_vars = dict()
+    if args is None:
+        args = dict()
     if including_jobs is None:
         including_jobs = {}
     for include in job.includes or []:
@@ -71,7 +71,7 @@ def expand_includes(
             path, str(Path(including_job_path).parent)
         )
         included_job = _load_job_from_file(
-            include_path, flow_vars, including_jobs | {including_job_path: job}
+            include_path, args, including_jobs | {including_job_path: job}
         )
         job = _apply_include(job, included_job)
     job.includes = None
@@ -187,7 +187,7 @@ def _apply_auto_includes(
         if exists(auto_file):
             auto_job = _load_job_from_file(
                 auto_file,
-                config_options.get("flow_vars", {}),
+                config_options.get("args", {}),
                 including_jobs={config_file: job},
             )
             job = _apply_include(job, auto_job)
