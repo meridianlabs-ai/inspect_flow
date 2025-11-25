@@ -175,14 +175,18 @@ def test_relative_bundle_dir() -> None:
     ):
         job = load_job(
             "./tests/config/e2e_test_flow.py",
-            overrides=["options.bundle_dir=bundle_dir"],
+            overrides=[
+                "options.bundle_dir=bundle_dir",
+                "options.bundle_url_map.bundle_dir=http://example.com/bundle}",
+            ],
         )
         launch(job=job, base_dir="tests/config/")
 
     mock_venv.assert_called_once()
     job: FlowJob = mock_venv.mock_calls[0].args[0]
+    absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert job.options
-    assert (
-        job.options.bundle_dir == Path("tests/config/bundle_dir").resolve().as_posix()
-    )
+    assert job.options.bundle_dir == absolute_path
+    assert job.options.bundle_url_map
+    assert absolute_path in job.options.bundle_url_map
     assert mock_run.call_count == 1

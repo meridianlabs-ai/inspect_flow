@@ -842,7 +842,7 @@ def test_bundle_url_map(capsys) -> None:
 
     mock_eval_set.assert_called_once()
     captured = capsys.readouterr()
-    assert "http://example.com/bundle" in captured.out
+    assert "Bundle URL: http://example.com/bundle" in captured.out
 
 
 def test_217_bundle_error_message() -> None:
