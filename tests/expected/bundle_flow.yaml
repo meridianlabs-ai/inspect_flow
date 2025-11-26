@@ -1,4 +1,4 @@
-log_dir: /Users/ransomrichardson/git/inspect_flow/tests/config/logs/bundle_flow
+log_dir: config/logs/bundle_flow
 options:
   limit: 1
   bundle_dir: /Users/ransomrichardson/git/inspect_flow/tests/config/logs/bundle_flow/bundle
