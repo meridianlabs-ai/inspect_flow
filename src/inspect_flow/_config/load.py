@@ -92,10 +92,9 @@ class _JobFormatMapMapping:
 
 def apply_substitions(job: FlowJob, base_dir: str) -> FlowJob:
     """Apply any substitutions to the job config."""
-    if not job.log_dir:
-        raise ValueError("log_dir must be set.")
     # Issue #266 must resolve the log dir before applying substitutions
-    job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
+    if job.log_dir:
+        job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
 
     job_dict = job.model_dump(**MODEL_DUMP_ARGS)
     mapping = _JobFormatMapMapping(job_dict)

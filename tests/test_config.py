@@ -402,7 +402,10 @@ def test_221_format_map() -> None:
     )
     job2 = apply_substitions(job, base_dir=".")
     assert job2.options
-    assert job2.options.bundle_dir == "./logs/flow_test/bundle"
+    assert (
+        job2.options.bundle_dir
+        == Path("./logs/flow_test", "bundle").resolve().as_posix()
+    )
 
 
 def test_221_format_map_nested() -> None:
@@ -411,7 +414,7 @@ def test_221_format_map_nested() -> None:
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
     job2 = apply_substitions(job, base_dir=".")
-    assert job2.log_dir == "tests/logs/flow_test"
+    assert job2.log_dir == Path("tests/logs/flow_test").resolve().as_posix()
 
 
 def test_221_format_map_recursive() -> None:
@@ -429,7 +432,10 @@ def test_221_format_map_file() -> None:
     include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
     job = load_job(include_path)
     assert job.options
-    assert job.options.bundle_dir == "logs/bundle_flow/bundle"
+    assert (
+        job.options.bundle_dir
+        == Path("tests/config/logs/bundle_flow/bundle").resolve().as_posix()
+    )
     validate_config(job, "bundle_flow.yaml")
 
 
@@ -445,9 +451,12 @@ def test_257_format_map_not_config() -> None:
         ),
     )
     job2 = apply_substitions(job, base_dir=".")
-    assert job2.log_dir == "logs/"
+    assert job2.log_dir == Path("logs/").resolve().as_posix()
     assert job2.env
-    assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
+    assert (
+        job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"]
+        == Path("logs//{task}_{model}_{id}").resolve().as_posix()
+    )
 
 
 def test_266_format_map_log_dir_create_unique() -> None:
@@ -536,3 +545,19 @@ def test_log_dir_create_unique() -> None:
         mock_exists.side_effect = [True, True, False]
         assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
         assert mock_exists.call_count == 3
+
+
+def test_apply_substitutions_log_dir_create_unique() -> None:
+    log_dir = "/etc/logs/flow"
+    with (
+        patch("inspect_flow._config.load.exists") as mock_exists,
+    ):
+        mock_exists.side_effect = [True, True, False]
+        job = FlowJob(
+            log_dir=log_dir,
+            log_dir_create_unique=True,
+            tasks=["task_name"],
+        )
+        job2 = apply_substitions(job, base_dir=".")
+        assert job2.log_dir == f"{log_dir}_2"
+    assert mock_exists.call_count == 3

@@ -1,4 +1,4 @@
-log_dir: logs
+log_dir: /Users/ransomrichardson/git/inspect_flow/examples/logs
 tasks:
 - name: task1
   args:

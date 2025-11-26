@@ -117,25 +117,6 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert env["myenv2"] == "value2"
 
 
-def test_relative_log_dir() -> None:
-    log_dir = "./logs/flow"
-    with (
-        patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
-    ):
-        launch(
-            job=FlowJob(
-                log_dir=log_dir,
-                tasks=["task_name"],
-            ),
-            base_dir=".",
-            env=os.environ.copy(),
-        )
-    mock_venv.assert_called_once()
-    assert mock_venv.mock_calls[0].args[0].log_dir == str(Path(log_dir).resolve())
-    assert mock_run.call_count == 1
-
-
 def test_s3() -> None:
     log_dir = "s3://my-bucket/flow-logs"
     with (
@@ -174,29 +155,6 @@ def test_config_relative_log_dir() -> None:
     assert (
         mock_venv.mock_calls[0].args[0].log_dir == expected_log_dir.resolve().as_posix()
     )
-    assert mock_run.call_count == 1
-
-
-def test_launch_log_dir_create_unique() -> None:
-    log_dir = "/etc/logs/flow"
-    with (
-        patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
-        patch("inspect_flow._launcher.launch.exists") as mock_exists,
-    ):
-        mock_exists.side_effect = [True, True, False]
-        launch(
-            job=FlowJob(
-                log_dir=log_dir,
-                log_dir_create_unique=True,
-                tasks=["task_name"],
-            ),
-            base_dir=".",
-            env=os.environ.copy(),
-        )
-    mock_venv.assert_called_once()
-    assert mock_exists.call_count == 3
-    assert mock_venv.mock_calls[0].args[0].log_dir == log_dir + "_2"
     assert mock_run.call_count == 1
 
 

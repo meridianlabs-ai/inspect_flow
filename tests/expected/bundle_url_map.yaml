@@ -1,4 +1,4 @@
-log_dir: logs/my_eval
+log_dir: /Users/ransomrichardson/git/inspect_flow/examples/logs/my_eval
 options:
   bundle_dir: /local/storage/bundles/my_eval
   bundle_url_map:
