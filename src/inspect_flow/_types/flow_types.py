@@ -156,8 +156,7 @@ class FlowEpochs(BaseModel):
     )
 
 
-# arbitrary_types_allowed=True is needed to allow NotGiven types. Those may not be serialized, so the default must always be NOT_GIVEN and they can only be serialized with exclude_defaults=True.
-class FlowTask(BaseModel, extra="forbid", arbitrary_types_allowed=True):
+class FlowTask(BaseModel, extra="forbid"):
     """Configuration for an evaluation task.
 
     Tasks are the basis for defining and running evaluations.
