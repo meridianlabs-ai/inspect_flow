@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from inspect_flow import FlowJob
 from inspect_flow._config.load import load_job
-from inspect_flow._launcher.launch import _log_dir_create_unique, launch
+from inspect_flow._launcher.launch import launch
 
 CREATE_VENV_RUN_CALLS = 3
 
@@ -175,21 +175,6 @@ def test_config_relative_log_dir() -> None:
         mock_venv.mock_calls[0].args[0].log_dir == expected_log_dir.resolve().as_posix()
     )
     assert mock_run.call_count == 1
-
-
-def test_log_dir_create_unique() -> None:
-    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
-        mock_exists.return_value = False
-        assert _log_dir_create_unique("log_dir") == "log_dir"
-        assert mock_exists.call_count == 1
-    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
-        mock_exists.side_effect = [True, True, False]
-        assert _log_dir_create_unique("log_dir") == "log_dir_2"
-        assert mock_exists.call_count == 3
-    with patch("inspect_flow._launcher.launch.exists") as mock_exists:
-        mock_exists.side_effect = [True, True, False]
-        assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
-        assert mock_exists.call_count == 3
 
 
 def test_launch_log_dir_create_unique() -> None:

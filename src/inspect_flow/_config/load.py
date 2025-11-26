@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import traceback
 from pathlib import Path
@@ -48,7 +49,7 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     if overrides:
         return _apply_overrides(job, overrides)
 
-    job = apply_substitions(job)
+    job = apply_substitions(job, base_dir=Path(file).parent.as_posix())
 
     return job
 
@@ -89,8 +90,13 @@ class _JobFormatMapMapping:
         return self.dict.get(key, f"{{{key}}}")
 
 
-def apply_substitions(job: FlowJob) -> FlowJob:
+def apply_substitions(job: FlowJob, base_dir: str) -> FlowJob:
     """Apply any substitutions to the job config."""
+    if not job.log_dir:
+        raise ValueError("log_dir must be set.")
+    # Issue #266 must resolve the log dir before applying substitutions
+    job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
+
     job_dict = job.model_dump(**MODEL_DUMP_ARGS)
     mapping = _JobFormatMapMapping(job_dict)
 
@@ -117,6 +123,37 @@ def apply_substitions(job: FlowJob) -> FlowJob:
 
     substituted_dict = substitute_strings(job_dict)
     return FlowJob.model_validate(substituted_dict, extra="forbid")
+
+
+def _resolve_log_dir(job: FlowJob, base_dir: str) -> str:
+    assert job.log_dir
+    absolute_log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
+
+    if job.log_dir_create_unique:
+        return _log_dir_create_unique(absolute_log_dir)
+    else:
+        return absolute_log_dir
+
+
+def _log_dir_create_unique(log_dir: str) -> str:
+    if not exists(log_dir):
+        return log_dir
+
+    # Check if log_dir ends with _<number>
+    match = re.match(r"^(.+)_(\d+)$", log_dir)
+    if match:
+        base_log_dir = match.group(1)
+        suffix = int(match.group(2)) + 1  # Start from next suffix
+    else:
+        base_log_dir = log_dir
+        suffix = 1
+
+    # Find the next available directory
+    current_dir = f"{base_log_dir}_{suffix}"
+    while exists(current_dir):
+        suffix += 1
+        current_dir = f"{base_log_dir}_{suffix}"
+    return current_dir
 
 
 def _load_job_from_file(

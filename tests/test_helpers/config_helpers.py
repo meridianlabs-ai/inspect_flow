@@ -27,8 +27,13 @@ def validate_config(job: FlowJob, file_name: str) -> None:
         with open(example_path, "r") as f:
             expected_config = yaml.safe_load(f)
 
-    # Compare the generated config with the example
     generated_config = job.model_dump(**MODEL_DUMP_ARGS)
+    # Fix the log_dir to be relative
+    if "log_dir" in generated_config:
+        generated_config["log_dir"] = str(
+            Path(generated_config["log_dir"]).relative_to(Path.cwd())
+        )
+    # Compare the generated config with the example
     if update_examples and generated_config != expected_config:
         write_flow_yaml(job, example_path)
     else:

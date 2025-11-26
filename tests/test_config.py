@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from inspect_ai.model import CachePolicy
@@ -17,6 +18,7 @@ from inspect_flow import (
 )
 from inspect_flow._config.load import (
     _apply_overrides,
+    _log_dir_create_unique,
     apply_substitions,
     expand_includes,
     load_job,
@@ -24,6 +26,7 @@ from inspect_flow._config.load import (
 from inspect_flow._types.flow_types import FlowDependencies
 
 from tests.test_helpers.config_helpers import validate_config
+from tests.test_helpers.log_helpers import init_test_logs
 
 
 def test_config_one_task() -> None:
@@ -64,7 +67,7 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowJob(
-        log_dir="logs/model_and_task",
+        log_dir="tests/config/logs/model_and_task",
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
@@ -397,7 +400,7 @@ def test_221_format_map() -> None:
             ],
         ),
     )
-    job2 = apply_substitions(job)
+    job2 = apply_substitions(job, base_dir=".")
     assert job2.options
     assert job2.options.bundle_dir == "./logs/flow_test/bundle"
 
@@ -407,7 +410,7 @@ def test_221_format_map_nested() -> None:
         log_dir="{flow_metadata[dir]}/flow_test",
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
-    job2 = apply_substitions(job)
+    job2 = apply_substitions(job, base_dir=".")
     assert job2.log_dir == "tests/logs/flow_test"
 
 
@@ -419,7 +422,7 @@ def test_221_format_map_recursive() -> None:
         },
     )
     with pytest.raises(ValueError):
-        apply_substitions(job)
+        apply_substitions(job, base_dir=".")
 
 
 def test_221_format_map_file() -> None:
@@ -441,10 +444,34 @@ def test_257_format_map_not_config() -> None:
             model="openai/gpt-4o-mini",
         ),
     )
-    job2 = apply_substitions(job)
+    job2 = apply_substitions(job, base_dir=".")
     assert job2.log_dir == "logs/"
     assert job2.env
     assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
+
+
+def test_266_format_map_log_dir_create_unique() -> None:
+    log_dir = init_test_logs()
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+    job = FlowJob(
+        log_dir=log_dir,
+        log_dir_create_unique=True,
+        options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
+        tasks=tasks_matrix(
+            task=[
+                "local_eval/noop",
+            ],
+            model=[
+                FlowModel(
+                    name="mockllm/mock-llm1",
+                ),
+            ],
+        ),
+    )
+    job2 = apply_substitions(job, base_dir=".")
+    assert job2.log_dir != log_dir
+    assert job2.options
+    assert job2.options.bundle_dir == f"{job2.log_dir}/bundle"
 
 
 def test_222_including_jobs_check() -> None:
@@ -494,3 +521,18 @@ def test_154_cache_policy() -> None:
         ],
     )
     validate_config(config, "cache_policy_flow.yaml")
+
+
+def test_log_dir_create_unique() -> None:
+    with patch("inspect_flow._config.load.exists") as mock_exists:
+        mock_exists.return_value = False
+        assert _log_dir_create_unique("log_dir") == "log_dir"
+        assert mock_exists.call_count == 1
+    with patch("inspect_flow._config.load.exists") as mock_exists:
+        mock_exists.side_effect = [True, True, False]
+        assert _log_dir_create_unique("log_dir") == "log_dir_2"
+        assert mock_exists.call_count == 3
+    with patch("inspect_flow._config.load.exists") as mock_exists:
+        mock_exists.side_effect = [True, True, False]
+        assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
+        assert mock_exists.call_count == 3
