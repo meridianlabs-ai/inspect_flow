@@ -56,7 +56,7 @@ def create_venv(
         dependencies.extend(collect_auto_dependencies(job))
     dependencies.append(get_pip_string("inspect-flow"))
 
-    _uv_pip_install(sorted(dependencies), temp_dir, env)
+    _uv_pip_install(dependencies, temp_dir, env)
 
     # Freeze installed packages to flow_requirements.txt in log_dir
     if job.log_dir:

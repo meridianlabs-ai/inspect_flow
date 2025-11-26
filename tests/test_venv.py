@@ -53,8 +53,8 @@ def test_dependencies() -> None:
                 "uv",
                 "pip",
                 "install",
-                f"-e {flow_path}",
                 "inspect_evals",
+                f"-e {flow_path}",
             ]
 
 
@@ -110,11 +110,9 @@ def test_auto_dependency() -> None:
                 "uv",
                 "pip",
                 "install",
-                f"-e {flow_path}",
                 "anthropic",
                 "google-genai",
                 "groq",
-                "inspect_ai",
                 "inspect_evals",
                 "inspect_evals2",
                 "inspect_evals3",
@@ -122,6 +120,7 @@ def test_auto_dependency() -> None:
                 "solver_package",
                 "solver_package2",
                 "solver_package3",
+                f"-e {flow_path}",
             ]
 
 
@@ -187,11 +186,10 @@ def test_no_file() -> None:
                 "uv",
                 "pip",
                 "install",
-                f"-e {flow_path}",
                 "anthropic",
                 "groq",
-                "inspect_ai",
                 "inspect_evals2",
+                f"-e {flow_path}",
             ]
 
 
