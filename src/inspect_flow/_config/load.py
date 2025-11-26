@@ -12,6 +12,7 @@ from pydantic_core import ValidationError
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -81,7 +82,7 @@ def expand_includes(
 def apply_substitions(job: FlowJob) -> FlowJob:
     """Apply any substitutions to the job config."""
     # Convert job to dict for use as the format_map dictionary
-    job_dict = job.model_dump(mode="json", exclude_none=True)
+    job_dict = job.model_dump(**MODEL_DUMP_ARGS)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
@@ -149,8 +150,8 @@ def _load_job_from_file(
 
 
 def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
-    job_dict = job.model_dump(mode="json", exclude_none=True)
-    include_dict = included_job.model_dump(mode="json", exclude_none=True)
+    job_dict = job.model_dump(**MODEL_DUMP_ARGS)
+    include_dict = included_job.model_dump(**MODEL_DUMP_ARGS)
     merged_dict = _deep_merge_include(include_dict, job_dict)
     return FlowJob.model_validate(merged_dict, extra="forbid")
 
@@ -246,7 +247,7 @@ def _deep_merge_override(
 
 def _apply_overrides(job: FlowJob, overrides: list[str]) -> FlowJob:
     overrides_dict = _overrides_to_dict(overrides)
-    base_dict = job.model_dump(mode="json", exclude_none=True)
+    base_dict = job.model_dump(**MODEL_DUMP_ARGS)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
     return FlowJob.model_validate(merged_dict, extra="forbid")
 

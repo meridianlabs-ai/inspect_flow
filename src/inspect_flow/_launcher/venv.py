@@ -11,6 +11,7 @@ from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowJob,
 )
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 
@@ -18,7 +19,7 @@ def write_flow_yaml(job: FlowJob, dir: str) -> Path:
     flow_yaml_path = Path(dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
-            job.model_dump(mode="json", exclude_unset=True, exclude_defaults=True),
+            job.model_dump(**MODEL_DUMP_ARGS),
             f,
             default_flow_style=False,
             sort_keys=False,

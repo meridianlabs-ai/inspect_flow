@@ -19,6 +19,7 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
 )
 from inspect_flow._types.merge import merge_recursive
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
 
@@ -48,7 +49,7 @@ def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
 
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
-    default_dict = defaults.model_dump(mode="json", exclude_none=True)
+    default_dict = defaults.model_dump(**MODEL_DUMP_ARGS)
     return merge_recursive(default_dict, config_dict)
 
 
@@ -60,7 +61,7 @@ def _merge_defaults(
     if not defaults and not prefix_defaults:
         return config
 
-    config_dict = config.model_dump(mode="json", exclude_none=True)
+    config_dict = config.model_dump(**MODEL_DUMP_ARGS)
 
     if prefix_defaults:
         # Filter the prefix defaults to only those that match the config name
