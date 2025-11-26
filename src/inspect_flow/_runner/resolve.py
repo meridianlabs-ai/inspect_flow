@@ -16,8 +16,10 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
+    not_given,
 )
 from inspect_flow._types.merge import merge_recursive
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
 
@@ -47,7 +49,7 @@ def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
 
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
-    default_dict = defaults.model_dump(mode="json", exclude_none=True)
+    default_dict = defaults.model_dump(**MODEL_DUMP_ARGS)
     return merge_recursive(default_dict, config_dict)
 
 
@@ -59,7 +61,7 @@ def _merge_defaults(
     if not defaults and not prefix_defaults:
         return config
 
-    config_dict = config.model_dump(mode="json", exclude_none=True)
+    config_dict = config.model_dump(**MODEL_DUMP_ARGS)
 
     if prefix_defaults:
         # Filter the prefix defaults to only those that match the config name
@@ -128,16 +130,18 @@ def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[Flo
 
     defaults = job.defaults or FlowDefaults()
     task = _merge_defaults(task, defaults.task, defaults.task_prefix)
-    model = _resolve_model(task.model, job) if task.model else None
-    solver = _resolve_solver(task.solver, job) if task.solver else None
+    model = _resolve_model(task.model, job) if task.model else not_given
+    solver = _resolve_solver(task.solver, job) if task.solver else not_given
     model_roles = (
-        _resolve_model_roles(task.model_roles, job) if task.model_roles else None
+        _resolve_model_roles(task.model_roles, job) if task.model_roles else not_given
     )
     generate_config = defaults.config or GenerateConfig()
     if task.config:
         generate_config = generate_config.merge(task.config)
     if model and model.config:
         generate_config = generate_config.merge(model.config)
+    if generate_config == GenerateConfig():
+        generate_config = not_given
     tasks = []
     for task_func_name in _get_task_creator_names(task, base_dir=base_dir):
         task = task.model_copy(

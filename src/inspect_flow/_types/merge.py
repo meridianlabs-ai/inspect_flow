@@ -1,5 +1,6 @@
 from typing import Any, Mapping, TypeVar
 
+from pydantic import BaseModel
 from pydantic_core import to_jsonable_python
 
 from inspect_flow._types.flow_types import (
@@ -9,26 +10,22 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
 )
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 
 
 def to_dict(input: Any) -> dict[str, Any]:
     if isinstance(input, Mapping):
         return dict(input)
+    if isinstance(input, BaseModel):
+        return input.model_dump(**MODEL_DUMP_ARGS)
     return to_jsonable_python(input, exclude_none=True)
 
 
-def _merge_dicts(
-    base_dict: dict[str, Any],
-    add_dict: dict[str, Any],
-) -> dict[str, Any]:
-    filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
-    return base_dict | filtered_add_dict
+def _merge_dicts(base_dict: dict[str, Any], add_dict: dict[str, Any]) -> dict[str, Any]:
+    return base_dict | add_dict
 
 
-def _merge(
-    base: Any,
-    add: Any,
-) -> dict[str, Any]:
+def _merge(base: Any, add: Any) -> dict[str, Any]:
     return _merge_dicts(to_dict(base), to_dict(add))
 
 

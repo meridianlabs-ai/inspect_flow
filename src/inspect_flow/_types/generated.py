@@ -19,6 +19,7 @@ from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSolver,
     FlowTask,
+    NotGiven,
 )
 
 
@@ -146,6 +147,17 @@ class FlowSolverMatrixDict(TypedDict):
 
     args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
     """Additional args to pass to solver constructor."""
+
+
+class NotGivenDict(TypedDict):
+    """
+    For parameters with a meaningful None value, we need to distinguish between the user explicitly passing None, and the user not passing the parameter at all.
+
+    User code shouldn't need to use not_given directly.
+    """
+
+    type: Literal["NOT_GIVEN"]
+    """Field to ensure serialized type can be identified as NotGiven"""
 
 
 class SandboxEnvironmentSpecDict(TypedDict):
@@ -296,41 +308,49 @@ class FlowTaskDict(TypedDict):
     Tasks are the basis for defining and running evaluations.
     """
 
-    name: NotRequired[Optional[str]]
+    name: NotRequired[Optional[Union[str, NotGiven]]]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: NotRequired[Optional[Mapping[str, Any]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        Optional[Union[str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent]]
+        Optional[
+            Union[
+                str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent, NotGiven
+            ]
+        ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Union[str, FlowModel]]]
+    model: NotRequired[Optional[Union[str, FlowModel, NotGiven]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[GenerateConfig]]
+    config: NotRequired[Union[GenerateConfig, NotGiven]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
-    model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
+    model_roles: NotRequired[
+        Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]
+    ]
     """Named roles for use in `get_model()`."""
-    sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
+    sandbox: NotRequired[
+        Optional[Union[str, Sequence, SandboxEnvironmentSpec, NotGiven]]
+    ]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
+    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig, NotGiven]]]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Union[int, FlowEpochs]]]
+    epochs: NotRequired[Optional[Union[int, FlowEpochs, NotGiven]]]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
+    fail_on_error: NotRequired[Optional[Union[bool, float, NotGiven]]]
     """`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: NotRequired[Optional[bool]]
+    continue_on_fail: NotRequired[Optional[Union[bool, NotGiven]]]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    message_limit: NotRequired[Optional[int]]
+    message_limit: NotRequired[Optional[Union[int, NotGiven]]]
     """Limit on total messages used for each sample."""
-    token_limit: NotRequired[Optional[int]]
+    token_limit: NotRequired[Optional[Union[int, NotGiven]]]
     """Limit on total tokens used for each sample."""
-    time_limit: NotRequired[Optional[int]]
+    time_limit: NotRequired[Optional[Union[int, NotGiven]]]
     """Limit on clock time (in seconds) for samples."""
-    working_limit: NotRequired[Optional[int]]
+    working_limit: NotRequired[Optional[Union[int, NotGiven]]]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: NotRequired[Optional[Union[int, str]]]
+    version: NotRequired[Union[int, str, NotGiven]]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
+    metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Additional metadata to associate with the task."""
     sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
     """Evaluate specific sample(s) from the dataset."""
@@ -351,18 +371,26 @@ class FlowTaskMatrixDict(TypedDict):
         Optional[
             Sequence[
                 Optional[
-                    Union[str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent]
+                    Union[
+                        str,
+                        FlowSolver,
+                        Sequence[Union[str, FlowSolver]],
+                        FlowAgent,
+                        NotGiven,
+                    ]
                 ]
             ]
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
+    model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel, NotGiven]]]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[Sequence[Optional[GenerateConfig]]]]
+    config: NotRequired[Optional[Sequence[Union[GenerateConfig, NotGiven]]]]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
+        Optional[
+            Sequence[Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]]
+        ]
     ]
     """Named roles for use in `get_model()`."""
 

@@ -22,7 +22,9 @@ from inspect_flow import (
     solvers_matrix,
     tasks_matrix,
 )
+from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import _run_eval_set
+from inspect_flow._types.flow_types import not_given
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -183,11 +185,6 @@ def test_write_config() -> None:
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         )
         loaded_job.python_version = None
-        assert loaded_job.tasks
-        assert isinstance(loaded_job.tasks[0], FlowTask)
-        # Loading the job results in an empty config, so clear it for comparison
-        loaded_job.tasks[0].config = None
-
         assert loaded_job == job
 
 
@@ -628,6 +625,58 @@ def test_task_defaults() -> None:
         assert isinstance(tasks_arg[0].model, Model)
         assert tasks_arg[0].model.name == "mock-llm"
         assert tasks_arg[0].metadata["subset"] == "original"
+
+
+def test_task_not_given() -> None:
+    config = FlowJob(
+        log_dir="logs/flow_test",
+        tasks=[
+            FlowTask(
+                name=task_file + "@task_with_params",
+                metadata=not_given,
+            )
+        ],
+    )
+    dump = config_to_yaml(config)
+    job = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(
+            job=job,
+            base_dir=".",
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert tasks_arg[0].metadata["subset"] == "original"
+
+    config = FlowJob(
+        log_dir="logs/flow_test",
+        tasks=[
+            FlowTask(
+                name=task_file + "@task_with_params",
+                metadata=None,
+            )
+        ],
+    )
+    dump = config_to_yaml(config)
+    job = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(
+            job=job,
+            base_dir=".",
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert tasks_arg[0].metadata is None
 
 
 def test_solver_defaults() -> None:

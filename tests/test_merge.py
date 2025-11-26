@@ -69,15 +69,34 @@ def test_merge():
     assert task.flow_metadata["both"] == "add"
 
 
-def test_merge_none_does_not_override():
-    """Test that None fields in add_dict do not override set fields in base_dict."""
-    base_dict = {"name": "base_name", "temperature": 0.5, "max_tokens": 100}
-    add_dict = {"temperature": None, "top_p": 0.9}
+def test_merge_none():
+    base_dict = {
+        "name": "base_name",
+        "temperature": 0.5,
+        "max_tokens": 100,
+        "config": {"base_key": "base_value", "temperature": 0.3},
+    }
+    add_dict = {
+        "temperature": None,
+        "top_p": 0.9,
+        "config": {"temperature": None, "add_key": "add_value"},
+    }
 
     result = merge_recursive(base_dict, add_dict)
 
-    # None value in add_dict should not override the set value in base_dict
+    assert result == {
+        "name": "base_name",
+        "temperature": None,
+        "max_tokens": 100,
+        "top_p": 0.9,
+        "config": {
+            "base_key": "base_value",
+            "temperature": None,
+            "add_key": "add_value",
+        },
+    }
+
     assert result["name"] == "base_name"
-    assert result["temperature"] == 0.5  # Should NOT be None
+    assert result["temperature"] is None
     assert result["max_tokens"] == 100
     assert result["top_p"] == 0.9

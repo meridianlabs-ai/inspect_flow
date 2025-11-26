@@ -4,6 +4,7 @@ from typing import TypeAlias, TypeVar
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
+from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -20,6 +21,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
+    NotGiven,
 )
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
@@ -97,10 +99,12 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    model = _create_model(flow_task.model) if flow_task.model else None
-    solver = _create_solver(flow_task.solver) if flow_task.solver else None
+    model = _create_model(flow_task.model) if flow_task.model else NOT_GIVEN
+    solver = _create_solver(flow_task.solver) if flow_task.solver else NOT_GIVEN
     model_roles = (
-        _create_model_roles(flow_task.model_roles) if flow_task.model_roles else None
+        _create_model_roles(flow_task.model_roles)
+        if flow_task.model_roles
+        else NOT_GIVEN
     )
     task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
@@ -121,21 +125,22 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
             reducer=epochs.reducer,
         )
 
-    def ng(arg):
-        """Pass NOT_GIVEN for args that are None"""
-        return arg if arg is not None else NOT_GIVEN
+    _T = TypeVar("_T")
+
+    def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
+        return NOT_GIVEN if isinstance(value, NotGiven) else value
 
     task_with(
         task,
         # dataset= Not Supported
         # setup= Not Supported
-        solver=ng(solver),
+        solver=solver,
         # cleanup= Not Supported
         # scorer= Not Supported
         # metrics= Not Supported
-        model=ng(model),
+        model=model,
         config=ng(flow_task.config),
-        model_roles=ng(model_roles),
+        model_roles=model_roles,
         sandbox=ng(flow_task.sandbox),
         approval=ng(flow_task.approval),
         epochs=ng(epochs),
