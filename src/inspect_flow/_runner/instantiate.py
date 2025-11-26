@@ -97,10 +97,13 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    model = _create_model(flow_task.model) if flow_task.model else None
-    solver = _create_solver(flow_task.solver) if flow_task.solver else None
+    # make sure this differentiates between None and NotGiven
+    model = _create_model(flow_task.model) if flow_task.model else NOT_GIVEN
+    solver = _create_solver(flow_task.solver) if flow_task.solver else NOT_GIVEN
     model_roles = (
-        _create_model_roles(flow_task.model_roles) if flow_task.model_roles else None
+        _create_model_roles(flow_task.model_roles)
+        if flow_task.model_roles
+        else NOT_GIVEN
     )
     task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
@@ -121,33 +124,29 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
             reducer=epochs.reducer,
         )
 
-    def ng(arg):
-        """Pass NOT_GIVEN for args that are None"""
-        return arg if arg is not None else NOT_GIVEN
-
     task_with(
         task,
         # dataset= Not Supported
         # setup= Not Supported
-        solver=ng(solver),
+        solver=solver,
         # cleanup= Not Supported
         # scorer= Not Supported
         # metrics= Not Supported
-        model=ng(model),
-        config=ng(flow_task.config),
-        model_roles=ng(model_roles),
-        sandbox=ng(flow_task.sandbox),
-        approval=ng(flow_task.approval),
-        epochs=ng(epochs),
-        fail_on_error=ng(flow_task.fail_on_error),
-        continue_on_fail=ng(flow_task.continue_on_fail),
-        message_limit=ng(flow_task.message_limit),
-        token_limit=ng(flow_task.token_limit),
-        time_limit=ng(flow_task.time_limit),
-        working_limit=ng(flow_task.working_limit),
-        name=ng(flow_task.name),
-        version=ng(flow_task.version),
-        metadata=ng(flow_task.metadata),
+        model=model,
+        config=flow_task.config,
+        model_roles=model_roles,
+        sandbox=flow_task.sandbox,
+        approval=flow_task.approval,
+        epochs=epochs,
+        fail_on_error=flow_task.fail_on_error,
+        continue_on_fail=flow_task.continue_on_fail,
+        message_limit=flow_task.message_limit,
+        token_limit=flow_task.token_limit,
+        time_limit=flow_task.time_limit,
+        working_limit=flow_task.working_limit,
+        name=flow_task.name,
+        version=flow_task.version,
+        metadata=flow_task.metadata,
     )
     return task
 

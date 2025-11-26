@@ -18,7 +18,7 @@ def write_flow_yaml(job: FlowJob, dir: str) -> Path:
     flow_yaml_path = Path(dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
-            job.model_dump(mode="json", exclude_unset=True),
+            job.model_dump(mode="json", exclude_unset=True, exclude_defaults=True),
             f,
             default_flow_style=False,
             sort_keys=False,

@@ -1,4 +1,5 @@
 import click
+from inspect_ai._util.notgiven import NotGiven
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -67,8 +68,10 @@ def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> 
             _collect_model_dependencies(model_role, dependencies)
 
 
-def _collect_name_dependencies(name: str | None, dependencies: set[str]) -> None:
-    if name is None or name.find("@") != -1 or name.find(".py") != -1:
+def _collect_name_dependencies(
+    name: str | None | NotGiven, dependencies: set[str]
+) -> None:
+    if not name or name.find("@") != -1 or name.find(".py") != -1:
         # Looks like a file name, not a package name
         return
     split = name.split("/", maxsplit=1)
@@ -88,10 +91,10 @@ def _collect_model_dependencies(
 
 
 def _collect_solver_dependencies(
-    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None,
+    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None | NotGiven,
     dependencies: set[str],
 ) -> None:
-    if solver is None:
+    if not solver:
         return
     if isinstance(solver, str):
         return _collect_name_dependencies(solver, dependencies)
@@ -103,10 +106,10 @@ def _collect_solver_dependencies(
 
 
 def _collect_sandbox_dependencies(
-    sandbox: SandboxEnvironmentType | None,
+    sandbox: SandboxEnvironmentType | None | NotGiven,
     dependencies: set[str],
 ) -> None:
-    if sandbox is None:
+    if not sandbox:
         return
     if isinstance(sandbox, str):
         return _collect_sandbox_type_dependencies(sandbox, dependencies)

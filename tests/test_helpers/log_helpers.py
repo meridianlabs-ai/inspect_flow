@@ -18,7 +18,7 @@ def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None]:
     if isinstance(task, str):
         return task, None
     else:
-        return task.name, task.model_name
+        return task.name if task.name else None, task.model_name
 
 
 def verify_test_logs(job: FlowJob, log_dir: str) -> None:

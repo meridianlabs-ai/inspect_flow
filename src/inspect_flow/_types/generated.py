@@ -306,7 +306,7 @@ class FlowTaskDict(TypedDict):
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
     model: NotRequired[Optional[Union[str, FlowModel]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[GenerateConfig]]
+    config: NotRequired[GenerateConfig]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
     """Named roles for use in `get_model()`."""
@@ -328,7 +328,7 @@ class FlowTaskDict(TypedDict):
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[Optional[int]]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: NotRequired[Optional[Union[int, str]]]
+    version: NotRequired[Union[int, str]]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
     metadata: NotRequired[Optional[Mapping[str, Any]]]
     """Additional metadata to associate with the task."""
@@ -359,7 +359,7 @@ class FlowTaskMatrixDict(TypedDict):
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
     model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel]]]]]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[Sequence[Optional[GenerateConfig]]]]
+    config: NotRequired[GenerateConfig]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[Sequence[Optional[Mapping[str, Union[FlowModel, str]]]]]
