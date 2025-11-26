@@ -79,16 +79,26 @@ def expand_includes(
     return job
 
 
+class _JobFormatMapMapping:
+    """Mapping for job config substitutions. Preserves missing keys."""
+
+    def __init__(self, dict: dict[str, Any]) -> None:
+        self.dict = dict
+
+    def __getitem__(self, key: str, /) -> Any:
+        return self.dict.get(key, f"{{{key}}}")
+
+
 def apply_substitions(job: FlowJob) -> FlowJob:
     """Apply any substitutions to the job config."""
-    # Convert job to dict for use as the format_map dictionary
     job_dict = job.model_dump(**MODEL_DUMP_ARGS)
+    mapping = _JobFormatMapMapping(job_dict)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
         if isinstance(obj, str):
             last = obj
-            new = obj.format_map(job_dict)
+            new = obj.format_map(mapping)
             # Repeat until no more substitutions occur
             while new != last:
                 if obj in new:
@@ -96,7 +106,7 @@ def apply_substitions(job: FlowJob) -> FlowJob:
                         f"Circular substitution detected for string: {obj}"
                     )
                 last = new
-                new = last.format_map(job_dict)
+                new = last.format_map(mapping)
             return new
         elif isinstance(obj, dict):
             return {k: substitute_strings(v) for k, v in obj.items()}
