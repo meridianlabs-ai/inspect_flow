@@ -126,12 +126,20 @@ def apply_substitions(job: FlowJob, base_dir: str) -> FlowJob:
 
 def _resolve_log_dir(job: FlowJob, base_dir: str) -> str:
     assert job.log_dir
+    if not job.log_dir_create_unique:
+        return job.log_dir
     absolute_log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
-
-    if job.log_dir_create_unique:
-        return _log_dir_create_unique(absolute_log_dir)
-    else:
-        return absolute_log_dir
+    already_absolute = absolute_log_dir == job.log_dir
+    unique_absolute_log_dir = _log_dir_create_unique(absolute_log_dir)
+    if already_absolute:
+        return unique_absolute_log_dir
+    try:
+        unique_relative_log_dir = str(
+            Path(unique_absolute_log_dir).relative_to(base_dir)
+        )
+    except ValueError:
+        return unique_absolute_log_dir
+    return unique_relative_log_dir
 
 
 def _log_dir_create_unique(log_dir: str) -> str:

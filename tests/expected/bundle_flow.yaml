@@ -1,7 +1,7 @@
 log_dir: logs/bundle_flow
 options:
   limit: 1
-  bundle_dir: /Users/ransomrichardson/git/inspect_flow/tests/config/logs/bundle_flow/bundle
+  bundle_dir: logs/bundle_flow/bundle
 tasks:
 - name: inspect_evals/mmlu_0_shot
   model:

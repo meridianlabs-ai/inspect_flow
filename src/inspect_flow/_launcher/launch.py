@@ -20,6 +20,7 @@ def launch(
 ) -> None:
     if not job.log_dir:
         raise ValueError("log_dir must be set before launching the flow job")
+    job.log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
 
     if job.options and job.options.bundle_dir:
         # Ensure bundle_dir and bundle_url_map are absolute paths

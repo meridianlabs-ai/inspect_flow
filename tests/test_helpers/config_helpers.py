@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 from inspect_flow import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 
-update_examples = True
+update_examples = False
 
 
 def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
@@ -27,13 +27,7 @@ def validate_config(job: FlowJob, file_name: str) -> None:
         with open(example_path, "r") as f:
             expected_config = yaml.safe_load(f)
 
-    # Fix the log_dir to be relative
-    if job.log_dir:
-        for base_dir in [Path(__file__).parents[1] / "config", Path.cwd() / "examples"]:
-            try:
-                job.log_dir = str(Path(job.log_dir).relative_to(base_dir))
-            except ValueError:
-                pass
+    # Compare the generated config with the example
     generated_config = job.model_dump(**MODEL_DUMP_ARGS)
     if update_examples and generated_config != expected_config:
         write_flow_yaml(job, example_path)

@@ -67,7 +67,7 @@ def test_config_two_models_one_task() -> None:
 
 def test_config_model_and_task() -> None:
     config = FlowJob(
-        log_dir="tests/config/logs/model_and_task",
+        log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
@@ -402,10 +402,7 @@ def test_221_format_map() -> None:
     )
     job2 = apply_substitions(job, base_dir=".")
     assert job2.options
-    assert (
-        job2.options.bundle_dir
-        == Path("./logs/flow_test", "bundle").resolve().as_posix()
-    )
+    assert job2.options.bundle_dir == "./logs/flow_test/bundle"
 
 
 def test_221_format_map_nested() -> None:
@@ -414,7 +411,7 @@ def test_221_format_map_nested() -> None:
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
     job2 = apply_substitions(job, base_dir=".")
-    assert job2.log_dir == Path("tests/logs/flow_test").resolve().as_posix()
+    assert job2.log_dir == "tests/logs/flow_test"
 
 
 def test_221_format_map_recursive() -> None:
@@ -432,10 +429,7 @@ def test_221_format_map_file() -> None:
     include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
     job = load_job(include_path)
     assert job.options
-    assert (
-        job.options.bundle_dir
-        == Path("tests/config/logs/bundle_flow/bundle").resolve().as_posix()
-    )
+    assert job.options.bundle_dir == "logs/bundle_flow/bundle"
     validate_config(job, "bundle_flow.yaml")
 
 
@@ -451,12 +445,9 @@ def test_257_format_map_not_config() -> None:
         ),
     )
     job2 = apply_substitions(job, base_dir=".")
-    assert job2.log_dir == Path("logs/").resolve().as_posix()
+    assert job2.log_dir == "logs/"
     assert job2.env
-    assert (
-        job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"]
-        == Path("logs//{task}_{model}_{id}").resolve().as_posix()
-    )
+    assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
 
 
 def test_266_format_map_log_dir_create_unique() -> None:
