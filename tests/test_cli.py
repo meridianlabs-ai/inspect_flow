@@ -78,7 +78,7 @@ def test_run_command_overrides() -> None:
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
             no_venv=False,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 
@@ -117,7 +117,7 @@ def test_run_command_log_dir_create_unique() -> None:
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
             no_venv=False,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 
@@ -205,7 +205,7 @@ def test_run_command_dry_run() -> None:
             base_dir=CONFIG_FILE_DIR,
             dry_run=True,
             no_venv=False,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 
@@ -235,7 +235,7 @@ def test_run_command_args() -> None:
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
             no_venv=False,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 
@@ -259,7 +259,7 @@ def test_run_command_no_venv() -> None:
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
             no_venv=True,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 
@@ -283,7 +283,7 @@ def test_config_command_resolve() -> None:
             base_dir=CONFIG_FILE_DIR,
             resolve=True,
             no_venv=False,
-            no_expand_includes=True,
+            no_prepare_job=True,
         )
 
 

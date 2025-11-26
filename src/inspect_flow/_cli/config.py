@@ -34,5 +34,5 @@ def config_command(
         base_dir=str(Path(config_file).parent),
         resolve=resolve,
         no_venv=kwargs.get("no_venv", False) or False,
-        no_expand_includes=True,
+        no_prepare_job=True,
     )
