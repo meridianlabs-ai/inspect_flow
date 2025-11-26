@@ -43,13 +43,14 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
 }
 
 
-def collect_auto_dependencies(job: FlowJob) -> set[str]:
+def collect_auto_dependencies(job: FlowJob) -> list[str]:
     result = set()
 
     for task in job.tasks or []:
         _collect_task_dependencies(task, result)
 
-    return {get_pip_string(dep) for dep in result}
+    # inspect_ai is already included by inspect-flow
+    return sorted({get_pip_string(dep) for dep in result if dep != "inspect_ai"})
 
 
 def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> None:
