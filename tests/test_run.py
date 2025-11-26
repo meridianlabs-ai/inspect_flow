@@ -5,7 +5,6 @@ from unittest.mock import patch
 import yaml
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
 from inspect_ai.solver import Solver
@@ -25,6 +24,7 @@ from inspect_flow import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import _run_eval_set
+from inspect_flow._types.flow_types import not_given
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -633,7 +633,7 @@ def test_task_not_given() -> None:
         tasks=[
             FlowTask(
                 name=task_file + "@task_with_params",
-                metadata=NOT_GIVEN,
+                metadata=not_given,
             )
         ],
     )

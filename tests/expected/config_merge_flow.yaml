@@ -19,12 +19,10 @@ tasks:
     name: mockllm/mock-llm1
   config:
     max_connections: 10
-    system_message: Be concise.
     reasoning_effort: low
 - name: local_eval/noop2
   model:
     name: mockllm/mock-llm1
   config:
     max_connections: 10
-    system_message: Be concise.
     reasoning_effort: high

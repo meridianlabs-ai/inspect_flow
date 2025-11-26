@@ -4,6 +4,7 @@ from typing import TypeAlias, TypeVar
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
+from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -20,6 +21,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
+    NotGiven,
 )
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
@@ -124,6 +126,11 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
             reducer=epochs.reducer,
         )
 
+    _T = TypeVar("_T")
+
+    def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
+        return NOT_GIVEN if isinstance(value, NotGiven) else value
+
     task_with(
         task,
         # dataset= Not Supported
@@ -133,20 +140,20 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
         # scorer= Not Supported
         # metrics= Not Supported
         model=model,
-        config=flow_task.config,
+        config=ng(flow_task.config),
         model_roles=model_roles,
-        sandbox=flow_task.sandbox,
-        approval=flow_task.approval,
-        epochs=epochs,
-        fail_on_error=flow_task.fail_on_error,
-        continue_on_fail=flow_task.continue_on_fail,
-        message_limit=flow_task.message_limit,
-        token_limit=flow_task.token_limit,
-        time_limit=flow_task.time_limit,
-        working_limit=flow_task.working_limit,
-        name=flow_task.name,
-        version=flow_task.version,
-        metadata=flow_task.metadata,
+        sandbox=ng(flow_task.sandbox),
+        approval=ng(flow_task.approval),
+        epochs=ng(epochs),
+        fail_on_error=ng(flow_task.fail_on_error),
+        continue_on_fail=ng(flow_task.continue_on_fail),
+        message_limit=ng(flow_task.message_limit),
+        token_limit=ng(flow_task.token_limit),
+        time_limit=ng(flow_task.time_limit),
+        working_limit=ng(flow_task.working_limit),
+        name=ng(flow_task.name),
+        version=ng(flow_task.version),
+        metadata=ng(flow_task.metadata),
     )
     return task
 

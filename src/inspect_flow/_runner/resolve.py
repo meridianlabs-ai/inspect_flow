@@ -1,7 +1,6 @@
 import sys
 from typing import Any, TypeAlias, TypeVar
 
-from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.registry import registry_lookup
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model
@@ -17,6 +16,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
+    not_given,
 )
 from inspect_flow._types.merge import merge_recursive
 from inspect_flow._util.args import MODEL_DUMP_ARGS
@@ -130,10 +130,10 @@ def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[Flo
 
     defaults = job.defaults or FlowDefaults()
     task = _merge_defaults(task, defaults.task, defaults.task_prefix)
-    model = _resolve_model(task.model, job) if task.model else NOT_GIVEN
-    solver = _resolve_solver(task.solver, job) if task.solver else NOT_GIVEN
+    model = _resolve_model(task.model, job) if task.model else not_given
+    solver = _resolve_solver(task.solver, job) if task.solver else not_given
     model_roles = (
-        _resolve_model_roles(task.model_roles, job) if task.model_roles else NOT_GIVEN
+        _resolve_model_roles(task.model_roles, job) if task.model_roles else not_given
     )
     generate_config = defaults.config or GenerateConfig()
     if task.config:
@@ -141,7 +141,7 @@ def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[Flo
     if model and model.config:
         generate_config = generate_config.merge(model.config)
     if generate_config == GenerateConfig():
-        generate_config = NOT_GIVEN
+        generate_config = not_given
     tasks = []
     for task_func_name in _get_task_creator_names(task, base_dir=base_dir):
         task = task.model_copy(

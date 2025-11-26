@@ -1,5 +1,4 @@
 import click
-from inspect_ai._util.notgiven import NotGiven
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -15,6 +14,7 @@ from inspect_flow._types.flow_types import (
     FlowModel,
     FlowSolver,
     FlowTask,
+    NotGiven,
 )
 
 # TODO:ransom how do we keep in sync with inspect_ai - should probably export from there

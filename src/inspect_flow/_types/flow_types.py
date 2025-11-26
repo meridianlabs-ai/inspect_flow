@@ -13,7 +13,6 @@ from typing import (
     overload,
 )
 
-from inspect_ai._util.notgiven import NOT_GIVEN, NotGiven
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import (
@@ -21,11 +20,33 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, field_validator
+from typing_extensions import override
 
 from inspect_flow._util.list_util import ensure_list_or_none
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
+
+
+class NotGiven(BaseModel, extra="forbid"):
+    """For parameters with a meaningful None value, we need to distinguish between the user explicitly passing None, and the user not passing the parameter at all.
+
+    User code shouldn't need to use not_given directly.
+    """
+
+    def __bool__(self) -> Literal[False]:
+        return False
+
+    @override
+    def __repr__(self) -> str:
+        return "NOT_GIVEN"
+
+    type: Literal["NOT_GIVEN"] = Field(
+        description="Field to ensure serialized type can be identified as NotGiven",
+    )
+
+
+not_given = NotGiven(type="NOT_GIVEN")
 
 
 class FlowModel(BaseModel, extra="forbid"):
@@ -143,7 +164,7 @@ class FlowTask(BaseModel, extra="forbid", arbitrary_types_allowed=True):
     """
 
     name: str | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
     )
 
@@ -154,75 +175,75 @@ class FlowTask(BaseModel, extra="forbid", arbitrary_types_allowed=True):
 
     solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None | NotGiven = (
         Field(
-            default=NOT_GIVEN,
+            default=not_given,
             description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
         )
     )
 
     model: str | FlowModel | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Default model for task (Optional, defaults to eval model).",
     )
 
     config: GenerateConfig | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Named roles for use in `get_model()`.",
     )
 
     sandbox: SandboxEnvironmentType | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Sandbox environment type (or optionally a str or tuple with a shorthand spec)",
     )
 
     approval: str | ApprovalPolicyConfig | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
     )
 
     epochs: int | FlowEpochs | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
     )
 
     fail_on_error: bool | float | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
     )
 
     continue_on_fail: bool | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
     )
 
     message_limit: int | None | NotGiven = Field(
-        default=NOT_GIVEN, description="Limit on total messages used for each sample."
+        default=not_given, description="Limit on total messages used for each sample."
     )
 
     token_limit: int | None | NotGiven = Field(
-        default=NOT_GIVEN, description="Limit on total tokens used for each sample."
+        default=not_given, description="Limit on total tokens used for each sample."
     )
 
     time_limit: int | None | NotGiven = Field(
-        default=NOT_GIVEN, description="Limit on clock time (in seconds) for samples."
+        default=not_given, description="Limit on clock time (in seconds) for samples."
     )
 
     working_limit: int | None | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
     )
 
     version: int | str | NotGiven = Field(
-        default=NOT_GIVEN,
+        default=not_given,
         description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
     )
 
     metadata: dict[str, Any] | None | NotGiven = Field(
-        default=NOT_GIVEN, description="Additional metadata to associate with the task."
+        default=not_given, description="Additional metadata to associate with the task."
     )
 
     sample_id: str | int | list[str | int] | None = Field(

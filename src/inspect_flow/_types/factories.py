@@ -91,7 +91,7 @@ def _matrix_with_base(
         if key != "config" and key in base_dict and base_dict[key] is not None:
             raise ValueError(f"{key} provided in both base and matrix")
 
-    matrix = to_jsonable_python(matrix, exclude_none=True)
+    matrix = to_jsonable_python(matrix)
     matrix_keys = matrix.keys()
     result = []
     for matrix_values in product(*matrix.values()):
