@@ -1,10 +1,9 @@
-from inspect_flow import FlowJob, FlowOptions
+from inspect_flow import FlowJob, FlowOptions, including_jobs
 
 MAX_SAMPLES = 16
 
-including_jobs: dict[str, FlowJob] = globals().get("__flow_including_jobs__", {})
 
-for file, job in including_jobs.items():
+for file, job in including_jobs().items():
     if (
         job.options
         and job.options.max_samples is not None

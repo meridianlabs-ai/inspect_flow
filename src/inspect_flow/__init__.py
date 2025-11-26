@@ -5,6 +5,9 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+from inspect_flow._types.config_funcs import (
+    including_jobs,
+)
 from inspect_flow._types.factories import (
     agents_matrix,
     agents_with,
@@ -51,6 +54,7 @@ __all__ = [
     "agents_with",
     "configs_matrix",
     "configs_with",
+    "including_jobs",
     "merge",
     "models_matrix",
     "models_with",

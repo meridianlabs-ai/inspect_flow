@@ -8,9 +8,7 @@ However, it should catch the most common cases where included files have uncommi
 import subprocess
 from pathlib import Path
 
-from inspect_flow import FlowJob
-
-including_jobs: dict[str, FlowJob] = globals().get("__flow_including_jobs__", {})
+from inspect_flow import FlowJob, including_jobs
 
 
 def check_repo(path: str) -> None:
@@ -46,7 +44,7 @@ def check_repo(path: str) -> None:
 
 
 check_repo(__file__)
-for path in including_jobs.keys():
+for path in including_jobs().keys():
     check_repo(path)
 
 FlowJob()

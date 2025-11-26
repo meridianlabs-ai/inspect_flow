@@ -9,6 +9,7 @@ from typing import Any
 
 from inspect_ai._util.file import file
 
+from inspect_flow._types.config_funcs import set_including_jobs
 from inspect_flow._types.flow_types import FlowJob
 
 
@@ -72,8 +73,8 @@ def execute_src_and_get_last_result(
         "__name__": "__main__",
         "__builtins__": builtins.__dict__,
         "__file__": filename,
-        "__flow_including_jobs__": including_jobs or {},
     }
+    set_including_jobs(including_jobs)
     exec(code, g, g)
     if not is_function_def:
         return g.get(target_id)
