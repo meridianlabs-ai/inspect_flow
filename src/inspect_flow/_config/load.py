@@ -42,7 +42,7 @@ def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
     job = _load_job_from_file(
         file, args=config_options.get("args", {}), including_jobs={}
     )
-    job = _apply_auto_includes(job, file, config_options)
+    job = apply_auto_includes(job, file, config_options)
 
     overrides = config_options.get("overrides", [])
     if overrides:
@@ -184,7 +184,7 @@ def _deep_merge_include(
     return result
 
 
-def _apply_auto_includes(
+def apply_auto_includes(
     job: FlowJob, config_file: str, config_options: ConfigOptions
 ) -> FlowJob:
     absolute_path = absolute_file_path(config_file)
