@@ -9,6 +9,9 @@ from inspect_flow import (
     GenerateConfig,
     configs_matrix,
 )
+from inspect_flow._types.flow_types import not_given
+from inspect_flow._util.args import MODEL_DUMP_ARGS
+from pydantic_core import to_jsonable_python
 
 
 def test_task_from_string():
@@ -75,3 +78,14 @@ def test_none_in_list():
     assert len(configs) == 2
     assert configs[0].reasoning_tokens is None
     assert configs[1].reasoning_tokens == 2048
+
+
+def test_task_not_given():
+    task1 = FlowTask(name="module/task", model=None)
+    task2 = FlowTask.model_validate(task1.model_dump(**MODEL_DUMP_ARGS))
+    assert task2.model != not_given
+    assert task2.epochs == not_given
+    jsonable = to_jsonable_python(task1)
+    task3 = FlowTask.model_validate(jsonable)
+    assert task3.model != not_given
+    assert task3.epochs == not_given
