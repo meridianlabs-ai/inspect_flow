@@ -1,4 +1,3 @@
-import os
 import re
 import subprocess
 import sys
@@ -16,6 +15,7 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 def launch(
     job: FlowJob,
     base_dir: str,
+    env: dict[str, str],
     run_args: list[str] | None = None,
     no_venv: bool = False,
 ) -> None:
@@ -38,7 +38,6 @@ def launch(
     run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
     base_dir = absolute_file_path(base_dir)
     args = ["--base-dir", base_dir] + (run_args or [])
-    env = os.environ.copy()
     if job.env:
         env.update(**job.env)
 
