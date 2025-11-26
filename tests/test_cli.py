@@ -74,7 +74,11 @@ def test_run_command_overrides() -> None:
 
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False, no_venv=False
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=False,
+            no_venv=False,
+            no_expand_includes=True,
         )
 
 
@@ -109,7 +113,11 @@ def test_run_command_log_dir_create_unique() -> None:
 
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False, no_venv=False
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=False,
+            no_venv=False,
+            no_expand_includes=True,
         )
 
 
@@ -193,7 +201,11 @@ def test_run_command_dry_run() -> None:
         mock_config.assert_called_once_with(CONFIG_FILE_RESOLVED, args={}, overrides=[])
 
         mock_run.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=True, no_venv=False
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=True,
+            no_venv=False,
+            no_expand_includes=True,
         )
 
 
@@ -219,7 +231,11 @@ def test_run_command_args() -> None:
         )
 
         mock_run.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False, no_venv=False
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=False,
+            no_venv=False,
+            no_expand_includes=True,
         )
 
 
@@ -239,7 +255,11 @@ def test_run_command_no_venv() -> None:
         mock_config.assert_called_once()
 
         mock_run.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, dry_run=False, no_venv=True
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=False,
+            no_venv=True,
+            no_expand_includes=True,
         )
 
 
@@ -259,7 +279,11 @@ def test_config_command_resolve() -> None:
         mock_load.assert_called_once_with(CONFIG_FILE_RESOLVED, args={}, overrides=[])
 
         mock_config.assert_called_once_with(
-            mock_config_obj, base_dir=CONFIG_FILE_DIR, resolve=True, no_venv=False
+            mock_config_obj,
+            base_dir=CONFIG_FILE_DIR,
+            resolve=True,
+            no_venv=False,
+            no_expand_includes=True,
         )
 
 
