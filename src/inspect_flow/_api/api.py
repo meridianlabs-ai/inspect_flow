@@ -88,7 +88,7 @@ def _prepare_job(job: FlowJob, base_dir: str) -> FlowJob:
         including_job_path=file,
     )
     job = apply_auto_includes(job, config_file=file, config_options={})
-    job = apply_substitions(job)
+    job = apply_substitions(job, base_dir=base_dir)
     return job
 
 
