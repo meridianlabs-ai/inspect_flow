@@ -430,6 +430,23 @@ def test_221_format_map_file() -> None:
     validate_config(job, "bundle_flow.yaml")
 
 
+def test_257_format_map_not_config() -> None:
+    job = FlowJob(
+        log_dir="logs/",
+        env={
+            "INSPECT_EVAL_LOG_FILE_PATTERN": "{log_dir}/{task}_{model}_{id}",
+        },
+        tasks=tasks_with(
+            task=["inspect_evals/mmlu_0_shot"],
+            model="openai/gpt-4o-mini",
+        ),
+    )
+    job2 = apply_substitions(job)
+    assert job2.log_dir == "logs/"
+    assert job2.env
+    assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
+
+
 def test_222_including_jobs_check() -> None:
     include_path = str(Path(__file__).parent / "config" / "including_jobs_flow.py")
     job = FlowJob(
