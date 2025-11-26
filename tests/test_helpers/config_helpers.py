@@ -29,7 +29,7 @@ def validate_config(job: FlowJob, file_name: str) -> None:
 
     # Fix the log_dir to be relative
     if job.log_dir:
-        for base_dir in [Path(__file__).parents[1], Path.cwd()]:
+        for base_dir in [Path(__file__).parents[1] / "config", Path.cwd() / "examples"]:
             try:
                 job.log_dir = str(Path(job.log_dir).relative_to(base_dir))
             except ValueError:

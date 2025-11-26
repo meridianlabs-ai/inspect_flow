@@ -1,4 +1,4 @@
-log_dir: examples/logs
+log_dir: logs
 options:
   metadata:
     experiment: baseline_v1

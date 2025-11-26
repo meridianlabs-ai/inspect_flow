@@ -1,4 +1,4 @@
-log_dir: examples/logs
+log_dir: logs
 tasks:
 - name: inspect_evals/gpqa_diamond
   model:

@@ -1,4 +1,4 @@
-log_dir: config/auto/sub/logs/model_and_task
+log_dir: auto/sub/logs/model_and_task
 options:
   limit: 1
 defaults:
