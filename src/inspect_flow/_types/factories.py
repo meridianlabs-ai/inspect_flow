@@ -1,7 +1,6 @@
 from itertools import product
 from typing import Any, Mapping, Sequence, TypeVar
 
-from pydantic_core import to_jsonable_python
 from typing_extensions import Unpack
 
 from inspect_flow._types.flow_types import (
@@ -91,7 +90,6 @@ def _matrix_with_base(
         if key != "config" and key in base_dict and base_dict[key] is not None:
             raise ValueError(f"{key} provided in both base and matrix")
 
-    matrix = to_jsonable_python(matrix)
     matrix_keys = matrix.keys()
     result = []
     for matrix_values in product(*matrix.values()):

@@ -22,18 +22,17 @@ def to_dict(input: Any) -> dict[str, Any]:
 
 
 def _merge_dicts(
-    base_dict: dict[str, Any],
-    add_dict: dict[str, Any],
+    base_dict: dict[str, Any], add_dict: dict[str, Any], merge_nones: bool
 ) -> dict[str, Any]:
-    # filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
-    return base_dict | add_dict
+    if merge_nones:
+        return base_dict | add_dict
+    else:
+        filtered_add_dict = {k: v for k, v in add_dict.items() if v is not None}
+        return base_dict | filtered_add_dict
 
 
-def _merge(
-    base: Any,
-    add: Any,
-) -> dict[str, Any]:
-    return _merge_dicts(to_dict(base), to_dict(add))
+def _merge(base: Any, add: Any, merge_nones: bool) -> dict[str, Any]:
+    return _merge_dicts(to_dict(base), to_dict(add), merge_nones=merge_nones)
 
 
 # Note that current recursive merges do not go deeper than one level
@@ -49,10 +48,10 @@ def merge_recursive(
 ) -> dict[str, Any]:
     base_dict = to_dict(base)
     add_dict = to_dict(add)
-    result = _merge_dicts(base_dict, add_dict)
+    result = _merge_dicts(base_dict, add_dict, merge_nones=True)
     for key in _RECURSIVE_KEYS:
         if (add_value := add_dict.get(key)) and (base_value := base_dict.get(key)):
-            result[key] = _merge(base_value, add_value)
+            result[key] = _merge(base_value, add_value, merge_nones=True)
     return result
 
 

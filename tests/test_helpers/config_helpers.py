@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 from inspect_flow import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 
-update_examples = True
+update_examples = False
 
 
 def write_flow_yaml(job: FlowJob, file_path: Path) -> None:

@@ -99,7 +99,6 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    # make sure this differentiates between None and NotGiven
     model = _create_model(flow_task.model) if flow_task.model else NOT_GIVEN
     solver = _create_solver(flow_task.solver) if flow_task.solver else NOT_GIVEN
     model_roles = (
