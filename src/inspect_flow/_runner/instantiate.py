@@ -1,13 +1,16 @@
 from collections.abc import Callable
-from typing import TypeAlias, TypeVar
+from typing import Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
+from inspect_ai._eval.loader import scorer_from_spec
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
+from inspect_ai.scorer import Scorer
+from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
@@ -17,6 +20,7 @@ from inspect_flow._types.flow_types import (
     FlowEpochs,
     FlowJob,
     FlowModel,
+    FlowScorer,
     FlowSolver,
     FlowTask,
     GenerateConfig,
@@ -64,6 +68,28 @@ def _create_model_roles(model_roles: ModelRolesConfig) -> ModelRoles:
     return roles
 
 
+def _create_single_scorer(scorer: str | FlowScorer) -> Scorer:
+    if isinstance(scorer, str):
+        scorer = FlowScorer(name=scorer)
+    if not scorer.name:
+        raise ValueError(f"Scorer name is required. Scorer: {scorer}")
+    return scorer_from_spec(
+        ScorerSpec(scorer=scorer.name), task_path=None, **(scorer.args or {})
+    )
+
+
+def _create_scorer(
+    scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven,
+) -> Scorer | Sequence[Scorer] | None | InspectNotGiven:
+    if isinstance(scorer, NotGiven):
+        return NOT_GIVEN
+    if scorer is None:
+        return None
+    if isinstance(scorer, str | FlowScorer):
+        return _create_single_scorer(scorer)
+    return [_create_single_scorer(single_solver) for single_solver in scorer]
+
+
 def _create_single_solver(solver: str | FlowSolver) -> Solver:
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
@@ -100,6 +126,7 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
         raise ValueError("config must be resolved before calling instantiate_task")
 
     model = _create_model(flow_task.model) if flow_task.model else NOT_GIVEN
+    scorer = _create_scorer(flow_task.scorer)
     solver = _create_solver(flow_task.solver) if flow_task.solver else NOT_GIVEN
     model_roles = (
         _create_model_roles(flow_task.model_roles)
@@ -136,7 +163,7 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
         # setup= Not Supported
         solver=solver,
         # cleanup= Not Supported
-        # scorer= Not Supported
+        scorer=scorer,
         # metrics= Not Supported
         model=model,
         config=ng(flow_task.config),

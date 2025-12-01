@@ -2,12 +2,13 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 import yaml
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
-from inspect_ai.model import Model
-from inspect_ai.solver import Solver
+from inspect_ai.model import Model, ModelName, ModelOutput
+from inspect_ai.solver import Solver, TaskState
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowAgent,
@@ -24,7 +25,7 @@ from inspect_flow import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import _run_eval_set
-from inspect_flow._types.flow_types import not_given
+from inspect_flow._types.flow_types import FlowScorer, not_given
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -1004,3 +1005,75 @@ def test_eval_set_args() -> None:
     assert call_args.kwargs["bundle_overwrite"] == job.options.bundle_overwrite
     assert call_args.kwargs["log_dir_allow_dirty"] == job.options.log_dir_allow_dirty
     assert call_args.kwargs["eval_set_id"] == job.options.eval_set_id
+
+
+@pytest.mark.asyncio
+async def test_task_with_scorer() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(
+            job=(
+                FlowJob(
+                    log_dir="logs/flow_test",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                            scorer=FlowScorer(
+                                name="inspect_ai/answer", args={"pattern": "letter"}
+                            ),
+                        )
+                    ],
+                )
+            ),
+            base_dir=".",
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        assert isinstance(tasks_arg[0], Task)
+        assert isinstance(tasks_arg[0].model, Model)
+        state = TaskState(
+            model=ModelName("mockllm/mock-llm"),
+            sample_id=1,
+            epoch=1,
+            input="Question: What is the answer?\n",
+            messages=[],
+            output=ModelOutput(completion="ANSWER: b"),
+        )
+        scorer = tasks_arg[0].scorer[0]
+        score = await scorer(state, target="b")
+        assert score.value == "C"
+
+
+@pytest.mark.asyncio
+async def test_task_with_scorer_list() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(
+            job=(
+                FlowJob(
+                    log_dir="logs/flow_test",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                            scorer=[
+                                FlowScorer(
+                                    name="inspect_ai/answer", args={"pattern": "letter"}
+                                ),
+                                "inspect_ai/choice",
+                            ],
+                        )
+                    ],
+                )
+            ),
+            base_dir=".",
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        scorers = tasks_arg[0].scorer
+        assert len(scorers) == 2
