@@ -200,7 +200,6 @@ def _load_job_from_file(
                 job = FlowJob.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
-        logger.info(f"Error validating config file: {config_file}")
         logger.error(e)
         sys.exit(1)
 
