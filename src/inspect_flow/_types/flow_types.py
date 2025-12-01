@@ -9,8 +9,6 @@ from typing import (
     Mapping,
     Sequence,
     TypeAlias,
-    TypeVar,
-    overload,
 )
 
 from inspect_ai.approval._policy import ApprovalPolicyConfig
@@ -19,10 +17,8 @@ from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
 )
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from typing_extensions import override
-
-from inspect_flow._util.list_util import ensure_list_or_none
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
@@ -169,7 +165,7 @@ class FlowEpochs(BaseModel):
 
     epochs: int = Field(description="Number of epochs.")
 
-    reducer: str | list[str] | None = Field(
+    reducer: str | Sequence[str] | None = Field(
         default=None,
         description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
     )
@@ -191,11 +187,11 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Additional args to pass to task constructor",
     )
 
-    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None | NotGiven = (
-        Field(
-            default=not_given,
-            description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
-        )
+    solver: (
+        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | None | NotGiven
+    ) = Field(
+        default=not_given,
+        description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
     scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven = Field(
@@ -269,7 +265,7 @@ class FlowTask(BaseModel, extra="forbid"):
         default=not_given, description="Additional metadata to associate with the task."
     )
 
-    sample_id: str | int | list[str | int] | None = Field(
+    sample_id: str | int | Sequence[str | int] | None = Field(
         default=None,
         description="Evaluate specific sample(s) from the dataset.",
     )
@@ -278,16 +274,6 @@ class FlowTask(BaseModel, extra="forbid"):
         default=None,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
-
-    @field_validator("model", mode="before")
-    @classmethod
-    def convert_string_model(cls, v):
-        return _convert_str_to_class(FlowModel, v)
-
-    @field_validator("solver", mode="before")
-    @classmethod
-    def convert_string_solvers(cls, v):
-        return _convert_str_to_solver(v)
 
     @property
     def model_name(self) -> str | None:
@@ -336,7 +322,7 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Cleanup sandbox environments after task completes (defaults to True).",
     )
 
-    tags: list[str] | None = Field(
+    tags: Sequence[str] | None = Field(
         default=None, description="Tags to associate with this evaluation run."
     )
 
@@ -553,7 +539,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
         description="If True, use the uv.lock file when using pyproject.toml and uv.lock is present in the same directory (defaults to True).",
     )
 
-    additional_dependencies: list[str] | None = Field(
+    additional_dependencies: str | Sequence[str] | None = Field(
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
@@ -562,12 +548,6 @@ class FlowDependencies(BaseModel, extra="forbid"):
         default=None,
         description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed.",
     )
-
-    # Convert single items to lists
-    @field_validator("additional_dependencies", mode="before")
-    @classmethod
-    def convert_to_list(cls, v):
-        return ensure_list_or_none(v)
 
 
 class FlowJob(BaseModel, extra="forbid"):
@@ -618,62 +598,3 @@ class FlowJob(BaseModel, extra="forbid"):
     tasks: Sequence[str | FlowTask] | None = Field(
         default=None, description="Tasks to run"
     )
-
-    # Convert single items to lists
-    @field_validator("tasks", mode="before")
-    @classmethod
-    def convert_string_tasks(cls, v):
-        return _convert_to_task_list(v)
-
-    @field_validator("includes", mode="before")
-    @classmethod
-    def convert_string_includes(cls, v):
-        return _convert_to_include_list(v)
-
-
-def _convert_to_task_list(
-    v: str | FlowTask | list[str | FlowTask] | None,
-) -> list[FlowTask] | None:
-    if v is None:
-        return v
-    if not isinstance(v, list):
-        v = [v]
-    return [FlowTask(name=task) if isinstance(task, str) else task for task in v]
-
-
-def _convert_to_include_list(
-    v: str | FlowInclude | list[str | FlowInclude] | None,
-) -> list[FlowInclude] | None:
-    if v is None:
-        return v
-    if not isinstance(v, list):
-        v = [v]
-    return [
-        FlowInclude(config_file_path=include) if isinstance(include, str) else include
-        for include in v
-    ]
-
-
-_T = TypeVar("_T", FlowModel, FlowSolver)
-
-
-@overload
-def _convert_str_to_class(cls: type[_T], v: None) -> None: ...
-
-
-@overload
-def _convert_str_to_class(cls: type[_T], v: str | _T) -> _T: ...
-
-
-def _convert_str_to_class(cls: type[_T], v: str | _T | None) -> _T | None:
-    return cls(name=v) if isinstance(v, str) else v
-
-
-def _convert_str_to_solver(
-    v: str | FlowSolver | list[str | FlowSolver] | None,
-) -> FlowSolver | list[FlowSolver] | None:
-    if v is None:
-        return None
-    if isinstance(v, list):
-        return [_convert_str_to_class(FlowSolver, solver) for solver in v]
-    return _convert_str_to_class(FlowSolver, v)

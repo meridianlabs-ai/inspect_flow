@@ -8,20 +8,14 @@ defaults:
       mock_model_arg: 3
 tasks:
 - name: local_eval/noop
-  model:
-    name: mockllm/mock-llm1
+  model: mockllm/mock-llm1
 - name: local_eval/noop
-  model:
-    name: mockllm/mock-llm2
+  model: mockllm/mock-llm2
 - name: local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm1
+  model: mockllm/mock-llm1
 - name: local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm2
+  model: mockllm/mock-llm2
 - name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm1
+  model: mockllm/mock-llm1
 - name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm2
+  model: mockllm/mock-llm2

@@ -4,7 +4,6 @@ from inspect_flow import (
     FlowDefaults,
     FlowJob,
     FlowModel,
-    FlowSolver,
     FlowTask,
     GenerateConfig,
     configs_matrix,
@@ -18,8 +17,8 @@ def test_task_from_string():
     task_name = "one_module/one_task"
     config = FlowJob(tasks=[task_name])
     assert config.tasks
-    assert isinstance(config.tasks[0], FlowTask)
-    assert config.tasks[0].name == task_name
+    assert len(config.tasks) == 1
+    assert config.tasks[0] == task_name
 
 
 def test_model_from_string():
@@ -56,14 +55,11 @@ def test_solver_from_string():
     assert config.tasks
     assert isinstance(config.tasks[0], FlowTask)
     assert config.tasks[0].solver
-    assert isinstance(config.tasks[0].solver, FlowSolver)
-    assert config.tasks[0].solver.name == solver_name
+    assert config.tasks[0].solver == solver_name
     assert isinstance(config.tasks[1], FlowTask)
     assert isinstance(config.tasks[1].solver, list)
-    assert isinstance(config.tasks[1].solver[1], FlowSolver)
-    assert isinstance(config.tasks[1].solver[0], FlowSolver)
-    assert config.tasks[1].solver[0].name == solver_name2
-    assert config.tasks[1].solver[1].name == solver_name3
+    assert config.tasks[1].solver[0] == solver_name2
+    assert config.tasks[1].solver[1] == solver_name3
 
 
 def test_defaults():

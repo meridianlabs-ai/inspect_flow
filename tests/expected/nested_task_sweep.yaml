@@ -3,40 +3,32 @@ tasks:
 - name: task1
   args:
     subset: test
-  model:
-    name: model1
+  model: model1
 - name: task1
   args:
     subset: test
-  model:
-    name: model2
+  model: model2
 - name: task2
   args:
     language: en
-  model:
-    name: model1
+  model: model1
 - name: task2
   args:
     language: en
-  model:
-    name: model2
+  model: model2
 - name: task2
   args:
     language: de
-  model:
-    name: model1
+  model: model1
 - name: task2
   args:
     language: de
-  model:
-    name: model2
+  model: model2
 - name: task2
   args:
     language: fr
-  model:
-    name: model1
+  model: model1
 - name: task2
   args:
     language: fr
-  model:
-    name: model2
+  model: model2

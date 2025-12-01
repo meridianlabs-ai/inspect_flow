@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import click
 from inspect_ai._util.registry import (
     registry_find,
@@ -12,6 +14,7 @@ from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowJob,
     FlowModel,
+    FlowScorer,
     FlowSolver,
     FlowTask,
     NotGiven,
@@ -58,7 +61,8 @@ def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> 
         return _collect_name_dependencies(task, dependencies)
 
     _collect_name_dependencies(task.name, dependencies)
-    _collect_solver_dependencies(task.solver, dependencies)
+    _collect_maybe_sequence_dependencies(task.scorer, dependencies)
+    _collect_maybe_sequence_dependencies(task.solver, dependencies)
     _collect_sandbox_dependencies(task.sandbox, dependencies)
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
@@ -91,17 +95,23 @@ def _collect_model_dependencies(
         dependencies.update(_MODEL_PROVIDERS.get(split[0], [split[0]]))
 
 
-def _collect_solver_dependencies(
-    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None | NotGiven,
+def _collect_maybe_sequence_dependencies(
+    solver: str
+    | FlowSolver
+    | FlowScorer
+    | Sequence[str | FlowSolver | FlowScorer]
+    | FlowAgent
+    | None
+    | NotGiven,
     dependencies: set[str],
 ) -> None:
     if not solver:
         return
     if isinstance(solver, str):
         return _collect_name_dependencies(solver, dependencies)
-    if isinstance(solver, list):
+    if isinstance(solver, Sequence):
         for s in solver:
-            _collect_solver_dependencies(s, dependencies)
+            _collect_maybe_sequence_dependencies(s, dependencies)
         return
     _collect_name_dependencies(solver.name, dependencies)
 

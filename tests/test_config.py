@@ -211,7 +211,8 @@ def test_overrides_of_lists():
         ],
     )
     assert config.dependencies
-    assert config.dependencies.additional_dependencies == ["dep2"]
+    assert config.dependencies.additional_dependencies == "dep2"
+    config.dependencies.additional_dependencies = ["dep2"]
     # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
         config,

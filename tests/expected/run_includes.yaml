@@ -4,7 +4,6 @@ defaults:
     model_args:
       mock_model_arg: 3
 tasks:
+- local_eval/noop
 - name: local_eval/noop
-- name: local_eval/noop
-  model:
-    name: mockllm/mock-llm1
+  model: mockllm/mock-llm1

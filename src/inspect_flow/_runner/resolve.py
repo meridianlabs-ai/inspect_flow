@@ -1,5 +1,5 @@
 import sys
-from typing import Any, TypeAlias, TypeVar
+from typing import Any, Sequence, TypeAlias, TypeVar
 
 from inspect_ai._util.registry import registry_lookup
 from inspect_ai.agent import Agent
@@ -114,7 +114,7 @@ def _resolve_agent(agent: FlowAgent, job: FlowJob) -> FlowAgent:
 
 
 def _resolve_solver(
-    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent,
+    solver: str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
     job: FlowJob,
 ) -> FlowSolver | list[FlowSolver] | FlowAgent:
     if isinstance(solver, str | FlowSolver):

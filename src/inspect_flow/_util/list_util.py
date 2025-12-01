@@ -1,13 +1,11 @@
-from typing import TypeVar
+from typing import Any, Sequence, TypeVar
 
-T = TypeVar("T")
+_T = TypeVar("_T", int, str)
 
 
-def ensure_list_or_none(value: T | list[T] | None) -> list[T] | None:
-    if value is None:
-        return None
-    if not isinstance(value, list):
-        return [value]
-    if len(value):
+def sequence_to_list(
+    value: Sequence[_T] | Any,
+) -> list[_T] | Any:
+    if isinstance(value, str) or not isinstance(value, Sequence):
         return value
-    return None
+    return list(value)
