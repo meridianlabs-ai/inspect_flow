@@ -4,7 +4,6 @@ import click
 from inspect_ai._cli.util import parse_cli_args
 from inspect_ai._util.constants import (
     ALL_LOG_LEVELS,
-    DEFAULT_LOG_LEVEL,
 )
 from typing_extensions import TypedDict, Unpack
 
@@ -18,9 +17,9 @@ def log_level_option(f):
             [level.lower() for level in ALL_LOG_LEVELS],
             case_sensitive=False,
         ),
-        default=DEFAULT_LOG_LEVEL,
+        default="info",
         envvar="INSPECT_FLOW_LOG_LEVEL",
-        help=f"Set the log level (defaults to '{DEFAULT_LOG_LEVEL}')",
+        help="Set the log level (defaults to 'info')",
     )(f)
     return f
 
