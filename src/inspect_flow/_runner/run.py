@@ -12,6 +12,7 @@ from inspect_flow._types.flow_types import (
     FlowJob,
     FlowOptions,
 )
+from inspect_flow._util.list_util import sequence_to_list
 
 
 def _read_config() -> FlowJob:
@@ -65,7 +66,7 @@ def _run_eval_set(
             sandbox=options.sandbox,
             sandbox_cleanup=options.sandbox_cleanup,
             # solver= FlowTask
-            tags=options.tags,
+            tags=sequence_to_list(options.tags),
             metadata=options.metadata,
             trace=options.trace,
             display=options.display,

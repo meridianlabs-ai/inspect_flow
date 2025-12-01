@@ -104,7 +104,7 @@ class FlowDependenciesDict(TypedDict):
     """Path to a dependency file (either requirements.txt or pyproject.toml) to install dependencies from. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
     use_uv_lock: NotRequired[Optional[bool]]
     """If True, use the uv.lock file when using pyproject.toml and uv.lock is present in the same directory (defaults to True)."""
-    additional_dependencies: NotRequired[Optional[Sequence[str]]]
+    additional_dependencies: NotRequired[Optional[Union[str, Sequence[str]]]]
     """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
     auto_detect_dependencies: NotRequired[Optional[bool]]
     """If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed."""

@@ -165,7 +165,7 @@ class FlowEpochs(BaseModel):
 
     epochs: int = Field(description="Number of epochs.")
 
-    reducer: str | list[str] | None = Field(
+    reducer: str | Sequence[str] | None = Field(
         default=None,
         description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
     )
@@ -187,11 +187,11 @@ class FlowTask(BaseModel, extra="forbid"):
         description="Additional args to pass to task constructor",
     )
 
-    solver: str | FlowSolver | list[str | FlowSolver] | FlowAgent | None | NotGiven = (
-        Field(
-            default=not_given,
-            description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
-        )
+    solver: (
+        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | None | NotGiven
+    ) = Field(
+        default=not_given,
+        description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
     scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven = Field(
@@ -265,7 +265,7 @@ class FlowTask(BaseModel, extra="forbid"):
         default=not_given, description="Additional metadata to associate with the task."
     )
 
-    sample_id: str | int | list[str | int] | None = Field(
+    sample_id: str | int | Sequence[str | int] | None = Field(
         default=None,
         description="Evaluate specific sample(s) from the dataset.",
     )
@@ -322,7 +322,7 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="Cleanup sandbox environments after task completes (defaults to True).",
     )
 
-    tags: list[str] | None = Field(
+    tags: Sequence[str] | None = Field(
         default=None, description="Tags to associate with this evaluation run."
     )
 
@@ -539,7 +539,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
         description="If True, use the uv.lock file when using pyproject.toml and uv.lock is present in the same directory (defaults to True).",
     )
 
-    additional_dependencies: list[str] | None = Field(
+    additional_dependencies: str | Sequence[str] | None = Field(
         default=None,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )

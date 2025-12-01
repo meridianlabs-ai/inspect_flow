@@ -27,6 +27,7 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
+from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.path_util import find_file
 
@@ -107,7 +108,7 @@ def _create_agent(agent: FlowAgent) -> Agent:
 
 
 def _create_solver(
-    solver: FlowSolver | list[str | FlowSolver] | FlowAgent,
+    solver: FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
 ) -> SingleSolver:
     if isinstance(solver, FlowSolver):
         return _create_single_solver(solver)
@@ -142,14 +143,14 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
         task.dataset = slice_dataset(
             task.dataset,
             limit=None,
-            sample_id=flow_task.sample_id,
+            sample_id=sequence_to_list(flow_task.sample_id),
         )
 
     epochs = flow_task.epochs
     if isinstance(epochs, FlowEpochs):
         epochs = Epochs(
             epochs=epochs.epochs,
-            reducer=epochs.reducer,
+            reducer=sequence_to_list(epochs.reducer),
         )
 
     _T = TypeVar("_T")
