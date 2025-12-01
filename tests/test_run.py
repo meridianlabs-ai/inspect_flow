@@ -1045,3 +1045,35 @@ async def test_task_with_scorer() -> None:
         scorer = tasks_arg[0].scorer[0]
         score = await scorer(state, target="b")
         assert score.value == "C"
+
+
+@pytest.mark.asyncio
+async def test_task_with_scorer_list() -> None:
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(
+            job=(
+                FlowJob(
+                    log_dir="logs/flow_test",
+                    tasks=[
+                        FlowTask(
+                            name=task_file + "@noop",
+                            model=FlowModel(name="mockllm/mock-llm"),
+                            scorer=[
+                                FlowScorer(
+                                    name="inspect_ai/answer", args={"pattern": "letter"}
+                                ),
+                                "inspect_ai/choice",
+                            ],
+                        )
+                    ],
+                )
+            ),
+            base_dir=".",
+        )
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 1
+        scorers = tasks_arg[0].scorer
+        assert len(scorers) == 2
