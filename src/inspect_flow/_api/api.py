@@ -19,6 +19,7 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
+    log_level: str | None = None,
     no_venv: bool = False,
     no_prepare_job: bool = False,
     no_dotenv: bool = False,
@@ -29,6 +30,7 @@ def run(
         job: The flow job configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
+        log_level: The log level to use.
         no_venv: If True, do not create a virtual environment to run the job.
         no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.
@@ -51,6 +53,7 @@ def config(
     base_dir: str | None = None,
     *,
     resolve: bool = False,
+    log_level: str | None = None,
     no_venv: bool = False,
     no_prepare_job: bool = False,
     no_dotenv: bool = False,
@@ -61,6 +64,7 @@ def config(
         job: The flow job configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         resolve: If True, resolve the configuration before printing.
+        log_level: The log level to use.
         no_venv: If True, do not create a virtual environment to resolve the job.
         no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.

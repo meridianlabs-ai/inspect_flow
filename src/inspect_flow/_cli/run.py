@@ -33,6 +33,7 @@ def run_command(
         config,
         base_dir=str(Path(config_file).parent),
         dry_run=dry_run,
+        log_level=kwargs.get("log_level"),
         no_venv=kwargs.get("no_venv", False) or False,
         no_prepare_job=True,
     )

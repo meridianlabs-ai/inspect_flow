@@ -33,6 +33,7 @@ def config_command(
         fconfig,
         base_dir=str(Path(config_file).parent),
         resolve=resolve,
+        log_level=kwargs.get("log_level"),
         no_venv=kwargs.get("no_venv", False) or False,
         no_prepare_job=True,
     )
