@@ -6,8 +6,7 @@ options:
     hardware: A100-80GB
 tasks:
 - name: inspect_evals/gpqa_diamond
-  model:
-    name: openai/gpt-4o
+  model: openai/gpt-4o
   metadata:
     task_variant: chemistry_subset
     note: Testing with reduced context

@@ -1,8 +1,7 @@
 log_dir: logs
 tasks:
 - name: inspect_evals/mmlu_0_shot
-  model:
-    name: anthropic/claude-3-5-sonnet
+  model: anthropic/claude-3-5-sonnet
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o
@@ -24,8 +23,7 @@ tasks:
     config:
       reasoning_effort: high
 - name: inspect_evals/gpqa_diamond
-  model:
-    name: anthropic/claude-3-5-sonnet
+  model: anthropic/claude-3-5-sonnet
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o

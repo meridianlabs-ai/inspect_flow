@@ -5,5 +5,4 @@ options:
     /local/storage: https://example.com/shared
 tasks:
 - name: task
-  model:
-    name: openai/gpt-4o
+  model: openai/gpt-4o

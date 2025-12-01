@@ -13,5 +13,4 @@ defaults:
       base_url: https://api.openai.com/v1/
 tasks:
 - name: inspect_evals/mmlu_0_shot
-  model:
-    name: openai/gpt-4o-mini
+  model: openai/gpt-4o-mini

@@ -5,40 +5,32 @@ tasks:
 - name: inspect_evals/mmlu_0_shot
   args:
     language: EN_US
-  model:
-    name: openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
 - name: inspect_evals/mmlu_0_shot
   args:
     language: EN_US
-  model:
-    name: openai/gpt-5-nano
+  model: openai/gpt-5-nano
 - name: inspect_evals/mmlu_5_shot
   args:
     language: EN_US
-  model:
-    name: openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
 - name: inspect_evals/mmlu_5_shot
   args:
     language: EN_US
-  model:
-    name: openai/gpt-5-nano
+  model: openai/gpt-5-nano
 - name: inspect_evals/mmlu_5_shot
   args:
     language: CN_CN
-  model:
-    name: openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
 - name: inspect_evals/mmlu_5_shot
   args:
     language: CN_CN
-  model:
-    name: openai/gpt-5-nano
+  model: openai/gpt-5-nano
 - name: inspect_evals/mmlu_5_shot
   args:
     language: DE_DE
-  model:
-    name: openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
 - name: inspect_evals/mmlu_5_shot
   args:
     language: DE_DE
-  model:
-    name: openai/gpt-5-nano
+  model: openai/gpt-5-nano

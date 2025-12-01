@@ -1,8 +1,6 @@
 log_dir: logs
 tasks:
 - name: inspect_evals/gpqa_diamond
-  model:
-    name: openai/gpt-4o
+  model: openai/gpt-4o
 - name: inspect_evals/mmlu_0_shot
-  model:
-    name: openai/gpt-4o
+  model: openai/gpt-4o
