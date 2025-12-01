@@ -1,8 +1,20 @@
-from inspect_flow import FlowJob, FlowModel, FlowOptions, FlowTask, tasks_matrix
+from inspect_flow import (
+    FlowDependencies,
+    FlowJob,
+    FlowModel,
+    FlowOptions,
+    FlowTask,
+    tasks_matrix,
+)
 
 FlowJob(
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
+    dependencies=FlowDependencies(
+        additional_dependencies=[
+            "../local_eval",
+        ]
+    ),
     tasks=tasks_matrix(
         task=[
             FlowTask(args={"fail": True}),

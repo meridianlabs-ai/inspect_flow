@@ -2,10 +2,10 @@ import json
 import re
 import sys
 import traceback
+from logging import getLogger
 from pathlib import Path
 from typing import Any, TypeAlias
 
-import click
 import yaml
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
@@ -16,6 +16,8 @@ from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
+
+logger = getLogger(__name__)
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
@@ -197,7 +199,7 @@ def _load_job_from_file(
                 job = FlowJob.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
-        click.echo(e, err=True)
+        logger.error(e)
         sys.exit(1)
 
     return expand_includes(job, str(config_path), args, including_jobs)

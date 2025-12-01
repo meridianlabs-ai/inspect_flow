@@ -47,8 +47,7 @@ def create_venv(
         else:
             dependencies.extend(job.dependencies.additional_dependencies)
         dependencies = [
-            dep if not dep.startswith(".") else str(Path(dep).resolve())
-            for dep in dependencies
+            _resolve_dependency(dep, base_dir=base_dir) for dep in dependencies
         ]
 
     auto_detect_dependencies = True
@@ -75,6 +74,12 @@ def create_venv(
         log_dir_path.mkdir(parents=True, exist_ok=True)
         requirements_path = log_dir_path / "flow_requirements.txt"
         requirements_path.write_text(freeze_result.stdout)
+
+
+def _resolve_dependency(dependency: str, base_dir: str) -> str:
+    if "/" in dependency:
+        return absolute_path_relative_to(dependency, base_dir=base_dir)
+    return dependency
 
 
 def _create_venv_with_base_dependencies(

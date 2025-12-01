@@ -19,7 +19,7 @@ def log_level_option(f):
             case_sensitive=False,
         ),
         default=DEFAULT_LOG_LEVEL,
-        envvar="INSPECT_LOG_LEVEL",
+        envvar="INSPECT_FLOW_LOG_LEVEL",
         help=f"Set the log level (defaults to '{DEFAULT_LOG_LEVEL}')",
     )(f)
     return f
