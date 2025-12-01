@@ -8,7 +8,7 @@ from inspect_flow import (
 )
 
 FlowJob(
-    invalid="foo",
+    invalid_field="Invalid Value",  # type: ignore
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     dependencies=FlowDependencies(
