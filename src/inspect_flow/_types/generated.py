@@ -519,7 +519,7 @@ class FlowJobDict(TypedDict):
     """Configuration for a flow job."""
 
     includes: NotRequired[Optional[Sequence[Union[str, FlowInclude]]]]
-    """List of other flow configs to include."""
+    """List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically."""
     log_dir: NotRequired[Optional[str]]
     """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
     log_dir_create_unique: NotRequired[Optional[bool]]

@@ -555,7 +555,7 @@ class FlowJob(BaseModel, extra="forbid"):
 
     includes: Sequence[str | FlowInclude] | None = Field(
         default=None,
-        description="List of other flow configs to include.",
+        description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
     log_dir: str | None = Field(
