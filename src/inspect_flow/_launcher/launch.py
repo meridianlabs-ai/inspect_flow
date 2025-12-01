@@ -9,7 +9,6 @@ from inspect_ai._util.file import absolute_file_path
 from inspect_flow._launcher.venv import create_venv, write_flow_yaml
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.path_util import absolute_path_relative_to
-from inspect_flow._util.subprocess_util import run_with_logging
 
 logger = getLogger(__name__)
 
@@ -47,7 +46,9 @@ def launch(
         python_path = sys.executable
         file = write_flow_yaml(job, ".")
         try:
-            run_with_logging([str(python_path), str(run_path), *args], env=env)
+            subprocess.run(
+                [str(python_path), str(run_path), *args], check=True, env=env
+            )
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
         finally:
