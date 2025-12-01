@@ -42,7 +42,10 @@ def create_venv(
 
     dependencies: List[str] = []
     if job.dependencies and job.dependencies.additional_dependencies:
-        dependencies.extend(job.dependencies.additional_dependencies)
+        if isinstance(job.dependencies.additional_dependencies, str):
+            dependencies.append(job.dependencies.additional_dependencies)
+        else:
+            dependencies.extend(job.dependencies.additional_dependencies)
         dependencies = [
             dep if not dep.startswith(".") else str(Path(dep).resolve())
             for dep in dependencies
