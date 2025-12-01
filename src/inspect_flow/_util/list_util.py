@@ -3,18 +3,6 @@ from typing import Any, Sequence, TypeVar
 _T = TypeVar("_T", int, str)
 
 
-# @overload
-# def sequence_to_list(
-#     value: None,
-# ) -> None: ...
-
-
-# @overload
-# def sequence_to_list(
-#     value: Sequence[_T] | Any,
-# ) -> list[_T] | Any: ...
-
-
 def sequence_to_list(
     value: Sequence[_T] | Any,
 ) -> list[_T] | Any:
