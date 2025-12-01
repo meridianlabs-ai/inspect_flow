@@ -97,6 +97,25 @@ class FlowModel(BaseModel, extra="forbid"):
     )
 
 
+class FlowScorer(BaseModel, extra="forbid"):
+    """Configuration for a Scorer."""
+
+    name: str | None = Field(
+        default=None,
+        description="Name of the scorer. Required to be set by the time the scorer is created.",
+    )
+
+    args: CreateArgs | None = Field(
+        default=None,
+        description="Additional args to pass to scorer constructor.",
+    )
+
+    flow_metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional. Metadata stored in the flow config. Not passed to the scorer.",
+    )
+
+
 class FlowSolver(BaseModel, extra="forbid"):
     """Configuration for a Solver."""
 
@@ -177,6 +196,11 @@ class FlowTask(BaseModel, extra="forbid"):
             default=not_given,
             description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
         )
+    )
+
+    scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven = Field(
+        default=not_given,
+        description="Scorer or list of scorers used to evaluate model output.",
     )
 
     model: str | FlowModel | None | NotGiven = Field(

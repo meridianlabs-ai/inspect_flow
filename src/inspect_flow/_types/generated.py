@@ -17,6 +17,7 @@ from inspect_flow._types.flow_types import (
     FlowInclude,
     FlowModel,
     FlowOptions,
+    FlowScorer,
     FlowSolver,
     FlowTask,
     NotGiven,
@@ -129,6 +130,17 @@ class FlowIncludeDict(TypedDict):
 
     config_file_path: NotRequired[Optional[str]]
     """Path to the flow config to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
+
+
+class FlowScorerDict(TypedDict):
+    """Configuration for a Scorer."""
+
+    name: NotRequired[Optional[str]]
+    """Name of the scorer. Required to be set by the time the scorer is created."""
+    args: NotRequired[Optional[Mapping[str, Any]]]
+    """Additional args to pass to scorer constructor."""
+    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    """Optional. Metadata stored in the flow config. Not passed to the scorer."""
 
 
 class FlowSolverDict(TypedDict):
@@ -320,6 +332,10 @@ class FlowTaskDict(TypedDict):
         ]
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
+    scorer: NotRequired[
+        Optional[Union[str, FlowScorer, Sequence[Union[str, FlowScorer]], NotGiven]]
+    ]
+    """Scorer or list of scorers used to evaluate model output."""
     model: NotRequired[Optional[Union[str, FlowModel, NotGiven]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Union[GenerateConfig, NotGiven]]
