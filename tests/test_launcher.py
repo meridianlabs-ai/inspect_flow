@@ -74,10 +74,9 @@ def test_launch_handles_subprocess_error() -> None:
         patch("subprocess.run") as mock_run,
         pytest.raises(SystemExit) as exc_info,
     ):
-        # Configure the third subprocess.run call to raise CalledProcessError
         mock_run.side_effect = [
-            None,  # First call succeeds
-            None,  # Second call succeeds
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
             subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
             subprocess.CalledProcessError(42, "cmd"),  # Fourth call fails
         ]

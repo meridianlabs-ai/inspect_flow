@@ -14,6 +14,12 @@ CONFIG_FILE = "./tests/config/model_and_task_flow.py"
 CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
+COMMON_DEFAULTS = {
+    "log_level": "info",
+    "no_venv": False,
+    "no_prepare_job": True,
+}
+
 
 def test_flow_help() -> None:
     runner = CliRunner()
@@ -74,11 +80,7 @@ def test_run_command_overrides() -> None:
 
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
-            mock_config_obj,
-            base_dir=CONFIG_FILE_DIR,
-            dry_run=False,
-            no_venv=False,
-            no_prepare_job=True,
+            mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR, dry_run=False
         )
 
 
@@ -114,10 +116,9 @@ def test_run_command_log_dir_create_unique() -> None:
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
             mock_config_obj,
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
-            no_venv=False,
-            no_prepare_job=True,
         )
 
 
@@ -202,10 +203,9 @@ def test_run_command_dry_run() -> None:
 
         mock_run.assert_called_once_with(
             mock_config_obj,
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
             dry_run=True,
-            no_venv=False,
-            no_prepare_job=True,
         )
 
 
@@ -232,10 +232,9 @@ def test_run_command_args() -> None:
 
         mock_run.assert_called_once_with(
             mock_config_obj,
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
-            no_venv=False,
-            no_prepare_job=True,
         )
 
 
@@ -256,10 +255,32 @@ def test_run_command_no_venv() -> None:
 
         mock_run.assert_called_once_with(
             mock_config_obj,
+            **(COMMON_DEFAULTS | {"no_venv": True}),
             base_dir=CONFIG_FILE_DIR,
             dry_run=False,
-            no_venv=True,
-            no_prepare_job=True,
+        )
+
+
+def test_run_command_log_level() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.run") as mock_run,
+        patch("inspect_flow._cli.run.load_job") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-level", "info"])
+
+        assert result.exit_code == 0
+
+        mock_config.assert_called_once()
+
+        mock_run.assert_called_once_with(
+            mock_config_obj,
+            **(COMMON_DEFAULTS | {"log_level": "info"}),
+            base_dir=CONFIG_FILE_DIR,
+            dry_run=False,
         )
 
 
@@ -280,10 +301,9 @@ def test_config_command_resolve() -> None:
 
         mock_config.assert_called_once_with(
             mock_config_obj,
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
             resolve=True,
-            no_venv=False,
-            no_prepare_job=True,
         )
 
 

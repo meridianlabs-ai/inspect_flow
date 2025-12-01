@@ -13,6 +13,10 @@ from inspect_flow._launcher.venv import create_venv
 def test_no_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+
             create_venv(
                 job=FlowJob(tasks=[FlowTask(name="task_name")]),
                 base_dir=".",
@@ -34,6 +38,10 @@ def test_no_dependencies() -> None:
 def test_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+
             create_venv(
                 job=FlowJob(
                     dependencies=FlowDependencies(
@@ -61,6 +69,9 @@ def test_dependencies() -> None:
 def test_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
             job = FlowJob(
                 tasks=[
                     FlowTask(
@@ -127,6 +138,9 @@ def test_auto_dependency() -> None:
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
             job = FlowJob(
                 dependencies=FlowDependencies(auto_detect_dependencies=False),
                 tasks=[
@@ -160,6 +174,9 @@ def test_no_auto_dependency() -> None:
 def test_no_file() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
             job = FlowJob(
                 dependencies=FlowDependencies(dependency_file_mode="no_file"),
                 tasks=[
@@ -196,6 +213,9 @@ def test_no_file() -> None:
 def test_python_version() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
             create_venv(
                 job=FlowJob(
                     python_version="3.11",
@@ -377,6 +397,9 @@ def test_241_not_found() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
             create_venv(
                 job=FlowJob(
                     dependencies=FlowDependencies(

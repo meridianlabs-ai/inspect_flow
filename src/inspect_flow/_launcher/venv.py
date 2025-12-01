@@ -1,9 +1,8 @@
-import subprocess
 import sys
+from logging import getLogger
 from pathlib import Path
 from typing import List, Literal
 
-import click
 import yaml
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
@@ -13,6 +12,9 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.subprocess_util import run_with_logging
+
+logger = getLogger(__name__)
 
 
 def write_flow_yaml(job: FlowJob, dir: str) -> Path:
@@ -47,8 +49,7 @@ def create_venv(
         else:
             dependencies.extend(job.dependencies.additional_dependencies)
         dependencies = [
-            dep if not dep.startswith(".") else str(Path(dep).resolve())
-            for dep in dependencies
+            _resolve_dependency(dep, base_dir=base_dir) for dep in dependencies
         ]
 
     auto_detect_dependencies = True
@@ -63,18 +64,22 @@ def create_venv(
 
     # Freeze installed packages to flow_requirements.txt in log_dir
     if job.log_dir:
-        freeze_result = subprocess.run(
+        freeze_result = run_with_logging(
             ["uv", "pip", "freeze"],
             cwd=temp_dir,
-            check=True,
             env=env,
-            capture_output=True,
-            text=True,
+            log_output=False,  # Don't log the full freeze output
         )
         log_dir_path = Path(job.log_dir)
         log_dir_path.mkdir(parents=True, exist_ok=True)
         requirements_path = log_dir_path / "flow_requirements.txt"
         requirements_path.write_text(freeze_result.stdout)
+
+
+def _resolve_dependency(dependency: str, base_dir: str) -> str:
+    if "/" in dependency:
+        return absolute_path_relative_to(dependency, base_dir=base_dir)
+    return dependency
 
 
 def _create_venv_with_base_dependencies(
@@ -84,19 +89,19 @@ def _create_venv_with_base_dependencies(
     file_path: str | None = None
     dependency_file_info = _get_dependency_file(job, base_dir=base_dir)
     if not dependency_file_info:
-        click.echo("No dependency file found, creating bare venv")
+        logger.info("No dependency file found, creating bare venv")
         _uv_venv(job, temp_dir, env)
         return
 
     file_type, file_path = dependency_file_info
     if file_type == "requirements.txt":
-        click.echo(f"Using requirements.txt to create venv. File: {file_path}")
+        logger.info(f"Using requirements.txt to create venv. File: {file_path}")
         _uv_venv(job, temp_dir, env)
         # Need to run in the directory containing the requirements.txt to handle relative paths
         _uv_pip_install(["-r", file_path], Path(file_path).parent.as_posix(), env)
         return
 
-    click.echo(f"Using pyproject.toml to create venv. File: {file_path}")
+    logger.info(f"Using pyproject.toml to create venv. File: {file_path}")
     assert job.python_version
     project_dir = Path(file_path).parent
     uv_args = [
@@ -108,11 +113,10 @@ def _create_venv_with_base_dependencies(
     ]
     if (project_dir / "uv.lock").exists():
         uv_args.append("--frozen")
-    click.echo(f"Creating venv with uv args: {uv_args}")
-    subprocess.run(
+    logger.info(f"Creating venv with uv args: {uv_args}")
+    run_with_logging(
         ["uv", "sync", "--no-dev"] + uv_args,
         cwd=temp_dir,
-        check=True,
         env=env,
     )
 
@@ -120,20 +124,18 @@ def _create_venv_with_base_dependencies(
 def _uv_venv(job: FlowJob, temp_dir: str, env: dict[str, str]) -> None:
     """Create a virtual environment using 'uv venv'."""
     assert job.python_version
-    subprocess.run(
+    run_with_logging(
         ["uv", "venv", "--python", job.python_version],
         cwd=temp_dir,
-        check=True,
         env=env,
     )
 
 
 def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None:
     """Install packages using 'uv pip install'."""
-    subprocess.run(
+    run_with_logging(
         ["uv", "pip", "install"] + args,
         cwd=temp_dir,
-        check=True,
         env=env,
     )
 

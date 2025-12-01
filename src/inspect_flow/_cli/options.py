@@ -2,13 +2,31 @@ from typing import Any
 
 import click
 from inspect_ai._cli.util import parse_cli_args
+from inspect_ai._util.constants import (
+    ALL_LOG_LEVELS,
+)
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
 
 
+def log_level_option(f):
+    f = click.option(
+        "--log-level",
+        type=click.Choice(
+            [level.lower() for level in ALL_LOG_LEVELS],
+            case_sensitive=False,
+        ),
+        default="info",
+        envvar="INSPECT_FLOW_LOG_LEVEL",
+        help="Set the log level (defaults to 'info')",
+    )(f)
+    return f
+
+
 def config_options(f):
     """Options for overriding the config."""
+    f = log_level_option(f)
     f = click.argument(
         "config-file",
         type=click.Path(
@@ -93,6 +111,7 @@ def config_options(f):
 
 
 class ConfigOptionArgs(TypedDict, total=False):
+    log_level: str | None
     log_dir: str | None
     log_dir_create_unique: bool | None
     limit: int | None

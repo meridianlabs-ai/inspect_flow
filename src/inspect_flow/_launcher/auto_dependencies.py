@@ -1,6 +1,6 @@
+from logging import getLogger
 from typing import Sequence
 
-import click
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -19,6 +19,8 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
+
+logger = getLogger(__name__)
 
 # TODO:ransom how do we keep in sync with inspect_ai - should probably export from there
 _MODEL_PROVIDERS: dict[str, list[str]] = {
@@ -135,7 +137,7 @@ def _collect_sandbox_type_dependencies(
 ) -> None:
     entries = registry_find(registry_match_sandboxenv(sandbox_type))
     if not entries:
-        click.echo(
+        logger.warning(
             f"No matching sandbox environment found in registry for {sandbox_type}"
         )
         return
