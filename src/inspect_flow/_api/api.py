@@ -3,7 +3,6 @@ from pathlib import Path
 
 import click
 from dotenv import dotenv_values, find_dotenv
-from inspect_ai._util.logger import init_logger
 
 from inspect_flow._config.load import (
     apply_auto_includes,
@@ -13,7 +12,7 @@ from inspect_flow._config.load import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.launch import launch
 from inspect_flow._types.flow_types import FlowJob
-from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.logging import init_flow_logging
 
 
 def run(
@@ -37,7 +36,7 @@ def run(
         no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.
     """
-    _init_logging(log_level)
+    init_flow_logging(log_level)
     run_args = ["--dry-run"] if dry_run else []
     base_dir = base_dir or Path().cwd().as_posix()
     if not no_prepare_job:
@@ -72,7 +71,7 @@ def config(
         no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.
     """
-    _init_logging(log_level)
+    init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
     if not no_prepare_job:
         job = _prepare_job(job, base_dir=base_dir)
@@ -87,10 +86,6 @@ def config(
     else:
         dump = config_to_yaml(job)
         click.echo(dump)
-
-
-def _init_logging(log_level: str | None) -> None:
-    init_logger(log_level=log_level, env_prefix="INSPECT_FLOW", pkg_name=PKG_NAME)
 
 
 def _prepare_job(job: FlowJob, base_dir: str) -> FlowJob:

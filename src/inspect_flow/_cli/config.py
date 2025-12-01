@@ -10,6 +10,7 @@ from inspect_flow._cli.options import (
     parse_config_options,
 )
 from inspect_flow._config.load import load_job
+from inspect_flow._util.logging import init_flow_logging
 
 
 @click.command("config", help="Output config")
@@ -27,6 +28,7 @@ def config_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to output config."""
+    init_flow_logging(kwargs.get("log_level"))
     config_options = parse_config_options(**kwargs)
     fconfig = load_job(config_file, **config_options)
     config(

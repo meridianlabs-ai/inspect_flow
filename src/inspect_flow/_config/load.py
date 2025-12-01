@@ -14,10 +14,11 @@ from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
-logger = getLogger(__name__)
+logger = getLogger(PKG_NAME)
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
@@ -199,6 +200,7 @@ def _load_job_from_file(
                 job = FlowJob.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
+        logger.info(f"Error validating config file: {config_file}")
         logger.error(e)
         sys.exit(1)
 

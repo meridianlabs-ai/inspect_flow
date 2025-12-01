@@ -8,6 +8,7 @@ from inspect_flow import (
 )
 
 FlowJob(
+    invalid="foo",
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     dependencies=FlowDependencies(
