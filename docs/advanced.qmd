@@ -21,7 +21,7 @@ The metadata from `FlowOptions` is applied globally to all tasks in the evaluati
 
 #### flow_metadata (Flow-Only Metadata)
 
-The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
+The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
 
 **Use cases:**
 
@@ -38,16 +38,19 @@ The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `F
 
 ### Variable Substitution
 
-#### Flow Variables (`--var`)
+#### Flow Args (`--arg`)
 
-Pass custom variables to Python config files using `--var` or the `INSPECT_FLOW_VAR` environment variable. Use this for dynamic configuration that isn't available via `--set`. Variables are accessible via the `__flow_vars__` dictionary:
+Pass custom variables to Python config files using `--arg` or the `INSPECT_FLOW_ARG` environment variable. 
+Use this for dynamic configuration that isn't available via `--set`.
+To access the args the last statement in the config file should be a function that returns a `FlowJob`.
+This function will be called with any provided args:
 
 ```bash
-flow run config.py --var task_min_priority=2
+flow run config.py --arg task_min_priority=2
 ```
 
-``` {.python filename="flow_vars.py"}
-{{< include ../examples/flow_vars.py >}}
+``` {.python filename="flow_args.py"}
+{{< include ../examples/flow_args.py >}}
 ```
 
 #### Template Substitution
