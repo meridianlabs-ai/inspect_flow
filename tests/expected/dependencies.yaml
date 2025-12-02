@@ -1,8 +1,6 @@
 log_dir: logs
 dependencies:
-  dependency_file_mode: auto
   dependency_file: ../foo/requirements.txt
-  use_uv_lock: true
   additional_dependencies:
   - pandas==2.0.0
   auto_detect_dependencies: true

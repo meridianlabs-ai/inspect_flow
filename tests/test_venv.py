@@ -178,7 +178,7 @@ def test_no_file() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
             job = FlowJob(
-                dependencies=FlowDependencies(dependency_file_mode="no_file"),
+                dependencies=FlowDependencies(dependency_file="no_file"),
                 tasks=[
                     FlowTask(
                         name="inspect_evals2/task_name",
@@ -311,7 +311,6 @@ def test_241_no_uvlock() -> None:
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
-                    dependency_file_mode="pyproject.toml",
                     dependency_file="tests/local_eval/pyproject.toml",
                 ),
                 tasks=[FlowTask(name="task_name")],
@@ -375,7 +374,7 @@ def test_241_unsupported() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-        with pytest.raises(ValueError):
+        with pytest.raises(subprocess.CalledProcessError):
             create_venv(
                 job=FlowJob(
                     python_version="3.11",
@@ -403,12 +402,12 @@ def test_241_not_found() -> None:
             create_venv(
                 job=FlowJob(
                     dependencies=FlowDependencies(
-                        dependency_file_mode="requirements.txt",
+                        dependency_file="auto",
                     ),
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
                 ),
-                base_dir=".",
+                base_dir="/",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
             )

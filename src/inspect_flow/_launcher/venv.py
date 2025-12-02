@@ -143,8 +143,27 @@ def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None
 def _get_dependency_file(
     job: FlowJob, base_dir: str
 ) -> tuple[Literal["requirements.txt", "pyproject.toml"], str] | None:
-    mode = job.dependencies and job.dependencies.dependency_file_mode or "auto"
-    if mode == "no_file":
+    if job.dependencies and job.dependencies.dependency_file == "no_file":
+        return None
+
+    if not job.dependencies or job.dependencies.dependency_file == "auto":
+        files: list[Literal["pyproject.toml", "requirements.txt"]] = [
+            "pyproject.toml",
+            "requirements.txt",
+        ]
+
+        # Walk up the directory tree starting from base_dir
+        current_dir = Path(base_dir).resolve()
+        while True:
+            for file_name in files:
+                file_path = current_dir / file_name
+                if file_path.exists():
+                    return file_name, str(file_path)
+
+            # Move to parent directory
+            if current_dir.parent == current_dir:
+                break
+            current_dir = current_dir.parent
         return None
 
     file = job.dependencies and job.dependencies.dependency_file or None
@@ -152,32 +171,6 @@ def _get_dependency_file(
         file = absolute_path_relative_to(file, base_dir=base_dir)
         if not Path(file).exists():
             raise FileNotFoundError(f"Dependency file '{file}' does not exist.")
-        if mode != "auto":
-            return mode, file
-        if file.endswith("requirements.txt"):
-            return "requirements.txt", file
         if file.endswith("pyproject.toml"):
             return "pyproject.toml", file
-        raise ValueError(
-            f"Cannot determine dependency file type from '{file}'. "
-            "Please set dependency_file_mode to 'requirements.txt' or 'pyproject.toml'."
-        )
-    files: list[Literal["pyproject.toml", "requirements.txt"]] = (
-        ["pyproject.toml", "requirements.txt"] if mode == "auto" else [mode]
-    )
-
-    # Walk up the directory tree starting from base_dir
-    current_dir = Path(base_dir).resolve()
-    while True:
-        for file_name in files:
-            file_path = current_dir / file_name
-            if file_path.exists():
-                return file_name, str(file_path)
-
-        # Move to parent directory
-        parent = current_dir.parent
-        if parent == current_dir:  # Reached root directory
-            break
-        current_dir = parent
-
-    return None
+        return "requirements.txt", file

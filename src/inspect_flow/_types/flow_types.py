@@ -517,26 +517,9 @@ class FlowInclude(BaseModel, extra="forbid"):
 class FlowDependencies(BaseModel, extra="forbid"):
     """Configuration for flow dependencies to install in the venv."""
 
-    dependency_file_mode: (
-        Literal["auto", "requirements.txt", "pyproject.toml", "no_file"] | None
-    ) = Field(
+    dependency_file: Literal["auto", "no_file"] | str | None = Field(
         default=None,
-        description="""Whether to use a dependency file to install dependencies (defaults to "auto").
-              - "auto": Automatically detect and use requirements.txt or pyproject.toml if present. Will use the dependency_file if provided. Otherwise will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API).
-              - "requirements.txt": Use requirements.txt. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
-              - "pyproject.toml": Use pyproject.toml. Will use dependency_file if provided, otherwise will search the path starting from the same directory as the flow config (or current working_directory if no config path is available).
-              - "no_file": Do not use a dependency file.
-              """,
-    )
-
-    dependency_file: str | None = Field(
-        default=None,
-        description="Path to a dependency file (either requirements.txt or pyproject.toml) to install dependencies from. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
-    )
-
-    use_uv_lock: bool | None = Field(
-        default=None,
-        description="If True, use the uv.lock file when using pyproject.toml and uv.lock is present in the same directory (defaults to True).",
+        description="Path to a dependency file (either requirements.txt or pyproject.toml) to use to create the virtual environment. If 'auto', will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API) looking for pyproject.toml or requirements.txt files. If 'no_file', no dependency file will be used. Defaults to 'auto'.",
     )
 
     additional_dependencies: str | Sequence[str] | None = Field(

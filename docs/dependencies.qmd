@@ -22,15 +22,12 @@ The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:
 {{< include ../examples/dependencies.py >}}
 ```
 
-1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file.
+1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. 
+May also be set to a path to a dependency file or `"no_file"` to not use a dependency file.
 
-2. Optional: Specify exact path to dependency file
+2. Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
-3. Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages
-
-4. Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
-
-5. Use `uv.lock` file when using `pyproject.toml` (default: `True`)
+3. Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
 
 ## Python Version Control
 
