@@ -1,14 +1,9 @@
-"""Test to ensure that included configs are in clean git repos.
-
-Note that this will not catch all dirty repo cases, as it only checks the includes that are currently being resolved.
-Because a file may include multiple includes, the includes are a tree.
-Only the path from the root config to this config is checked for dirty repos.
-However, it should catch the most common cases where included files have uncommitted changes."""
+"""Test to ensure that included configs are in clean git repos."""
 
 import subprocess
 from pathlib import Path
 
-from inspect_flow import FlowJob, including_jobs
+from inspect_flow import FlowJob
 
 
 def check_repo(path: str) -> None:
@@ -43,8 +38,7 @@ def check_repo(path: str) -> None:
         raise RuntimeError("Git command not found. Is git installed?") from e
 
 
-check_repo(__file__)
-for path in including_jobs().keys():
-    check_repo(path)
-
-FlowJob()
+def after_flow_job_loaded(files_to_jobs: dict[str, FlowJob | None]) -> None:
+    # Check no config files are in a dirty git repo
+    for path in files_to_jobs.keys():
+        check_repo(path)

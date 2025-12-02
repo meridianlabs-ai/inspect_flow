@@ -5,6 +5,8 @@ import click
 from dotenv import dotenv_values, find_dotenv
 
 from inspect_flow._config.load import (
+    LoadState,
+    after_flow_job_loaded,
     apply_auto_includes,
     apply_substitions,
     expand_includes,
@@ -90,12 +92,15 @@ def config(
 
 def _prepare_job(job: FlowJob, base_dir: str) -> FlowJob:
     file = str(Path(base_dir) / "unknown_file")
+    state = LoadState()
     job = expand_includes(
         job,
+        state,
         including_job_path=file,
     )
-    job = apply_auto_includes(job, config_file=file, config_options={})
+    job = apply_auto_includes(job, config_file=file, config_options={}, state=state)
     job = apply_substitions(job, base_dir=base_dir)
+    after_flow_job_loaded(job, state)
     return job
 
 

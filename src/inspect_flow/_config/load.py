@@ -1,12 +1,14 @@
+import inspect
 import json
 import re
 import sys
 import traceback
 from logging import getLogger
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, Callable, TypeAlias
 
 import yaml
+from attr import dataclass, field
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
 from pydantic_core import ValidationError
@@ -14,7 +16,7 @@ from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
-from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.constants import AFTER_FLOW_JOB_LOADED, PKG_NAME
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -36,6 +38,12 @@ class ConfigOptions(TypedDict, total=False):
     args: dict[str, Any]
 
 
+@dataclass
+class LoadState:
+    files_to_jobs: dict[str, FlowJob | None] = field(factory=dict)
+    after_flow_job_loaded_funcs: list[Callable] = field(factory=list)
+
+
 def load_job(
     file: str, log_level: str | None = None, **kwargs: Unpack[ConfigOptions]
 ) -> FlowJob:
@@ -48,10 +56,12 @@ def load_job(
     """
     init_flow_logging(log_level)
     config_options = ConfigOptions(**kwargs)
-    job = _load_job_from_file(
-        file, args=config_options.get("args", {}), including_jobs={}
-    )
-    job = apply_auto_includes(job, file, config_options)
+    state = LoadState()
+    job = _load_job_from_file(file, args=config_options.get("args", {}), state=state)
+    if job is None:
+        raise ValueError(f"No value returned from Python config file: {file}")
+
+    job = apply_auto_includes(job, file, config_options, state)
 
     overrides = config_options.get("overrides", [])
     if overrides:
@@ -59,20 +69,32 @@ def load_job(
 
     job = apply_substitions(job, base_dir=Path(file).parent.as_posix())
 
+    after_flow_job_loaded(job, state)
+
     return job
+
+
+def after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
+    """Run any registered after_flow_job_loaded functions."""
+    for func in state.after_flow_job_loaded_funcs:
+        sig = inspect.signature(func)
+        filtered_args = {
+            k: v
+            for k, v in {"job": job, "files_to_jobs": state.files_to_jobs}.items()
+            if k in sig.parameters
+        }
+        func(**filtered_args)
 
 
 def expand_includes(
     job: FlowJob,
+    state: LoadState,
     including_job_path: str = "",
     args: dict[str, Any] | None = None,
-    including_jobs: dict[str, FlowJob] | None = None,
 ) -> FlowJob:
     """Apply includes in the job config."""
     if args is None:
         args = dict()
-    if including_jobs is None:
-        including_jobs = {}
     for include in job.includes or []:
         path = include if isinstance(include, str) else include.config_file_path
         if not path:
@@ -80,10 +102,9 @@ def expand_includes(
         include_path = absolute_path_relative_to(
             path, str(Path(including_job_path).parent)
         )
-        included_job = _load_job_from_file(
-            include_path, args, including_jobs | {including_job_path: job}
-        )
-        job = _apply_include(job, included_job)
+        included_job = _load_job_from_file(include_path, args, state)
+        if included_job is not None:
+            job = _apply_include(job, included_job)
     job.includes = None
     return job
 
@@ -172,23 +193,21 @@ def _log_dir_create_unique(log_dir: str) -> str:
 
 
 def _load_job_from_file(
-    config_file: str,
-    args: dict[str, Any],
-    including_jobs: dict[str, FlowJob] | None,
-) -> FlowJob:
+    config_file: str, args: dict[str, Any], state: LoadState
+) -> FlowJob | None:
     config_path = Path(config_file)
 
     try:
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
-                job = execute_file_and_get_last_result(
-                    config_file, args=args, including_jobs=including_jobs
-                )
-                if job is None:
-                    raise ValueError(
-                        f"No value returned from Python config file: {config_file}"
-                    )
-                if not isinstance(job, FlowJob):
+                job, globals = execute_file_and_get_last_result(config_file, args=args)
+                if job is None or isinstance(job, FlowJob):
+                    state.files_to_jobs[config_file] = job
+                    if AFTER_FLOW_JOB_LOADED in globals:
+                        state.after_flow_job_loaded_funcs.append(
+                            globals[AFTER_FLOW_JOB_LOADED]
+                        )
+                else:
                     raise TypeError(
                         f"Expected FlowJob from Python config file, got {type(job)}"
                     )
@@ -208,7 +227,9 @@ def _load_job_from_file(
         logger.error(e)
         sys.exit(1)
 
-    return expand_includes(job, str(config_path), args, including_jobs)
+    if job:
+        return expand_includes(job, state, str(config_path), args)
+    return None
 
 
 def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
@@ -237,7 +258,7 @@ def _deep_merge_include(
 
 
 def apply_auto_includes(
-    job: FlowJob, config_file: str, config_options: ConfigOptions
+    job: FlowJob, config_file: str, config_options: ConfigOptions, state: LoadState
 ) -> FlowJob:
     absolute_path = absolute_file_path(config_file)
     protocol, path = split_protocol(absolute_path)
@@ -249,11 +270,10 @@ def apply_auto_includes(
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
             auto_job = _load_job_from_file(
-                auto_file,
-                config_options.get("args", {}),
-                including_jobs={config_file: job},
+                auto_file, config_options.get("args", {}), state=state
             )
-            job = _apply_include(job, auto_job)
+            if auto_job:
+                job = _apply_include(job, auto_job)
         if parent_dir.parent == parent_dir:
             break
         parent_dir = parent_dir.parent
