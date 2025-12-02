@@ -1,0 +1,143 @@
+---
+title: "Running Evaluations"
+tbl-colwidths: [30,70]
+---
+
+Once you've defined your Flow configuration, you can execute evaluations using the `flow run` command. Flow also provides tools for previewing configurations and controlling runtime behavior.
+
+## The `flow run` Command
+
+Execute your evaluation workflow:
+
+``` bash
+flow run config.py
+```
+
+**What happens when you run this:**
+
+1.  Flow loads your configuration file
+2.  Creates an isolated virtual environment
+3.  Installs dependencies
+4.  Resolves all defaults and matrix expansions
+5.  Executes evaluations via Inspect AI's `eval_set()`
+6.  Stores logs in `log_dir`
+7.  Cleans up the temporary environment
+
+### Common CLI Flags
+
+**Preview without running:**
+
+``` bash
+flow run config.py --dry-run
+```
+
+Shows how many tasks would be executed without actually running them. Useful for validating large parameter sweeps.
+
+```         
+eval_set would be called with 24 tasks
+```
+
+**Override log directory:**
+
+``` bash
+flow run config.py --log-dir ./experiments/baseline
+```
+
+Changes where logs and results are stored.
+
+**Runtime overrides:**
+
+``` bash
+flow run config.py \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5
+```
+
+Override any configuration value at runtime. See [CLI Overrides](#cli-overrides) for more details.
+
+## The `flow config` Command
+
+Preview your configuration before running:
+
+**Basic usage:**
+
+``` bash
+flow config config.py
+```
+
+Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.
+
+**Full resolution:**
+
+``` bash
+flow config config.py --resolve
+```
+
+Shows the completely resolved configuration:
+
+- Creates virtual environment
+- Applies all defaults 
+- Expands all matrix functions 
+- Instantiates all Python objects
+
+This is invaluable for debugging what settings will actually be used in your evaluations.
+
+::: callout-tip
+### When to Use Each Command
+
+-   **`flow config`** - Quick syntax check, verify overrides
+-   **`flow config --resolve`** - Debug defaults resolution, inspect final settings
+-   **`flow run --dry-run`** - Count tasks in parameter sweeps, validate before expensive runs
+-   **`flow run`** - Execute evaluations
+:::
+
+## Results and Logs
+
+### Flow Directory Structure
+
+Evaluation results are stored in the `log_dir`:
+
+```
+logs/
+├── 2025-11-21T17-38-20+01-00_gpqa-diamond_KvJBGowidXSCLRhkKQbHYA.eval
+├── 2025-11-21T17-38-20+01-00_mmlu-0-shot_Vnu2A3M2wPet5yobLiCQmZ.eval
+├── .eval-set-id
+├── eval-set.json
+├── flow.yaml
+└── ...
+```
+
+**Directory structure:**
+
+-   Flow passes the `log_dir` directly to Inspect AI `eval_set()` for evaluation log storage
+-   Inspect AI handles the actual evaluation log file naming and storage
+-   Log file naming conventions follow Inspect AI's standards (see [Inspect AI logging docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
+-   Flow automatically saves the resolved configuration as `flow.yaml` in the log directory
+-   The `.eval-set-id` file contains the eval set identifier
+-   The `eval-set.json` file contains eval set metadata
+
+**Log formats:**
+
+-   `.eval` - Binary Inspect AI log format (default, high-performance)
+-   `.json` - JSON format (if `log_format="json"` in FlowOptions)
+
+### Viewing Results
+
+**Using Inspect View:**
+
+``` bash
+inspect view
+```
+
+Opens the Inspect AI viewer to explore evaluation logs interactively.
+
+### S3 Support
+
+Store logs directly to S3:
+
+``` python
+FlowJob(
+    log_dir="s3://my-bucket/experiments/baseline",
+    tasks=[...]
+)
+```
