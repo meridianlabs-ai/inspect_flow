@@ -75,22 +75,21 @@ def test_dirty_git_check() -> None:
     dirty_git_check_dir = examples_dir / "dirty_git_check"
     config_path = dirty_git_check_dir / "including" / "config.py"
 
-    if config_path.exists():
-        # Mock subprocess.run to return empty output (clean repo)
-        mock_result = MagicMock()
-        mock_result.stdout = ""
+    # Mock subprocess.run to return empty output (clean repo)
+    mock_result = MagicMock()
+    mock_result.stdout = ""
 
-        with patch("subprocess.run", return_value=mock_result):
-            job = load_job(str(dirty_git_check_dir / "_flow.py"))
-            validate_config(job, "dirty_git_check_flow.yaml")
+    with patch("subprocess.run", return_value=mock_result):
+        job = load_job(str(config_path))
+        validate_config(job, "dirty_git_check_flow.yaml")
 
-        # Mock subprocess.run to return output indicating uncommitted changes
-        mock_result = MagicMock()
-        mock_result.stdout = "M  some_file.py\n"
+    # Mock subprocess.run to return output indicating uncommitted changes
+    mock_result = MagicMock()
+    mock_result.stdout = "M  some_file.py\n"
 
-        with patch("subprocess.run", return_value=mock_result):
-            with pytest.raises(RuntimeError, match="has uncommitted changes"):
-                load_job(str(config_path))
+    with patch("subprocess.run", return_value=mock_result):
+        with pytest.raises(RuntimeError, match="has uncommitted changes"):
+            load_job(str(config_path))
 
 
 def test_lock() -> None:

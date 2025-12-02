@@ -513,8 +513,10 @@ def test_206_dirty_repo_check() -> None:
     dirty_file = Path(__file__).parent / "test_dirty_file.txt"
     dirty_file.touch()
     try:
+        state = LoadState()
+        job = expand_includes(job, state=state)
         with pytest.raises(RuntimeError):
-            expand_includes(job, state=LoadState())
+            after_flow_job_loaded(job, state)
     finally:
         dirty_file.unlink()
 
