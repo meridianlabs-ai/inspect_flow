@@ -15,6 +15,7 @@ from typing_extensions import TypedDict, Unpack
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -35,13 +36,17 @@ class ConfigOptions(TypedDict, total=False):
     args: dict[str, Any]
 
 
-def load_job(file: str, **kwargs: Unpack[ConfigOptions]) -> FlowJob:
+def load_job(
+    file: str, log_level: str | None = None, **kwargs: Unpack[ConfigOptions]
+) -> FlowJob:
     """Load a job file and apply any overrides.
 
     Args:
         file: The path to the job configuration file.
+        log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
         **kwargs: Configuration options. See ConfigOptions for available parameters.
     """
+    init_flow_logging(log_level)
     config_options = ConfigOptions(**kwargs)
     job = _load_job_from_file(
         file, args=config_options.get("args", {}), including_jobs={}

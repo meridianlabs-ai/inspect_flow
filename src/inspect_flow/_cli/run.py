@@ -10,7 +10,6 @@ from inspect_flow._cli.options import (
     parse_config_options,
 )
 from inspect_flow._config.load import load_job
-from inspect_flow._util.logging import init_flow_logging
 
 
 @click.command("run", help="Run a job")
@@ -28,14 +27,14 @@ def run_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to run a job."""
-    init_flow_logging(kwargs.get("log_level"))
+    log_level = kwargs.get("log_level")
     config_options = parse_config_options(**kwargs)
-    config = load_job(config_file, **config_options)
+    config = load_job(config_file, log_level=log_level, **config_options)
     run(
         config,
         base_dir=str(Path(config_file).parent),
         dry_run=dry_run,
-        log_level=kwargs.get("log_level"),
+        log_level=log_level,
         no_venv=kwargs.get("no_venv", False) or False,
         no_prepare_job=True,
     )
