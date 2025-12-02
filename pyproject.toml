@@ -21,19 +21,13 @@ dependencies = [
 [project.urls]
 "Source Code" = "https://github.com/meridianlabs-ai/inspect_flow"
 "Issue Tracker" = "https://github.com/meridianlabs-ai/inspect_flow/issues"
+Documentation = "https://meridianlabs-ai.github.io/inspect_flow/"
 
 [project.scripts]
 flow = "inspect_flow._cli.main:main"
 
 [project.optional-dependencies]
-doc = [
-    "jupyter",
-    "quarto-cli",
-    "griffe",
-    "panflute",
-    "markdown",
-    "click",
-]
+doc = ["jupyter", "quarto-cli", "griffe", "panflute", "markdown", "click"]
 
 [dependency-groups]
 dev = [
@@ -91,12 +85,12 @@ select = [
     # "RUF", # ruff rules
 ]
 ignore = [
-    "E203",  # whitespace before ':'
-    "E501",  # line too long
-    "D105",  # missing docstring in magic method
-    "D107",  # missing docstring in __init__
-    "D212",  # multi-line docstring summary should start at the first line
-    "D415",  # first line should end with a period, question mark, or exclamation point
+    "E203", # whitespace before ':'
+    "E501", # line too long
+    "D105", # missing docstring in magic method
+    "D107", # missing docstring in __init__
+    "D212", # multi-line docstring summary should start at the first line
+    "D415", # first line should end with a period, question mark, or exclamation point
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -1,0 +1,175 @@
+---
+title: "Creating Flow Configs"
+tbl-colwidths: [30,70]
+---
+
+## Your First Config
+
+In [Basic Examples](index.qmd#basic-examples), we showed a simple `FlowJob`. Let's break down what's happening:
+
+``` {.python filename="config.py"}
+{{< include ../examples/first_config.py >}}
+```
+
+1.  Specify the directory for storing logs
+
+2.  List evaluation tasks to run
+
+3.  Specify task from registry by name
+
+4.  Specify model to evaluate by name
+
+To run the task, run the following command in your shell.
+
+``` bash
+flow run config.py
+```
+
+![Progress bar in terminal](images/first_config_progress_terminal.png)
+
+**What happens when you run this?**
+
+1.  Flow creates an isolated virtual environment
+2.  Installs `inspect-evals` and `openai` (auto-detected)
+3.  Loads the `gpqa_diamond` task from the `inspect_evals` registry
+4.  Runs the evaluation with GPT-5
+5.  Stores results in `logs/`
+
+::: callout-note
+### Config File Evaluation
+
+Python config files are evaluated as normal Python code. The last expression in the file is used as the `FlowJob`. This means you can:
+
+-   Define variables and reuse them
+-   Use loops or comprehensions to generate task lists
+-   Import helper functions
+-   Add comments and documentation
+
+Flow configs are just Python!
+:::
+
+## Task Specification
+
+In the example above, we used a registry name (`"inspect_evals/gpqa_diamond"`). Flow supports multiple ways to reference tasks:
+
+::: {.panel-tabset .code-tabset}
+
+#### Registry Name
+
+``` python
+# Tasks from installed packages.
+FlowTask(
+    name="inspect_evals/gpqa_diamond",
+    model="openai/gpt-5"
+)
+```
+
+#### File Path
+
+``` python
+# Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them.
+FlowTask(
+    name="./my_task.py",
+    model="openai/gpt-5"
+)
+```
+
+#### File with Function
+
+``` python
+# Explicitly selects a specific function from the file.
+FlowTask(
+    name="./my_task.py@custom_eval",
+    model="openai/gpt-5"
+)
+```
+:::
+
+## Task Configuration
+
+`FlowTask` accepts parameters that map to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) fields. The examples below show commonly used fields; see the FlowTask reference documentationfor the complete list of available parameters.
+
+``` python
+FlowTask(
+    name="inspect_evals/mmlu_0_shot",   # <1>
+    model="openai/gpt-5",               # <2>
+    epochs=3,                           # <3>
+    config=GenerateConfig(          # <4>
+        temperature=0.7,                # <4>
+        max_tokens=1000,                # <4>
+    ),                                  # <4>
+    solver="chain_of_thought",          # <5>
+    args={"subject": "physics"},        # <6>
+    sandbox="docker",                   # <7>
+    sample_id=[0, 1, 2],                # <8>
+)
+```
+
+1.  **Task name** — Maps to Inspect AI `Task.name`. Can be a registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`).
+
+2.  **Model** — Maps to Inspect AI `Task.model`. Optional model for this task. If not specified, uses the model from `INSPECT_EVAL_MODEL` environment variable. Can be a string (`"openai/gpt-5"`) or a `FlowModel` object for advanced configuration.
+
+3.  **Epochs** — Maps to Inspect AI `Task.epochs`. Number of times to repeat evaluation over the dataset samples. Can be an integer (`epochs=3`) or a `FlowEpochs` object to specify custom reducer functions (`FlowEpochs(epochs=3, reducer="median")`). By default, scores are combined using the `"mean"` reducer across epochs.
+
+4.  **Generation config** — Maps to Inspect AI `Task.config` (`GenerateConfig`). Model generation parameters like `temperature`, `max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override config on `FlowJob.config` but are overridden by settings on `FlowModel.config`.
+
+5.  **Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s) for solving the task. Can be a string (`"chain_of_thought"`), `FlowSolver` object, `FlowAgent` object, or a list of solvers for chaining. Defaults to `generate()` if not specified.
+
+6.  **Task arguments** — Maps to task function parameters. Dictionary of arguments passed to the task constructor or `@task` decorated function. Enables parameterization of tasks (e.g., selecting dataset subsets, configuring difficulty levels).
+
+7.  **Sandbox environment** — Maps to Inspect AI `Task.sandbox`. Can be a string (`"docker"`, `"local"`), a tuple with additional config, or a `SandboxEnvironmentType` object.
+
+8.  **Sample selection** — Evaluate specific samples from the dataset. Accepts a single ID (`sample_id=0`), list of IDs (`sample_id=[0, 1, 2]`), or list of string IDs.
+
+## Model Specification
+
+Models can be specified as simple strings or as `FlowModel` objects for more control:
+
+::: {.panel-tabset .code-tabset}
+#### Simple string
+
+``` python
+FlowTask(name="task", model="openai/gpt-5")
+```
+
+#### FlowModel
+
+``` python
+FlowTask(
+    name="task",
+    model=FlowModel(
+        name="openai/gpt-5",
+        config=GenerateConfig(
+            reasoning_effort="medium",
+            max_connections=10,
+        ),
+        base_url="https://custom-endpoint.com",
+        api_key="${CUSTOM_API_KEY}",
+    )
+)
+```
+
+#### Multi-model tasks
+
+``` python
+# For agent evaluations with multiple roles
+FlowTask(
+    name="multi_agent_task",
+    model_roles={
+        "assistant": "openai/gpt-5",
+        "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+:::
+
+::: callout-tip
+### When to use FlowModel
+
+Use `FlowModel` when you need to:
+
+-   Set model-specific generation configs
+-   Use custom API endpoints
+-   Configure API keys per model
+-   Organize complex multi-model setups
+:::

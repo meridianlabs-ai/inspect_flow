@@ -1,0 +1,23 @@
+## Configuration Inheritance
+
+Inspect Flow supports configuration inheritance through two mechanisms:
+
+### Explicit Includes
+
+Use the `includes` field to explicitly merge other config files into your job:
+
+```python
+FlowJob(
+    includes=["defaults_flow.py"],
+    log_dir="./logs/flow_test",
+    tasks=["my_task"]
+)
+```
+
+Included configs are merged recursively, with the current config's values taking precedence over included values. For dictionaries, fields are merged deeply. For lists, items are concatenated with duplicates removed.
+
+### Automatic Discovery
+
+Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file's location, it searches upward through the directory tree for `_flow.py` files and automatically merges them as base configurations.
+
+This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes.

@@ -1,0 +1,5 @@
+log_dir: logs
+python_version: '3.11'
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model: openai/gpt-5
