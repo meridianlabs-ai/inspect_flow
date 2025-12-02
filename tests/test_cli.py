@@ -71,6 +71,7 @@ def test_run_command_overrides() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
+            log_level="info",
             overrides=[
                 "dependencies.additional_dependencies=dep1",
                 "defaults.solver.args.tool_calls=none",
@@ -109,6 +110,7 @@ def test_run_command_log_dir_create_unique() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
+            log_level="info",
             overrides=["log_dir_create_unique=True"],
             args={},
         )
@@ -147,6 +149,7 @@ def test_config_command_overrides() -> None:
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
+            log_level="info",
             overrides=[
                 "dependencies.additional_dependencies=dep1",
                 "defaults.solver.args.tool_calls=none",
@@ -178,6 +181,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         # Verify that load_job was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
+            log_level="info",
             overrides=[
                 "dependencies.additional_dependencies=dep1",
                 "defaults.solver.args.tool_calls=none",
@@ -199,7 +203,9 @@ def test_run_command_dry_run() -> None:
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once_with(CONFIG_FILE_RESOLVED, args={}, overrides=[])
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED, log_level="info", args={}, overrides=[]
+        )
 
         mock_run.assert_called_once_with(
             mock_config_obj,
@@ -226,6 +232,7 @@ def test_run_command_args() -> None:
 
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
+            log_level="info",
             args={"var1": "value1", "var2": "value2"},
             overrides=[],
         )
@@ -297,7 +304,9 @@ def test_config_command_resolve() -> None:
 
         assert result.exit_code == 0
 
-        mock_load.assert_called_once_with(CONFIG_FILE_RESOLVED, args={}, overrides=[])
+        mock_load.assert_called_once_with(
+            CONFIG_FILE_RESOLVED, log_level="info", args={}, overrides=[]
+        )
 
         mock_config.assert_called_once_with(
             mock_config_obj,

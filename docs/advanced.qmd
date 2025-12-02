@@ -21,7 +21,7 @@ The metadata from `FlowOptions` is applied globally to all tasks in the evaluati
 
 #### flow_metadata (Flow-Only Metadata)
 
-The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
+The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
 
 **Use cases:**
 
@@ -38,16 +38,19 @@ The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `F
 
 ### Variable Substitution
 
-#### Flow Variables (`--var`)
+#### Flow Args (`--arg`)
 
-Pass custom variables to Python config files using `--var` or the `INSPECT_FLOW_VAR` environment variable. Use this for dynamic configuration that isn't available via `--set`. Variables are accessible via the `__flow_vars__` dictionary:
+Pass custom variables to Python config files using `--arg` or the `INSPECT_FLOW_ARG` environment variable. 
+Use this for dynamic configuration that isn't available via `--set`.
+To access the args the last statement in the config file should be a function that returns a `FlowJob`.
+This function will be called with any provided args:
 
 ```bash
-flow run config.py --var task_min_priority=2
+flow run flow_args.py --arg task_min_priority=2
 ```
 
-``` {.python filename="flow_vars.py"}
-{{< include ../examples/flow_vars.py >}}
+``` {.python filename="flow_args.py"}
+{{< include ../examples/flow_args.py >}}
 ```
 
 #### Template Substitution
@@ -78,14 +81,60 @@ Use this when storing bundles on servers with public HTTP access or cloud storag
 
 ### Configuration Scripts
 
-Included configuration files can execute validation code to enforce constraints. Files named `_flow.py` are automatically included from parent directories, and receive `__flow_including_jobs__` containing all configs in the include chain.
+When loading a configuration file, Flow expects the last statement to either be a `FlowJob` or a function that returns a `FlowJob`.
+Other than this requirement, the configuration file may execute arbitrary code.
+One example of functionality that can be implemented using this feature is validation code to enforce constraints.
+Instead of repeating this validation code in every Flow configuration file, the code could be placed in a _flow.py file that is auto included.
+In this section, first we provide a detailed example of a Flow include structure.
+Then we provide example configuration scripts that can be used to enforce constraints.
 
-**Terminology:**
+#### Flow Includes Detailed Example
 
-- **Including config**: The file being loaded (e.g., `my_config.py`)
-- **Included config**: The `_flow.py` file(s) automatically inherited from parent directories
+Flow files may be included in two ways:
+- Files named `_flow.py` are automatically included from parent directories.
+  - When using the CLI to load a file, only _flow.py files in the parent directories of the configuration file provided are automatically included.
+  - When the API prepares a job that contains includes, only _flow.py files in the parent directories of the base_dir arg are automatically included.
+- Other configuration files can be explicitly included using the `includes` field in the `FlowJob`.
 
-The included config can inspect the including configs to validate or enforce constraints.
+Assume the following file structure:
+~/_flow.py
+~/a/_flow.py
+~/a/b/1flow.py
+~/a/b/2flow.py
+~/a/b/my_config.py
+~/a/c/_flow.py
+~/a/c/2_1flow.py
+
+And the following includes:
+- 2flow.py includes 2_1flow.py
+- my_config-py includes 1flow.py and 2flow.py
+
+~/a/c/_flow.py will not be loaded.
+Even though ~/a/c/2_1flow.py is loaded from the directory, Flow only automatically includes files in the same directory is my_config.py and its parents.
+
+The config files will be loaded and applied in the following order:
+1. my_config.py is loaded
+1. 1flow.py is loaded (including config is my_config.py)
+1. 1flow.py is applied to my_config.py to create an updated my_config
+1. 2flow.py is loaded (including config is my_config.py)
+1. 2_1flow.py is loaded (including configs are my_config.py and 2flow.py)
+1. 2_1flow is appliec to 2flow.py to create an updated 2flow
+1. The updated 2flow is applied to the updated my_config to create a new update to my_config
+1. ~/a/_flow.py is loaded (including config is my_config.py)
+1. ~/a/_flow.py is applied to the updated my_config to crate a new update to my_config
+1. ~/_flow.py is loaded (including config is my_config.py)
+1. ~/_flow.py is applied to the updated my_config to create a new update to my_config
+
+When includes are applied any values in the including config overwrite the value in the included config.
+In many cases this is the desired behavior, as the final config file can override values in the included files.
+However, sometimes the included file may want to prevent a value from being overridden.
+
+#### including_jobs
+
+When loading a config file, the `included_jobs()` function can be used to access the including files.
+`including_jobs()` returns a dictionary mapping file path to `FlowJob` for all the jobs in the include chain that have been loaded but not yet applied.
+Often this will only be the single file (`my_config.py`) and most recently updated version of the `FlowJob`.
+In the case of a longer include chain (an included file including another include file, as is the case when loading `2_1flow.py` in the above example) this will contain multiple items.
 
 #### Prevent Runs with Uncommitted Changes
 
@@ -112,3 +161,5 @@ A `_flow.py` file can prevent configs from overriding critical settings:
 ```
 
 This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.
+Even though `including_jobs` does not include jobs that have either already been applied or not yet been loaded.
+
