@@ -9,8 +9,7 @@ from typing import Any
 
 from inspect_ai._util.file import file
 
-from inspect_flow._types.config_funcs import set_including_jobs
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._util.constants import AFTER_FLOW_JOB_LOADED
 
 
 @lru_cache(maxsize=None)
@@ -27,22 +26,26 @@ def get_module_from_file(file: str) -> ModuleType:
 
 
 def execute_file_and_get_last_result(
-    path: str, args: dict[str, Any], including_jobs: dict[str, FlowJob] | None
-) -> object | None:
+    path: str, args: dict[str, Any]
+) -> tuple[object | None, dict[str, Any]]:
     with file(path, "r", encoding="utf-8") as f:
         src = f.read()
-    return execute_src_and_get_last_result(src, path, args, including_jobs)
+    return execute_src_and_get_last_result(src, path, args)
 
 
 def execute_src_and_get_last_result(
     src: str,
     filename: str,
     args: dict[str, Any],
-    including_jobs: dict[str, FlowJob] | None,
-) -> object | None:
+) -> tuple[object | None, dict[str, Any]]:
+    g = {
+        "__name__": "__main__",
+        "__builtins__": builtins.__dict__,
+        "__file__": filename,
+    }
     mod = ast.parse(src, filename=filename, mode="exec")
     if not mod.body:
-        return None
+        return None, g
 
     *prefix, last = mod.body
     target_id = "_"
@@ -65,19 +68,17 @@ def execute_src_and_get_last_result(
         target_id = last.name
         is_function_def = True
     else:
-        return None
+        target_id = None
     # else: leave as-is; result will be None
 
     code = compile(ast.fix_missing_locations(mod), filename=filename, mode="exec")
-    g = {
-        "__name__": "__main__",
-        "__builtins__": builtins.__dict__,
-        "__file__": filename,
-    }
-    set_including_jobs(including_jobs)
     exec(code, g, g)
+    if target_id is None:
+        return None, g
     if not is_function_def:
-        return g.get(target_id)
+        return g.get(target_id), g
     function = g.get(target_id)
     assert function and callable(function)
-    return function(**args)
+    if target_id == AFTER_FLOW_JOB_LOADED:
+        return None, g
+    return function(**args), g

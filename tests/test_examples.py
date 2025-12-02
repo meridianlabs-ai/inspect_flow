@@ -47,9 +47,7 @@ def test_readme_python_blocks() -> None:
     )
 
     for i, (line_num, code) in enumerate(blocks):
-        job = execute_src_and_get_last_result(
-            code, f"README.md:line {line_num}", {}, None
-        )
+        job, _ = execute_src_and_get_last_result(code, f"README.md:line {line_num}", {})
         assert isinstance(job, FlowJob), (
             f"Code block at README.md:line {line_num} did not return an object"
         )

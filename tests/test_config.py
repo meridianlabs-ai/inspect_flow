@@ -17,8 +17,10 @@ from inspect_flow import (
     tasks_with,
 )
 from inspect_flow._config.load import (
+    LoadState,
     _apply_overrides,
     _log_dir_create_unique,
+    after_flow_job_loaded,
     apply_substitions,
     expand_includes,
     load_job,
@@ -321,7 +323,8 @@ def test_overrides_invalid_config_key():
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
     job = expand_includes(
-        FlowJob(includes=[FlowInclude(config_file_path=include_path)])
+        FlowJob(includes=[FlowInclude(config_file_path=include_path)]),
+        state=LoadState(),
     )
     validate_config(job, "absolute_include_flow.yaml")
 
@@ -329,7 +332,8 @@ def test_absolute_include() -> None:
 def test_recursive_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "include_flow.py")
     job = expand_includes(
-        FlowJob(includes=[FlowInclude(config_file_path=include_path)])
+        FlowJob(includes=[FlowInclude(config_file_path=include_path)]),
+        state=LoadState(),
     )
     validate_config(job, "recursive_include_flow.yaml")
 
@@ -343,6 +347,7 @@ def test_multiple_includes() -> None:
                 "model_and_task_flow.py",
             ]
         ),
+        state=LoadState(),
         including_job_path=str(Path(__file__).parent / "config" / "nofile.py"),
     )
     validate_config(job, "multiple_includes_flow.yaml")
@@ -378,7 +383,8 @@ def test_219_include_remove_duplicates() -> None:
                     "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
                 ]
             ),
-        )
+        ),
+        state=LoadState(),
     )
     assert job.dependencies
     assert job.dependencies.additional_dependencies == [
@@ -481,7 +487,9 @@ def test_222_including_jobs_check() -> None:
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
-    job2 = expand_includes(job)
+    state = LoadState()
+    job2 = expand_includes(job, state=state)
+    after_flow_job_loaded(job2, state)
     assert job2.options
     assert job2.options.max_samples == 16
 
@@ -489,8 +497,10 @@ def test_222_including_jobs_check() -> None:
         includes=[include_path],
         options=FlowOptions(limit=1, max_samples=1024),
     )
+    state = LoadState()
+    job4 = expand_includes(job3, state=state)
     with pytest.raises(ValueError):
-        expand_includes(job3)
+        after_flow_job_loaded(job4, state)
 
 
 def test_206_dirty_repo_check() -> None:
@@ -504,7 +514,7 @@ def test_206_dirty_repo_check() -> None:
     dirty_file.touch()
     try:
         with pytest.raises(RuntimeError):
-            expand_includes(job)
+            expand_includes(job, state=LoadState())
     finally:
         dirty_file.unlink()
 
