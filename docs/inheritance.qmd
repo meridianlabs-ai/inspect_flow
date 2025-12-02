@@ -21,5 +21,3 @@ Included configs are merged recursively, with the current config's values taking
 Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file's location, it searches upward through the directory tree for `_flow.py` files and automatically merges them as base configurations.
 
 This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes.
-
-### Detailed Example
