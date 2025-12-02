@@ -17,10 +17,10 @@ website:
           href: reference/inspect_flow.qmd#flowjob
         - text: FlowDefaults
           href: reference/inspect_flow.qmd#flowdefaults
+        - text: FlowDependencies
+          href: reference/inspect_flow.qmd#flowdependencies
         - text: FlowEpochs
           href: reference/inspect_flow.qmd#flowepochs
-        - text: FlowGenerateConfig
-          href: reference/inspect_flow.qmd#flowgenerateconfig
         - text: FlowModel
           href: reference/inspect_flow.qmd#flowmodel
         - text: FlowOptions

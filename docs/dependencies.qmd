@@ -1,0 +1,62 @@
+---
+title: "Dependency Management"
+tbl-colwidths: [30,70]
+---
+
+Inspect Flow automatically creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.
+
+## How Virtual Environments Work
+
+When you run `flow run config.py`, Flow:
+
+1.  Creates a temporary virtual environment with [`uv`](https://github.com/astral-sh/uv)
+2.  Installs dependencies from dependency files and/or config file
+5.  Executes your evaluations in this isolated environment
+6.  Cleans up the temporary environment after completion (logs persist in `log_dir`)
+
+## Configuring Dependencies
+
+The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:
+
+``` {.python filename="config.py"}
+{{< include ../examples/dependencies.py >}}
+```
+
+1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file.
+
+2. Optional: Specify exact path to dependency file
+
+3. Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages
+
+4. Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+
+5. Use `uv.lock` file when using `pyproject.toml` (default: `True`)
+
+## Python Version Control
+
+Specify the Python version for your job's virtual environment:
+
+``` {.python filename="config.py"}
+{{< include ../examples/python_version.py >}}
+```
+
+::: callout-tip
+### Checking Configuration
+
+To verify which dependencies and Python version will be used:
+
+``` bash
+flow config config.py --resolve
+```
+:::
+
+::: callout-tip
+### Repeatability Best Practices
+
+For repeatable workflows:
+
+-   Pin PyPI package versions: `"inspect-evals==0.3.15"`
+-   Pin Git commits: `"git+https://github.com/user/repo@commit_hash"`
+-   Specify `python_version` explicitly
+-   Set `use_uv_lock=True` when using `pyproject.toml` (default)
+:::

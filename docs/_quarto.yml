@@ -33,8 +33,6 @@ website:
     left:
       - text: "Welcome"
         href: index.qmd
-      - text: "Usage"
-        href: usage.qmd
       - text: "Reference"
         href: reference/index.qmd
     right:
@@ -54,24 +52,23 @@ website:
             - text: Basic Examples
               href: index.qmd#basic-examples
         - text: Using Flow
-          href: usage.qmd
           contents:
             - text: Core Concepts
-              href: usage.qmd#core-concepts
+              href: core_concepts.qmd
             - text: Creating Flow Configs
-              href: usage.qmd#creating-flow-configs
+              href: config_basics.qmd
             - text: Dependency Management
-              href: usage.qmd#dependency-management
+              href: dependencies.qmd
             - text: Defaults and Overrides
-              href: usage.qmd#defaults-and-overrides
+              href: defaults_overrides.qmd
             - text: Configuration Inheritance
-              href: usage.qmd#configuration-inheritance
+              href: inheritance.qmd
             - text: Parameter Sweeping
-              href: usage.qmd#parameter-sweeping
+              href: parameter_sweep.qmd
             - text: Running Evaluations
-              href: usage.qmd#running-evaluations
+              href: run.qmd
             - text: Advanced Features
-              href: usage.qmd#advanced-features
+              href: advanced.qmd
 
   page-footer:
     left:

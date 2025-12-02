@@ -1,0 +1,114 @@
+---
+title: "Advanced Features"
+tbl-colwidths: [30,70]
+---
+
+### Metadata Management
+
+Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
+
+#### metadata (Inspect AI Metadata)
+
+The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI's log viewer and analysis tools.
+
+**Example:**
+
+``` {.python filename="metadata.py"}
+{{< include ../examples/metadata.py >}}
+```
+
+The metadata from `FlowOptions` is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task.
+
+#### flow_metadata (Flow-Only Metadata)
+
+The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
+
+**Use cases:**
+
+-   Filtering or selecting configurations based on properties
+-   Organizing complex configuration generation logic
+-   Documenting configuration decisions
+-   Annotating configs without polluting Inspect AI logs
+
+**Example: Configuration-time filtering**
+
+``` {.python filename="flow_metadata.py"}
+{{< include ../examples/flow_metadata.py >}}
+```
+
+### Variable Substitution
+
+#### Flow Variables (`--var`)
+
+Pass custom variables to Python config files using `--var` or the `INSPECT_FLOW_VAR` environment variable. Use this for dynamic configuration that isn't available via `--set`. Variables are accessible via the `__flow_vars__` dictionary:
+
+```bash
+flow run config.py --var task_min_priority=2
+```
+
+``` {.python filename="flow_vars.py"}
+{{< include ../examples/flow_vars.py >}}
+```
+
+#### Template Substitution
+
+Use `{field_name}` syntax to reference other FlowJob configuration values. Substitutions are applied after the config is loaded:
+
+```python
+FlowJob(
+    log_dir="logs/my_eval",
+    options=FlowOptions(bundle_dir="{log_dir}/bundle"),
+    # Result: bundle_dir="logs/my_eval/bundle"
+)
+```
+
+For nested fields, use bracket notation: `{options[eval_set_id]}` or `{flow_metadata[key]}`. Substitutions are resolved recursively until no more remain.
+
+### Bundle URL Mapping
+
+Convert local bundle paths to public URLs for sharing evaluation results. The `bundle_url_map` in `FlowOptions` applies string replacements to `bundle_dir` to generate a shareable URL that's printed to stdout after the evaluation completes.
+
+``` {.python filename="bundle_url_map.py"}
+{{< include ../examples/bundle_url_map.py >}}
+```
+
+After running this prints: `Bundle URL: https://example.com/shared/bundles/my_eval`
+
+Use this when storing bundles on servers with public HTTP access or cloud storage with URL mapping. Multiple mappings are applied in order.
+
+### Configuration Scripts
+
+Included configuration files can execute validation code to enforce constraints. Files named `_flow.py` are automatically included from parent directories, and receive `__flow_including_jobs__` containing all configs in the include chain.
+
+**Terminology:**
+
+- **Including config**: The file being loaded (e.g., `my_config.py`)
+- **Included config**: The `_flow.py` file(s) automatically inherited from parent directories
+
+The included config can inspect the including configs to validate or enforce constraints.
+
+#### Prevent Runs with Uncommitted Changes
+
+Place a `_flow.py` file at your repository root to validate that all configs are in clean git repositories. This validation runs automatically for all configs in subdirectories.
+
+``` {.python filename="_flow.py"}
+{{< include ../examples/dirty_git_check/_flow.py >}}
+```
+
+``` {.python filename="config.py"}
+{{< include ../examples/dirty_git_check/including/config.py >}}
+```
+
+#### Lock Configuration Fields
+
+A `_flow.py` file can prevent configs from overriding critical settings:
+
+``` {.python filename="_flow.py"}
+{{< include ../examples/lock/_flow.py >}}
+```
+
+``` {.python filename="config.py"}
+{{< include ../examples/lock/including/config.py >}}
+```
+
+This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.
