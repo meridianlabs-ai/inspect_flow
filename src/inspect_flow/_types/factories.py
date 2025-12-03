@@ -28,13 +28,12 @@ BaseType = TypeVar(
     "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
 )
 
-MatrixDict = TypeVar(
-    "MatrixDict",
-    FlowAgentMatrixDict,
-    GenerateConfigMatrixDict,
-    FlowModelMatrixDict,
-    FlowSolverMatrixDict,
-    FlowTaskMatrixDict,
+MatrixDict = (
+    FlowAgentMatrixDict
+    | GenerateConfigMatrixDict
+    | FlowModelMatrixDict
+    | FlowSolverMatrixDict
+    | FlowTaskMatrixDict
 )
 
 

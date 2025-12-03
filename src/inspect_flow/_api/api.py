@@ -1,20 +1,31 @@
-import os
 from pathlib import Path
-
-import click
-from dotenv import dotenv_values, find_dotenv
+from typing import Any
 
 from inspect_flow._config.load import (
-    LoadState,
-    after_flow_job_loaded,
-    apply_auto_includes,
-    apply_substitions,
-    expand_includes,
+    ConfigOptions,
+    expand_job,
+    int_load_job,
 )
-from inspect_flow._config.write import config_to_yaml
-from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.launch import launch_config, launch_run
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.logging import init_flow_logging
+
+
+def load_job(
+    file: str,
+    *,
+    log_level: str | None = None,
+    args: dict[str, Any] | None = None,
+) -> FlowJob:
+    """Load a job file and apply any overrides.
+
+    Args:
+        file: The path to the job configuration file.
+        log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
+        args: A dictionary of arguments to pass as kwargs to the function in the flow config.
+    """
+    init_flow_logging(log_level)
+    return int_load_job(file, options=ConfigOptions(args=args or {}))
 
 
 def run(
@@ -38,27 +49,13 @@ def run(
     """
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
-    job = _prepare_job(job, base_dir=base_dir)
-    int_run(
+    job = expand_job(job, base_dir=base_dir)
+    launch_run(
         job,
         base_dir=base_dir,
         dry_run=dry_run,
         no_venv=no_venv,
         no_dotenv=no_dotenv,
-    )
-
-
-def int_run(
-    job: FlowJob, base_dir: str, dry_run: bool, no_venv: bool, no_dotenv: bool
-) -> None:
-    """Internal run function implementation."""
-    run_args = ["--dry-run"] if dry_run else []
-    launch(
-        job=job,
-        base_dir=base_dir,
-        env=_get_env(base_dir, no_dotenv),
-        run_args=run_args,
-        no_venv=no_venv,
     )
 
 
@@ -83,57 +80,11 @@ def config(
     """
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
-    job = _prepare_job(job, base_dir=base_dir)
-    int_config(
+    job = expand_job(job, base_dir=base_dir)
+    launch_config(
         job,
         base_dir=base_dir,
         resolve=resolve,
         no_venv=no_venv,
         no_dotenv=no_dotenv,
     )
-
-
-def int_config(
-    job: FlowJob, base_dir: str, resolve: bool, no_venv: bool, no_dotenv: bool
-) -> None:
-    """Internal config function implementation."""
-    if resolve:
-        launch(
-            job=job,
-            base_dir=base_dir,
-            env=_get_env(base_dir, no_dotenv),
-            run_args=["--config"],
-            no_venv=no_venv,
-        )
-    else:
-        dump = config_to_yaml(job)
-        click.echo(dump)
-
-
-def _prepare_job(job: FlowJob, base_dir: str) -> FlowJob:
-    state = LoadState()
-    job = expand_includes(
-        job,
-        state,
-        base_dir=base_dir,
-    )
-    job = apply_auto_includes(job, base_dir=base_dir, config_options={}, state=state)
-    job = apply_substitions(job, base_dir=base_dir)
-    after_flow_job_loaded(job, state)
-    return job
-
-
-def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
-    env = os.environ.copy()
-    if no_dotenv:
-        return env
-    # Temporarily change to base_dir to find .env file
-    original_cwd = os.getcwd()
-    try:
-        os.chdir(base_dir)
-        # Already loaded environment variables should take precedence
-        dotenv = dotenv_values(find_dotenv(usecwd=True))
-        env = {k: v for k, v in dotenv.items() if v is not None} | env
-    finally:
-        os.chdir(original_cwd)
-    return env

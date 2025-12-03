@@ -3,8 +3,8 @@ from pathlib import Path
 
 import yaml
 from click.testing import CliRunner
+from inspect_flow._api.api import load_job
 from inspect_flow._cli.main import flow
-from inspect_flow._config.load import load_job
 from inspect_flow._types.flow_types import FlowJob
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
