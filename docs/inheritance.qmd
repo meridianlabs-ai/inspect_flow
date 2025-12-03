@@ -27,7 +27,7 @@ Included configs are merged recursively, with the current config's values taking
 
 ### Order
 
-Includes are processed sequentially in the order they appear. When multiple includes are specified, later includes take precedence over earlier ones.
+Includes are processed sequentially in the order they appear. When multiple includes are specified, earlier includes take precedence over later ones.
 
 ### Recursion
 
@@ -35,7 +35,7 @@ Included files can themselves have `includes` fields, which are expanded recursi
 
 ### Path Resolution
 
-Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). You can use either simple string paths or `FlowInclude` objects to specify the path to the flow config to include:
+Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API):
 
 ``` {.python filename="config.py"}
 {{< include ../examples/includes.py >}}
@@ -46,3 +46,5 @@ Relative paths will be resolved relative to the config file (when using the CLI)
 Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file's location, it searches upward through the directory tree for `_flow.py` files and automatically merges them as base configurations.
 
 This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes.
+
+Automatic discovery does not look for `_flow.py` files in the parent directories of explicitly included files.

@@ -1,10 +1,10 @@
-from inspect_flow import FlowInclude, FlowJob, FlowTask
+from inspect_flow import FlowJob, FlowTask
 
 FlowJob(
     includes=[
         "defaults.py",
-        FlowInclude(config_file_path="../shared.py"),
-        FlowInclude(config_file_path="/absolute/path.py"),
+        "../shared.py",
+        "/absolute/path.py",
     ],
     log_dir="logs",
     tasks=[

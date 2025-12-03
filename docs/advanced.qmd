@@ -87,58 +87,20 @@ Using Bundle URL maps makes sense along with the job [inheritance](inheritance.q
 
 When loading a configuration file, Flow expects the last expression to either be a `FlowJob` or a function that returns a `FlowJob`.
 Other than this requirement, the configuration file may execute arbitrary code.
+
+#### after_load
+
+Configuration scripts are executed while loading the job.
+At the time that the script is running the job is in an intermediate state (includes may not have been processed, overrides not applied, and template substitutions will not have run).
+To run code after the job is fully loaded a script can decorate a function with `@after_load`.
+
+The decorated function may optionally implement the following arguments:
+
+- `job` - the fully loaded `FlowJob`
+- `files` - the list of configuration files that were loaded
+
 One example of functionality that can be implemented using this feature is validation code to enforce constraints.
 Instead of repeating this validation code in every Flow configuration file, the code could be placed in a _flow.py file that is auto included.
-In this section, first we provide a detailed example of a Flow include structure.
-Then we provide example configuration scripts that can be used to enforce constraints.
-
-#### Flow Includes Detailed Example
-
-Flow files may be included in two ways:
-- Files named `_flow.py` are automatically included from parent directories.
-  - When using the CLI to load a file, only _flow.py files in the parent directories of the configuration file provided are automatically included.
-  - When the API prepares a job that contains includes, only _flow.py files in the parent directories of the base_dir arg are automatically included.
-- Other configuration files can be explicitly included using the `includes` field in the `FlowJob`.
-
-Assume the following file structure:
-~/_flow.py
-~/a/_flow.py
-~/a/b/1flow.py
-~/a/b/2flow.py
-~/a/b/my_config.py
-~/a/c/_flow.py
-~/a/c/2_1flow.py
-
-And the following includes:
-- 2flow.py includes 2_1flow.py
-- my_config-py includes 1flow.py and 2flow.py
-
-~/a/c/_flow.py will not be loaded.
-Even though ~/a/c/2_1flow.py is loaded from the directory, Flow only automatically includes files in the same directory is my_config.py and its parents.
-
-The config files will be loaded and applied in the following order:
-1. my_config.py is loaded
-1. 1flow.py is loaded (including config is my_config.py)
-1. 1flow.py is applied to my_config.py to create an updated my_config
-1. 2flow.py is loaded (including config is my_config.py)
-1. 2_1flow.py is loaded (including configs are my_config.py and 2flow.py)
-1. 2_1flow is appliec to 2flow.py to create an updated 2flow
-1. The updated 2flow is applied to the updated my_config to create a new update to my_config
-1. ~/a/_flow.py is loaded (including config is my_config.py)
-1. ~/a/_flow.py is applied to the updated my_config to crate a new update to my_config
-1. ~/_flow.py is loaded (including config is my_config.py)
-1. ~/_flow.py is applied to the updated my_config to create a new update to my_config
-
-When includes are applied any values in the including config overwrite the value in the included config.
-In many cases this is the desired behavior, as the final config file can override values in the included files.
-However, sometimes the included file may want to prevent a value from being overridden.
-
-#### including_jobs
-
-When loading a config file, the `included_jobs()` function can be used to access the including files.
-`including_jobs()` returns a dictionary mapping file path to `FlowJob` for all the jobs in the include chain that have been loaded but not yet applied.
-Often this will only be the single file (`my_config.py`) and most recently updated version of the `FlowJob`.
-In the case of a longer include chain (an included file including another include file, as is the case when loading `2_1flow.py` in the above example) this will contain multiple items.
 
 #### Prevent Runs with Uncommitted Changes
 
@@ -165,5 +127,4 @@ A `_flow.py` file can prevent configs from overriding critical settings:
 ```
 
 This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.
-Even though `including_jobs` does not include jobs that have either already been applied or not yet been loaded.
 

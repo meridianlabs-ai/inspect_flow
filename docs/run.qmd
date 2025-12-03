@@ -104,6 +104,7 @@ logs/
 ├── .eval-set-id
 ├── eval-set.json
 ├── flow.yaml
+├── flow-requirements.txt
 └── ...
 ```
 
@@ -113,6 +114,7 @@ logs/
 -   Inspect AI handles the actual evaluation log file naming and storage
 -   Log file naming conventions follow Inspect AI's standards (see [Inspect AI logging docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
 -   Flow automatically saves the resolved configuration as `flow.yaml` in the log directory
+-   Flow saves the exact version of packages installed in the virtual environment as `flow-requirements.txt`
 -   The `.eval-set-id` file contains the eval set identifier
 -   The `eval-set.json` file contains eval set metadata
 

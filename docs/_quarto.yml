@@ -49,8 +49,8 @@ website:
               href: index.qmd#introduction
             - text: Getting Started
               href: index.qmd#getting-started
-            - text: Basic Examples
-              href: index.qmd#basic-examples
+            - text: Basic Example
+              href: index.qmd#basic-example
         - text: Using Flow
           contents:
             - text: Flow Concepts

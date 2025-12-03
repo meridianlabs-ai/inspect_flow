@@ -68,11 +68,11 @@ FlowJob(
 
 Defaults follow a hierarchy where **more specific settings override less specific ones**:
 
-**For Models:**
+**For GenerateConfig:**
 
 1.  Global config defaults (`defaults.config`)
-2.  Global model defaults (`defaults.model`)
-3.  Model prefix defaults (`defaults.model_prefix`)
+2.  Global model config defaults (`defaults.model.config`)
+3.  Model prefix config defaults (`defaults.model_prefix.config`)
 4.  Task-specific config (`task.config`)
 5.  Model-specific config (`model.config`) — **highest priority**
 
@@ -90,9 +90,9 @@ Defaults follow a hierarchy where **more specific settings override less specifi
 **Final result:** `temperature=1.0` (most specific), `max_tokens=100` (from global defaults)
 
 ::: callout-note
-### None Values Don't Override
+### None Values Don't Override (Except FlowTask)
 
-Setting a field to `None` means "not specified" — it won't override existing values from defaults. This allows partial configs to merge cleanly:
+With the exception of FlowTask, setting a field to `None` means "not specified" — it won't override existing values from defaults. This allows partial configs to merge cleanly:
 
 ``` python
 FlowTask(
@@ -175,9 +175,13 @@ flow run config.py
 |---------------------------------------|----------------------------|----------------------------------------------------------|
 | `INSPECT_FLOW_LOG_DIR`                | `--log-dir`                | Override log directory                                   |
 | `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`  | `--log-dir-create-unique`  | Create new log directory with numeric suffix if exists   |
+| `INSPECT_FLOW_LOG_LEVEL`              | `--log-level`              | Inspect Flow log level. Defaults to Info. Use options.log_level to set the Inspect AI log level.
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
-| `INSPECT_FLOW_VAR`                    | `--var`                    | Set variables for `__flow_vars__` (can be multiple)      |
+| `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to job functions in the config file (can be multiple)      |
+| `INSPECT_FLOW_NO_VENV`                | `--no-venv`                | Do not create a virtual environment to run the Flow job |
+| `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Create virtual environment and print number of tasks without running |
+| `INSPECT_FLOW_RESOLVE`                | `--resolve`                | Fully resolve the config file (creates virtual environment) when running `flow config`|
 
 ::: callout-tip
 ### Override Priority
