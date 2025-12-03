@@ -3,7 +3,7 @@
 import subprocess
 from pathlib import Path
 
-from inspect_flow import FlowJob, after_load
+from inspect_flow import after_load
 
 
 def check_repo(path: str) -> None:
@@ -39,7 +39,7 @@ def check_repo(path: str) -> None:
 
 
 @after_load
-def validate_no_dirty_repo(files_to_jobs: dict[str, FlowJob | None]) -> None:
+def validate_no_dirty_repo(files: list[str]) -> None:
     # Check no config files are in a dirty git repo
-    for path in files_to_jobs.keys():
+    for path in files:
         check_repo(path)
