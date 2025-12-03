@@ -13,24 +13,28 @@ website:
         contents:
         - text: FlowAgent
           href: reference/inspect_flow.qmd#flowagent
-        - text: FlowJob
-          href: reference/inspect_flow.qmd#flowjob
         - text: FlowDefaults
           href: reference/inspect_flow.qmd#flowdefaults
         - text: FlowDependencies
           href: reference/inspect_flow.qmd#flowdependencies
         - text: FlowEpochs
           href: reference/inspect_flow.qmd#flowepochs
+        - text: FlowInclude
+          href: reference/inspect_flow.qmd#flowinclude
+        - text: FlowJob
+          href: reference/inspect_flow.qmd#flowjob
         - text: FlowModel
           href: reference/inspect_flow.qmd#flowmodel
         - text: FlowOptions
           href: reference/inspect_flow.qmd#flowoptions
-        - text: FlowSolver
-          href: reference/inspect_flow.qmd#flowsolver
         - text: FlowScorer
           href: reference/inspect_flow.qmd#flowscorer
+        - text: FlowSolver
+          href: reference/inspect_flow.qmd#flowsolver
         - text: FlowTask
           href: reference/inspect_flow.qmd#flowtask
+        - text: after_load
+          href: reference/inspect_flow.qmd#after_load
         - text: agents_matrix
           href: reference/inspect_flow.qmd#agents_matrix
         - text: agents_with
@@ -56,8 +60,6 @@ website:
       - section: inspect_flow.api
         href: reference/inspect_flow.api.qmd
         contents:
-        - text: ConfigOptions
-          href: reference/inspect_flow.api.qmd#configoptions
         - text: config
           href: reference/inspect_flow.api.qmd#config
         - text: load_job
