@@ -1,9 +1,9 @@
 ---
-title: "Parameter Sweeping"
+title: "Matrixing"
 tbl-colwidths: [30,70]
 ---
 
-Parameter sweeping lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and "with" functions to declaratively generate evaluation grids.
+Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and "with" functions to declaratively generate evaluation grids.
 
 ## Matrix Functions (Cartesian Products)
 

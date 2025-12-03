@@ -1,11 +1,10 @@
 ---
-title: "Dependency Management"
+title: "Dependencies"
 tbl-colwidths: [30,70]
 ---
 
 Inspect Flow automatically creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.
-
-## How Virtual Environments Work
+Because each run starts with a fresh environment, dependencies must be resolved—either automatically detected from your project files or explicitly specified in your configuration.
 
 When you run `flow run config.py`, Flow:
 
@@ -14,7 +13,7 @@ When you run `flow run config.py`, Flow:
 5.  Executes your evaluations in this isolated environment
 6.  Cleans up the temporary environment after completion (logs persist in `log_dir`)
 
-## Configuring Dependencies
+## Specification
 
 The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:
 
@@ -22,14 +21,15 @@ The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:
 {{< include ../examples/dependencies.py >}}
 ```
 
-1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. 
+1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file.
 May also be set to a path to a dependency file or `"no_file"` to not use a dependency file.
+When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
 
 2. Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
 3. Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
 
-## Python Version Control
+## Python Version
 
 Specify the Python version for your job's virtual environment:
 
@@ -55,5 +55,5 @@ For repeatable workflows:
 -   Pin PyPI package versions: `"inspect-evals==0.3.15"`
 -   Pin Git commits: `"git+https://github.com/user/repo@commit_hash"`
 -   Specify `python_version` explicitly
--   Set `use_uv_lock=True` when using `pyproject.toml` (default)
+-   Use `uv.lock` with `pyproject.toml` for locked dependencies (automatically detected if present)
 :::

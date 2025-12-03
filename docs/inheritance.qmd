@@ -1,22 +1,47 @@
-## Configuration Inheritance
+---
+title: "Inheritance"
+tbl-colwidths: [30,70]
+---
 
 Inspect Flow supports configuration inheritance through two mechanisms:
 
-### Explicit Includes
+## Explicit Includes
 
 Use the `includes` field to explicitly merge other config files into your job:
 
 ```python
 FlowJob(
-    includes=["defaults_flow.py"],
-    log_dir="./logs/flow_test",
+    includes=["defaults.py"],
+    log_dir="logs",
     tasks=["my_task"]
 )
 ```
 
-Included configs are merged recursively, with the current config's values taking precedence over included values. For dictionaries, fields are merged deeply. For lists, items are concatenated with duplicates removed.
+### Merge
 
-### Automatic Discovery
+Included configs are merged recursively, with the current config's values taking precedence over included values:
+
+- **Dictionaries**: Fields are merged deeply (recursive merge)
+- **Lists**: Items are concatenated with duplicates removed
+- **Scalars**: Current config values override included values
+
+### Order
+
+Includes are processed sequentially in the order they appear. When multiple includes are specified, later includes take precedence over earlier ones.
+
+### Recursion
+
+Included files can themselves have `includes` fields, which are expanded recursively. This allows you to build hierarchies of configuration.
+
+### Path Resolution
+
+Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). You can use either simple string paths or `FlowInclude` objects to specify the path to the flow config to include:
+
+``` {.python filename="config.py"}
+{{< include ../examples/includes.py >}}
+```
+
+## Automatic Discovery
 
 Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file's location, it searches upward through the directory tree for `_flow.py` files and automatically merges them as base configurations.
 
