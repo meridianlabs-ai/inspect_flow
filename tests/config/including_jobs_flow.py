@@ -1,9 +1,10 @@
-from inspect_flow import FlowJob, FlowOptions
+from inspect_flow import FlowJob, FlowOptions, after_load
 
 MAX_SAMPLES = 16
 
 
-def after_flow_job_loaded(
+@after_load
+def validate_max_samples(
     job: FlowJob, files_to_jobs: dict[str, FlowJob | None]
 ) -> None:
     """Validate that max_samples is set correctly."""

@@ -5,6 +5,7 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+from inspect_flow._types.decorator import after_load
 from inspect_flow._types.factories import (
     agents_matrix,
     agents_with,
@@ -47,6 +48,7 @@ __all__ = [
     "FlowOptions",
     "FlowSolver",
     "FlowTask",
+    "after_load",
     "agents_matrix",
     "agents_with",
     "configs_matrix",
