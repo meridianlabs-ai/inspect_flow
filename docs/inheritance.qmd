@@ -35,7 +35,7 @@ Included files can themselves have `includes` fields, which are expanded recursi
 
 ### Path Resolution
 
-Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). You can use either simple string paths or `FlowInclude` objects to specify the path to the flow config to include:
+Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API):
 
 ``` {.python filename="config.py"}
 {{< include ../examples/includes.py >}}

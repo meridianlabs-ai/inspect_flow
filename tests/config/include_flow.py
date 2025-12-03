@@ -1,7 +1,7 @@
-from inspect_flow import FlowInclude, FlowJob, FlowOptions, tasks_matrix
+from inspect_flow import FlowJob, FlowOptions, tasks_matrix
 
 FlowJob(
-    includes=[FlowInclude(config_file_path="defaults_flow.py")],
+    includes=["defaults_flow.py"],
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     tasks=tasks_matrix(

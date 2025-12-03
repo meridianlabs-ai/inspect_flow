@@ -61,7 +61,7 @@ flow run config.py
 | Field | Description | Default |
 |------------------|--------------------------------|----------------------|
 | `tasks` | List of tasks to run (`FlowTask` objects or strings) | `None` |
-| `includes` | List of other flow configs to include (paths as strings or `FlowInclude` objects). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
+| `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
 | `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the job or have `options.log_dir_allow_dirty=True`) | `False` |
 | `python_version` | Python version for the isolated virtual environment (e.g., `"3.11"`) | Same as current environment |
 | `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names |
