@@ -9,7 +9,7 @@ from typing import Any
 
 from inspect_ai._util.file import file
 
-from inspect_flow._util.constants import AFTER_FLOW_JOB_LOADED
+from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 
 
 @lru_cache(maxsize=None)
@@ -79,6 +79,6 @@ def execute_src_and_get_last_result(
         return g.get(target_id), g
     function = g.get(target_id)
     assert function and callable(function)
-    if target_id == AFTER_FLOW_JOB_LOADED:
+    if hasattr(function, INSPECT_FLOW_AFTER_LOAD_ATTR):
         return None, g
     return function(**args), g

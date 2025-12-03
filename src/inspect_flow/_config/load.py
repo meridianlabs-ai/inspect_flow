@@ -14,9 +14,10 @@ from inspect_ai._util.file import absolute_file_path, exists, file
 from pydantic_core import ValidationError
 from typing_extensions import TypedDict, Unpack
 
+from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
-from inspect_flow._util.constants import AFTER_FLOW_JOB_LOADED, PKG_NAME
+from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -203,10 +204,14 @@ def _load_job_from_file(
                 job, globals = execute_file_and_get_last_result(config_file, args=args)
                 if job is None or isinstance(job, FlowJob):
                     state.files_to_jobs[config_file] = job
-                    if AFTER_FLOW_JOB_LOADED in globals:
-                        state.after_flow_job_loaded_funcs.append(
-                            globals[AFTER_FLOW_JOB_LOADED]
-                        )
+                    state.after_flow_job_loaded_funcs.extend(
+                        [
+                            v
+                            for v in globals.values()
+                            if hasattr(v, INSPECT_FLOW_AFTER_LOAD_ATTR)
+                        ]
+                    )
+
                 else:
                     raise TypeError(
                         f"Expected FlowJob from Python config file, got {type(job)}"
