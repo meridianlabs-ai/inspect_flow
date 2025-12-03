@@ -82,7 +82,7 @@ export HF_TOKEN=your-hf-token
 
 Optionally install the [Inspect AI VS Code Extension](https://inspect.aisi.org.uk/vscode.html) which includes features for viewing evaluation log files.
 
-## Basic Examples
+## Basic Example
 
 Let's walk through creating your first Flow configuration. We'll use `FlowJob` (the entrypoint class) and `FlowTask` to define evaluations.
 
@@ -113,7 +113,15 @@ This will run both tasks and display progress in your terminal.
 
 ![Progress bar in terminal](images/config_progress_terminal.png)
 
-### Matrix Functions
+### Python API
+
+Equally you can run evaluations from Python instead of the command line.
+
+``` {.python filename="config.py"}
+{{< include ../examples/python.py >}}
+```
+
+## Matrix Functions
 
 Often you'll want to evaluate multiple tasks across multiple models. Rather than manually defining every combination, use `tasks_matrix` to generate all task-model pairs:
 
@@ -145,6 +153,8 @@ For even more concise parameter sweeping, use `configs_matrix` to generate confi
 {{< include ../examples/configs_matrix.py >}}
 ```
 
+### Run evaluations
+
 To run the config:
 
 ``` bash
@@ -167,6 +177,5 @@ inspect view
 
 See the following articles to learn more about using Flow:
 
--   [Core Concepts](core_concepts.qmd): Flow data type system and config structure.
--   [Config Basics](config_basics.qmd): Build and understand your first Flow config.
+-   [Flow Concepts](flow_concepts.qmd): Flow type system, config structure and basics.
 -   [Reference](reference/index.qmd): Detailed documentation on the Flow Python API and CLI commands.

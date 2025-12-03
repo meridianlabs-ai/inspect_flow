@@ -1,9 +1,10 @@
 log_dir: logs
 dependencies:
-  dependency_file: ../foo/requirements.txt
+  dependency_file: ../foo/pyproject.toml
   additional_dependencies:
   - pandas==2.0.0
   auto_detect_dependencies: true
 tasks:
 - name: inspect_evals/gpqa_diamond
   model: openai/gpt-5
+

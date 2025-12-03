@@ -59,7 +59,13 @@ def test_examples() -> None:
     examples_dir = Path(__file__).parent.parent / "examples"
     example_files = [f for f in examples_dir.glob("*.py")]
 
+    # Skip files that require custom test setup
+    skip_files = {"includes.py", "python.py"}
+
     for file in example_files:
+        if file.name in skip_files:
+            continue
+
         try:
             job = load_job(str(file))
             validate_config(job, f"{file.stem}.yaml")

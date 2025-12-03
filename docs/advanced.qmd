@@ -1,9 +1,9 @@
 ---
-title: "Advanced Features"
+title: "Advanced"
 tbl-colwidths: [30,70]
 ---
 
-### Metadata Management
+### Metadata
 
 Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
 
@@ -36,7 +36,7 @@ The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `F
 {{< include ../examples/flow_metadata.py >}}
 ```
 
-### Variable Substitution
+### Parameterized Jobs
 
 #### Flow Args (`--arg`)
 
@@ -67,7 +67,9 @@ FlowJob(
 
 For nested fields, use bracket notation: `{options[eval_set_id]}` or `{flow_metadata[key]}`. Substitutions are resolved recursively until no more remain.
 
-### Bundle URL Mapping
+### Viewer Bundling
+
+Viewer bundling works the same way as [`eval_set()`](https://inspect.aisi.org.uk/eval-sets.html) in Inspect AI and is configurable via `FlowOptions`. An additional feature allows you to print bundle URLs for users running evaluations.
 
 Convert local bundle paths to public URLs for sharing evaluation results. The `bundle_url_map` in `FlowOptions` applies string replacements to `bundle_dir` to generate a shareable URL that's printed to stdout after the evaluation completes.
 
@@ -79,9 +81,11 @@ After running this prints: `Bundle URL: https://example.com/shared/bundles/my_ev
 
 Use this when storing bundles on servers with public HTTP access or cloud storage with URL mapping. Multiple mappings are applied in order.
 
+Using Bundle URL maps makes sense along with the job [inheritance](inheritance.qmd) feature so you can configure the same bundle mapping for all configs in a repository.
+
 ### Configuration Scripts
 
-When loading a configuration file, Flow expects the last statement to either be a `FlowJob` or a function that returns a `FlowJob`.
+When loading a configuration file, Flow expects the last expression to either be a `FlowJob` or a function that returns a `FlowJob`.
 Other than this requirement, the configuration file may execute arbitrary code.
 One example of functionality that can be implemented using this feature is validation code to enforce constraints.
 Instead of repeating this validation code in every Flow configuration file, the code could be placed in a _flow.py file that is auto included.

@@ -12,6 +12,7 @@ title: inspect_flow
 ### FlowModel
 ### FlowOptions
 ### FlowSolver
+### FlowScorer
 ### FlowTask
 
 ## Functions
