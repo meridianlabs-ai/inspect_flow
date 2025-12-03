@@ -20,6 +20,7 @@ from inspect_flow._api.api import load_job
 from inspect_flow._config.load import (
     ConfigOptions,
     _apply_overrides,
+    _apply_substitutions,
     _log_dir_create_unique,
     expand_job,
     int_load_job,
@@ -346,7 +347,7 @@ def test_multiple_includes() -> None:
         FlowJob(
             includes=[
                 "defaults_flow.py",
-                "e2e_test_flow.py",
+                "dependencies_flow.py",
                 "model_and_task_flow.py",
             ]
         ),
@@ -558,6 +559,6 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
             log_dir_create_unique=True,
             tasks=["task_name"],
         )
-        job2 = expand_job(job, base_dir=".")
+        job2 = _apply_substitutions(job, base_dir=Path.cwd().resolve().as_posix())
         assert job2.log_dir == f"{log_dir}_2"
     assert mock_exists.call_count == 3

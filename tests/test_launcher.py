@@ -175,3 +175,30 @@ def test_relative_bundle_dir() -> None:
     assert job.options.bundle_url_map
     assert absolute_path in job.options.bundle_url_map
     assert mock_run.call_count == 1
+
+
+def test_259_dot_env() -> None:
+    job = FlowJob(
+        log_dir="logs",
+        tasks=[
+            "local_eval/noop",
+        ],
+    )
+
+    with (
+        patch("subprocess.run"),
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+    ):
+        launch_run(job=job, base_dir="./tests/config/")
+    mock_venv.assert_called_once()
+    launch_env = mock_venv.mock_calls[0].kwargs["env"]
+    assert launch_env["TEST_ENV_VAR"] == "test_value"
+    # Now test with no_dotenv=True
+    with (
+        patch("subprocess.run"),
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+    ):
+        launch_run(job=job, base_dir="./tests/config/", no_dotenv=True)
+    mock_venv.assert_called_once()
+    launch_env = mock_venv.mock_calls[0].kwargs["env"]
+    assert "TEST_ENV_VAR" not in launch_env

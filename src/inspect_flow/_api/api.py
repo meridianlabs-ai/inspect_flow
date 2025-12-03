@@ -25,7 +25,7 @@ def load_job(
         args: A dictionary of arguments to pass as kwargs to the function in the flow config.
     """
     init_flow_logging(log_level)
-    return int_load_job(file, options=ConfigOptions(args=args or {}))
+    return int_load_job(file=file, options=ConfigOptions(args=args or {}))
 
 
 def run(
@@ -51,7 +51,7 @@ def run(
     base_dir = base_dir or Path().cwd().as_posix()
     job = expand_job(job, base_dir=base_dir)
     launch_run(
-        job,
+        job=job,
         base_dir=base_dir,
         dry_run=dry_run,
         no_venv=no_venv,
@@ -82,7 +82,7 @@ def config(
     base_dir = base_dir or Path().cwd().as_posix()
     job = expand_job(job, base_dir=base_dir)
     launch_config(
-        job,
+        job=job,
         base_dir=base_dir,
         resolve=resolve,
         no_venv=no_venv,

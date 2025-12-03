@@ -62,7 +62,7 @@ def expand_job(
     job = _apply_auto_includes(job, base_dir=base_dir, options=options, state=state)
     if options.overrides:
         return _apply_overrides(job, options.overrides)
-    job = _apply_substitions(job, base_dir=base_dir)
+    job = _apply_substitutions(job, base_dir=base_dir)
     _after_flow_job_loaded(job, state)
     return job
 
@@ -110,7 +110,7 @@ class _JobFormatMapMapping:
         return self.dict.get(key, f"{{{key}}}")
 
 
-def _apply_substitions(job: FlowJob, base_dir: str) -> FlowJob:
+def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
     """Apply any substitutions to the job config."""
     # Issue #266 must resolve the log dir before applying substitutions
     if job.log_dir:

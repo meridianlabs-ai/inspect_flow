@@ -1,10 +1,9 @@
-log_dir: ./logs/flow_test
-log_dir_create_unique: true
+log_dir: logs/model_and_task
 options:
   limit: 1
 dependencies:
   additional_dependencies:
-  - ../local_eval
+  - git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
 defaults:
   model:
     name: mockllm/mock-llm1
@@ -13,11 +12,3 @@ defaults:
 tasks:
 - name: inspect_evals/mmlu_0_shot
   model: openai/gpt-4o-mini
-- name: local_eval/noop
-  model: mockllm/mock-llm1
-- name: local_eval/noop
-  model: mockllm/mock-llm2
-- name: ../local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm1
-- name: ../local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm2
