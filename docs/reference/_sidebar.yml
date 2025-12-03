@@ -27,6 +27,8 @@ website:
           href: reference/inspect_flow.qmd#flowoptions
         - text: FlowSolver
           href: reference/inspect_flow.qmd#flowsolver
+        - text: FlowScorer
+          href: reference/inspect_flow.qmd#flowscorer
         - text: FlowTask
           href: reference/inspect_flow.qmd#flowtask
         - text: agents_matrix
