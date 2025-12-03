@@ -58,17 +58,25 @@ def load_job(
     init_flow_logging(log_level)
     config_options = ConfigOptions(**kwargs)
     state = LoadState()
+    file = absolute_file_path(file)
     job = _load_job_from_file(file, args=config_options.get("args", {}), state=state)
     if job is None:
         raise ValueError(f"No value returned from Python config file: {file}")
 
-    job = apply_auto_includes(job, file, config_options, state)
+    base_dir = Path(file).parent.as_posix()
+
+    job = apply_auto_includes(
+        job,
+        base_dir=base_dir,
+        config_options=config_options,
+        state=state,
+    )
 
     overrides = config_options.get("overrides", [])
     if overrides:
         return _apply_overrides(job, overrides)
 
-    job = apply_substitions(job, base_dir=Path(file).parent.as_posix())
+    job = apply_substitions(job, base_dir=base_dir)
 
     after_flow_job_loaded(job, state)
 
@@ -90,7 +98,7 @@ def after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
 def expand_includes(
     job: FlowJob,
     state: LoadState,
-    including_job_path: str = "",
+    base_dir: str = "",
     args: dict[str, Any] | None = None,
 ) -> FlowJob:
     """Apply includes in the job config."""
@@ -100,9 +108,7 @@ def expand_includes(
         path = include if isinstance(include, str) else include.config_file_path
         if not path:
             raise ValueError("Include must have a config_file_path set.")
-        include_path = absolute_path_relative_to(
-            path, str(Path(including_job_path).parent)
-        )
+        include_path = absolute_path_relative_to(path, base_dir=base_dir)
         included_job = _load_job_from_file(include_path, args, state)
         if included_job is not None:
             job = _apply_include(job, included_job)
@@ -196,7 +202,7 @@ def _log_dir_create_unique(log_dir: str) -> str:
 def _load_job_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
 ) -> FlowJob | None:
-    config_path = Path(config_file)
+    config_path = Path(absolute_file_path(config_file))
 
     try:
         with file(config_file, "r") as f:
@@ -233,7 +239,9 @@ def _load_job_from_file(
         sys.exit(1)
 
     if job:
-        return expand_includes(job, state, str(config_path), args)
+        return expand_includes(
+            job, state, base_dir=config_path.parent.as_posix(), args=args
+        )
     return None
 
 
@@ -263,12 +271,12 @@ def _deep_merge_include(
 
 
 def apply_auto_includes(
-    job: FlowJob, config_file: str, config_options: ConfigOptions, state: LoadState
+    job: FlowJob, base_dir: str, config_options: ConfigOptions, state: LoadState
 ) -> FlowJob:
-    absolute_path = absolute_file_path(config_file)
+    absolute_path = absolute_file_path(base_dir)
     protocol, path = split_protocol(absolute_path)
 
-    parent_dir = Path(path).parent
+    parent_dir = Path(base_dir)
     while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
         if protocol:

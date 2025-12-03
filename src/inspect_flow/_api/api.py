@@ -91,14 +91,13 @@ def config(
 
 
 def _prepare_job(job: FlowJob, base_dir: str) -> FlowJob:
-    file = str(Path(base_dir) / "unknown_file")
     state = LoadState()
     job = expand_includes(
         job,
         state,
-        including_job_path=file,
+        base_dir=base_dir,
     )
-    job = apply_auto_includes(job, config_file=file, config_options={}, state=state)
+    job = apply_auto_includes(job, base_dir=base_dir, config_options={}, state=state)
     job = apply_substitions(job, base_dir=base_dir)
     after_flow_job_loaded(job, state)
     return job

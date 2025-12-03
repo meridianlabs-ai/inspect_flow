@@ -348,7 +348,7 @@ def test_multiple_includes() -> None:
             ]
         ),
         state=LoadState(),
-        including_job_path=str(Path(__file__).parent / "config" / "nofile.py"),
+        base_dir=str(Path(__file__).parent / "config"),
     )
     validate_config(job, "multiple_includes_flow.yaml")
 
