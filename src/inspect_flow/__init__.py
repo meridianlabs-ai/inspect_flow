@@ -30,6 +30,7 @@ from inspect_flow._types.flow_types import (
     FlowScorer,
     FlowSolver,
     FlowTask,
+    GenerateConfig,
 )
 from inspect_flow._types.merge import (
     merge,
@@ -48,6 +49,7 @@ __all__ = [
     "FlowScorer",
     "FlowSolver",
     "FlowTask",
+    "GenerateConfig",
     "after_load",
     "agents_matrix",
     "agents_with",

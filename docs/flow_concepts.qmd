@@ -16,7 +16,7 @@ Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 
 ## Basic Example
 
-In [Welcome](index.qmd#basic-example), we showed a simple `FlowJob`. Let's break down what's happening:
+In [Basic Example](index.qmd#basic-example), we showed a simple `FlowJob`. Let's break down what's happening:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/first_config.py >}}
@@ -52,7 +52,9 @@ flow run config.py
 
 **Required fields:**
 
-- **`log_dir`** — Output path for logging results. Supports S3 paths (e.g., `s3://bucket/path`).
+| Field | Description |
+|------------------|--------------------------------|
+| `log_dir` | Output path for logging results. Supports S3 paths (e.g., `s3://bucket/path`) |
 
 **Optional fields:**
 
@@ -60,13 +62,13 @@ flow run config.py
 |------------------|--------------------------------|----------------------|
 | `tasks` | List of tasks to run (`FlowTask` objects or strings) | `None` |
 | `includes` | List of other flow configs to include (paths as strings or `FlowInclude` objects). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
-| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must be empty or have `log_dir_allow_dirty=True`) | `False` |
+| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the job or have `options.log_dir_allow_dirty=True`) | `False` |
 | `python_version` | Python version for the isolated virtual environment (e.g., `"3.11"`) | Same as current environment |
-| `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml`, `requirements.txt`, and config object names |
+| `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names |
 | `env` | Environment variables to set when running tasks | `None` |
 | `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
-| `defaults` | Default values applied across tasks, models, solvers, and agents (see `FlowDefaults` reference) | `None` |
-| `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI) | `None` |
+| `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults and Overrides](defaults_overrides.qmd) and `FlowDefaults` reference) | `None` |
+| `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
 
 ::: callout-note
 ### Config File Evaluation

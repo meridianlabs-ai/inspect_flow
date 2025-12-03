@@ -89,9 +89,9 @@ Let's walk through creating your first Flow configuration. We'll use `FlowJob` (
 ::: {.callout-tip collapse="true"}
 ### Core Components Reference
 
--   `types.FlowJob` — Pydantic class that encapsulates the declarative description of a Flow job.
--   `types.FlowTask` — Pydantic class abstraction on top of Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html).
--   `types.FlowModel` — Pydantic class abstraction on top of Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
+-   `FlowJob` — Pydantic class that encapsulates the declarative description of a Flow job.
+-   `FlowTask` — Pydantic class abstraction on top of Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html).
+-   `FlowModel` — Pydantic class abstraction on top of Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 -   `tasks_matrix` — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.
 -   `models_matrix` — Helper function for parameter sweeping to generate a list of models with all parameter combinations.
 -   `configs_matrix` — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.
@@ -115,7 +115,7 @@ This will run both tasks and display progress in your terminal.
 
 ### Python API
 
-Equally you can run evaluations from Python instead of the command line.
+You can run evaluations from Python instead of the command line.
 
 ``` {.python filename="config.py"}
 {{< include ../examples/python.py >}}
