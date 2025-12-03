@@ -73,7 +73,7 @@ def _after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
         sig = inspect.signature(func)
         filtered_args = {
             k: v
-            for k, v in {"job": job, "files_to_jobs": state.files_to_jobs}.items()
+            for k, v in {"job": job, "files": state.files_to_jobs.keys()}.items()
             if k in sig.parameters
         }
         func(**filtered_args)
