@@ -62,7 +62,7 @@ def create_venv(
 
     _uv_pip_install(dependencies, temp_dir, env)
 
-    # Freeze installed packages to flow_requirements.txt in log_dir
+    # Freeze installed packages to flow-requirements.txt in log_dir
     if job.log_dir:
         freeze_result = run_with_logging(
             ["uv", "pip", "freeze"],
@@ -72,7 +72,7 @@ def create_venv(
         )
         log_dir_path = Path(job.log_dir)
         log_dir_path.mkdir(parents=True, exist_ok=True)
-        requirements_path = log_dir_path / "flow_requirements.txt"
+        requirements_path = log_dir_path / "flow-requirements.txt"
         requirements_path.write_text(freeze_result.stdout)
 
 

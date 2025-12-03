@@ -19,8 +19,6 @@ website:
           href: reference/inspect_flow.qmd#flowdependencies
         - text: FlowEpochs
           href: reference/inspect_flow.qmd#flowepochs
-        - text: FlowInclude
-          href: reference/inspect_flow.qmd#flowinclude
         - text: FlowJob
           href: reference/inspect_flow.qmd#flowjob
         - text: FlowModel

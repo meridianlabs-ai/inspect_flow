@@ -266,7 +266,7 @@ def test_5_flow_requirements() -> None:
             "pip",
             "freeze",
         ]
-        requirements_path = Path("logs") / "flow_requirements.txt"
+        requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
@@ -290,7 +290,7 @@ def test_241_dependency_file() -> None:
             temp_dir=temp_dir,
             env=env,
         )
-        requirements_path = Path("logs") / "flow_requirements.txt"
+        requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
@@ -319,7 +319,7 @@ def test_241_no_uvlock() -> None:
             temp_dir=temp_dir,
             env=env,
         )
-        requirements_path = Path("logs") / "flow_requirements.txt"
+        requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
@@ -343,7 +343,7 @@ def test_241_requirements_txt() -> None:
             temp_dir=temp_dir,
             env=env,
         )
-        requirements_path = Path("logs") / "flow_requirements.txt"
+        requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
