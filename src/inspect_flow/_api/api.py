@@ -24,7 +24,6 @@ def run(
     dry_run: bool = False,
     log_level: str | None = None,
     no_venv: bool = False,
-    no_prepare_job: bool = False,
     no_dotenv: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
@@ -35,14 +34,25 @@ def run(
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
         log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
         no_venv: If True, do not create a virtual environment to run the job.
-        no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.
     """
     init_flow_logging(log_level)
-    run_args = ["--dry-run"] if dry_run else []
     base_dir = base_dir or Path().cwd().as_posix()
-    if not no_prepare_job:
-        job = _prepare_job(job, base_dir=base_dir)
+    job = _prepare_job(job, base_dir=base_dir)
+    int_run(
+        job,
+        base_dir=base_dir,
+        dry_run=dry_run,
+        no_venv=no_venv,
+        no_dotenv=no_dotenv,
+    )
+
+
+def int_run(
+    job: FlowJob, base_dir: str, dry_run: bool, no_venv: bool, no_dotenv: bool
+) -> None:
+    """Internal run function implementation."""
+    run_args = ["--dry-run"] if dry_run else []
     launch(
         job=job,
         base_dir=base_dir,
@@ -59,7 +69,6 @@ def config(
     resolve: bool = False,
     log_level: str | None = None,
     no_venv: bool = False,
-    no_prepare_job: bool = False,
     no_dotenv: bool = False,
 ) -> None:
     """Print the flow job configuration.
@@ -70,13 +79,24 @@ def config(
         resolve: If True, resolve the configuration before printing.
         log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
         no_venv: If True, do not create a virtual environment to resolve the job.
-        no_prepare_job: If True, do not prepare the job by expanding includes and applying substitutions before running it.
         no_dotenv: If True, do not load environment variables from a .env file.
     """
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
-    if not no_prepare_job:
-        job = _prepare_job(job, base_dir=base_dir)
+    job = _prepare_job(job, base_dir=base_dir)
+    int_config(
+        job,
+        base_dir=base_dir,
+        resolve=resolve,
+        no_venv=no_venv,
+        no_dotenv=no_dotenv,
+    )
+
+
+def int_config(
+    job: FlowJob, base_dir: str, resolve: bool, no_venv: bool, no_dotenv: bool
+) -> None:
+    """Internal config function implementation."""
     if resolve:
         launch(
             job=job,

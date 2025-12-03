@@ -1,9 +1,10 @@
 from pathlib import Path
 
 import click
+from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
-from inspect_flow._api.api import run
+from inspect_flow._api.api import int_run
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
@@ -29,12 +30,12 @@ def run_command(
     """CLI command to run a job."""
     log_level = kwargs.get("log_level")
     config_options = parse_config_options(**kwargs)
-    config = load_job(config_file, log_level=log_level, **config_options)
-    run(
-        config,
+    config_file = absolute_file_path(config_file)
+    job = load_job(config_file, log_level=log_level, **config_options)
+    int_run(
+        job,
         base_dir=str(Path(config_file).parent),
         dry_run=dry_run,
-        log_level=log_level,
         no_venv=kwargs.get("no_venv", False) or False,
-        no_prepare_job=True,
+        no_dotenv=False,
     )
