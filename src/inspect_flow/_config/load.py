@@ -12,13 +12,11 @@ from attr import dataclass, field
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
 from pydantic_core import ValidationError
-from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import PKG_NAME
-from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -27,16 +25,10 @@ logger = getLogger(PKG_NAME)
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
-class ConfigOptions(TypedDict, total=False):
-    """Options for loading a configuration file.
-
-    Attributes:
-        overrides: A list of configuration overrides in the form of "key1.key2=value" strings.
-        args: A dictionary of arguments to pass as kwargs to the function in the flow config.
-    """
-
-    overrides: list[str]
-    args: dict[str, Any]
+@dataclass
+class ConfigOptions:
+    overrides: list[str] = field(factory=list)
+    args: dict[str, Any] = field(factory=dict)
 
 
 @dataclass
@@ -45,37 +37,37 @@ class LoadState:
     after_flow_job_loaded_funcs: list[Callable] = field(factory=list)
 
 
-def load_job(
-    file: str, log_level: str | None = None, **kwargs: Unpack[ConfigOptions]
-) -> FlowJob:
-    """Load a job file and apply any overrides.
-
-    Args:
-        file: The path to the job configuration file.
-        log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
-        **kwargs: Configuration options. See ConfigOptions for available parameters.
-    """
-    init_flow_logging(log_level)
-    config_options = ConfigOptions(**kwargs)
+def int_load_job(file: str, options: ConfigOptions) -> FlowJob:
     state = LoadState()
-    job = _load_job_from_file(file, args=config_options.get("args", {}), state=state)
+    file = absolute_file_path(file)
+    job = _load_job_from_file(file, args=options.args, state=state)
     if job is None:
         raise ValueError(f"No value returned from Python config file: {file}")
 
-    job = apply_auto_includes(job, file, config_options, state)
-
-    overrides = config_options.get("overrides", [])
-    if overrides:
-        return _apply_overrides(job, overrides)
-
-    job = apply_substitions(job, base_dir=Path(file).parent.as_posix())
-
-    after_flow_job_loaded(job, state)
-
+    base_dir = Path(file).parent.as_posix()
+    job = expand_job(job, base_dir=base_dir, options=options)
     return job
 
 
-def after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
+def expand_job(
+    job: FlowJob, base_dir: str, options: ConfigOptions | None = None
+) -> FlowJob:
+    options = options or ConfigOptions()
+    state = LoadState()
+    job = _expand_includes(
+        job,
+        state,
+        base_dir=base_dir,
+    )
+    job = _apply_auto_includes(job, base_dir=base_dir, options=options, state=state)
+    if options.overrides:
+        return _apply_overrides(job, options.overrides)
+    job = _apply_substitutions(job, base_dir=base_dir)
+    _after_flow_job_loaded(job, state)
+    return job
+
+
+def _after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
     """Run any registered after_flow_job_loaded functions."""
     for func in state.after_flow_job_loaded_funcs:
         sig = inspect.signature(func)
@@ -87,10 +79,10 @@ def after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
         func(**filtered_args)
 
 
-def expand_includes(
+def _expand_includes(
     job: FlowJob,
     state: LoadState,
-    including_job_path: str = "",
+    base_dir: str = "",
     args: dict[str, Any] | None = None,
 ) -> FlowJob:
     """Apply includes in the job config."""
@@ -100,9 +92,7 @@ def expand_includes(
         path = include if isinstance(include, str) else include.config_file_path
         if not path:
             raise ValueError("Include must have a config_file_path set.")
-        include_path = absolute_path_relative_to(
-            path, str(Path(including_job_path).parent)
-        )
+        include_path = absolute_path_relative_to(path, base_dir=base_dir)
         included_job = _load_job_from_file(include_path, args, state)
         if included_job is not None:
             job = _apply_include(job, included_job)
@@ -120,7 +110,7 @@ class _JobFormatMapMapping:
         return self.dict.get(key, f"{{{key}}}")
 
 
-def apply_substitions(job: FlowJob, base_dir: str) -> FlowJob:
+def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
     """Apply any substitutions to the job config."""
     # Issue #266 must resolve the log dir before applying substitutions
     if job.log_dir:
@@ -196,7 +186,7 @@ def _log_dir_create_unique(log_dir: str) -> str:
 def _load_job_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
 ) -> FlowJob | None:
-    config_path = Path(config_file)
+    config_path = Path(absolute_file_path(config_file))
 
     try:
         with file(config_file, "r") as f:
@@ -233,7 +223,9 @@ def _load_job_from_file(
         sys.exit(1)
 
     if job:
-        return expand_includes(job, state, str(config_path), args)
+        return _expand_includes(
+            job, state, base_dir=config_path.parent.as_posix(), args=args
+        )
     return None
 
 
@@ -262,21 +254,19 @@ def _deep_merge_include(
     return result
 
 
-def apply_auto_includes(
-    job: FlowJob, config_file: str, config_options: ConfigOptions, state: LoadState
+def _apply_auto_includes(
+    job: FlowJob, base_dir: str, options: ConfigOptions, state: LoadState
 ) -> FlowJob:
-    absolute_path = absolute_file_path(config_file)
+    absolute_path = absolute_file_path(base_dir)
     protocol, path = split_protocol(absolute_path)
 
-    parent_dir = Path(path).parent
+    parent_dir = Path(base_dir)
     while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
         if protocol:
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
-            auto_job = _load_job_from_file(
-                auto_file, config_options.get("args", {}), state=state
-            )
+            auto_job = _load_job_from_file(auto_file, args=options.args, state=state)
             if auto_job:
                 job = _apply_include(job, auto_job)
         if parent_dir.parent == parent_dir:

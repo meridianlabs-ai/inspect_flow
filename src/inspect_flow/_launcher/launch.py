@@ -1,11 +1,15 @@
+import os
 import subprocess
 import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
 
+import click
+from dotenv import dotenv_values, find_dotenv
 from inspect_ai._util.file import absolute_file_path
 
+from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.venv import create_venv, write_flow_yaml
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -13,13 +17,47 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 logger = getLogger(__name__)
 
 
-def launch(
+def launch_run(
     job: FlowJob,
     base_dir: str,
-    env: dict[str, str],
+    dry_run: bool = False,
+    no_venv: bool = False,
+    no_dotenv: bool = False,
+) -> None:
+    int_launch(
+        job=job,
+        base_dir=base_dir,
+        no_dotenv=no_dotenv,
+        run_args=["--dry-run"] if dry_run else [],
+        no_venv=no_venv,
+    )
+
+
+def launch_config(
+    job: FlowJob, base_dir: str, resolve: bool, no_venv: bool, no_dotenv: bool
+) -> None:
+    if not resolve:
+        dump = config_to_yaml(job)
+        click.echo(dump)
+    else:
+        int_launch(
+            job=job,
+            base_dir=base_dir,
+            no_dotenv=no_dotenv,
+            run_args=["--config"],
+            no_venv=no_venv,
+        )
+
+
+def int_launch(
+    job: FlowJob,
+    base_dir: str,
+    no_dotenv: bool,
     run_args: list[str] | None = None,
     no_venv: bool = False,
 ) -> None:
+    env = _get_env(base_dir, no_dotenv)
+
     if not job.log_dir:
         raise ValueError("log_dir must be set before launching the flow job")
     job.log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
@@ -71,3 +109,19 @@ def launch(
             )
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
+
+
+def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
+    env = os.environ.copy()
+    if no_dotenv:
+        return env
+    # Temporarily change to base_dir to find .env file
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(base_dir)
+        # Already loaded environment variables should take precedence
+        dotenv = dotenv_values(find_dotenv(usecwd=True))
+        env = {k: v for k, v in dotenv.items() if v is not None} | env
+    finally:
+        os.chdir(original_cwd)
+    return env

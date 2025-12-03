@@ -14,28 +14,9 @@ def test_258_run_includes() -> None:
             FlowTask(name="local_eval/noop", model="{defaults[model][name]}"),
         ],
     )
-    with patch("inspect_flow._api.api.launch") as mock_launch:
+    with patch("inspect_flow._api.api.launch_run") as mock_launch:
         run(job=job, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_job = mock_launch.mock_calls[0].kwargs["job"]
     assert launch_job.includes is None
     validate_config(launch_job, "run_includes.yaml")
-
-
-def test_259_dot_env() -> None:
-    job = FlowJob(
-        tasks=[
-            "local_eval/noop",
-        ],
-    )
-    with patch("inspect_flow._api.api.launch") as mock_launch:
-        run(job=job, base_dir="./tests/config/")
-    mock_launch.assert_called_once()
-    launch_env = mock_launch.mock_calls[0].kwargs["env"]
-    assert launch_env["TEST_ENV_VAR"] == "test_value"
-    # Now test with no_dotenv=True
-    with patch("inspect_flow._api.api.launch") as mock_launch:
-        run(job=job, base_dir="./tests/config/", no_dotenv=True)
-    mock_launch.assert_called_once()
-    launch_env = mock_launch.mock_calls[0].kwargs["env"]
-    assert "TEST_ENV_VAR" not in launch_env

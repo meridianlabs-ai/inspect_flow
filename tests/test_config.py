@@ -16,19 +16,21 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
+from inspect_flow._api.api import load_job
 from inspect_flow._config.load import (
-    LoadState,
+    ConfigOptions,
     _apply_overrides,
+    _apply_substitutions,
     _log_dir_create_unique,
-    after_flow_job_loaded,
-    apply_substitions,
-    expand_includes,
-    load_job,
+    expand_job,
+    int_load_job,
 )
 from inspect_flow._types.flow_types import FlowDependencies
 
 from tests.test_helpers.config_helpers import validate_config
 from tests.test_helpers.log_helpers import init_test_logs
+
+config_dir = str(Path(__file__).parent / "config")
 
 
 def test_config_one_task() -> None:
@@ -185,13 +187,15 @@ def test_merge_config():
 
 
 def test_load_config_overrides():
-    config = load_job(
+    config = int_load_job(
         str(Path(__file__).parent / "config" / "model_and_task_flow.py"),
-        overrides=[
-            "log_dir=./logs/overridden_flow",
-            "options.limit=2",
-            "defaults.solver.args.tool_calls=none",
-        ],
+        options=ConfigOptions(
+            overrides=[
+                "log_dir=./logs/overridden_flow",
+                "options.limit=2",
+                "defaults.solver.args.tool_calls=none",
+            ]
+        ),
     )
     assert config.log_dir == "./logs/overridden_flow"
     assert config.options
@@ -322,33 +326,32 @@ def test_overrides_invalid_config_key():
 
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
-    job = expand_includes(
+    job = expand_job(
         FlowJob(includes=[FlowInclude(config_file_path=include_path)]),
-        state=LoadState(),
+        base_dir=config_dir,
     )
     validate_config(job, "absolute_include_flow.yaml")
 
 
 def test_recursive_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "include_flow.py")
-    job = expand_includes(
+    job = expand_job(
         FlowJob(includes=[FlowInclude(config_file_path=include_path)]),
-        state=LoadState(),
+        base_dir=config_dir,
     )
     validate_config(job, "recursive_include_flow.yaml")
 
 
 def test_multiple_includes() -> None:
-    job = expand_includes(
+    job = expand_job(
         FlowJob(
             includes=[
                 "defaults_flow.py",
-                "e2e_test_flow.py",
+                "dependencies_flow.py",
                 "model_and_task_flow.py",
             ]
         ),
-        state=LoadState(),
-        including_job_path=str(Path(__file__).parent / "config" / "nofile.py"),
+        base_dir=config_dir,
     )
     validate_config(job, "multiple_includes_flow.yaml")
 
@@ -375,7 +378,7 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_219_include_remove_duplicates() -> None:
     include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
-    job = expand_includes(
+    job = expand_job(
         FlowJob(
             includes=[include_path],
             dependencies=FlowDependencies(
@@ -384,7 +387,7 @@ def test_219_include_remove_duplicates() -> None:
                 ]
             ),
         ),
-        state=LoadState(),
+        base_dir=config_dir,
     )
     assert job.dependencies
     assert job.dependencies.additional_dependencies == [
@@ -407,7 +410,7 @@ def test_221_format_map() -> None:
             ],
         ),
     )
-    job2 = apply_substitions(job, base_dir=".")
+    job2 = expand_job(job, base_dir=".")
     assert job2.options
     assert job2.options.bundle_dir == "./logs/flow_test/bundle"
 
@@ -417,7 +420,7 @@ def test_221_format_map_nested() -> None:
         log_dir="{flow_metadata[dir]}/flow_test",
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
-    job2 = apply_substitions(job, base_dir=".")
+    job2 = expand_job(job, base_dir=".")
     assert job2.log_dir == "tests/logs/flow_test"
 
 
@@ -429,7 +432,7 @@ def test_221_format_map_recursive() -> None:
         },
     )
     with pytest.raises(ValueError):
-        apply_substitions(job, base_dir=".")
+        expand_job(job, base_dir=".")
 
 
 def test_221_format_map_file() -> None:
@@ -451,7 +454,7 @@ def test_257_format_map_not_config() -> None:
             model="openai/gpt-4o-mini",
         ),
     )
-    job2 = apply_substitions(job, base_dir=".")
+    job2 = expand_job(job, base_dir=".")
     assert job2.log_dir == "logs/"
     assert job2.env
     assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
@@ -475,7 +478,7 @@ def test_266_format_map_log_dir_create_unique() -> None:
             ],
         ),
     )
-    job2 = apply_substitions(job, base_dir=".")
+    job2 = expand_job(job, base_dir=".")
     assert job2.log_dir != log_dir
     assert job2.options
     assert job2.options.bundle_dir == f"{job2.log_dir}/bundle"
@@ -487,9 +490,7 @@ def test_222_including_jobs_check() -> None:
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
-    state = LoadState()
-    job2 = expand_includes(job, state=state)
-    after_flow_job_loaded(job2, state)
+    job2 = expand_job(job, base_dir=config_dir)
     assert job2.options
     assert job2.options.max_samples == 16
 
@@ -497,10 +498,8 @@ def test_222_including_jobs_check() -> None:
         includes=[include_path],
         options=FlowOptions(limit=1, max_samples=1024),
     )
-    state = LoadState()
-    job4 = expand_includes(job3, state=state)
     with pytest.raises(ValueError):
-        after_flow_job_loaded(job4, state)
+        expand_job(job3, base_dir=config_dir)
 
 
 def test_206_dirty_repo_check() -> None:
@@ -513,10 +512,8 @@ def test_206_dirty_repo_check() -> None:
     dirty_file = Path(__file__).parent / "test_dirty_file.txt"
     dirty_file.touch()
     try:
-        state = LoadState()
-        job = expand_includes(job, state=state)
         with pytest.raises(RuntimeError):
-            after_flow_job_loaded(job, state)
+            job = expand_job(job, base_dir=Path(include_path).parent.as_posix())
     finally:
         dirty_file.unlink()
 
@@ -562,6 +559,6 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
             log_dir_create_unique=True,
             tasks=["task_name"],
         )
-        job2 = apply_substitions(job, base_dir=".")
+        job2 = _apply_substitutions(job, base_dir=Path.cwd().resolve().as_posix())
         assert job2.log_dir == f"{log_dir}_2"
     assert mock_exists.call_count == 3

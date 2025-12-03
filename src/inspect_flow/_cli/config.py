@@ -1,15 +1,17 @@
 from pathlib import Path
 
 import click
+from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
-from inspect_flow._api.api import config
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
     parse_config_options,
 )
-from inspect_flow._config.load import load_job
+from inspect_flow._config.load import int_load_job
+from inspect_flow._launcher.launch import launch_config
+from inspect_flow._util.logging import init_flow_logging
 
 
 @click.command("config", help="Output config")
@@ -28,13 +30,14 @@ def config_command(
 ) -> None:
     """CLI command to output config."""
     log_level = kwargs.get("log_level")
+    init_flow_logging(log_level)
     config_options = parse_config_options(**kwargs)
-    fconfig = load_job(config_file, log_level=log_level, **config_options)
-    config(
+    config_file = absolute_file_path(config_file)
+    fconfig = int_load_job(config_file, options=config_options)
+    launch_config(
         fconfig,
         base_dir=str(Path(config_file).parent),
         resolve=resolve,
-        log_level=log_level,
         no_venv=kwargs.get("no_venv", False) or False,
-        no_prepare_job=True,
+        no_dotenv=False,
     )
