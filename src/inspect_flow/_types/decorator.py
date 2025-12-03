@@ -16,6 +16,6 @@ def after_load(func: Callable) -> Callable:  # noqa: D417
             job: The loaded FlowJob.
             files: List of file paths that were loaded to create the FlowJob.
         ...
-    """  # noqa: D214,D417
+    """  # noqa: D214
     setattr(func, INSPECT_FLOW_AFTER_LOAD_ATTR, True)
     return func
