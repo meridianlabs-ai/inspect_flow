@@ -1,8 +1,8 @@
 import pytest
+from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowModel,
     FlowTask,
-    GenerateConfig,
     configs_matrix,
     tasks_matrix,
     tasks_with,

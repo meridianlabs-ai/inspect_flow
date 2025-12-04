@@ -1,4 +1,5 @@
-from inspect_flow import FlowDefaults, FlowJob, FlowModel, GenerateConfig
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowJob, FlowModel
 
 FlowJob(
     includes=["_other_flow.py"],

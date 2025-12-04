@@ -1,11 +1,11 @@
 from pathlib import Path
 
+from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowDefaults,
     FlowJob,
     FlowModel,
     FlowTask,
-    GenerateConfig,
 )
 
 config_system_message = "Config System Message"

@@ -7,7 +7,7 @@ import yaml
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
-from inspect_ai.model import Model, ModelName, ModelOutput
+from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
 from inspect_ai.solver import Solver, TaskState
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
@@ -18,7 +18,6 @@ from inspect_flow import (
     FlowOptions,
     FlowSolver,
     FlowTask,
-    GenerateConfig,
     models_matrix,
     solvers_matrix,
     tasks_matrix,

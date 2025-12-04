@@ -1,4 +1,5 @@
-from inspect_flow import FlowJob, GenerateConfig, models_matrix, tasks_matrix
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowJob, models_matrix, tasks_matrix
 
 FlowJob(
     log_dir="logs",

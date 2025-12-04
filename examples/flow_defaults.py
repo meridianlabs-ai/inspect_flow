@@ -1,3 +1,4 @@
+from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
@@ -5,7 +6,6 @@ from inspect_flow import (
     FlowModel,
     FlowSolver,
     FlowTask,
-    GenerateConfig,
 )
 
 FlowJob(
