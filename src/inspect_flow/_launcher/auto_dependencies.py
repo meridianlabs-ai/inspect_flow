@@ -90,7 +90,7 @@ def _collect_model_dependencies(
     model: str | FlowModel | None, dependencies: set[str]
 ) -> None:
     name = model.name if isinstance(model, FlowModel) else model
-    if name is None:
+    if not name:
         return
     split = name.split("/", maxsplit=1)
     if len(split) == 2:

@@ -301,7 +301,7 @@ def test_metadata():
     agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
     solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
     task = FlowTask(name="taskname", flow_metadata={"task": "3"})
-    config = FlowJob(
+    job = FlowJob(
         tasks=tasks_matrix(
             task=task,
             model=models_to_use,
@@ -309,7 +309,7 @@ def test_metadata():
         ),
         flow_metadata={"config": "4"},
     )
-    validate_config(config, "metadata_flow.yaml")
+    validate_config(job, "metadata_flow.yaml")
 
 
 def test_overrides_invalid_config_key():

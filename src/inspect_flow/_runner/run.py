@@ -13,6 +13,7 @@ from inspect_flow._types.flow_types import (
     FlowOptions,
 )
 from inspect_flow._util.list_util import sequence_to_list
+from inspect_flow._util.not_given import default, default_none
 
 
 def _read_config() -> FlowJob:
@@ -54,54 +55,52 @@ def _run_eval_set(
         result = inspect_ai.eval_set(
             tasks=tasks,
             log_dir=resolved_config.log_dir,
-            retry_attempts=options.retry_attempts,
-            retry_wait=options.retry_wait,
-            retry_connections=options.retry_connections,
-            retry_cleanup=options.retry_cleanup,
+            retry_attempts=default_none(options.retry_attempts),
+            retry_wait=default_none(options.retry_wait),
+            retry_connections=default_none(options.retry_connections),
+            retry_cleanup=default_none(options.retry_cleanup),
             # model= FlowTask
             # model_base_url= FlowModel
             # model_args= FlowModel
             # model_roles= FlowTask
             # task_args= FlowTask
-            sandbox=options.sandbox,
-            sandbox_cleanup=options.sandbox_cleanup,
+            sandbox=default_none(options.sandbox),
+            sandbox_cleanup=default_none(options.sandbox_cleanup),
             # solver= FlowTask
-            tags=sequence_to_list(options.tags),
-            metadata=options.metadata,
-            trace=options.trace,
-            display=options.display,
-            approval=options.approval,
-            score=options.score if options.score is not None else True,
-            log_level=options.log_level,
-            log_level_transcript=options.log_level_transcript,
-            log_format=options.log_format,
-            limit=options.limit,
+            tags=sequence_to_list(default_none(options.tags)),
+            metadata=default_none(options.metadata),
+            trace=default_none(options.trace),
+            display=default_none(options.display),
+            approval=default_none(options.approval),
+            score=default(options.score, True),
+            log_level=default_none(options.log_level),
+            log_level_transcript=default_none(options.log_level_transcript),
+            log_format=default_none(options.log_format),
+            limit=default_none(options.limit),
             # sample_id= FlowTask
-            sample_shuffle=options.sample_shuffle,
+            sample_shuffle=default_none(options.sample_shuffle),
             # epochs= FlowTask
-            fail_on_error=options.fail_on_error,
-            continue_on_fail=options.continue_on_fail,
-            retry_on_error=options.retry_on_error
-            if options.retry_on_error is not None
-            else 3,
-            debug_errors=options.debug_errors,
+            fail_on_error=default_none(options.fail_on_error),
+            continue_on_fail=default_none(options.continue_on_fail),
+            retry_on_error=default(options.retry_on_error, 3),
+            debug_errors=default_none(options.debug_errors),
             # message_limit= FlowTask
             # token_limit= FlowTask
             # time_limit= FlowTask
             # working_limit= FlowTask
-            max_samples=options.max_samples,
-            max_tasks=options.max_tasks if options.max_tasks is not None else 10,
-            max_subprocesses=options.max_subprocesses,
-            max_sandboxes=options.max_sandboxes,
-            log_samples=options.log_samples,
-            log_realtime=options.log_realtime,
-            log_images=options.log_images,
-            log_buffer=options.log_buffer,
-            log_shared=options.log_shared,
-            bundle_dir=options.bundle_dir,
-            bundle_overwrite=options.bundle_overwrite or False,
-            log_dir_allow_dirty=options.log_dir_allow_dirty,
-            eval_set_id=options.eval_set_id,
+            max_samples=default_none(options.max_samples),
+            max_tasks=default(options.max_tasks, 10),
+            max_subprocesses=default_none(options.max_subprocesses),
+            max_sandboxes=default_none(options.max_sandboxes),
+            log_samples=default_none(options.log_samples),
+            log_realtime=default_none(options.log_realtime),
+            log_images=default_none(options.log_images),
+            log_buffer=default_none(options.log_buffer),
+            log_shared=default_none(options.log_shared),
+            bundle_dir=default_none(options.bundle_dir),
+            bundle_overwrite=default(options.bundle_overwrite, False),
+            log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
+            eval_set_id=default_none(options.eval_set_id),
             # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
         )
     except PrerequisiteError as e:

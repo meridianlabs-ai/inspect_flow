@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from inspect_flow._types.flow_types import FlowJob, FlowTask
+from inspect_flow._types.flow_types import FlowJob, FlowTask, not_given
 from inspect_flow.api import run
 
 from tests.test_helpers.config_helpers import validate_config
@@ -18,5 +18,5 @@ def test_258_run_includes() -> None:
         run(job=job, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_job = mock_launch.mock_calls[0].kwargs["job"]
-    assert launch_job.includes is None
+    assert launch_job.includes == not_given
     validate_config(launch_job, "run_includes.yaml")

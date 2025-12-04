@@ -185,7 +185,7 @@ def test_write_config() -> None:
             loaded_job.python_version
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         )
-        loaded_job.python_version = None
+        loaded_job.python_version = not_given
         assert loaded_job == job
 
 

@@ -17,8 +17,8 @@ from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
 )
-from pydantic import BaseModel, Field
-from typing_extensions import override
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self, override
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
@@ -48,47 +48,47 @@ not_given = NotGiven(type="NOT_GIVEN")
 class FlowModel(BaseModel, extra="forbid"):
     """Configuration for a Model."""
 
-    name: str | None = Field(
-        default=None,
+    name: str | None | NotGiven = Field(
+        default=not_given,
         description="Name of the model to use. Required to be set by the time the model is created.",
     )
 
-    role: str | None = Field(
-        default=None,
+    role: str | None | NotGiven = Field(
+        default=not_given,
         description="Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified.",
     )
 
-    default: str | None = Field(
-        default=None,
+    default: str | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
     )
 
-    config: GenerateConfig | None = Field(
-        default=None,
+    config: GenerateConfig | None | NotGiven = Field(
+        default=not_given,
         description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
     )
 
-    base_url: str | None = Field(
-        default=None,
+    base_url: str | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Alternate base URL for model.",
     )
 
-    api_key: str | None = Field(
-        default=None,
+    api_key: str | None | NotGiven = Field(
+        default=not_given,
         description="Optional. API key for model.",
     )
 
-    memoize: bool | None = Field(
-        default=None,
+    memoize: bool | None | NotGiven = Field(
+        default=not_given,
         description="Use/store a cached version of the model based on the parameters to get_model(). Defaults to True.",
     )
 
-    model_args: CreateArgs | None = Field(
-        default=None, description="Additional args to pass to model constructor."
+    model_args: CreateArgs | None | NotGiven = Field(
+        default=not_given, description="Additional args to pass to model constructor."
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
@@ -96,18 +96,18 @@ class FlowModel(BaseModel, extra="forbid"):
 class FlowScorer(BaseModel, extra="forbid"):
     """Configuration for a Scorer."""
 
-    name: str | None = Field(
-        default=None,
+    name: str | None | NotGiven = Field(
+        default=not_given,
         description="Name of the scorer. Required to be set by the time the scorer is created.",
     )
 
-    args: CreateArgs | None = Field(
-        default=None,
+    args: CreateArgs | None | NotGiven = Field(
+        default=not_given,
         description="Additional args to pass to scorer constructor.",
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the scorer.",
     )
 
@@ -115,18 +115,18 @@ class FlowScorer(BaseModel, extra="forbid"):
 class FlowSolver(BaseModel, extra="forbid"):
     """Configuration for a Solver."""
 
-    name: str | None = Field(
-        default=None,
+    name: str | None | NotGiven = Field(
+        default=not_given,
         description="Name of the solver. Required to be set by the time the solver is created.",
     )
 
-    args: CreateArgs | None = Field(
-        default=None,
+    args: CreateArgs | None | NotGiven = Field(
+        default=not_given,
         description="Additional args to pass to solver constructor.",
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the solver.",
     )
 
@@ -134,28 +134,33 @@ class FlowSolver(BaseModel, extra="forbid"):
 class FlowAgent(BaseModel, extra="forbid"):
     """Configuration for an Agent."""
 
-    name: str | None = Field(
-        default=None,
+    name: str | None | NotGiven = Field(
+        default=not_given,
         description="Name of the agent. Required to be set by the time the agent is created.",
     )
 
-    args: CreateArgs | None = Field(
-        default=None,
+    args: CreateArgs | None | NotGiven = Field(
+        default=not_given,
         description="Additional args to pass to agent constructor.",
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the agent.",
     )
 
-    type: Literal["agent"] = Field(
-        default="agent",
+    type: Literal["agent"] | None = Field(
+        default=None,
         description="Type needed to differentiated solvers and agents in solver lists.",
     )
 
+    @model_validator(mode="after")
+    def set_type(self) -> Self:
+        self.type = "agent"
+        return self
 
-class FlowEpochs(BaseModel):
+
+class FlowEpochs(BaseModel, extra="forbid"):
     """Configuration for task epochs.
 
     Number of epochs to repeat samples over and optionally one or more
@@ -165,8 +170,8 @@ class FlowEpochs(BaseModel):
 
     epochs: int = Field(description="Number of epochs.")
 
-    reducer: str | Sequence[str] | None = Field(
-        default=None,
+    reducer: str | Sequence[str] | None | NotGiven = Field(
+        default=not_given,
         description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
     )
 
@@ -182,8 +187,8 @@ class FlowTask(BaseModel, extra="forbid"):
         description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
     )
 
-    args: CreateArgs | None = Field(
-        default=None,
+    args: CreateArgs | None | NotGiven = Field(
+        default=not_given,
         description="Additional args to pass to task constructor",
     )
 
@@ -265,18 +270,18 @@ class FlowTask(BaseModel, extra="forbid"):
         default=not_given, description="Additional metadata to associate with the task."
     )
 
-    sample_id: str | int | Sequence[str | int] | None = Field(
-        default=None,
+    sample_id: str | int | Sequence[str | int] | None | NotGiven = Field(
+        default=not_given,
         description="Evaluate specific sample(s) from the dataset.",
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
 
     @property
-    def model_name(self) -> str | None:
+    def model_name(self) -> str | None | NotGiven:
         """Get the model name from the model field.
 
         Returns:
@@ -292,172 +297,174 @@ class FlowTask(BaseModel, extra="forbid"):
 class FlowOptions(BaseModel, extra="forbid"):
     """Evaluation options."""
 
-    retry_attempts: int | None = Field(
-        default=None,
+    retry_attempts: int | None | NotGiven = Field(
+        default=not_given,
         description="Maximum number of retry attempts before giving up (defaults to 10).",
     )
 
-    retry_wait: float | None = Field(
-        default=None,
+    retry_wait: float | None | NotGiven = Field(
+        default=not_given,
         description="Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour.",
     )
 
-    retry_connections: float | None = Field(
-        default=None,
+    retry_connections: float | None | NotGiven = Field(
+        default=not_given,
         description="Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).",
     )
 
-    retry_cleanup: bool | None = Field(
-        default=None,
+    retry_cleanup: bool | None | NotGiven = Field(
+        default=not_given,
         description="Cleanup failed log files after retries (defaults to True).",
     )
 
-    sandbox: SandboxEnvironmentType | None = Field(
-        default=None,
+    sandbox: SandboxEnvironmentType | None | NotGiven = Field(
+        default=not_given,
         description="Sandbox environment type (or optionally a str or tuple with a shorthand spec).",
     )
 
-    sandbox_cleanup: bool | None = Field(
-        default=None,
+    sandbox_cleanup: bool | None | NotGiven = Field(
+        default=not_given,
         description="Cleanup sandbox environments after task completes (defaults to True).",
     )
 
-    tags: Sequence[str] | None = Field(
-        default=None, description="Tags to associate with this evaluation run."
+    tags: Sequence[str] | None | NotGiven = Field(
+        default=not_given, description="Tags to associate with this evaluation run."
     )
 
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Metadata to associate with this evaluation run."
+    metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given, description="Metadata to associate with this evaluation run."
     )
 
-    trace: bool | None = Field(
-        default=None,
+    trace: bool | None | NotGiven = Field(
+        default=not_given,
         description="Trace message interactions with evaluated model to terminal.",
     )
 
-    display: DisplayType | None = Field(
-        default=None, description="Task display type (defaults to 'full')."
+    display: DisplayType | None | NotGiven = Field(
+        default=not_given, description="Task display type (defaults to 'full')."
     )
 
-    approval: str | ApprovalPolicyConfig | None = Field(
-        default=None,
+    approval: str | ApprovalPolicyConfig | None | NotGiven = Field(
+        default=not_given,
         description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
     )
 
-    score: bool | None = Field(
-        default=None, description="Score output (defaults to True)."
+    score: bool | None | NotGiven = Field(
+        default=not_given, description="Score output (defaults to True)."
     )
 
-    log_level: str | None = Field(
-        default=None,
+    log_level: str | None | NotGiven = Field(
+        default=not_given,
         description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning").',
     )
 
-    log_level_transcript: str | None = Field(
-        default=None,
+    log_level_transcript: str | None | NotGiven = Field(
+        default=not_given,
         description='Level for logging to the log file (defaults to "info").',
     )
 
-    log_format: Literal["eval", "json"] | None = Field(
-        default=None,
+    log_format: Literal["eval", "json"] | None | NotGiven = Field(
+        default=not_given,
         description='Format for writing log files (defaults to "eval", the native high-performance format).',
     )
 
-    limit: int | None = Field(
-        default=None, description="Limit evaluated samples (defaults to all samples)."
+    limit: int | None | NotGiven = Field(
+        default=not_given,
+        description="Limit evaluated samples (defaults to all samples).",
     )
 
-    sample_shuffle: bool | int | None = Field(
-        default=None,
+    sample_shuffle: bool | int | None | NotGiven = Field(
+        default=not_given,
         description="Shuffle order of samples (pass a seed to make the order deterministic).",
     )
 
-    fail_on_error: bool | float | None = Field(
-        default=None,
+    fail_on_error: bool | float | None | NotGiven = Field(
+        default=not_given,
         description="`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails.",
     )
 
-    continue_on_fail: bool | None = Field(
-        default=None,
+    continue_on_fail: bool | None | NotGiven = Field(
+        default=not_given,
         description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
     )
 
-    retry_on_error: int | None = Field(
-        default=None,
+    retry_on_error: int | None | NotGiven = Field(
+        default=not_given,
         description="Number of times to retry samples if they encounter errors (defaults to 3).",
     )
 
-    debug_errors: bool | None = Field(
-        default=None,
+    debug_errors: bool | None | NotGiven = Field(
+        default=not_given,
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to False).",
     )
 
-    max_samples: int | None = Field(
-        default=None,
+    max_samples: int | None | NotGiven = Field(
+        default=not_given,
         description="Maximum number of samples to run in parallel (default is max_connections).",
     )
 
-    max_tasks: int | None = Field(
-        default=None,
+    max_tasks: int | None | NotGiven = Field(
+        default=not_given,
         description="Maximum number of tasks to run in parallel (defaults is 10).",
     )
 
-    max_subprocesses: int | None = Field(
-        default=None,
+    max_subprocesses: int | None | NotGiven = Field(
+        default=not_given,
         description="Maximum number of subprocesses to run in parallel (default is os.cpu_count()).",
     )
 
-    max_sandboxes: int | None = Field(
-        default=None,
+    max_sandboxes: int | None | NotGiven = Field(
+        default=not_given,
         description="Maximum number of sandboxes (per-provider) to run in parallel.",
     )
 
-    log_samples: bool | None = Field(
-        default=None, description="Log detailed samples and scores (defaults to True)."
+    log_samples: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Log detailed samples and scores (defaults to True).",
     )
 
-    log_realtime: bool | None = Field(
-        default=None,
+    log_realtime: bool | None | NotGiven = Field(
+        default=not_given,
         description="Log events in realtime (enables live viewing of samples in inspect view) (defaults to True).",
     )
 
-    log_images: bool | None = Field(
-        default=None,
+    log_images: bool | None | NotGiven = Field(
+        default=not_given,
         description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False).",
     )
 
-    log_buffer: int | None = Field(
-        default=None,
+    log_buffer: int | None | NotGiven = Field(
+        default=not_given,
         description="Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems).",
     )
 
-    log_shared: bool | int | None = Field(
-        default=None,
+    log_shared: bool | int | None | NotGiven = Field(
+        default=not_given,
         description="Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds.",
     )
 
-    bundle_dir: str | None = Field(
-        default=None,
+    bundle_dir: str | None | NotGiven = Field(
+        default=not_given,
         description="If specified, the log viewer and logs generated by this eval set will be bundled into this directory. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
     )
 
-    bundle_overwrite: bool | None = Field(
-        default=None,
+    bundle_overwrite: bool | None | NotGiven = Field(
+        default=not_given,
         description="Whether to overwrite files in the bundle_dir. (defaults to False).",
     )
 
-    log_dir_allow_dirty: bool | None = Field(
-        default=None,
+    log_dir_allow_dirty: bool | None | NotGiven = Field(
+        default=not_given,
         description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
     )
 
-    eval_set_id: str | None = Field(
-        default=None,
+    eval_set_id: str | None | NotGiven = Field(
+        default=not_given,
         description="ID for the eval set. If not specified, a unique ID will be generated.",
     )
 
-    bundle_url_map: dict[str, str] | None = Field(
-        default=None,
+    bundle_url_map: dict[str, str] | None | NotGiven = Field(
+        default=not_given,
         description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
     )
 
@@ -465,42 +472,44 @@ class FlowOptions(BaseModel, extra="forbid"):
 class FlowDefaults(BaseModel, extra="forbid"):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
-    config: GenerateConfig | None = Field(
-        default=None,
+    config: GenerateConfig | None | NotGiven = Field(
+        default=not_given,
         description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
     )
 
-    agent: FlowAgent | None = Field(
-        default=None, description="Field defaults for agents."
+    agent: FlowAgent | None | NotGiven = Field(
+        default=not_given, description="Field defaults for agents."
     )
 
-    agent_prefix: dict[str, FlowAgent] | None = Field(
-        default=None,
+    agent_prefix: dict[str, FlowAgent] | None | NotGiven = Field(
+        default=not_given,
         description="Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}",
     )
 
-    model: FlowModel | None = Field(
-        default=None, description="Field defaults for models."
+    model: FlowModel | None | NotGiven = Field(
+        default=not_given, description="Field defaults for models."
     )
 
-    model_prefix: dict[str, FlowModel] | None = Field(
-        default=None,
+    model_prefix: dict[str, FlowModel] | None | NotGiven = Field(
+        default=not_given,
         description="Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}",
     )
 
-    solver: FlowSolver | None = Field(
-        default=None, description="Field defaults for solvers."
+    solver: FlowSolver | None | NotGiven = Field(
+        default=not_given, description="Field defaults for solvers."
     )
 
-    solver_prefix: dict[str, FlowSolver] | None = Field(
-        default=None,
+    solver_prefix: dict[str, FlowSolver] | None | NotGiven = Field(
+        default=not_given,
         description="Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}",
     )
 
-    task: FlowTask | None = Field(default=None, description="Field defaults for tasks.")
+    task: FlowTask | None | NotGiven = Field(
+        default=not_given, description="Field defaults for tasks."
+    )
 
-    task_prefix: dict[str, FlowTask] | None = Field(
-        default=None,
+    task_prefix: dict[str, FlowTask] | None | NotGiven = Field(
+        default=not_given,
         description="Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}",
     )
 
@@ -508,18 +517,18 @@ class FlowDefaults(BaseModel, extra="forbid"):
 class FlowDependencies(BaseModel, extra="forbid"):
     """Configuration for flow dependencies to install in the venv."""
 
-    dependency_file: Literal["auto", "no_file"] | str | None = Field(
-        default=None,
+    dependency_file: Literal["auto", "no_file"] | str | None | NotGiven = Field(
+        default=not_given,
         description="Path to a dependency file (either requirements.txt or pyproject.toml) to use to create the virtual environment. If 'auto', will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API) looking for pyproject.toml or requirements.txt files. If 'no_file', no dependency file will be used. Defaults to 'auto'.",
     )
 
-    additional_dependencies: str | Sequence[str] | None = Field(
-        default=None,
+    additional_dependencies: str | Sequence[str] | None | NotGiven = Field(
+        default=not_given,
         description="Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs.",
     )
 
-    auto_detect_dependencies: bool | None = Field(
-        default=None,
+    auto_detect_dependencies: bool | None | NotGiven = Field(
+        default=not_given,
         description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed.",
     )
 
@@ -527,48 +536,49 @@ class FlowDependencies(BaseModel, extra="forbid"):
 class FlowJob(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
-    includes: Sequence[str] | None = Field(
-        default=None,
+    includes: Sequence[str] | None | NotGiven = Field(
+        default=not_given,
         description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
-    log_dir: str | None = Field(
-        default=None,
+    log_dir: str | None | NotGiven = Field(
+        default=not_given,
         description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
     )
 
-    log_dir_create_unique: bool | None = Field(
-        default=None,
+    log_dir_create_unique: bool | None | NotGiven = Field(
+        default=not_given,
         description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
     )
 
-    python_version: str | None = Field(
-        default=None,
+    python_version: str | None | NotGiven = Field(
+        default=not_given,
         description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
-    options: FlowOptions | None = Field(
-        default=None, description="Arguments for calls to eval_set."
+    options: FlowOptions | None | NotGiven = Field(
+        default=not_given, description="Arguments for calls to eval_set."
     )
 
-    dependencies: FlowDependencies | None = Field(
-        default=None,
+    dependencies: FlowDependencies | None | NotGiven = Field(
+        default=not_given,
         description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.",
     )
 
-    env: dict[str, str] | None = Field(
-        default=None, description="Environment variables to set when running tasks."
+    env: dict[str, str] | None | NotGiven = Field(
+        default=not_given,
+        description="Environment variables to set when running tasks.",
     )
 
-    defaults: FlowDefaults | None = Field(
-        default=None, description="Defaults values for Inspect objects."
+    defaults: FlowDefaults | None | NotGiven = Field(
+        default=not_given, description="Defaults values for Inspect objects."
     )
 
-    flow_metadata: dict[str, Any] | None = Field(
-        default=None,
+    flow_metadata: dict[str, Any] | None | NotGiven = Field(
+        default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
-    tasks: Sequence[str | FlowTask] | None = Field(
-        default=None, description="Tasks to run"
+    tasks: Sequence[str | FlowTask] | None | NotGiven = Field(
+        default=not_given, description="Tasks to run"
     )

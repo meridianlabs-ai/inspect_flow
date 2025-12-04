@@ -29,6 +29,7 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.module_util import get_module_from_file
+from inspect_flow._util.not_given import default, default_none, is_set
 from inspect_flow._util.path_util import find_file
 
 ModelRoles: TypeAlias = dict[str, str | Model]
@@ -50,12 +51,12 @@ def _create_model(model: FlowModel) -> Model:
 
     return get_model(
         model=model.name,
-        role=model.role,
-        default=model.default,
+        role=default_none(model.role),
+        default=default_none(model.default),
         config=model.config or GenerateConfig(),
-        base_url=model.base_url,
-        api_key=model.api_key,
-        memoize=model.memoize or True,
+        base_url=default_none(model.base_url),
+        api_key=default_none(model.api_key),
+        memoize=default(model.memoize, True),
         **(model.model_args or {}),
     )
 
@@ -119,7 +120,7 @@ def _create_solver(
 
 def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) -> Task:
     if (
-        job.defaults is not None
+        job.defaults
         or not isinstance(flow_task, FlowTask)
         or isinstance(flow_task.model, str)
         or isinstance(flow_task.solver, str)
@@ -139,7 +140,7 @@ def _instantiate_task(job: FlowJob, flow_task: str | FlowTask, base_dir: str) ->
         init_active_model(model, model.config)
     task = task_func(**(flow_task.args or {}))
 
-    if flow_task.sample_id is not None:
+    if is_set(flow_task.sample_id):
         task.dataset = slice_dataset(
             task.dataset,
             limit=None,

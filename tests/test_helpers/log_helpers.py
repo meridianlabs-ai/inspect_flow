@@ -3,6 +3,7 @@ from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow import FlowJob, FlowTask
+from inspect_flow._types.flow_types import NotGiven
 
 
 def init_test_logs() -> str:
@@ -14,7 +15,7 @@ def init_test_logs() -> str:
     return relative_log_dir
 
 
-def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None]:
+def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotGiven]:
     if isinstance(task, str):
         return task, None
     else:

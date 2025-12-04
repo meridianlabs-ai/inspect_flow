@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import yaml
 from inspect_flow import (
     FlowDefaults,
     FlowJob,
@@ -8,7 +9,8 @@ from inspect_flow import (
     GenerateConfig,
     configs_matrix,
 )
-from inspect_flow._types.flow_types import not_given
+from inspect_flow._config.write import config_to_yaml
+from inspect_flow._types.flow_types import FlowAgent, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from pydantic_core import to_jsonable_python
 
@@ -85,3 +87,21 @@ def test_task_not_given():
     task3 = FlowTask.model_validate(jsonable)
     assert task3.model != not_given
     assert task3.epochs == not_given
+
+
+def test_agent_from_yaml():
+    job = FlowJob(
+        tasks=[
+            FlowTask(
+                name="module/task",
+                solver=FlowAgent(name="module/agent"),
+            )
+        ]
+    )
+    dump = config_to_yaml(job)
+    job2 = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+    assert job2.tasks
+    assert len(job2.tasks) == 1
+    assert isinstance(job2.tasks[0], FlowTask)
+    assert isinstance(job2.tasks[0].solver, FlowAgent)
+    assert job2 == job
