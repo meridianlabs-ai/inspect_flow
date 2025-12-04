@@ -31,11 +31,7 @@ flow run config.py
 flow run config.py --dry-run
 ```
 
-Shows how many tasks would be executed without actually running them. Useful for validating large parameter sweeps.
-
-```         
-eval_set would be called with 24 tasks
-```
+Writes the job configuration (as yaml) without running any tasks. Useful for validating large parameter sweeps.
 
 **Override log directory:**
 
@@ -73,6 +69,12 @@ Displays the parsed configuration as YAML with CLI overrides applied. Does not c
 flow config config.py --resolve
 ```
 
+Equivalent to 
+
+``` bash
+flow run config.py --dry-run
+```
+
 Shows the completely resolved configuration:
 
 - Creates virtual environment
@@ -86,8 +88,7 @@ This is invaluable for debugging what settings will actually be used in your eva
 ### When to Use Each Command
 
 -   **`flow config`** - Quick syntax check, verify overrides
--   **`flow config --resolve`** - Debug defaults resolution, inspect final settings
--   **`flow run --dry-run`** - Count tasks in parameter sweeps, validate before expensive runs
+-   **`flow run --dry-run`** - Debug defaults resolution, inspect final settings
 -   **`flow run`** - Execute evaluations
 :::
 

@@ -22,12 +22,6 @@ def _read_config() -> FlowJob:
         return FlowJob.model_validate(data, extra="forbid")
 
 
-def _print_resolved_config(job: FlowJob, base_dir: str) -> None:
-    resolved_config = resolve_job(job, base_dir=base_dir)
-    dump = config_to_yaml(resolved_config)
-    click.echo(dump)
-
-
 def _write_config_file(job: FlowJob) -> None:
     filename = f"{job.log_dir}/flow.yaml"
     yaml = config_to_yaml(job)
@@ -42,7 +36,8 @@ def _run_eval_set(
     tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
 
     if dry_run:
-        click.echo(f"eval_set would be called with {len(tasks)} tasks")
+        dump = config_to_yaml(resolved_config)
+        click.echo(dump)
         return False, []
 
     options = resolved_config.options or FlowOptions()
@@ -150,24 +145,14 @@ def _print_bundle_url(job: FlowJob) -> None:
     default=False,
     help="Dry run.",
 )
-@click.option(
-    "--config",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="Output the resolved config and do not run.",
-)
 @click.pass_context
-def flow_run(ctx: click.Context, base_dir: str, dry_run: bool, config: bool) -> None:
+def flow_run(ctx: click.Context, base_dir: str, dry_run: bool) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         return
 
     cfg = _read_config()
-    if config:
-        _print_resolved_config(cfg, base_dir=base_dir)
-    else:
-        _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
 def main() -> None:

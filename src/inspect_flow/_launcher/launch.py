@@ -44,7 +44,7 @@ def launch_config(
             job=job,
             base_dir=base_dir,
             no_dotenv=no_dotenv,
-            run_args=["--config"],
+            run_args=["--dry-run"],
             no_venv=no_venv,
         )
 
