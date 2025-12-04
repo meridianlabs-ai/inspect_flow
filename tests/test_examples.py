@@ -42,11 +42,16 @@ def test_readme_python_blocks() -> None:
     content = readme_path.read_text()
 
     blocks = extract_python_blocks(content)
-    assert len(blocks) == 2, (
+    assert len(blocks) == 5, (
         "Unexpected number of Python code blocks found in README.md"
     )
 
-    for i, (line_num, code) in enumerate(blocks):
+    # Filter out blocks that call run() - these execute jobs rather than just defining them
+    config_blocks = [
+        (line_num, code) for line_num, code in blocks if "run(" not in code
+    ]
+
+    for i, (line_num, code) in enumerate(config_blocks):
         job, _ = execute_src_and_get_last_result(code, f"README.md:line {line_num}", {})
         assert isinstance(job, FlowJob), (
             f"Code block at README.md:line {line_num} did not return an object"

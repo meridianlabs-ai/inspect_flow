@@ -1,0 +1,4 @@
+defaults:
+  config:
+    max_connections: 10
+    temperature: 0.0
