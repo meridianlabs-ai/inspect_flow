@@ -30,7 +30,7 @@ Before using Inspect Flow, you should:
 
 ### Installation
 
-Install the `inspect_flow` package from PyPI as follows:
+Install the `inspect-flow` package from PyPI as follows:
 
 ``` bash
 pip install inspect-flow
@@ -163,15 +163,15 @@ flow run matrix.py
 
 This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
 
-![Log path printed in terminal](images/matrix_logs_terminal.png)
+![Log path printed in terminal](images/logs_terminal.png)
 
 To view logs interactively, run:
 
 ``` bash
-inspect view
+inspect view --log-dir logs
 ```
 
-![Inspect View](images/index_inspect_view.png)
+![Eval logs rendered by Inspect View](images/inspect_view_eval.png){width=80%}
 
 ## Learning More
 
