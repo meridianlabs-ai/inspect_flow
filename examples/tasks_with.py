@@ -1,4 +1,5 @@
-from inspect_flow import FlowJob, GenerateConfig, tasks_with
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowJob, tasks_with
 
 FlowJob(
     tasks=tasks_with(

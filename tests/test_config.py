@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from inspect_ai.model import CachePolicy
+from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
     FlowJob,
@@ -10,7 +10,6 @@ from inspect_flow import (
     FlowOptions,
     FlowSolver,
     FlowTask,
-    GenerateConfig,
     models_matrix,
     tasks_matrix,
     tasks_with,

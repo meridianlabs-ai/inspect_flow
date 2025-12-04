@@ -1,4 +1,5 @@
-from inspect_flow import FlowDefaults, FlowJob, GenerateConfig
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowJob
 
 FlowJob(
     defaults=FlowDefaults(

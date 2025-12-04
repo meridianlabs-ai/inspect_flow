@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import yaml
+from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowDefaults,
     FlowJob,
     FlowModel,
     FlowTask,
-    GenerateConfig,
     configs_matrix,
 )
 from inspect_flow._config.write import config_to_yaml

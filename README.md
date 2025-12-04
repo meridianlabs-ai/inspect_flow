@@ -138,7 +138,8 @@ tasks:
 `tasks_matrix` and `models_matrix` are powerful functions that can operate on multiple levels of nested matrixes which enable sophisticated parameter sweeping. Let's say you want to explore different reasoning efforts across models—you can achieve this with the `models_matrix` function.
 
 ```python
-from inspect_flow import FlowJob, GenerateConfig, models_matrix, tasks_matrix
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowJob, models_matrix, tasks_matrix
 
 FlowJob(
     log_dir="logs",
