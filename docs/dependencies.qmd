@@ -43,7 +43,7 @@ Specify the Python version for your job's virtual environment:
 To verify which dependencies and Python version will be used:
 
 ``` bash
-flow config config.py --resolve
+flow run config.py --dry-run
 ```
 :::
 

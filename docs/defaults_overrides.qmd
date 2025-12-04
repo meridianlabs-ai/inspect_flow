@@ -1,20 +1,49 @@
 ---
-title: "Defaults, Inheritance and Overrides"
+title: "Defaults and Overrides"
 tbl-colwidths: [30,70]
 ---
 
-Inspect Flow provides powerful mechanisms to avoid repetition and share configuration across evaluations. This page covers:
+Inspect Flow provides a powerful defaults system to avoid repetition when configuring evaluations. The `FlowDefaults` field lets you set default values that cascade across tasks, models, solvers, and agents—with more specific settings overriding less specific ones.
 
-- **FlowDefaults** - Setting default values within a job that cascade across tasks, models, solvers, and agents
-- **Config Inheritance** - Reusing and composing configurations across multiple files
-- **CLI Overrides** - Overriding any config value at runtime
-
-## FlowDefaults {#flowdefaults}
+## The FlowDefaults System
 
 `FlowDefaults` supports multiple levels of default configuration:
 
-``` {.python filename="config.py"}
-{{< include ../examples/flow_defaults.py >}}
+``` python
+from inspect_flow import (
+    FlowJob,
+    FlowDefaults,
+    GenerateConfig,
+    FlowModel,
+    FlowSolver,
+    FlowAgent,
+    FlowTask,
+)
+
+FlowJob(
+    defaults=FlowDefaults(
+        config=GenerateConfig(                          # <1>
+            max_connections=10,                         # <1>
+        ),                                              # <1>
+        model=FlowModel(                                # <2>
+            model_args={"arg": "foo"},                  # <2>
+        ),                                              # <2>
+        model_prefix={                                  # <3>
+            "openai/": FlowModel(                       # <3>
+                config=GenerateConfig(                  # <3>
+                    max_connections=20                  # <3>
+                ),                                      # <3>
+            ),                                          # <3>
+        },                                              # <3>
+        solver=FlowSolver(...),                         # <4>
+        solver_prefix={"chain_of_thought": ...},        # <5>
+        agent=FlowAgent(...),                           # <6>
+        agent_prefix={"inspect/": ...},                 # <7>
+        task=FlowTask(...),                             # <8>
+        task_prefix={"inspect_evals/": ...},            # <9>
+    ),
+    tasks=[...]
+)
 ```
 
 1.  Default model generation options. Will be overridden by settings on FlowTask and FlowModel.
@@ -35,7 +64,7 @@ Inspect Flow provides powerful mechanisms to avoid repetition and share configur
 
 9.  Task defaults for task name prefixes. Overrides `FlowDefaults.config` and `FlowDefaults.task`. If multiple prefixes match, **longest prefix wins**.
 
-## Merge Priority
+## Merge Priority and Behavior
 
 Defaults follow a hierarchy where **more specific settings override less specific ones**:
 
@@ -49,7 +78,7 @@ Defaults follow a hierarchy where **more specific settings override less specifi
 
 **Example hierarchy in action:**
 
-``` {.python filename="config.py"}
+``` {.python filename="hierarchy.py"}
 {{< include ../examples/hierarchy.py >}}
 ```
 
@@ -63,89 +92,36 @@ Defaults follow a hierarchy where **more specific settings override less specifi
 ::: callout-note
 ### None Values and Merge Behavior
 
-**For fields in Flow types:** Most fields use a special "not given" default, which means `None` is a meaningful value that **does override**:
+**For GenerateConfig and most Flow types:** Setting a field to `None` means "not specified" — it won't override existing values from defaults:
 
-``` {.python filename="config.py"}
-{{< include ../examples/merge_none_flow_task.py >}}
+``` python
+FlowJob(
+    defaults=FlowDefaults(
+        config=GenerateConfig(temperature=0.8, max_tokens=1000)
+    ),
+    tasks=[
+        FlowTask(
+            config=GenerateConfig(temperature=0.5, max_tokens=None)
+        )
+    ]
+)
+# Result: Task runs with temperature=0.5, max_tokens=1000
+# The max_tokens=None didn't override the default 1000
+```
+
+**For FlowTask fields:** Most fields use a special "not given" default, which means `None` is a meaningful value that **does override**:
+
+``` python
+FlowJob(
+    defaults=FlowDefaults(model="gpt-4"),
+    tasks=[
+        FlowTask(model=None)  # Explicitly set to None
+    ]
+)
+# Result: Task uses model=None (overrides the default "gpt-4")
 ```
 
 To avoid overriding a FlowTask field, omit it entirely rather than setting it to `None`.
-
-**For GenerateConfig and other Inspect types:** Setting a field to `None` means "not specified" — it won't override existing values from defaults:
-
-``` {.python filename="config.py"}
-{{< include ../examples/merge_none_generate_config.py >}}
-```
-:::
-
-## Inheritance {#inheritance}
-
-Inspect Flow supports configuration inheritance to share settings across multiple config files. This is particularly useful for defining global defaults at a repository level that apply to all evaluations.
-
-### Includes
-
-Use the `includes` field to explicitly merge other config files into your job:
-
-```python
-FlowJob(
-    includes=["defaults.py"],
-    log_dir="logs",
-    tasks=["my_task"]
-)
-```
-
-#### Merge
-
-Included configs are merged recursively, with the current config's values taking precedence over included values:
-
-- **Dictionaries**: Fields are merged deeply (recursive merge)
-- **Lists**: Items are concatenated with duplicates removed
-- **Scalars**: Current config values override included values
-
-#### Order
-
-Includes are processed sequentially in the order they appear. When multiple includes are specified, earlier includes take precedence over later ones.
-
-#### Recursion
-
-Included files can themselves have `includes` fields, which are expanded recursively. This allows you to build hierarchies of configuration.
-
-#### Path Resolution
-
-Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API):
-
-``` {.python filename="config.py"}
-{{< include ../examples/includes.py >}}
-```
-
-### Automatic Discovery
-
-Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file's location, it searches upward through the directory tree for `_flow.py` files and automatically merges them as base configurations.
-
-This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes.
-
-::: callout-note
-Automatic discovery does not look for `_flow.py` files in the parent directories of explicitly included files.
-:::
-
-### Using Inheritance with Defaults
-
-Config inheritance is especially powerful when combined with `FlowDefaults`. You can define global defaults in a `_flow.py` file at your repository root:
-
-``` {.python filename="_flow.py"}
-{{< include ../examples/inheritance_root_config.py >}}
-```
-
-Then all configs in subdirectories automatically inherit these defaults, which can be selectively overridden:
-
-``` {.python filename="experiments/config.py"}
-{{< include ../examples/inheritance_subdir_config.py >}}
-```
-
-::: callout-tip
-### Preventing Overrides
-
-When using inheritance to define shared defaults, you can enforce critical settings by preventing including configs from overriding them. See [Lock Configuration Fields](advanced.qmd#lock-configuration-fields) in the Advanced section to learn how to lock inherited or default values and prevent them from being overwritten.
 :::
 
 ## CLI Overrides {#cli-overrides}
@@ -202,7 +178,7 @@ flow run config.py \
 ```
 :::
 
-## Env Vars
+## Environment Variables
 
 Set config values via environment variables:
 
@@ -253,9 +229,9 @@ All other settings follow the priority order:
 4.  CLI `--set` flags
 :::
 
-## Debugging
+## Debugging Defaults Resolution
 
-To see the fully resolved configuration with all defaults, inheritance, and overrides applied:
+To see the fully resolved configuration with all defaults applied:
 
 ``` bash
 flow run config.py --dry-run
