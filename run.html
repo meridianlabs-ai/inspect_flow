@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Reference – Inspect Flow</title>
+<title>Running Flows – Inspect Flow</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,29 +20,65 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<link href="../reference/inspect_flow.html" rel="next">
-<link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./advanced.html" rel="next">
+<link href="./matrix.html" rel="prev">
+<link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -74,10 +110,16 @@ ul.task-list li input[type="checkbox"] {
 
 <meta property="og:title" content="Inspect Flow">
 <meta property="og:description" content="Workflow orchestration for Inspect AI">
+<meta property="og:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/inspect_view_list.png">
 <meta property="og:site_name" content="Inspect Flow">
+<meta property="og:image:height" content="224">
+<meta property="og:image:width" content="1940">
 <meta name="twitter:title" content="Inspect Flow">
 <meta name="twitter:description" content="Workflow orchestration for Inspect AI">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/inspect_view_list.png">
+<meta name="twitter:image-height" content="224">
+<meta name="twitter:image-width" content="1940">
+<meta name="twitter:card" content="summary_large_image">
 </head>
 
 <body class="nav-sidebar docked nav-fixed quarto-light">
@@ -87,11 +129,11 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../images/icon-dark.svg" alt="" class="navbar-logo light-content">
-    <img src="../images/icon-dark.svg" alt="" class="navbar-logo dark-content">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./images/icon-dark.svg" alt="" class="navbar-logo light-content">
+    <img src="./images/icon-dark.svg" alt="" class="navbar-logo dark-content">
     </a>
-    <a class="navbar-brand" href="../index.html">
+    <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">Inspect Flow</span>
     </a>
   </div>
@@ -102,11 +144,11 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../index.html"> 
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
 <span class="menu-text">Welcome</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
+    <a class="nav-link" href="./reference/index.html"> 
 <span class="menu-text">Reference</span></a>
   </li>  
 </ul>
@@ -127,7 +169,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/index.html">Reference</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./flow_concepts.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./run.html">Running Flows</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -139,214 +181,78 @@ ul.task-list li input[type="checkbox"] {
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/index.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Reference</span></a>
-  </div>
-</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Python API</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowagent" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowAgent</span></a>
+  <a href="./index.html#introduction" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowdefaults" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowDefaults</span></a>
+  <a href="./index.html#getting-started" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Getting Started</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowdependencies" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowDependencies</span></a>
+  <a href="./index.html#basic-example" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Basic Example</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowepochs" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowEpochs</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowjob" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowJob</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowmodel" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowModel</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowoptions" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowOptions</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowscorer" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowScorer</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowsolver" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowSolver</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowtask" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowTask</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#after_load" class="sidebar-item-text sidebar-link">
- <span class="menu-text">after_load</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#agents_matrix" class="sidebar-item-text sidebar-link">
- <span class="menu-text">agents_matrix</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#agents_with" class="sidebar-item-text sidebar-link">
- <span class="menu-text">agents_with</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#configs_matrix" class="sidebar-item-text sidebar-link">
- <span class="menu-text">configs_matrix</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#configs_with" class="sidebar-item-text sidebar-link">
- <span class="menu-text">configs_with</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#merge" class="sidebar-item-text sidebar-link">
- <span class="menu-text">merge</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#models_matrix" class="sidebar-item-text sidebar-link">
- <span class="menu-text">models_matrix</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#models_with" class="sidebar-item-text sidebar-link">
- <span class="menu-text">models_with</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#solvers_matrix" class="sidebar-item-text sidebar-link">
- <span class="menu-text">solvers_matrix</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#solvers_with" class="sidebar-item-text sidebar-link">
- <span class="menu-text">solvers_with</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#tasks_matrix" class="sidebar-item-text sidebar-link">
- <span class="menu-text">tasks_matrix</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#tasks_with" class="sidebar-item-text sidebar-link">
- <span class="menu-text">tasks_with</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-          <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow.api</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
- <span class="menu-text">config</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#load_job" class="sidebar-item-text sidebar-link">
- <span class="menu-text">load_job</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#run" class="sidebar-item-text sidebar-link">
- <span class="menu-text">run</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Inspect CLI</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#" role="navigation" aria-expanded="true">
+ <span class="menu-text">Using Flow</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">flow config</span></a>
+  <a href="./flow_concepts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flow Concepts</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_run.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">flow run</span></a>
+  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Dependencies</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./defaults.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Defaults</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrixing</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./run.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Running Flows</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Advanced</span></a>
   </div>
 </li>
       </ul>
@@ -357,21 +263,30 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+        <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#python-api" id="toc-python-api" class="nav-link active" data-scroll-target="#python-api">Python API</a></li>
-  <li><a href="#flow-cli" id="toc-flow-cli" class="nav-link" data-scroll-target="#flow-cli">Flow CLI</a></li>
+  <li><a href="#the-flow-run-command" id="toc-the-flow-run-command" class="nav-link active" data-scroll-target="#the-flow-run-command">The <code>flow run</code> Command</a>
+  <ul class="collapse">
+  <li><a href="#common-cli-flags" id="toc-common-cli-flags" class="nav-link" data-scroll-target="#common-cli-flags">Common CLI Flags</a></li>
+  </ul></li>
+  <li><a href="#the-flow-config-command" id="toc-the-flow-config-command" class="nav-link" data-scroll-target="#the-flow-config-command">The <code>flow config</code> Command</a></li>
+  <li><a href="#results-and-logs" id="toc-results-and-logs" class="nav-link" data-scroll-target="#results-and-logs">Results and Logs</a>
+  <ul class="collapse">
+  <li><a href="#flow-directory-structure" id="toc-flow-directory-structure" class="nav-link" data-scroll-target="#flow-directory-structure">Flow Directory Structure</a></li>
+  <li><a href="#viewing-results" id="toc-viewing-results" class="nav-link" data-scroll-target="#viewing-results">Viewing Results</a></li>
+  <li><a href="#s3-support" id="toc-s3-support" class="nav-link" data-scroll-target="#s3-support">S3 Support</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./flow_concepts.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./run.html">Running Flows</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Reference</h1>
+<h1 class="title">Running Flows</h1>
 </div>
 
 
@@ -388,56 +303,132 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="python-api" class="level4">
-<h4 class="anchored" data-anchor-id="python-api">Python API</h4>
-<table class="table-borderless caption-top table">
-<colgroup>
-<col style="width: 35%">
-<col style="width: 65%">
-</colgroup>
-<tbody>
-<tr class="odd">
-<td><a href="../reference/inspect_flow.html">inspect_flow</a></td>
-<td>Core types and functions.</td>
-</tr>
-<tr class="even">
-<td><a href="../reference/inspect_flow.api.html">inspect_flow.api</a></td>
-<td>Output and run a job.</td>
-</tr>
-</tbody>
-</table>
+<p>Once you’ve defined your Flow configuration, you can execute evaluations using the <code>flow run</code> command. Flow also provides tools for previewing configurations and controlling runtime behavior.</p>
+<section id="the-flow-run-command" class="level2">
+<h2 class="anchored" data-anchor-id="the-flow-run-command">The <code>flow run</code> Command</h2>
+<p>Execute your evaluation workflow:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>What happens when you run this:</strong></p>
+<ol type="1">
+<li>Flow loads your configuration file</li>
+<li>Creates an isolated virtual environment</li>
+<li>Installs dependencies</li>
+<li>Resolves all defaults and matrix expansions</li>
+<li>Executes evaluations via Inspect AI’s <code>eval_set()</code></li>
+<li>Stores logs in <code>log_dir</code></li>
+<li>Cleans up the temporary environment</li>
+</ol>
+<section id="common-cli-flags" class="level3">
+<h3 class="anchored" data-anchor-id="common-cli-flags">Common CLI Flags</h3>
+<p><strong>Preview without running:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Shows how many tasks would be executed without actually running them. Useful for validating large parameter sweeps.</p>
+<pre><code>eval_set would be called with 24 tasks</code></pre>
+<p><strong>Override log directory:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--log-dir</span> ./experiments/baseline</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Changes where logs and results are stored.</p>
+<p><strong>Runtime overrides:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> options.limit=100 <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> defaults.config.temperature=0.5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Override any configuration value at runtime. See <a href="#cli-overrides">CLI Overrides</a> for more details.</p>
 </section>
-<section id="flow-cli" class="level4">
-<h4 class="anchored" data-anchor-id="flow-cli">Flow CLI</h4>
-<table class="table-borderless caption-top table">
-<colgroup>
-<col style="width: 35%">
-<col style="width: 65%">
-</colgroup>
-<tbody>
-<tr class="odd">
-<td><a href="../reference/flow_config.html">flow config</a></td>
-<td>Output job config.</td>
-</tr>
-<tr class="even">
-<td><a href="../reference/flow_run.html">flow run</a></td>
-<td>Run a job.</td>
-</tr>
-</tbody>
-</table>
-<style>
-.table td {
-    padding-bottom: 0 !important;
-}
-a {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: underline;
-}
-</style>
+</section>
+<section id="the-flow-config-command" class="level2">
+<h2 class="anchored" data-anchor-id="the-flow-config-command">The <code>flow config</code> Command</h2>
+<p>Preview your configuration before running:</p>
+<p><strong>Basic usage:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.</p>
+<p><strong>Full resolution:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py <span class="at">--resolve</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Shows the completely resolved configuration:</p>
+<ul>
+<li>Creates virtual environment</li>
+<li>Applies all defaults</li>
+<li>Expands all matrix functions</li>
+<li>Instantiates all Python objects</li>
+</ul>
+<p>This is invaluable for debugging what settings will actually be used in your evaluations.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>When to Use Each Command
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong><code>flow config</code></strong> - Quick syntax check, verify overrides</li>
+<li><strong><code>flow config --resolve</code></strong> - Debug defaults resolution, inspect final settings</li>
+<li><strong><code>flow run --dry-run</code></strong> - Count tasks in parameter sweeps, validate before expensive runs</li>
+<li><strong><code>flow run</code></strong> - Execute evaluations</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="results-and-logs" class="level2">
+<h2 class="anchored" data-anchor-id="results-and-logs">Results and Logs</h2>
+<section id="flow-directory-structure" class="level3">
+<h3 class="anchored" data-anchor-id="flow-directory-structure">Flow Directory Structure</h3>
+<p>Evaluation results are stored in the <code>log_dir</code>:</p>
+<pre><code>logs/
+├── 2025-11-21T17-38-20+01-00_gpqa-diamond_KvJBGowidXSCLRhkKQbHYA.eval
+├── 2025-11-21T17-38-20+01-00_mmlu-0-shot_Vnu2A3M2wPet5yobLiCQmZ.eval
+├── .eval-set-id
+├── eval-set.json
+├── flow.yaml
+├── flow-requirements.txt
+└── ...</code></pre>
+<p><strong>Directory structure:</strong></p>
+<ul>
+<li>Flow passes the <code>log_dir</code> directly to Inspect AI <code>eval_set()</code> for evaluation log storage</li>
+<li>Inspect AI handles the actual evaluation log file naming and storage</li>
+<li>Log file naming conventions follow Inspect AI’s standards (see <a href="https://inspect.aisi.org.uk/eval-logs.html#log-file-name">Inspect AI logging docs</a>)</li>
+<li>Flow automatically saves the resolved configuration as <code>flow.yaml</code> in the log directory</li>
+<li>Flow saves the exact version of packages installed in the virtual environment as <code>flow-requirements.txt</code></li>
+<li>The <code>.eval-set-id</code> file contains the eval set identifier</li>
+<li>The <code>eval-set.json</code> file contains eval set metadata</li>
+</ul>
+<p><strong>Log formats:</strong></p>
+<ul>
+<li><code>.eval</code> - Binary Inspect AI log format (default, high-performance)</li>
+<li><code>.json</code> - JSON format (if <code>log_format="json"</code> in FlowOptions)</li>
+</ul>
+</section>
+<section id="viewing-results" class="level3">
+<h3 class="anchored" data-anchor-id="viewing-results">Viewing Results</h3>
+<p><strong>Using Inspect View:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Opens the Inspect AI viewer to explore evaluation logs interactively. Inspect View can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.</p>
+<p>Click the Flow icon in the top right hand corner to view the Flow config.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/inspect_view_list.png" class="img-fluid figure-img"></p>
+<figcaption>Eval list rendered by Inspect View</figcaption>
+</figure>
+</div>
+<p>The latest Flow config file is rendered in YAML format.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/inspect_view_flow_config.png" class="img-fluid figure-img" style="width:60.0%"></p>
+<figcaption>Flow config rendered by Inspect View</figcaption>
+</figure>
+</div>
+</section>
+<section id="s3-support" class="level3">
+<h3 class="anchored" data-anchor-id="s3-support">S3 Support</h3>
+<p>Store logs directly to S3:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"s3://my-bucket/experiments/baseline"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For more information on configuring an S3 bucket as a logs directory, refer to the Inspect AI <a href="https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3">documentation</a>.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -884,10 +875,13 @@ a:hover {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="./matrix.html" class="pagination-link" aria-label="Matrixing">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Matrixing</span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../reference/inspect_flow.html" class="pagination-link" aria-label="Python API">
-        <span class="nav-page-text">Python API</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./advanced.html" class="pagination-link" aria-label="Advanced">
+        <span class="nav-page-text">Advanced</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

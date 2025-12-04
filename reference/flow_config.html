@@ -107,10 +107,6 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Welcome</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../usage.html"> 
-<span class="menu-text">Usage</span></a>
-  </li>  
-  <li class="nav-item">
     <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
 <span class="menu-text">Reference</span></a>
   </li>  
@@ -176,14 +172,14 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowjob" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowJob</span></a>
+  <a href="../reference/inspect_flow.html#flowdefaults" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowDefaults</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowdefaults" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowDefaults</span></a>
+  <a href="../reference/inspect_flow.html#flowdependencies" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowDependencies</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -194,8 +190,8 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowgenerateconfig" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowGenerateConfig</span></a>
+  <a href="../reference/inspect_flow.html#flowjob" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowJob</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -212,6 +208,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#flowscorer" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowScorer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowsolver" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FlowSolver</span></a>
   </div>
@@ -220,6 +222,12 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowtask" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FlowTask</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#after_load" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">after_load</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -299,12 +307,6 @@ ul.task-list li input[type="checkbox"] {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#configoptions" class="sidebar-item-text sidebar-link">
- <span class="menu-text">ConfigOptions</span></a>
-  </div>
-</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
@@ -412,34 +414,46 @@ ul.task-list li input[type="checkbox"] {
 <td><code>False</code></td>
 </tr>
 <tr class="even">
+<td><code>--no-venv</code></td>
+<td>boolean</td>
+<td>If set run the flow in the current environment without creating a virtual environment.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="odd">
 <td><code>--log-dir-create-unique</code></td>
 <td>boolean</td>
 <td>If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).</td>
 <td><code>False</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir</code></td>
 <td>directory</td>
 <td>Set the log directory. Will override the log_dir specified in the config.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--limit</code></td>
 <td>integer</td>
 <td>Limit the number of samples to run.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
-<td><code>--var</code></td>
+<tr class="even">
+<td><code>--arg</code>, <code>-A</code></td>
 <td>text</td>
-<td>Set variables accessible to code executing in the config file through the variable <code>__flow_vars__</code>: <code>task_min_priority = __flow_vars__.get("task_min_priority", 1)</code> Examples: <code>--var task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
+<td>Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: <code>--arg task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--set</code>, <code>-s</code></td>
 <td>text</td>
 <td>Set config overrides. Examples: <code>--set defaults.solver.args.tool_calls=none</code> <code>--set options.limit=10</code> <code>--set options.metadata={"key1": "val1", "key2": "val2"}</code> The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
+</tr>
+<tr class="even">
+<td><code>--log-level</code></td>
+<td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
+<td>Set the log level (defaults to ‘info’)</td>
+<td><code>info</code></td>
 </tr>
 <tr class="odd">
 <td><code>--help</code></td>
