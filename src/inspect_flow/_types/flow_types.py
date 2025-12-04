@@ -7,7 +7,6 @@ from typing import (
     Any,
     Literal,
     Mapping,
-    Self,
     Sequence,
     TypeAlias,
 )
@@ -19,7 +18,7 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, model_validator
-from typing_extensions import override
+from typing_extensions import Self, override
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
