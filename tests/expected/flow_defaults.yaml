@@ -3,9 +3,11 @@ defaults:
     max_connections: 10
   agent:
     name: basic
+    type: agent
   agent_prefix:
     inspect/:
       name: inspect/basic
+      type: agent
   model:
     model_args:
       arg: foo

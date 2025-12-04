@@ -96,7 +96,7 @@ class FlowAgentDict(TypedDict):
     """Additional args to pass to agent constructor."""
     flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Optional. Metadata stored in the flow config. Not passed to the agent."""
-    type: NotRequired[Literal["agent"]]
+    type: NotRequired[Optional[str]]
     """Type needed to differentiated solvers and agents in solver lists."""
 
 

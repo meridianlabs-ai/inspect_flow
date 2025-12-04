@@ -7,6 +7,7 @@ from typing import (
     Any,
     Literal,
     Mapping,
+    Self,
     Sequence,
     TypeAlias,
 )
@@ -17,7 +18,7 @@ from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing_extensions import override
 
 CreateArgs: TypeAlias = Mapping[str, Any]
@@ -149,13 +150,18 @@ class FlowAgent(BaseModel, extra="forbid"):
         description="Optional. Metadata stored in the flow config. Not passed to the agent.",
     )
 
-    type: Literal["agent"] = Field(
-        default="agent",
+    type: Literal["agent"] | None = Field(
+        default=None,
         description="Type needed to differentiated solvers and agents in solver lists.",
     )
 
+    @model_validator(mode="after")
+    def set_type(self) -> Self:
+        self.type = "agent"
+        return self
 
-class FlowEpochs(BaseModel):
+
+class FlowEpochs(BaseModel, extra="forbid"):
     """Configuration for task epochs.
 
     Number of epochs to repeat samples over and optionally one or more

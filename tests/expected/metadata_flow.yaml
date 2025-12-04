@@ -17,6 +17,7 @@ tasks:
     name: agentname
     flow_metadata:
       agent: '1'
+    type: agent
   model:
     name: mockllm/mock-llm2
     flow_metadata:
