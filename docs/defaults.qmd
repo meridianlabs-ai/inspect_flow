@@ -63,19 +63,19 @@ Defaults follow a hierarchy where **more specific settings override less specifi
 ::: callout-note
 ### None Values and Merge Behavior
 
-**For GenerateConfig and most Flow types:** Setting a field to `None` means "not specified" — it won't override existing values from defaults:
-
-``` {.python filename="config.py"}
-{{< include ../examples/merge_none_generate_config.py >}}
-```
-
-**For FlowTask fields:** Most fields use a special "not given" default, which means `None` is a meaningful value that **does override**:
+**For fields in Flow types:** Most fields use a special "not given" default, which means `None` is a meaningful value that **does override**:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/merge_none_flow_task.py >}}
 ```
 
 To avoid overriding a FlowTask field, omit it entirely rather than setting it to `None`.
+
+**For GenerateConfig and other Inspect types:** Setting a field to `None` means "not specified" — it won't override existing values from defaults:
+
+``` {.python filename="config.py"}
+{{< include ../examples/merge_none_generate_config.py >}}
+```
 :::
 
 ## Inheritance {#inheritance}
