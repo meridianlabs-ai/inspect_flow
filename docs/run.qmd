@@ -132,6 +132,15 @@ inspect view
 ```
 
 Opens the Inspect AI viewer to explore evaluation logs interactively.
+Inspect View can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.
+
+Click the Flow icon in the top right hand corner to view the Flow config.
+
+![Eval list rendered by Inspect View](images/inspect_view_list.png)
+
+The latest Flow config file is rendered in YAML format.
+
+![Flow config rendered by Inspect View](images/inspect_view_flow_config.png){width=60%}
 
 ### S3 Support
 
@@ -143,3 +152,5 @@ FlowJob(
     tasks=[...]
 )
 ```
+
+For more information on configuring an S3 bucket as a logs directory, refer to the Inspect AI [documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3).

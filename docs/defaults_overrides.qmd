@@ -22,7 +22,7 @@ from inspect_flow import (
 
 FlowJob(
     defaults=FlowDefaults(
-        config=GenerateConfig(                      # <1>
+        config=GenerateConfig(                          # <1>
             max_connections=10,                         # <1>
         ),                                              # <1>
         model=FlowModel(                                # <2>
@@ -30,7 +30,7 @@ FlowJob(
         ),                                              # <2>
         model_prefix={                                  # <3>
             "openai/": FlowModel(                       # <3>
-                config=GenerateConfig(              # <3>
+                config=GenerateConfig(                  # <3>
                     max_connections=20                  # <3>
                 ),                                      # <3>
             ),                                          # <3>
@@ -90,17 +90,38 @@ Defaults follow a hierarchy where **more specific settings override less specifi
 **Final result:** `temperature=1.0` (most specific), `max_tokens=100` (from global defaults)
 
 ::: callout-note
-### None Values Don't Override (Except FlowTask)
+### None Values and Merge Behavior
 
-With the exception of FlowTask, setting a field to `None` means "not specified" — it won't override existing values from defaults. This allows partial configs to merge cleanly:
+**For GenerateConfig and most Flow types:** Setting a field to `None` means "not specified" — it won't override existing values from defaults:
 
 ``` python
-FlowTask(
-    config=GenerateConfig(temperature=0.5, max_tokens=None)
+FlowJob(
+    defaults=FlowDefaults(
+        config=GenerateConfig(temperature=0.8, max_tokens=1000)
+    ),
+    tasks=[
+        FlowTask(
+            config=GenerateConfig(temperature=0.5, max_tokens=None)
+        )
+    ]
 )
+# Result: Task runs with temperature=0.5, max_tokens=1000
+# The max_tokens=None didn't override the default 1000
 ```
 
-The `max_tokens=None` doesn't override a default `max_tokens` value; it's simply not set at this level.
+**For FlowTask fields:** Most fields use a special "not given" default, which means `None` is a meaningful value that **does override**:
+
+``` python
+FlowJob(
+    defaults=FlowDefaults(model="gpt-4"),
+    tasks=[
+        FlowTask(model=None)  # Explicitly set to None
+    ]
+)
+# Result: Task uses model=None (overrides the default "gpt-4")
+```
+
+To avoid overriding a FlowTask field, omit it entirely rather than setting it to `None`.
 :::
 
 ## CLI Overrides {#cli-overrides}
