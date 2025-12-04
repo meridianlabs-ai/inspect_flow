@@ -5,11 +5,9 @@ import tempfile
 from logging import getLogger
 from pathlib import Path
 
-import click
 from dotenv import dotenv_values, find_dotenv
 from inspect_ai._util.file import absolute_file_path
 
-from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.venv import create_venv, write_flow_yaml
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -17,42 +15,10 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 logger = getLogger(__name__)
 
 
-def launch_run(
+def launch(
     job: FlowJob,
     base_dir: str,
-    dry_run: bool = False,
-    no_venv: bool = False,
     no_dotenv: bool = False,
-) -> None:
-    int_launch(
-        job=job,
-        base_dir=base_dir,
-        no_dotenv=no_dotenv,
-        run_args=["--dry-run"] if dry_run else [],
-        no_venv=no_venv,
-    )
-
-
-def launch_config(
-    job: FlowJob, base_dir: str, resolve: bool, no_venv: bool, no_dotenv: bool
-) -> None:
-    if not resolve:
-        dump = config_to_yaml(job)
-        click.echo(dump)
-    else:
-        int_launch(
-            job=job,
-            base_dir=base_dir,
-            no_dotenv=no_dotenv,
-            run_args=["--dry-run"],
-            no_venv=no_venv,
-        )
-
-
-def int_launch(
-    job: FlowJob,
-    base_dir: str,
-    no_dotenv: bool,
     run_args: list[str] | None = None,
     no_venv: bool = False,
 ) -> None:
@@ -87,8 +53,6 @@ def int_launch(
             subprocess.run(
                 [str(python_path), str(run_path), *args], check=True, env=env
             )
-        except subprocess.CalledProcessError as e:
-            sys.exit(e.returncode)
         finally:
             file.unlink(missing_ok=True)
         return
@@ -100,15 +64,12 @@ def int_launch(
         create_venv(job, base_dir=base_dir, temp_dir=temp_dir, env=env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
-        try:
-            subprocess.run(
-                [str(python_path), str(run_path), *args],
-                cwd=temp_dir,
-                check=True,
-                env=env,
-            )
-        except subprocess.CalledProcessError as e:
-            sys.exit(e.returncode)
+        subprocess.run(
+            [str(python_path), str(run_path), *args],
+            cwd=temp_dir,
+            check=True,
+            env=env,
+        )
 
 
 def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:

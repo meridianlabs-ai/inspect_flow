@@ -6,7 +6,8 @@ from inspect_flow._config.load import (
     expand_job,
     int_load_job,
 )
-from inspect_flow._launcher.launch import launch_config, launch_run
+from inspect_flow._config.write import config_to_yaml
+from inspect_flow._launcher.launch import launch
 from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.logging import init_flow_logging
 
@@ -50,10 +51,10 @@ def run(
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
     job = expand_job(job, base_dir=base_dir)
-    launch_run(
+    launch(
         job=job,
         base_dir=base_dir,
-        dry_run=dry_run,
+        run_args=["--dry-run"] if dry_run else [],
         no_venv=no_venv,
         no_dotenv=no_dotenv,
     )
@@ -63,28 +64,17 @@ def config(
     job: FlowJob,
     base_dir: str | None = None,
     *,
-    resolve: bool = False,
     log_level: str | None = None,
-    no_venv: bool = False,
-    no_dotenv: bool = False,
-) -> None:
-    """Print the flow job configuration.
+) -> str:
+    """Return the flow job configuration.
 
     Args:
         job: The flow job configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
-        resolve: If True, resolve the configuration before printing.
         log_level: The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.
-        no_venv: If True, do not create a virtual environment to resolve the job.
-        no_dotenv: If True, do not load environment variables from a .env file.
     """
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
     job = expand_job(job, base_dir=base_dir)
-    launch_config(
-        job=job,
-        base_dir=base_dir,
-        resolve=resolve,
-        no_venv=no_venv,
-        no_dotenv=no_dotenv,
-    )
+    dump = config_to_yaml(job)
+    return dump

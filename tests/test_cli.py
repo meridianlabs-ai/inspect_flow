@@ -46,7 +46,7 @@ def test_flow_version() -> None:
 def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         # Mock the config object
@@ -82,14 +82,14 @@ def test_run_command_overrides() -> None:
 
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
-            mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR, dry_run=False
+            mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR, run_args=[]
         )
 
 
 def test_run_command_log_dir_create_unique() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         # Mock the config object
@@ -122,7 +122,7 @@ def test_run_command_log_dir_create_unique() -> None:
             mock_config_obj,
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
-            dry_run=False,
+            run_args=[],
         )
 
 
@@ -197,7 +197,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
 def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -215,14 +215,14 @@ def test_run_command_dry_run() -> None:
             mock_config_obj,
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
-            dry_run=True,
+            run_args=["--dry-run"],
         )
 
 
 def test_run_command_args() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -246,14 +246,14 @@ def test_run_command_args() -> None:
             mock_config_obj,
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
-            dry_run=False,
+            run_args=[],
         )
 
 
 def test_run_command_no_venv() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -269,7 +269,7 @@ def test_run_command_no_venv() -> None:
             mock_config_obj,
             **(COMMON_DEFAULTS | {"no_venv": True}),
             base_dir=CONFIG_FILE_DIR,
-            dry_run=False,
+            run_args=[],
         )
 
 
@@ -277,7 +277,7 @@ def test_run_command_log_level() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.init_flow_logging") as mock_init_flow_logging,
-        patch("inspect_flow._cli.run.launch_run") as mock_run,
+        patch("inspect_flow._cli.run.launch") as mock_run,
         patch("inspect_flow._cli.run.int_load_job") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -292,31 +292,6 @@ def test_run_command_log_level() -> None:
         mock_config.assert_called_once()
 
         mock_run.assert_called_once()
-
-
-def test_config_command_resolve() -> None:
-    runner = CliRunner()
-    with (
-        patch("inspect_flow._cli.config.launch_config") as mock_config,
-        patch("inspect_flow._cli.config.int_load_job") as mock_load,
-    ):
-        mock_config_obj = MagicMock()
-        mock_load.return_value = mock_config_obj
-
-        result = runner.invoke(config_command, [CONFIG_FILE, "--resolve"])
-
-        assert result.exit_code == 0
-
-        mock_load.assert_called_once_with(
-            CONFIG_FILE_RESOLVED, options=ConfigOptions(args={}, overrides=[])
-        )
-
-        mock_config.assert_called_once_with(
-            mock_config_obj,
-            **COMMON_DEFAULTS,
-            base_dir=CONFIG_FILE_DIR,
-            resolve=True,
-        )
 
 
 def test_options_to_overrides() -> None:

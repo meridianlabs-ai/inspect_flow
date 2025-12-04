@@ -14,7 +14,7 @@ def test_258_run_includes() -> None:
             FlowTask(name="local_eval/noop", model="{defaults[model][name]}"),
         ],
     )
-    with patch("inspect_flow._api.api.launch_run") as mock_launch:
+    with patch("inspect_flow._api.api.launch") as mock_launch:
         run(job=job, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_job = mock_launch.mock_calls[0].kwargs["job"]

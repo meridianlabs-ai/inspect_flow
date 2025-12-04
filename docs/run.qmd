@@ -31,7 +31,14 @@ flow run config.py
 flow run config.py --dry-run
 ```
 
-Writes the job configuration (as yaml) without running any tasks. Useful for validating large parameter sweeps.
+Shows the completely resolved configuration:
+
+- Creates virtual environment
+- Applies all defaults 
+- Expands all matrix functions 
+- Instantiates all Python objects
+
+This is invaluable for debugging what settings will actually be used in your evaluations.
 
 **Override log directory:**
 
@@ -55,34 +62,11 @@ Override any configuration value at runtime. See [CLI Overrides](#cli-overrides)
 
 Preview your configuration before running:
 
-**Basic usage:**
-
 ``` bash
 flow config config.py
 ```
 
 Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.
-
-**Full resolution:**
-
-``` bash
-flow config config.py --resolve
-```
-
-Equivalent to 
-
-``` bash
-flow run config.py --dry-run
-```
-
-Shows the completely resolved configuration:
-
-- Creates virtual environment
-- Applies all defaults 
-- Expands all matrix functions 
-- Instantiates all Python objects
-
-This is invaluable for debugging what settings will actually be used in your evaluations.
 
 ::: callout-tip
 ### When to Use Each Command

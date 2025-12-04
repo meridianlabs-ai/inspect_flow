@@ -7,17 +7,17 @@ import pytest
 from inspect_flow import FlowJob
 from inspect_flow._api.api import load_job
 from inspect_flow._config.load import ConfigOptions, int_load_job
-from inspect_flow._launcher.launch import launch_run
+from inspect_flow._launcher.launch import launch
 
 CREATE_VENV_RUN_CALLS = 3
 
 
-def test_launch_run() -> None:
+def test_launch() -> None:
     with patch("subprocess.run") as mock_run:
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
-        launch_run(
+        launch(
             job=FlowJob(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
         )
@@ -44,7 +44,7 @@ def test_launch_no_venv() -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
-        launch_run(
+        launch(
             job=FlowJob(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
             no_venv=True,
@@ -67,24 +67,6 @@ def test_launch_no_venv() -> None:
         assert args[3] == Path.cwd().as_posix()
 
 
-def test_launch_handles_subprocess_error() -> None:
-    with (
-        patch("subprocess.run") as mock_run,
-        pytest.raises(SystemExit) as exc_info,
-    ):
-        mock_run.side_effect = [
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="mocked output"),
-            subprocess.CalledProcessError(42, "cmd"),  # Fourth call fails
-        ]
-
-        launch_run(job=FlowJob(log_dir="logs", tasks=["task_name"]), base_dir=".")
-
-    # Verify sys.exit was called with the subprocess's return code
-    assert exc_info.value.code == 42
-
-
 def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv1", raising=False)
     monkeypatch.delenv("myenv2", raising=False)
@@ -94,7 +76,7 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
             args=[], returncode=0, stdout="mocked output"
         )
 
-        launch_run(
+        launch(
             job=FlowJob(
                 log_dir="logs",
                 tasks=["task_name"],
@@ -115,7 +97,7 @@ def test_s3() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        launch_run(
+        launch(
             job=FlowJob(
                 log_dir=log_dir,
                 tasks=["task_name"],
@@ -135,7 +117,7 @@ def test_config_relative_log_dir() -> None:
         job = load_job("./tests/config/e2e_test_flow.py")
         assert job.log_dir
         expected_log_dir = Path("./tests/config/") / job.log_dir
-        launch_run(
+        launch(
             job=job,
             base_dir="./tests/config/",
         )
@@ -162,7 +144,7 @@ def test_relative_bundle_dir() -> None:
                 ]
             ),
         )
-        launch_run(
+        launch(
             job=job,
             base_dir="tests/config/",
         )
@@ -189,7 +171,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        launch_run(job=job, base_dir="./tests/config/")
+        launch(job=job, base_dir="./tests/config/")
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert launch_env["TEST_ENV_VAR"] == "test_value"
@@ -198,7 +180,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        launch_run(job=job, base_dir="./tests/config/", no_dotenv=True)
+        launch(job=job, base_dir="./tests/config/", no_dotenv=True)
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert "TEST_ENV_VAR" not in launch_env
