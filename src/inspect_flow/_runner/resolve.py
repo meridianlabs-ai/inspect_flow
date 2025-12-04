@@ -16,6 +16,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
+    NotGiven,
     not_given,
 )
 from inspect_flow._types.merge import merge_recursive
@@ -42,7 +43,7 @@ def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
     return job.model_copy(
         update={
             "tasks": resolved_tasks,
-            "defaults": None,
+            "defaults": not_given,
             "python_version": _resolve_python_version(),
         }
     )
@@ -55,8 +56,8 @@ def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str
 
 def _merge_defaults(
     config: _T,
-    defaults: _T | None,
-    prefix_defaults: dict[str, _T] | None,
+    defaults: _T | None | NotGiven,
+    prefix_defaults: dict[str, _T] | None | NotGiven,
 ) -> _T:
     if not defaults and not prefix_defaults:
         return config

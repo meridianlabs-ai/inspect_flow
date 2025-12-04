@@ -65,81 +65,6 @@ class CachePolicyDict(TypedDict):
     scopes: NotRequired[Mapping[str, str]]
 
 
-class FlowAgentDict(TypedDict):
-    """Configuration for an Agent."""
-
-    name: NotRequired[Optional[str]]
-    """Name of the agent. Required to be set by the time the agent is created."""
-    args: NotRequired[Optional[Mapping[str, Any]]]
-    """Additional args to pass to agent constructor."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
-    """Optional. Metadata stored in the flow config. Not passed to the agent."""
-    type: NotRequired[Literal["agent"]]
-    """Type needed to differentiated solvers and agents in solver lists."""
-
-
-class FlowAgentMatrixDict(TypedDict):
-    """Configuration for an Agent."""
-
-    args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
-    """Additional args to pass to agent constructor."""
-
-
-class FlowDependenciesDict(TypedDict):
-    """Configuration for flow dependencies to install in the venv."""
-
-    dependency_file: NotRequired[Optional[Union[Literal["auto", "no_file"], str]]]
-    """Path to a dependency file (either requirements.txt or pyproject.toml) to use to create the virtual environment. If 'auto', will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API) looking for pyproject.toml or requirements.txt files. If 'no_file', no dependency file will be used. Defaults to 'auto'."""
-    additional_dependencies: NotRequired[Optional[Union[str, Sequence[str]]]]
-    """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
-    auto_detect_dependencies: NotRequired[Optional[bool]]
-    """If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed."""
-
-
-class FlowEpochsDict(TypedDict):
-    """
-    Configuration for task epochs.
-
-    Number of epochs to repeat samples over and optionally one or more
-    reducers used to combine scores from samples across epochs. If not
-    specified the "mean" score reducer is used.
-    """
-
-    epochs: int
-    """Number of epochs."""
-    reducer: NotRequired[Optional[Union[str, Sequence[str]]]]
-    """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
-
-
-class FlowScorerDict(TypedDict):
-    """Configuration for a Scorer."""
-
-    name: NotRequired[Optional[str]]
-    """Name of the scorer. Required to be set by the time the scorer is created."""
-    args: NotRequired[Optional[Mapping[str, Any]]]
-    """Additional args to pass to scorer constructor."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
-    """Optional. Metadata stored in the flow config. Not passed to the scorer."""
-
-
-class FlowSolverDict(TypedDict):
-    """Configuration for a Solver."""
-
-    name: NotRequired[Optional[str]]
-    """Name of the solver. Required to be set by the time the solver is created."""
-    args: NotRequired[Optional[Mapping[str, Any]]]
-    """Additional args to pass to solver constructor."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
-    """Optional. Metadata stored in the flow config. Not passed to the solver."""
-
-
-class FlowSolverMatrixDict(TypedDict):
-    """Configuration for a Solver."""
-
-    args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
-    """Additional args to pass to solver constructor."""
-
-
 class NotGivenDict(TypedDict):
     """
     For parameters with a meaningful None value, we need to distinguish between the user explicitly passing None, and the user not passing the parameter at all.
@@ -162,134 +87,226 @@ class ApprovalPolicyConfigDict(TypedDict):
     approvers: Sequence[ApproverPolicyConfig]
 
 
+class FlowAgentDict(TypedDict):
+    """Configuration for an Agent."""
+
+    name: NotRequired[Optional[Union[str, NotGiven]]]
+    """Name of the agent. Required to be set by the time the agent is created."""
+    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Additional args to pass to agent constructor."""
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Optional. Metadata stored in the flow config. Not passed to the agent."""
+    type: NotRequired[Literal["agent"]]
+    """Type needed to differentiated solvers and agents in solver lists."""
+
+
+class FlowAgentMatrixDict(TypedDict):
+    """Configuration for an Agent."""
+
+    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
+    """Additional args to pass to agent constructor."""
+
+
 class FlowDefaultsDict(TypedDict):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
-    config: NotRequired[Optional[GenerateConfig]]
+    config: NotRequired[Optional[Union[GenerateConfig, NotGiven]]]
     """Default model generation options. Will be overriden by settings on the FlowModel and FlowTask."""
-    agent: NotRequired[Optional[Union[FlowAgent, str]]]
+    agent: NotRequired[Optional[Union[FlowAgent, NotGiven, str]]]
     """Field defaults for agents."""
-    agent_prefix: NotRequired[Optional[Mapping[str, Union[FlowAgent, str]]]]
+    agent_prefix: NotRequired[
+        Optional[Union[Mapping[str, Union[FlowAgent, str]], NotGiven]]
+    ]
     """Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}"""
-    model: NotRequired[Optional[Union[FlowModel, str]]]
+    model: NotRequired[Optional[Union[FlowModel, NotGiven, str]]]
     """Field defaults for models."""
-    model_prefix: NotRequired[Optional[Mapping[str, Union[FlowModel, str]]]]
+    model_prefix: NotRequired[
+        Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]
+    ]
     """Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}"""
-    solver: NotRequired[Optional[Union[FlowSolver, str]]]
+    solver: NotRequired[Optional[Union[FlowSolver, NotGiven, str]]]
     """Field defaults for solvers."""
-    solver_prefix: NotRequired[Optional[Mapping[str, Union[FlowSolver, str]]]]
+    solver_prefix: NotRequired[
+        Optional[Union[Mapping[str, Union[FlowSolver, str]], NotGiven]]
+    ]
     """Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}"""
-    task: NotRequired[Optional[Union[FlowTask, str]]]
+    task: NotRequired[Optional[Union[FlowTask, NotGiven, str]]]
     """Field defaults for tasks."""
-    task_prefix: NotRequired[Optional[Mapping[str, Union[FlowTask, str]]]]
+    task_prefix: NotRequired[
+        Optional[Union[Mapping[str, Union[FlowTask, str]], NotGiven]]
+    ]
     """Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}"""
+
+
+class FlowDependenciesDict(TypedDict):
+    """Configuration for flow dependencies to install in the venv."""
+
+    dependency_file: NotRequired[
+        Optional[Union[Literal["auto", "no_file"], str, NotGiven]]
+    ]
+    """Path to a dependency file (either requirements.txt or pyproject.toml) to use to create the virtual environment. If 'auto', will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API) looking for pyproject.toml or requirements.txt files. If 'no_file', no dependency file will be used. Defaults to 'auto'."""
+    additional_dependencies: NotRequired[Optional[Union[str, Sequence[str], NotGiven]]]
+    """Dependencies to pip install. E.g. PyPI package specifiers or Git repository URLs."""
+    auto_detect_dependencies: NotRequired[Optional[Union[bool, NotGiven]]]
+    """If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed."""
+
+
+class FlowEpochsDict(TypedDict):
+    """
+    Configuration for task epochs.
+
+    Number of epochs to repeat samples over and optionally one or more
+    reducers used to combine scores from samples across epochs. If not
+    specified the "mean" score reducer is used.
+    """
+
+    epochs: int
+    """Number of epochs."""
+    reducer: NotRequired[Optional[Union[str, Sequence[str], NotGiven]]]
+    """One or more reducers used to combine scores from samples across epochs (defaults to "mean")"""
 
 
 class FlowModelDict(TypedDict):
     """Configuration for a Model."""
 
-    name: NotRequired[Optional[str]]
+    name: NotRequired[Optional[Union[str, NotGiven]]]
     """Name of the model to use. Required to be set by the time the model is created."""
-    role: NotRequired[Optional[str]]
+    role: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[Optional[str]]
+    default: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
-    config: NotRequired[Optional[GenerateConfig]]
+    config: NotRequired[Optional[Union[GenerateConfig, NotGiven]]]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
-    base_url: NotRequired[Optional[str]]
+    base_url: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional. Alternate base URL for model."""
-    api_key: NotRequired[Optional[str]]
+    api_key: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional. API key for model."""
-    memoize: NotRequired[Optional[bool]]
+    memoize: NotRequired[Optional[Union[bool, NotGiven]]]
     """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
-    model_args: NotRequired[Optional[Mapping[str, Any]]]
+    model_args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Additional args to pass to model constructor."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Optional. Metadata stored in the flow config. Not passed to the model."""
 
 
 class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
-    config: NotRequired[Optional[Sequence[Optional[GenerateConfig]]]]
+    config: NotRequired[Optional[Sequence[Optional[Union[GenerateConfig, NotGiven]]]]]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
 
 
 class FlowOptionsDict(TypedDict):
     """Evaluation options."""
 
-    retry_attempts: NotRequired[Optional[int]]
+    retry_attempts: NotRequired[Optional[Union[int, NotGiven]]]
     """Maximum number of retry attempts before giving up (defaults to 10)."""
-    retry_wait: NotRequired[Optional[float]]
+    retry_wait: NotRequired[Optional[Union[float, NotGiven]]]
     """Time to wait between attempts, increased exponentially (defaults to 30, resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will in no case be longer than 1 hour."""
-    retry_connections: NotRequired[Optional[float]]
+    retry_connections: NotRequired[Optional[Union[float, NotGiven]]]
     """Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction)."""
-    retry_cleanup: NotRequired[Optional[bool]]
+    retry_cleanup: NotRequired[Optional[Union[bool, NotGiven]]]
     """Cleanup failed log files after retries (defaults to True)."""
-    sandbox: NotRequired[Optional[Union[str, Sequence, SandboxEnvironmentSpec]]]
+    sandbox: NotRequired[
+        Optional[Union[str, Sequence, SandboxEnvironmentSpec, NotGiven]]
+    ]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)."""
-    sandbox_cleanup: NotRequired[Optional[bool]]
+    sandbox_cleanup: NotRequired[Optional[Union[bool, NotGiven]]]
     """Cleanup sandbox environments after task completes (defaults to True)."""
-    tags: NotRequired[Optional[Sequence[str]]]
+    tags: NotRequired[Optional[Union[Sequence[str], NotGiven]]]
     """Tags to associate with this evaluation run."""
-    metadata: NotRequired[Optional[Mapping[str, Any]]]
+    metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Metadata to associate with this evaluation run."""
-    trace: NotRequired[Optional[bool]]
+    trace: NotRequired[Optional[Union[bool, NotGiven]]]
     """Trace message interactions with evaluated model to terminal."""
     display: NotRequired[
-        Optional[Literal["full", "conversation", "rich", "plain", "log", "none"]]
+        Optional[
+            Union[
+                Literal["full", "conversation", "rich", "plain", "log", "none"],
+                NotGiven,
+            ]
+        ]
     ]
     """Task display type (defaults to 'full')."""
-    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig]]]
+    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig, NotGiven]]]
     """Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy."""
-    score: NotRequired[Optional[bool]]
+    score: NotRequired[Optional[Union[bool, NotGiven]]]
     """Score output (defaults to True)."""
-    log_level: NotRequired[Optional[str]]
+    log_level: NotRequired[Optional[Union[str, NotGiven]]]
     """Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning")."""
-    log_level_transcript: NotRequired[Optional[str]]
+    log_level_transcript: NotRequired[Optional[Union[str, NotGiven]]]
     """Level for logging to the log file (defaults to "info")."""
-    log_format: NotRequired[Optional[Literal["eval", "json"]]]
+    log_format: NotRequired[Optional[Union[Literal["eval", "json"], NotGiven]]]
     """Format for writing log files (defaults to "eval", the native high-performance format)."""
-    limit: NotRequired[Optional[int]]
+    limit: NotRequired[Optional[Union[int, NotGiven]]]
     """Limit evaluated samples (defaults to all samples)."""
-    sample_shuffle: NotRequired[Optional[Union[bool, int]]]
+    sample_shuffle: NotRequired[Optional[Union[bool, int, NotGiven]]]
     """Shuffle order of samples (pass a seed to make the order deterministic)."""
-    fail_on_error: NotRequired[Optional[Union[bool, float]]]
+    fail_on_error: NotRequired[Optional[Union[bool, float, NotGiven]]]
     """`True` to fail on first sample error(default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: NotRequired[Optional[bool]]
+    continue_on_fail: NotRequired[Optional[Union[bool, NotGiven]]]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    retry_on_error: NotRequired[Optional[int]]
+    retry_on_error: NotRequired[Optional[Union[int, NotGiven]]]
     """Number of times to retry samples if they encounter errors (defaults to 3)."""
-    debug_errors: NotRequired[Optional[bool]]
+    debug_errors: NotRequired[Optional[Union[bool, NotGiven]]]
     """Raise task errors (rather than logging them) so they can be debugged (defaults to False)."""
-    max_samples: NotRequired[Optional[int]]
+    max_samples: NotRequired[Optional[Union[int, NotGiven]]]
     """Maximum number of samples to run in parallel (default is max_connections)."""
-    max_tasks: NotRequired[Optional[int]]
+    max_tasks: NotRequired[Optional[Union[int, NotGiven]]]
     """Maximum number of tasks to run in parallel (defaults is 10)."""
-    max_subprocesses: NotRequired[Optional[int]]
+    max_subprocesses: NotRequired[Optional[Union[int, NotGiven]]]
     """Maximum number of subprocesses to run in parallel (default is os.cpu_count())."""
-    max_sandboxes: NotRequired[Optional[int]]
+    max_sandboxes: NotRequired[Optional[Union[int, NotGiven]]]
     """Maximum number of sandboxes (per-provider) to run in parallel."""
-    log_samples: NotRequired[Optional[bool]]
+    log_samples: NotRequired[Optional[Union[bool, NotGiven]]]
     """Log detailed samples and scores (defaults to True)."""
-    log_realtime: NotRequired[Optional[bool]]
+    log_realtime: NotRequired[Optional[Union[bool, NotGiven]]]
     """Log events in realtime (enables live viewing of samples in inspect view) (defaults to True)."""
-    log_images: NotRequired[Optional[bool]]
+    log_images: NotRequired[Optional[Union[bool, NotGiven]]]
     """Log base64 encoded version of images, even if specified as a filename or URL (defaults to False)."""
-    log_buffer: NotRequired[Optional[int]]
+    log_buffer: NotRequired[Optional[Union[int, NotGiven]]]
     """Number of samples to buffer before writing log file. If not specified, an appropriate default for the format and filesystem is chosen (10 for most all cases, 100 for JSON logs on remote filesystems)."""
-    log_shared: NotRequired[Optional[Union[bool, int]]]
+    log_shared: NotRequired[Optional[Union[bool, int, NotGiven]]]
     """Sync sample events to log directory so that users on other systems can see log updates in realtime (defaults to no syncing). Specify `True` to sync every 10 seconds, otherwise an integer to sync every `n` seconds."""
-    bundle_dir: NotRequired[Optional[str]]
+    bundle_dir: NotRequired[Optional[Union[str, NotGiven]]]
     """If specified, the log viewer and logs generated by this eval set will be bundled into this directory. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
-    bundle_overwrite: NotRequired[Optional[bool]]
+    bundle_overwrite: NotRequired[Optional[Union[bool, NotGiven]]]
     """Whether to overwrite files in the bundle_dir. (defaults to False)."""
-    log_dir_allow_dirty: NotRequired[Optional[bool]]
+    log_dir_allow_dirty: NotRequired[Optional[Union[bool, NotGiven]]]
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
-    eval_set_id: NotRequired[Optional[str]]
+    eval_set_id: NotRequired[Optional[Union[str, NotGiven]]]
     """ID for the eval set. If not specified, a unique ID will be generated."""
-    bundle_url_map: NotRequired[Optional[Mapping[str, str]]]
+    bundle_url_map: NotRequired[Optional[Union[Mapping[str, str], NotGiven]]]
     """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""
+
+
+class FlowScorerDict(TypedDict):
+    """Configuration for a Scorer."""
+
+    name: NotRequired[Optional[Union[str, NotGiven]]]
+    """Name of the scorer. Required to be set by the time the scorer is created."""
+    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Additional args to pass to scorer constructor."""
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Optional. Metadata stored in the flow config. Not passed to the scorer."""
+
+
+class FlowSolverDict(TypedDict):
+    """Configuration for a Solver."""
+
+    name: NotRequired[Optional[Union[str, NotGiven]]]
+    """Name of the solver. Required to be set by the time the solver is created."""
+    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Additional args to pass to solver constructor."""
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    """Optional. Metadata stored in the flow config. Not passed to the solver."""
+
+
+class FlowSolverMatrixDict(TypedDict):
+    """Configuration for a Solver."""
+
+    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
+    """Additional args to pass to solver constructor."""
 
 
 class FlowTaskDict(TypedDict):
@@ -301,7 +318,7 @@ class FlowTaskDict(TypedDict):
 
     name: NotRequired[Optional[Union[str, NotGiven]]]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
-    args: NotRequired[Optional[Mapping[str, Any]]]
+    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
         Optional[
@@ -347,9 +364,11 @@ class FlowTaskDict(TypedDict):
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
     metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Additional metadata to associate with the task."""
-    sample_id: NotRequired[Optional[Union[str, int, Sequence[Union[str, int]]]]]
+    sample_id: NotRequired[
+        Optional[Union[str, int, Sequence[Union[str, int]], NotGiven]]
+    ]
     """Evaluate specific sample(s) from the dataset."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Optional. Metadata stored in the flow config. Not passed to the task."""
 
 
@@ -360,7 +379,7 @@ class FlowTaskMatrixDict(TypedDict):
     Tasks are the basis for defining and running evaluations.
     """
 
-    args: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
+    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
         Optional[
@@ -497,23 +516,23 @@ class ResponseSchemaDict(TypedDict):
 class FlowJobDict(TypedDict):
     """Configuration for a flow job."""
 
-    includes: NotRequired[Optional[Sequence[str]]]
+    includes: NotRequired[Optional[Union[Sequence[str], NotGiven]]]
     """List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically."""
-    log_dir: NotRequired[Optional[str]]
+    log_dir: NotRequired[Optional[Union[str, NotGiven]]]
     """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
-    log_dir_create_unique: NotRequired[Optional[bool]]
+    log_dir_create_unique: NotRequired[Optional[Union[bool, NotGiven]]]
     """If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False."""
-    python_version: NotRequired[Optional[str]]
+    python_version: NotRequired[Optional[Union[str, NotGiven]]]
     """Python version to use in the flow virtual environment (e.g. '3.11')"""
-    options: NotRequired[Optional[FlowOptions]]
+    options: NotRequired[Optional[Union[FlowOptions, NotGiven]]]
     """Arguments for calls to eval_set."""
-    dependencies: NotRequired[Optional[FlowDependencies]]
+    dependencies: NotRequired[Optional[Union[FlowDependencies, NotGiven]]]
     """Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config."""
-    env: NotRequired[Optional[Mapping[str, str]]]
+    env: NotRequired[Optional[Union[Mapping[str, str], NotGiven]]]
     """Environment variables to set when running tasks."""
-    defaults: NotRequired[Optional[FlowDefaults]]
+    defaults: NotRequired[Optional[Union[FlowDefaults, NotGiven]]]
     """Defaults values for Inspect objects."""
-    flow_metadata: NotRequired[Optional[Mapping[str, Any]]]
+    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Optional. Metadata stored in the flow config. Not passed to the model."""
-    tasks: NotRequired[Optional[Sequence[Union[str, FlowTask]]]]
+    tasks: NotRequired[Optional[Union[Sequence[Union[str, FlowTask]], NotGiven]]]
     """Tasks to run"""

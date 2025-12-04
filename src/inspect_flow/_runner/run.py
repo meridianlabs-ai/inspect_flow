@@ -1,3 +1,5 @@
+from typing import Any
+
 import click
 import inspect_ai
 import yaml
@@ -11,6 +13,8 @@ from inspect_flow._runner.resolve import resolve_job
 from inspect_flow._types.flow_types import (
     FlowJob,
     FlowOptions,
+    NotGiven,
+    not_given,
 )
 from inspect_flow._util.list_util import sequence_to_list
 
@@ -50,58 +54,63 @@ def _run_eval_set(
 
     _write_config_file(resolved_config)
 
+    def ng(value: NotGiven | Any) -> Any:
+        return value if value is not not_given else None
+
     try:
         result = inspect_ai.eval_set(
             tasks=tasks,
             log_dir=resolved_config.log_dir,
-            retry_attempts=options.retry_attempts,
-            retry_wait=options.retry_wait,
-            retry_connections=options.retry_connections,
-            retry_cleanup=options.retry_cleanup,
+            retry_attempts=ng(options.retry_attempts),
+            retry_wait=ng(options.retry_wait),
+            retry_connections=ng(options.retry_connections),
+            retry_cleanup=ng(options.retry_cleanup),
             # model= FlowTask
             # model_base_url= FlowModel
             # model_args= FlowModel
             # model_roles= FlowTask
             # task_args= FlowTask
-            sandbox=options.sandbox,
-            sandbox_cleanup=options.sandbox_cleanup,
+            sandbox=ng(options.sandbox),
+            sandbox_cleanup=ng(options.sandbox_cleanup),
             # solver= FlowTask
-            tags=sequence_to_list(options.tags),
-            metadata=options.metadata,
-            trace=options.trace,
-            display=options.display,
-            approval=options.approval,
-            score=options.score if options.score is not None else True,
-            log_level=options.log_level,
-            log_level_transcript=options.log_level_transcript,
-            log_format=options.log_format,
-            limit=options.limit,
+            tags=sequence_to_list(ng(options.tags)),
+            metadata=ng(options.metadata),
+            trace=ng(options.trace),
+            display=ng(options.display),
+            approval=ng(options.approval),
+            score=ng(options.score) if ng(options.score) is not None else True,
+            log_level=ng(options.log_level),
+            log_level_transcript=ng(options.log_level_transcript),
+            log_format=ng(options.log_format),
+            limit=ng(options.limit),
             # sample_id= FlowTask
-            sample_shuffle=options.sample_shuffle,
+            sample_shuffle=ng(options.sample_shuffle),
             # epochs= FlowTask
-            fail_on_error=options.fail_on_error,
-            continue_on_fail=options.continue_on_fail,
-            retry_on_error=options.retry_on_error
-            if options.retry_on_error is not None
+            fail_on_error=ng(options.fail_on_error),
+            continue_on_fail=ng(options.continue_on_fail),
+            retry_on_error=ng(options.retry_on_error)
+            if ng(options.retry_on_error) is not None
             else 3,
-            debug_errors=options.debug_errors,
+            debug_errors=ng(options.debug_errors),
             # message_limit= FlowTask
             # token_limit= FlowTask
             # time_limit= FlowTask
             # working_limit= FlowTask
-            max_samples=options.max_samples,
-            max_tasks=options.max_tasks if options.max_tasks is not None else 10,
-            max_subprocesses=options.max_subprocesses,
-            max_sandboxes=options.max_sandboxes,
-            log_samples=options.log_samples,
-            log_realtime=options.log_realtime,
-            log_images=options.log_images,
-            log_buffer=options.log_buffer,
-            log_shared=options.log_shared,
-            bundle_dir=options.bundle_dir,
-            bundle_overwrite=options.bundle_overwrite or False,
-            log_dir_allow_dirty=options.log_dir_allow_dirty,
-            eval_set_id=options.eval_set_id,
+            max_samples=ng(options.max_samples),
+            max_tasks=ng(options.max_tasks)
+            if ng(options.max_tasks) is not None
+            else 10,
+            max_subprocesses=ng(options.max_subprocesses),
+            max_sandboxes=ng(options.max_sandboxes),
+            log_samples=ng(options.log_samples),
+            log_realtime=ng(options.log_realtime),
+            log_images=ng(options.log_images),
+            log_buffer=ng(options.log_buffer),
+            log_shared=ng(options.log_shared),
+            bundle_dir=ng(options.bundle_dir),
+            bundle_overwrite=ng(options.bundle_overwrite) or False,
+            log_dir_allow_dirty=ng(options.log_dir_allow_dirty),
+            eval_set_id=ng(options.eval_set_id),
             # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
         )
     except PrerequisiteError as e:

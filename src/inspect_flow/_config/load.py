@@ -14,7 +14,7 @@ from inspect_ai._util.file import absolute_file_path, exists, file
 from pydantic_core import ValidationError
 
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowJob, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.module_util import execute_file_and_get_last_result
@@ -96,7 +96,7 @@ def _expand_includes(
         included_job = _load_job_from_file(include_path, args, state)
         if included_job is not None:
             job = _apply_include(job, included_job)
-    job.includes = None
+    job.includes = not_given
     return job
 
 

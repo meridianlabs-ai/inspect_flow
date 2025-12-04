@@ -7,9 +7,7 @@ import yaml
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
-from inspect_flow._types.flow_types import (
-    FlowJob,
-)
+from inspect_flow._types.flow_types import FlowJob
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import run_with_logging
@@ -53,8 +51,8 @@ def create_venv(
         ]
 
     auto_detect_dependencies = True
-    if job.dependencies and job.dependencies.auto_detect_dependencies is not None:
-        auto_detect_dependencies = job.dependencies.auto_detect_dependencies
+    if job.dependencies and job.dependencies.auto_detect_dependencies is False:
+        auto_detect_dependencies = False
 
     if auto_detect_dependencies:
         dependencies.extend(collect_auto_dependencies(job))
