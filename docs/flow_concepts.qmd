@@ -67,7 +67,7 @@ flow run config.py
 | `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names |
 | `env` | Environment variables to set when running tasks | `None` |
 | `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
-| `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults and Overrides](defaults_overrides.qmd) and `FlowDefaults` reference) | `None` |
+| `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
 | `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
 
 ::: callout-note

@@ -1,0 +1,9 @@
+defaults:
+  config:
+    max_tokens: 1000
+    temperature: 0.8
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model: openai/gpt-4o
+  config:
+    temperature: 0.5
