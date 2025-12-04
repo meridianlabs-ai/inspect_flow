@@ -1,0 +1,6 @@
+defaults:
+  model:
+    name: openai/gpt-4o
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model: null

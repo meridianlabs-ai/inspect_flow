@@ -57,10 +57,8 @@ website:
               href: flow_concepts.qmd
             - text: Dependencies
               href: dependencies.qmd
-            - text: Defaults and Overrides
-              href: defaults_overrides.qmd
-            - text: Inheritance
-              href: inheritance.qmd
+            - text: Defaults
+              href: defaults.qmd
             - text: Matrixing
               href: matrix.qmd
             - text: Running Flows

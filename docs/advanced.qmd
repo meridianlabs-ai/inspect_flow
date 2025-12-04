@@ -13,7 +13,7 @@ The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspe
 
 **Example:**
 
-``` {.python filename="metadata.py"}
+``` {.python filename="config.py"}
 {{< include ../examples/metadata.py >}}
 ```
 
@@ -32,7 +32,7 @@ The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `F
 
 **Example: Configuration-time filtering**
 
-``` {.python filename="flow_metadata.py"}
+``` {.python filename="config.py"}
 {{< include ../examples/flow_metadata.py >}}
 ```
 
@@ -49,7 +49,7 @@ This function will be called with any provided args:
 flow run flow_args.py --arg task_min_priority=2
 ```
 
-``` {.python filename="flow_args.py"}
+``` {.python filename="config.py"}
 {{< include ../examples/flow_args.py >}}
 ```
 
@@ -73,7 +73,7 @@ Viewer bundling works the same way as [`eval_set()`](https://inspect.aisi.org.uk
 
 Convert local bundle paths to public URLs for sharing evaluation results. The `bundle_url_map` in `FlowOptions` applies string replacements to `bundle_dir` to generate a shareable URL that's printed to stdout after the evaluation completes.
 
-``` {.python filename="bundle_url_map.py"}
+``` {.python filename="config.py"}
 {{< include ../examples/bundle_url_map.py >}}
 ```
 
@@ -81,7 +81,7 @@ After running this prints: `Bundle URL: https://example.com/shared/bundles/my_ev
 
 Use this when storing bundles on servers with public HTTP access or cloud storage with URL mapping. Multiple mappings are applied in order.
 
-Using Bundle URL maps makes sense along with the job [inheritance](inheritance.qmd) feature so you can configure the same bundle mapping for all configs in a repository.
+Using Bundle URL maps makes sense along with the job [inheritance](defaults.qmd#inheritance) feature so you can configure the same bundle mapping for all configs in a repository.
 
 ### Configuration Scripts
 
@@ -114,7 +114,7 @@ Place a `_flow.py` file at your repository root to validate that all configs are
 {{< include ../examples/dirty_git_check/including/config.py >}}
 ```
 
-#### Lock Configuration Fields
+#### Lock Configuration Fields {#lock-configuration-fields}
 
 A `_flow.py` file can prevent configs from overriding critical settings:
 
