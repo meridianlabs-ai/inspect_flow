@@ -432,19 +432,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="python-api">Python API</h2>
 <section id="config" class="level3">
 <h3 class="anchored" data-anchor-id="config">config</h3>
-<p>Print the flow job configuration.</p>
+<p>Return the flow job configuration.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/5433d734fe85e434c3a6ffb29721c34a89725eab/src/inspect_flow/_api/api.py#L62">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/91e0b66f2979083c7be8d10322306ee3e0857891/src/inspect_flow/_api/api.py#L63">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    resolve: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    no_venv: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    no_dotenv: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">job</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
 <dd>
@@ -454,21 +451,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The base directory for resolving relative paths. Defaults to the current working directory.</p>
 </dd>
-<dt><code class="ref-definition">resolve</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
-<dd>
-<p>If True, resolve the configuration before printing.</p>
-</dd>
 <dt><code class="ref-definition">log_level</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.</p>
-</dd>
-<dt><code class="ref-definition">no_venv</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
-<dd>
-<p>If True, do not create a virtual environment to resolve the job.</p>
-</dd>
-<dt><code class="ref-definition">no_dotenv</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
-<dd>
-<p>If True, do not load environment variables from a .env file.</p>
 </dd>
 </dl>
 </section>
@@ -476,7 +461,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="load_job">load_job</h3>
 <p>Load a job file and apply any overrides.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/5433d734fe85e434c3a6ffb29721c34a89725eab/src/inspect_flow/_api/api.py#L14">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/91e0b66f2979083c7be8d10322306ee3e0857891/src/inspect_flow/_api/api.py#L15">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_job(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span>: <span class="bu">str</span>,</span>
@@ -503,7 +488,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run">run</h3>
 <p>Run an inspect_flow evaluation.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/5433d734fe85e434c3a6ffb29721c34a89725eab/src/inspect_flow/_api/api.py#L31">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/91e0b66f2979083c7be8d10322306ee3e0857891/src/inspect_flow/_api/api.py#L32">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>

@@ -296,6 +296,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Executes your evaluations in this isolated environment</li>
 <li>Cleans up the temporary environment after completion (logs persist in <code>log_dir</code>)</li>
 </ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Automatic Dependency Discovery
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>By default, Flow automatically discovers and installs dependencies without requiring explicit configuration:</p>
+<ul>
+<li><strong>Dependency files</strong>: Searches upward from your config file directory for <code>pyproject.toml</code> or <code>requirements.txt</code></li>
+<li><strong>Package inference</strong>: Detects packages from object names in your config:
+<ul>
+<li>Models: <code>model="openai/gpt-4"</code> → installs <code>openai</code></li>
+<li>Tasks: <code>name="inspect_evals/mmlu"</code> → installs <code>inspect-evals</code></li>
+</ul></li>
+<li><strong>Config inheritance</strong>: Automatically includes any <code>_flow.py</code> files in the config directory or parent directories (see <a href="./defaults.html#inheritance">Inheritance</a>). These files can specify default dependencies that apply to all including configs.</li>
+</ul>
+<p>This means most workflows require no dependency configuration at all!</p>
+</div>
+</div>
 <section id="specification" class="level2">
 <h2 class="anchored" data-anchor-id="specification">Specification</h2>
 <p>The <code>dependencies</code> field in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> accepts a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span> object:</p>
@@ -366,7 +389,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <p>To verify which dependencies and Python version will be used:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py <span class="at">--resolve</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 <div class="callout callout-style-default callout-tip callout-titled">

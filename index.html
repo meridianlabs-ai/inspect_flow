@@ -318,10 +318,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Inspect Flow is a workflow orchestration tool for <a href="https://inspect.aisi.org.uk/">Inspect AI</a> that enables you to run evaluations at scale with repeatability and maintainability.</p>
 <p><strong>Why Inspect Flow?</strong> As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:</p>
 <ol type="1">
-<li><strong>Declarative Configuration</strong>: Define complex evaluations with tasks, models, and parameters in type-safe schemas</li>
-<li><strong>Repeatable &amp; Shareable</strong>: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared</li>
-<li><strong>Incremental Execution</strong>: Add new models, tasks, or configurations to existing results without re-running completed work</li>
-<li><strong>Parameter Sweeping</strong>: Matrix patterns for systematic exploration across tasks, models, and hyperparameters</li>
+<li><a href="./flow_concepts.html"><strong>Declarative Configuration</strong></a>: Define complex evaluations with tasks, models, and parameters in type-safe schemas</li>
+<li><a href="./dependencies.html"><strong>Repeatable &amp; Shareable</strong></a>: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared</li>
+<li><a href="./defaults.html"><strong>Powerful Defaults</strong></a>: Define defaults once and reuse them everywhere with automatic inheritance</li>
+<li><a href="./matrix.html"><strong>Parameter Sweeping</strong></a>: Matrix patterns for systematic exploration across tasks, models, and hyperparameters</li>
 </ol>
 <p>Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.</p>
 </section>
@@ -400,9 +400,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> — Pydantic class that encapsulates the declarative description of a Flow job.</li>
 <li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> — Pydantic class abstraction on top of Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a>.</li>
 <li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> — Pydantic class abstraction on top of Inspect AI <a href="https://inspect.aisi.org.uk/models.html">Model</a>.</li>
-<li><code>tasks_matrix</code> — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.</li>
-<li><code>models_matrix</code> — Helper function for parameter sweeping to generate a list of models with all parameter combinations.</li>
-<li><code>configs_matrix</code> — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.</li>
+<li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#tasks_matrix">tasks_matrix()</a></span> — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.</li>
+<li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#models_matrix">models_matrix()</a></span> — Helper function for parameter sweeping to generate a list of models with all parameter combinations.</li>
+<li><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#configs_matrix">configs_matrix()</a></span> — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.</li>
 </ul>
 </div>
 </div>
@@ -428,9 +428,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    ],</span>
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>To run the evaluations, run the following command in your shell. This will create a virtual environment for this job run and install the dependencies. Note that task and model dependencies (like the <code>inspect-evals</code> and <code>openai</code> Python packages) are inferred and installed automatically.</p>
+<p>To run the evaluations, execute the following command. It creates a virtual environment for this job run and installs the dependencies—note that task and model dependencies (like the <code>inspect-evals</code> and <code>openai</code> Python packages) are inferred and installed automatically.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This will run both tasks and display progress in your terminal.</p>
+<p>Both tasks will run with progress displayed in your terminal.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/config_progress_terminal.png" class="img-fluid figure-img"></p>
@@ -439,7 +439,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="python-api" class="level3">
 <h3 class="anchored" data-anchor-id="python-api">Python API</h3>
-<p>You can run evaluations from Python instead of the command line.</p>
+<p>You can run evaluations from Python instead of the command line by calling the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span> function with a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>.</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
@@ -510,29 +510,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>models_matrix.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14" data-filename="models_matrix.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, GenerateConfig, models_matrix, tasks_matrix</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        ],</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>models_matrix(</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span>[</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5"</span>,</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5-mini"</span>,</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>            ],</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>[</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"minimal"</span>),</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"medium"</span>),</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>            ],</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14" data-filename="models_matrix.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, models_matrix, tasks_matrix</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>models_matrix(</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span>[</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5"</span>,</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5-mini"</span>,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>[</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"minimal"</span>),</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"medium"</span>),</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>For even more concise parameter sweeping, use <code>configs_matrix</code> to generate configuration variants. This produces the same 16 evaluations (2 tasks × 2 models × 4 reasoning levels) as above, but with less boilerplate:</p>
 <div class="code-with-filename">
@@ -562,8 +563,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="run-evaluations" class="level3">
 <h3 class="anchored" data-anchor-id="run-evaluations">Run evaluations</h3>
+<p>Before running evaluations, preview the resolved configuration with <code>--dry-run</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run matrix.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This creates the virtual environment, installs all dependencies, imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. Unlike <code>flow config</code> which just parses the config file, <code>--dry-run</code> performs the full setup process.</p>
 <p>To run the config:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run matrix.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run matrix.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you’ll find a link to the logs at the bottom of the task results summary.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -572,7 +576,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </figure>
 </div>
 <p>To view logs interactively, run:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view <span class="at">--log-dir</span> logs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view <span class="at">--log-dir</span> logs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/inspect_view_eval.png" class="img-fluid figure-img" style="width:80.0%"></p>
@@ -586,6 +590,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>See the following articles to learn more about using Flow:</p>
 <ul>
 <li><a href="./flow_concepts.html">Flow Concepts</a>: Flow type system, config structure and basics.</li>
+<li><a href="./defaults.html">Defaults</a>: Define defaults once and reuse them everywhere with automatic inheritance.</li>
+<li><a href="./matrix.html">Matrixing</a>: Systematic parameter exploration with matrix and with functions.</li>
 <li><a href="./reference/index.html">Reference</a>: Detailed documentation on the Flow Python API and CLI commands.</li>
 </ul>
 

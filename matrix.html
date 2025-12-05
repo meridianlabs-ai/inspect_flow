@@ -261,20 +261,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#matrix-functions-cartesian-products" id="toc-matrix-functions-cartesian-products" class="nav-link active" data-scroll-target="#matrix-functions-cartesian-products">Matrix Functions (Cartesian Products)</a>
+  <li><a href="#matrix-functions" id="toc-matrix-functions" class="nav-link active" data-scroll-target="#matrix-functions">Matrix Functions</a>
   <ul class="collapse">
   <li><a href="#tasks_matrix" id="toc-tasks_matrix" class="nav-link" data-scroll-target="#tasks_matrix">tasks_matrix()</a></li>
   <li><a href="#models_matrix" id="toc-models_matrix" class="nav-link" data-scroll-target="#models_matrix">models_matrix()</a></li>
   <li><a href="#configs_matrix" id="toc-configs_matrix" class="nav-link" data-scroll-target="#configs_matrix">configs_matrix()</a></li>
-  <li><a href="#solvers_matrix-and-agents_matrix" id="toc-solvers_matrix-and-agents_matrix" class="nav-link" data-scroll-target="#solvers_matrix-and-agents_matrix">solvers_matrix() and agents_matrix()</a></li>
+  <li><a href="#solvers_matrix" id="toc-solvers_matrix" class="nav-link" data-scroll-target="#solvers_matrix">solvers_matrix()</a></li>
+  <li><a href="#agents_matrix" id="toc-agents_matrix" class="nav-link" data-scroll-target="#agents_matrix">agents_matrix()</a></li>
   </ul></li>
   <li><a href="#with-functions-apply-to-all" id="toc-with-functions-apply-to-all" class="nav-link" data-scroll-target="#with-functions-apply-to-all">With Functions (Apply to All)</a>
   <ul class="collapse">
   <li><a href="#tasks_with" id="toc-tasks_with" class="nav-link" data-scroll-target="#tasks_with">tasks_with()</a></li>
+  <li><a href="#models_with" id="toc-models_with" class="nav-link" data-scroll-target="#models_with">models_with()</a></li>
+  <li><a href="#configs_with" id="toc-configs_with" class="nav-link" data-scroll-target="#configs_with">configs_with()</a></li>
+  <li><a href="#solvers_with" id="toc-solvers_with" class="nav-link" data-scroll-target="#solvers_with">solvers_with()</a></li>
+  <li><a href="#agents_with" id="toc-agents_with" class="nav-link" data-scroll-target="#agents_with">agents_with()</a></li>
   <li><a href="#combining-matrix-and-with" id="toc-combining-matrix-and-with" class="nav-link" data-scroll-target="#combining-matrix-and-with">Combining Matrix and With</a></li>
   </ul></li>
   <li><a href="#nested-sweeps" id="toc-nested-sweeps" class="nav-link" data-scroll-target="#nested-sweeps">Nested Sweeps</a></li>
-  <li><a href="#config-merging-behavior" id="toc-config-merging-behavior" class="nav-link" data-scroll-target="#config-merging-behavior">Config Merging Behavior</a></li>
+  <li><a href="#matrix-merge" id="toc-matrix-merge" class="nav-link" data-scroll-target="#matrix-merge">Matrix Merge</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -301,8 +306,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and “with” functions to declaratively generate evaluation grids.</p>
-<section id="matrix-functions-cartesian-products" class="level2">
-<h2 class="anchored" data-anchor-id="matrix-functions-cartesian-products">Matrix Functions (Cartesian Products)</h2>
+<section id="matrix-functions" class="level2">
+<h2 class="anchored" data-anchor-id="matrix-functions">Matrix Functions</h2>
 <p>Matrix functions generate all combinations of their parameters using Cartesian products.</p>
 <section id="tasks_matrix" class="level3">
 <h3 class="anchored" data-anchor-id="tasks_matrix">tasks_matrix()</h3>
@@ -330,29 +335,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>models_matrix.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" data-filename="models_matrix.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, GenerateConfig, models_matrix, tasks_matrix</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        ],</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>models_matrix(</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span>[</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5"</span>,</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5-mini"</span>,</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            ],</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>[</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"minimal"</span>),</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"medium"</span>),</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>            ],</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" data-filename="models_matrix.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, models_matrix, tasks_matrix</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>models_matrix(</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span>[</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5"</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                <span class="st">"openai/gpt-5-mini"</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>[</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"minimal"</span>),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"medium"</span>),</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This creates <strong>16 tasks</strong> (2 task × 2 models × 4 resoning_effort).</p>
 </section>
@@ -386,9 +392,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>This creates <strong>16 tasks</strong> (2 task × 2 models × 4 resoning_effort).</p>
 </section>
-<section id="solvers_matrix-and-agents_matrix" class="level3">
-<h3 class="anchored" data-anchor-id="solvers_matrix-and-agents_matrix">solvers_matrix() and agents_matrix()</h3>
-<p>Generate solver or agent configurations with different arguments:</p>
+<section id="solvers_matrix" class="level3">
+<h3 class="anchored" data-anchor-id="solvers_matrix">solvers_matrix()</h3>
+<p>Generate solver configurations with different arguments:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>solvers_matrix.py</strong></pre>
@@ -412,10 +418,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>This creates <strong>3 tasks</strong> (1 task × 3 solver configurations).</p>
 </section>
+<section id="agents_matrix" class="level3">
+<h3 class="anchored" data-anchor-id="agents_matrix">agents_matrix()</h3>
+<p>Generate agent configurations with different arguments:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>agents_matrix.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" data-filename="agents_matrix.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, agents_matrix, tasks_matrix</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"my_task"</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>agents_matrix(</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            agent<span class="op">=</span><span class="st">"system_message"</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>            args<span class="op">=</span>[</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                {<span class="st">"message"</span>: <span class="st">"You are a helpful assistant."</span>},</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                {<span class="st">"message"</span>: <span class="st">"You are a creative writer."</span>},</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                {<span class="st">"message"</span>: <span class="st">"You are a technical expert."</span>},</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This creates <strong>3 tasks</strong> (1 task × 3 agent configurations).</p>
+</section>
 </section>
 <section id="with-functions-apply-to-all" class="level2">
 <h2 class="anchored" data-anchor-id="with-functions-apply-to-all">With Functions (Apply to All)</h2>
-<p>“With” functions apply the same value to all items in a list. Use these when you want to sweep over some parameters while keeping others constant.</p>
+<p>“With” functions apply the same setting to all items in a list, without creating a Cartesian product. Unlike matrix functions which multiply combinations, with functions keep the list size the same.</p>
+<p><strong>Key difference:</strong></p>
+<ul>
+<li><strong>Matrix functions</strong> create all combinations: <code>models_matrix(model=[A, B], temperature=[0.5, 1.0])</code> → 4 tasks (A at 0.5, A at 1.0, B at 0.5, B at 1.0)</li>
+<li><strong>With functions</strong> apply to each item: <code>models_with(model=[A, B], temperature=0.5)</code> → 2 tasks (A at 0.5, B at 0.5)</li>
+</ul>
 <section id="tasks_with" class="level3">
 <h3 class="anchored" data-anchor-id="tasks_with">tasks_with()</h3>
 <p>Apply common settings to multiple tasks:</p>
@@ -423,17 +460,112 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>tasks_with.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" data-filename="tasks_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, GenerateConfig, tasks_with</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_with(</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[<span class="st">"inspect_evals/gpqa_diamond"</span>, <span class="st">"inspect_evals/mmlu_0_shot"</span>],</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,  <span class="co"># Same model for both tasks</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(temperature<span class="op">=</span><span class="fl">0.7</span>),  <span class="co"># Same config for both</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" data-filename="tasks_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, tasks_with</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_with(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[<span class="st">"inspect_evals/gpqa_diamond"</span>, <span class="st">"inspect_evals/mmlu_0_shot"</span>],</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,  <span class="co"># Same model for both tasks</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(temperature<span class="op">=</span><span class="fl">0.7</span>),  <span class="co"># Same config for both</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This creates <strong>2 tasks</strong> (2 tasks, each with the same model and config).</p>
+</section>
+<section id="models_with" class="level3">
+<h3 class="anchored" data-anchor-id="models_with">models_with()</h3>
+<p>Apply common settings to multiple models:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>models_with.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" data-filename="models_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, models_with, tasks_matrix</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"my_task"</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>models_with(</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span>[<span class="st">"openai/gpt-4o"</span>, <span class="st">"anthropic/claude-3-5-sonnet-20241022"</span>],</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>GenerateConfig(temperature<span class="op">=</span><span class="fl">0.7</span>),  <span class="co"># Same config for both models</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This creates <strong>2 tasks</strong> (1 task × 2 models, each with the same config).</p>
+</section>
+<section id="configs_with" class="level3">
+<h3 class="anchored" data-anchor-id="configs_with">configs_with()</h3>
+<p>Apply common settings to multiple configs:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>configs_with.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-filename="configs_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, configs_with, tasks_matrix</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"my_task"</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>configs_with(</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>[</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(temperature<span class="op">=</span><span class="fl">0.0</span>),</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(temperature<span class="op">=</span><span class="fl">0.5</span>),</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                GenerateConfig(temperature<span class="op">=</span><span class="fl">1.0</span>),</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>            ],</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>            max_tokens<span class="op">=</span><span class="dv">1000</span>,  <span class="co"># Same max_tokens for all configs</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This creates <strong>3 tasks</strong> (1 task × 3 configs, each with the same max_tokens).</p>
+</section>
+<section id="solvers_with" class="level3">
+<h3 class="anchored" data-anchor-id="solvers_with">solvers_with()</h3>
+<p>Apply common settings to multiple solvers:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>solvers_with.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-filename="solvers_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, solvers_with, tasks_matrix</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"my_task"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>solvers_with(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>            solver<span class="op">=</span>[<span class="st">"chain_of_thought"</span>, <span class="st">"plan_solve"</span>, <span class="st">"self_critique"</span>],</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>            args<span class="op">=</span>{<span class="st">"max_steps"</span>: <span class="dv">5</span>},</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This creates <strong>3 tasks</strong> (1 task × 3 solvers, each with the same max_attempts).</p>
+</section>
+<section id="agents_with" class="level3">
+<h3 class="anchored" data-anchor-id="agents_with">agents_with()</h3>
+<p>Apply common settings to multiple agents:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>agents_with.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" data-filename="agents_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, agents_with, tasks_matrix</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"my_task"</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>agents_with(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>            agent<span class="op">=</span>[<span class="st">"system_message"</span>, <span class="st">"tool_agent"</span>, <span class="st">"web_agent"</span>],</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>            args<span class="op">=</span>{<span class="st">"system_message"</span>: <span class="st">"You are a helpful assistant."</span>},</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This creates <strong>3 tasks</strong> (1 task × 3 agents, each with cache enabled).</p>
 </section>
 <section id="combining-matrix-and-with" class="level3">
 <h3 class="anchored" data-anchor-id="combining-matrix-and-with">Combining Matrix and With</h3>
@@ -442,26 +574,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>matrix_and_with.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" data-filename="matrix_and_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> (</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    FlowJob,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    configs_matrix,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    tasks_matrix,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    tasks_with,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_with(</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>tasks_matrix(</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>            task<span class="op">=</span>[<span class="st">"task1"</span>, <span class="st">"task2"</span>],</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>configs_matrix(</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                temperature<span class="op">=</span>[<span class="fl">0.0</span>, <span class="fl">0.5</span>, <span class="fl">1.0</span>],</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>            ),</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        ),  <span class="co"># Creates 6 tasks (2 × 3)</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,  <span class="co"># Applied to all 6 tasks</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        sandbox<span class="op">=</span><span class="st">"docker"</span>,  <span class="co"># Applied to all 6 tasks</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11" data-filename="matrix_and_with.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> (</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    FlowJob,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    configs_matrix,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    tasks_matrix,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    tasks_with,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_with(</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>tasks_matrix(</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>            task<span class="op">=</span>[<span class="st">"task1"</span>, <span class="st">"task2"</span>],</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>            config<span class="op">=</span>configs_matrix(</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>                temperature<span class="op">=</span>[<span class="fl">0.0</span>, <span class="fl">0.5</span>, <span class="fl">1.0</span>],</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        ),  <span class="co"># Creates 6 tasks (2 × 3)</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,  <span class="co"># Applied to all 6 tasks</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>        sandbox<span class="op">=</span><span class="st">"docker"</span>,  <span class="co"># Applied to all 6 tasks</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
@@ -473,24 +605,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>nested_model_sweep.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" data-filename="nested_model_sweep.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, GenerateConfig, models_matrix, tasks_matrix</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[<span class="st">"inspect_evals/mmlu_0_shot"</span>, <span class="st">"inspect_evals/gpqa_diamond"</span>],</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>[</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"anthropic/claude-3-5-sonnet"</span>,  <span class="co"># Single model</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span>models_matrix(  <span class="co"># Unpacks list of 4 model configs</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                model<span class="op">=</span>[<span class="st">"openai/gpt-4o"</span>, <span class="st">"openai/gpt-4o-mini"</span>],</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                config<span class="op">=</span>[</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                    GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                    GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                ],</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>            ),</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        ],  <span class="co"># Total: 1 + 4 = 5 models</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12" data-filename="nested_model_sweep.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> GenerateConfig</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, models_matrix, tasks_matrix</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[<span class="st">"inspect_evals/mmlu_0_shot"</span>, <span class="st">"inspect_evals/gpqa_diamond"</span>],</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>[</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"anthropic/claude-3-5-sonnet"</span>,  <span class="co"># Single model</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span>models_matrix(  <span class="co"># Unpacks list of 4 model configs</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                model<span class="op">=</span>[<span class="st">"openai/gpt-4o"</span>, <span class="st">"openai/gpt-4o-mini"</span>],</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                config<span class="op">=</span>[</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                    GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"low"</span>),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                    GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                ],</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        ],  <span class="co"># Total: 1 + 4 = 5 models</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This creates <strong>10 tasks</strong> (2 tasks × 5 model configurations).</p>
 <p><strong>Example: Tasks with nested task sweep</strong></p>
@@ -498,25 +631,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>nested_task_sweep.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-filename="nested_task_sweep.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, FlowTask, tasks_matrix</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            FlowTask(name<span class="op">=</span><span class="st">"task1"</span>, args<span class="op">=</span>{<span class="st">"subset"</span>: <span class="st">"test"</span>}),  <span class="co"># Single task</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span>tasks_matrix(  <span class="co"># Unpacks list of 3 tasks</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                task<span class="op">=</span><span class="st">"task2"</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                args<span class="op">=</span>[</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"en"</span>},</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"de"</span>},</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"fr"</span>},</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                ],</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            ),</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        ],  <span class="co"># Total: 1 + 3 = 4 tasks</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>[<span class="st">"model1"</span>, <span class="st">"model2"</span>],</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13" data-filename="nested_task_sweep.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, FlowTask, tasks_matrix</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span>[</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>            FlowTask(name<span class="op">=</span><span class="st">"task1"</span>, args<span class="op">=</span>{<span class="st">"subset"</span>: <span class="st">"test"</span>}),  <span class="co"># Single task</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span>tasks_matrix(  <span class="co"># Unpacks list of 3 tasks</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                task<span class="op">=</span><span class="st">"task2"</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                args<span class="op">=</span>[</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"en"</span>},</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"de"</span>},</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                    {<span class="st">"language"</span>: <span class="st">"fr"</span>},</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                ],</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        ],  <span class="co"># Total: 1 + 3 = 4 tasks</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>[<span class="st">"model1"</span>, <span class="st">"model2"</span>],</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This creates <strong>8 tasks</strong> (4 task variants × 2 models).</p>
 <div class="callout callout-style-default callout-warning callout-titled">
@@ -529,26 +662,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Parameter sweeps grow multiplicatively. A sweep with: - 3 tasks - 4 models - 5 temperature values - 3 solver configurations</p>
+<p>Parameter sweeps grow multiplicatively. A sweep with:</p>
+<ul>
+<li>3 tasks</li>
+<li>4 models</li>
+<li>5 temperature values</li>
+<li>3 solver configurations</li>
+</ul>
 <p>Results in 3 × 4 × 5 × 3 = <strong>180 evaluations</strong>.</p>
 <p>Always use <code>--dry-run</code> to check the number of evaluations before running expensive grids.</p>
 </div>
 </div>
 </section>
-<section id="config-merging-behavior" class="level2">
-<h2 class="anchored" data-anchor-id="config-merging-behavior">Config Merging Behavior</h2>
+<section id="matrix-merge" class="level2">
+<h2 class="anchored" data-anchor-id="matrix-merge">Matrix Merge</h2>
 <p>When base objects already have values, matrix parameters are merged:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Config fields merge recursively</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>tasks_matrix(</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span>FlowTask(</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"task"</span>,</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(temperature<span class="op">=</span><span class="fl">0.5</span>)  <span class="co"># Base value</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>[</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        GenerateConfig(max_tokens<span class="op">=</span><span class="dv">1000</span>),  <span class="co"># Adds max_tokens, keeps temperature=0.5</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        GenerateConfig(max_tokens<span class="op">=</span><span class="dv">2000</span>),  <span class="co"># Adds max_tokens, keeps temperature=0.5</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Config fields merge recursively</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>tasks_matrix(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span>FlowTask(</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"task"</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(temperature<span class="op">=</span><span class="fl">0.5</span>)  <span class="co"># Base value</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>[</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        GenerateConfig(max_tokens<span class="op">=</span><span class="dv">1000</span>),  <span class="co"># Adds max_tokens, keeps temperature=0.5</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        GenerateConfig(max_tokens<span class="op">=</span><span class="dv">2000</span>),  <span class="co"># Adds max_tokens, keeps temperature=0.5</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

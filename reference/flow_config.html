@@ -408,54 +408,48 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>--resolve</code></td>
-<td>boolean</td>
-<td>Fully resolve the config. Will create a venv and create all objects.</td>
-<td><code>False</code></td>
-</tr>
-<tr class="even">
 <td><code>--no-venv</code></td>
 <td>boolean</td>
 <td>If set run the flow in the current environment without creating a virtual environment.</td>
 <td><code>False</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir-create-unique</code></td>
 <td>boolean</td>
 <td>If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).</td>
 <td><code>False</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--log-dir</code></td>
 <td>directory</td>
 <td>Set the log directory. Will override the log_dir specified in the config.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--limit</code></td>
 <td>integer</td>
 <td>Limit the number of samples to run.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--arg</code>, <code>-A</code></td>
 <td>text</td>
 <td>Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: <code>--arg task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--set</code>, <code>-s</code></td>
 <td>text</td>
 <td>Set config overrides. Examples: <code>--set defaults.solver.args.tool_calls=none</code> <code>--set options.limit=10</code> <code>--set options.metadata={"key1": "val1", "key2": "val2"}</code> The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to ‘info’)</td>
 <td><code>info</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>

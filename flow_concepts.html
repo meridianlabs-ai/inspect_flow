@@ -302,18 +302,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <p>Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:</p>
 <ul>
-<li><a href="./reference/inspect_flow.html#flowjob"><strong><span class="element-type-name ref-interlink"><span>FlowJob</span></span></strong></a> — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI <a href="https://inspect.aisi.org.uk/eval-sets.html">Eval Set</a>.</li>
-<li><a href="./reference/inspect_flow.html#flowtask"><strong><span class="element-type-name ref-interlink"><span>FlowTask</span></span></strong></a> — Configuration for a single evaluation task. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> parameters.</li>
-<li><a href="./reference/inspect_flow.html#flowmodel"><strong><span class="element-type-name ref-interlink"><span>FlowModel</span></span></strong></a> — Model configuration including API settings and generation settings. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/models.html">Model</a>.</li>
-<li><a href="./reference/inspect_flow.html#flowsolver"><strong><span class="element-type-name ref-interlink"><span>FlowSolver</span></span></strong></a> and <a href="./reference/inspect_flow.html#flowagent"><strong><span class="element-type-name ref-interlink"><span>FlowAgent</span></span></strong></a> — Solver and agent chain configuration. Map to Inspect AI <a href="https://inspect.aisi.org.uk/solvers.html">Solver</a> and <a href="https://inspect.aisi.org.uk/agents.html">Agent</a>.</li>
-<li><a href="./reference/inspect_flow.html#flowscorer"><strong><span class="element-type-name ref-interlink"><span>FlowScorer</span></span></strong></a> — Configuration for a Scorer. Map to Inspect AI <a href="https://inspect.aisi.org.uk/scorer.html">Scorer</a>.</li>
-<li><a href="./reference/inspect_flow.html#flowoptions"><strong><span class="element-type-name ref-interlink"><span>FlowOptions</span></span></strong></a> — Runtime execution options. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/eval-sets.html">eval_set()</a> parameters.</li>
-<li><a href="./reference/inspect_flow.html#flowdefaults"><strong><span class="element-type-name ref-interlink"><span>FlowDefaults</span></span></strong></a> — System for setting default values across tasks, models, solvers, and agents.</li>
-<li><a href="./reference/inspect_flow.html#flowdependencies"><strong><span class="element-type-name ref-interlink"><span>FlowDependencies</span></span></strong></a> — Configuration for evaluation dependencies to install.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span></strong> — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI <a href="https://inspect.aisi.org.uk/eval-sets.html">Eval Set</a>.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span></strong> — Configuration for a single evaluation task. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> parameters.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span></strong> — Model configuration including API settings and generation settings. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/models.html">Model</a>.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span></strong> and <strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span></strong> — Solver and agent chain configuration. Map to Inspect AI <a href="https://inspect.aisi.org.uk/solvers.html">Solver</a> and <a href="https://inspect.aisi.org.uk/agents.html">Agent</a>.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowscorer">FlowScorer</a></span></strong> — Configuration for a Scorer. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/scorer.html">Scorer</a>.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span></strong> — Runtime execution options. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set">eval_set()</a> parameters.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span></strong> — System for setting default values across tasks, models, solvers, and agents.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span></strong> — Configuration for evaluation dependencies to install.</li>
 </ul>
 <section id="basic-example" class="level2">
 <h2 class="anchored" data-anchor-id="basic-example">Basic Example</h2>
-<p>In <a href="./index.html#basic-example">Basic Example</a>, we showed a simple <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. Let’s break down what’s happening:</p>
+<p>In <a href="./index.html#basic-example">Welcome - Basic Example</a>, we showed a simple <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. Let’s break down what’s happening:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
@@ -476,19 +476,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="specification">Specification</h3>
 <p>In the example above, we used a registry name (<code>"inspect_evals/gpqa_diamond"</code>). Flow supports multiple ways to reference tasks:</p>
 <p><strong>Registry Name</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tasks from installed packages.</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tasks from installed packages</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>File Path</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them.</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py"</span>,</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>File with Function</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicitly selects a specific function from the file.</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicitly selects a specific function from the file</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py@custom_eval"</span>,</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
@@ -496,7 +496,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="configuration" class="level3">
 <h3 class="anchored" data-anchor-id="configuration">Configuration</h3>
-<p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> accepts parameters that map to Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> fields. The examples below show commonly used fields; see the <a href="./reference/inspect_flow.html#flowtask"><span class="element-type-name ref-interlink"><span>FlowTask</span></span></a> reference documentationfor the complete list of available parameters.</p>
+<p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> accepts parameters that map to Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> fields. The examples below show commonly used fields; see the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> reference documentation for the complete list of available parameters.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-6"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-6-1"><a href="#annotated-cell-6-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="1">1</button><span id="annotated-cell-6-2" class="code-annotation-target"><a href="#annotated-cell-6-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="2">2</button><span id="annotated-cell-6-3" class="code-annotation-target"><a href="#annotated-cell-6-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
@@ -588,6 +588,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Set model-specific generation configs</li>
 <li>Use custom API endpoints</li>
 <li>Configure API keys per model</li>
+<li>Use metadata for custom filtering (see <a href="./advanced.html#flow_metadata-flow-only-metadata">flow_metadata</a>)</li>
 <li>Organize complex multi-model setups</li>
 </ul>
 </div>

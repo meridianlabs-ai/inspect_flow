@@ -260,10 +260,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#metadata" id="toc-metadata" class="nav-link active" data-scroll-target="#metadata">Metadata</a></li>
-  <li><a href="#parameterized-jobs" id="toc-parameterized-jobs" class="nav-link" data-scroll-target="#parameterized-jobs">Parameterized Jobs</a></li>
+  <li><a href="#metadata" id="toc-metadata" class="nav-link active" data-scroll-target="#metadata">Metadata</a>
+  <ul class="collapse">
+  <li><a href="#metadata-inspect-ai-metadata" id="toc-metadata-inspect-ai-metadata" class="nav-link" data-scroll-target="#metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</a></li>
+  <li><a href="#flow_metadata-flow-only-metadata" id="toc-flow_metadata-flow-only-metadata" class="nav-link" data-scroll-target="#flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</a></li>
+  </ul></li>
+  <li><a href="#parameterized-jobs" id="toc-parameterized-jobs" class="nav-link" data-scroll-target="#parameterized-jobs">Parameterized Jobs</a>
+  <ul class="collapse">
+  <li><a href="#flow-args---arg" id="toc-flow-args---arg" class="nav-link" data-scroll-target="#flow-args---arg">Flow Args (<code>--arg</code>)</a></li>
+  <li><a href="#template-substitution" id="toc-template-substitution" class="nav-link" data-scroll-target="#template-substitution">Template Substitution</a></li>
+  </ul></li>
   <li><a href="#viewer-bundling" id="toc-viewer-bundling" class="nav-link" data-scroll-target="#viewer-bundling">Viewer Bundling</a></li>
-  <li><a href="#configuration-scripts" id="toc-configuration-scripts" class="nav-link" data-scroll-target="#configuration-scripts">Configuration Scripts</a></li>
+  <li><a href="#config-scripts" id="toc-config-scripts" class="nav-link" data-scroll-target="#config-scripts">Config Scripts</a>
+  <ul class="collapse">
+  <li><a href="#after_load" id="toc-after_load" class="nav-link" data-scroll-target="#after_load">after_load</a></li>
+  <li><a href="#prevent-runs-with-uncommitted-changes" id="toc-prevent-runs-with-uncommitted-changes" class="nav-link" data-scroll-target="#prevent-runs-with-uncommitted-changes">Prevent Runs with Uncommitted Changes</a></li>
+  <li><a href="#lock-configuration-fields" id="toc-lock-configuration-fields" class="nav-link" data-scroll-target="#lock-configuration-fields">Lock Config Fields</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -289,11 +302,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="metadata" class="level3">
-<h3 class="anchored" data-anchor-id="metadata">Metadata</h3>
+<section id="metadata" class="level2">
+<h2 class="anchored" data-anchor-id="metadata">Metadata</h2>
 <p>Flow supports two types of metadata with distinct purposes: <code>metadata</code> and <code>flow_metadata</code>.</p>
-<section id="metadata-inspect-ai-metadata" class="level4">
-<h4 class="anchored" data-anchor-id="metadata-inspect-ai-metadata">metadata (Inspect AI Metadata)</h4>
+<section id="metadata-inspect-ai-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</h3>
 <p>The <code>metadata</code> field in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI’s log viewer and analysis tools.</p>
 <p><strong>Example:</strong></p>
 <div class="code-with-filename">
@@ -323,10 +336,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    ],</span>
 <span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The metadata from <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task.</p>
+<p>The metadata from <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.</p>
 </section>
-<section id="flow_metadata-flow-only-metadata" class="level4">
-<h4 class="anchored" data-anchor-id="flow_metadata-flow-only-metadata">flow_metadata (Flow-Only Metadata)</h4>
+<section id="flow_metadata-flow-only-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</h3>
 <p>The <code>flow_metadata</code> field is available on <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowscorer">FlowScorer</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span>, and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span>. This metadata is <strong>not passed to Inspect AI</strong>—it exists only in the Flow configuration and is useful for configuration-time logic and organization.</p>
 <p><strong>Use cases:</strong></p>
 <ul>
@@ -353,27 +366,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to only long-context models</span></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>long_context_models <span class="op">=</span> [</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    m</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> m <span class="kw">in</span> models</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> m.flow_metadata <span class="kw">and</span> m.flow_metadata.get(<span class="st">"context_window"</span>, <span class="dv">0</span>) <span class="op">&gt;=</span> <span class="dv">128000</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"long_context_task"</span>,</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>long_context_models,</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    m <span class="cf">for</span> m <span class="kw">in</span> models <span class="cf">if</span> (m.flow_metadata <span class="kw">or</span> {}).get(<span class="st">"context_window"</span>, <span class="dv">0</span>) <span class="op">&gt;=</span> <span class="dv">128000</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"long_context_task"</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>long_context_models,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
-<section id="parameterized-jobs" class="level3">
-<h3 class="anchored" data-anchor-id="parameterized-jobs">Parameterized Jobs</h3>
-<section id="flow-args---arg" class="level4">
-<h4 class="anchored" data-anchor-id="flow-args---arg">Flow Args (<code>--arg</code>)</h4>
+<section id="parameterized-jobs" class="level2">
+<h2 class="anchored" data-anchor-id="parameterized-jobs">Parameterized Jobs</h2>
+<section id="flow-args---arg" class="level3">
+<h3 class="anchored" data-anchor-id="flow-args---arg">Flow Args (<code>--arg</code>)</h3>
 <p>Pass custom variables to Python config files using <code>--arg</code> or the <code>INSPECT_FLOW_ARG</code> environment variable. Use this for dynamic configuration that isn’t available via <code>--set</code>. To access the args the last statement in the config file should be a function that returns a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. This function will be called with any provided args:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run flow_args.py <span class="at">--arg</span> task_min_priority=2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--arg</span> task_min_priority=2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
@@ -398,9 +409,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="template-substitution" class="level4">
-<h4 class="anchored" data-anchor-id="template-substitution">Template Substitution</h4>
-<p>Use <code>{field_name}</code> syntax to reference other FlowJob configuration values. Substitutions are applied after the config is loaded:</p>
+<section id="template-substitution" class="level3">
+<h3 class="anchored" data-anchor-id="template-substitution">Template Substitution</h3>
+<p>Use <code>{field_name}</code> syntax to reference other <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> configuration values. Substitutions are applied after the config is loaded:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs/my_eval"</span>,</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(bundle_dir<span class="op">=</span><span class="st">"</span><span class="sc">{log_dir}</span><span class="st">/bundle"</span>),</span>
@@ -409,8 +420,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For nested fields, use bracket notation: <code>{options[eval_set_id]}</code> or <code>{flow_metadata[key]}</code>. Substitutions are resolved recursively until no more remain.</p>
 </section>
 </section>
-<section id="viewer-bundling" class="level3">
-<h3 class="anchored" data-anchor-id="viewer-bundling">Viewer Bundling</h3>
+<section id="viewer-bundling" class="level2">
+<h2 class="anchored" data-anchor-id="viewer-bundling">Viewer Bundling</h2>
 <p>Viewer bundling works the same way as <a href="https://inspect.aisi.org.uk/eval-sets.html"><code>eval_set()</code></a> in Inspect AI and is configurable via <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span>. An additional feature allows you to print bundle URLs for users running evaluations.</p>
 <p>Convert local bundle paths to public URLs for sharing evaluation results. The <code>bundle_url_map</code> in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> applies string replacements to <code>bundle_dir</code> to generate a shareable URL that’s printed to stdout after the evaluation completes.</p>
 <div class="code-with-filename">
@@ -422,31 +433,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs/my_eval"</span>,</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        bundle_dir<span class="op">=</span><span class="st">"/local/storage/bundles/my_eval"</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        bundle_url_map<span class="op">=</span>{<span class="st">"/local/storage"</span>: <span class="st">"https://example.com/shared"</span>},</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        bundle_dir<span class="op">=</span><span class="st">"s3://my-bucket/bundles/my_eval"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        bundle_url_map<span class="op">=</span>{<span class="st">"s3://my-bucket"</span>: <span class="st">"https://my-bucket.s3.amazonaws.com"</span>},</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>After running this prints: <code>Bundle URL: https://example.com/shared/bundles/my_eval</code></p>
-<p>Use this when storing bundles on servers with public HTTP access or cloud storage with URL mapping. Multiple mappings are applied in order.</p>
+<p>After running this prints: <code>Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval</code></p>
+<p>Use this when storing bundles on cloud storage like S3 or on servers with public HTTP access. Multiple mappings are applied in order.</p>
 <p>Using Bundle URL maps makes sense along with the job <a href="./defaults.html#inheritance">inheritance</a> feature so you can configure the same bundle mapping for all configs in a repository.</p>
 </section>
-<section id="configuration-scripts" class="level3">
-<h3 class="anchored" data-anchor-id="configuration-scripts">Configuration Scripts</h3>
+<section id="config-scripts" class="level2">
+<h2 class="anchored" data-anchor-id="config-scripts">Config Scripts</h2>
 <p>When loading a configuration file, Flow expects the last expression to either be a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> or a function that returns a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. Other than this requirement, the configuration file may execute arbitrary code.</p>
-<section id="after_load" class="level4">
-<h4 class="anchored" data-anchor-id="after_load">after_load</h4>
+<section id="after_load" class="level3">
+<h3 class="anchored" data-anchor-id="after_load">after_load</h3>
 <p>Configuration scripts are executed while loading the job. At the time that the script is running the job is in an intermediate state (includes may not have been processed, overrides not applied, and template substitutions will not have run). To run code after the job is fully loaded a script can decorate a function with <code>@after_load</code>.</p>
 <p>The decorated function may optionally implement the following arguments:</p>
 <ul>
 <li><code>job</code> - the fully loaded <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span></li>
 <li><code>files</code> - the list of configuration files that were loaded</li>
 </ul>
-<p>One example of functionality that can be implemented using this feature is validation code to enforce constraints. Instead of repeating this validation code in every Flow configuration file, the code could be placed in a _flow.py file that is auto included.</p>
+<p>One example of functionality that can be implemented using this feature is validation code to enforce constraints. Instead of repeating this validation code in every Flow configuration file, the code could be placed in a <code>_flow.py</code> file that is auto included.</p>
 </section>
-<section id="prevent-runs-with-uncommitted-changes" class="level4">
-<h4 class="anchored" data-anchor-id="prevent-runs-with-uncommitted-changes">Prevent Runs with Uncommitted Changes</h4>
+<section id="prevent-runs-with-uncommitted-changes" class="level3">
+<h3 class="anchored" data-anchor-id="prevent-runs-with-uncommitted-changes">Prevent Runs with Uncommitted Changes</h3>
 <p>Place a <code>_flow.py</code> file at your repository root to validate that all configs are in clean git repositories. This validation runs automatically for all configs in subdirectories.</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
@@ -494,8 +505,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Will fail if uncommitted changes exist in the repository</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="lock-configuration-fields" class="level4">
-<h4 class="anchored" data-anchor-id="lock-configuration-fields">Lock Configuration Fields</h4>
+<section id="lock-configuration-fields" class="level3">
+<h3 class="anchored" data-anchor-id="lock-configuration-fields">Lock Config Fields</h3>
 <p>A <code>_flow.py</code> file can prevent configs from overriding critical settings:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
@@ -507,7 +518,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">@after_load</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_max_samples(job: FlowJob, files: <span class="bu">list</span>[<span class="bu">str</span>]) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_max_samples(job: FlowJob) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> job.options <span class="kw">or</span> <span class="kw">not</span> job.options.max_samples <span class="op">==</span> MAX_SAMPLES:</span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Do not override max_samples!"</span>)</span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>

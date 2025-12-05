@@ -272,9 +272,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#common-cli-flags" id="toc-common-cli-flags" class="nav-link" data-scroll-target="#common-cli-flags">Common CLI Flags</a></li>
   </ul></li>
   <li><a href="#the-flow-config-command" id="toc-the-flow-config-command" class="nav-link" data-scroll-target="#the-flow-config-command">The <code>flow config</code> Command</a></li>
+  <li><a href="#running-from-python" id="toc-running-from-python" class="nav-link" data-scroll-target="#running-from-python">Running from Python</a></li>
   <li><a href="#results-and-logs" id="toc-results-and-logs" class="nav-link" data-scroll-target="#results-and-logs">Results and Logs</a>
   <ul class="collapse">
-  <li><a href="#flow-directory-structure" id="toc-flow-directory-structure" class="nav-link" data-scroll-target="#flow-directory-structure">Flow Directory Structure</a></li>
+  <li><a href="#logs-directory" id="toc-logs-directory" class="nav-link" data-scroll-target="#logs-directory">Logs Directory</a></li>
   <li><a href="#viewing-results" id="toc-viewing-results" class="nav-link" data-scroll-target="#viewing-results">Viewing Results</a></li>
   <li><a href="#s3-support" id="toc-s3-support" class="nav-link" data-scroll-target="#s3-support">S3 Support</a></li>
   </ul></li>
@@ -322,26 +323,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="common-cli-flags">Common CLI Flags</h3>
 <p><strong>Preview without running:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Shows how many tasks would be executed without actually running them. Useful for validating large parameter sweeps.</p>
-<pre><code>eval_set would be called with 24 tasks</code></pre>
-<p><strong>Override log directory:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--log-dir</span> ./experiments/baseline</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Changes where logs and results are stored.</p>
-<p><strong>Runtime overrides:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="dt">\</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> options.limit=100 <span class="dt">\</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> defaults.config.temperature=0.5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Override any configuration value at runtime. See <a href="#cli-overrides">CLI Overrides</a> for more details.</p>
-</section>
-</section>
-<section id="the-flow-config-command" class="level2">
-<h2 class="anchored" data-anchor-id="the-flow-config-command">The <code>flow config</code> Command</h2>
-<p>Preview your configuration before running:</p>
-<p><strong>Basic usage:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.</p>
-<p><strong>Full resolution:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py <span class="at">--resolve</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Shows the completely resolved configuration:</p>
 <ul>
 <li>Creates virtual environment</li>
@@ -350,6 +331,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Instantiates all Python objects</li>
 </ul>
 <p>This is invaluable for debugging what settings will actually be used in your evaluations.</p>
+<p><strong>Override log directory:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--log-dir</span> ./experiments/baseline</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Changes where logs and results are stored.</p>
+<p><strong>Runtime overrides:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> options.limit=100 <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set</span> defaults.config.temperature=0.5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Override any configuration value at runtime. See <a href="./defaults.html#cli-overrides">CLI Overrides</a> for more details.</p>
+</section>
+</section>
+<section id="the-flow-config-command" class="level2">
+<h2 class="anchored" data-anchor-id="the-flow-config-command">The <code>flow config</code> Command</h2>
+<p>Preview your configuration before running:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment or instantiate Python objects.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -362,17 +358,49 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="callout-body-container callout-body">
 <ul>
 <li><strong><code>flow config</code></strong> - Quick syntax check, verify overrides</li>
-<li><strong><code>flow config --resolve</code></strong> - Debug defaults resolution, inspect final settings</li>
-<li><strong><code>flow run --dry-run</code></strong> - Count tasks in parameter sweeps, validate before expensive runs</li>
+<li><strong><code>flow run --dry-run</code></strong> - Debug defaults resolution, inspect final settings</li>
 <li><strong><code>flow run</code></strong> - Execute evaluations</li>
 </ul>
 </div>
 </div>
 </section>
+<section id="running-from-python" class="level2">
+<h2 class="anchored" data-anchor-id="running-from-python">Running from Python</h2>
+<p>You can run Flow evaluations programmatically using the Python API:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>run.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" data-filename="run.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowJob, FlowTask</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> run</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>job <span class="op">=</span> FlowJob(</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>run(job<span class="op">=</span>job)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The <code>inspect_flow.api</code> module provides three functions:</p>
+<ul>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span></strong> - Execute a Flow job with full environment setup (equivalent to <code>flow run</code>)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#load_job">load_job()</a></span></strong> - Load a Flow configuration from a Python file into a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> object</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#config">config()</a></span></strong> - Get the resolved configuration as YAML (equivalent to <code>flow config</code>)</li>
+</ul>
+<p>See the <a href="./reference/inspect_flow.api.html">API Reference</a> for detailed parameter documentation.</p>
+</section>
 <section id="results-and-logs" class="level2">
 <h2 class="anchored" data-anchor-id="results-and-logs">Results and Logs</h2>
-<section id="flow-directory-structure" class="level3">
-<h3 class="anchored" data-anchor-id="flow-directory-structure">Flow Directory Structure</h3>
+<section id="logs-directory" class="level3">
+<h3 class="anchored" data-anchor-id="logs-directory">Logs Directory</h3>
 <p>Evaluation results are stored in the <code>log_dir</code>:</p>
 <pre><code>logs/
 ├── 2025-11-21T17-38-20+01-00_gpqa-diamond_KvJBGowidXSCLRhkKQbHYA.eval
@@ -395,14 +423,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>Log formats:</strong></p>
 <ul>
 <li><code>.eval</code> - Binary Inspect AI log format (default, high-performance)</li>
-<li><code>.json</code> - JSON format (if <code>log_format="json"</code> in FlowOptions)</li>
+<li><code>.json</code> - JSON format (if <code>log_format="json"</code> in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span>)</li>
 </ul>
 </section>
 <section id="viewing-results" class="level3">
 <h3 class="anchored" data-anchor-id="viewing-results">Viewing Results</h3>
-<p><strong>Using Inspect View:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Opens the Inspect AI viewer to explore evaluation logs interactively. Inspect View can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.</p>
+<p><strong>Using <a href="https://inspect.aisi.org.uk/log-viewer.html">Inspect View</a>:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Opens the Inspect AI viewer to explore evaluation logs interactively. <a href="https://inspect.aisi.org.uk/log-viewer.html">Inspect View</a> can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.</p>
 <p>Click the Flow icon in the top right hand corner to view the Flow config.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -410,7 +438,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption>Eval list rendered by Inspect View</figcaption>
 </figure>
 </div>
-<p>The latest Flow config file is rendered in YAML format.</p>
+<p>The Flow config file is rendered in YAML format.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/inspect_view_flow_config.png" class="img-fluid figure-img" style="width:60.0%"></p>
@@ -421,10 +449,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="s3-support" class="level3">
 <h3 class="anchored" data-anchor-id="s3-support">S3 Support</h3>
 <p>Store logs directly to S3:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"s3://my-bucket/experiments/baseline"</span>,</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>FlowJob(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"s3://my-bucket/experiments/baseline"</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For more information on configuring an S3 bucket as a logs directory, refer to the Inspect AI <a href="https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3">documentation</a>.</p>
 
 
