@@ -11,9 +11,7 @@ models = [
 
 # Filter to only long-context models
 long_context_models = [
-    m
-    for m in models
-    if m.flow_metadata and m.flow_metadata.get("context_window", 0) >= 128000
+    m for m in models if (m.flow_metadata or {}).get("context_window", 0) >= 128000
 ]
 
 FlowJob(

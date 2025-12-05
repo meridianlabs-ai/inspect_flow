@@ -1,0 +1,17 @@
+log_dir: logs
+tasks:
+- name: my_task
+  solver:
+    name: chain_of_thought
+    args:
+      max_steps: 5
+- name: my_task
+  solver:
+    name: plan_solve
+    args:
+      max_steps: 5
+- name: my_task
+  solver:
+    name: self_critique
+    args:
+      max_steps: 5

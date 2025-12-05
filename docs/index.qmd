@@ -10,10 +10,10 @@ Inspect Flow is a workflow orchestration tool for [Inspect AI](https://inspect.a
 
 **Why Inspect Flow?** As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
 
-1.  **Declarative Configuration**: Define complex evaluations with tasks, models, and parameters in type-safe schemas
-2.  **Repeatable & Shareable**: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
-3.  **Incremental Execution**: Add new models, tasks, or configurations to existing results without re-running completed work
-4.  **Parameter Sweeping**: Matrix patterns for systematic exploration across tasks, models, and hyperparameters
+1.  [**Declarative Configuration**](flow_concepts.qmd): Define complex evaluations with tasks, models, and parameters in type-safe schemas
+2.  [**Repeatable & Shareable**](dependencies.qmd): Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
+3.  [**Powerful Defaults**](defaults.qmd): Define defaults once and reuse them everywhere with automatic inheritance
+4.  [**Parameter Sweeping**](matrix.qmd): Matrix patterns for systematic exploration across tasks, models, and hyperparameters
 
 Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.
 
@@ -92,9 +92,9 @@ Let's walk through creating your first Flow configuration. We'll use `FlowJob` (
 -   `FlowJob` — Pydantic class that encapsulates the declarative description of a Flow job.
 -   `FlowTask` — Pydantic class abstraction on top of Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html).
 -   `FlowModel` — Pydantic class abstraction on top of Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
--   `tasks_matrix` — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.
--   `models_matrix` — Helper function for parameter sweeping to generate a list of models with all parameter combinations.
--   `configs_matrix` — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.
+-   `tasks_matrix()` — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.
+-   `models_matrix()` — Helper function for parameter sweeping to generate a list of models with all parameter combinations.
+-   `configs_matrix()` — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.
 :::
 
 `FlowJob` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
@@ -103,19 +103,19 @@ Let's walk through creating your first Flow configuration. We'll use `FlowJob` (
 {{< include ../examples/config.py >}}
 ```
 
-To run the evaluations, run the following command in your shell. This will create a virtual environment for this job run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, execute the following command. It creates a virtual environment for this job run and installs the dependencies—note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
 
 ``` bash
 flow run config.py
 ```
 
-This will run both tasks and display progress in your terminal.
+Both tasks will run with progress displayed in your terminal.
 
 ![Progress bar in terminal](images/config_progress_terminal.png)
 
 ### Python API
 
-You can run evaluations from Python instead of the command line.
+You can run evaluations from Python instead of the command line by calling the `run()` function with a `FlowJob`.
 
 ``` {.python filename="config.py"}
 {{< include ../examples/python.py >}}
@@ -155,6 +155,14 @@ For even more concise parameter sweeping, use `configs_matrix` to generate confi
 
 ### Run evaluations
 
+Before running evaluations, preview the resolved configuration with `--dry-run`:
+
+``` bash
+flow run matrix.py --dry-run
+```
+
+This creates the virtual environment, installs all dependencies, imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
+
 To run the config:
 
 ``` bash
@@ -178,4 +186,6 @@ inspect view --log-dir logs
 See the following articles to learn more about using Flow:
 
 -   [Flow Concepts](flow_concepts.qmd): Flow type system, config structure and basics.
+-   [Defaults](defaults.qmd): Define defaults once and reuse them everywhere with automatic inheritance.
+-   [Matrixing](matrix.qmd): Systematic parameter exploration with matrix and with functions.
 -   [Reference](reference/index.qmd): Detailed documentation on the Flow Python API and CLI commands.

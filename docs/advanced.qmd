@@ -3,11 +3,11 @@ title: "Advanced"
 tbl-colwidths: [30,70]
 ---
 
-### Metadata
+## Metadata
 
 Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
 
-#### metadata (Inspect AI Metadata)
+### `metadata` (Inspect AI Metadata)
 
 The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI's log viewer and analysis tools.
 
@@ -17,9 +17,9 @@ The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspe
 {{< include ../examples/metadata.py >}}
 ```
 
-The metadata from `FlowOptions` is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task.
+The metadata from `FlowOptions` is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.
 
-#### flow_metadata (Flow-Only Metadata)
+### `flow_metadata` (Flow-Only Metadata)
 
 The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
 
@@ -36,9 +36,9 @@ The `flow_metadata` field is available on `FlowJob`, `FlowTask`, `FlowModel`, `F
 {{< include ../examples/flow_metadata.py >}}
 ```
 
-### Parameterized Jobs
+## Parameterized Jobs
 
-#### Flow Args (`--arg`)
+### Flow Args (`--arg`)
 
 Pass custom variables to Python config files using `--arg` or the `INSPECT_FLOW_ARG` environment variable. 
 Use this for dynamic configuration that isn't available via `--set`.
@@ -46,16 +46,16 @@ To access the args the last statement in the config file should be a function th
 This function will be called with any provided args:
 
 ```bash
-flow run flow_args.py --arg task_min_priority=2
+flow run config.py --arg task_min_priority=2
 ```
 
 ``` {.python filename="config.py"}
 {{< include ../examples/flow_args.py >}}
 ```
 
-#### Template Substitution
+### Template Substitution
 
-Use `{field_name}` syntax to reference other FlowJob configuration values. Substitutions are applied after the config is loaded:
+Use `{field_name}` syntax to reference other `FlowJob` configuration values. Substitutions are applied after the config is loaded:
 
 ```python
 FlowJob(
@@ -67,7 +67,7 @@ FlowJob(
 
 For nested fields, use bracket notation: `{options[eval_set_id]}` or `{flow_metadata[key]}`. Substitutions are resolved recursively until no more remain.
 
-### Viewer Bundling
+## Viewer Bundling
 
 Viewer bundling works the same way as [`eval_set()`](https://inspect.aisi.org.uk/eval-sets.html) in Inspect AI and is configurable via `FlowOptions`. An additional feature allows you to print bundle URLs for users running evaluations.
 
@@ -77,18 +77,18 @@ Convert local bundle paths to public URLs for sharing evaluation results. The `b
 {{< include ../examples/bundle_url_map.py >}}
 ```
 
-After running this prints: `Bundle URL: https://example.com/shared/bundles/my_eval`
+After running this prints: `Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval`
 
-Use this when storing bundles on servers with public HTTP access or cloud storage with URL mapping. Multiple mappings are applied in order.
+Use this when storing bundles on cloud storage like S3 or on servers with public HTTP access. Multiple mappings are applied in order.
 
 Using Bundle URL maps makes sense along with the job [inheritance](defaults.qmd#inheritance) feature so you can configure the same bundle mapping for all configs in a repository.
 
-### Configuration Scripts
+## Config Scripts
 
 When loading a configuration file, Flow expects the last expression to either be a `FlowJob` or a function that returns a `FlowJob`.
 Other than this requirement, the configuration file may execute arbitrary code.
 
-#### after_load
+### after_load
 
 Configuration scripts are executed while loading the job.
 At the time that the script is running the job is in an intermediate state (includes may not have been processed, overrides not applied, and template substitutions will not have run).
@@ -100,9 +100,9 @@ The decorated function may optionally implement the following arguments:
 - `files` - the list of configuration files that were loaded
 
 One example of functionality that can be implemented using this feature is validation code to enforce constraints.
-Instead of repeating this validation code in every Flow configuration file, the code could be placed in a _flow.py file that is auto included.
+Instead of repeating this validation code in every Flow configuration file, the code could be placed in a `_flow.py` file that is auto included.
 
-#### Prevent Runs with Uncommitted Changes
+### Prevent Runs with Uncommitted Changes
 
 Place a `_flow.py` file at your repository root to validate that all configs are in clean git repositories. This validation runs automatically for all configs in subdirectories.
 
@@ -114,7 +114,7 @@ Place a `_flow.py` file at your repository root to validate that all configs are
 {{< include ../examples/dirty_git_check/including/config.py >}}
 ```
 
-#### Lock Configuration Fields {#lock-configuration-fields}
+### Lock Config Fields {#lock-configuration-fields}
 
 A `_flow.py` file can prevent configs from overriding critical settings:
 
@@ -127,4 +127,3 @@ A `_flow.py` file can prevent configs from overriding critical settings:
 ```
 
 This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.
-

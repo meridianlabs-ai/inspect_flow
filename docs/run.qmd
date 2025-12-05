@@ -56,7 +56,7 @@ flow run config.py \
   --set defaults.config.temperature=0.5
 ```
 
-Override any configuration value at runtime. See [CLI Overrides](#cli-overrides) for more details.
+Override any configuration value at runtime. See [CLI Overrides](defaults.qmd#cli-overrides) for more details.
 
 ## The `flow config` Command
 
@@ -76,9 +76,25 @@ Displays the parsed configuration as YAML with CLI overrides applied. Does not c
 -   **`flow run`** - Execute evaluations
 :::
 
+## Running from Python
+
+You can run Flow evaluations programmatically using the Python API:
+
+``` {.python filename="run.py"}
+{{< include ../examples/python.py >}}
+```
+
+The `inspect_flow.api` module provides three functions:
+
+- **`run()`** - Execute a Flow job with full environment setup (equivalent to `flow run`)
+- **`load_job()`** - Load a Flow configuration from a Python file into a `FlowJob` object
+- **`config()`** - Get the resolved configuration as YAML (equivalent to `flow config`)
+
+See the [API Reference](reference/inspect_flow.api.qmd) for detailed parameter documentation.
+
 ## Results and Logs
 
-### Flow Directory Structure
+### Logs Directory
 
 Evaluation results are stored in the `log_dir`:
 
@@ -106,24 +122,24 @@ logs/
 **Log formats:**
 
 -   `.eval` - Binary Inspect AI log format (default, high-performance)
--   `.json` - JSON format (if `log_format="json"` in FlowOptions)
+-   `.json` - JSON format (if `log_format="json"` in `FlowOptions`)
 
 ### Viewing Results
 
-**Using Inspect View:**
+**Using [Inspect View](https://inspect.aisi.org.uk/log-viewer.html):**
 
 ``` bash
 inspect view
 ```
 
 Opens the Inspect AI viewer to explore evaluation logs interactively.
-Inspect View can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.
+[Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.
 
 Click the Flow icon in the top right hand corner to view the Flow config.
 
 ![Eval list rendered by Inspect View](images/inspect_view_list.png)
 
-The latest Flow config file is rendered in YAML format.
+The Flow config file is rendered in YAML format.
 
 ![Flow config rendered by Inspect View](images/inspect_view_flow_config.png){width=60%}
 

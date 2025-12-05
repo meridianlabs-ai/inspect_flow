@@ -1,0 +1,20 @@
+log_dir: logs
+tasks:
+- name: my_task
+  solver:
+    name: system_message
+    args:
+      message: You are a helpful assistant.
+    type: agent
+- name: my_task
+  solver:
+    name: system_message
+    args:
+      message: You are a creative writer.
+    type: agent
+- name: my_task
+  solver:
+    name: system_message
+    args:
+      message: You are a technical expert.
+    type: agent
