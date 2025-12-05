@@ -1,0 +1,14 @@
+log_dir: logs
+tasks:
+- name: my_task
+  config:
+    max_tokens: 1000
+    temperature: 0.0
+- name: my_task
+  config:
+    max_tokens: 1000
+    temperature: 0.5
+- name: my_task
+  config:
+    max_tokens: 1000
+    temperature: 1.0

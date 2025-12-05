@@ -13,6 +13,20 @@ When you run `flow run config.py`, Flow:
 5.  Executes your evaluations in this isolated environment
 6.  Cleans up the temporary environment after completion (logs persist in `log_dir`)
 
+::: callout-note
+### Automatic Dependency Discovery
+
+By default, Flow automatically discovers and installs dependencies without requiring explicit configuration:
+
+- **Dependency files**: Searches upward from your config file directory for `pyproject.toml` or `requirements.txt`
+- **Package inference**: Detects packages from object names in your config:
+  - Models: `model="openai/gpt-4"` → installs `openai`
+  - Tasks: `name="inspect_evals/mmlu"` → installs `inspect-evals`
+- **Config inheritance**: Automatically includes any `_flow.py` files in the config directory or parent directories (see [Inheritance](defaults.qmd#inheritance)). These files can specify default dependencies that apply to all including configs.
+
+This means most workflows require no dependency configuration at all!
+:::
+
 ## Specification
 
 The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:

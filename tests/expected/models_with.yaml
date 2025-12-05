@@ -1,0 +1,12 @@
+log_dir: logs
+tasks:
+- name: my_task
+  model:
+    name: openai/gpt-4o
+    config:
+      temperature: 0.7
+- name: my_task
+  model:
+    name: anthropic/claude-3-5-sonnet-20241022
+    config:
+      temperature: 0.7

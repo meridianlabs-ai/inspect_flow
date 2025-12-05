@@ -10,7 +10,7 @@ As evaluation workflows grow in complexity—running multiple tasks across diffe
 
 1. **Declarative Configuration**: Define complex evaluations with tasks, models, and parameters in type-safe schemas
 2. **Repeatable & Shareable**: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
-3. **Incremental Execution**: Add new models, tasks, or configurations to existing results without re-running completed work
+3. **Powerful Defaults**: Define defaults once and reuse them everywhere with automatic inheritance
 4. **Parameter Sweeping**: Matrix patterns for systematic exploration across tasks, models, and hyperparameters
 
 Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.
@@ -29,6 +29,10 @@ Before using Inspect Flow, you should:
 ```bash
 pip install inspect-flow
 ```
+
+### Optional: VS Code extension
+
+Optionally install the [Inspect AI VS Code Extension](https://inspect.aisi.org.uk/vscode.html) which includes features for viewing evaluation log files.
 
 ## Basic Example
 
@@ -191,6 +195,14 @@ FlowJob(
 
 ### Run evaluations
 
+Before running evaluations, preview the resolved configuration with `--dry-run`:
+
+```bash
+flow run matrix.py --dry-run
+```
+
+This creates the virtual environment, installs all dependencies, imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. It's invaluable for verifying that dependencies can be installed, tasks are properly configured, and the exact settings are what you expect. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
+
 To run the config:
 
 ```bash
@@ -214,6 +226,8 @@ inspect view --log-dir logs
 See the following articles to learn more about using Flow:
 
 - [Flow Concepts](https://meridianlabs-ai.github.io/inspect_flow/flow_concepts.html): Flow type system, config structure and basics.
+- [Defaults](https://meridianlabs-ai.github.io/inspect_flow/defaults.html): Define defaults once and reuse them everywhere with automatic inheritance.
+- [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html): Systematic parameter exploration with matrix and with functions.
 - [Reference](https://meridianlabs-ai.github.io/inspect_flow/reference/): Detailed documentation on the Flow Python API and CLI commands.
 
 ## Development

@@ -1,0 +1,20 @@
+log_dir: logs
+tasks:
+- name: my_task
+  solver:
+    name: system_message
+    args:
+      system_message: You are a helpful assistant.
+    type: agent
+- name: my_task
+  solver:
+    name: tool_agent
+    args:
+      system_message: You are a helpful assistant.
+    type: agent
+- name: my_task
+  solver:
+    name: web_agent
+    args:
+      system_message: You are a helpful assistant.
+    type: agent

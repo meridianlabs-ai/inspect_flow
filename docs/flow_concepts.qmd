@@ -5,18 +5,18 @@ tbl-colwidths: [30,70]
 
 Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 
--   [**`FlowJob`**](/reference/inspect_flow.html#flowjob) — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
--   [**`FlowTask`**](/reference/inspect_flow.html#flowtask) — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
--   [**`FlowModel`**](/reference/inspect_flow.html#flowmodel) — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
--   [**`FlowSolver`**](/reference/inspect_flow.html#flowsolver) and [**`FlowAgent`**](/reference/inspect_flow.html#flowagent) — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
--   [**`FlowScorer`**](/reference/inspect_flow.html#flowscorer) — Configuration for a Scorer. Map to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
--   [**`FlowOptions`**](/reference/inspect_flow.html#flowoptions) — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/eval-sets.html) parameters.
--   [**`FlowDefaults`**](/reference/inspect_flow.html#flowdefaults) — System for setting default values across tasks, models, solvers, and agents.
--   [**`FlowDependencies`**](/reference/inspect_flow.html#flowdependencies) — Configuration for evaluation dependencies to install.
+-   **`FlowJob`** — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
+-   **`FlowTask`** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
+-   **`FlowModel`** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
+-   **`FlowSolver`** and **`FlowAgent`** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
+-   **`FlowScorer`** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
+-   **`FlowOptions`** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
+-   **`FlowDefaults`** — System for setting default values across tasks, models, solvers, and agents.
+-   **`FlowDependencies`** — Configuration for evaluation dependencies to install.
 
 ## Basic Example
 
-In [Basic Example](index.qmd#basic-example), we showed a simple `FlowJob`. Let's break down what's happening:
+In [Welcome - Basic Example](index.qmd#basic-example), we showed a simple `FlowJob`. Let's break down what's happening:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/first_config.py >}}
@@ -92,7 +92,7 @@ In the example above, we used a registry name (`"inspect_evals/gpqa_diamond"`). 
 **Registry Name**
 
 ``` python
-# Tasks from installed packages.
+# Tasks from installed packages
 FlowTask(
     name="inspect_evals/gpqa_diamond",
     model="openai/gpt-5"
@@ -102,7 +102,7 @@ FlowTask(
 **File Path**
 
 ``` python
-# Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them.
+# Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them
 FlowTask(
     name="./my_task.py",
     model="openai/gpt-5"
@@ -112,7 +112,7 @@ FlowTask(
 **File with Function**
 
 ``` python
-# Explicitly selects a specific function from the file.
+# Explicitly selects a specific function from the file
 FlowTask(
     name="./my_task.py@custom_eval",
     model="openai/gpt-5"
@@ -121,7 +121,7 @@ FlowTask(
 
 ### Configuration
 
-`FlowTask` accepts parameters that map to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) fields. The examples below show commonly used fields; see the [`FlowTask`](/reference/inspect_flow.html#flowtask) reference documentationfor the complete list of available parameters.
+`FlowTask` accepts parameters that map to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) fields. The examples below show commonly used fields; see the `FlowTask` reference documentation for the complete list of available parameters.
 
 ``` python
 FlowTask(
@@ -203,5 +203,6 @@ Use `FlowModel` when you need to:
 -   Set model-specific generation configs
 -   Use custom API endpoints
 -   Configure API keys per model
+-   Use metadata for custom filtering (see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata))
 -   Organize complex multi-model setups
 :::

@@ -5,7 +5,7 @@ tbl-colwidths: [30,70]
 
 Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and "with" functions to declaratively generate evaluation grids.
 
-## Matrix Functions (Cartesian Products)
+## Matrix Functions
 
 Matrix functions generate all combinations of their parameters using Cartesian products.
 
@@ -39,9 +39,9 @@ Generate generation config combinations by specifying individual parameters:
 
 This creates **16 tasks** (2 task × 2 models × 4 resoning_effort).
 
-### solvers_matrix() and agents_matrix()
+### solvers_matrix()
 
-Generate solver or agent configurations with different arguments:
+Generate solver configurations with different arguments:
 
 ``` {.python filename="solvers_matrix.py"}
 {{< include ../examples/solvers_matrix.py >}}
@@ -49,9 +49,24 @@ Generate solver or agent configurations with different arguments:
 
 This creates **3 tasks** (1 task × 3 solver configurations).
 
+### agents_matrix()
+
+Generate agent configurations with different arguments:
+
+``` {.python filename="agents_matrix.py"}
+{{< include ../examples/agents_matrix.py >}}
+```
+
+This creates **3 tasks** (1 task × 3 agent configurations).
+
 ## With Functions (Apply to All)
 
-"With" functions apply the same value to all items in a list. Use these when you want to sweep over some parameters while keeping others constant.
+"With" functions apply the same setting to all items in a list, without creating a Cartesian product. Unlike matrix functions which multiply combinations, with functions keep the list size the same.
+
+**Key difference:**
+
+- **Matrix functions** create all combinations: `models_matrix(model=[A, B], temperature=[0.5, 1.0])` → 4 tasks (A at 0.5, A at 1.0, B at 0.5, B at 1.0)
+- **With functions** apply to each item: `models_with(model=[A, B], temperature=0.5)` → 2 tasks (A at 0.5, B at 0.5)
 
 ### tasks_with()
 
@@ -62,6 +77,46 @@ Apply common settings to multiple tasks:
 ```
 
 This creates **2 tasks** (2 tasks, each with the same model and config).
+
+### models_with()
+
+Apply common settings to multiple models:
+
+``` {.python filename="models_with.py"}
+{{< include ../examples/models_with.py >}}
+```
+
+This creates **2 tasks** (1 task × 2 models, each with the same config).
+
+### configs_with()
+
+Apply common settings to multiple configs:
+
+``` {.python filename="configs_with.py"}
+{{< include ../examples/configs_with.py >}}
+```
+
+This creates **3 tasks** (1 task × 3 configs, each with the same max_tokens).
+
+### solvers_with()
+
+Apply common settings to multiple solvers:
+
+``` {.python filename="solvers_with.py"}
+{{< include ../examples/solvers_with.py >}}
+```
+
+This creates **3 tasks** (1 task × 3 solvers, each with the same max_attempts).
+
+### agents_with()
+
+Apply common settings to multiple agents:
+
+``` {.python filename="agents_with.py"}
+{{< include ../examples/agents_with.py >}}
+```
+
+This creates **3 tasks** (1 task × 3 agents, each with cache enabled).
 
 ### Combining Matrix and With
 
@@ -94,14 +149,19 @@ This creates **8 tasks** (4 task variants × 2 models).
 ::: callout-warning
 ### Watch Out for Combinatorial Explosion
 
-Parameter sweeps grow multiplicatively. A sweep with: - 3 tasks - 4 models - 5 temperature values - 3 solver configurations
+Parameter sweeps grow multiplicatively. A sweep with:
+
+- 3 tasks
+- 4 models
+- 5 temperature values
+- 3 solver configurations
 
 Results in 3 × 4 × 5 × 3 = **180 evaluations**.
 
 Always use `--dry-run` to check the number of evaluations before running expensive grids.
 :::
 
-## Config Merging Behavior
+## Matrix Merge
 
 When base objects already have values, matrix parameters are merged:
 
