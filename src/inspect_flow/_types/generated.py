@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema
@@ -208,7 +215,7 @@ class FlowOptionsDict(TypedDict):
     retry_cleanup: NotRequired[Optional[Union[bool, NotGiven]]]
     """Cleanup failed log files after retries (defaults to True)."""
     sandbox: NotRequired[
-        Optional[Union[str, Sequence, SandboxEnvironmentSpec, NotGiven]]
+        Optional[Union[str, Sequence[Any], SandboxEnvironmentSpec, NotGiven]]
     ]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)."""
     sandbox_cleanup: NotRequired[Optional[Union[bool, NotGiven]]]
@@ -341,7 +348,7 @@ class FlowTaskDict(TypedDict):
     ]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
-        Optional[Union[str, Sequence, SandboxEnvironmentSpec, NotGiven]]
+        Optional[Union[str, Sequence[Any], SandboxEnvironmentSpec, NotGiven]]
     ]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
     approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig, NotGiven]]]
@@ -434,6 +441,7 @@ class GenerateConfigDict(TypedDict):
     internal_tools: NotRequired[Optional[bool]]
     max_tool_output: NotRequired[Optional[int]]
     cache_prompt: NotRequired[Optional[Union[str, bool]]]
+    effort: NotRequired[Optional[Literal["low", "medium", "high"]]]
     reasoning_effort: NotRequired[
         Optional[Literal["none", "minimal", "low", "medium", "high"]]
     ]
@@ -496,7 +504,7 @@ class JSONSchemaDict(TypedDict):
     format: NotRequired[Optional[str]]
     description: NotRequired[Optional[str]]
     default: NotRequired[Any]
-    enum: NotRequired[Optional[Sequence]]
+    enum: NotRequired[Optional[Sequence[Any]]]
     items: NotRequired[Optional[JSONSchema]]
     properties: NotRequired[Optional[Mapping[str, JSONSchema]]]
     additionalProperties: NotRequired[Optional[Union[JSONSchema, bool]]]

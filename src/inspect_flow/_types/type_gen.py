@@ -24,7 +24,6 @@ GENERATED_CODE_COMMENT = [
 ]
 
 ADDITIONAL_IMPORTS = [
-    "from __future__ import annotations\n",
     "from typing_extensions import TypedDict\n",
     "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema\n",
     "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
@@ -312,10 +311,14 @@ def _add_generated_code(
             # Do not maintain the comment (it includes a timestamp which changes each time)
             if line.strip().startswith("from"):
                 section = "imports"
-        elif section == "imports":
+
+        if section == "imports":
             if line.strip().startswith("class") or line[0] == "@":
                 section = "classes"
-            elif line.strip().startswith("from"):
+            elif line.strip().startswith("Model:"):
+                # Not sure where this line comes from, but don't want it
+                continue
+            else:
                 # Remove TypedDict from the import line but keep other imports
                 modified_line = re.sub(r"\s*TypedDict\s*,?", "", line)
                 code.imports.append(modified_line)
