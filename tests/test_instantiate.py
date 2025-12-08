@@ -1,0 +1,138 @@
+import pytest
+from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowDefaults,
+    FlowEpochs,
+    FlowJob,
+    FlowModel,
+    FlowScorer,
+    FlowSolver,
+    FlowTask,
+)
+
+task_name = "tests/local_eval/src/local_eval/noop.py@noop"  # task from a file relative to the base_dir
+
+
+def test_task_not_resolved() -> None:
+    for job in [
+        FlowJob(tasks=[task_name]),
+        FlowJob(defaults=FlowDefaults(), tasks=[FlowTask(name=task_name)]),
+        FlowJob(tasks=[FlowTask(name=task_name, model="mockllm/mock-llm")]),
+        FlowJob(tasks=[FlowTask(name=task_name, solver="inspect/solver")]),
+    ]:
+        with pytest.raises(ValueError) as e:
+            instantiate_tasks(job=job, base_dir=".")
+        assert "config must be resolved before calling instantiate_task" in str(e.value)
+
+
+def test_missing_model_name() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, model=FlowModel()),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Model name is required." in str(e.value)
+
+
+def test_missing_scorer_name() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, scorer=FlowScorer()),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Scorer name is required." in str(e.value)
+
+
+def test_none_scorer() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, scorer=None),
+        ]
+    )
+    tasks = instantiate_tasks(job=job, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].scorer is None
+
+
+def test_unresolved_solver() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, solver=["inspect/solver"]),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Solver should have been resolved. Solver: inspect/solver" in str(e.value)
+
+
+def test_missing_solver_name() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, solver=FlowSolver()),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Solver name is required." in str(e.value)
+
+
+def test_missing_agent_name() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, solver=FlowAgent()),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Agent name is required." in str(e.value)
+
+
+def test_flow_epochs() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name=task_name, epochs=FlowEpochs(epochs=3, reducer="median")),
+        ]
+    )
+    tasks = instantiate_tasks(job=job, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].epochs == 3
+    assert tasks[0].epochs_reducer
+    assert tasks[0].epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
+
+
+def test_file_not_found() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name="missing_file.py@task_name"),
+        ]
+    )
+    with pytest.raises(FileNotFoundError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "File not found:" in str(e.value)
+
+
+def test_missing_task_name() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(),
+        ]
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "Task name is required." in str(e.value)
+
+
+def test_missing_task() -> None:
+    job = FlowJob(
+        tasks=[
+            FlowTask(name="unregistered_task"),
+        ]
+    )
+    with pytest.raises(LookupError) as e:
+        instantiate_tasks(job=job, base_dir=".")
+    assert "unregistered_task" in str(e.value)
