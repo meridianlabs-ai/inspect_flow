@@ -37,8 +37,7 @@ flow.add_command(run_command)
 flow.add_command(config_command)
 
 
-def main() -> None:
-    # pragma: no cover
+def main() -> None:  # pragma: no cover
     set_exception_hook()
     load_dotenv(find_dotenv(usecwd=True))
     flow(auto_envvar_prefix="INSPECT_FLOW")
