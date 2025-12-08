@@ -159,6 +159,32 @@ def test_relative_bundle_dir() -> None:
     assert mock_run.call_count == 1
 
 
+def test_bundle_dir() -> None:
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+    ):
+        job = int_load_job(
+            "./tests/config/e2e_test_flow.py",
+            options=ConfigOptions(
+                overrides=[
+                    "options.bundle_dir=bundle_dir",
+                ]
+            ),
+        )
+        launch(
+            job=job,
+            base_dir="tests/config/",
+        )
+
+    mock_venv.assert_called_once()
+    job: FlowJob = mock_venv.mock_calls[0].args[0]
+    absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
+    assert job.options
+    assert job.options.bundle_dir == absolute_path
+    assert mock_run.call_count == 1
+
+
 def test_259_dot_env() -> None:
     job = FlowJob(
         log_dir="logs",
@@ -184,3 +210,13 @@ def test_259_dot_env() -> None:
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert "TEST_ENV_VAR" not in launch_env
+
+
+def test_no_log_dir() -> None:
+    job = FlowJob()
+    with pytest.raises(ValueError) as e:
+        launch(
+            job=job,
+            base_dir=".",
+        )
+    assert "log_dir must be set" in str(e.value)
