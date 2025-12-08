@@ -2,6 +2,7 @@ import click
 from dotenv import find_dotenv, load_dotenv
 
 from inspect_flow._cli.config import config_command
+from inspect_flow._util.error import set_exception_hook
 
 from .. import __version__
 from .run import run_command
@@ -36,7 +37,8 @@ flow.add_command(run_command)
 flow.add_command(config_command)
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
+    set_exception_hook()
     load_dotenv(find_dotenv(usecwd=True))
     flow(auto_envvar_prefix="INSPECT_FLOW")
 

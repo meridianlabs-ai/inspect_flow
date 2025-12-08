@@ -17,6 +17,8 @@ from inspect_flow import (
 from inspect_flow._api.api import load_job
 from inspect_flow._config.load import (
     ConfigOptions,
+    LoadState,
+    _apply_auto_includes,
     _apply_overrides,
     _apply_substitutions,
     _log_dir_create_unique,
@@ -24,6 +26,7 @@ from inspect_flow._config.load import (
     int_load_job,
 )
 from inspect_flow._types.flow_types import FlowDependencies
+from pydantic import ValidationError
 
 from tests.test_helpers.config_helpers import validate_config
 from tests.test_helpers.log_helpers import init_test_logs
@@ -560,3 +563,45 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
         job2 = _apply_substitutions(job, base_dir=Path.cwd().resolve().as_posix())
         assert job2.log_dir == f"{log_dir}_2"
     assert mock_exists.call_count == 3
+
+
+def test_load_invalid() -> None:
+    invalid_config_path = str(Path(config_dir) / "invalid_flow.py")
+    with pytest.raises(ValidationError) as e:
+        load_job(invalid_config_path)
+    assert getattr(e.value, "_flow_handled", False) is True
+
+
+def test_load_no_job() -> None:
+    config_path = str(Path(config_dir) / "dirty_repo_flow.py")
+    with pytest.raises(ValueError) as e:
+        load_job(config_path)
+    assert getattr(e.value, "_flow_handled", False) is False
+
+
+def test_load_yaml() -> None:
+    config_path = str(Path(__file__).parent / "expected" / "first_config.yaml")
+    job = load_job(config_path)
+    validate_config(job, "first_config.yaml")
+
+
+def test_unsupported_format() -> None:
+    config_path = str(Path(__file__).parent.parent / "pyproject.toml")
+    with pytest.raises(ValueError) as e:
+        load_job(config_path)
+    assert "Unsupported config file extension: .toml" in str(e.value)
+
+
+def test_not_flow_job() -> None:
+    config_path = str(Path(config_dir) / "not_flow.py")
+    with pytest.raises(TypeError) as e:
+        load_job(config_path)
+    assert "got <class 'int'>" in str(e.value)
+
+
+def test_auto_include_protocol() -> None:
+    job1 = FlowJob()
+    job2 = _apply_auto_includes(
+        job1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
+    )
+    assert job1 == job2

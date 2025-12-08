@@ -1,7 +1,6 @@
 import inspect
 import json
 import re
-import sys
 import traceback
 from logging import getLogger
 from pathlib import Path
@@ -89,10 +88,7 @@ def _expand_includes(
     if args is None:
         args = dict()
     for include in job.includes or []:
-        path = include if isinstance(include, str) else include.config_file_path
-        if not path:
-            raise ValueError("Include must have a config_file_path set.")
-        include_path = absolute_path_relative_to(path, base_dir=base_dir)
+        include_path = absolute_path_relative_to(include, base_dir=base_dir)
         included_job = _load_job_from_file(include_path, args, state)
         if included_job is not None:
             job = _apply_include(job, included_job)
@@ -209,18 +205,17 @@ def _load_job_from_file(
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
                     data = yaml.safe_load(f)
-                elif config_path.suffix == ".json":
-                    data = json.load(f)
                 else:
                     raise ValueError(
-                        f"Unsupported config file format: {config_path.suffix}. "
-                        "Supported formats: .py, .yaml, .yml, .json"
+                        f"Unsupported config file extension: {config_path.suffix}. "
+                        "Supported extensions: .py, .yaml, .yml"
                     )
                 job = FlowJob.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         logger.error(e)
-        sys.exit(1)
+        e._flow_handled = True  # type: ignore
+        raise
 
     if job:
         return _expand_includes(
@@ -335,4 +330,5 @@ def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
     filtered_frames = [
         frame for frame in stack_summary if frame.filename in config_file
     ]
-    traceback.print_list(filtered_frames)
+    for item in traceback.format_list(filtered_frames):
+        logger.error(item)

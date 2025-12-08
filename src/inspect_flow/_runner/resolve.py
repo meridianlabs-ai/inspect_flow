@@ -171,7 +171,7 @@ def _get_task_creator_names_from_file(file_path: str, base_dir: str) -> list[str
         and getattr(module, attr).__registry_info__.type == "task"
     ]
     if not task_names:
-        raise ValueError("No task functions found in file {file}")
+        raise ValueError(f"No task functions found in file {file_path}")
     return task_names
 
 
@@ -188,7 +188,4 @@ def _get_task_creator_names(task: FlowTask, base_dir: str) -> list[str]:
         if registry_lookup(type="task", name=task.name):
             return [task.name]
         else:
-            # Check if name is a file name
-            if file := find_file(task.name, base_dir=base_dir):
-                return _get_task_creator_names_from_file(file, base_dir=base_dir)
             raise LookupError(f"{task.name} was not found in the registry")
