@@ -36,8 +36,11 @@ def test_no_dependencies() -> None:
 
 
 def test_dependencies() -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        with patch("subprocess.run") as mock_run:
+    for additional_dependencies in ["inspect_evals", ["inspect_evals"]]:
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            patch("subprocess.run") as mock_run,
+        ):
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
@@ -45,7 +48,7 @@ def test_dependencies() -> None:
             create_venv(
                 job=FlowJob(
                     dependencies=FlowDependencies(
-                        additional_dependencies=["inspect_evals"]
+                        additional_dependencies=additional_dependencies
                     ),
                     tasks=[FlowTask(name="task_name")],
                 ),
@@ -64,6 +67,38 @@ def test_dependencies() -> None:
                 "inspect_evals",
                 f"-e {flow_path}",
             ]
+
+
+def test_relative_dependency() -> None:
+    base_dir = Path(__file__).parent.resolve().as_posix()
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+        patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        create_venv(
+            job=FlowJob(
+                dependencies=FlowDependencies(additional_dependencies="../local_eval"),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=base_dir,
+            temp_dir=temp_dir,
+            env=os.environ.copy(),
+        )
+
+        assert mock_run.call_count == 2
+        args = mock_run.call_args.args[0]
+        flow_path = str((Path(__file__).parents[1]).resolve())
+        assert args == [
+            "uv",
+            "pip",
+            "install",
+            str(Path(base_dir) / ".." / "local_eval"),
+            f"-e {flow_path}",
+        ]
 
 
 def test_auto_dependency() -> None:
