@@ -140,7 +140,7 @@ def test_relative_bundle_dir() -> None:
             options=ConfigOptions(
                 overrides=[
                     "options.bundle_dir=bundle_dir",
-                    "options.bundle_url_map.bundle_dir=http://example.com/bundle}",
+                    "options.bundle_url_mappings.bundle_dir=http://example.com/bundle}",
                 ]
             ),
         )
@@ -154,8 +154,8 @@ def test_relative_bundle_dir() -> None:
     absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert job.options
     assert job.options.bundle_dir == absolute_path
-    assert job.options.bundle_url_map
-    assert absolute_path in job.options.bundle_url_map
+    assert job.options.bundle_url_mappings
+    assert absolute_path in job.options.bundle_url_mappings
     assert mock_run.call_count == 1
 
 

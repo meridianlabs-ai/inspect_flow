@@ -879,7 +879,7 @@ def test_bundle_url_map(capsys) -> None:
         log_dir="logs/flow_test",
         options=FlowOptions(
             bundle_dir=path + "logs/bundle_test",
-            bundle_url_map={path: "http://example.com/bundle"},
+            bundle_url_mappings={path: "http://example.com/bundle"},
         ),
         tasks=[
             task_file + "@noop",
