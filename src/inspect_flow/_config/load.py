@@ -1,7 +1,6 @@
 import inspect
 import json
 import re
-import sys
 import traceback
 from logging import getLogger
 from pathlib import Path
@@ -220,7 +219,8 @@ def _load_job_from_file(
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         logger.error(e)
-        sys.exit(1)
+        e._flow_handled = True  # type: ignore
+        raise
 
     if job:
         return _expand_includes(
@@ -335,4 +335,5 @@ def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
     filtered_frames = [
         frame for frame in stack_summary if frame.filename in config_file
     ]
-    traceback.print_list(filtered_frames)
+    for item in traceback.format_list(filtered_frames):
+        logger.error(item)

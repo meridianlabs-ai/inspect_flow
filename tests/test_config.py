@@ -24,6 +24,7 @@ from inspect_flow._config.load import (
     int_load_job,
 )
 from inspect_flow._types.flow_types import FlowDependencies
+from pydantic import ValidationError
 
 from tests.test_helpers.config_helpers import validate_config
 from tests.test_helpers.log_helpers import init_test_logs
@@ -560,3 +561,10 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
         job2 = _apply_substitutions(job, base_dir=Path.cwd().resolve().as_posix())
         assert job2.log_dir == f"{log_dir}_2"
     assert mock_exists.call_count == 3
+
+
+def test_load_invalid() -> None:
+    invalid_config_path = str(Path(config_dir) / "invalid_flow.py")
+    with pytest.raises(ValidationError) as e:
+        load_job(invalid_config_path)
+    assert getattr(e.value, "_flow_handled", False) is True
