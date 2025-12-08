@@ -283,7 +283,7 @@ class FlowOptionsDict(TypedDict):
     """If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False)."""
     eval_set_id: NotRequired[Optional[Union[str, NotGiven]]]
     """ID for the eval set. If not specified, a unique ID will be generated."""
-    bundle_url_map: NotRequired[Optional[Union[Mapping[str, str], NotGiven]]]
+    bundle_url_mappings: NotRequired[Optional[Union[Mapping[str, str], NotGiven]]]
     """Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout."""
 
 

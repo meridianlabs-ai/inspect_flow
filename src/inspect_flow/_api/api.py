@@ -18,7 +18,7 @@ def load_job(
     log_level: str | None = None,
     args: dict[str, Any] | None = None,
 ) -> FlowJob:
-    """Load a job file and apply any overrides.
+    """Load a job config file.
 
     Args:
         file: The path to the job configuration file.

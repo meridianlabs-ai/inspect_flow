@@ -29,14 +29,14 @@ def launch(
     job.log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
 
     if job.options and job.options.bundle_dir:
-        # Ensure bundle_dir and bundle_url_map are absolute paths
+        # Ensure bundle_dir and bundle_url_mappings are absolute paths
         job.options.bundle_dir = absolute_path_relative_to(
             job.options.bundle_dir, base_dir=base_dir
         )
-        if job.options.bundle_url_map:
-            job.options.bundle_url_map = {
+        if job.options.bundle_url_mappings:
+            job.options.bundle_url_mappings = {
                 absolute_path_relative_to(k, base_dir=base_dir): v
-                for k, v in job.options.bundle_url_map.items()
+                for k, v in job.options.bundle_url_mappings.items()
             }
     logger.info(f"Using log_dir: {job.log_dir}")
 

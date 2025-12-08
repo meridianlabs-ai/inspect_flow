@@ -463,7 +463,7 @@ class FlowOptions(BaseModel, extra="forbid"):
         description="ID for the eval set. If not specified, a unique ID will be generated.",
     )
 
-    bundle_url_map: dict[str, str] | None | NotGiven = Field(
+    bundle_url_mappings: dict[str, str] | None | NotGiven = Field(
         default=not_given,
         description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
     )
