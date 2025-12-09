@@ -15,13 +15,10 @@ runs:
         python-version: ${{ inputs.python-version }}
     - name: Install uv
       uses: astral-sh/setup-uv@v3
-    - name: Cache uv dependencies
-      uses: actions/cache@v3
       with:
-        path: ~/.cache/uv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock', '**/pyproject.toml') }}-${{ inputs.python-version }}
-        restore-keys: |
-          ${{ runner.os }}-uv-
+        enable-cache: true
+        cache-dependency-glob: "**/uv.lock"
+        cache-suffix: ${{ inputs.python-version }}
     - name: Install dependencies with uv
       run: uv sync --dev
       shell: bash
