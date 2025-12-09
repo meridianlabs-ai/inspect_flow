@@ -18,6 +18,9 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Upgrade dependencies
+        run: uv sync --dev --upgrade
+        shell: bash
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Lint with Ruff
@@ -35,6 +38,9 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Upgrade dependencies
+        run: uv sync --dev --upgrade
+        shell: bash
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Type check with pyright
@@ -50,6 +56,9 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Upgrade dependencies
+        run: uv sync --dev --upgrade
+        shell: bash
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Run tests
