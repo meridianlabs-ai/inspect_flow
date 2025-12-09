@@ -29,7 +29,6 @@ from inspect_flow._types.flow_types import FlowDependencies
 from pydantic import ValidationError
 
 from tests.test_helpers.config_helpers import validate_config
-from tests.test_helpers.log_helpers import init_test_logs
 
 config_dir = str(Path(__file__).parent / "config")
 
@@ -462,7 +461,7 @@ def test_257_format_map_not_config() -> None:
 
 
 def test_266_format_map_log_dir_create_unique() -> None:
-    log_dir = init_test_logs()
+    log_dir = "logs/flow_test"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     job = FlowJob(
         log_dir=log_dir,
