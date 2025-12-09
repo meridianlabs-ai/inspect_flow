@@ -8,7 +8,7 @@ from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
-from inspect_ai.solver import Solver, TaskState
+from inspect_ai.solver import Generate, Solver, TaskState, solver
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowAgent,
@@ -894,6 +894,27 @@ def test_bundle_url_map(capsys) -> None:
     assert "Bundle URL: http://example.com/bundle" in captured.out
 
 
+def test_bundle_url_map_no_change(capsys) -> None:
+    path = Path.cwd().as_posix()
+    config = FlowJob(
+        log_dir="logs/flow_test",
+        options=FlowOptions(
+            bundle_dir=path + "logs/bundle_test",
+            bundle_url_mappings={"not_there": "http://example.com/bundle"},
+        ),
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    with patch("inspect_ai.eval_set") as mock_eval_set:
+        _run_eval_set(job=(config), base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    captured = capsys.readouterr()
+    assert "Bundle URL:" not in captured.out
+
+
 def test_217_bundle_error_message() -> None:
     log_dir = init_test_logs()
 
@@ -911,13 +932,41 @@ def test_217_bundle_error_message() -> None:
         FlowTask(name=task_file + "@noop", model="mockllm/mock-llm2")
     ]
 
-    try:
+    with pytest.raises(PrerequisiteError) as e:
         _run_eval_set(job=(config), base_dir=".")
-    except PrerequisiteError as e:
-        assert "'bundle_overwrite'" in str(e)
-        assert "'bundle_overwrite'" in str(e.message)
-    else:
-        raise AssertionError("Expected PrerequisiteError was not raised")
+    assert "'bundle_overwrite'" in str(e)
+    assert "'bundle_overwrite'" in str(e.value.message)
+
+
+def test_prerequisite_error() -> None:
+    job = FlowJob(
+        log_dir="logs/flow_test",
+        tasks=[task_file + "@noop", task_file + "@noop"],
+    )
+    with pytest.raises(PrerequisiteError) as e:
+        _run_eval_set(job=job, base_dir=".")
+    assert "not distinct" in str(e.value.message)
+    assert "overwrite" not in str(e.value.message)
+
+
+@solver
+def fail_solver() -> Solver:
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        raise RuntimeError("Intentional Task Failure")
+
+    return solve
+
+
+def test_task_failure() -> None:
+    log_dir = init_test_logs()
+
+    job = FlowJob(
+        log_dir=log_dir,
+        options=FlowOptions(retry_attempts=0),
+        tasks=[FlowTask(name=task_file + "@noop", solver="fail_solver")],
+    )
+    result = _run_eval_set(job=job, base_dir=".")
+    assert result[0] is False
 
 
 def test_eval_set_args() -> None:
@@ -1076,3 +1125,16 @@ async def test_task_with_scorer_list() -> None:
         assert len(tasks_arg) == 1
         scorers = tasks_arg[0].scorer
         assert len(scorers) == 2
+
+
+def test_no_log_dir() -> None:
+    job = FlowJob(
+        log_dir="",
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    with pytest.raises(ValueError) as e:
+        _run_eval_set(job=job, base_dir=".")
+    assert "log_dir must be set" in str(e.value)

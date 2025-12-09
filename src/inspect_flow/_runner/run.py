@@ -115,11 +115,10 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
     if original_message != modified_message:
         e.message = modified_message
 
-    if e.args:
-        original_message = str(e.args[0])
-        modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
-        if original_message != modified_message:
-            e.args = (modified_message, *e.args[1:])
+    original_message = str(e.args[0])
+    modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
+    if original_message != modified_message:
+        e.args = (modified_message, *e.args[1:])
 
 
 def _print_bundle_url(job: FlowJob) -> None:
@@ -149,15 +148,11 @@ def _print_bundle_url(job: FlowJob) -> None:
 def flow_run(ctx: click.Context, base_dir: str, dry_run: bool) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
-        return
+        raise NotImplementedError("Run has no subcommands.")
 
     cfg = _read_config()
     _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
-def main() -> None:
-    flow_run()
-
-
 if __name__ == "__main__":
-    main()
+    flow_run()
