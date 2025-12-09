@@ -107,6 +107,7 @@ testpaths = ["tests"]
 [tool.coverage.run]
 source = ["src"]
 omit = ["*/tests/*", "*/__pycache__/*", "*/test_*.py", "*/src/inspect_flow/_types/type_gen.py"]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = [
