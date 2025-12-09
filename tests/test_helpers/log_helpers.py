@@ -12,7 +12,7 @@ def init_test_logs() -> str:
     log_dir = (Path.cwd() / relative_log_dir).resolve()
     if log_dir.exists():
         shutil.rmtree(log_dir)
-    return relative_log_dir
+    return log_dir.as_posix()
 
 
 def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotGiven]:
