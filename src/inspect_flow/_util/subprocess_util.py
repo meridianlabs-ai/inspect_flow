@@ -47,14 +47,12 @@ def run_with_logging(
         # Log stdout at INFO level
         if result.stdout:
             for line in result.stdout.strip().split("\n"):
-                if line:
-                    logger.info(line)
+                logger.info(line)
 
         # Log stderr at INFO level
         if result.stderr:
             for line in result.stderr.strip().split("\n"):
-                if line:
-                    logger.info(line)
+                logger.info(line)
 
     # Check return code after logging
     if check and result.returncode != 0:

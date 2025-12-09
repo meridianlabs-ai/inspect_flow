@@ -8,5 +8,5 @@ def test_relative_path_resolution():
     base_dir = path.parent
     file_name = path.name
 
-    result = find_file(file_name, base_dir=base_dir)
+    result = find_file(file_name, base_dir=base_dir.as_posix())
     assert result == str(path.resolve())
