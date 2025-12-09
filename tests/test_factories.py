@@ -112,3 +112,21 @@ def test_config_default():
         reasoning_effort=["low", "high"], reasoning_tokens=[100, 200]
     )
     assert len(result) == 4
+
+
+def test_with_no_list() -> None:
+    result = tasks_with(
+        task=FlowTask(name="task1"),
+        model="model1",
+    )
+    assert len(result) == 1
+    assert result[0].name == "task1"
+    assert result[0].model_name == "model1"
+
+
+def test_with_duplicate_value() -> None:
+    with pytest.raises(ValueError, match="model provided in both base and values"):
+        tasks_with(
+            task=FlowTask(name="task1", model="model2"),
+            model="model1",
+        )
