@@ -103,6 +103,7 @@ def _create_venv_with_base_dependencies(
     assert job.python_version
     project_dir = Path(file_path).parent
     uv_args = [
+        "--no-dev",
         "--python",
         job.python_version,
         "--project",
@@ -113,7 +114,7 @@ def _create_venv_with_base_dependencies(
         uv_args.append("--frozen")
     logger.info(f"Creating venv with uv args: {uv_args}")
     run_with_logging(
-        ["uv", "sync", "--no-dev"] + uv_args,
+        ["uv", "sync"] + uv_args,
         cwd=temp_dir,
         env=env,
     )
