@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from inspect_flow._types.generated import (
     FlowAgent,
     FlowModel,
@@ -100,3 +102,17 @@ def test_merge_none():
     assert result["temperature"] is None
     assert result["max_tokens"] == 100
     assert result["top_p"] == 0.9
+
+
+@dataclass
+class SimpleClass:
+    name: str
+
+
+def test_merge_recursive_dataclass() -> None:
+    base = {"config": SimpleClass(name="base_name")}
+    add = {"config": {"temperature": 0.7}}
+
+    result = merge_recursive(base, add)
+
+    assert result == {"config": {"name": "base_name", "temperature": 0.7}}

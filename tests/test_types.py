@@ -105,3 +105,10 @@ def test_agent_from_yaml():
     assert isinstance(job2.tasks[0], FlowTask)
     assert isinstance(job2.tasks[0].solver, FlowAgent)
     assert job2 == job
+
+
+def test_task_none_model_name():
+    task = FlowTask(name="module/task")
+    assert task.model_name is None
+    task = FlowTask(name="module/task", model=FlowModel())
+    assert task.model_name == not_given
