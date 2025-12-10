@@ -30,6 +30,6 @@ def test_config() -> None:
     )
     dump = config(job=job, base_dir="./tests/config/")
     expected_dump = """tasks:
-- local_eval/noop
+- name: local_eval/noop
 """
     assert dump == expected_dump

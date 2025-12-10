@@ -41,8 +41,9 @@ def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
 
 
 def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[FlowTask]:
-    if isinstance(task, str):
-        task = FlowTask(name=task)
+    assert isinstance(
+        task, FlowTask
+    )  # apply_defaults should have converted str to FlowTask
     names = _get_task_creator_names(task, base_dir=base_dir)
     if names == [task.name]:
         return [task]
