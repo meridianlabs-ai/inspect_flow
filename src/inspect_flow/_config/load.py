@@ -12,6 +12,7 @@ from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
 from pydantic_core import ValidationError
 
+from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowJob, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
@@ -62,6 +63,7 @@ def expand_job(
     if options.overrides:
         return _apply_overrides(job, options.overrides)
     job = _apply_substitutions(job, base_dir=base_dir)
+    job = apply_defaults(job)
     _after_flow_job_loaded(job, state)
     return job
 

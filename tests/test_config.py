@@ -15,6 +15,7 @@ from inspect_flow import (
     tasks_with,
 )
 from inspect_flow._api.api import load_job
+from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._config.load import (
     ConfigOptions,
     LoadState,
@@ -75,7 +76,8 @@ def test_config_model_and_task() -> None:
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
-    validate_config(config, "model_and_task_flow.yaml")
+    job = apply_defaults(config)
+    validate_config(job, "model_and_task_flow.yaml")
 
 
 def test_py_config() -> None:

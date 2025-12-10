@@ -1,10 +1,14 @@
 log_dir: logs
 tasks:
 - name: inspect_evals/gpqa_diamond
-  model: openai/gpt-4o
+  model:
+    name: openai/gpt-4o
 - name: inspect_evals/gpqa_diamond
-  model: anthropic/claude-3-5-sonnet
+  model:
+    name: anthropic/claude-3-5-sonnet
 - name: inspect_evals/mmlu_0_shot
-  model: openai/gpt-4o
+  model:
+    name: openai/gpt-4o
 - name: inspect_evals/mmlu_0_shot
-  model: anthropic/claude-3-5-sonnet
+  model:
+    name: anthropic/claude-3-5-sonnet

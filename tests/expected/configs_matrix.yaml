@@ -5,78 +5,110 @@ tasks:
     name: openai/gpt-5
     config:
       reasoning_effort: minimal
+  config:
+    reasoning_effort: minimal
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: medium
+  config:
+    reasoning_effort: medium
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: minimal
+  config:
+    reasoning_effort: minimal
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: medium
+  config:
+    reasoning_effort: medium
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: minimal
+  config:
+    reasoning_effort: minimal
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: medium
+  config:
+    reasoning_effort: medium
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: minimal
+  config:
+    reasoning_effort: minimal
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: medium
+  config:
+    reasoning_effort: medium
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-5-mini
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high

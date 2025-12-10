@@ -1,21 +1,34 @@
 log_dir: ./logs/flow_test
 options:
   limit: 1
-defaults:
+tasks:
+- name: local_eval/noop
   model:
     name: mockllm/mock-llm1
     model_args:
       mock_model_arg: 3
-tasks:
 - name: local_eval/noop
-  model: mockllm/mock-llm1
-- name: local_eval/noop
-  model: mockllm/mock-llm2
+  model:
+    name: mockllm/mock-llm2
+    model_args:
+      mock_model_arg: 3
 - name: local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm1
+  model:
+    name: mockllm/mock-llm1
+    model_args:
+      mock_model_arg: 3
 - name: local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm2
+  model:
+    name: mockllm/mock-llm2
+    model_args:
+      mock_model_arg: 3
 - name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm1
+  model:
+    name: mockllm/mock-llm1
+    model_args:
+      mock_model_arg: 3
 - name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model: mockllm/mock-llm2
+  model:
+    name: mockllm/mock-llm2
+    model_args:
+      mock_model_arg: 3
