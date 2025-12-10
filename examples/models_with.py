@@ -7,7 +7,7 @@ FlowJob(
         task="my_task",
         model=models_with(
             model=["openai/gpt-4o", "anthropic/claude-3-5-sonnet-20241022"],
-            config=GenerateConfig(temperature=0.7),  # Same config for both models
+            config=GenerateConfig(temperature=0.7),  # <1>
         ),
     ),
 )

@@ -11,7 +11,7 @@ FlowJob(
                 GenerateConfig(temperature=0.5),
                 GenerateConfig(temperature=1.0),
             ],
-            max_tokens=1000,  # Same max_tokens for all configs
+            max_tokens=1000,  # <1>
         ),
     ),
 )

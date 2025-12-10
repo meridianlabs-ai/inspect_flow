@@ -3,6 +3,8 @@ title: "Flow Concepts"
 tbl-colwidths: [30,70]
 ---
 
+The primary interface for defining a workflow in Flow is a `FlowJob`. A `FlowJob` defines the log directory, tasks, models, and other options that make up the job. When Inspect Flow processes the `FlowJob`, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect's `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
+
 Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 
 -   **`FlowJob`** — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
@@ -13,6 +15,15 @@ Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 -   **`FlowOptions`** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 -   **`FlowDefaults`** — System for setting default values across tasks, models, solvers, and agents.
 -   **`FlowDependencies`** — Configuration for evaluation dependencies to install.
+
+## Config Files
+
+Flow configuration files are Python files where the last expression is either:
+
+- A `FlowJob` object, or
+- A function that returns a `FlowJob` object
+
+Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!
 
 ## Basic Example
 
@@ -70,20 +81,9 @@ flow run config.py
 | `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
 | `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
 
-::: callout-note
-### Config File Evaluation
-
-Python config files are evaluated as normal Python code. The last expression in the file should either be a `FlowJob` or a function that returns a `FlowJob`. This means you can:
-
--   Define variables and reuse them
--   Use loops or comprehensions to generate task lists
--   Import helper functions
--   Add comments and documentation
-
-Flow configs are just Python!
-:::
-
 ## Tasks
+
+`FlowTask` defines the configuration for a single evaluation. Each `FlowTask` maps to an Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) and accepts the same parameters—including the model to evaluate, solver chain, generation config, sandbox environment, and dataset filters.
 
 ### Specification
 
@@ -157,15 +157,13 @@ FlowTask(
 
 ## Models
 
-Models can be specified as simple strings or as `FlowModel` objects for more control:
-
-**Simple string**
+When specifying a task, you can provide the model for the task as either a string with a model name or as a `FlowModel`. When using the simple string, the default values for that model will be used. For example:
 
 ``` python
 FlowTask(name="task", model="openai/gpt-5")
 ```
 
-**FlowModel**
+Using `FlowModel` allows you to specify additional parameters for the model (e.g. `GenerateConfig`). Use `FlowModel` when you need to set custom `GenerateConfig`, API endpoints, custom API keys for a specific model, or perform other custom configuration. For example:
 
 ``` python
 FlowTask(
@@ -182,7 +180,9 @@ FlowTask(
 )
 ```
 
-**Multi-model tasks**
+### Model Roles
+
+For agent evaluations with multiple model roles, use `model_roles` to specify which model to use for each role. For example:
 
 ``` python
 # For agent evaluations with multiple roles
@@ -194,15 +194,3 @@ FlowTask(
     }
 )
 ```
-
-::: callout-tip
-### When to use FlowModel
-
-Use `FlowModel` when you need to:
-
--   Set model-specific generation configs
--   Use custom API endpoints
--   Configure API keys per model
--   Use metadata for custom filtering (see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata))
--   Organize complex multi-model setups
-:::

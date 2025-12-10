@@ -3,7 +3,7 @@ title: "Matrixing"
 tbl-colwidths: [30,70]
 ---
 
-Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides matrix and "with" functions to declaratively generate evaluation grids.
+Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides `_matrix()` and `_with()` functions to declaratively generate evaluation grids.
 
 ## Matrix Functions
 
@@ -76,6 +76,9 @@ Apply common settings to multiple tasks:
 {{< include ../examples/tasks_with.py >}}
 ```
 
+1. Apply the same model to both tasks
+2. Apply the same generation config to both tasks
+
 This creates **2 tasks** (2 tasks, each with the same model and config).
 
 ### models_with()
@@ -86,6 +89,8 @@ Apply common settings to multiple models:
 {{< include ../examples/models_with.py >}}
 ```
 
+1. Apply the same generation config to both models
+
 This creates **2 tasks** (1 task × 2 models, each with the same config).
 
 ### configs_with()
@@ -95,6 +100,8 @@ Apply common settings to multiple configs:
 ``` {.python filename="configs_with.py"}
 {{< include ../examples/configs_with.py >}}
 ```
+
+1. Apply the same max_tokens to all three temperature configs
 
 This creates **3 tasks** (1 task × 3 configs, each with the same max_tokens).
 
@@ -126,6 +133,10 @@ Mix parameter sweeps with common settings:
 {{< include ../examples/matrix_and_with.py >}}
 ```
 
+1. Create a matrix of 6 tasks (2 tasks × 3 temperature values)
+2. Apply the same model to all 6 tasks from the matrix
+3. Apply the same sandbox to all 6 tasks from the matrix
+
 ## Nested Sweeps
 
 Matrix functions can be nested to create complex parameter grids. Use the unpacking operator `*` to expand inner matrix results:
@@ -136,6 +147,10 @@ Matrix functions can be nested to create complex parameter grids. Use the unpack
 {{< include ../examples/nested_model_sweep.py >}}
 ```
 
+1. Total of 5 models: 1 single model + 4 from the matrix (2 models × 2 reasoning_effort values)
+2. A single model configuration for Claude
+3. Use the unpacking operator `*` to expand the nested model matrix into the list
+
 This creates **10 tasks** (2 tasks × 5 model configurations).
 
 **Example: Tasks with nested task sweep**
@@ -143,6 +158,10 @@ This creates **10 tasks** (2 tasks × 5 model configurations).
 ``` {.python filename="nested_task_sweep.py"}
 {{< include ../examples/nested_task_sweep.py >}}
 ```
+
+1. A single task configuration with specific arguments
+2. Use the unpacking operator `*` to expand the nested task matrix into the list
+3. Total of 4 tasks: 1 single task + 3 from the matrix (1 task × 3 language variants)
 
 This creates **8 tasks** (4 task variants × 2 models).
 
@@ -165,16 +184,20 @@ Always use `--dry-run` to check the number of evaluations before running expensi
 
 When base objects already have values, matrix parameters are merged:
 
-``` python
-# Config fields merge recursively
+``` {.python}
 tasks_matrix(
     task=FlowTask(
         name="task",
-        config=GenerateConfig(temperature=0.5)  # Base value
+        config=GenerateConfig(temperature=0.5)  # <1>
     ),
     config=[
-        GenerateConfig(max_tokens=1000),  # Adds max_tokens, keeps temperature=0.5
-        GenerateConfig(max_tokens=2000),  # Adds max_tokens, keeps temperature=0.5
+        GenerateConfig(max_tokens=1000),  # <2>
+        GenerateConfig(max_tokens=2000),  # <2>
     ]
 )
 ```
+
+1. Base value of temperature=0.5
+2. Adds max_tokens, keeps temperature=0.5
+
+This creates 2 tasks: one with `temperature=0.5, max_tokens=1000` and another with `temperature=0.5, max_tokens=2000`.
