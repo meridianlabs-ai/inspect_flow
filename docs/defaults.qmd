@@ -255,7 +255,7 @@ flow run config.py
 
 Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 
-**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_NO_VENV`, and `INSPECT_FLOW_DRY_RUN` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`) are runtime settings for the `flow run` command and cannot be set in `FlowJob`.
+**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_NO_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowJob`.
 
 **Settings with multiple override levels**:
 
