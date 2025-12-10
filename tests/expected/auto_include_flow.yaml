@@ -1,16 +1,12 @@
 log_dir: logs/model_and_task
 options:
   limit: 1
-defaults:
-  model_prefix:
-    antropic:
-      config:
-        max_connections: 2
-      base_url: https://api.anthropic.com/v1/
-    openai:
-      config:
-        max_connections: 5
-      base_url: https://api.openai.com/v1/
 tasks:
 - name: inspect_evals/mmlu_0_shot
-  model: openai/gpt-4o-mini
+  model:
+    name: openai/gpt-4o-mini
+    config:
+      max_connections: 5
+    base_url: https://api.openai.com/v1/
+  config:
+    max_connections: 5

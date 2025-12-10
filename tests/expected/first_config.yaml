@@ -1,4 +1,5 @@
 log_dir: logs
 tasks:
 - name: inspect_evals/gpqa_diamond
-  model: openai/gpt-5
+  model:
+    name: openai/gpt-5

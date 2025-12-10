@@ -1,46 +1,64 @@
 log_dir: logs
 tasks:
 - name: inspect_evals/mmlu_0_shot
-  model: anthropic/claude-3-5-sonnet
+  model:
+    name: anthropic/claude-3-5-sonnet
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o-mini
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/mmlu_0_shot
   model:
     name: openai/gpt-4o-mini
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/gpqa_diamond
-  model: anthropic/claude-3-5-sonnet
+  model:
+    name: anthropic/claude-3-5-sonnet
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o-mini
     config:
       reasoning_effort: low
+  config:
+    reasoning_effort: low
 - name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o-mini
     config:
       reasoning_effort: high
+  config:
+    reasoning_effort: high

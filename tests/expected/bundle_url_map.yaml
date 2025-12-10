@@ -4,5 +4,6 @@ options:
   bundle_url_mappings:
     s3://my-bucket: https://my-bucket.s3.amazonaws.com
 tasks:
-  - name: task
-    model: openai/gpt-4o
+- name: task
+  model:
+    name: openai/gpt-4o

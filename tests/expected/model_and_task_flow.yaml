@@ -3,4 +3,5 @@ options:
   limit: 1
 tasks:
 - name: inspect_evals/mmlu_0_shot
-  model: openai/gpt-4o-mini
+  model:
+    name: openai/gpt-4o-mini

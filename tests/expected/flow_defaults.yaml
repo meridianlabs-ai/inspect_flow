@@ -1,30 +1,10 @@
-defaults:
-  config:
-    max_connections: 10
-  agent:
-    name: basic
-    type: agent
-  agent_prefix:
-    inspect/:
-      name: inspect/basic
-      type: agent
-  model:
-    model_args:
-      arg: foo
-  model_prefix:
-    openai/:
-      config:
-        max_connections: 20
-  solver:
-    name: generate
-  solver_prefix:
-    chain_of_thought:
-      name: chain_of_thought
-  task:
-    model: openai/gpt-4o
-  task_prefix:
-    inspect_evals/:
-      model: openai/gpt-4o-mini
 tasks:
 - name: inspect_evals/gpqa_diamond
-  model: openai/gpt-4o
+  model:
+    name: openai/gpt-4o
+    config:
+      max_connections: 20
+    model_args:
+      arg: foo
+  config:
+    max_connections: 20
