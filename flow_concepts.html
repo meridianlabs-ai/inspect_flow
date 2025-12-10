@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -179,6 +179,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      </a>
+      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item sidebar-item-section">
@@ -267,14 +271,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basic-example" id="toc-basic-example" class="nav-link active" data-scroll-target="#basic-example">Basic Example</a></li>
+  <li><a href="#config-files" id="toc-config-files" class="nav-link active" data-scroll-target="#config-files">Config Files</a></li>
+  <li><a href="#basic-example" id="toc-basic-example" class="nav-link" data-scroll-target="#basic-example">Basic Example</a></li>
   <li><a href="#jobs" id="toc-jobs" class="nav-link" data-scroll-target="#jobs">Jobs</a></li>
   <li><a href="#tasks" id="toc-tasks" class="nav-link" data-scroll-target="#tasks">Tasks</a>
   <ul class="collapse">
   <li><a href="#specification" id="toc-specification" class="nav-link" data-scroll-target="#specification">Specification</a></li>
   <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration">Configuration</a></li>
   </ul></li>
-  <li><a href="#models" id="toc-models" class="nav-link" data-scroll-target="#models">Models</a></li>
+  <li><a href="#models" id="toc-models" class="nav-link" data-scroll-target="#models">Models</a>
+  <ul class="collapse">
+  <li><a href="#model-roles" id="toc-model-roles" class="nav-link" data-scroll-target="#model-roles">Model Roles</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -300,6 +308,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>The primary interface for defining a workflow in Flow is a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. A <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> defines the log directory, tasks, models, and other options that make up the job. When Inspect Flow processes the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect’s <code>eval_set()</code> function along with any additional configuration, and Inspect executes the tasks.</p>
 <p>Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:</p>
 <ul>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span></strong> — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI <a href="https://inspect.aisi.org.uk/eval-sets.html">Eval Set</a>.</li>
@@ -311,6 +320,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span></strong> — System for setting default values across tasks, models, solvers, and agents.</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span></strong> — Configuration for evaluation dependencies to install.</li>
 </ul>
+<section id="config-files" class="level2">
+<h2 class="anchored" data-anchor-id="config-files">Config Files</h2>
+<p>Flow configuration files are Python files where the last expression is either:</p>
+<ul>
+<li>A <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> object, or</li>
+<li>A function that returns a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> object</li>
+</ul>
+<p>Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!</p>
+</section>
 <section id="basic-example" class="level2">
 <h2 class="anchored" data-anchor-id="basic-example">Basic Example</h2>
 <p>In <a href="./index.html#basic-example">Welcome - Basic Example</a>, we showed a simple <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. Let’s break down what’s happening:</p>
@@ -449,29 +467,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Config File Evaluation
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Python config files are evaluated as normal Python code. The last expression in the file should either be a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span> or a function that returns a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowjob">FlowJob</a></span>. This means you can:</p>
-<ul>
-<li>Define variables and reuse them</li>
-<li>Use loops or comprehensions to generate task lists</li>
-<li>Import helper functions</li>
-<li>Add comments and documentation</li>
-</ul>
-<p>Flow configs are just Python!</p>
-</div>
-</div>
 </section>
 <section id="tasks" class="level2">
 <h2 class="anchored" data-anchor-id="tasks">Tasks</h2>
+<p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> defines the configuration for a single evaluation. Each <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> maps to an Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> and accepts the same parameters—including the model to evaluate, solver chain, generation config, sandbox environment, and dataset filters.</p>
 <section id="specification" class="level3">
 <h3 class="anchored" data-anchor-id="specification">Specification</h3>
 <p>In the example above, we used a registry name (<code>"inspect_evals/gpqa_diamond"</code>). Flow supports multiple ways to reference tasks:</p>
@@ -548,10 +547,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="models" class="level2">
 <h2 class="anchored" data-anchor-id="models">Models</h2>
-<p>Models can be specified as simple strings or as <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> objects for more control:</p>
-<p><strong>Simple string</strong></p>
+<p>When specifying a task, you can provide the model for the task as either a string with a model name or as a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>. When using the simple string, the default values for that model will be used. For example:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>FlowModel</strong></p>
+<p>Using <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> allows you to specify additional parameters for the model (e.g.&nbsp;<code>GenerateConfig</code>). Use <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> when you need to set custom <code>GenerateConfig</code>, API endpoints, custom API keys for a specific model, or perform other custom configuration. For example:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"task"</span>,</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>FlowModel(</span>
@@ -564,7 +562,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        api_key<span class="op">=</span><span class="st">"$</span><span class="sc">{CUSTOM_API_KEY}</span><span class="st">"</span>,</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Multi-model tasks</strong></p>
+<section id="model-roles" class="level3">
+<h3 class="anchored" data-anchor-id="model-roles">Model Roles</h3>
+<p>For agent evaluations with multiple model roles, use <code>model_roles</code> to specify which model to use for each role. For example:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For agent evaluations with multiple roles</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"multi_agent_task"</span>,</span>
@@ -573,28 +573,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"critic"</span>: <span class="st">"anthropic/claude-3-5-sonnet"</span>,</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>When to use FlowModel
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Use <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> when you need to:</p>
-<ul>
-<li>Set model-specific generation configs</li>
-<li>Use custom API endpoints</li>
-<li>Configure API keys per model</li>
-<li>Use metadata for custom filtering (see <a href="./advanced.html#flow_metadata-flow-only-metadata">flow_metadata</a>)</li>
-<li>Organize complex multi-model setups</li>
-</ul>
-</div>
-</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
