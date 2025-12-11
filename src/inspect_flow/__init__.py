@@ -23,11 +23,11 @@ from inspect_flow._types.flow_types import (
     FlowDefaults,
     FlowDependencies,
     FlowEpochs,
-    FlowJob,
     FlowModel,
     FlowOptions,
     FlowScorer,
     FlowSolver,
+    FlowSpec,
     FlowTask,
 )
 from inspect_flow._types.merge import (
@@ -40,7 +40,7 @@ __all__ = [
     "FlowDefaults",
     "FlowDependencies",
     "FlowEpochs",
-    "FlowJob",
+    "FlowSpec",
     "FlowModel",
     "FlowOptions",
     "FlowScorer",

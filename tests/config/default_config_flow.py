@@ -3,8 +3,8 @@ from pathlib import Path
 from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowDefaults,
-    FlowJob,
     FlowModel,
+    FlowSpec,
     FlowTask,
 )
 
@@ -18,7 +18,7 @@ config_max_tokens = 100
 task_dir = (Path("tests") / "config" / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
 
-FlowJob(
+FlowSpec(
     log_dir="logs/flow_test",
     defaults=FlowDefaults(
         config=GenerateConfig(

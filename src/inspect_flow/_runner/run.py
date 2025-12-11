@@ -9,20 +9,20 @@ from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_job
 from inspect_flow._types.flow_types import (
-    FlowJob,
     FlowOptions,
+    FlowSpec,
 )
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none
 
 
-def _read_config(config_file: str) -> FlowJob:
+def _read_config(config_file: str) -> FlowSpec:
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-        return FlowJob.model_validate(data, extra="forbid")
+        return FlowSpec.model_validate(data, extra="forbid")
 
 
-def _write_config_file(job: FlowJob) -> None:
+def _write_config_file(job: FlowSpec) -> None:
     filename = f"{job.log_dir}/flow.yaml"
     yaml = config_to_yaml(job)
     with file(filename, "w") as f:
@@ -30,7 +30,7 @@ def _write_config_file(job: FlowJob) -> None:
 
 
 def _run_eval_set(
-    job: FlowJob, base_dir: str, dry_run: bool = False
+    job: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_job(job, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
@@ -96,7 +96,7 @@ def _run_eval_set(
             bundle_overwrite=default(options.bundle_overwrite, False),
             log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
             eval_set_id=default_none(options.eval_set_id),
-            # kwargs= FlowJob, FlowTask, and FlowModel allow setting the generate config
+            # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
     except PrerequisiteError as e:
         _fix_prerequisite_error_message(e)
@@ -121,7 +121,7 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
         e.args = (modified_message, *e.args[1:])
 
 
-def _print_bundle_url(job: FlowJob) -> None:
+def _print_bundle_url(job: FlowSpec) -> None:
     if job.options and job.options.bundle_url_mappings and job.options.bundle_dir:
         bundle_url = job.options.bundle_dir
         for local, url in job.options.bundle_url_mappings.items():

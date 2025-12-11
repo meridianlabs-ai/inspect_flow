@@ -10,7 +10,7 @@ from dotenv import dotenv_values, find_dotenv
 from inspect_ai._util.file import absolute_file_path
 
 from inspect_flow._launcher.venv import create_venv
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 
 def launch(
-    job: FlowJob,
+    job: FlowSpec,
     base_dir: str,
     no_dotenv: bool = False,
     run_args: list[str] | None = None,
@@ -92,7 +92,7 @@ def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
     return env
 
 
-def _write_flow_yaml(job: FlowJob, dir: str) -> Path:
+def _write_flow_yaml(job: FlowSpec, dir: str) -> Path:
     flow_yaml_path = Path(dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(

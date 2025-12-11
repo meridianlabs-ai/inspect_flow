@@ -5,7 +5,7 @@ import yaml
 from click.testing import CliRunner
 from inspect_flow._api.api import load_job
 from inspect_flow._cli.main import flow
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -38,7 +38,7 @@ def test_local_e2e() -> None:
 
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-    loaded_job = FlowJob.model_validate(data, extra="forbid")
+    loaded_job = FlowSpec.model_validate(data, extra="forbid")
     # The python_version should match the current version
     assert (
         loaded_job.python_version

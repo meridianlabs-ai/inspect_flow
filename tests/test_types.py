@@ -4,8 +4,8 @@ import yaml
 from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowDefaults,
-    FlowJob,
     FlowModel,
+    FlowSpec,
     FlowTask,
     configs_matrix,
 )
@@ -17,7 +17,7 @@ from pydantic_core import to_jsonable_python
 
 def test_task_from_string():
     task_name = "one_module/one_task"
-    config = FlowJob(tasks=[task_name])
+    config = FlowSpec(tasks=[task_name])
     assert config.tasks
     assert len(config.tasks) == 1
     assert config.tasks[0] == task_name
@@ -27,7 +27,7 @@ def test_model_from_string():
     model_name = "module/model"
     model_role = "mark"
     model_name2 = "module/model2"
-    config = FlowJob(
+    config = FlowSpec(
         tasks=[
             FlowTask(
                 name="module/task",
@@ -48,7 +48,7 @@ def test_solver_from_string():
     solver_name = "module/solver"
     solver_name2 = "module/solver2"
     solver_name3 = "module/solver3"
-    config = FlowJob(
+    config = FlowSpec(
         tasks=[
             FlowTask(name="module/task", solver=solver_name),
             FlowTask(name="module/task", solver=[solver_name2, solver_name3]),
@@ -90,7 +90,7 @@ def test_task_not_given():
 
 
 def test_agent_from_yaml():
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(
                 name="module/task",
@@ -99,7 +99,7 @@ def test_agent_from_yaml():
         ]
     )
     dump = config_to_yaml(job)
-    job2 = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+    job2 = FlowSpec.model_validate(yaml.safe_load(dump), extra="forbid")
     assert job2.tasks
     assert len(job2.tasks) == 1
     assert isinstance(job2.tasks[0], FlowTask)

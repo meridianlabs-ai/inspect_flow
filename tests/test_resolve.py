@@ -4,7 +4,7 @@ import pytest
 from inspect_ai import Task, task
 from inspect_flow._runner.resolve import resolve_job
 from inspect_flow._types.flow_types import (
-    FlowJob,
+    FlowSpec,
     FlowTask,
 )
 
@@ -12,7 +12,7 @@ task_name = "tests/local_eval/src/local_eval/noop.py@noop"  # task from a file r
 
 
 def test_file_not_found() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name="missing_file.py"),
         ]
@@ -24,7 +24,7 @@ def test_file_not_found() -> None:
 
 def test_no_tasks() -> None:
     file = str(Path(__file__).parent / "config" / "e2e_test_flow.py")
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=file),
         ]
@@ -36,7 +36,7 @@ def test_no_tasks() -> None:
 
 
 def test_no_task_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(),
         ]
@@ -47,7 +47,7 @@ def test_no_task_name() -> None:
 
 
 def test_unregistered_task_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name="unregistered_task"),
         ]
@@ -63,7 +63,7 @@ def noop() -> Task:
 
 
 def test_registered_task() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name="noop"),
         ]

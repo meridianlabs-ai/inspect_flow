@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
-from inspect_flow import FlowDependencies, FlowJob, FlowModel, FlowSolver, FlowTask
+from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._launcher.venv import create_venv
 
 
@@ -18,7 +18,7 @@ def test_no_dependencies() -> None:
             )
 
             create_venv(
-                job=FlowJob(tasks=[FlowTask(name="task_name")]),
+                job=FlowSpec(tasks=[FlowTask(name="task_name")]),
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
@@ -46,7 +46,7 @@ def test_dependencies() -> None:
             )
 
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     dependencies=FlowDependencies(
                         additional_dependencies=additional_dependencies
                     ),
@@ -80,7 +80,7 @@ def test_relative_dependency() -> None:
         )
 
         create_venv(
-            job=FlowJob(
+            job=FlowSpec(
                 dependencies=FlowDependencies(additional_dependencies="../local_eval"),
                 tasks=[FlowTask(name="task_name")],
             ),
@@ -107,7 +107,7 @@ def test_auto_dependency() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowJob(
+            job = FlowSpec(
                 tasks=[
                     FlowTask(
                         name="inspect_evals2/task_name",
@@ -176,7 +176,7 @@ def test_no_auto_dependency() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowJob(
+            job = FlowSpec(
                 dependencies=FlowDependencies(auto_detect_dependencies=False),
                 tasks=[
                     FlowTask(
@@ -212,7 +212,7 @@ def test_no_file() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowJob(
+            job = FlowSpec(
                 dependencies=FlowDependencies(dependency_file="no_file"),
                 tasks=[
                     FlowTask(
@@ -252,7 +252,7 @@ def test_python_version() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
                 ),
@@ -284,7 +284,7 @@ def test_5_flow_requirements() -> None:
             )
 
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     python_version="3.11",
                     log_dir="logs",
                     tasks=[FlowTask(name="task_name")],
@@ -313,7 +313,7 @@ def test_241_dependency_file() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
-            job=FlowJob(
+            job=FlowSpec(
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
@@ -342,7 +342,7 @@ def test_241_no_uvlock() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
-            job=FlowJob(
+            job=FlowSpec(
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
@@ -366,7 +366,7 @@ def test_241_requirements_txt() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
-            job=FlowJob(
+            job=FlowSpec(
                 python_version="3.11",
                 log_dir="logs",
                 dependencies=FlowDependencies(
@@ -391,7 +391,7 @@ def test_241_does_not_exist() -> None:
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         with pytest.raises(FileNotFoundError):
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     python_version="3.11",
                     log_dir="logs",
                     dependencies=FlowDependencies(
@@ -411,7 +411,7 @@ def test_241_unsupported() -> None:
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         with pytest.raises(subprocess.CalledProcessError):
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     python_version="3.11",
                     log_dir="logs",
                     dependencies=FlowDependencies(
@@ -435,7 +435,7 @@ def test_241_not_found() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
             create_venv(
-                job=FlowJob(
+                job=FlowSpec(
                     dependencies=FlowDependencies(
                         dependency_file="auto",
                     ),

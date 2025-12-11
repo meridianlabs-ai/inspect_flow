@@ -1,7 +1,7 @@
 # Automatically inherits _flow.py
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=[FlowTask(name="inspect_evals/gpqa_diamond", model="openai/gpt-4o")],
 )

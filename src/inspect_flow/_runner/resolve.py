@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.flow_types import (
-    FlowJob,
+    FlowSpec,
     FlowTask,
     not_given,
 )
@@ -23,7 +23,7 @@ def _resolve_python_version() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
-def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
+def resolve_job(job: FlowSpec, base_dir: str) -> FlowSpec:
     job = apply_defaults(job)
 
     resolved_tasks = []
@@ -40,7 +40,7 @@ def resolve_job(job: FlowJob, base_dir: str) -> FlowJob:
     )
 
 
-def _resolve_task(job: FlowJob, task: str | FlowTask, base_dir: str) -> list[FlowTask]:
+def _resolve_task(job: FlowSpec, task: str | FlowTask, base_dir: str) -> list[FlowTask]:
     assert isinstance(
         task, FlowTask
     )  # apply_defaults should have converted str to FlowTask

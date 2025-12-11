@@ -8,7 +8,7 @@ from inspect_flow._config.load import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.launch import launch
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.logging import init_flow_logging
 
 
@@ -17,7 +17,7 @@ def load_job(
     *,
     log_level: str | None = None,
     args: dict[str, Any] | None = None,
-) -> FlowJob:
+) -> FlowSpec:
     """Load a job config file.
 
     Args:
@@ -30,7 +30,7 @@ def load_job(
 
 
 def run(
-    job: FlowJob,
+    job: FlowSpec,
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
@@ -61,7 +61,7 @@ def run(
 
 
 def config(
-    job: FlowJob,
+    job: FlowSpec,
     base_dir: str | None = None,
     *,
     log_level: str | None = None,

@@ -65,7 +65,7 @@ class FlowModel(BaseModel, extra="forbid"):
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowSpec.",
     )
 
     base_url: str | None | NotGiven = Field(
@@ -211,7 +211,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: GenerateConfig | NotGiven = Field(
         default=not_given,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
@@ -533,7 +533,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
     )
 
 
-class FlowJob(BaseModel, extra="forbid"):
+class FlowSpec(BaseModel, extra="forbid"):
     """Configuration for a flow job."""
 
     includes: Sequence[str] | None | NotGiven = Field(

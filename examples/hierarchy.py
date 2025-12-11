@@ -1,7 +1,7 @@
 from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowDefaults, FlowJob, FlowModel, FlowTask
+from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     defaults=FlowDefaults(
         config=GenerateConfig(
             temperature=0.0,  # <1>

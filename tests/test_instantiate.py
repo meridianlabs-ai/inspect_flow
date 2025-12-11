@@ -4,10 +4,10 @@ from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
     FlowEpochs,
-    FlowJob,
     FlowModel,
     FlowScorer,
     FlowSolver,
+    FlowSpec,
     FlowTask,
 )
 
@@ -16,10 +16,10 @@ task_name = "tests/local_eval/src/local_eval/noop.py@noop"  # task from a file r
 
 def test_task_not_resolved() -> None:
     for job in [
-        FlowJob(tasks=[task_name]),
-        FlowJob(defaults=FlowDefaults(), tasks=[FlowTask(name=task_name)]),
-        FlowJob(tasks=[FlowTask(name=task_name, model="mockllm/mock-llm")]),
-        FlowJob(tasks=[FlowTask(name=task_name, solver="inspect/solver")]),
+        FlowSpec(tasks=[task_name]),
+        FlowSpec(defaults=FlowDefaults(), tasks=[FlowTask(name=task_name)]),
+        FlowSpec(tasks=[FlowTask(name=task_name, model="mockllm/mock-llm")]),
+        FlowSpec(tasks=[FlowTask(name=task_name, solver="inspect/solver")]),
     ]:
         with pytest.raises(ValueError) as e:
             instantiate_tasks(job=job, base_dir=".")
@@ -27,7 +27,7 @@ def test_task_not_resolved() -> None:
 
 
 def test_missing_model_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, model=FlowModel()),
         ]
@@ -38,7 +38,7 @@ def test_missing_model_name() -> None:
 
 
 def test_missing_scorer_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, scorer=FlowScorer()),
         ]
@@ -49,7 +49,7 @@ def test_missing_scorer_name() -> None:
 
 
 def test_none_scorer() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, scorer=None),
         ]
@@ -60,7 +60,7 @@ def test_none_scorer() -> None:
 
 
 def test_unresolved_solver() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, solver=["inspect/solver"]),
         ]
@@ -71,7 +71,7 @@ def test_unresolved_solver() -> None:
 
 
 def test_missing_solver_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, solver=FlowSolver()),
         ]
@@ -82,7 +82,7 @@ def test_missing_solver_name() -> None:
 
 
 def test_missing_agent_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, solver=FlowAgent()),
         ]
@@ -93,7 +93,7 @@ def test_missing_agent_name() -> None:
 
 
 def test_flow_epochs() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name=task_name, epochs=FlowEpochs(epochs=3, reducer="median")),
         ]
@@ -106,7 +106,7 @@ def test_flow_epochs() -> None:
 
 
 def test_file_not_found() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name="missing_file.py@task_name"),
         ]
@@ -117,7 +117,7 @@ def test_file_not_found() -> None:
 
 
 def test_missing_task_name() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(),
         ]
@@ -128,7 +128,7 @@ def test_missing_task_name() -> None:
 
 
 def test_missing_task() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         tasks=[
             FlowTask(name="unregistered_task"),
         ]

@@ -14,7 +14,7 @@ from datamodel_code_generator import (
     generate,
 )
 
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 
 GenType = Literal["Dict", "MatrixDict"]
 
@@ -189,7 +189,7 @@ class GeneratedCode:
 
 
 def _generate_dict_code() -> GeneratedCode:
-    schema = FlowJob.model_json_schema()
+    schema = FlowSpec.model_json_schema()
     _root_type_as_def(schema)
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]

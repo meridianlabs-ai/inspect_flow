@@ -2,13 +2,13 @@ from pathlib import Path
 
 import yaml
 from deepdiff import DeepDiff
-from inspect_flow import FlowJob
+from inspect_flow import FlowSpec
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 
 update_examples = False
 
 
-def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
+def write_flow_yaml(job: FlowSpec, file_path: Path) -> None:
     with open(file_path, "w") as f:
         yaml.dump(
             job.model_dump(**MODEL_DUMP_ARGS),
@@ -18,7 +18,7 @@ def write_flow_yaml(job: FlowJob, file_path: Path) -> None:
         )
 
 
-def validate_config(job: FlowJob, file_name: str) -> None:
+def validate_config(job: FlowSpec, file_name: str) -> None:
     # Load the example config file
     example_path = Path(__file__).parents[1] / "expected" / file_name
     if not example_path.exists() and update_examples:

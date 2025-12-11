@@ -1,7 +1,7 @@
 from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     tasks=[
         FlowTask(
             name="inspect_evals/gpqa_diamond",

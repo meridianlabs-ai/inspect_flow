@@ -5,10 +5,10 @@ import pytest
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
-    FlowJob,
     FlowModel,
     FlowOptions,
     FlowSolver,
+    FlowSpec,
     FlowTask,
     models_matrix,
     tasks_matrix,
@@ -35,7 +35,7 @@ config_dir = str(Path(__file__).parent / "config")
 
 
 def test_config_one_task() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot")],
@@ -44,7 +44,7 @@ def test_config_one_task() -> None:
 
 
 def test_config_two_tasks() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=[
@@ -56,7 +56,7 @@ def test_config_two_tasks() -> None:
 
 
 def test_config_two_models_one_task() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=tasks_matrix(
@@ -71,7 +71,7 @@ def test_config_two_models_one_task() -> None:
 
 
 def test_config_model_and_task() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
@@ -91,7 +91,7 @@ def test_py_config_with_assign() -> None:
 
 
 def test_config_two_models_two_tasks() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=tasks_matrix(
@@ -103,7 +103,7 @@ def test_config_two_models_two_tasks() -> None:
 
 
 def test_config_model_config() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=tasks_matrix(
@@ -124,7 +124,7 @@ def test_config_model_config() -> None:
 
 
 def test_config_matrix_and_task() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=[
@@ -139,7 +139,7 @@ def test_config_matrix_and_task() -> None:
 
 
 def test_config_nested_matrix() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=tasks_matrix(
@@ -164,7 +164,7 @@ def test_config_nested_matrix() -> None:
 
 
 def test_merge_config():
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="./logs/flow_test",
         options=FlowOptions(limit=1),
         tasks=tasks_with(
@@ -209,7 +209,7 @@ def test_load_config_overrides():
 
 
 def test_overrides_of_lists():
-    config = FlowJob()
+    config = FlowSpec()
     # Within a single override, later values replace earlier ones
     config = _apply_overrides(
         config,
@@ -244,7 +244,7 @@ def test_overrides_of_lists():
 
 
 def test_overrides_of_dicts():
-    config = FlowJob()
+    config = FlowSpec()
     config = _apply_overrides(
         config,
         [
@@ -304,7 +304,7 @@ def test_metadata():
     agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
     solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
     task = FlowTask(name="taskname", flow_metadata={"task": "3"})
-    job = FlowJob(
+    job = FlowSpec(
         tasks=tasks_matrix(
             task=task,
             model=models_to_use,
@@ -316,7 +316,7 @@ def test_metadata():
 
 
 def test_overrides_invalid_config_key():
-    config = FlowJob()
+    config = FlowSpec()
     with pytest.raises(ValueError):
         config = _apply_overrides(
             config,
@@ -329,7 +329,7 @@ def test_overrides_invalid_config_key():
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
     job = expand_job(
-        FlowJob(includes=[include_path]),
+        FlowSpec(includes=[include_path]),
         base_dir=config_dir,
     )
     validate_config(job, "absolute_include_flow.yaml")
@@ -338,7 +338,7 @@ def test_absolute_include() -> None:
 def test_recursive_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "include_flow.py")
     job = expand_job(
-        FlowJob(includes=[include_path]),
+        FlowSpec(includes=[include_path]),
         base_dir=config_dir,
     )
     validate_config(job, "recursive_include_flow.yaml")
@@ -346,7 +346,7 @@ def test_recursive_include() -> None:
 
 def test_multiple_includes() -> None:
     job = expand_job(
-        FlowJob(
+        FlowSpec(
             includes=[
                 "defaults_flow.py",
                 "dependencies_flow.py",
@@ -381,7 +381,7 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_219_include_remove_duplicates() -> None:
     include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
     job = expand_job(
-        FlowJob(
+        FlowSpec(
             includes=[include_path],
             dependencies=FlowDependencies(
                 additional_dependencies=[
@@ -398,7 +398,7 @@ def test_219_include_remove_duplicates() -> None:
 
 
 def test_221_format_map() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="./logs/flow_test",
         options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
         tasks=tasks_matrix(
@@ -418,7 +418,7 @@ def test_221_format_map() -> None:
 
 
 def test_221_format_map_nested() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="{flow_metadata[dir]}/flow_test",
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
@@ -427,7 +427,7 @@ def test_221_format_map_nested() -> None:
 
 
 def test_221_format_map_recursive() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         flow_metadata={
             "one": "{flow_metadata[two]}/a",
             "two": "{flow_metadata[one]}/b",
@@ -446,7 +446,7 @@ def test_221_format_map_file() -> None:
 
 
 def test_257_format_map_not_config() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="logs/",
         env={
             "INSPECT_EVAL_LOG_FILE_PATTERN": "{log_dir}/{task}_{model}_{id}",
@@ -465,7 +465,7 @@ def test_257_format_map_not_config() -> None:
 def test_266_format_map_log_dir_create_unique() -> None:
     log_dir = "logs/flow_test"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    job = FlowJob(
+    job = FlowSpec(
         log_dir=log_dir,
         log_dir_create_unique=True,
         options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
@@ -488,7 +488,7 @@ def test_266_format_map_log_dir_create_unique() -> None:
 
 def test_222_including_jobs_check() -> None:
     include_path = str(Path(__file__).parent / "config" / "including_jobs_flow.py")
-    job = FlowJob(
+    job = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
@@ -496,7 +496,7 @@ def test_222_including_jobs_check() -> None:
     assert job2.options
     assert job2.options.max_samples == 16
 
-    job3 = FlowJob(
+    job3 = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1, max_samples=1024),
     )
@@ -506,7 +506,7 @@ def test_222_including_jobs_check() -> None:
 
 def test_206_dirty_repo_check() -> None:
     include_path = str(Path(__file__).parent / "config" / "dirty_repo_flow.py")
-    job = FlowJob(
+    job = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
@@ -521,7 +521,7 @@ def test_206_dirty_repo_check() -> None:
 
 
 def test_154_cache_policy() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         tasks=[
             FlowTask(
                 name="some_task",
@@ -556,7 +556,7 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
         patch("inspect_flow._config.load.exists") as mock_exists,
     ):
         mock_exists.side_effect = [True, True, False]
-        job = FlowJob(
+        job = FlowSpec(
             log_dir=log_dir,
             log_dir_create_unique=True,
             tasks=["task_name"],
@@ -601,7 +601,7 @@ def test_not_flow_job() -> None:
 
 
 def test_auto_include_protocol() -> None:
-    job1 = FlowJob()
+    job1 = FlowSpec()
     job2 = _apply_auto_includes(
         job1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )

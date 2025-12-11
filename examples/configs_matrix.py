@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, configs_matrix, models_matrix, tasks_matrix
+from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[

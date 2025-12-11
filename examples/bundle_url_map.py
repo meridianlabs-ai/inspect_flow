@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowOptions, FlowTask
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     log_dir="logs/my_eval",
     options=FlowOptions(
         bundle_dir="s3://my-bucket/bundles/my_eval",

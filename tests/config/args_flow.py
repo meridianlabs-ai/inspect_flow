@@ -1,8 +1,8 @@
-from inspect_flow import FlowJob, FlowOptions, FlowTask
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
 
 
-def job(model: str | None = None) -> FlowJob:
-    return FlowJob(
+def job(model: str | None = None) -> FlowSpec:
+    return FlowSpec(
         log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
         tasks=[

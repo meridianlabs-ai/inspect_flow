@@ -1,6 +1,6 @@
-from inspect_flow import FlowDependencies, FlowJob, FlowTask
+from inspect_flow import FlowDependencies, FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     dependencies=FlowDependencies(
         dependency_file="../foo/pyproject.toml",  # <1>
         additional_dependencies=["pandas==2.0.0"],  # <2>

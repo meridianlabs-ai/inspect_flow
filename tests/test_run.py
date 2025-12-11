@@ -13,10 +13,10 @@ from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
-    FlowJob,
     FlowModel,
     FlowOptions,
     FlowSolver,
+    FlowSpec,
     FlowTask,
     models_matrix,
     solvers_matrix,
@@ -36,7 +36,7 @@ def test_task_with_get_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -64,7 +64,7 @@ def test_task_with_two_models() -> None:
     # So can not use a mock
     log_dir = init_test_logs()
 
-    config = FlowJob(
+    config = FlowSpec(
         log_dir=log_dir,
         tasks=tasks_matrix(
             task=task_file + "@noop",
@@ -84,7 +84,7 @@ def test_model_generate_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -114,7 +114,7 @@ def test_default_model_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[FlowTask(name=task_file + "@noop")],
                 )
@@ -134,7 +134,7 @@ def test_task_model() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -159,7 +159,7 @@ def test_task_model() -> None:
 def test_write_config() -> None:
     log_dir = init_test_logs()
 
-    job = FlowJob(
+    job = FlowSpec(
         log_dir=log_dir,
         tasks=[
             FlowTask(
@@ -176,10 +176,10 @@ def test_write_config() -> None:
     config_file = Path(log_dir) / "flow.yaml"
     assert config_file.exists()
 
-    # Read the file, parse the yaml, and convert to FlowJob
+    # Read the file, parse the yaml, and convert to FlowSpec
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-        loaded_job = FlowJob.model_validate(data, extra="forbid")
+        loaded_job = FlowSpec.model_validate(data, extra="forbid")
         assert (
             loaded_job.python_version
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -192,7 +192,7 @@ def test_matrix_args() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
@@ -230,7 +230,7 @@ def test_matrix_model_roles() -> None:
         }
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
@@ -262,7 +262,7 @@ def test_matrix_solvers() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=tasks_matrix(
                         task=FlowTask(
@@ -302,7 +302,7 @@ def test_matrix_solvers() -> None:
 def test_sample_id() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            job=FlowJob(
+            job=FlowSpec(
                 log_dir="logs/flow_test",
                 tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
             ),
@@ -322,7 +322,7 @@ def test_all_tasks_in_file() -> None:
     file = str(task_dir / "three_tasks.py")
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
-            job=FlowJob(
+            job=FlowSpec(
                 log_dir="logs/flow_test",
                 tasks=[file],
             ),
@@ -349,7 +349,7 @@ def test_config_generate_config() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=GenerateConfig(
@@ -400,7 +400,7 @@ def test_config_model_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=GenerateConfig(
@@ -452,7 +452,7 @@ def test_config_model_prefix_default_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=GenerateConfig(
@@ -503,7 +503,7 @@ def test_config_model_default_overrides() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         config=GenerateConfig(
@@ -554,7 +554,7 @@ def test_config_model_prefixes() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         model_prefix={
@@ -601,7 +601,7 @@ def test_task_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         task=FlowTask(model="mockllm/mock-llm"),
@@ -628,7 +628,7 @@ def test_task_defaults() -> None:
 
 
 def test_task_not_given() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         tasks=[
             FlowTask(
@@ -638,7 +638,7 @@ def test_task_not_given() -> None:
         ],
     )
     dump = config_to_yaml(config)
-    job = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+    job = FlowSpec.model_validate(yaml.safe_load(dump), extra="forbid")
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
@@ -653,7 +653,7 @@ def test_task_not_given() -> None:
         assert isinstance(tasks_arg[0], Task)
         assert tasks_arg[0].metadata["subset"] == "original"
 
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         tasks=[
             FlowTask(
@@ -663,7 +663,7 @@ def test_task_not_given() -> None:
         ],
     )
     dump = config_to_yaml(config)
-    job = FlowJob.model_validate(yaml.safe_load(dump), extra="forbid")
+    job = FlowSpec.model_validate(yaml.safe_load(dump), extra="forbid")
 
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
@@ -683,7 +683,7 @@ def test_solver_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         solver=FlowSolver(args={"template": "Default"}),
@@ -715,7 +715,7 @@ def test_agent_defaults() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     defaults=FlowDefaults(
                         agent=FlowAgent(args={"description": "Default Description"}),
@@ -748,7 +748,7 @@ def test_dry_run():
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -770,7 +770,7 @@ def test_task_with_two_model_configs() -> None:
     # So can not use a mock
     log_dir = init_test_logs()
 
-    config = FlowJob(
+    config = FlowSpec(
         log_dir=log_dir,
         tasks=tasks_matrix(
             task=[FlowTask(name=task_file + "@noop")],
@@ -793,7 +793,7 @@ def test_task_with_two_solvers() -> None:
     # So can not use a mock
     log_dir = init_test_logs()
 
-    config = FlowJob(
+    config = FlowSpec(
         log_dir=log_dir,
         tasks=tasks_matrix(
             task=FlowTask(name=task_file + "@noop", model="mockllm/mock-llm"),
@@ -823,7 +823,7 @@ def test_task_with_two_solvers() -> None:
 def test_default_model_roles() -> None:
     default_model_roles = {"grader": "mockllm/default-grader"}
     task_model_roles = {"mark": "mockllm/mark"}
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         defaults=FlowDefaults(
             task=FlowTask(model_roles=default_model_roles),
@@ -850,7 +850,7 @@ def test_default_model_roles() -> None:
 
 
 def test_logs_allow_dirty() -> None:
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         tasks=[
             task_file + "@noop",
@@ -875,7 +875,7 @@ def test_logs_allow_dirty() -> None:
 
 def test_bundle_url_map(capsys) -> None:
     path = Path.cwd().as_posix()
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         options=FlowOptions(
             bundle_dir=path + "logs/bundle_test",
@@ -896,7 +896,7 @@ def test_bundle_url_map(capsys) -> None:
 
 def test_bundle_url_map_no_change(capsys) -> None:
     path = Path.cwd().as_posix()
-    config = FlowJob(
+    config = FlowSpec(
         log_dir="logs/flow_test",
         options=FlowOptions(
             bundle_dir=path + "logs/bundle_test",
@@ -919,7 +919,7 @@ def test_217_bundle_error_message() -> None:
     log_dir = init_test_logs()
 
     bundle_dir = log_dir + "/bundle_test"
-    config = FlowJob(
+    config = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(bundle_dir=bundle_dir),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
@@ -939,7 +939,7 @@ def test_217_bundle_error_message() -> None:
 
 
 def test_prerequisite_error() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="logs/flow_test",
         tasks=[task_file + "@noop", task_file + "@noop"],
     )
@@ -960,7 +960,7 @@ def fail_solver() -> Solver:
 def test_task_failure() -> None:
     log_dir = init_test_logs()
 
-    job = FlowJob(
+    job = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(retry_attempts=0),
         tasks=[FlowTask(name=task_file + "@noop", solver="fail_solver")],
@@ -970,7 +970,7 @@ def test_task_failure() -> None:
 
 
 def test_eval_set_args() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="logs/flow_test",
         options=FlowOptions(
             retry_attempts=7,
@@ -1060,7 +1060,7 @@ async def test_task_with_scorer() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -1100,7 +1100,7 @@ async def test_task_with_scorer_list() -> None:
     with patch("inspect_ai.eval_set") as mock_eval_set:
         _run_eval_set(
             job=(
-                FlowJob(
+                FlowSpec(
                     log_dir="logs/flow_test",
                     tasks=[
                         FlowTask(
@@ -1128,7 +1128,7 @@ async def test_task_with_scorer_list() -> None:
 
 
 def test_no_log_dir() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="",
         tasks=[
             task_file + "@noop",

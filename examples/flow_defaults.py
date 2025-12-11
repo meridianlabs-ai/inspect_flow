@@ -2,13 +2,13 @@ from inspect_ai.model import GenerateConfig
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
-    FlowJob,
     FlowModel,
     FlowSolver,
+    FlowSpec,
     FlowTask,
 )
 
-FlowJob(
+FlowSpec(
     defaults=FlowDefaults(
         config=GenerateConfig(  # <1>
             max_connections=10,  # <1>

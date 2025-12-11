@@ -1,4 +1,4 @@
-from inspect_flow import FlowJob, FlowModel, tasks_matrix
+from inspect_flow import FlowModel, FlowSpec, tasks_matrix
 
 # Define models with metadata about capabilities
 models = [
@@ -14,7 +14,7 @@ long_context_models = [
     m for m in models if (m.flow_metadata or {}).get("context_window", 0) >= 128000
 ]
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task="long_context_task",

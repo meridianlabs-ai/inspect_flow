@@ -14,7 +14,7 @@ from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowJob, not_given
+from inspect_flow._types.flow_types import FlowSpec, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.module_util import execute_file_and_get_last_result
@@ -33,11 +33,11 @@ class ConfigOptions:
 
 @dataclass
 class LoadState:
-    files_to_jobs: dict[str, FlowJob | None] = field(factory=dict)
+    files_to_jobs: dict[str, FlowSpec | None] = field(factory=dict)
     after_flow_job_loaded_funcs: list[Callable] = field(factory=list)
 
 
-def int_load_job(file: str, options: ConfigOptions) -> FlowJob:
+def int_load_job(file: str, options: ConfigOptions) -> FlowSpec:
     state = LoadState()
     file = absolute_file_path(file)
     job = _load_job_from_file(file, args=options.args, state=state)
@@ -50,8 +50,8 @@ def int_load_job(file: str, options: ConfigOptions) -> FlowJob:
 
 
 def expand_job(
-    job: FlowJob, base_dir: str, options: ConfigOptions | None = None
-) -> FlowJob:
+    job: FlowSpec, base_dir: str, options: ConfigOptions | None = None
+) -> FlowSpec:
     options = options or ConfigOptions()
     state = LoadState()
     job = _expand_includes(
@@ -68,7 +68,7 @@ def expand_job(
     return job
 
 
-def _after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
+def _after_flow_job_loaded(job: FlowSpec, state: LoadState) -> None:
     """Run any registered after_flow_job_loaded functions."""
     for func in state.after_flow_job_loaded_funcs:
         sig = inspect.signature(func)
@@ -81,11 +81,11 @@ def _after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
 
 
 def _expand_includes(
-    job: FlowJob,
+    job: FlowSpec,
     state: LoadState,
     base_dir: str = "",
     args: dict[str, Any] | None = None,
-) -> FlowJob:
+) -> FlowSpec:
     """Apply includes in the job config."""
     if args is None:
         args = dict()
@@ -108,7 +108,7 @@ class _JobFormatMapMapping:
         return self.dict.get(key, f"{{{key}}}")
 
 
-def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
+def _apply_substitutions(job: FlowSpec, base_dir: str) -> FlowSpec:
     """Apply any substitutions to the job config."""
     # Issue #266 must resolve the log dir before applying substitutions
     if job.log_dir:
@@ -139,10 +139,10 @@ def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
             return obj
 
     substituted_dict = substitute_strings(job_dict)
-    return FlowJob.model_validate(substituted_dict, extra="forbid")
+    return FlowSpec.model_validate(substituted_dict, extra="forbid")
 
 
-def _resolve_log_dir(job: FlowJob, base_dir: str) -> str:
+def _resolve_log_dir(job: FlowSpec, base_dir: str) -> str:
     assert job.log_dir
     if not job.log_dir_create_unique:
         return job.log_dir
@@ -183,14 +183,14 @@ def _log_dir_create_unique(log_dir: str) -> str:
 
 def _load_job_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
-) -> FlowJob | None:
+) -> FlowSpec | None:
     config_path = Path(absolute_file_path(config_file))
 
     try:
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
                 job, globals = execute_file_and_get_last_result(config_file, args=args)
-                if job is None or isinstance(job, FlowJob):
+                if job is None or isinstance(job, FlowSpec):
                     state.files_to_jobs[config_file] = job
                     state.after_flow_job_loaded_funcs.extend(
                         [
@@ -202,7 +202,7 @@ def _load_job_from_file(
 
                 else:
                     raise TypeError(
-                        f"Expected FlowJob from Python config file, got {type(job)}"
+                        f"Expected FlowSpec from Python config file, got {type(job)}"
                     )
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
@@ -212,7 +212,7 @@ def _load_job_from_file(
                         f"Unsupported config file extension: {config_path.suffix}. "
                         "Supported extensions: .py, .yaml, .yml"
                     )
-                job = FlowJob.model_validate(data, extra="forbid")
+                job = FlowSpec.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         logger.error(e)
@@ -226,11 +226,11 @@ def _load_job_from_file(
     return None
 
 
-def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
+def _apply_include(job: FlowSpec, included_job: FlowSpec) -> FlowSpec:
     job_dict = job.model_dump(**MODEL_DUMP_ARGS)
     include_dict = included_job.model_dump(**MODEL_DUMP_ARGS)
     merged_dict = _deep_merge_include(include_dict, job_dict)
-    return FlowJob.model_validate(merged_dict, extra="forbid")
+    return FlowSpec.model_validate(merged_dict, extra="forbid")
 
 
 def _deep_merge_include(
@@ -252,8 +252,8 @@ def _deep_merge_include(
 
 
 def _apply_auto_includes(
-    job: FlowJob, base_dir: str, options: ConfigOptions, state: LoadState
-) -> FlowJob:
+    job: FlowSpec, base_dir: str, options: ConfigOptions, state: LoadState
+) -> FlowSpec:
     absolute_path = absolute_file_path(base_dir)
     protocol, path = split_protocol(absolute_path)
 
@@ -319,11 +319,11 @@ def _deep_merge_override(
     return base
 
 
-def _apply_overrides(job: FlowJob, overrides: list[str]) -> FlowJob:
+def _apply_overrides(job: FlowSpec, overrides: list[str]) -> FlowSpec:
     overrides_dict = _overrides_to_dict(overrides)
     base_dict = job.model_dump(**MODEL_DUMP_ARGS)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
-    return FlowJob.model_validate(merged_dict, extra="forbid")
+    return FlowSpec.model_validate(merged_dict, extra="forbid")
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

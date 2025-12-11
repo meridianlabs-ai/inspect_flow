@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 from inspect_flow._types.flow_types import NotGiven
 
 
@@ -22,7 +22,7 @@ def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotG
         return task.name if task.name else None, task.model_name
 
 
-def verify_test_logs(job: FlowJob, log_dir: str) -> None:
+def verify_test_logs(job: FlowSpec, log_dir: str) -> None:
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)

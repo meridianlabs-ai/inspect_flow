@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from inspect_flow import FlowJob
+from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_job
 from inspect_flow._config.load import ConfigOptions, int_load_job
 from inspect_flow._launcher.launch import launch
@@ -18,7 +18,7 @@ def test_launch() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            job=FlowJob(log_dir="logs", tasks=["task_name"]),
+            job=FlowSpec(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
         )
 
@@ -47,7 +47,7 @@ def test_launch_no_venv() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            job=FlowJob(log_dir="logs", tasks=["task_name"]),
+            job=FlowSpec(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
             no_venv=True,
         )
@@ -81,7 +81,7 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
         launch(
-            job=FlowJob(
+            job=FlowSpec(
                 log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
@@ -102,7 +102,7 @@ def test_s3() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            job=FlowJob(
+            job=FlowSpec(
                 log_dir=log_dir,
                 tasks=["task_name"],
             ),
@@ -154,7 +154,7 @@ def test_relative_bundle_dir() -> None:
         )
 
     mock_venv.assert_called_once()
-    job: FlowJob = mock_venv.mock_calls[0].args[0]
+    job: FlowSpec = mock_venv.mock_calls[0].args[0]
     absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert job.options
     assert job.options.bundle_dir == absolute_path
@@ -182,7 +182,7 @@ def test_bundle_dir() -> None:
         )
 
     mock_venv.assert_called_once()
-    job: FlowJob = mock_venv.mock_calls[0].args[0]
+    job: FlowSpec = mock_venv.mock_calls[0].args[0]
     absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert job.options
     assert job.options.bundle_dir == absolute_path
@@ -190,7 +190,7 @@ def test_bundle_dir() -> None:
 
 
 def test_259_dot_env() -> None:
-    job = FlowJob(
+    job = FlowSpec(
         log_dir="logs",
         tasks=[
             "local_eval/noop",
@@ -217,7 +217,7 @@ def test_259_dot_env() -> None:
 
 
 def test_no_log_dir() -> None:
-    job = FlowJob()
+    job = FlowSpec()
     with pytest.raises(ValueError) as e:
         launch(
             job=job,

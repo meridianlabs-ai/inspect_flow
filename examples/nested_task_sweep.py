@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowTask, tasks_matrix
+from inspect_flow import FlowSpec, FlowTask, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[

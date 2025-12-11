@@ -5,7 +5,7 @@ from typing import List, Literal
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import run_with_logging
 
@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 
 
 def create_venv(
-    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+    job: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str]
 ) -> None:
     job.python_version = (
         job.python_version
@@ -64,7 +64,7 @@ def _resolve_dependency(dependency: str, base_dir: str) -> str:
 
 
 def _create_venv_with_base_dependencies(
-    job: FlowJob, base_dir: str, temp_dir: str, env: dict[str, str]
+    job: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str]
 ) -> None:
     file_type: Literal["requirements.txt", "pyproject.toml"] | None = None
     file_path: str | None = None
@@ -103,7 +103,7 @@ def _create_venv_with_base_dependencies(
     )
 
 
-def _uv_venv(job: FlowJob, temp_dir: str, env: dict[str, str]) -> None:
+def _uv_venv(job: FlowSpec, temp_dir: str, env: dict[str, str]) -> None:
     """Create a virtual environment using 'uv venv'."""
     assert job.python_version
     run_with_logging(
@@ -123,7 +123,7 @@ def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None
 
 
 def _get_dependency_file(
-    job: FlowJob, base_dir: str
+    job: FlowSpec, base_dir: str
 ) -> tuple[Literal["requirements.txt", "pyproject.toml"], str] | None:
     if job.dependencies and job.dependencies.dependency_file == "no_file":
         return None

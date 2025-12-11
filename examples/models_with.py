@@ -1,7 +1,7 @@
 from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowJob, models_with, tasks_matrix
+from inspect_flow import FlowSpec, models_with, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task="my_task",

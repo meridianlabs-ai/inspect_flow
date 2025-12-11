@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from inspect_flow import FlowJob
+from inspect_flow import FlowSpec
 from inspect_flow._util.module_util import execute_src_and_get_last_result
 from inspect_flow.api import load_job
 
@@ -53,7 +53,7 @@ def test_readme_python_blocks() -> None:
 
     for i, (line_num, code) in enumerate(config_blocks):
         job, _ = execute_src_and_get_last_result(code, f"README.md:line {line_num}", {})
-        assert isinstance(job, FlowJob), (
+        assert isinstance(job, FlowSpec), (
             f"Code block at README.md:line {line_num} did not return an object"
         )
         validate_config(job, f"readme_example_{i + 1}.yaml")

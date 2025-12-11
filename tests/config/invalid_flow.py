@@ -1,13 +1,13 @@
 from inspect_flow import (
     FlowDependencies,
-    FlowJob,
     FlowModel,
     FlowOptions,
+    FlowSpec,
     FlowTask,
     tasks_matrix,
 )
 
-FlowJob(
+FlowSpec(
     invalid_field="Invalid Value",  # type: ignore
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),

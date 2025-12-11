@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowOptions, tasks_with
+from inspect_flow import FlowOptions, FlowSpec, tasks_with
 
-FlowJob(
+FlowSpec(
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),
     tasks=tasks_with(
