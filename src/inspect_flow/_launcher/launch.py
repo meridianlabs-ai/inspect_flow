@@ -5,11 +5,13 @@ import tempfile
 from logging import getLogger
 from pathlib import Path
 
+import yaml
 from dotenv import dotenv_values, find_dotenv
 from inspect_ai._util.file import absolute_file_path
 
-from inspect_flow._launcher.venv import create_venv, write_flow_yaml
+from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -48,10 +50,12 @@ def launch(
 
     if no_venv:
         python_path = sys.executable
-        file = write_flow_yaml(job, ".")
+        file = _write_flow_yaml(job, ".")
         try:
             subprocess.run(
-                [str(python_path), str(run_path), *args], check=True, env=env
+                [str(python_path), str(run_path), "--file", file.as_posix(), *args],
+                check=True,
+                env=env,
             )
         finally:
             file.unlink(missing_ok=True)
@@ -64,9 +68,9 @@ def launch(
         create_venv(job, base_dir=base_dir, temp_dir=temp_dir, env=env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
+        file = _write_flow_yaml(job, temp_dir)
         subprocess.run(
-            [str(python_path), str(run_path), *args],
-            cwd=temp_dir,
+            [str(python_path), str(run_path), "--file", file.as_posix(), *args],
             check=True,
             env=env,
         )
@@ -86,3 +90,15 @@ def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
     finally:
         os.chdir(original_cwd)
     return env
+
+
+def _write_flow_yaml(job: FlowJob, dir: str) -> Path:
+    flow_yaml_path = Path(dir) / "flow.yaml"
+    with open(flow_yaml_path, "w") as f:
+        yaml.dump(
+            job.model_dump(**MODEL_DUMP_ARGS),
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+    return flow_yaml_path

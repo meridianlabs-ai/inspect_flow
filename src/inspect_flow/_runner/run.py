@@ -16,8 +16,8 @@ from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none
 
 
-def _read_config() -> FlowJob:
-    with open("flow.yaml", "r") as f:
+def _read_config(config_file: str) -> FlowJob:
+    with open(config_file, "r") as f:
         data = yaml.safe_load(f)
         return FlowJob.model_validate(data, extra="forbid")
 
@@ -132,6 +132,16 @@ def _print_bundle_url(job: FlowJob) -> None:
 
 @click.group(invoke_without_command=True)
 @click.option(
+    "--file",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+    ),
+)
+@click.option(
     "--base-dir",
     type=str,
     default=False,
@@ -145,12 +155,12 @@ def _print_bundle_url(job: FlowJob) -> None:
     help="Dry run.",
 )
 @click.pass_context
-def flow_run(ctx: click.Context, base_dir: str, dry_run: bool) -> None:
+def flow_run(ctx: click.Context, file: str, base_dir: str, dry_run: bool) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         raise NotImplementedError("Run has no subcommands.")
 
-    cfg = _read_config()
+    cfg = _read_config(file)
     _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
