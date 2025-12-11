@@ -7,7 +7,7 @@ from tests.test_helpers.config_helpers import validate_config
 
 
 def test_258_run_includes() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         includes=["defaults_flow.py"],
         tasks=[
             "local_eval/noop",
@@ -15,20 +15,20 @@ def test_258_run_includes() -> None:
         ],
     )
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        run(spec=job, base_dir="./tests/config/")
+        run(spec=spec, base_dir="./tests/config/")
     mock_launch.assert_called_once()
-    launch_job = mock_launch.mock_calls[0].kwargs["job"]
-    assert launch_job.includes == not_given
-    validate_config(launch_job, "run_includes.yaml")
+    launch_spec = mock_launch.mock_calls[0].kwargs["spec"]
+    assert launch_spec.includes == not_given
+    validate_config(launch_spec, "run_includes.yaml")
 
 
 def test_config() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         tasks=[
             "local_eval/noop",
         ],
     )
-    dump = config(spec=job, base_dir="./tests/config/")
+    dump = config(spec=spec, base_dir="./tests/config/")
     expected_dump = """tasks:
 - name: local_eval/noop
 """

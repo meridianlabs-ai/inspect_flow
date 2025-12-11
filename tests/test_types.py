@@ -90,7 +90,7 @@ def test_task_not_given():
 
 
 def test_agent_from_yaml():
-    job = FlowSpec(
+    spec = FlowSpec(
         tasks=[
             FlowTask(
                 name="module/task",
@@ -98,13 +98,13 @@ def test_agent_from_yaml():
             )
         ]
     )
-    dump = config_to_yaml(job)
-    job2 = FlowSpec.model_validate(yaml.safe_load(dump), extra="forbid")
-    assert job2.tasks
-    assert len(job2.tasks) == 1
-    assert isinstance(job2.tasks[0], FlowTask)
-    assert isinstance(job2.tasks[0].solver, FlowAgent)
-    assert job2 == job
+    dump = config_to_yaml(spec)
+    spec2 = FlowSpec.model_validate(yaml.safe_load(dump), extra="forbid")
+    assert spec2.tasks
+    assert len(spec2.tasks) == 1
+    assert isinstance(spec2.tasks[0], FlowTask)
+    assert isinstance(spec2.tasks[0].solver, FlowAgent)
+    assert spec2 == spec
 
 
 def test_task_none_model_name():

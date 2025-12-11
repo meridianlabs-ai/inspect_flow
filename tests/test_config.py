@@ -76,8 +76,8 @@ def test_config_model_and_task() -> None:
         options=FlowOptions(limit=1),
         tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
     )
-    job = apply_defaults(config)
-    validate_config(job, "model_and_task_flow.yaml")
+    spec = apply_defaults(config)
+    validate_config(spec, "model_and_task_flow.yaml")
 
 
 def test_py_config() -> None:
@@ -306,7 +306,7 @@ def test_metadata():
     agent = FlowAgent(name="agentname", flow_metadata={"agent": "1"})
     solver = FlowSolver(name="solvername", flow_metadata={"solver": "2"})
     task = FlowTask(name="taskname", flow_metadata={"task": "3"})
-    job = FlowSpec(
+    spec = FlowSpec(
         tasks=tasks_matrix(
             task=task,
             model=models_to_use,
@@ -314,7 +314,7 @@ def test_metadata():
         ),
         flow_metadata={"config": "4"},
     )
-    validate_config(job, "metadata_flow.yaml")
+    validate_config(spec, "metadata_flow.yaml")
 
 
 def test_overrides_invalid_config_key():
@@ -330,24 +330,24 @@ def test_overrides_invalid_config_key():
 
 def test_absolute_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
-    job = expand_spec(
+    spec = expand_spec(
         FlowSpec(includes=[include_path]),
         base_dir=config_dir,
     )
-    validate_config(job, "absolute_include_flow.yaml")
+    validate_config(spec, "absolute_include_flow.yaml")
 
 
 def test_recursive_include() -> None:
     include_path = str(Path(__file__).parent / "config" / "include_flow.py")
-    job = expand_spec(
+    spec = expand_spec(
         FlowSpec(includes=[include_path]),
         base_dir=config_dir,
     )
-    validate_config(job, "recursive_include_flow.yaml")
+    validate_config(spec, "recursive_include_flow.yaml")
 
 
 def test_multiple_includes() -> None:
-    job = expand_spec(
+    spec = expand_spec(
         FlowSpec(
             includes=[
                 "defaults_flow.py",
@@ -357,16 +357,16 @@ def test_multiple_includes() -> None:
         ),
         base_dir=config_dir,
     )
-    validate_config(job, "multiple_includes_flow.yaml")
+    validate_config(spec, "multiple_includes_flow.yaml")
 
 
 def test_auto_include() -> None:
-    job = load_spec(
+    spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
         )
     )
-    validate_config(job, "auto_include_flow.yaml")
+    validate_config(spec, "auto_include_flow.yaml")
 
 
 def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -376,13 +376,13 @@ def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(
         flow_file.parent
     )  # Change to sub-directory to test relative includes
-    job = load_spec("model_and_task_flow.py")
-    validate_config(job, "auto_include_flow.yaml")
+    spec = load_spec("model_and_task_flow.py")
+    validate_config(spec, "auto_include_flow.yaml")
 
 
 def test_219_include_remove_duplicates() -> None:
     include_path = str(Path(__file__).parent / "config" / "dependencies_flow.py")
-    job = expand_spec(
+    spec = expand_spec(
         FlowSpec(
             includes=[include_path],
             dependencies=FlowDependencies(
@@ -393,14 +393,14 @@ def test_219_include_remove_duplicates() -> None:
         ),
         base_dir=config_dir,
     )
-    assert job.dependencies
-    assert job.dependencies.additional_dependencies == [
+    assert spec.dependencies
+    assert spec.dependencies.additional_dependencies == [
         "git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670"
     ]  # No duplicates
 
 
 def test_221_format_map() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         log_dir="./logs/flow_test",
         options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
         tasks=tasks_matrix(
@@ -414,41 +414,41 @@ def test_221_format_map() -> None:
             ],
         ),
     )
-    job2 = expand_spec(job, base_dir=".")
-    assert job2.options
-    assert job2.options.bundle_dir == "./logs/flow_test/bundle"
+    spec2 = expand_spec(spec, base_dir=".")
+    assert spec2.options
+    assert spec2.options.bundle_dir == "./logs/flow_test/bundle"
 
 
 def test_221_format_map_nested() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         log_dir="{flow_metadata[dir]}/flow_test",
         flow_metadata={"root": "tests", "dir": "{flow_metadata[root]}/logs"},
     )
-    job2 = expand_spec(job, base_dir=".")
-    assert job2.log_dir == "tests/logs/flow_test"
+    spec2 = expand_spec(spec, base_dir=".")
+    assert spec2.log_dir == "tests/logs/flow_test"
 
 
 def test_221_format_map_recursive() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         flow_metadata={
             "one": "{flow_metadata[two]}/a",
             "two": "{flow_metadata[one]}/b",
         },
     )
     with pytest.raises(ValueError):
-        expand_spec(job, base_dir=".")
+        expand_spec(spec, base_dir=".")
 
 
 def test_221_format_map_file() -> None:
     include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
-    job = load_spec(include_path)
-    assert job.options
-    assert job.options.bundle_dir == "logs/bundle_flow/bundle"
-    validate_config(job, "bundle_flow.yaml")
+    spec = load_spec(include_path)
+    assert spec.options
+    assert spec.options.bundle_dir == "logs/bundle_flow/bundle"
+    validate_config(spec, "bundle_flow.yaml")
 
 
 def test_257_format_map_not_config() -> None:
-    job = FlowSpec(
+    spec = FlowSpec(
         log_dir="logs/",
         env={
             "INSPECT_EVAL_LOG_FILE_PATTERN": "{log_dir}/{task}_{model}_{id}",
@@ -458,16 +458,16 @@ def test_257_format_map_not_config() -> None:
             model="openai/gpt-4o-mini",
         ),
     )
-    job2 = expand_spec(job, base_dir=".")
-    assert job2.log_dir == "logs/"
-    assert job2.env
-    assert job2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
+    spec2 = expand_spec(spec, base_dir=".")
+    assert spec2.log_dir == "logs/"
+    assert spec2.env
+    assert spec2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
 
 
 def test_266_format_map_log_dir_create_unique() -> None:
     log_dir = "logs/flow_test"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    job = FlowSpec(
+    spec = FlowSpec(
         log_dir=log_dir,
         log_dir_create_unique=True,
         options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
@@ -482,33 +482,33 @@ def test_266_format_map_log_dir_create_unique() -> None:
             ],
         ),
     )
-    job2 = expand_spec(job, base_dir=".")
-    assert job2.log_dir != log_dir
-    assert job2.options
-    assert job2.options.bundle_dir == f"{job2.log_dir}/bundle"
+    spec2 = expand_spec(spec, base_dir=".")
+    assert spec2.log_dir != log_dir
+    assert spec2.options
+    assert spec2.options.bundle_dir == f"{spec2.log_dir}/bundle"
 
 
-def test_222_including_jobs_check() -> None:
-    include_path = str(Path(__file__).parent / "config" / "including_jobs_flow.py")
-    job = FlowSpec(
+def test_222_including_specs_check() -> None:
+    include_path = str(Path(__file__).parent / "config" / "including_specs_flow.py")
+    spec = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
-    job2 = expand_spec(job, base_dir=config_dir)
-    assert job2.options
-    assert job2.options.max_samples == 16
+    spec2 = expand_spec(spec, base_dir=config_dir)
+    assert spec2.options
+    assert spec2.options.max_samples == 16
 
-    job3 = FlowSpec(
+    spec3 = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1, max_samples=1024),
     )
     with pytest.raises(ValueError):
-        expand_spec(job3, base_dir=config_dir)
+        expand_spec(spec3, base_dir=config_dir)
 
 
 def test_206_dirty_repo_check() -> None:
     include_path = str(Path(__file__).parent / "config" / "dirty_repo_flow.py")
-    job = FlowSpec(
+    spec = FlowSpec(
         includes=[include_path],
         options=FlowOptions(limit=1),
     )
@@ -517,7 +517,7 @@ def test_206_dirty_repo_check() -> None:
     dirty_file.touch()
     try:
         with pytest.raises(RuntimeError):
-            job = expand_spec(job, base_dir=Path(include_path).parent.as_posix())
+            spec = expand_spec(spec, base_dir=Path(include_path).parent.as_posix())
     finally:
         dirty_file.unlink()
 
@@ -558,13 +558,13 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
         patch("inspect_flow._config.load.exists") as mock_exists,
     ):
         mock_exists.side_effect = [True, True, False]
-        job = FlowSpec(
+        spec = FlowSpec(
             log_dir=log_dir,
             log_dir_create_unique=True,
             tasks=["task_name"],
         )
-        job2 = _apply_substitutions(job, base_dir=Path.cwd().resolve().as_posix())
-        assert job2.log_dir == f"{log_dir}_2"
+        spec2 = _apply_substitutions(spec, base_dir=Path.cwd().resolve().as_posix())
+        assert spec2.log_dir == f"{log_dir}_2"
     assert mock_exists.call_count == 3
 
 
@@ -575,7 +575,7 @@ def test_load_invalid() -> None:
     assert getattr(e.value, "_flow_handled", False) is True
 
 
-def test_load_no_job() -> None:
+def test_load_no_spec() -> None:
     config_path = str(Path(config_dir) / "dirty_repo_flow.py")
     with pytest.raises(ValueError) as e:
         load_spec(config_path)
@@ -584,8 +584,8 @@ def test_load_no_job() -> None:
 
 def test_load_yaml() -> None:
     config_path = str(Path(__file__).parent / "expected" / "first_config.yaml")
-    job = load_spec(config_path)
-    validate_config(job, "first_config.yaml")
+    spec = load_spec(config_path)
+    validate_config(spec, "first_config.yaml")
 
 
 def test_unsupported_format() -> None:
@@ -595,7 +595,7 @@ def test_unsupported_format() -> None:
     assert "Unsupported config file extension: .toml" in str(e.value)
 
 
-def test_not_flow_job() -> None:
+def test_not_flow_spec() -> None:
     config_path = str(Path(config_dir) / "not_flow.py")
     with pytest.raises(TypeError) as e:
         load_spec(config_path)
@@ -603,8 +603,8 @@ def test_not_flow_job() -> None:
 
 
 def test_auto_include_protocol() -> None:
-    job1 = FlowSpec()
-    job2 = _apply_auto_includes(
-        job1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
+    spec1 = FlowSpec()
+    spec2 = _apply_auto_includes(
+        spec1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )
-    assert job1 == job2
+    assert spec1 == spec2

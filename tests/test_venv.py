@@ -107,7 +107,7 @@ def test_auto_dependency() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowSpec(
+            spec = FlowSpec(
                 tasks=[
                     FlowTask(
                         name="inspect_evals2/task_name",
@@ -136,14 +136,14 @@ def test_auto_dependency() -> None:
                 ]
             )
             # Add a string task to test that code path
-            assert isinstance(job.tasks, list)
-            job.tasks.append("inspect_evals/task_name")
+            assert isinstance(spec.tasks, list)
+            spec.tasks.append("inspect_evals/task_name")
             # Add a string solver to test that code path
-            assert isinstance(job.tasks[0], FlowTask)
-            job.tasks[0].solver = "solver_package/solver_name"
+            assert isinstance(spec.tasks[0], FlowTask)
+            spec.tasks[0].solver = "solver_package/solver_name"
 
             create_venv(
-                spec=job,
+                spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
@@ -176,7 +176,7 @@ def test_no_auto_dependency() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowSpec(
+            spec = FlowSpec(
                 dependencies=FlowDependencies(auto_detect_dependencies=False),
                 tasks=[
                     FlowTask(
@@ -189,7 +189,7 @@ def test_no_auto_dependency() -> None:
             )
 
             create_venv(
-                spec=job,
+                spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
@@ -212,7 +212,7 @@ def test_no_file() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            job = FlowSpec(
+            spec = FlowSpec(
                 dependencies=FlowDependencies(dependency_file="no_file"),
                 tasks=[
                     FlowTask(
@@ -225,7 +225,7 @@ def test_no_file() -> None:
             )
 
             create_venv(
-                spec=job,
+                spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),

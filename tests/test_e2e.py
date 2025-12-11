@@ -38,9 +38,9 @@ def test_local_e2e() -> None:
 
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
-    loaded_job = FlowSpec.model_validate(data, extra="forbid")
+    loaded_spec = FlowSpec.model_validate(data, extra="forbid")
     # The python_version should match the current version
     assert (
-        loaded_job.python_version
+        loaded_spec.python_version
         == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )

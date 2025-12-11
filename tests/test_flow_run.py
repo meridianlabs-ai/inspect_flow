@@ -27,8 +27,8 @@ def test_run_command_overrides() -> None:
         assert result.exit_code == 0
         data = yaml.safe_load(result.stdout)
 
-        output_job = FlowSpec.model_validate(data, extra="forbid")
-        assert output_job == FlowSpec(
+        output_spec = FlowSpec.model_validate(data, extra="forbid")
+        assert output_spec == FlowSpec(
             python_version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
             tasks=[],
         )

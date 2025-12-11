@@ -46,17 +46,19 @@ def test_readme_python_blocks() -> None:
         "Unexpected number of Python code blocks found in README.md"
     )
 
-    # Filter out blocks that call run() - these execute jobs rather than just defining them
+    # Filter out blocks that call run() - these execute specs rather than just defining them
     config_blocks = [
         (line_num, code) for line_num, code in blocks if "run(" not in code
     ]
 
     for i, (line_num, code) in enumerate(config_blocks):
-        job, _ = execute_src_and_get_last_result(code, f"README.md:line {line_num}", {})
-        assert isinstance(job, FlowSpec), (
+        spec, _ = execute_src_and_get_last_result(
+            code, f"README.md:line {line_num}", {}
+        )
+        assert isinstance(spec, FlowSpec), (
             f"Code block at README.md:line {line_num} did not return an object"
         )
-        validate_config(job, f"readme_example_{i + 1}.yaml")
+        validate_config(spec, f"readme_example_{i + 1}.yaml")
 
 
 def test_examples() -> None:
@@ -72,8 +74,8 @@ def test_examples() -> None:
             continue
 
         try:
-            job = load_spec(str(file))
-            validate_config(job, f"{file.stem}.yaml")
+            spec = load_spec(str(file))
+            validate_config(spec, f"{file.stem}.yaml")
         except Exception as e:
             raise AssertionError(
                 f"Failed testing config: {file.name}\nSource file: {file}"
@@ -91,8 +93,8 @@ def test_dirty_git_check() -> None:
     mock_result.stdout = ""
 
     with patch("subprocess.run", return_value=mock_result):
-        job = load_spec(str(config_path))
-        validate_config(job, "dirty_git_check_flow.yaml")
+        spec = load_spec(str(config_path))
+        validate_config(spec, "dirty_git_check_flow.yaml")
 
     # Mock subprocess.run to return output indicating uncommitted changes
     mock_result = MagicMock()
@@ -110,8 +112,8 @@ def test_lock() -> None:
     config_path = lock_dir / "including" / "config.py"
 
     if lock_dir.exists():
-        job = load_spec(str(lock_dir / "_flow.py"))
-        validate_config(job, "lock_flow.yaml")
+        spec = load_spec(str(lock_dir / "_flow.py"))
+        validate_config(spec, "lock_flow.yaml")
 
     if config_path.exists():
         with pytest.raises(ValueError, match="Do not override max_samples"):
