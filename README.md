@@ -18,13 +18,13 @@
 | src/inspect\_flow/\_config/write.py                |        5 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/\_\_init\_\_.py       |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/auto\_dependencies.py |       66 |        0 |    100.00% |           |
-| src/inspect\_flow/\_launcher/launch.py             |       50 |        0 |    100.00% |           |
+| src/inspect\_flow/\_launcher/launch.py             |       58 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       66 |       26 |     60.61% |17-21, 74-75, 82-92, 102-119 |
-| src/inspect\_flow/\_launcher/venv.py               |       94 |        0 |    100.00% |           |
+| src/inspect\_flow/\_launcher/venv.py               |       86 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/instantiate.py          |      103 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/resolve.py              |       50 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |       64 |        0 |    100.00% |           |
+| src/inspect\_flow/\_runner/run.py                  |       65 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        5 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       61 |        0 |    100.00% |           |
@@ -43,7 +43,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |    100.00% |           |
-|                                          **TOTAL** | **1600** |   **26** | **98.38%** |           |
+|                                          **TOTAL** | **1601** |   **26** | **98.38%** |           |
 
 
 ## Setup coverage badge

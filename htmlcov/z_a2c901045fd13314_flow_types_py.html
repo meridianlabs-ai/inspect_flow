@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_a2c901045fd13314_generated_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-10 22:20 +0000
+            created at 2025-12-11 19:06 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -147,7 +147,7 @@
     <p class="pln"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">    <span class="nam">config</span><span class="op">:</span> <span class="nam">GenerateConfig</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="nam">not_given</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Configuration for model. Config values will be override settings on the FlowTask and FlowJob."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t69" href="#t69">69</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t70" href="#t70">70</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">    <span class="nam">base_url</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -293,7 +293,7 @@
     <p class="pln"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">    <span class="nam">config</span><span class="op">:</span> <span class="nam">GenerateConfig</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="nam">not_given</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">    <span class="nam">model_roles</span><span class="op">:</span> <span class="nam">ModelRolesConfig</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -615,8 +615,8 @@
     <p class="run run2"><span class="n"><a id="t533" href="#t533">533</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t534" href="#t534">534</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t535" href="#t535">535</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t536" href="#t536">536</a></span><span class="t"><span class="key">class</span> <span class="nam">FlowJob</span><span class="op">(</span><span class="nam">BaseModel</span><span class="op">,</span> <span class="nam">extra</span><span class="op">=</span><span class="str">"forbid"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t537" href="#t537">537</a></span><span class="t">    <span class="str">"""Configuration for a flow job."""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t536" href="#t536">536</a></span><span class="t"><span class="key">class</span> <span class="nam">FlowSpec</span><span class="op">(</span><span class="nam">BaseModel</span><span class="op">,</span> <span class="nam">extra</span><span class="op">=</span><span class="str">"forbid"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t537" href="#t537">537</a></span><span class="t">    <span class="str">"""Top-level flow specification."""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t538" href="#t538">538</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t539" href="#t539">539</a></span><span class="t">    <span class="nam">includes</span><span class="op">:</span> <span class="nam">Sequence</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t540" href="#t540">540</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="nam">not_given</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -625,7 +625,7 @@
     <p class="pln"><span class="n"><a id="t543" href="#t543">543</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t544" href="#t544">544</a></span><span class="t">    <span class="nam">log_dir</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t545" href="#t545">545</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="nam">not_given</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t546" href="#t546">546</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t546" href="#t546">546</a></span><span class="t">        <span class="nam">description</span><span class="op">=</span><span class="str">"Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t547" href="#t547">547</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t548" href="#t548">548</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t549" href="#t549">549</a></span><span class="t">    <span class="nam">log_dir_create_unique</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">|</span> <span class="key">None</span> <span class="op">|</span> <span class="nam">NotGiven</span> <span class="op">=</span> <span class="nam">Field</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -673,7 +673,7 @@
             <a class="nav" href="z_a2c901045fd13314_generated_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-10 22:20 +0000
+            created at 2025-12-11 19:06 +0000
         </p>
     </div>
 </footer>
