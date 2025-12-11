@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from inspect_flow import FlowSpec
 from inspect_flow._util.module_util import execute_src_and_get_last_result
-from inspect_flow.api import load_job
+from inspect_flow.api import load_spec
 
 from tests.test_helpers.config_helpers import validate_config
 
@@ -72,7 +72,7 @@ def test_examples() -> None:
             continue
 
         try:
-            job = load_job(str(file))
+            job = load_spec(str(file))
             validate_config(job, f"{file.stem}.yaml")
         except Exception as e:
             raise AssertionError(
@@ -91,7 +91,7 @@ def test_dirty_git_check() -> None:
     mock_result.stdout = ""
 
     with patch("subprocess.run", return_value=mock_result):
-        job = load_job(str(config_path))
+        job = load_spec(str(config_path))
         validate_config(job, "dirty_git_check_flow.yaml")
 
     # Mock subprocess.run to return output indicating uncommitted changes
@@ -100,7 +100,7 @@ def test_dirty_git_check() -> None:
 
     with patch("subprocess.run", return_value=mock_result):
         with pytest.raises(RuntimeError, match="has uncommitted changes"):
-            load_job(str(config_path))
+            load_spec(str(config_path))
 
 
 def test_lock() -> None:
@@ -110,9 +110,9 @@ def test_lock() -> None:
     config_path = lock_dir / "including" / "config.py"
 
     if lock_dir.exists():
-        job = load_job(str(lock_dir / "_flow.py"))
+        job = load_spec(str(lock_dir / "_flow.py"))
         validate_config(job, "lock_flow.yaml")
 
     if config_path.exists():
         with pytest.raises(ValueError, match="Do not override max_samples"):
-            load_job(str(config_path))
+            load_spec(str(config_path))

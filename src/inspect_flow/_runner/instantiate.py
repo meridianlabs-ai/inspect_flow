@@ -38,10 +38,10 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def instantiate_tasks(job: FlowSpec, base_dir: str) -> list[Task]:
+def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     return [
-        _instantiate_task(job, task_config, base_dir=base_dir)
-        for task_config in job.tasks or []
+        _instantiate_task(spec, task_config, base_dir=base_dir)
+        for task_config in spec.tasks or []
     ]
 
 
@@ -118,9 +118,9 @@ def _create_solver(
     return [_create_single_solver(single_solver) for single_solver in solver]
 
 
-def _instantiate_task(job: FlowSpec, flow_task: str | FlowTask, base_dir: str) -> Task:
+def _instantiate_task(spec: FlowSpec, flow_task: str | FlowTask, base_dir: str) -> Task:
     if (
-        job.defaults
+        spec.defaults
         or not isinstance(flow_task, FlowTask)
         or isinstance(flow_task.model, str)
         or isinstance(flow_task.solver, str)

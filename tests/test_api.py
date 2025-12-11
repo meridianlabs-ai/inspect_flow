@@ -15,7 +15,7 @@ def test_258_run_includes() -> None:
         ],
     )
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        run(job=job, base_dir="./tests/config/")
+        run(spec=job, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_job = mock_launch.mock_calls[0].kwargs["job"]
     assert launch_job.includes == not_given
@@ -28,7 +28,7 @@ def test_config() -> None:
             "local_eval/noop",
         ],
     )
-    dump = config(job=job, base_dir="./tests/config/")
+    dump = config(spec=job, base_dir="./tests/config/")
     expected_dump = """tasks:
 - name: local_eval/noop
 """

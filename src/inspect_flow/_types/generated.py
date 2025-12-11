@@ -522,12 +522,12 @@ class ResponseSchemaDict(TypedDict):
 
 
 class FlowSpecDict(TypedDict):
-    """Configuration for a flow job."""
+    """Top-level flow specification."""
 
     includes: NotRequired[Optional[Union[Sequence[str], NotGiven]]]
     """List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically."""
     log_dir: NotRequired[Optional[Union[str, NotGiven]]]
-    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
     log_dir_create_unique: NotRequired[Optional[Union[bool, NotGiven]]]
     """If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False."""
     python_version: NotRequired[Optional[Union[str, NotGiven]]]

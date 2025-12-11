@@ -7,7 +7,7 @@ from inspect_ai.log import EvalLog
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
-from inspect_flow._runner.resolve import resolve_job
+from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
@@ -22,17 +22,17 @@ def _read_config(config_file: str) -> FlowSpec:
         return FlowSpec.model_validate(data, extra="forbid")
 
 
-def _write_config_file(job: FlowSpec) -> None:
-    filename = f"{job.log_dir}/flow.yaml"
-    yaml = config_to_yaml(job)
+def _write_config_file(spec: FlowSpec) -> None:
+    filename = f"{spec.log_dir}/flow.yaml"
+    yaml = config_to_yaml(spec)
     with file(filename, "w") as f:
         f.write(yaml)
 
 
 def _run_eval_set(
-    job: FlowSpec, base_dir: str, dry_run: bool = False
+    spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
-    resolved_config = resolve_job(job, base_dir=base_dir)
+    resolved_config = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
 
     if dry_run:
@@ -42,7 +42,7 @@ def _run_eval_set(
 
     options = resolved_config.options or FlowOptions()
     if not resolved_config.log_dir:
-        raise ValueError("log_dir must be set before running the flow job")
+        raise ValueError("log_dir must be set before running the flow spec")
 
     _write_config_file(resolved_config)
 
@@ -121,12 +121,12 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
         e.args = (modified_message, *e.args[1:])
 
 
-def _print_bundle_url(job: FlowSpec) -> None:
-    if job.options and job.options.bundle_url_mappings and job.options.bundle_dir:
-        bundle_url = job.options.bundle_dir
-        for local, url in job.options.bundle_url_mappings.items():
+def _print_bundle_url(spec: FlowSpec) -> None:
+    if spec.options and spec.options.bundle_url_mappings and spec.options.bundle_dir:
+        bundle_url = spec.options.bundle_dir
+        for local, url in spec.options.bundle_url_mappings.items():
             bundle_url = bundle_url.replace(local, url)
-        if bundle_url != job.options.bundle_dir:
+        if bundle_url != spec.options.bundle_dir:
             click.echo(f"Bundle URL: {bundle_url}")
 
 

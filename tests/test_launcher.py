@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow import FlowSpec
-from inspect_flow._api.api import load_job
-from inspect_flow._config.load import ConfigOptions, int_load_job
+from inspect_flow._api.api import load_spec
+from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
 
 CREATE_VENV_RUN_CALLS = 3
@@ -18,7 +18,7 @@ def test_launch() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            job=FlowSpec(log_dir="logs", tasks=["task_name"]),
+            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
         )
 
@@ -47,7 +47,7 @@ def test_launch_no_venv() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            job=FlowSpec(log_dir="logs", tasks=["task_name"]),
+            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
             no_venv=True,
         )
@@ -81,7 +81,7 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
         launch(
-            job=FlowSpec(
+            spec=FlowSpec(
                 log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
@@ -102,7 +102,7 @@ def test_s3() -> None:
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
         launch(
-            job=FlowSpec(
+            spec=FlowSpec(
                 log_dir=log_dir,
                 tasks=["task_name"],
             ),
@@ -118,11 +118,11 @@ def test_config_relative_log_dir() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        job = load_job("./tests/config/e2e_test_flow.py")
+        job = load_spec("./tests/config/e2e_test_flow.py")
         assert job.log_dir
         expected_log_dir = Path("./tests/config/") / job.log_dir
         launch(
-            job=job,
+            spec=job,
             base_dir="./tests/config/",
         )
 
@@ -139,7 +139,7 @@ def test_relative_bundle_dir() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        job = int_load_job(
+        job = int_load_spec(
             "./tests/config/e2e_test_flow.py",
             options=ConfigOptions(
                 overrides=[
@@ -149,7 +149,7 @@ def test_relative_bundle_dir() -> None:
             ),
         )
         launch(
-            job=job,
+            spec=job,
             base_dir="tests/config/",
         )
 
@@ -168,7 +168,7 @@ def test_bundle_dir() -> None:
         patch("subprocess.run") as mock_run,
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        job = int_load_job(
+        job = int_load_spec(
             "./tests/config/e2e_test_flow.py",
             options=ConfigOptions(
                 overrides=[
@@ -177,7 +177,7 @@ def test_bundle_dir() -> None:
             ),
         )
         launch(
-            job=job,
+            spec=job,
             base_dir="tests/config/",
         )
 
@@ -201,7 +201,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        launch(job=job, base_dir="./tests/config/")
+        launch(spec=job, base_dir="./tests/config/")
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert launch_env["TEST_ENV_VAR"] == "test_value"
@@ -210,7 +210,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
     ):
-        launch(job=job, base_dir="./tests/config/", no_dotenv=True)
+        launch(spec=job, base_dir="./tests/config/", no_dotenv=True)
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert "TEST_ENV_VAR" not in launch_env
@@ -220,7 +220,7 @@ def test_no_log_dir() -> None:
     job = FlowSpec()
     with pytest.raises(ValueError) as e:
         launch(
-            job=job,
+            spec=job,
             base_dir=".",
         )
     assert "log_dir must be set" in str(e.value)

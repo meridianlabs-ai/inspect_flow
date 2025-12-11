@@ -8,7 +8,7 @@ title: inspect_flow
 ### FlowDefaults
 ### FlowDependencies
 ### FlowEpochs
-### FlowJob
+### FlowSpec
 ### FlowModel
 ### FlowOptions
 ### FlowScorer

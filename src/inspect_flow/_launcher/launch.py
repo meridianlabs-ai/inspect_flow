@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 
 def launch(
-    job: FlowSpec,
+    spec: FlowSpec,
     base_dir: str,
     no_dotenv: bool = False,
     run_args: list[str] | None = None,
@@ -26,31 +26,31 @@ def launch(
 ) -> None:
     env = _get_env(base_dir, no_dotenv)
 
-    if not job.log_dir:
-        raise ValueError("log_dir must be set before launching the flow job")
-    job.log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
+    if not spec.log_dir:
+        raise ValueError("log_dir must be set before launching the flow spec")
+    spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
 
-    if job.options and job.options.bundle_dir:
+    if spec.options and spec.options.bundle_dir:
         # Ensure bundle_dir and bundle_url_mappings are absolute paths
-        job.options.bundle_dir = absolute_path_relative_to(
-            job.options.bundle_dir, base_dir=base_dir
+        spec.options.bundle_dir = absolute_path_relative_to(
+            spec.options.bundle_dir, base_dir=base_dir
         )
-        if job.options.bundle_url_mappings:
-            job.options.bundle_url_mappings = {
+        if spec.options.bundle_url_mappings:
+            spec.options.bundle_url_mappings = {
                 absolute_path_relative_to(k, base_dir=base_dir): v
-                for k, v in job.options.bundle_url_mappings.items()
+                for k, v in spec.options.bundle_url_mappings.items()
             }
-    logger.info(f"Using log_dir: {job.log_dir}")
+    logger.info(f"Using log_dir: {spec.log_dir}")
 
     run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
     base_dir = absolute_file_path(base_dir)
     args = ["--base-dir", base_dir] + (run_args or [])
-    if job.env:
-        env.update(**job.env)
+    if spec.env:
+        env.update(**spec.env)
 
     if no_venv:
         python_path = sys.executable
-        file = _write_flow_yaml(job, ".")
+        file = _write_flow_yaml(spec, ".")
         try:
             subprocess.run(
                 [str(python_path), str(run_path), "--file", file.as_posix(), *args],
@@ -65,10 +65,10 @@ def launch(
         # Set the virtual environment so that it will be created in the temp directory
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
 
-        create_venv(job, base_dir=base_dir, temp_dir=temp_dir, env=env)
+        create_venv(spec, base_dir=base_dir, temp_dir=temp_dir, env=env)
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
-        file = _write_flow_yaml(job, temp_dir)
+        file = _write_flow_yaml(spec, temp_dir)
         subprocess.run(
             [str(python_path), str(run_path), "--file", file.as_posix(), *args],
             check=True,
@@ -92,11 +92,11 @@ def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
     return env
 
 
-def _write_flow_yaml(job: FlowSpec, dir: str) -> Path:
+def _write_flow_yaml(spec: FlowSpec, dir: str) -> Path:
     flow_yaml_path = Path(dir) / "flow.yaml"
     with open(flow_yaml_path, "w") as f:
         yaml.dump(
-            job.model_dump(**MODEL_DUMP_ARGS),
+            spec.model_dump(**MODEL_DUMP_ARGS),
             f,
             default_flow_style=False,
             sort_keys=False,

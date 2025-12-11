@@ -5,7 +5,7 @@ tbl-colwidths: [30,70]
 
 Inspect Flow provides powerful mechanisms to avoid repetition and share configuration across evaluations. This page covers:
 
-- **FlowDefaults** - Setting default values within a job that cascade across tasks, models, solvers, and agents
+- **FlowDefaults** - Setting default values within a spec that cascade across tasks, models, solvers, and agents
 - **Config Inheritance** - Reusing and composing configurations across multiple files
 - **CLI Overrides** - Overriding any config value at runtime
 
@@ -91,15 +91,15 @@ Inspect Flow automatically discovers and includes files named `_flow.py` in pare
 This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes.
 
 ::: callout-note
-When using `run()` from the Python API to run the `FlowJob` directly instead of the command line, the `base_dir` argument is used as the starting point for searching upward through the directory tree, rather than the config file's location.
+When using `run()` from the Python API to run the `FlowSpec` directly instead of the command line, the `base_dir` argument is used as the starting point for searching upward through the directory tree, rather than the config file's location.
 :::
 
 ### Includes
 
-Use the `includes` field to explicitly merge other config files into your job:
+Use the `includes` field to explicitly merge other config files into your spec:
 
 ```python
-FlowJob(
+FlowSpec(
     includes=["../foo/other_config.py"],
     log_dir="logs",
     tasks=["my_task"]
@@ -121,7 +121,7 @@ Includes are processed sequentially in the order they appear. Each included file
 **Priority order** (highest to lowest):
 
 ``` {.python filename="config.py"}
-FlowJob(
+FlowSpec(
     includes=["defaults.py", "shared.py", "path.py"],
     ...
 )
@@ -246,8 +246,8 @@ flow run config.py
 | `INSPECT_FLOW_LOG_LEVEL`              | `--log-level`              | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level.   |
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
-| `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to job functions in the config file (can be multiple)      |
-| `INSPECT_FLOW_NO_VENV`                | `--no-venv`                | Do not create a virtual environment to run the Flow job |
+| `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
+| `INSPECT_FLOW_NO_VENV`                | `--no-venv`                | Do not create a virtual environment to run the Flow spec |
 | `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Create virtual environment and print resolved YAML configuration |
 
 ::: callout-tip
@@ -255,14 +255,14 @@ flow run config.py
 
 Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 
-**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_NO_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowJob`.
+**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_NO_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowSpec`.
 
 **Settings with multiple override levels**:
 
 Priority order for `log-dir`, `log-dir-create-unique` and `limit`:
 
-1.  `FlowJob` defaults
-2.  Explicit setting on the `FlowJob`
+1.  `FlowSpec` defaults
+2.  Explicit setting on the `FlowSpec`
 3.  `INSPECT_FLOW_SET_` environment variables
 4.  CLI `--set` flags
 5.  `INSPECT_FLOW_LOG_DIR`, `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` and `INSPECT_FLOW_LIMIT` environment variables
@@ -270,8 +270,8 @@ Priority order for `log-dir`, `log-dir-create-unique` and `limit`:
 
 Priority order for all other settings:
 
-1.  `FlowJob` defaults
-2.  Explicit setting on the `FlowJob`
+1.  `FlowSpec` defaults
+2.  Explicit setting on the `FlowSpec`
 3.  `INSPECT_FLOW_SET_` environment variables
 4.  CLI `--set` flags
 :::

@@ -48,10 +48,10 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
 }
 
 
-def collect_auto_dependencies(job: FlowSpec) -> list[str]:
+def collect_auto_dependencies(spec: FlowSpec) -> list[str]:
     result = set()
 
-    for task in job.tasks or []:
+    for task in spec.tasks or []:
         _collect_task_dependencies(task, result)
 
     # inspect_ai is already included by inspect-flow

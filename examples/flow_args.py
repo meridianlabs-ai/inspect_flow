@@ -7,7 +7,7 @@ all_tasks = [
 ]
 
 
-def job(task_min_priority: int = 1) -> FlowSpec:
+def spec(task_min_priority: int = 1) -> FlowSpec:
     return FlowSpec(
         log_dir="logs",
         tasks=[

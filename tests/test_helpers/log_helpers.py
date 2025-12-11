@@ -22,16 +22,16 @@ def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotG
         return task.name if task.name else None, task.model_name
 
 
-def verify_test_logs(job: FlowSpec, log_dir: str) -> None:
+def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
-    assert len(log_list) == len(job.tasks or [])
+    assert len(log_list) == len(spec.tasks or [])
     logs = [read_eval_log(log) for log in log_list]
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
     assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [_task_and_model(task) for task in job.tasks or []]
+        [_task_and_model(task) for task in spec.tasks or []]
     )

@@ -22,7 +22,7 @@ def test_task_not_resolved() -> None:
         FlowSpec(tasks=[FlowTask(name=task_name, solver="inspect/solver")]),
     ]:
         with pytest.raises(ValueError) as e:
-            instantiate_tasks(job=job, base_dir=".")
+            instantiate_tasks(spec=job, base_dir=".")
         assert "config must be resolved before calling instantiate_task" in str(e.value)
 
 
@@ -33,7 +33,7 @@ def test_missing_model_name() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Model name is required." in str(e.value)
 
 
@@ -44,7 +44,7 @@ def test_missing_scorer_name() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Scorer name is required." in str(e.value)
 
 
@@ -54,7 +54,7 @@ def test_none_scorer() -> None:
             FlowTask(name=task_name, scorer=None),
         ]
     )
-    tasks = instantiate_tasks(job=job, base_dir=".")
+    tasks = instantiate_tasks(spec=job, base_dir=".")
     assert len(tasks) == 1
     assert tasks[0].scorer is None
 
@@ -66,7 +66,7 @@ def test_unresolved_solver() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Solver should have been resolved. Solver: inspect/solver" in str(e.value)
 
 
@@ -77,7 +77,7 @@ def test_missing_solver_name() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Solver name is required." in str(e.value)
 
 
@@ -88,7 +88,7 @@ def test_missing_agent_name() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Agent name is required." in str(e.value)
 
 
@@ -98,7 +98,7 @@ def test_flow_epochs() -> None:
             FlowTask(name=task_name, epochs=FlowEpochs(epochs=3, reducer="median")),
         ]
     )
-    tasks = instantiate_tasks(job=job, base_dir=".")
+    tasks = instantiate_tasks(spec=job, base_dir=".")
     assert len(tasks) == 1
     assert tasks[0].epochs == 3
     assert tasks[0].epochs_reducer
@@ -112,7 +112,7 @@ def test_file_not_found() -> None:
         ]
     )
     with pytest.raises(FileNotFoundError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "File not found:" in str(e.value)
 
 
@@ -123,7 +123,7 @@ def test_missing_task_name() -> None:
         ]
     )
     with pytest.raises(ValueError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "Task name is required." in str(e.value)
 
 
@@ -134,5 +134,5 @@ def test_missing_task() -> None:
         ]
     )
     with pytest.raises(LookupError) as e:
-        instantiate_tasks(job=job, base_dir=".")
+        instantiate_tasks(spec=job, base_dir=".")
     assert "unregistered_task" in str(e.value)

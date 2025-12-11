@@ -84,12 +84,12 @@ Optionally install the [Inspect AI VS Code Extension](https://inspect.aisi.org.u
 
 ## Basic Example
 
-Let's walk through creating your first Flow configuration. We'll use `FlowJob` (the entrypoint class) and `FlowTask` to define evaluations.
+Let's walk through creating your first Flow configuration. We'll use `FlowSpec` (the entrypoint class) and `FlowTask` to define evaluations.
 
 ::: {.callout-tip collapse="true"}
 ### Core Components Reference
 
--   `FlowJob` — Pydantic class that encapsulates the declarative description of a Flow job.
+-   `FlowSpec` — Pydantic class that encapsulates the declarative description of a Flow spec.
 -   `FlowTask` — Pydantic class abstraction on top of Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html).
 -   `FlowModel` — Pydantic class abstraction on top of Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 -   `tasks_matrix()` — Helper function for parameter sweeping to generate a list of tasks with all parameter combinations.
@@ -97,13 +97,13 @@ Let's walk through creating your first Flow configuration. We'll use `FlowJob` (
 -   `configs_matrix()` — Helper function for parameter sweeping to generate a list of GenerateConfig with all parameter combinations.
 :::
 
-`FlowJob` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
+`FlowSpec` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/config.py >}}
 ```
 
-To run the evaluations, execute the following command. It creates a virtual environment for this job run and installs the dependencies—note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, execute the following command. It creates a virtual environment for this spec run and installs the dependencies—note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
 
 ``` bash
 flow run config.py
@@ -115,7 +115,7 @@ Both tasks will run with progress displayed in your terminal.
 
 ### Python API
 
-You can run evaluations from Python instead of the command line by calling the `run()` function with a `FlowJob`.
+You can run evaluations from Python instead of the command line by calling the `run()` function with a `FlowSpec`.
 
 ``` {.python filename="config.py"}
 {{< include ../examples/python.py >}}

@@ -534,7 +534,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
 
 
 class FlowSpec(BaseModel, extra="forbid"):
-    """Configuration for a flow job."""
+    """Top-level flow specification."""
 
     includes: Sequence[str] | None | NotGiven = Field(
         default=not_given,
@@ -543,7 +543,7 @@ class FlowSpec(BaseModel, extra="forbid"):
 
     log_dir: str | None | NotGiven = Field(
         default=not_given,
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
     )
 
     log_dir_create_unique: bool | None | NotGiven = Field(

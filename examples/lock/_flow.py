@@ -4,8 +4,8 @@ MAX_SAMPLES = 16
 
 
 @after_load
-def validate_max_samples(job: FlowSpec) -> None:
-    if not job.options or not job.options.max_samples == MAX_SAMPLES:
+def validate_max_samples(spec: FlowSpec) -> None:
+    if not spec.options or not spec.options.max_samples == MAX_SAMPLES:
         raise ValueError("Do not override max_samples!")
 
 

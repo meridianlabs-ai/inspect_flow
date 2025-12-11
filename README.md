@@ -56,7 +56,7 @@ FlowSpec(
 )
 ```
 
-To run the evaluations, run the following command in your shell. This will create a virtual environment for this job run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, run the following command in your shell. This will create a virtual environment for this spec run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
 
 ```bash
 flow run config.py
@@ -74,7 +74,7 @@ You can run evaluations from Python instead of the command line.
 from inspect_flow import FlowSpec, FlowTask
 from inspect_flow.api import run
 
-job = FlowSpec(
+spec = FlowSpec(
     log_dir="logs",
     tasks=[
         FlowTask(
@@ -87,7 +87,7 @@ job = FlowSpec(
         ),
     ],
 )
-run(job=job)
+run(spec=spec)
 ```
 
 ## Matrix Functions

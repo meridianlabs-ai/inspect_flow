@@ -1,7 +1,7 @@
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
 
 
-def job(model: str | None = None) -> FlowSpec:
+def spec(model: str | None = None) -> FlowSpec:
     return FlowSpec(
         log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
