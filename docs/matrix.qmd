@@ -3,7 +3,7 @@ title: "Matrixing"
 tbl-colwidths: [30,70]
 ---
 
-Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides `_matrix()` and `_with()` functions to declaratively generate evaluation grids.
+Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides `*_matrix()` and `*_with()` functions to declaratively generate evaluation grids.
 
 ## Matrix Functions
 
