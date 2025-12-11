@@ -24,7 +24,7 @@ def test_launch() -> None:
 
         assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
         args = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].args[0]
-        assert len(args) == 4
+        assert len(args) == 6
         assert str(args[0]).endswith("/.venv/bin/python")
         assert args[1] == str(
             (
@@ -35,8 +35,10 @@ def test_launch() -> None:
                 / "run.py"
             ).resolve()
         )
-        assert args[2] == "--base-dir"
-        assert args[3] == Path.cwd().as_posix()
+        assert args[2] == "--file"
+        assert "flow.yaml" in args[3]
+        assert args[4] == "--base-dir"
+        assert args[5] == Path.cwd().as_posix()
 
 
 def test_launch_no_venv() -> None:
@@ -52,7 +54,7 @@ def test_launch_no_venv() -> None:
 
         assert mock_run.call_count == 1
         args = mock_run.mock_calls[0].args[0]
-        assert len(args) == 4
+        assert len(args) == 6
         assert args[0] == sys.executable
         assert args[1] == str(
             (
@@ -63,8 +65,10 @@ def test_launch_no_venv() -> None:
                 / "run.py"
             ).resolve()
         )
-        assert args[2] == "--base-dir"
-        assert args[3] == Path.cwd().as_posix()
+        assert args[2] == "--file"
+        assert args[3] == "flow.yaml"
+        assert args[4] == "--base-dir"
+        assert args[5] == Path.cwd().as_posix()
 
 
 def test_env(monkeypatch: pytest.MonkeyPatch) -> None:

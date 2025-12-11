@@ -16,6 +16,8 @@ def test_run_command_overrides() -> None:
         result = runner.invoke(
             flow_run,
             [
+                "--file",
+                "flow.yaml",
                 "--dry-run",
             ],
             catch_exceptions=False,
