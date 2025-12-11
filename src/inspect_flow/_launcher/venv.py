@@ -3,28 +3,13 @@ from logging import getLogger
 from pathlib import Path
 from typing import List, Literal
 
-import yaml
-
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import FlowJob
-from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import run_with_logging
 
 logger = getLogger(__name__)
-
-
-def write_flow_yaml(job: FlowJob, dir: str) -> Path:
-    flow_yaml_path = Path(dir) / "flow.yaml"
-    with open(flow_yaml_path, "w") as f:
-        yaml.dump(
-            job.model_dump(**MODEL_DUMP_ARGS),
-            f,
-            default_flow_style=False,
-            sort_keys=False,
-        )
-    return flow_yaml_path
 
 
 def create_venv(
@@ -34,8 +19,6 @@ def create_venv(
         job.python_version
         or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )
-    write_flow_yaml(job, temp_dir)
-
     _create_venv_with_base_dependencies(
         job, base_dir=base_dir, temp_dir=temp_dir, env=env
     )
