@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowOptions, FlowTask
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
 
-my_config = FlowJob(
+my_config = FlowSpec(
     log_dir="logs/bundle_flow",
     options=FlowOptions(limit=1, bundle_dir="{log_dir}/bundle"),
     tasks=[

@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowOptions, tasks_matrix
+from inspect_flow import FlowOptions, FlowSpec, tasks_matrix
 
-FlowJob(
+FlowSpec(
     options=FlowOptions(limit=1),
     tasks=tasks_matrix(
         task=[

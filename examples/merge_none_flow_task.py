@@ -1,6 +1,6 @@
-from inspect_flow import FlowDefaults, FlowJob, FlowModel, FlowTask
+from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     defaults=FlowDefaults(
         model=FlowModel(name="openai/gpt-4o"),
     ),

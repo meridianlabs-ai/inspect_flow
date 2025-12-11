@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
-    FlowJob,
     FlowModel,
     FlowSolver,
+    FlowSpec,
     FlowTask,
     GenerateConfig,
     ModelRolesConfig,
@@ -23,10 +23,10 @@ ModelRoles: TypeAlias = dict[str, str | Model]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-def apply_defaults(job: FlowJob) -> FlowJob:
-    expanded_tasks = [_apply_task_defaults(job, task) for task in job.tasks or []]
+def apply_defaults(spec: FlowSpec) -> FlowSpec:
+    expanded_tasks = [_apply_task_defaults(spec, task) for task in spec.tasks or []]
 
-    return job.model_copy(
+    return spec.model_copy(
         update={
             "tasks": expanded_tasks,
             "defaults": not_given,
@@ -69,59 +69,61 @@ def _merge_defaults(
     return config.__class__.model_validate(config_dict, extra="forbid")
 
 
-def _apply_model_defaults(model: str | FlowModel, job: FlowJob) -> FlowModel:
+def _apply_model_defaults(model: str | FlowModel, spec: FlowSpec) -> FlowModel:
     if isinstance(model, str):
         model = FlowModel(name=model)
-    defaults = job.defaults or FlowDefaults()
+    defaults = spec.defaults or FlowDefaults()
     return _merge_defaults(model, defaults.model, defaults.model_prefix)
 
 
 def _apply_model_roles_defaults(
-    model_roles: ModelRolesConfig, job: FlowJob
+    model_roles: ModelRolesConfig, spec: FlowSpec
 ) -> ModelRolesConfig:
     roles = {}
     for role, model in model_roles.items():
         if isinstance(model, FlowModel):
-            model = _apply_model_defaults(model=model, job=job)
+            model = _apply_model_defaults(model=model, spec=spec)
         roles[role] = model
     return roles
 
 
-def _apply_single_solver_defaults(solver: str | FlowSolver, job: FlowJob) -> FlowSolver:
+def _apply_single_solver_defaults(
+    solver: str | FlowSolver, spec: FlowSpec
+) -> FlowSolver:
     if isinstance(solver, str):
         solver = FlowSolver(name=solver)
-    defaults = job.defaults or FlowDefaults()
+    defaults = spec.defaults or FlowDefaults()
     return _merge_defaults(solver, defaults.solver, defaults.solver_prefix)
 
 
-def _apply_agent_defaults(agent: FlowAgent, job: FlowJob) -> FlowAgent:
-    defaults = job.defaults or FlowDefaults()
+def _apply_agent_defaults(agent: FlowAgent, spec: FlowSpec) -> FlowAgent:
+    defaults = spec.defaults or FlowDefaults()
     return _merge_defaults(agent, defaults.agent, defaults.agent_prefix)
 
 
 def _apply_solver_defaults(
     solver: str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
-    job: FlowJob,
+    spec: FlowSpec,
 ) -> FlowSolver | list[FlowSolver] | FlowAgent:
     if isinstance(solver, str | FlowSolver):
-        return _apply_single_solver_defaults(solver, job)
+        return _apply_single_solver_defaults(solver, spec)
     if isinstance(solver, FlowAgent):
-        return _apply_agent_defaults(solver, job)
+        return _apply_agent_defaults(solver, spec)
     return [
-        _apply_single_solver_defaults(single_config, job) for single_config in solver
+        _apply_single_solver_defaults(single_config, spec) for single_config in solver
     ]
 
 
-def _apply_task_defaults(job: FlowJob, task: str | FlowTask) -> FlowTask:
+def _apply_task_defaults(spec: FlowSpec, task: str | FlowTask) -> FlowTask:
     if isinstance(task, str):
         task = FlowTask(name=task)
 
-    defaults = job.defaults or FlowDefaults()
+    defaults = spec.defaults or FlowDefaults()
     task = _merge_defaults(task, defaults.task, defaults.task_prefix)
-    model = _apply_model_defaults(task.model, job) if task.model else not_given
-    solver = _apply_solver_defaults(task.solver, job) if task.solver else not_given
+    model = _apply_model_defaults(task.model, spec) if task.model else not_given
+    solver = _apply_solver_defaults(task.solver, spec) if task.solver else not_given
     model_roles = (
-        _apply_model_roles_defaults(task.model_roles, job)
+        _apply_model_roles_defaults(task.model_roles, spec)
         if task.model_roles
         else not_given
     )

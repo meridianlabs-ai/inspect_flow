@@ -86,8 +86,8 @@ You can run Flow evaluations programmatically using the Python API:
 
 The `inspect_flow.api` module provides three functions:
 
-- **`run()`** - Execute a Flow job with full environment setup (equivalent to `flow run`)
-- **`load_job()`** - Load a Flow configuration from a Python file into a `FlowJob` object
+- **`run()`** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
+- **`load_spec()`** - Load a Flow configuration from a Python file into a `FlowSpec` object
 - **`config()`** - Get the resolved configuration as YAML (equivalent to `flow config`)
 
 See the [API Reference](reference/inspect_flow.api.qmd) for detailed parameter documentation.
@@ -133,7 +133,7 @@ inspect view
 ```
 
 Opens the Inspect AI viewer to explore evaluation logs interactively.
-[Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the job configuration for the evaluations.
+[Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the spec for the evaluations.
 
 Click the Flow icon in the top right hand corner to view the Flow config.
 
@@ -148,7 +148,7 @@ The Flow config file is rendered in YAML format.
 Store logs directly to S3:
 
 ``` python
-FlowJob(
+FlowSpec(
     log_dir="s3://my-bucket/experiments/baseline",
     tasks=[...]
 )

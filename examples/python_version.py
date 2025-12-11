@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     python_version="3.11",
     log_dir="logs",
     tasks=[  # <2>

@@ -29,7 +29,7 @@ This means most workflows require no dependency configuration at all!
 
 While automatic dependency discovery works for most cases, you may need explicit dependencies when you require specific package versions for reproducibility e.g. `openai==2.8.0`, need to specify a non-standard dependency file location, or need to override the automatic detection behavior. Explicit dependencies give you full control over what gets installed in your workflow's virtual environment.
 
-The `dependencies` field in `FlowJob` accepts a `FlowDependencies` object:
+The `dependencies` field in `FlowSpec` accepts a `FlowDependencies` object:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/dependencies.py >}}
@@ -45,7 +45,7 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 ## Python Version
 
-Specify the Python version for your job's virtual environment:
+Specify the Python version for your spec's virtual environment:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/python_version.py >}}

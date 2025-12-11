@@ -14,7 +14,7 @@ from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowJob, not_given
+from inspect_flow._types.flow_types import FlowSpec, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.module_util import execute_file_and_get_last_result
@@ -33,73 +33,73 @@ class ConfigOptions:
 
 @dataclass
 class LoadState:
-    files_to_jobs: dict[str, FlowJob | None] = field(factory=dict)
-    after_flow_job_loaded_funcs: list[Callable] = field(factory=list)
+    files_to_specs: dict[str, FlowSpec | None] = field(factory=dict)
+    after_flow_spec_loaded_funcs: list[Callable] = field(factory=list)
 
 
-def int_load_job(file: str, options: ConfigOptions) -> FlowJob:
+def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
     state = LoadState()
     file = absolute_file_path(file)
-    job = _load_job_from_file(file, args=options.args, state=state)
-    if job is None:
+    spec = _load_spec_from_file(file, args=options.args, state=state)
+    if spec is None:
         raise ValueError(f"No value returned from Python config file: {file}")
 
     base_dir = Path(file).parent.as_posix()
-    job = expand_job(job, base_dir=base_dir, options=options)
-    return job
+    spec = expand_spec(spec, base_dir=base_dir, options=options)
+    return spec
 
 
-def expand_job(
-    job: FlowJob, base_dir: str, options: ConfigOptions | None = None
-) -> FlowJob:
+def expand_spec(
+    spec: FlowSpec, base_dir: str, options: ConfigOptions | None = None
+) -> FlowSpec:
     options = options or ConfigOptions()
     state = LoadState()
-    job = _expand_includes(
-        job,
+    spec = _expand_includes(
+        spec,
         state,
         base_dir=base_dir,
     )
-    job = _apply_auto_includes(job, base_dir=base_dir, options=options, state=state)
+    spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
     if options.overrides:
-        return _apply_overrides(job, options.overrides)
-    job = _apply_substitutions(job, base_dir=base_dir)
-    job = apply_defaults(job)
-    _after_flow_job_loaded(job, state)
-    return job
+        return _apply_overrides(spec, options.overrides)
+    spec = _apply_substitutions(spec, base_dir=base_dir)
+    spec = apply_defaults(spec)
+    _after_flow_spec_loaded(spec, state)
+    return spec
 
 
-def _after_flow_job_loaded(job: FlowJob, state: LoadState) -> None:
-    """Run any registered after_flow_job_loaded functions."""
-    for func in state.after_flow_job_loaded_funcs:
+def _after_flow_spec_loaded(spec: FlowSpec, state: LoadState) -> None:
+    """Run any registered after_flow_spec_loaded functions."""
+    for func in state.after_flow_spec_loaded_funcs:
         sig = inspect.signature(func)
         filtered_args = {
             k: v
-            for k, v in {"job": job, "files": state.files_to_jobs.keys()}.items()
+            for k, v in {"spec": spec, "files": state.files_to_specs.keys()}.items()
             if k in sig.parameters
         }
         func(**filtered_args)
 
 
 def _expand_includes(
-    job: FlowJob,
+    spec: FlowSpec,
     state: LoadState,
     base_dir: str = "",
     args: dict[str, Any] | None = None,
-) -> FlowJob:
-    """Apply includes in the job config."""
+) -> FlowSpec:
+    """Apply includes in the spec config."""
     if args is None:
         args = dict()
-    for include in job.includes or []:
+    for include in spec.includes or []:
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
-        included_job = _load_job_from_file(include_path, args, state)
-        if included_job is not None:
-            job = _apply_include(job, included_job)
-    job.includes = not_given
-    return job
+        included_spec = _load_spec_from_file(include_path, args, state)
+        if included_spec is not None:
+            spec = _apply_include(spec, included_spec)
+    spec.includes = not_given
+    return spec
 
 
-class _JobFormatMapMapping:
-    """Mapping for job config substitutions. Preserves missing keys."""
+class _SpecFormatMapMapping:
+    """Mapping for spec config substitutions. Preserves missing keys."""
 
     def __init__(self, dict: dict[str, Any]) -> None:
         self.dict = dict
@@ -108,14 +108,14 @@ class _JobFormatMapMapping:
         return self.dict.get(key, f"{{{key}}}")
 
 
-def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
-    """Apply any substitutions to the job config."""
+def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
+    """Apply any substitutions to the spec."""
     # Issue #266 must resolve the log dir before applying substitutions
-    if job.log_dir:
-        job.log_dir = _resolve_log_dir(job, base_dir=base_dir)
+    if spec.log_dir:
+        spec.log_dir = _resolve_log_dir(spec, base_dir=base_dir)
 
-    job_dict = job.model_dump(**MODEL_DUMP_ARGS)
-    mapping = _JobFormatMapMapping(job_dict)
+    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
+    mapping = _SpecFormatMapMapping(spec_dict)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
@@ -138,16 +138,16 @@ def _apply_substitutions(job: FlowJob, base_dir: str) -> FlowJob:
         else:
             return obj
 
-    substituted_dict = substitute_strings(job_dict)
-    return FlowJob.model_validate(substituted_dict, extra="forbid")
+    substituted_dict = substitute_strings(spec_dict)
+    return FlowSpec.model_validate(substituted_dict, extra="forbid")
 
 
-def _resolve_log_dir(job: FlowJob, base_dir: str) -> str:
-    assert job.log_dir
-    if not job.log_dir_create_unique:
-        return job.log_dir
-    absolute_log_dir = absolute_path_relative_to(job.log_dir, base_dir=base_dir)
-    already_absolute = absolute_log_dir == job.log_dir
+def _resolve_log_dir(spec: FlowSpec, base_dir: str) -> str:
+    assert spec.log_dir
+    if not spec.log_dir_create_unique:
+        return spec.log_dir
+    absolute_log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
+    already_absolute = absolute_log_dir == spec.log_dir
     unique_absolute_log_dir = _log_dir_create_unique(absolute_log_dir)
     if already_absolute:
         return unique_absolute_log_dir
@@ -181,18 +181,18 @@ def _log_dir_create_unique(log_dir: str) -> str:
     return current_dir
 
 
-def _load_job_from_file(
+def _load_spec_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
-) -> FlowJob | None:
+) -> FlowSpec | None:
     config_path = Path(absolute_file_path(config_file))
 
     try:
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
-                job, globals = execute_file_and_get_last_result(config_file, args=args)
-                if job is None or isinstance(job, FlowJob):
-                    state.files_to_jobs[config_file] = job
-                    state.after_flow_job_loaded_funcs.extend(
+                spec, globals = execute_file_and_get_last_result(config_file, args=args)
+                if spec is None or isinstance(spec, FlowSpec):
+                    state.files_to_specs[config_file] = spec
+                    state.after_flow_spec_loaded_funcs.extend(
                         [
                             v
                             for v in globals.values()
@@ -202,7 +202,7 @@ def _load_job_from_file(
 
                 else:
                     raise TypeError(
-                        f"Expected FlowJob from Python config file, got {type(job)}"
+                        f"Expected FlowSpec from Python config file, got {type(spec)}"
                     )
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
@@ -212,25 +212,25 @@ def _load_job_from_file(
                         f"Unsupported config file extension: {config_path.suffix}. "
                         "Supported extensions: .py, .yaml, .yml"
                     )
-                job = FlowJob.model_validate(data, extra="forbid")
+                spec = FlowSpec.model_validate(data, extra="forbid")
     except ValidationError as e:
         _print_filtered_traceback(e, config_file)
         logger.error(e)
         e._flow_handled = True  # type: ignore
         raise
 
-    if job:
+    if spec:
         return _expand_includes(
-            job, state, base_dir=config_path.parent.as_posix(), args=args
+            spec, state, base_dir=config_path.parent.as_posix(), args=args
         )
     return None
 
 
-def _apply_include(job: FlowJob, included_job: FlowJob) -> FlowJob:
-    job_dict = job.model_dump(**MODEL_DUMP_ARGS)
-    include_dict = included_job.model_dump(**MODEL_DUMP_ARGS)
-    merged_dict = _deep_merge_include(include_dict, job_dict)
-    return FlowJob.model_validate(merged_dict, extra="forbid")
+def _apply_include(spec: FlowSpec, included_spec: FlowSpec) -> FlowSpec:
+    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
+    include_dict = included_spec.model_dump(**MODEL_DUMP_ARGS)
+    merged_dict = _deep_merge_include(include_dict, spec_dict)
+    return FlowSpec.model_validate(merged_dict, extra="forbid")
 
 
 def _deep_merge_include(
@@ -252,8 +252,8 @@ def _deep_merge_include(
 
 
 def _apply_auto_includes(
-    job: FlowJob, base_dir: str, options: ConfigOptions, state: LoadState
-) -> FlowJob:
+    spec: FlowSpec, base_dir: str, options: ConfigOptions, state: LoadState
+) -> FlowSpec:
     absolute_path = absolute_file_path(base_dir)
     protocol, path = split_protocol(absolute_path)
 
@@ -263,13 +263,13 @@ def _apply_auto_includes(
         if protocol:
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
-            auto_job = _load_job_from_file(auto_file, args=options.args, state=state)
-            if auto_job:
-                job = _apply_include(job, auto_job)
+            auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
+            if auto_spec:
+                spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:
             break
         parent_dir = parent_dir.parent
-    return job
+    return spec
 
 
 def _maybe_json(value: str) -> Any:
@@ -319,11 +319,11 @@ def _deep_merge_override(
     return base
 
 
-def _apply_overrides(job: FlowJob, overrides: list[str]) -> FlowJob:
+def _apply_overrides(spec: FlowSpec, overrides: list[str]) -> FlowSpec:
     overrides_dict = _overrides_to_dict(overrides)
-    base_dict = job.model_dump(**MODEL_DUMP_ARGS)
+    base_dict = spec.model_dump(**MODEL_DUMP_ARGS)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
-    return FlowJob.model_validate(merged_dict, extra="forbid")
+    return FlowSpec.model_validate(merged_dict, extra="forbid")
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

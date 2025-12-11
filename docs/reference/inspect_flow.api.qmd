@@ -5,5 +5,5 @@ title: "inspect_flow.api"
 ## Python API
 
 ### config
-### load_job
+### load_spec
 ### run

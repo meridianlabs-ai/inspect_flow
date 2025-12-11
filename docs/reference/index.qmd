@@ -10,7 +10,7 @@ toc-depth: 4
 |  |  |
 |----|----|
 | [inspect_flow](inspect_flow.qmd) | Core types and functions. |
-| [inspect_flow.api](inspect_flow.api.qmd) | Output and run a job. |
+| [inspect_flow.api](inspect_flow.api.qmd) | Output and run a spec. |
 
 : {.borderless}
 
@@ -18,8 +18,8 @@ toc-depth: 4
 
 |  |  |
 |------------------------------------|------------------------------------|
-| [flow config](flow_config.qmd) | Output job config. |
-| [flow run](flow_run.qmd) | Run a job. |
+| [flow config](flow_config.qmd) | Output spec as yaml. |
+| [flow run](flow_run.qmd) | Run a spec. |
 
 : {.borderless}
 

@@ -65,7 +65,7 @@ class FlowModel(BaseModel, extra="forbid"):
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowJob.",
+        description="Configuration for model. Config values will be override settings on the FlowTask and FlowSpec.",
     )
 
     base_url: str | None | NotGiven = Field(
@@ -211,7 +211,7 @@ class FlowTask(BaseModel, extra="forbid"):
 
     config: GenerateConfig | NotGiven = Field(
         default=not_given,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel.",
     )
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
@@ -533,8 +533,8 @@ class FlowDependencies(BaseModel, extra="forbid"):
     )
 
 
-class FlowJob(BaseModel, extra="forbid"):
-    """Configuration for a flow job."""
+class FlowSpec(BaseModel, extra="forbid"):
+    """Top-level flow specification."""
 
     includes: Sequence[str] | None | NotGiven = Field(
         default=not_given,
@@ -543,7 +543,7 @@ class FlowJob(BaseModel, extra="forbid"):
 
     log_dir: str | None | NotGiven = Field(
         default=not_given,
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
     )
 
     log_dir_create_unique: bool | None | NotGiven = Field(

@@ -183,7 +183,7 @@ class FlowModelDict(TypedDict):
     default: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
     config: NotRequired[Optional[Union[GenerateConfig, NotGiven]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
     base_url: NotRequired[Optional[Union[str, NotGiven]]]
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[Optional[Union[str, NotGiven]]]
@@ -200,7 +200,7 @@ class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
     config: NotRequired[Optional[Sequence[Optional[Union[GenerateConfig, NotGiven]]]]]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowJob."""
+    """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
 
 
 class FlowOptionsDict(TypedDict):
@@ -342,7 +342,7 @@ class FlowTaskDict(TypedDict):
     model: NotRequired[Optional[Union[str, FlowModel, NotGiven]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Union[GenerateConfig, NotGiven]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]
     ]
@@ -407,7 +407,7 @@ class FlowTaskMatrixDict(TypedDict):
     model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel, NotGiven]]]]]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Optional[Sequence[Union[GenerateConfig, NotGiven]]]]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowJob. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
         Optional[
             Sequence[Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]]
@@ -521,13 +521,13 @@ class ResponseSchemaDict(TypedDict):
     strict: NotRequired[Optional[bool]]
 
 
-class FlowJobDict(TypedDict):
-    """Configuration for a flow job."""
+class FlowSpecDict(TypedDict):
+    """Top-level flow specification."""
 
     includes: NotRequired[Optional[Union[Sequence[str], NotGiven]]]
     """List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically."""
     log_dir: NotRequired[Optional[Union[str, NotGiven]]]
-    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow job. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
+    """Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API)."""
     log_dir_create_unique: NotRequired[Optional[Union[bool, NotGiven]]]
     """If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False."""
     python_version: NotRequired[Optional[Union[str, NotGiven]]]

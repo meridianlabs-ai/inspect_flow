@@ -1,6 +1,6 @@
-from inspect_flow import FlowJob, FlowOptions, tasks_matrix
+from inspect_flow import FlowOptions, FlowSpec, tasks_matrix
 
-FlowJob(
+FlowSpec(
     includes=["defaults_flow.py"],
     log_dir="./logs/flow_test",
     options=FlowOptions(limit=1),

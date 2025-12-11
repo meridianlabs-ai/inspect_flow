@@ -12,10 +12,10 @@ from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowJob,
     FlowModel,
     FlowScorer,
     FlowSolver,
+    FlowSpec,
     FlowTask,
     NotGiven,
 )
@@ -48,10 +48,10 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
 }
 
 
-def collect_auto_dependencies(job: FlowJob) -> list[str]:
+def collect_auto_dependencies(spec: FlowSpec) -> list[str]:
     result = set()
 
-    for task in job.tasks or []:
+    for task in spec.tasks or []:
         _collect_task_dependencies(task, result)
 
     # inspect_ai is already included by inspect-flow

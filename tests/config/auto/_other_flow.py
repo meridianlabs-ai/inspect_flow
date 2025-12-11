@@ -1,7 +1,7 @@
 from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowDefaults, FlowJob, FlowModel
+from inspect_flow import FlowDefaults, FlowModel, FlowSpec
 
-FlowJob(
+FlowSpec(
     defaults=FlowDefaults(
         model_prefix={
             "antropic": FlowModel(

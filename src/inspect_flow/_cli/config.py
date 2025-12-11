@@ -7,7 +7,7 @@ from inspect_flow._cli.options import (
     config_options,
     parse_config_options,
 )
-from inspect_flow._config.load import int_load_job
+from inspect_flow._config.load import int_load_spec
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._util.logging import init_flow_logging
 
@@ -23,6 +23,6 @@ def config_command(
     init_flow_logging(log_level)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
-    fconfig = int_load_job(config_file, options=config_options)
+    fconfig = int_load_spec(config_file, options=config_options)
     dump = config_to_yaml(fconfig)
     click.echo(dump)

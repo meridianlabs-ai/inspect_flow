@@ -1,6 +1,6 @@
-from inspect_flow import FlowDependencies, FlowJob, FlowOptions, tasks_matrix
+from inspect_flow import FlowDependencies, FlowOptions, FlowSpec, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs/flow_test",
     log_dir_create_unique=True,
     dependencies=FlowDependencies(dependency_file="../requirements.txt"),

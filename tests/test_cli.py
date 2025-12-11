@@ -8,7 +8,7 @@ from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._config.load import ConfigOptions
-from inspect_flow._types.flow_types import FlowJob
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
 CONFIG_FILE = "./tests/config/model_and_task_flow.py"
@@ -47,7 +47,7 @@ def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
         mock_config_obj = MagicMock()
@@ -68,7 +68,7 @@ def test_run_command_overrides() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_job was called with the correct file
+        # Verify that load_spec was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
             options=ConfigOptions(
@@ -90,7 +90,7 @@ def test_run_command_log_dir_create_unique() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
         mock_config_obj = MagicMock()
@@ -108,7 +108,7 @@ def test_run_command_log_dir_create_unique() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_job was called with the correct file
+        # Verify that load_spec was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
             options=ConfigOptions(
@@ -129,9 +129,9 @@ def test_run_command_log_dir_create_unique() -> None:
 def test_config_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.config.int_load_job") as mock_config,
+        patch("inspect_flow._cli.config.int_load_spec") as mock_config,
     ):
-        mock_config.return_value = FlowJob()
+        mock_config.return_value = FlowSpec()
 
         result = runner.invoke(
             config_command,
@@ -148,7 +148,7 @@ def test_config_command_overrides() -> None:
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_job was called with the correct file
+        # Verify that load_spec was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
             options=ConfigOptions(
@@ -168,9 +168,9 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         "dependencies.additional_dependencies=dep1 defaults.solver.args.tool_calls=none",
     )
     with (
-        patch("inspect_flow._cli.config.int_load_job") as mock_config,
+        patch("inspect_flow._cli.config.int_load_spec") as mock_config,
     ):
-        mock_config.return_value = FlowJob()
+        mock_config.return_value = FlowSpec()
 
         result = runner.invoke(
             config_command,
@@ -181,7 +181,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
         # Check that the command executed successfully
         assert result.exit_code == 0
 
-        # Verify that load_job was called with the correct file
+        # Verify that load_spec was called with the correct file
         mock_config.assert_called_once_with(
             CONFIG_FILE_RESOLVED,
             options=ConfigOptions(
@@ -198,7 +198,7 @@ def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
@@ -223,7 +223,7 @@ def test_run_command_args() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
@@ -254,7 +254,7 @@ def test_run_command_no_venv() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
@@ -278,7 +278,7 @@ def test_run_command_log_level() -> None:
     with (
         patch("inspect_flow._cli.run.init_flow_logging") as mock_init_flow_logging,
         patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_job") as mock_config,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj

@@ -1,11 +1,11 @@
 from inspect_flow import (
-    FlowJob,
+    FlowSpec,
     configs_matrix,
     tasks_matrix,
     tasks_with,
 )
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_with(
         task=tasks_matrix(  # <1>

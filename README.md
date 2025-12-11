@@ -36,12 +36,12 @@ Optionally install the [Inspect AI VS Code Extension](https://inspect.aisi.org.u
 
 ## Basic Example
 
-`FlowJob` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
+`FlowSpec` is the main entrypoint for defining evaluation runs. At its core, it takes a list of tasks to run. Here's a simple example that runs two evaluations:
 
 ```python
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=[
         FlowTask(
@@ -56,7 +56,7 @@ FlowJob(
 )
 ```
 
-To run the evaluations, run the following command in your shell. This will create a virtual environment for this job run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, run the following command in your shell. This will create a virtual environment for this spec run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
 
 ```bash
 flow run config.py
@@ -71,10 +71,10 @@ This will run both tasks and display progress in your terminal.
 You can run evaluations from Python instead of the command line.
 
 ```python
-from inspect_flow import FlowJob, FlowTask
+from inspect_flow import FlowSpec, FlowTask
 from inspect_flow.api import run
 
-job = FlowJob(
+spec = FlowSpec(
     log_dir="logs",
     tasks=[
         FlowTask(
@@ -87,7 +87,7 @@ job = FlowJob(
         ),
     ],
 )
-run(job=job)
+run(spec=spec)
 ```
 
 ## Matrix Functions
@@ -95,9 +95,9 @@ run(job=job)
 Often you'll want to evaluate multiple tasks across multiple models. Rather than manually defining every combination, use `tasks_matrix` to generate all task-model pairs:
 
 ```python
-from inspect_flow import FlowJob, tasks_matrix
+from inspect_flow import FlowSpec, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[
@@ -143,9 +143,9 @@ tasks:
 
 ```python
 from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowJob, models_matrix, tasks_matrix
+from inspect_flow import FlowSpec, models_matrix, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[
@@ -171,9 +171,9 @@ FlowJob(
 For even more concise parameter sweeping, use `configs_matrix` to generate configuration variants. This produces the same 16 evaluations (2 tasks × 2 models × 4 reasoning levels) as above, but with less boilerplate:
 
 ```python
-from inspect_flow import FlowJob, configs_matrix, models_matrix, tasks_matrix
+from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
 
-FlowJob(
+FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[

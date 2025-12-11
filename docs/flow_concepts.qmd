@@ -3,11 +3,11 @@ title: "Flow Concepts"
 tbl-colwidths: [30,70]
 ---
 
-The primary interface for defining a workflow in Flow is a `FlowJob`. A `FlowJob` defines the log directory, tasks, models, and other options that make up the job. When Inspect Flow processes the `FlowJob`, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect's `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
+The primary interface for defining a workflow in Flow is a `FlowSpec`. A `FlowSpec` defines the log directory, tasks, models, and other options that make up the spec. When Inspect Flow processes the `FlowSpec`, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect's `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
 
 Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 
--   **`FlowJob`** — The top-level job definition. Contains a list of tasks and job settings. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
+-   **`FlowSpec`** — The top-level spec definition. Contains a list of tasks and spec settings. Under the hood it translates to an Inspect AI [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
 -   **`FlowTask`** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
 -   **`FlowModel`** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 -   **`FlowSolver`** and **`FlowAgent`** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
@@ -20,14 +20,14 @@ Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 
 Flow configuration files are Python files where the last expression is either:
 
-- A `FlowJob` object, or
-- A function that returns a `FlowJob` object
+- A `FlowSpec` object, or
+- A function that returns a `FlowSpec` object
 
 Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!
 
 ## Basic Example
 
-In [Welcome - Basic Example](index.qmd#basic-example), we showed a simple `FlowJob`. Let's break down what's happening:
+In [Welcome - Basic Example](index.qmd#basic-example), we showed a simple `FlowSpec`. Let's break down what's happening:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/first_config.py >}}
@@ -59,7 +59,7 @@ flow run config.py
 
 ## Jobs
 
-`FlowJob` is the primary interface for defining Flow workflows. All Flow operations—including [parameter sweeps and matrix expansions](matrix.qmd)—ultimately produce a list of tasks that `FlowJob` executes.
+`FlowSpec` is the primary interface for defining Flow workflows. All Flow operations—including [parameter sweeps and matrix expansions](matrix.qmd)—ultimately produce a list of tasks that `FlowSpec` executes.
 
 **Required fields:**
 
@@ -73,7 +73,7 @@ flow run config.py
 |------------------|--------------------------------|----------------------|
 | `tasks` | List of tasks to run (`FlowTask` objects or strings) | `None` |
 | `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
-| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the job or have `options.log_dir_allow_dirty=True`) | `False` |
+| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
 | `python_version` | Python version for the isolated virtual environment (e.g., `"3.11"`) | Same as current environment |
 | `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names |
 | `env` | Environment variables to set when running tasks | `None` |
@@ -145,7 +145,7 @@ FlowTask(
 
 3.  **Epochs** — Maps to Inspect AI `Task.epochs`. Number of times to repeat evaluation over the dataset samples. Can be an integer (`epochs=3`) or a `FlowEpochs` object to specify custom reducer functions (`FlowEpochs(epochs=3, reducer="median")`). By default, scores are combined using the `"mean"` reducer across epochs.
 
-4.  **Generation config** — Maps to Inspect AI `Task.config` (`GenerateConfig`). Model generation parameters like `temperature`, `max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override config on `FlowJob.config` but are overridden by settings on `FlowModel.config`.
+4.  **Generation config** — Maps to Inspect AI `Task.config` (`GenerateConfig`). Model generation parameters like `temperature`, `max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override config on `FlowSpec.config` but are overridden by settings on `FlowModel.config`.
 
 5.  **Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s) for solving the task. Can be a string (`"chain_of_thought"`), `FlowSolver` object, `FlowAgent` object, or a list of solvers for chaining. Defaults to `generate()` if not specified.
 
