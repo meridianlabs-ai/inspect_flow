@@ -21,7 +21,7 @@ repos:
       - id: check-added-large-files
       - id: check-json
         # The following are JSONC files.
-        exclude: '(^\.vscode/|^tools/vscode/|jsconfig\.json$|tsconfig\.json$)'
+        exclude: '(^\.vscode/|^tools/vscode/|jsconfig\.json$|tsconfig\.json$|.release-please-config\.json$)'
       - id: check-yaml
       - id: debug-statements
       - id: detect-private-key
