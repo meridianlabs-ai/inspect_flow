@@ -1,0 +1,20 @@
+log_dir: logs/test
+options:
+  limit: 1
+tasks:
+  - name: inspect_evals/mmlu_0_shot
+    model:
+      name: openai/gpt-4o-mini
+      config:
+        max_connections: 5
+      base_url: https://api.openai.com/v1/
+    config:
+      max_connections: 5
+  - name: inspect_evals/mmlu_0_shot
+    model:
+      name: anthropic/claude-3-5-sonnet
+      config:
+        max_connections: 10
+      base_url: https://api.anthropic.com/v1/
+    config:
+      max_connections: 10

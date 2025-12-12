@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
@@ -27,6 +28,7 @@ from inspect_flow._config.load import (
     int_load_spec,
 )
 from inspect_flow._types.flow_types import FlowDependencies
+from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 
 from tests.test_helpers.config_helpers import validate_config
@@ -360,13 +362,37 @@ def test_multiple_includes() -> None:
     validate_config(spec, "multiple_includes_flow.yaml")
 
 
-def test_auto_include() -> None:
+def test_auto_include(capsys) -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="info", log_handler_var=log_handler)
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
         )
     )
+    out = capsys.readouterr().out
     validate_config(spec, "auto_include_flow.yaml")
+    # Remove all whitespace from rich console formatting to handle line wrapping
+    out_normalized = "".join(out.split())
+    assert "model_and_task_flow.py" in out_normalized
+    assert "_flow.py" in out_normalized
+    assert "_other_flow.py" in out_normalized
+
+
+def test_auto_include_two(capsys) -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="warning", log_handler_var=log_handler)
+    spec = load_spec(
+        str(
+            Path(__file__).parent / "config" / "auto" / "another_flow" / "test_flow.py"
+        ),
+    )
+    out = capsys.readouterr().out
+    validate_config(spec, "auto_include_two_flow.yaml")
+    # Remove all whitespace from rich console formatting to handle line wrapping
+    out_normalized = "".join(out.split())
+    assert "auto/_flow.py" in out_normalized
+    assert "Applyingmultiple_flow.py.#2:" in out_normalized
 
 
 def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:

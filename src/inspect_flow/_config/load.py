@@ -185,6 +185,7 @@ def _load_spec_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
 ) -> FlowSpec | None:
     config_path = Path(absolute_file_path(config_file))
+    logger.info(f"Loading config file: {config_path.as_posix()}")
 
     try:
         with file(config_file, "r") as f:
@@ -258,12 +259,17 @@ def _apply_auto_includes(
     protocol, path = split_protocol(absolute_path)
 
     parent_dir = Path(base_dir)
+    auto_include_count = 0
     while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
         if protocol:
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
             auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
+            if (auto_include_count := auto_include_count + 1) > 1:
+                logger.warning(
+                    f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {auto_file}"
+                )
             if auto_spec:
                 spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:
