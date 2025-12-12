@@ -45,6 +45,7 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     "sglang": ["openai"],
     "transformer_lens": ["transformer_lens"],
     "hf-inference-providers": ["openai"],
+    "mockllm": [],
 }
 
 

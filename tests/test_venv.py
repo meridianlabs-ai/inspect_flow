@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
+from inspect_flow._launcher.pip_string import _get_pip_string_with_version
 from inspect_flow._launcher.venv import create_venv
 
 
@@ -156,13 +157,13 @@ def test_auto_dependency() -> None:
                 "uv",
                 "pip",
                 "install",
-                "anthropic",
-                "google-genai",
-                "groq",
+                _get_pip_string_with_version("anthropic"),
+                _get_pip_string_with_version("google-genai"),
+                _get_pip_string_with_version("groq"),
                 "inspect_evals",
                 "inspect_evals2",
                 "inspect_evals3",
-                "openai",
+                _get_pip_string_with_version("openai"),
                 "solver_package",
                 "solver_package2",
                 "solver_package3",
@@ -238,8 +239,8 @@ def test_no_file() -> None:
                 "uv",
                 "pip",
                 "install",
-                "anthropic",
-                "groq",
+                _get_pip_string_with_version("anthropic"),
+                _get_pip_string_with_version("groq"),
                 "inspect_evals2",
                 f"-e {flow_path}",
             ]

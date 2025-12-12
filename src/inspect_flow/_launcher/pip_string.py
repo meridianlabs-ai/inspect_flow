@@ -1,9 +1,12 @@
 import json
 from importlib.metadata import Distribution, PackageNotFoundError
+from logging import getLogger
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+logger = getLogger(__name__)
 
 
 def get_pip_string(package: str) -> str:
@@ -12,13 +15,23 @@ def get_pip_string(package: str) -> str:
         # package is installed - copy the installed package to the new venv
         return _direct_url_to_pip_string(direct_url)
     if package != "inspect-flow":
-        return package
+        return _get_pip_string_with_version(package)
     # If DirectURL is None, inspect-flow could be running in dev mode or installed from PyPI.
     package_path = Path(__file__).parents[3]
     if not (package_path / "pyproject.toml").exists():
         # Assume installed from PyPI
-        return package
+        return _get_pip_string_with_version(package)
     return str(package_path)
+
+
+def _get_pip_string_with_version(package: str) -> str:
+    """Return package name with exact version specifier if version can be determined."""
+    try:
+        version = Distribution.from_name(package).version
+        return f"{package}=={version}"
+    except (ValueError, PackageNotFoundError) as e:
+        logger.info(f"Could not determine version for package '{package}': {e}.")
+        return package
 
 
 class _VcsInfo(BaseModel):
