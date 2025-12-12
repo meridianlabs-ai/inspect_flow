@@ -532,6 +532,11 @@ class FlowDependencies(BaseModel, extra="forbid"):
         description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed.",
     )
 
+    uv_sync_args: str | Sequence[str] | None | NotGiven = Field(
+        default=not_given,
+        description="Additional arguments to pass to 'uv sync' when creating the virtual environment using a pyproject.toml file. May be a string ('--dev --extra test') or a list of strings (['--dev', '--extra', 'test']).",
+    )
+
 
 class FlowSpec(BaseModel, extra="forbid"):
     """Top-level flow specification."""

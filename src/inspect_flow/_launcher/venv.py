@@ -1,7 +1,8 @@
+import shlex
 import sys
 from logging import getLogger
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Sequence
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
@@ -95,12 +96,24 @@ def _create_venv_with_base_dependencies(
     ]
     if (project_dir / "uv.lock").exists():
         uv_args.append("--frozen")
+
+    uv_args.extend(_uv_sync_args(spec))
+
     logger.info(f"Creating venv with uv args: {uv_args}")
     run_with_logging(
         ["uv", "sync"] + uv_args,
         cwd=temp_dir,
         env=env,
     )
+
+
+def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
+    if spec.dependencies and spec.dependencies.uv_sync_args:
+        if isinstance(spec.dependencies.uv_sync_args, str):
+            return shlex.split(spec.dependencies.uv_sync_args)
+        else:
+            return spec.dependencies.uv_sync_args
+    return []
 
 
 def _uv_venv(spec: FlowSpec, temp_dir: str, env: dict[str, str]) -> None:
@@ -128,7 +141,11 @@ def _get_dependency_file(
     if spec.dependencies and spec.dependencies.dependency_file == "no_file":
         return None
 
-    if not spec.dependencies or spec.dependencies.dependency_file == "auto":
+    if (
+        not spec.dependencies
+        or not spec.dependencies.dependency_file
+        or spec.dependencies.dependency_file == "auto"
+    ):
         files: list[Literal["pyproject.toml", "requirements.txt"]] = [
             "pyproject.toml",
             "requirements.txt",
@@ -148,11 +165,11 @@ def _get_dependency_file(
             current_dir = current_dir.parent
         return None
 
-    file = spec.dependencies and spec.dependencies.dependency_file or None
-    if file:
-        file = absolute_path_relative_to(file, base_dir=base_dir)
-        if not Path(file).exists():
-            raise FileNotFoundError(f"Dependency file '{file}' does not exist.")
-        if file.endswith("pyproject.toml"):
-            return "pyproject.toml", file
-        return "requirements.txt", file
+    file = absolute_path_relative_to(
+        spec.dependencies.dependency_file, base_dir=base_dir
+    )
+    if not Path(file).exists():
+        raise FileNotFoundError(f"Dependency file '{file}' does not exist.")
+    if file.endswith("pyproject.toml"):
+        return "pyproject.toml", file
+    return "requirements.txt", file

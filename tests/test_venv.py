@@ -464,3 +464,42 @@ def test_241_not_found() -> None:
                 "install",
                 f"-e {flow_path}",
             ]
+
+
+def test_325_uv_sync_args() -> None:
+    for uv_sync_args in [
+        "--dev --extra 'test with space'",
+        ["--dev", "--extra", "test with space"],
+    ]:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(
+                    args=[], returncode=0, stdout="mocked output"
+                )
+                create_venv(
+                    spec=FlowSpec(
+                        dependencies=FlowDependencies(uv_sync_args=uv_sync_args),
+                        python_version="3.11",
+                        tasks=[FlowTask(name="task_name")],
+                    ),
+                    base_dir=".",
+                    temp_dir=temp_dir,
+                    env=os.environ.copy(),
+                )
+
+                assert mock_run.call_count == 2
+                args = mock_run.mock_calls[0].args[0]
+                assert args == [
+                    "uv",
+                    "sync",
+                    "--no-dev",
+                    "--python",
+                    "3.11",
+                    "--project",
+                    Path.cwd().as_posix(),
+                    "--active",
+                    "--frozen",
+                    "--dev",
+                    "--extra",
+                    "test with space",
+                ]
