@@ -376,6 +376,21 @@ def test_auto_include(capsys) -> None:
     assert "_other_flow.py" in out_normalized
 
 
+def test_auto_include_two(capsys) -> None:
+    spec = load_spec(
+        str(
+            Path(__file__).parent / "config" / "auto" / "another_flow" / "test_flow.py"
+        ),
+        log_level="warning",
+    )
+    out = capsys.readouterr().out
+    validate_config(spec, "auto_include_two_flow.yaml")
+    # Remove all whitespace from rich console formatting to handle line wrapping
+    out_normalized = "".join(out.split())
+    assert "auto/_flow.py" in out_normalized
+    assert "Applyingmultiple_flow.py.#2:" in out_normalized
+
+
 def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     flow_file = (
         Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
