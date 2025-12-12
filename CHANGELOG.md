@@ -5,7 +5,7 @@
 
 * Rename FlowJob to FlowSpec
 * Fix log paths in Inspect output
-* Rename bundle_url_map to bundle_url_mapping
+* Rename bundle_url_map to bundle_url_mappings
 * Apply defaults when loading FlowSpec
 
 
