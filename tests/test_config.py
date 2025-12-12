@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
@@ -27,6 +28,7 @@ from inspect_flow._config.load import (
     int_load_spec,
 )
 from inspect_flow._types.flow_types import FlowDependencies
+from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 
 from tests.test_helpers.config_helpers import validate_config
@@ -361,11 +363,12 @@ def test_multiple_includes() -> None:
 
 
 def test_auto_include(capsys) -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="info", log_handler_var=log_handler)
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
-        ),
-        log_level="info",
+        )
     )
     out = capsys.readouterr().out
     validate_config(spec, "auto_include_flow.yaml")
@@ -377,11 +380,12 @@ def test_auto_include(capsys) -> None:
 
 
 def test_auto_include_two(capsys) -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="warning", log_handler_var=log_handler)
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "another_flow" / "test_flow.py"
         ),
-        log_level="warning",
     )
     out = capsys.readouterr().out
     validate_config(spec, "auto_include_two_flow.yaml")
