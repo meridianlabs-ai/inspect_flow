@@ -19,8 +19,8 @@ website:
           href: reference/inspect_flow.qmd#flowdependencies
         - text: FlowEpochs
           href: reference/inspect_flow.qmd#flowepochs
-        - text: FlowJob
-          href: reference/inspect_flow.qmd#flowjob
+        - text: FlowSpec
+          href: reference/inspect_flow.qmd#flowspec
         - text: FlowModel
           href: reference/inspect_flow.qmd#flowmodel
         - text: FlowOptions
@@ -60,8 +60,8 @@ website:
         contents:
         - text: config
           href: reference/inspect_flow.api.qmd#config
-        - text: load_job
-          href: reference/inspect_flow.api.qmd#load_job
+        - text: load_spec
+          href: reference/inspect_flow.api.qmd#load_spec
         - text: run
           href: reference/inspect_flow.api.qmd#run
     - section: Inspect CLI
