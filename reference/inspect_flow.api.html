@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.8.26">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -138,11 +138,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="../index.html" aria-current="page"> 
+    <a class="nav-link" href="../index.html"> 
 <span class="menu-text">Welcome</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../reference/index.html"> 
+    <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
 <span class="menu-text">Reference</span></a>
   </li>  
 </ul>
@@ -173,10 +173,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
-    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="../index.html" class="sidebar-logo-link">
-      </a>
-      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -229,8 +225,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowjob" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowJob</span></a>
+  <a href="../reference/inspect_flow.html#flowspec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowSpec</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -354,8 +350,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#load_job" class="sidebar-item-text sidebar-link">
- <span class="menu-text">load_job</span></a>
+  <a href="../reference/inspect_flow.api.html#load_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_spec</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -404,7 +400,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#python-api" id="toc-python-api" class="nav-link active" data-scroll-target="#python-api">Python API</a>
   <ul class="collapse">
   <li><a href="#config" id="toc-config" class="nav-link" data-scroll-target="#config">config</a></li>
-  <li><a href="#load_job" id="toc-load_job" class="nav-link" data-scroll-target="#load_job">load_job</a></li>
+  <li><a href="#load_spec" id="toc-load_spec" class="nav-link" data-scroll-target="#load_spec">load_spec</a></li>
   <li><a href="#run" id="toc-run" class="nav-link" data-scroll-target="#run">run</a></li>
   </ul></li>
   </ul>
@@ -436,20 +432,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="python-api">Python API</h2>
 <section id="config" class="level3">
 <h3 class="anchored" data-anchor-id="config">config</h3>
-<p>Return the flow job configuration.</p>
+<p>Return the flow spec configuration.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b811bb1cec8914d7a4c431ea7da69a31d8cef410/src/inspect_flow/_api/api.py#L63">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3c83b0eb5dad12558b56704e726b92e1c5f59be4/src/inspect_flow/_api/api.py#L63">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
-<dt><code class="ref-definition">job</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
+<dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
 <dd>
-<p>The flow job configuration.</p>
+<p>The flow spec configuration.</p>
 </dd>
 <dt><code class="ref-definition">base_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -457,30 +453,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">log_level</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.</p>
+<p>The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.</p>
 </dd>
 </dl>
 </section>
-<section id="load_job" class="level3">
-<h3 class="anchored" data-anchor-id="load_job">load_job</h3>
-<p>Load a job config file.</p>
+<section id="load_spec" class="level3">
+<h3 class="anchored" data-anchor-id="load_spec">load_spec</h3>
+<p>Load a spec from file.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b811bb1cec8914d7a4c431ea7da69a31d8cef410/src/inspect_flow/_api/api.py#L15">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3c83b0eb5dad12558b56704e726b92e1c5f59be4/src/inspect_flow/_api/api.py#L15">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_job(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_spec(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span>: <span class="bu">str</span>,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    args: <span class="bu">dict</span>[<span class="bu">str</span>, Any] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> FlowJob</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> FlowSpec</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">file</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
 <dd>
-<p>The path to the job configuration file.</p>
+<p>The path to the spec file.</p>
 </dd>
 <dt><code class="ref-definition">log_level</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.</p>
+<p>The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.</p>
 </dd>
 <dt><code class="ref-definition">args</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -492,10 +488,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run">run</h3>
 <p>Run an inspect_flow evaluation.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b811bb1cec8914d7a4c431ea7da69a31d8cef410/src/inspect_flow/_api/api.py#L32">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3c83b0eb5dad12558b56704e726b92e1c5f59be4/src/inspect_flow/_api/api.py#L32">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    job: FlowJob,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
@@ -504,9 +500,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    no_dotenv: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
-<dt><code class="ref-definition">job</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowjob">FlowJob</a></span></span></dt>
+<dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
 <dd>
-<p>The flow job configuration.</p>
+<p>The flow spec configuration.</p>
 </dd>
 <dt><code class="ref-definition">base_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -518,11 +514,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">log_level</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>The Inspect Flow log level to use. Use job.options.log_level to set the Inspect AI log level.</p>
+<p>The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.</p>
 </dd>
 <dt><code class="ref-definition">no_venv</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
 <dd>
-<p>If True, do not create a virtual environment to run the job.</p>
+<p>If True, do not create a virtual environment to run the spec.</p>
 </dd>
 <dt><code class="ref-definition">no_dotenv</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
 <dd>
