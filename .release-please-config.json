@@ -22,6 +22,11 @@
           "hidden": false
         },
         {
+          "type": "doc",
+          "section": "Documentation",
+          "hidden": false
+        },
+        {
           "type": "style",
           "section": "Styles",
           "hidden": true
