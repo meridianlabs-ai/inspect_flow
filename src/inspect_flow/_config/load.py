@@ -185,6 +185,7 @@ def _load_spec_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
 ) -> FlowSpec | None:
     config_path = Path(absolute_file_path(config_file))
+    logger.info(f"Loading config file: {config_path.as_posix()}")
 
     try:
         with file(config_file, "r") as f:
