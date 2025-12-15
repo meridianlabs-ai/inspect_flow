@@ -18,6 +18,7 @@ CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 COMMON_DEFAULTS = {
     "no_venv": False,
     "no_dotenv": False,
+    "dry_run": False,
 }
 
 
@@ -82,7 +83,7 @@ def test_run_command_overrides() -> None:
 
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
-            mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR, run_args=[]
+            mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR
         )
 
 
@@ -122,7 +123,6 @@ def test_run_command_log_dir_create_unique() -> None:
             mock_config_obj,
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
-            run_args=[],
         )
 
 
@@ -213,9 +213,8 @@ def test_run_command_dry_run() -> None:
 
         mock_run.assert_called_once_with(
             mock_config_obj,
-            **COMMON_DEFAULTS,
+            **(COMMON_DEFAULTS | {"dry_run": True}),
             base_dir=CONFIG_FILE_DIR,
-            run_args=["--dry-run"],
         )
 
 
@@ -246,7 +245,6 @@ def test_run_command_args() -> None:
             mock_config_obj,
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
-            run_args=[],
         )
 
 
@@ -269,7 +267,6 @@ def test_run_command_no_venv() -> None:
             mock_config_obj,
             **(COMMON_DEFAULTS | {"no_venv": True}),
             base_dir=CONFIG_FILE_DIR,
-            run_args=[],
         )
 
 

@@ -14,7 +14,11 @@ logger = getLogger(__name__)
 
 
 def create_venv(
-    spec: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str]
+    spec: FlowSpec,
+    base_dir: str,
+    temp_dir: str,
+    env: dict[str, str],
+    dry_run: bool = False,
 ) -> None:
     spec.python_version = (
         spec.python_version
@@ -45,7 +49,7 @@ def create_venv(
     _uv_pip_install(dependencies, temp_dir, env)
 
     # Freeze installed packages to flow-requirements.txt in log_dir
-    if spec.log_dir:
+    if not dry_run and spec.log_dir:
         freeze_result = run_with_logging(
             ["uv", "pip", "freeze"],
             cwd=temp_dir,
