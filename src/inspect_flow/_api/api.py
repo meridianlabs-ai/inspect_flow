@@ -54,7 +54,7 @@ def run(
     launch(
         spec=spec,
         base_dir=base_dir,
-        run_args=["--dry-run"] if dry_run else [],
+        dry_run=dry_run,
         no_venv=no_venv,
         no_dotenv=no_dotenv,
     )

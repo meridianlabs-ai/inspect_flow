@@ -21,7 +21,7 @@ def launch(
     spec: FlowSpec,
     base_dir: str,
     no_dotenv: bool = False,
-    run_args: list[str] | None = None,
+    dry_run: bool = False,
     no_venv: bool = False,
 ) -> None:
     env = _get_env(base_dir, no_dotenv)
@@ -44,7 +44,8 @@ def launch(
 
     run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
     base_dir = absolute_file_path(base_dir)
-    args = ["--base-dir", base_dir] + (run_args or [])
+    run_args = ["--dry-run"] if dry_run else []
+    args = ["--base-dir", base_dir] + run_args
     if spec.env:
         env.update(**spec.env)
 
@@ -65,7 +66,9 @@ def launch(
         # Set the virtual environment so that it will be created in the temp directory
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
 
-        create_venv(spec, base_dir=base_dir, temp_dir=temp_dir, env=env)
+        create_venv(
+            spec, base_dir=base_dir, temp_dir=temp_dir, env=env, dry_run=dry_run
+        )
 
         python_path = Path(temp_dir) / ".venv" / "bin" / "python"
         file = _write_flow_yaml(spec, temp_dir)

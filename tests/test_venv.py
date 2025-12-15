@@ -279,6 +279,7 @@ def test_python_version() -> None:
 
 def test_5_flow_requirements() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
+        log_dir = Path(temp_dir) / "logs"
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
@@ -287,7 +288,7 @@ def test_5_flow_requirements() -> None:
             create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
-                    log_dir="logs",
+                    log_dir=log_dir.as_posix(),
                     tasks=[FlowTask(name="task_name")],
                 ),
                 base_dir=".",
@@ -302,11 +303,36 @@ def test_5_flow_requirements() -> None:
             "pip",
             "freeze",
         ]
-        requirements_path = Path("logs") / "flow-requirements.txt"
+        requirements_path = log_dir / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
             assert requirements == "mocked output"
+
+
+def test_333_no_flow_requirements() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        log_dir = Path(temp_dir) / "logs"
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+
+            create_venv(
+                spec=FlowSpec(
+                    python_version="3.11",
+                    log_dir=log_dir.as_posix(),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+                dry_run=True,
+            )
+
+        assert mock_run.call_count == 2
+        requirements_path = log_dir / "flow-requirements.txt"
+        assert not requirements_path.exists()
 
 
 def test_241_dependency_file() -> None:
