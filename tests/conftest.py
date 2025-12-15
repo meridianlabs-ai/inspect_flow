@@ -1,5 +1,11 @@
-import importlib.util
+# Configure environment BEFORE any imports that might initialize Rich
+# This prevents Rich from wrapping log output at narrow column widths
 import os
+
+os.environ["COLUMNS"] = "500"
+os.environ["NO_COLOR"] = "1"
+
+import importlib.util
 import subprocess
 from typing import Any, Callable, TypeVar, cast
 
