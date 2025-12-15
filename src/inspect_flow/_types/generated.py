@@ -103,7 +103,7 @@ class FlowAgentDict(TypedDict):
     """Additional args to pass to agent constructor."""
     flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
     """Optional. Metadata stored in the flow config. Not passed to the agent."""
-    type: NotRequired[Optional[str]]
+    type: NotRequired[Literal["agent"]]
     """Type needed to differentiated solvers and agents in solver lists."""
 
 
@@ -443,9 +443,10 @@ class GenerateConfigDict(TypedDict):
     internal_tools: NotRequired[Optional[bool]]
     max_tool_output: NotRequired[Optional[int]]
     cache_prompt: NotRequired[Optional[Union[str, bool]]]
+    verbosity: NotRequired[Optional[Literal["low", "medium", "high"]]]
     effort: NotRequired[Optional[Literal["low", "medium", "high"]]]
     reasoning_effort: NotRequired[
-        Optional[Literal["none", "minimal", "low", "medium", "high"]]
+        Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
     ]
     reasoning_tokens: NotRequired[Optional[int]]
     reasoning_summary: NotRequired[
@@ -481,7 +482,9 @@ class GenerateConfigMatrixDict(TypedDict):
     cache_prompt: NotRequired[Optional[Sequence[Optional[Union[str, bool]]]]]
     reasoning_effort: NotRequired[
         Optional[
-            Sequence[Optional[Literal["none", "minimal", "low", "medium", "high"]]]
+            Sequence[
+                Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
+            ]
         ]
     ]
     reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
