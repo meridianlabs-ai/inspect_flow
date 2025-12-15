@@ -29,6 +29,16 @@ def test_local_e2e() -> None:
     )
     assert result.exit_code == 0
 
+    # #334 Verify warning about duplicate dependency files
+    assert (
+        "Multiple dependency files found when auto-detecting dependencies. Using 'pyproject.toml'"
+        in result.stdout
+    )
+    # requirements.txt ignored in same directory as pyproject.toml
+    assert "and ignoring 'requirements.txt'" in result.stdout
+    # pyproject.toml ignored in parent directory
+    assert "and ignoring 'pyproject.toml'" in result.stdout
+
     config = load_spec(str(config_path))
     verify_test_logs(spec=config, log_dir=log_dir)
 

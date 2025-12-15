@@ -150,24 +150,7 @@ def _get_dependency_file(
         or not spec.dependencies.dependency_file
         or spec.dependencies.dependency_file == "auto"
     ):
-        files: list[Literal["pyproject.toml", "requirements.txt"]] = [
-            "pyproject.toml",
-            "requirements.txt",
-        ]
-
-        # Walk up the directory tree starting from base_dir
-        current_dir = Path(base_dir).resolve()
-        while True:
-            for file_name in files:
-                file_path = current_dir / file_name
-                if file_path.exists():
-                    return file_name, str(file_path)
-
-            # Move to parent directory
-            if current_dir.parent == current_dir:
-                break
-            current_dir = current_dir.parent
-        return None
+        return _search_dependency_file(base_dir=base_dir)
 
     file = absolute_path_relative_to(
         spec.dependencies.dependency_file, base_dir=base_dir
@@ -177,3 +160,36 @@ def _get_dependency_file(
     if file.endswith("pyproject.toml"):
         return "pyproject.toml", file
     return "requirements.txt", file
+
+
+def _search_dependency_file(
+    base_dir: str,
+) -> tuple[Literal["requirements.txt", "pyproject.toml"], str] | None:
+    files: list[Literal["pyproject.toml", "requirements.txt"]] = [
+        "pyproject.toml",
+        "requirements.txt",
+    ]
+
+    # Walk up the directory tree starting from base_dir
+    current_dir = Path(base_dir).resolve()
+    found_file = None
+    found_path = None
+    while True:
+        for file_name in files:
+            file_path = current_dir / file_name
+            if file_path.exists():
+                if not found_file:
+                    found_file = file_name
+                    found_path = str(file_path)
+                else:
+                    logger.warning(
+                        f"Multiple dependency files found when auto-detecting dependencies. "
+                        f"Using '{found_file}' at '{found_path}' and ignoring "
+                        f"'{file_name}' at '{file_path}'."
+                    )
+
+        # Move to parent directory
+        if current_dir.parent == current_dir:
+            break
+        current_dir = current_dir.parent
+    return (found_file, found_path) if found_file and found_path else None
