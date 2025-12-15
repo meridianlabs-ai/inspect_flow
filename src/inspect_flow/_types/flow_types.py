@@ -546,6 +546,11 @@ class FlowSpec(BaseModel, extra="forbid"):
         description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
+    database: str | None | NotGiven = Field(
+        default=not_given,
+        description="Path to database directory. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). If not specified, no database will be used.",
+    )
+
     log_dir: str | None | NotGiven = Field(
         default=not_given,
         description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
