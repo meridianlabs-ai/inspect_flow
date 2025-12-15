@@ -87,7 +87,7 @@ def config_options(f):
             dir_okay=True,
             writable=True,
             readable=True,
-            resolve_path=True,
+            resolve_path=False,
         ),
         default=None,
         help="Set the log directory. Will override the log_dir specified in the config.",
