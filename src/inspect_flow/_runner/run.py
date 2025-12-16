@@ -1,11 +1,19 @@
+import shutil
+from logging import getLogger
+
 import click
 import inspect_ai
 import yaml
+from inspect_ai import Task
+from inspect_ai._eval.eval import eval_resolve_tasks
+from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
+from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._database.database import add_log_dir, search_for_logs
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
@@ -14,6 +22,8 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none
+
+logger = getLogger(__name__)
 
 
 def _read_config(config_file: str) -> FlowSpec:
@@ -32,24 +42,28 @@ def _write_config_file(spec: FlowSpec) -> None:
 def _run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
-    resolved_config = resolve_spec(spec, base_dir=base_dir)
-    tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
+    resolved_spec = resolve_spec(spec, base_dir=base_dir)
+    tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
 
     if dry_run:
-        dump = config_to_yaml(resolved_config)
+        dump = config_to_yaml(resolved_spec)
         click.echo(dump)
         return False, []
 
-    options = resolved_config.options or FlowOptions()
-    if not resolved_config.log_dir:
+    options = resolved_spec.options or FlowOptions()
+    if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 
-    _write_config_file(resolved_config)
+    _write_config_file(resolved_spec)
+
+    _copy_existing_logs(tasks, resolved_spec, base_dir=base_dir)
+
+    add_log_dir(resolved_spec, base_dir=base_dir)
 
     try:
         result = inspect_ai.eval_set(
             tasks=tasks,
-            log_dir=resolved_config.log_dir,
+            log_dir=resolved_spec.log_dir,
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
             retry_connections=default_none(options.retry_connections),
@@ -103,9 +117,45 @@ def _run_eval_set(
         raise
 
     if result[0]:
-        _print_bundle_url(resolved_config)
+        _print_bundle_url(resolved_spec)
 
     return result
+
+
+def _copy_existing_logs(tasks: list[Task], spec: FlowSpec, base_dir: str) -> None:
+    options = spec.options or FlowOptions()
+
+    resolved_tasks, _ = eval_resolve_tasks(
+        tasks=tasks,
+        task_args=dict(),
+        models=[get_model("none")],
+        model_roles=None,
+        config=GenerateConfig(),
+        approval=default_none(options.approval),
+        sandbox=default_none(options.sandbox),
+        sample_shuffle=default_none(options.sample_shuffle),
+    )
+
+    task_ids = set(
+        [
+            task_identifier(
+                task=task, eval_set_config=GenerateConfig(), eval_set_solver=None
+            )
+            for task in resolved_tasks
+        ]
+    )
+
+    # remove any tasks that already exist in the log_dir
+    assert spec.log_dir
+    logs = list_all_eval_logs(log_dir=spec.log_dir)
+    task_ids.difference_update([log.task_identifier for log in logs])
+    if not task_ids:
+        return
+
+    logs_files = search_for_logs(task_ids, spec, base_dir)
+    for log_file in logs_files:
+        logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
+        shutil.copy2(log_file, spec.log_dir)
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
