@@ -363,8 +363,6 @@ def test_multiple_includes() -> None:
 
 
 def test_auto_include(capsys) -> None:
-    log_handler: LogHandlerVar = {"handler": None}
-    init_flow_logging(log_level="info", log_handler_var=log_handler)
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"

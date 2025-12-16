@@ -31,6 +31,7 @@ def add_log_dir(spec: FlowSpec, base_dir: str) -> None:
     new_paths = previous_log_dirs.union({log_dir})
     if new_paths != previous_log_dirs:
         database_path = _get_database_path(spec, base_dir=base_dir)
+        database_path.parent.mkdir(parents=True, exist_ok=True)
         with open(database_path, "w") as db_file:
             db_file.write("\n".join(sorted(new_paths)) + "\n")
 

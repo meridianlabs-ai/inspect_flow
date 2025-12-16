@@ -1,5 +1,5 @@
-import shutil
 from logging import getLogger
+from pathlib import Path
 
 import click
 import inspect_ai
@@ -8,7 +8,7 @@ from inspect_ai import Task
 from inspect_ai._eval.eval import eval_resolve_tasks
 from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.file import file
+from inspect_ai._util.file import basename, copy_file, file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
@@ -48,6 +48,8 @@ def _run_eval_set(
     if dry_run:
         dump = config_to_yaml(resolved_spec)
         click.echo(dump)
+        if resolved_spec.database:
+            _copy_existing_logs(tasks, resolved_spec, base_dir=base_dir, dry_run=True)
         return False, []
 
     options = resolved_spec.options or FlowOptions()
@@ -122,7 +124,9 @@ def _run_eval_set(
     return result
 
 
-def _copy_existing_logs(tasks: list[Task], spec: FlowSpec, base_dir: str) -> None:
+def _copy_existing_logs(
+    tasks: list[Task], spec: FlowSpec, base_dir: str, dry_run: bool = False
+) -> None:
     options = spec.options or FlowOptions()
 
     resolved_tasks, _ = eval_resolve_tasks(
@@ -148,14 +152,21 @@ def _copy_existing_logs(tasks: list[Task], spec: FlowSpec, base_dir: str) -> Non
     # remove any tasks that already exist in the log_dir
     assert spec.log_dir
     logs = list_all_eval_logs(log_dir=spec.log_dir)
-    task_ids.difference_update([log.task_identifier for log in logs])
-    if not task_ids:
-        return
+    for log in logs:
+        if log.task_identifier in task_ids:
+            logger.info(f"Found existing log file {log.info.name}")
+            task_ids.remove(log.task_identifier)
+            if not task_ids:
+                return
 
     logs_files = search_for_logs(task_ids, spec, base_dir)
     for log_file in logs_files:
-        logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
-        shutil.copy2(log_file, spec.log_dir)
+        if dry_run:
+            logger.info(f"Found existing log file {log_file}")
+        else:
+            logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
+            destination = Path(spec.log_dir) / basename(log_file)
+            copy_file(log_file, destination.as_posix())
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
