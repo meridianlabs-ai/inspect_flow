@@ -56,9 +56,9 @@ def _run_eval_set(
 
     _write_config_file(resolved_spec)
 
-    _copy_existing_logs(tasks, resolved_spec, base_dir=base_dir)
-
-    add_log_dir(resolved_spec, base_dir=base_dir)
+    if resolved_spec.database:
+        _copy_existing_logs(tasks, resolved_spec, base_dir=base_dir)
+        add_log_dir(resolved_spec, base_dir=base_dir)
 
     try:
         result = inspect_ai.eval_set(
