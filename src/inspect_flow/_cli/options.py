@@ -8,6 +8,7 @@ from inspect_ai._util.constants import (
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 
 
 def log_level_option(f):
@@ -17,7 +18,7 @@ def log_level_option(f):
             [level.lower() for level in ALL_LOG_LEVELS],
             case_sensitive=False,
         ),
-        default="info",
+        default=DEFAULT_LOG_LEVEL,
         envvar="INSPECT_FLOW_LOG_LEVEL",
         help="Set the log level (defaults to 'info')",
     )(f)
@@ -125,7 +126,7 @@ def config_options(f):
 
 
 class ConfigOptionArgs(TypedDict, total=False):
-    log_level: str | None
+    log_level: str
     database: str | None
     log_dir: str | None
     log_dir_create_unique: bool | None

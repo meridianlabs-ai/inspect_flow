@@ -20,7 +20,9 @@ from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
 )
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
+from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
 
 logger = getLogger(__name__)
@@ -61,6 +63,8 @@ def _run_eval_set(
     if resolved_spec.database:
         _copy_existing_logs(tasks, resolved_spec, base_dir=base_dir)
         add_log_dir(resolved_spec, base_dir=base_dir)
+
+    logger.info(f"Running eval set with {len(tasks)} tasks.")
 
     try:
         result = inspect_ai.eval_set(
@@ -205,8 +209,14 @@ def _print_bundle_url(spec: FlowSpec) -> None:
 @click.option(
     "--base-dir",
     type=str,
-    default=False,
+    default="",
     help="Base directory.",
+)
+@click.option(
+    "--log-level",
+    type=str,
+    default=DEFAULT_LOG_LEVEL,
+    help="Log level.",
 )
 @click.option(
     "--dry-run",
@@ -216,10 +226,14 @@ def _print_bundle_url(spec: FlowSpec) -> None:
     help="Dry run.",
 )
 @click.pass_context
-def flow_run(ctx: click.Context, file: str, base_dir: str, dry_run: bool) -> None:
+def flow_run(
+    ctx: click.Context, file: str, base_dir: str, log_level: str, dry_run: bool
+) -> None:
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         raise NotImplementedError("Run has no subcommands.")
+
+    init_flow_logging(log_level=log_level)
 
     cfg = _read_config(file)
     _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
