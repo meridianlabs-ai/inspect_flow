@@ -9,13 +9,14 @@ from inspect_flow._config.load import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.launch import launch
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
 
 def load_spec(
     file: str,
     *,
-    log_level: str = "info",
+    log_level: str = DEFAULT_LOG_LEVEL,
     args: dict[str, Any] | None = None,
 ) -> FlowSpec:
     """Load a spec from file.
@@ -34,7 +35,7 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
-    log_level: str = "info",
+    log_level: str = DEFAULT_LOG_LEVEL,
     no_venv: bool = False,
     no_dotenv: bool = False,
 ) -> None:
@@ -64,7 +65,7 @@ def config(
     spec: FlowSpec,
     base_dir: str | None = None,
     *,
-    log_level: str = "info",
+    log_level: str = DEFAULT_LOG_LEVEL,
 ) -> str:
     """Return the flow spec configuration.
 

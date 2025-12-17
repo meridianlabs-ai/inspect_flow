@@ -9,6 +9,7 @@ from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
 CREATE_VENV_RUN_CALLS = 3
@@ -42,7 +43,7 @@ def test_launch() -> None:
         assert args[4] == "--base-dir"
         assert args[5] == Path.cwd().as_posix()
         assert args[6] == "--log-level"
-        assert args[7] == "info"
+        assert args[7] == DEFAULT_LOG_LEVEL
 
 
 def test_launch_no_venv() -> None:

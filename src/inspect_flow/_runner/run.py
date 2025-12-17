@@ -14,6 +14,7 @@ from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
 )
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
@@ -156,7 +157,7 @@ def _print_bundle_url(spec: FlowSpec) -> None:
 @click.option(
     "--log-level",
     type=str,
-    default="info",
+    default=DEFAULT_LOG_LEVEL,
     help="Log level.",
 )
 @click.option(

@@ -1,8 +1,8 @@
 from inspect_ai._util.logger import LogHandlerVar, init_logger
 
-from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL, PKG_NAME
 
-_last_log_level = "info"
+_last_log_level = DEFAULT_LOG_LEVEL
 
 
 def init_flow_logging(
