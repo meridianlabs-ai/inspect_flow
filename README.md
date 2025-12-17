@@ -6,25 +6,25 @@
 |--------------------------------------------------- | -------: | -------: | ---------: | --------: |
 | src/inspect\_flow/\_\_init\_\_.py                  |        7 |        0 |    100.00% |           |
 | src/inspect\_flow/\_api/\_\_init\_\_.py            |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_api/api.py                     |       21 |        0 |    100.00% |           |
+| src/inspect\_flow/\_api/api.py                     |       22 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/\_\_init\_\_.py            |        3 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/config.py                  |       17 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/config.py                  |       18 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/main.py                    |       19 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/options.py                 |       34 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/run.py                     |       18 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/options.py                 |       35 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/run.py                     |       19 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/\_\_init\_\_.py         |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/defaults.py             |       68 |        0 |    100.00% |           |
-| src/inspect\_flow/\_config/load.py                 |      222 |        0 |    100.00% |           |
+| src/inspect\_flow/\_config/load.py                 |      221 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/write.py                |        5 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/\_\_init\_\_.py       |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/auto\_dependencies.py |       66 |        0 |    100.00% |           |
-| src/inspect\_flow/\_launcher/launch.py             |       59 |        0 |    100.00% |           |
+| src/inspect\_flow/\_launcher/launch.py             |       60 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       75 |       26 |     65.33% |20-24, 87-88, 95-105, 115-132 |
 | src/inspect\_flow/\_launcher/venv.py               |       99 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/instantiate.py          |      103 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/resolve.py              |       50 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |       65 |        0 |    100.00% |           |
+| src/inspect\_flow/\_runner/run.py                  |       72 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        5 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       61 |        0 |    100.00% |           |
@@ -33,17 +33,17 @@
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/args.py                   |        1 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/constants.py              |        2 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/constants.py              |        3 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/error.py                  |       16 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/list\_util.py             |        6 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/logging.py                |        4 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/logging.py                |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/module\_util.py           |       56 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/path\_util.py             |       16 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1632** |   **26** | **98.41%** |           |
+| **TOTAL**                                          | **1648** |   **26** | **98.42%** |           |
 
 
 ## Setup coverage badge
