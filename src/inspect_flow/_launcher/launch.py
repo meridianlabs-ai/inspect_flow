@@ -12,6 +12,7 @@ from inspect_ai._util.file import absolute_file_path
 from inspect_flow._launcher.venv import create_venv
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -45,7 +46,7 @@ def launch(
     run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
     base_dir = absolute_file_path(base_dir)
     run_args = ["--dry-run"] if dry_run else []
-    args = ["--base-dir", base_dir] + run_args
+    args = ["--base-dir", base_dir, "--log-level", get_last_log_level()] + run_args
     if spec.env:
         env.update(**spec.env)
 

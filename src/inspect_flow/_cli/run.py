@@ -11,6 +11,7 @@ from inspect_flow._cli.options import (
 )
 from inspect_flow._config.load import int_load_spec
 from inspect_flow._launcher.launch import launch
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
 
@@ -29,7 +30,7 @@ def run_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to run a spec."""
-    log_level = kwargs.get("log_level")
+    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
