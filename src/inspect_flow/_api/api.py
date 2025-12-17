@@ -15,7 +15,7 @@ from inspect_flow._util.logging import init_flow_logging
 def load_spec(
     file: str,
     *,
-    log_level: str | None = None,
+    log_level: str = "info",
     args: dict[str, Any] | None = None,
 ) -> FlowSpec:
     """Load a spec from file.
@@ -34,7 +34,7 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
-    log_level: str | None = None,
+    log_level: str = "info",
     no_venv: bool = False,
     no_dotenv: bool = False,
 ) -> None:
@@ -64,7 +64,7 @@ def config(
     spec: FlowSpec,
     base_dir: str | None = None,
     *,
-    log_level: str | None = None,
+    log_level: str = "info",
 ) -> str:
     """Return the flow spec configuration.
 

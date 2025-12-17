@@ -4,10 +4,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from inspect_ai._util.logger import LogHandlerVar
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
+from inspect_flow._util.logging import init_flow_logging
 
 CREATE_VENV_RUN_CALLS = 3
 
@@ -24,7 +26,7 @@ def test_launch() -> None:
 
         assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
         args = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].args[0]
-        assert len(args) == 6
+        assert len(args) == 8
         assert str(args[0]).endswith("/.venv/bin/python")
         assert args[1] == str(
             (
@@ -39,9 +41,13 @@ def test_launch() -> None:
         assert "flow.yaml" in args[3]
         assert args[4] == "--base-dir"
         assert args[5] == Path.cwd().as_posix()
+        assert args[6] == "--log-level"
+        assert args[7] == "info"
 
 
 def test_launch_no_venv() -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="warning", log_handler_var=log_handler)
     with patch("subprocess.run") as mock_run:
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
@@ -54,7 +60,7 @@ def test_launch_no_venv() -> None:
 
         assert mock_run.call_count == 1
         args = mock_run.mock_calls[0].args[0]
-        assert len(args) == 6
+        assert len(args) == 8
         assert args[0] == sys.executable
         assert args[1] == str(
             (
@@ -69,6 +75,8 @@ def test_launch_no_venv() -> None:
         assert args[3] == "flow.yaml"
         assert args[4] == "--base-dir"
         assert args[5] == Path.cwd().as_posix()
+        assert args[6] == "--log-level"
+        assert args[7] == "warning"
 
 
 def test_env(monkeypatch: pytest.MonkeyPatch) -> None:

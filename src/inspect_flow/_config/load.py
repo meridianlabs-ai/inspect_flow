@@ -16,11 +16,10 @@ from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
-from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
-logger = getLogger(PKG_NAME)
+logger = getLogger(__file__)
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
