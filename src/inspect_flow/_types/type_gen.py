@@ -26,9 +26,9 @@ GENERATED_CODE_COMMENT = [
 ADDITIONAL_IMPORTS = [
     "from typing_extensions import TypedDict\n",
     "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema\n",
-    "from inspect_ai.util import JSONSchema, SandboxEnvironmentSpec\n",
-    "from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowDefaults, FlowDependencies, FlowEpochs, FlowModel, FlowOptions, FlowScorer, FlowSolver, FlowTask, NotGiven\n",
+    "from inspect_ai.util import SandboxEnvironmentSpec\n",
+    "from inspect_ai.approval._policy import ApprovalPolicyConfig\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
@@ -167,10 +167,9 @@ def _update_refs(type_def: Schema) -> None:
 def _create_dict_types(schema: Schema, initial_defs: Schema) -> None:
     defs: Schema = schema["$defs"]
     for title, type_def in initial_defs.items():
-        new_title = title
-        _create_type(defs, new_title, type_def, "Dict")
-        if new_title in MATRIX_CLASS_FIELDS:
-            _create_type(defs, new_title, type_def, "MatrixDict")
+        if title in MATRIX_CLASS_FIELDS:
+            _create_type(defs, title, type_def, "Dict")
+            _create_type(defs, title, type_def, "MatrixDict")
 
 
 def _update_def_titles_and_refs(schema: Schema) -> None:
@@ -317,6 +316,9 @@ def _add_generated_code(
                 section = "classes"
             elif line.strip().startswith("Model:"):
                 # Not sure where this line comes from, but don't want it
+                continue
+            elif "TypeAlias = Any" in line:
+                # Skip this line which datamodel-codegen adds for some reason
                 continue
             else:
                 # Remove TypedDict from the import line but keep other imports
