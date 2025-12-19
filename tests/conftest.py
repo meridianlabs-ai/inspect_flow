@@ -5,11 +5,20 @@ import os
 os.environ["COLUMNS"] = "500"
 os.environ["NO_COLOR"] = "1"
 
+
 import importlib.util
 import subprocess
 from typing import Any, Callable, TypeVar, cast
 
 import pytest
+from inspect_ai._util.logger import LogHandlerVar
+from inspect_flow._util.logging import init_flow_logging
+
+
+@pytest.fixture(autouse=True)
+def init_log_handler() -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="info", log_handler_var=log_handler)
 
 
 def pytest_addoption(parser: pytest.Parser):

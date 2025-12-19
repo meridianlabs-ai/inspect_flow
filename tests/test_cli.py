@@ -64,6 +64,8 @@ def test_run_command_overrides() -> None:
                 "defaults.solver.args.tool_calls=none",
                 "--log-dir",
                 "s3://my-bucket/flow-logs",
+                "--database",
+                "s3://my-bucket/flow-db",
             ],
             catch_exceptions=False,
         )
@@ -78,6 +80,7 @@ def test_run_command_overrides() -> None:
                 overrides=[
                     "dependencies.additional_dependencies=dep1",
                     "defaults.solver.args.tool_calls=none",
+                    "database=s3://my-bucket/flow-db",
                     "log_dir=s3://my-bucket/flow-logs",
                 ],
                 args={},

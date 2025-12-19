@@ -19,7 +19,7 @@ from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
