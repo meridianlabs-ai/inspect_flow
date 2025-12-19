@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from inspect_flow._types.generated import (
+from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowModel,
     FlowSolver,
