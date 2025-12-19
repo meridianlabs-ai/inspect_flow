@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from inspect_ai._eval.evalset import list_all_eval_logs
+from inspect_ai.log import EvalLog, read_eval_log
 
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -38,13 +39,41 @@ def add_log_dir(spec: FlowSpec, base_dir: str) -> None:
 
 def search_for_logs(task_ids: set[str], spec: FlowSpec, base_dir: str) -> list[str]:
     log_dirs = _get_log_dirs(spec, base_dir=base_dir)
-    log_files = []
+    id_to_logs: dict[str, list[str]] = {}
+
     for log_dir in log_dirs:
         logs = list_all_eval_logs(log_dir=log_dir)
         for log in logs:
             if log.task_identifier in task_ids:
-                log_files.append(log.info.name)
-                task_ids.remove(log.task_identifier)
-                if not task_ids:
-                    return log_files
+                if log.task_identifier not in id_to_logs:
+                    id_to_logs[log.task_identifier] = []
+                id_to_logs[log.task_identifier].append(log.info.name)
+
+    # find the best log for each id
+    log_files: list[str] = []
+    for logs in id_to_logs.values():
+        best_log = None
+        best_eval_log = None
+        for log in logs:
+            eval_log = read_eval_log(log, header_only=True)
+            if _is_better_log(eval_log, best_eval_log):
+                best_log = log
+                best_eval_log = eval_log
+        if best_log:
+            log_files.append(best_log)
     return log_files
+
+
+def _is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
+    if not candidate.results or candidate.invalidated:
+        return False
+    if best is None:
+        return True
+    # Compare completed samples
+    assert best.results
+    if candidate.results.completed_samples > best.results.completed_samples:
+        return True
+    if candidate.results.completed_samples < best.results.completed_samples:
+        return False
+    # If completed samples are equal, take the more recently completed one
+    return candidate.stats.completed_at > best.stats.completed_at
