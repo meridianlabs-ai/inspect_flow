@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
 from datamodel_code_generator import (
-    DataModelType,
     InputFileType,
     LiteralType,
     PythonVersion,
     generate,
 )
+from datamodel_code_generator.enums import DataModelType
 
 from inspect_flow._types.flow_types import FlowSpec
 
@@ -322,7 +322,7 @@ def _add_generated_code(
                 continue
             else:
                 # Remove TypedDict from the import line but keep other imports
-                modified_line = re.sub(r"\s*TypedDict\s*,?", "", line)
+                modified_line = re.sub(r",?\s*TypedDict\s*", "", line)
                 code.imports.append(modified_line)
 
         if section == "classes":

@@ -6,6 +6,7 @@ from click.testing import CliRunner
 from inspect_flow._api.api import load_spec
 from inspect_flow._cli.main import flow
 from inspect_flow._types.flow_types import FlowSpec
+from packaging.version import Version
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -49,8 +50,12 @@ def test_local_e2e() -> None:
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
     loaded_spec = FlowSpec.model_validate(data, extra="forbid")
-    # The python_version should match the current version
-    assert (
-        loaded_spec.python_version
-        == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
+    # The uv.lock specifies python version >= 3.12
+    if sys.version_info >= (3, 12):
+        assert (
+            loaded_spec.python_version
+            == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
+    else:
+        assert loaded_spec.python_version
+        assert Version(loaded_spec.python_version) >= Version("3.12")

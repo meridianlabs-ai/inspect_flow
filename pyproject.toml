@@ -13,8 +13,10 @@ license = { text = "MIT License" }
 dependencies = [
     "click>=8.2.1",
     "inspect-ai>=0.3.147",
+    "packaging>=21.0",
     "pydantic>=2.11.2",
     "python-dotenv>=1.1.1",
+    "tomli>=2.0.0;python_version<'3.11'",
     "typing_extensions>=4.9.0",
 ]
 

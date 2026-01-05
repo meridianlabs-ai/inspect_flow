@@ -6,6 +6,7 @@ from typing import List, Literal, Sequence
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
+from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import run_with_logging
@@ -20,10 +21,6 @@ def create_venv(
     env: dict[str, str],
     dry_run: bool = False,
 ) -> None:
-    spec.python_version = (
-        spec.python_version
-        or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
     _create_venv_with_base_dependencies(
         spec, base_dir=base_dir, temp_dir=temp_dir, env=env
     )
@@ -90,8 +87,10 @@ def _create_venv_with_base_dependencies(
         return
 
     logger.info(f"Using pyproject.toml to create venv. File: {file_path}")
-    assert spec.python_version
     project_dir = Path(file_path).parent
+    if not spec.python_version:
+        spec.python_version = resolve_python_version(file_path)
+
     uv_args = [
         "--no-dev",
         "--python",
@@ -123,8 +122,11 @@ def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
 
 
 def _uv_venv(spec: FlowSpec, temp_dir: str, env: dict[str, str]) -> None:
-    """Create a virtual environment using 'uv venv'."""
-    assert spec.python_version
+    spec.python_version = (
+        spec.python_version
+        or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+
     run_with_logging(
         ["uv", "venv", "--python", spec.python_version],
         cwd=temp_dir,
