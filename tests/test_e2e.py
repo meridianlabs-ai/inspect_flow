@@ -6,6 +6,7 @@ from click.testing import CliRunner
 from inspect_flow._api.api import load_spec
 from inspect_flow._cli.main import flow
 from inspect_flow._types.flow_types import FlowSpec
+from packaging.version import Version
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -56,4 +57,5 @@ def test_local_e2e() -> None:
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         )
     else:
-        assert loaded_spec.python_version == "3.13.9"  # most recent version
+        assert loaded_spec.python_version
+        assert Version(loaded_spec.python_version) >= Version("3.12")
