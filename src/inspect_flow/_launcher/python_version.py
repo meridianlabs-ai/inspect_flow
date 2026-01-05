@@ -37,15 +37,26 @@ def _get_available_python_versions() -> list[Version]:
         check=True,
     )
 
-    versions: list[Version] = []
-    # Parse output like: "cpython-3.12.0-macos-aarch64-none"
-    version_pattern = re.compile(r"cpython-(\d+\.\d+\.\d+)")
+    return _all_versions_to_available_python_versions(result.stdout.strip().split("\n"))
 
-    for line in result.stdout.strip().split("\n"):
+
+def _all_versions_to_available_python_versions(
+    all_versions: list[str],
+) -> list[Version]:
+    versions: list[Version] = []
+    # Parse output like: "cpython-3.12.0-macos-aarch64-none" or "cpython-3.15.0a1-..."
+    # Capture full version including optional pre-release suffix (e.g., a1, b2, rc1)
+    version_pattern = re.compile(r"cpython-(\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?)")
+
+    for line in all_versions:
         match = version_pattern.search(line)
         if match:
             try:
-                versions.append(Version(match.group(1)))
+                version = Version(match.group(1))
+                # Skip pre-release versions (alpha, beta, release candidate)
+                if version.is_prerelease:
+                    continue
+                versions.append(version)
             except Exception:
                 continue
 

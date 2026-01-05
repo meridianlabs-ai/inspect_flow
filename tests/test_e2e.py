@@ -56,4 +56,4 @@ def test_local_e2e() -> None:
             == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         )
     else:
-        assert loaded_spec.python_version == "3.14.0"  # most recent version
+        assert loaded_spec.python_version == "3.13.9"  # most recent version
