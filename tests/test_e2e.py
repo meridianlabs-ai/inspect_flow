@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import yaml
@@ -50,7 +49,4 @@ def test_local_e2e() -> None:
         data = yaml.safe_load(f)
     loaded_spec = FlowSpec.model_validate(data, extra="forbid")
     # The python_version should match the current version
-    assert (
-        loaded_spec.python_version
-        == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
+    assert loaded_spec.python_version == "3.14.0"

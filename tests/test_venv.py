@@ -341,7 +341,7 @@ def test_241_dependency_file() -> None:
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
             spec=FlowSpec(
-                python_version="3.11",
+                python_version="3.12",
                 log_dir="logs",
                 dependencies=FlowDependencies(
                     dependency_file="tests/local_eval/pyproject.toml"
@@ -370,7 +370,7 @@ def test_241_no_uvlock() -> None:
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
             spec=FlowSpec(
-                python_version="3.11",
+                python_version="3.13",
                 log_dir="logs",
                 dependencies=FlowDependencies(
                     dependency_file="tests/local_eval/pyproject.toml",
@@ -394,7 +394,7 @@ def test_241_requirements_txt() -> None:
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
             spec=FlowSpec(
-                python_version="3.11",
+                python_version="3.12",
                 log_dir="logs",
                 dependencies=FlowDependencies(
                     dependency_file="tests/local_eval/requirements.txt",
