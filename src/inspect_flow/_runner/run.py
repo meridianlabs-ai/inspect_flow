@@ -155,6 +155,7 @@ def _copy_existing_logs(
     )
 
     # remove any tasks that already exist in the log_dir
+    logger.info("Searching for existing logs in the log directory")
     assert spec.log_dir
     logs = list_all_eval_logs(log_dir=spec.log_dir)
     for log in logs:
@@ -164,6 +165,7 @@ def _copy_existing_logs(
             if not task_ids:
                 return
 
+    logger.info("Searching database for existing logs")
     logs_files = search_for_logs(task_ids, spec, base_dir)
     for log_file in logs_files:
         if dry_run:
