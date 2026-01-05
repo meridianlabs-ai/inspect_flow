@@ -13,7 +13,7 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._database.database import add_log_dir, search_for_logs
+from inspect_flow._database.database import add_log_dir, init_database, search_for_logs
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
@@ -46,6 +46,7 @@ def _run_eval_set(
 ) -> tuple[bool, list[EvalLog]]:
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
+    init_database(resolved_spec, base_dir=base_dir)
 
     if dry_run:
         dump = config_to_yaml(resolved_spec)

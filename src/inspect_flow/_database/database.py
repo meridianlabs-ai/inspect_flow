@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 
 from inspect_ai._eval.evalset import list_all_eval_logs
@@ -5,6 +6,8 @@ from inspect_ai.log import EvalLog, read_eval_log
 
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.path_util import absolute_path_relative_to
+
+logger = getLogger(__name__)
 
 
 def _get_database_path(spec: FlowSpec, base_dir: str) -> Path:
@@ -22,6 +25,16 @@ def _get_log_dirs(spec: FlowSpec, base_dir: str) -> set[str]:
             lines = contents.splitlines()
             return set(lines)
     return set()
+
+
+def init_database(spec: FlowSpec, base_dir: str) -> None:
+    if not spec.database:
+        return
+    database_path = _get_database_path(spec, base_dir=base_dir)
+    if database_path.exists():
+        logger.info(f"Existing database: {database_path}")
+    else:
+        logger.info(f"Creating database: {database_path}")
 
 
 def add_log_dir(spec: FlowSpec, base_dir: str) -> None:
