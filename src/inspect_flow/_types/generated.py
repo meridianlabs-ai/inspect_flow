@@ -2,14 +2,8 @@
 
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Literal,
-    Mapping,
-    Optional,
-    Sequence,
-    Union,
-)
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema
@@ -29,11 +23,11 @@ from inspect_flow._types.flow_types import (
 class FlowAgentDict(TypedDict):
     """Configuration for an Agent."""
 
-    name: NotRequired[Optional[Union[str, NotGiven]]]
+    name: NotRequired[str | NotGiven | None]
     """Name of the agent. Required to be set by the time the agent is created."""
-    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to agent constructor."""
-    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Optional. Metadata stored in the flow config. Not passed to the agent."""
     type: NotRequired[Literal["agent"]]
     """Type needed to differentiated solvers and agents in solver lists."""
@@ -42,55 +36,55 @@ class FlowAgentDict(TypedDict):
 class FlowAgentMatrixDict(TypedDict):
     """Configuration for an Agent."""
 
-    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
+    args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to agent constructor."""
 
 
 class FlowModelDict(TypedDict):
     """Configuration for a Model."""
 
-    name: NotRequired[Optional[Union[str, NotGiven]]]
+    name: NotRequired[str | NotGiven | None]
     """Name of the model to use. Required to be set by the time the model is created."""
-    role: NotRequired[Optional[Union[str, NotGiven]]]
+    role: NotRequired[str | NotGiven | None]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[Optional[Union[str, NotGiven]]]
+    default: NotRequired[str | NotGiven | None]
     """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
-    config: NotRequired[Optional[Union[GenerateConfig, NotGiven]]]
+    config: NotRequired[GenerateConfig | NotGiven | None]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
-    base_url: NotRequired[Optional[Union[str, NotGiven]]]
+    base_url: NotRequired[str | NotGiven | None]
     """Optional. Alternate base URL for model."""
-    api_key: NotRequired[Optional[Union[str, NotGiven]]]
+    api_key: NotRequired[str | NotGiven | None]
     """Optional. API key for model."""
-    memoize: NotRequired[Optional[Union[bool, NotGiven]]]
+    memoize: NotRequired[bool | NotGiven | None]
     """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
-    model_args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    model_args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to model constructor."""
-    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Optional. Metadata stored in the flow config. Not passed to the model."""
 
 
 class FlowModelMatrixDict(TypedDict):
     """Configuration for a Model."""
 
-    config: NotRequired[Optional[Sequence[Optional[Union[GenerateConfig, NotGiven]]]]]
+    config: NotRequired[Sequence[GenerateConfig | NotGiven | None] | None]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
 
 
 class FlowSolverDict(TypedDict):
     """Configuration for a Solver."""
 
-    name: NotRequired[Optional[Union[str, NotGiven]]]
+    name: NotRequired[str | NotGiven | None]
     """Name of the solver. Required to be set by the time the solver is created."""
-    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to solver constructor."""
-    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Optional. Metadata stored in the flow config. Not passed to the solver."""
 
 
 class FlowSolverMatrixDict(TypedDict):
     """Configuration for a Solver."""
 
-    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
+    args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to solver constructor."""
 
 
@@ -101,59 +95,49 @@ class FlowTaskDict(TypedDict):
     Tasks are the basis for defining and running evaluations.
     """
 
-    name: NotRequired[Optional[Union[str, NotGiven]]]
+    name: NotRequired[str | NotGiven | None]
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
-    args: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        Optional[
-            Union[
-                str, FlowSolver, Sequence[Union[str, FlowSolver]], FlowAgent, NotGiven
-            ]
-        ]
+        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | NotGiven | None
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    scorer: NotRequired[
-        Optional[Union[str, FlowScorer, Sequence[Union[str, FlowScorer]], NotGiven]]
-    ]
+    scorer: NotRequired[str | FlowScorer | Sequence[str | FlowScorer] | NotGiven | None]
     """Scorer or list of scorers used to evaluate model output."""
-    model: NotRequired[Optional[Union[str, FlowModel, NotGiven]]]
+    model: NotRequired[str | FlowModel | NotGiven | None]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Union[GenerateConfig, NotGiven]]
+    config: NotRequired[GenerateConfig | NotGiven]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
-    model_roles: NotRequired[
-        Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]
-    ]
+    model_roles: NotRequired[Mapping[str, FlowModel | str] | NotGiven | None]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
-        Optional[Union[str, Sequence[Any], SandboxEnvironmentSpec, NotGiven]]
+        str | tuple[str, str] | SandboxEnvironmentSpec | NotGiven | None
     ]
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
-    approval: NotRequired[Optional[Union[str, ApprovalPolicyConfig, NotGiven]]]
+    approval: NotRequired[str | ApprovalPolicyConfig | NotGiven | None]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
-    epochs: NotRequired[Optional[Union[int, FlowEpochs, NotGiven]]]
+    epochs: NotRequired[int | FlowEpochs | NotGiven | None]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
-    fail_on_error: NotRequired[Optional[Union[bool, float, NotGiven]]]
+    fail_on_error: NotRequired[bool | float | NotGiven | None]
     """`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
-    continue_on_fail: NotRequired[Optional[Union[bool, NotGiven]]]
+    continue_on_fail: NotRequired[bool | NotGiven | None]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
-    message_limit: NotRequired[Optional[Union[int, NotGiven]]]
+    message_limit: NotRequired[int | NotGiven | None]
     """Limit on total messages used for each sample."""
-    token_limit: NotRequired[Optional[Union[int, NotGiven]]]
+    token_limit: NotRequired[int | NotGiven | None]
     """Limit on total tokens used for each sample."""
-    time_limit: NotRequired[Optional[Union[int, NotGiven]]]
+    time_limit: NotRequired[int | NotGiven | None]
     """Limit on clock time (in seconds) for samples."""
-    working_limit: NotRequired[Optional[Union[int, NotGiven]]]
+    working_limit: NotRequired[int | NotGiven | None]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
-    version: NotRequired[Union[int, str, NotGiven]]
+    version: NotRequired[int | str | NotGiven]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
-    metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional metadata to associate with the task."""
-    sample_id: NotRequired[
-        Optional[Union[str, int, Sequence[Union[str, int]], NotGiven]]
-    ]
+    sample_id: NotRequired[str | int | Sequence[str | int] | NotGiven | None]
     """Evaluate specific sample(s) from the dataset."""
-    flow_metadata: NotRequired[Optional[Union[Mapping[str, Any], NotGiven]]]
+    flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Optional. Metadata stored in the flow config. Not passed to the task."""
 
 
@@ -164,32 +148,21 @@ class FlowTaskMatrixDict(TypedDict):
     Tasks are the basis for defining and running evaluations.
     """
 
-    args: NotRequired[Optional[Sequence[Optional[Union[Mapping[str, Any], NotGiven]]]]]
+    args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        Optional[
-            Sequence[
-                Optional[
-                    Union[
-                        str,
-                        FlowSolver,
-                        Sequence[Union[str, FlowSolver]],
-                        FlowAgent,
-                        NotGiven,
-                    ]
-                ]
-            ]
+        Sequence[
+            str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | NotGiven | None
         ]
+        | None
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Optional[Sequence[Optional[Union[str, FlowModel, NotGiven]]]]]
+    model: NotRequired[Sequence[str | FlowModel | NotGiven | None] | None]
     """Default model for task (Optional, defaults to eval model)."""
-    config: NotRequired[Optional[Sequence[Union[GenerateConfig, NotGiven]]]]
+    config: NotRequired[Sequence[GenerateConfig | NotGiven] | None]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Optional[
-            Sequence[Optional[Union[Mapping[str, Union[FlowModel, str]], NotGiven]]]
-        ]
+        Sequence[Mapping[str, FlowModel | str] | NotGiven | None] | None
     ]
     """Named roles for use in `get_model()`."""
 
@@ -197,78 +170,75 @@ class FlowTaskMatrixDict(TypedDict):
 class GenerateConfigDict(TypedDict):
     """Model generation options."""
 
-    max_retries: NotRequired[Optional[int]]
-    timeout: NotRequired[Optional[int]]
-    attempt_timeout: NotRequired[Optional[int]]
-    max_connections: NotRequired[Optional[int]]
-    system_message: NotRequired[Optional[str]]
-    max_tokens: NotRequired[Optional[int]]
-    top_p: NotRequired[Optional[float]]
-    temperature: NotRequired[Optional[float]]
-    stop_seqs: NotRequired[Optional[Sequence[str]]]
-    best_of: NotRequired[Optional[int]]
-    frequency_penalty: NotRequired[Optional[float]]
-    presence_penalty: NotRequired[Optional[float]]
-    logit_bias: NotRequired[Optional[Mapping[str, float]]]
-    seed: NotRequired[Optional[int]]
-    top_k: NotRequired[Optional[int]]
-    num_choices: NotRequired[Optional[int]]
-    logprobs: NotRequired[Optional[bool]]
-    top_logprobs: NotRequired[Optional[int]]
-    parallel_tool_calls: NotRequired[Optional[bool]]
-    internal_tools: NotRequired[Optional[bool]]
-    max_tool_output: NotRequired[Optional[int]]
-    cache_prompt: NotRequired[Optional[Union[str, bool]]]
-    verbosity: NotRequired[Optional[Literal["low", "medium", "high"]]]
-    effort: NotRequired[Optional[Literal["low", "medium", "high"]]]
+    max_retries: NotRequired[int | None]
+    timeout: NotRequired[int | None]
+    attempt_timeout: NotRequired[int | None]
+    max_connections: NotRequired[int | None]
+    system_message: NotRequired[str | None]
+    max_tokens: NotRequired[int | None]
+    top_p: NotRequired[float | None]
+    temperature: NotRequired[float | None]
+    stop_seqs: NotRequired[Sequence[str] | None]
+    best_of: NotRequired[int | None]
+    frequency_penalty: NotRequired[float | None]
+    presence_penalty: NotRequired[float | None]
+    logit_bias: NotRequired[Mapping[str, float] | None]
+    seed: NotRequired[int | None]
+    top_k: NotRequired[int | None]
+    num_choices: NotRequired[int | None]
+    logprobs: NotRequired[bool | None]
+    top_logprobs: NotRequired[int | None]
+    parallel_tool_calls: NotRequired[bool | None]
+    internal_tools: NotRequired[bool | None]
+    max_tool_output: NotRequired[int | None]
+    cache_prompt: NotRequired[Literal["auto"] | bool | None]
+    verbosity: NotRequired[Literal["low", "medium", "high"] | None]
+    effort: NotRequired[Literal["low", "medium", "high"] | None]
     reasoning_effort: NotRequired[
-        Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
+        Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None
     ]
-    reasoning_tokens: NotRequired[Optional[int]]
+    reasoning_tokens: NotRequired[int | None]
     reasoning_summary: NotRequired[
-        Optional[Literal["none", "concise", "detailed", "auto"]]
+        Literal["none", "concise", "detailed", "auto"] | None
     ]
-    reasoning_history: NotRequired[Optional[Literal["none", "all", "last", "auto"]]]
-    response_schema: NotRequired[Optional[ResponseSchema]]
-    extra_body: NotRequired[Optional[Mapping[str, Any]]]
-    cache: NotRequired[Optional[Union[bool, CachePolicy]]]
-    batch: NotRequired[Optional[Union[bool, int, BatchConfig]]]
+    reasoning_history: NotRequired[Literal["none", "all", "last", "auto"] | None]
+    response_schema: NotRequired[ResponseSchema | None]
+    extra_body: NotRequired[Mapping[str, Any] | None]
+    cache: NotRequired[bool | CachePolicy | None]
+    batch: NotRequired[bool | int | BatchConfig | None]
 
 
 class GenerateConfigMatrixDict(TypedDict):
     """Model generation options."""
 
-    system_message: NotRequired[Optional[Sequence[Optional[str]]]]
-    max_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
-    top_p: NotRequired[Optional[Sequence[Optional[float]]]]
-    temperature: NotRequired[Optional[Sequence[Optional[float]]]]
-    stop_seqs: NotRequired[Optional[Sequence[Optional[Sequence[str]]]]]
-    best_of: NotRequired[Optional[Sequence[Optional[int]]]]
-    frequency_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
-    presence_penalty: NotRequired[Optional[Sequence[Optional[float]]]]
-    logit_bias: NotRequired[Optional[Sequence[Optional[Mapping[str, float]]]]]
-    seed: NotRequired[Optional[Sequence[Optional[int]]]]
-    top_k: NotRequired[Optional[Sequence[Optional[int]]]]
-    num_choices: NotRequired[Optional[Sequence[Optional[int]]]]
-    logprobs: NotRequired[Optional[Sequence[Optional[bool]]]]
-    top_logprobs: NotRequired[Optional[Sequence[Optional[int]]]]
-    parallel_tool_calls: NotRequired[Optional[Sequence[Optional[bool]]]]
-    internal_tools: NotRequired[Optional[Sequence[Optional[bool]]]]
-    max_tool_output: NotRequired[Optional[Sequence[Optional[int]]]]
-    cache_prompt: NotRequired[Optional[Sequence[Optional[Union[str, bool]]]]]
+    system_message: NotRequired[Sequence[str | None] | None]
+    max_tokens: NotRequired[Sequence[int | None] | None]
+    top_p: NotRequired[Sequence[float | None] | None]
+    temperature: NotRequired[Sequence[float | None] | None]
+    stop_seqs: NotRequired[Sequence[Sequence[str] | None] | None]
+    best_of: NotRequired[Sequence[int | None] | None]
+    frequency_penalty: NotRequired[Sequence[float | None] | None]
+    presence_penalty: NotRequired[Sequence[float | None] | None]
+    logit_bias: NotRequired[Sequence[Mapping[str, float] | None] | None]
+    seed: NotRequired[Sequence[int | None] | None]
+    top_k: NotRequired[Sequence[int | None] | None]
+    num_choices: NotRequired[Sequence[int | None] | None]
+    logprobs: NotRequired[Sequence[bool | None] | None]
+    top_logprobs: NotRequired[Sequence[int | None] | None]
+    parallel_tool_calls: NotRequired[Sequence[bool | None] | None]
+    internal_tools: NotRequired[Sequence[bool | None] | None]
+    max_tool_output: NotRequired[Sequence[int | None] | None]
+    cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
     reasoning_effort: NotRequired[
-        Optional[
-            Sequence[
-                Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
-            ]
-        ]
+        Sequence[Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None]
+        | None
     ]
-    reasoning_tokens: NotRequired[Optional[Sequence[Optional[int]]]]
+    reasoning_tokens: NotRequired[Sequence[int | None] | None]
     reasoning_summary: NotRequired[
-        Optional[Sequence[Optional[Literal["none", "concise", "detailed", "auto"]]]]
+        Sequence[Literal["none", "concise", "detailed", "auto"] | None] | None
     ]
     reasoning_history: NotRequired[
-        Optional[Sequence[Optional[Literal["none", "all", "last", "auto"]]]]
+        Sequence[Literal["none", "all", "last", "auto"] | None] | None
     ]
-    response_schema: NotRequired[Optional[Sequence[Optional[ResponseSchema]]]]
-    extra_body: NotRequired[Optional[Sequence[Optional[Mapping[str, Any]]]]]
+    response_schema: NotRequired[Sequence[ResponseSchema | None] | None]
+    extra_body: NotRequired[Sequence[Mapping[str, Any] | None] | None]
