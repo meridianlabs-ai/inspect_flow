@@ -1138,3 +1138,15 @@ def test_no_log_dir() -> None:
     with pytest.raises(ValueError) as e:
         _run_eval_set(spec=spec, base_dir=".")
     assert "log_dir must be set" in str(e.value)
+
+
+def test_duplicate_task_identifier() -> None:
+    spec = FlowSpec(
+        log_dir="logs/flow_test",
+        tasks=tasks_matrix(
+            task=[task_file + "@noop"], model=["mockllm/model1", "mockllm/model1"]
+        ),
+    )
+    with pytest.raises(ValueError) as e:
+        _run_eval_set(spec=spec, base_dir=".")
+    assert e.value.args[0].startswith("Duplicate task found:")

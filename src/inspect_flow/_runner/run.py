@@ -1,11 +1,14 @@
 from logging import getLogger
 
 import click
-import inspect_ai
 import yaml
+from inspect_ai import Task, eval_set
+from inspect_ai._eval.eval import eval_resolve_tasks
+from inspect_ai._eval.evalset import task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
+from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -13,7 +16,9 @@ from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
+    FlowTask,
 )
+from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
@@ -40,6 +45,7 @@ def _run_eval_set(
 ) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
+    _ = _get_task_ids(tasks=tasks, spec=resolved_config)
 
     if dry_run:
         dump = config_to_yaml(resolved_config)
@@ -54,7 +60,7 @@ def _run_eval_set(
 
     logger.info(f"Running eval set with {len(tasks)} tasks.")
     try:
-        result = inspect_ai.eval_set(
+        result = eval_set(
             tasks=tasks,
             log_dir=resolved_config.log_dir,
             retry_attempts=default_none(options.retry_attempts),
@@ -113,6 +119,36 @@ def _run_eval_set(
         _print_bundle_url(resolved_config)
 
     return result
+
+
+def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
+    options = spec.options or FlowOptions()
+
+    resolved_tasks, _ = eval_resolve_tasks(
+        tasks=tasks,
+        task_args=dict(),
+        models=[get_model("none")],
+        model_roles=None,
+        config=GenerateConfig(),
+        approval=default_none(options.approval),
+        sandbox=default_none(options.sandbox),
+        sample_shuffle=default_none(options.sample_shuffle),
+    )
+
+    task_ids = set()
+    for i, task in enumerate(resolved_tasks):
+        task_id = task_identifier(
+            task=task, eval_set_config=GenerateConfig(), eval_set_solver=None
+        )
+        if task_id in task_ids:
+            assert spec.tasks
+            flow_task = spec.tasks[i]
+            assert isinstance(flow_task, FlowTask)
+            task_json = flow_task.model_dump(**MODEL_DUMP_ARGS)
+            raise ValueError(f"Duplicate task found: {task_json}")
+
+        task_ids.add(task_id)
+    return task_ids
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
