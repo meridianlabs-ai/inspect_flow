@@ -1,5 +1,7 @@
+import json
 from logging import getLogger
 from pathlib import Path
+from typing import Any
 
 import pyarrow as pa
 from deltalake import DeltaTable, write_deltalake
@@ -8,14 +10,35 @@ from inspect_ai._eval.evalset import list_all_eval_logs
 from inspect_ai.log import read_eval_log
 
 from inspect_flow._database.database import FlowDatabase, is_better_log
+from inspect_flow._util.constants import PKG_NAME
 
 logger = getLogger(__name__)
 
+LOG_DIRS_TABLE_VERSION = "0.0.1"
 LOG_DIRS_SCHEMA = pa.schema(
     [
         ("log_dir", pa.string()),
     ]
 )
+
+
+def _create_table_metadata(version: str) -> dict[str, Any]:
+    """Create metadata dictionary for table description."""
+    return {
+        "package": PKG_NAME,
+        "table": "log_dirs",
+        "schema_version": version,
+    }
+
+
+def _parse_table_metadata(description: str | None) -> dict[str, Any] | None:
+    """Parse metadata from table description."""
+    if not description:
+        return None
+    try:
+        return json.loads(description)
+    except json.JSONDecodeError:
+        return None
 
 
 class DeltaLakeDatabase(FlowDatabase):
@@ -35,8 +58,31 @@ class DeltaLakeDatabase(FlowDatabase):
         self._table_path = str(database_path / "log_dirs")
         if self._table_exists():
             logger.info(f"Existing database: {self._database_path}")
+            self._check_version()
         else:
             logger.info(f"Creating database: {self._database_path}")
+
+    def _check_version(self) -> None:
+        """Check the table version and log a warning if it doesn't match."""
+        dt = DeltaTable(self._table_path)
+        metadata = _parse_table_metadata(dt.metadata().description)
+        if metadata is None:
+            logger.warning(
+                f"Table {self._table_path} has no schema version metadata. "
+                f"Expected version {LOG_DIRS_TABLE_VERSION}."
+            )
+            return
+        version = metadata.get("schema_version")
+        if version is None:
+            logger.warning(
+                f"Table {self._table_path} has no schema version. "
+                f"Expected {LOG_DIRS_TABLE_VERSION}."
+            )
+        elif version != LOG_DIRS_TABLE_VERSION:
+            logger.warning(
+                f"Table {self._table_path} has schema version {version}, "
+                f"but expected {LOG_DIRS_TABLE_VERSION}."
+            )
 
     def _table_exists(self) -> bool:
         """Check if the Delta table exists."""
@@ -63,11 +109,19 @@ class DeltaLakeDatabase(FlowDatabase):
 
         self._database_path.mkdir(parents=True, exist_ok=True)
 
-        write_deltalake(
-            self._table_path,
-            new_data,
-            mode="append",
-        )
+        if self._table_exists():
+            write_deltalake(
+                self._table_path,
+                new_data,
+                mode="append",
+            )
+        else:
+            metadata = _create_table_metadata(LOG_DIRS_TABLE_VERSION)
+            write_deltalake(
+                self._table_path,
+                new_data,
+                description=json.dumps(metadata),
+            )
 
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
         """Search for logs matching the given task IDs.
