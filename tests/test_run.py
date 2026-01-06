@@ -1176,7 +1176,7 @@ def test_log_copy(capsys) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        database=db_dir,
+        cache=db_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     _run_eval_set(spec=spec, base_dir=".")

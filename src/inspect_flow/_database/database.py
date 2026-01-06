@@ -11,9 +11,9 @@ logger = getLogger(__name__)
 
 
 def _get_database_path(spec: FlowSpec, base_dir: str) -> Path:
-    if not spec.database:
+    if not spec.cache:
         raise ValueError("database must be set to get database path")
-    database_file = Path(spec.database) / "inspect_flow_db"
+    database_file = Path(spec.cache) / "inspect_flow_db"
     return Path(absolute_path_relative_to(str(database_file), base_dir=base_dir))
 
 
@@ -28,7 +28,7 @@ def _get_log_dirs(spec: FlowSpec, base_dir: str) -> set[str]:
 
 
 def init_database(spec: FlowSpec, base_dir: str) -> None:
-    if not spec.database:
+    if not spec.cache:
         return
     database_path = _get_database_path(spec, base_dir=base_dir)
     if database_path.exists():

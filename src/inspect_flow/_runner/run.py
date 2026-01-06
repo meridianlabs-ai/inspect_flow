@@ -53,7 +53,7 @@ def _run_eval_set(
     if dry_run:
         dump = config_to_yaml(resolved_spec)
         click.echo(dump)
-        if resolved_spec.database:
+        if resolved_spec.cache:
             _copy_existing_logs(
                 task_ids, resolved_spec, base_dir=base_dir, dry_run=True
             )
@@ -65,7 +65,7 @@ def _run_eval_set(
 
     _write_config_file(resolved_spec)
 
-    if resolved_spec.database:
+    if resolved_spec.cache:
         _copy_existing_logs(task_ids, resolved_spec, base_dir=base_dir)
         add_log_dir(resolved_spec, base_dir=base_dir)
 
