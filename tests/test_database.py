@@ -1,5 +1,5 @@
 from inspect_flow._database.database import create_database
-from inspect_flow._database.database_deltalake import DeltaLakeDatabase
+from inspect_flow._database.deltalake import DeltaLakeDatabase
 from inspect_flow._types.flow_types import FlowSpec
 
 

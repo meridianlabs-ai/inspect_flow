@@ -80,7 +80,7 @@ def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
         spec.cache = str(default_cache_dir)
 
     # Import here to avoid circular imports
-    from inspect_flow._database.database_deltalake import DeltaLakeDatabase
+    from inspect_flow._database.deltalake import DeltaLakeDatabase
 
     database_path = Path(absolute_path_relative_to(spec.cache, base_dir=base_dir))
     return DeltaLakeDatabase(database_path)
