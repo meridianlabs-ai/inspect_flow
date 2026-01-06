@@ -939,15 +939,25 @@ def test_217_bundle_error_message() -> None:
     assert "'bundle_overwrite'" in str(e.value.message)
 
 
-# def test_prerequisite_error() -> None:
-#     spec = FlowSpec(
-#         log_dir="logs/flow_test",
-#         tasks=[task_file + "@noop", task_file + "@noop"],
-#     )
-#     with pytest.raises(PrerequisiteError) as e:
-#         _run_eval_set(spec=spec, base_dir=".")
-#     assert "not distinct" in str(e.value.message)
-#     assert "overwrite" not in str(e.value.message)
+def test_prerequisite_error() -> None:
+    log_dir = init_test_logs()
+
+    config = FlowSpec(
+        log_dir=log_dir,
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+
+    _run_eval_set(spec=(config), base_dir=".")
+
+    config.options = FlowOptions(eval_set_id="different_id")
+
+    with pytest.raises(PrerequisiteError) as e:
+        _run_eval_set(spec=(config), base_dir=".")
+    assert (
+        "The eval set ID 'different_id' is not the same as the existing eval set ID"
+        in str(e.value.message)
+    )
+    assert "overwrite" not in str(e.value.message)
 
 
 @solver
