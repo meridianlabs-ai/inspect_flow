@@ -11,7 +11,7 @@ def test_run_command_overrides() -> None:
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open("flow.yaml", "w") as f:
-            f.write(config_to_yaml(FlowSpec()))
+            f.write(config_to_yaml(FlowSpec(cache=None)))
 
         result = runner.invoke(
             flow_run,
@@ -31,4 +31,5 @@ def test_run_command_overrides() -> None:
         assert output_spec == FlowSpec(
             python_version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
             tasks=[],
+            cache=None,
         )

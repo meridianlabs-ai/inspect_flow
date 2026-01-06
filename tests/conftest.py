@@ -16,6 +16,15 @@ from inspect_flow._util.logging import init_flow_logging
 
 
 @pytest.fixture(autouse=True)
+def isolate_cache(tmp_path, monkeypatch):
+    """Ensure tests never touch real user cache."""
+    monkeypatch.setattr(
+        "inspect_flow._database.database._get_default_cache_database_dir",
+        lambda: tmp_path / "test_cache",
+    )
+
+
+@pytest.fixture(autouse=True)
 def init_log_handler() -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="info", log_handler_var=log_handler)

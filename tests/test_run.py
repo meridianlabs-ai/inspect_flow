@@ -162,6 +162,7 @@ def test_write_config() -> None:
     log_dir = init_test_logs()
 
     spec = FlowSpec(
+        cache=None,
         log_dir=log_dir,
         tasks=[
             FlowTask(

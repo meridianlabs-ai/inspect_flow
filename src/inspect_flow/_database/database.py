@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 
+import platformdirs
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -55,6 +57,10 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
     return candidate.stats.completed_at > best.stats.completed_at
 
 
+def _get_default_cache_database_dir() -> Path:
+    return Path(platformdirs.user_data_dir(PKG_NAME)) / "cache_database"
+
+
 def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
     """Create a FlowDatabase instance based on the spec configuration.
 
@@ -65,8 +71,13 @@ def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
     Returns:
         A FlowDatabase instance, or None if no database is configured.
     """
-    if not spec.cache:
+    if spec.cache is None:
         return None
+    if not spec.cache:
+        spec.cache = "auto"
+    if spec.cache == "auto":
+        default_cache_dir = _get_default_cache_database_dir()
+        spec.cache = str(default_cache_dir)
 
     # Import here to avoid circular imports
     from inspect_flow._database.database_file import FileDatabase
