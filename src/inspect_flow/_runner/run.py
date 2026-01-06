@@ -12,7 +12,7 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._database.database import add_log_dir, init_database, search_for_logs
+from inspect_flow._database.database import FlowDatabase, create_database
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
@@ -48,15 +48,13 @@ def _run_eval_set(
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
-    init_database(resolved_spec, base_dir=base_dir)
+    database = create_database(resolved_spec, base_dir=base_dir)
 
     if dry_run:
         dump = config_to_yaml(resolved_spec)
         click.echo(dump)
-        if resolved_spec.cache:
-            _copy_existing_logs(
-                task_ids, resolved_spec, base_dir=base_dir, dry_run=True
-            )
+        if database:
+            _copy_existing_logs(task_ids, resolved_spec, database, dry_run=True)
         return False, []
 
     options = resolved_spec.options or FlowOptions()
@@ -65,9 +63,10 @@ def _run_eval_set(
 
     _write_config_file(resolved_spec)
 
-    if resolved_spec.cache:
-        _copy_existing_logs(task_ids, resolved_spec, base_dir=base_dir)
-        add_log_dir(resolved_spec, base_dir=base_dir)
+    if database:
+        _copy_existing_logs(task_ids, resolved_spec, database)
+        assert resolved_spec.log_dir
+        database.add_log_dir(resolved_spec.log_dir)
 
     logger.info(f"Running eval set with {len(tasks)} tasks.")
 
@@ -167,7 +166,7 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
 
 
 def _copy_existing_logs(
-    task_ids: set[str], spec: FlowSpec, base_dir: str, dry_run: bool = False
+    task_ids: set[str], spec: FlowSpec, database: FlowDatabase, dry_run: bool = False
 ) -> None:
     # remove any tasks that already exist in the log_dir
     logger.info("Searching for existing logs in the log directory")
@@ -181,8 +180,8 @@ def _copy_existing_logs(
                 return
 
     logger.info("Searching database for existing logs")
-    logs_files = search_for_logs(task_ids, spec, base_dir)
-    for log_file in logs_files:
+    log_files = database.search_for_logs(task_ids)
+    for log_file in log_files:
         if dry_run:
             logger.info(f"Found existing log file {log_file}")
         else:
