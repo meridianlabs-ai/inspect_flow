@@ -122,6 +122,9 @@ def _run_eval_set(
 
 
 def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
+    if not tasks:
+        return set()
+
     options = spec.options or FlowOptions()
 
     resolved_tasks, _ = eval_resolve_tasks(
