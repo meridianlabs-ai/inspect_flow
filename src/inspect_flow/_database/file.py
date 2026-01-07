@@ -40,19 +40,6 @@ class FileDatabase(FlowDatabase):
             with open(self._database_path, "w") as db_file:
                 db_file.write("\n".join(sorted(new_paths)) + "\n")
 
-    def add_log(self, task_identifier: str, log_path: str) -> None:
-        """Add an individual log record to the database.
-
-        Note: FileDatabase does not support individual log indexing.
-        This method is a no-op for backward compatibility.
-
-        Args:
-            task_identifier: The task identifier for the log.
-            log_path: Absolute path to the log file.
-        """
-        # FileDatabase does not support individual log indexing
-        pass
-
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
         """Search for logs matching the given task IDs.
 

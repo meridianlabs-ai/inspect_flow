@@ -126,6 +126,12 @@ def _run_eval_set(
         _fix_prerequisite_error_message(e)
         raise
 
+    if database:
+        # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
+        # TODO:ransomr better monitoring of the log directory
+        assert resolved_spec.log_dir
+        database.add_log_dir(resolved_spec.log_dir)
+
     if result[0]:
         _print_bundle_url(resolved_spec)
 
