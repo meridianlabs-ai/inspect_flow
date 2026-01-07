@@ -16,6 +16,8 @@ from inspect_flow._util.constants import PKG_NAME
 
 logger = getLogger(__name__)
 
+TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
+
 
 @dataclass
 class TableDef:
@@ -50,7 +52,10 @@ TABLES: list[TableDef] = [
 
 
 def _create_table_description(table: TableDef) -> str:
-    return json.dumps({"name": table.name, "version": table.version})
+    description = {"name": table.name, "version": table.version}
+    if table.name == LOGS:
+        description["task_identifier_version"] = str(TASK_IDENTIFIER_VERSION)
+    return json.dumps(description)
 
 
 def _check_table_description(table: TableDef, description: str) -> None:
@@ -69,6 +74,11 @@ def _check_table_description(table: TableDef, description: str) -> None:
         else:
             raise ValueError(
                 f"Table {table.name} version mismatch: supported {table.version}, got {parsed.get('version')}. Store upgrade required."
+            )
+    if table.name == LOGS:
+        if parsed.get("task_identifier_version") != str(TASK_IDENTIFIER_VERSION):
+            raise ValueError(
+                f"Table {table.name} task identifier version mismatch: expected {TASK_IDENTIFIER_VERSION}, got {parsed.get('task_identifier_version')}. Store update required."
             )
 
 
