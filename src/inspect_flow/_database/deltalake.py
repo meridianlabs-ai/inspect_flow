@@ -4,6 +4,7 @@ from logging import getLogger
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, list_all_eval_logs
@@ -121,10 +122,12 @@ class DeltaLakeDatabase(FlowDatabase):
             )
 
         logs = list_all_eval_logs(log_dir=log_dir)
-        self._add_logs(logs)
+        if logs:
+            self._add_logs(logs)
 
     def _add_logs(self, logs: list[Log]) -> None:
-        existing_logs = self._get_logs()
+        task_ids = {log.task_identifier for log in logs}
+        existing_logs = self._get_logs(task_ids)
         new_logs = [
             log
             for log in logs
@@ -151,7 +154,7 @@ class DeltaLakeDatabase(FlowDatabase):
         results = []
         remaining_task_ids = set(task_ids)
 
-        indexed_logs = self._get_logs()
+        indexed_logs = self._get_logs(remaining_task_ids)
         for task_id in list(remaining_task_ids):
             if task_id not in indexed_logs:
                 continue
@@ -172,9 +175,10 @@ class DeltaLakeDatabase(FlowDatabase):
         table = dt.to_pyarrow_table()
         return set(table["log_dir"].to_pylist())
 
-    def _get_logs(self) -> dict[str, set[str]]:
+    def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
         dt = DeltaTable(str(self._database_path / LOGS))
-        table = dt.to_pyarrow_table()
+        dataset = dt.to_pyarrow_dataset()
+        table = dataset.to_table(filter=pc.field("task_identifier").isin(task_ids))
 
         result: dict[str, set[str]] = {}
         for task_id, log_path in zip(
