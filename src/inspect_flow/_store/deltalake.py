@@ -11,7 +11,7 @@ from inspect_ai._eval.evalset import Log, list_all_eval_logs
 from inspect_ai.log import read_eval_log
 from semver import Version
 
-from inspect_flow._database.database import FlowDatabase, is_better_log
+from inspect_flow._store.store import FlowStore, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 
 logger = getLogger(__name__)
@@ -82,8 +82,8 @@ def _check_table_description(table: TableDef, description: str) -> None:
             )
 
 
-class DeltaLakeDatabase(FlowDatabase):
-    """Delta Lake implementation of FlowDatabase.
+class DeltaLakeStore(FlowStore):
+    """Delta Lake implementation of FlowStore.
 
     Stores log directory paths in a Delta Lake table for scalable,
     concurrent-safe storage with S3 compatibility.

@@ -4,19 +4,19 @@ from pathlib import Path
 from inspect_ai._eval.evalset import list_all_eval_logs
 from inspect_ai.log import read_eval_log
 
-from inspect_flow._database.database import FlowDatabase, is_better_log
+from inspect_flow._store.store import FlowStore, is_better_log
 
 logger = getLogger(__name__)
 
 
-class FileDatabase(FlowDatabase):
-    """File-based implementation of FlowDatabase.
+class FileStore(FlowStore):
+    """File-based implementation of FlowStore.
 
     Stores log directory paths in a simple text file, one path per line.
     """
 
     def __init__(self, database_path: Path) -> None:
-        """Initialize the FileDatabase.
+        """Initialize the FileStore.
 
         Args:
             database_path: Path to the database file.

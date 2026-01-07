@@ -12,9 +12,9 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._database.database import FlowDatabase, create_database
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
+from inspect_flow._store.store import FlowStore, create_store
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
@@ -48,7 +48,7 @@ def _run_eval_set(
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
-    database = create_database(resolved_spec, base_dir=base_dir)
+    database = create_store(resolved_spec, base_dir=base_dir)
 
     if dry_run:
         dump = config_to_yaml(resolved_spec)
@@ -172,7 +172,7 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
 
 
 def _copy_existing_logs(
-    task_ids: set[str], spec: FlowSpec, database: FlowDatabase, dry_run: bool = False
+    task_ids: set[str], spec: FlowSpec, database: FlowStore, dry_run: bool = False
 ) -> None:
     # remove any tasks that already exist in the log_dir
     logger.info("Searching for existing logs in the log directory")

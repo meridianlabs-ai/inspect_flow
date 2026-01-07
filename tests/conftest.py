@@ -19,7 +19,7 @@ from inspect_flow._util.logging import init_flow_logging
 def isolate_store(tmp_path, monkeypatch):
     """Ensure tests never touch real user store."""
     monkeypatch.setattr(
-        "inspect_flow._database.database._get_default_store_dir",
+        "inspect_flow._store.store._get_default_store_dir",
         lambda: tmp_path / "test_store",
     )
 

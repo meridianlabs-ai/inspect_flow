@@ -12,7 +12,7 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 logger = getLogger(__name__)
 
 
-class FlowDatabase(ABC):
+class FlowStore(ABC):
     """Abstract interface for flow database implementations."""
 
     @abstractmethod
@@ -61,15 +61,15 @@ def _get_default_store_dir() -> Path:
     return Path(platformdirs.user_data_dir(PKG_NAME)) / "store"
 
 
-def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
-    """Create a FlowDatabase instance based on the spec configuration.
+def create_store(spec: FlowSpec, base_dir: str) -> FlowStore | None:
+    """Create a FlowStore instance based on the spec configuration.
 
     Args:
-        spec: The flow specification containing database configuration.
+        spec: The flow specification containing store configuration.
         base_dir: Base directory for resolving relative paths.
 
     Returns:
-        A FlowDatabase instance, or None if no database is configured.
+        A FlowStore instance, or None if no store is configured.
     """
     if spec.store is None:
         return None
@@ -79,7 +79,7 @@ def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
         spec.store = str(_get_default_store_dir())
 
     # Import here to avoid circular imports
-    from inspect_flow._database.deltalake import DeltaLakeDatabase
+    from inspect_flow._store.deltalake import DeltaLakeStore
 
     database_path = Path(absolute_path_relative_to(spec.store, base_dir=base_dir))
-    return DeltaLakeDatabase(database_path)
+    return DeltaLakeStore(database_path)
