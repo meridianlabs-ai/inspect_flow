@@ -162,7 +162,7 @@ def test_write_config() -> None:
     log_dir = init_test_logs()
 
     spec = FlowSpec(
-        cache=None,
+        store=None,
         log_dir=log_dir,
         tasks=[
             FlowTask(
@@ -1177,7 +1177,7 @@ def test_log_copy(capsys) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        cache=db_dir,
+        store=db_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     _run_eval_set(spec=spec, base_dir=".")
@@ -1204,7 +1204,7 @@ def test_store_log_gone(capsys) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        cache=db_dir,
+        store=db_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     _run_eval_set(spec=spec, base_dir=".")

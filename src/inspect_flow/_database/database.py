@@ -57,8 +57,8 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
     return candidate.stats.completed_at > best.stats.completed_at
 
 
-def _get_default_cache_database_dir() -> Path:
-    return Path(platformdirs.user_data_dir(PKG_NAME)) / "cache_database"
+def _get_default_store_dir() -> Path:
+    return Path(platformdirs.user_data_dir(PKG_NAME)) / "store"
 
 
 def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
@@ -71,16 +71,15 @@ def create_database(spec: FlowSpec, base_dir: str) -> FlowDatabase | None:
     Returns:
         A FlowDatabase instance, or None if no database is configured.
     """
-    if spec.cache is None:
+    if spec.store is None:
         return None
-    if not spec.cache:
-        spec.cache = "auto"
-    if spec.cache == "auto":
-        default_cache_dir = _get_default_cache_database_dir()
-        spec.cache = str(default_cache_dir)
+    if not spec.store:
+        spec.store = "auto"
+    if spec.store == "auto":
+        spec.store = str(_get_default_store_dir())
 
     # Import here to avoid circular imports
     from inspect_flow._database.deltalake import DeltaLakeDatabase
 
-    database_path = Path(absolute_path_relative_to(spec.cache, base_dir=base_dir))
+    database_path = Path(absolute_path_relative_to(spec.store, base_dir=base_dir))
     return DeltaLakeDatabase(database_path)

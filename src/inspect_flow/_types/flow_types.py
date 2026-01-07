@@ -546,9 +546,9 @@ class FlowSpec(BaseModel, extra="forbid"):
         description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
-    cache: Literal["auto"] | str | None | NotGiven = Field(
+    store: Literal["auto"] | str | None | NotGiven = Field(
         default=not_given,
-        description="Path to cache database directory. 'auto' will use a default application location. None will disable caching. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). If not given, 'auto' will be used.",
+        description="Path to directory to use for flow storage. 'auto' will use a default application location. None will disable storage. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). If not given, 'auto' will be used.",
     )
 
     log_dir: str | None | NotGiven = Field(

@@ -3,19 +3,19 @@ from inspect_flow._database.deltalake import DeltaLakeDatabase
 from inspect_flow._types.flow_types import FlowSpec
 
 
-def test_cache_defaults() -> None:
+def test_store_defaults() -> None:
     spec = FlowSpec()
     database = create_database(spec, base_dir=".")
     assert database
     assert isinstance(database, DeltaLakeDatabase)
-    assert database._database_path.stem == "test_cache"
+    assert database._database_path.stem == "test_store"
 
-    spec = FlowSpec(cache="auto")
+    spec = FlowSpec(store="auto")
     database = create_database(spec, base_dir=".")
     assert database
     assert isinstance(database, DeltaLakeDatabase)
-    assert database._database_path.stem == "test_cache"
+    assert database._database_path.stem == "test_store"
 
-    spec = FlowSpec(cache=None)
+    spec = FlowSpec(store=None)
     database = create_database(spec, base_dir=".")
     assert database is None
