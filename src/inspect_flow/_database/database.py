@@ -21,6 +21,16 @@ class FlowDatabase(ABC):
         pass
 
     @abstractmethod
+    def add_log(self, task_identifier: str, log_path: str) -> None:
+        """Add an individual log record to the database.
+
+        Args:
+            task_identifier: The task identifier for the log.
+            log_path: Absolute path to the log file.
+        """
+        pass
+
+    @abstractmethod
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
         """Search for logs matching the given task IDs.
 
