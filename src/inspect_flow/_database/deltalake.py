@@ -172,7 +172,13 @@ class DeltaLakeDatabase(FlowDatabase):
             best_log = None
             best_eval_log = None
             for log in logs:
-                eval_log = read_eval_log(log, header_only=True)
+                try:
+                    eval_log = read_eval_log(log, header_only=True)
+                except Exception as e:
+                    logger.error(
+                        f"Failed to read log {log} referenced from the store. This could be a permissions issue. If expected, use 'flow store remove' to update the store. {e}"
+                    )
+                    raise
                 if is_better_log(eval_log, best_eval_log):
                     best_log = log
                     best_eval_log = eval_log

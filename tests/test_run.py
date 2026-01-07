@@ -1196,3 +1196,26 @@ def test_log_copy(capsys) -> None:
 
     out = capsys.readouterr().out
     assert "Copying existing log file" in out
+
+
+def test_store_log_gone(capsys) -> None:
+    log_dir = init_test_logs()
+    db_dir = init_test_db()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        cache=db_dir,
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    _run_eval_set(spec=spec, base_dir=".")
+
+    verify_test_logs(spec, log_dir)
+
+    log_dir = init_test_logs()
+    capsys.readouterr()  # Clear previous output
+
+    with pytest.raises(FileNotFoundError):
+        _run_eval_set(spec=spec, base_dir=".")
+    out = capsys.readouterr().out
+    assert "Failed to read log" in out
+    assert "If expected, use 'flow store remove' to update the store." in out
