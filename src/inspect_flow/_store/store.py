@@ -20,10 +20,10 @@ class FlowStore(ABC):
     def add_log_dir(
         self, log_dir: str | Sequence[str], recursive: bool = False
     ) -> None:
-        """Add a directory to search for log files.
+        """Add a directory of log files.
 
         Args:
-            log_dir: Path to a directory containing log files.
+            log_dir: Path or paths to directories containing log files.
             recursive: Whether to search directories recursively.
         """
         pass
@@ -35,6 +35,20 @@ class FlowStore(ABC):
         Returns:
             Set of log directory paths that have been added to the store.
         """
+        pass
+
+    @abstractmethod
+    def remove_log_dir(self, log_dir: str | Sequence[str]) -> None:
+        """Remove a directory of log files.
+
+        Args:
+            log_dir: Path or paths to directories containing log files.
+        """
+        pass
+
+    @abstractmethod
+    def refresh(self) -> None:
+        """Refresh the store to reflect the current state of the file system."""
         pass
 
 

@@ -166,7 +166,41 @@ class DeltaLakeStore(FlowStoreInternal):
         if logs:
             self._add_logs(logs)
 
-    def _add_logs(self, logs: list[Log]) -> None:
+    def remove_log_dir(self, log_dir: str | Sequence[str]) -> None:
+        if isinstance(log_dir, str):
+            log_dir = [log_dir]
+
+        if not log_dir:
+            return
+
+        dt = DeltaTable(str(self._database_path / LOG_DIRS))
+        metrics = dt.delete(predicate=pc.field("log_dir").isin(log_dir))
+        if metrics.get("num_deleted_rows", 0):
+            self.refresh()
+
+    def refresh(self) -> None:
+        log_dirs = self.get_log_dirs()
+
+        all_logs = []
+        for log_dir in log_dirs:
+            logs = list_all_eval_logs(log_dir=log_dir)
+            all_logs.extend(logs)
+
+        new_data = pa.Table.from_pylist(
+            [
+                {"task_identifier": log.task_identifier, "log_path": log.info.name}
+                for log in all_logs
+            ],
+            schema=LOGS_SCHEMA,
+        )
+
+        write_deltalake(
+            str(self._database_path / LOGS),
+            new_data,
+            mode="overwrite",
+        )
+
+    def _add_logs(self, logs: list[Log], overwrite: bool = False) -> None:
         task_ids = {log.task_identifier for log in logs}
         existing_logs = self._get_logs(task_ids)
         new_logs = [
