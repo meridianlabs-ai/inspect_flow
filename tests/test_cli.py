@@ -322,4 +322,4 @@ def test_store_commands() -> None:
     result = runner.invoke(store_command, ["list", "--log-level", "error"])
     assert result.exit_code == 0
     # setting the log level is not working in the test, so only look at the last line of output to ignore logging
-    assert result.output.split("\n")[-2] == "./logs"
+    assert result.output.split("\n")[-2] == str(Path.cwd() / "logs")

@@ -9,7 +9,7 @@ import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, list_all_eval_logs
-from inspect_ai._util.file import filesystem
+from inspect_ai._util.file import absolute_file_path, filesystem
 from inspect_ai.log import read_eval_log
 from semver import Version
 
@@ -148,6 +148,7 @@ class DeltaLakeStore(FlowStoreInternal):
         dirs = set()
         logs = []
         for dir in log_dir:
+            dir = absolute_file_path(dir)
             _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
@@ -173,6 +174,7 @@ class DeltaLakeStore(FlowStoreInternal):
         if not log_dir:
             return
 
+        log_dir = [absolute_file_path(d) for d in log_dir]
         dt = DeltaTable(str(self._database_path / LOG_DIRS))
         metrics = dt.delete(predicate=pc.field("log_dir").isin(log_dir))
         if metrics.get("num_deleted_rows", 0):
