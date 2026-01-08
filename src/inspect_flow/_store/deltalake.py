@@ -11,7 +11,7 @@ from inspect_ai._eval.evalset import Log, list_all_eval_logs
 from inspect_ai.log import read_eval_log
 from semver import Version
 
-from inspect_flow._store.store import FlowStore, is_better_log
+from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 
 logger = getLogger(__name__)
@@ -82,7 +82,7 @@ def _check_table_description(table: TableDef, description: str) -> None:
             )
 
 
-class DeltaLakeStore(FlowStore):
+class DeltaLakeStore(FlowStoreInternal):
     """Delta Lake implementation of FlowStore.
 
     Stores log directory paths in a Delta Lake table for scalable,
@@ -118,7 +118,7 @@ class DeltaLakeStore(FlowStore):
             return False
 
     def add_log_dir(self, log_dir: str) -> None:
-        existing_dirs = self._get_log_dirs()
+        existing_dirs = self.get_log_dirs()
         if log_dir not in existing_dirs:
             new_data = pa.Table.from_pydict(
                 {"log_dir": [log_dir]},
@@ -186,7 +186,7 @@ class DeltaLakeStore(FlowStore):
                 results.append(best_log)
         return results
 
-    def _get_log_dirs(self) -> set[str]:
+    def get_log_dirs(self) -> set[str]:
         dt = DeltaTable(str(self._database_path / LOG_DIRS))
         table = dt.to_pyarrow_table()
         return set(table["log_dir"].to_pylist())

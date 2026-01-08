@@ -13,12 +13,19 @@ logger = getLogger(__name__)
 
 
 class FlowStore(ABC):
-    """Abstract interface for flow database implementations."""
+    """Interface for flow database implementations."""
 
     @abstractmethod
     def add_log_dir(self, log_dir: str) -> None:
-        """Add a log directory to the database."""
         pass
+
+    @abstractmethod
+    def get_log_dirs(self) -> set[str]:
+        pass
+
+
+class FlowStoreInternal(FlowStore):
+    """Internal interface for flow database implementations."""
 
     @abstractmethod
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
@@ -61,25 +68,19 @@ def _get_default_store_dir() -> Path:
     return Path(platformdirs.user_data_dir(PKG_NAME)) / "store"
 
 
-def create_store(spec: FlowSpec, base_dir: str) -> FlowStore | None:
-    """Create a FlowStore instance based on the spec configuration.
-
-    Args:
-        spec: The flow specification containing store configuration.
-        base_dir: Base directory for resolving relative paths.
-
-    Returns:
-        A FlowStore instance, or None if no store is configured.
-    """
-    if spec.store is None:
+def store_factory(
+    spec_or_store: FlowSpec | str, base_dir: str
+) -> FlowStoreInternal | None:
+    store = spec_or_store if isinstance(spec_or_store, str) else spec_or_store.store
+    if store is None:
         return None
-    if not spec.store:
-        spec.store = "auto"
-    if spec.store == "auto":
-        spec.store = str(_get_default_store_dir())
+    if not store:
+        store = "auto"
+    if store == "auto":
+        store = str(_get_default_store_dir())
 
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore
 
-    database_path = Path(absolute_path_relative_to(spec.store, base_dir=base_dir))
+    database_path = Path(absolute_path_relative_to(store, base_dir=base_dir))
     return DeltaLakeStore(database_path)
