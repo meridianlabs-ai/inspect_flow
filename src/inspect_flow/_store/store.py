@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
+from typing import Sequence
 
 import platformdirs
 from inspect_ai.log import EvalLog
@@ -16,7 +17,9 @@ class FlowStore(ABC):
     """Interface for flow database implementations."""
 
     @abstractmethod
-    def add_log_dir(self, log_dir: str, recursive: bool = False) -> None:
+    def add_log_dir(
+        self, log_dir: str | Sequence[str], recursive: bool = False
+    ) -> None:
         """Add a directory to search for log files.
 
         Args:

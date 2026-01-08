@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from logging import getLogger
 from pathlib import Path
+from typing import Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -139,10 +140,15 @@ class DeltaLakeStore(FlowStoreInternal):
         except TableNotFoundError:
             return False
 
-    def add_log_dir(self, log_dir: str, recursive: bool = False) -> None:
+    def add_log_dir(
+        self, log_dir: str | Sequence[str], recursive: bool = False
+    ) -> None:
+        if isinstance(log_dir, str):
+            log_dir = [log_dir]
         dirs = set()
         logs = []
-        _add_log_dir(log_dir=log_dir, recursive=recursive, dirs=dirs, logs=logs)
+        for dir in log_dir:
+            _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
         if new_dirs:
