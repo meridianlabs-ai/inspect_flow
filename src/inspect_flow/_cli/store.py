@@ -1,6 +1,8 @@
 import click
 
+from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
+from inspect_flow._util.logging import init_flow_logging
 
 
 def _get_store(store_path: str | None) -> FlowStore:
@@ -18,6 +20,7 @@ def store_command() -> None:
 
 
 @store_command.command("add", help="Add log directories to the store")
+@log_level_option
 @click.argument("log_dirs", nargs=-1, required=True)
 @click.option(
     "--store",
@@ -33,8 +36,10 @@ def store_command() -> None:
     default=False,
     help="Recursively search for log directories.",
 )
-def store_add(log_dirs: tuple[str, ...], store: str | None, recursive: bool) -> None:
-    """Add log directories to the flow store."""
+def store_add(
+    log_level: str, log_dirs: tuple[str, ...], store: str | None, recursive: bool
+) -> None:
+    init_flow_logging(log_level)
     flow_store = _get_store(store)
     flow_store.add_log_dir(list(log_dirs), recursive=recursive)
     click.echo(
@@ -43,6 +48,7 @@ def store_add(log_dirs: tuple[str, ...], store: str | None, recursive: bool) -> 
 
 
 @store_command.command("remove", help="Remove log directories from the store")
+@log_level_option
 @click.argument("log_dirs", nargs=-1, required=True)
 @click.option(
     "--store",
@@ -51,8 +57,8 @@ def store_add(log_dirs: tuple[str, ...], store: str | None, recursive: bool) -> 
     default=None,
     help="Path to the store directory. Defaults to the default store location.",
 )
-def store_remove(log_dirs: tuple[str, ...], store: str | None) -> None:
-    """Remove log directories from the flow store."""
+def store_remove(log_level: str, log_dirs: tuple[str, ...], store: str | None) -> None:
+    init_flow_logging(log_level)
     flow_store = _get_store(store)
     flow_store.remove_log_dir(list(log_dirs))
     click.echo(
@@ -61,6 +67,7 @@ def store_remove(log_dirs: tuple[str, ...], store: str | None) -> None:
 
 
 @store_command.command("list", help="List log directories in the store")
+@log_level_option
 @click.option(
     "--store",
     "-s",
@@ -68,8 +75,8 @@ def store_remove(log_dirs: tuple[str, ...], store: str | None) -> None:
     default=None,
     help="Path to the store directory. Defaults to the default store location.",
 )
-def store_list(store: str | None) -> None:
-    """List all log directories in the flow store."""
+def store_list(log_level: str, store: str | None) -> None:
+    init_flow_logging(log_level)
     flow_store = _get_store(store)
     log_dirs = flow_store.get_log_dirs()
     if log_dirs:
@@ -82,6 +89,7 @@ def store_list(store: str | None) -> None:
 @store_command.command(
     "refresh", help="Refresh the store to reflect the current file system state"
 )
+@log_level_option
 @click.option(
     "--store",
     "-s",
@@ -89,8 +97,8 @@ def store_list(store: str | None) -> None:
     default=None,
     help="Path to the store directory. Defaults to the default store location.",
 )
-def store_refresh(store: str | None) -> None:
-    """Refresh the flow store to reflect the current state of the file system."""
+def store_refresh(log_level: str, store: str | None) -> None:
+    init_flow_logging(log_level)
     flow_store = _get_store(store)
     flow_store.refresh()
     click.echo("Store refreshed.")

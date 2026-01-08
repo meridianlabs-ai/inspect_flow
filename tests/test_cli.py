@@ -7,6 +7,7 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
+from inspect_flow._cli.store import store_command
 from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
@@ -312,3 +313,13 @@ def test_options_to_overrides() -> None:
         "log_dir=option_dir",
         "options.limit=1",
     ]
+
+
+def test_store_commands() -> None:
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["add", "./logs", "--log-level", "error"])
+    assert result.exit_code == 0
+    result = runner.invoke(store_command, ["list", "--log-level", "error"])
+    assert result.exit_code == 0
+    # setting the log level is not working in the test, so only look at the last line of output to ignore logging
+    assert result.output.split("\n")[-2] == "./logs"
