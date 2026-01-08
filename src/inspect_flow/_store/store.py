@@ -16,11 +16,22 @@ class FlowStore(ABC):
     """Interface for flow database implementations."""
 
     @abstractmethod
-    def add_log_dir(self, log_dir: str) -> None:
+    def add_log_dir(self, log_dir: str, recursive: bool = False) -> None:
+        """Add a directory to search for log files.
+
+        Args:
+            log_dir: Path to a directory containing log files.
+            recursive: Whether to search directories recursively.
+        """
         pass
 
     @abstractmethod
     def get_log_dirs(self) -> set[str]:
+        """Get all registered log directories.
+
+        Returns:
+            Set of log directory paths that have been added to the store.
+        """
         pass
 
 

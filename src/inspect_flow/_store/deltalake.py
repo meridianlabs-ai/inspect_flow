@@ -8,6 +8,7 @@ import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, list_all_eval_logs
+from inspect_ai._util.file import filesystem
 from inspect_ai.log import read_eval_log
 from semver import Version
 
@@ -82,6 +83,27 @@ def _check_table_description(table: TableDef, description: str) -> None:
             )
 
 
+def _add_log_dir(
+    log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
+) -> None:
+    dir_logs = list_all_eval_logs(log_dir=log_dir)
+    if dir_logs or not recursive:
+        dirs.add(log_dir)
+        logs.extend(dir_logs)
+
+    if recursive:
+        fs = filesystem(log_dir)
+        file_infos = fs.ls(log_dir)
+        for file_info in file_infos:
+            if file_info.type == "directory":
+                _add_log_dir(
+                    log_dir=file_info.name,
+                    recursive=recursive,
+                    dirs=dirs,
+                    logs=logs,
+                )
+
+
 class DeltaLakeStore(FlowStoreInternal):
     """Delta Lake implementation of FlowStore.
 
@@ -117,11 +139,15 @@ class DeltaLakeStore(FlowStoreInternal):
         except TableNotFoundError:
             return False
 
-    def add_log_dir(self, log_dir: str) -> None:
+    def add_log_dir(self, log_dir: str, recursive: bool = False) -> None:
+        dirs = set()
+        logs = []
+        _add_log_dir(log_dir=log_dir, recursive=recursive, dirs=dirs, logs=logs)
         existing_dirs = self.get_log_dirs()
-        if log_dir not in existing_dirs:
-            new_data = pa.Table.from_pydict(
-                {"log_dir": [log_dir]},
+        new_dirs = dirs - existing_dirs
+        if new_dirs:
+            new_data = pa.Table.from_pylist(
+                [{"log_dir": log_dir} for log_dir in new_dirs],
                 schema=LOG_DIRS_SCHEMA,
             )
 
@@ -131,7 +157,6 @@ class DeltaLakeStore(FlowStoreInternal):
                 mode="append",
             )
 
-        logs = list_all_eval_logs(log_dir=log_dir)
         if logs:
             self._add_logs(logs)
 
