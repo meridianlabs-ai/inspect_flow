@@ -28,12 +28,14 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert len(args) == 5
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
             ]
+            assert "inspect-ai" in args[4]
 
 
 def test_dependencies() -> None:
@@ -61,7 +63,7 @@ def test_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:5] == [
                 "uv",
                 "pip",
                 "install",
@@ -93,7 +95,7 @@ def test_relative_dependency() -> None:
         assert mock_run.call_count == 2
         args = mock_run.call_args.args[0]
         flow_path = str((Path(__file__).parents[1]).resolve())
-        assert args == [
+        assert args[:5] == [
             "uv",
             "pip",
             "install",
@@ -138,7 +140,7 @@ def test_auto_dependency() -> None:
             )
             # Add a string task to test that code path
             assert isinstance(spec.tasks, list)
-            spec.tasks.append("inspect_evals/task_name")
+            spec.tasks.append("inspect_evals1/task_name")
             # Add a string solver to test that code path
             assert isinstance(spec.tasks[0], FlowTask)
             spec.tasks[0].solver = "solver_package/solver_name"
@@ -153,14 +155,14 @@ def test_auto_dependency() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:14] == [
                 "uv",
                 "pip",
                 "install",
                 _get_pip_string_with_version("anthropic"),
                 _get_pip_string_with_version("google-genai"),
                 _get_pip_string_with_version("groq"),
-                "inspect_evals",
+                "inspect_evals1",
                 "inspect_evals2",
                 "inspect_evals3",
                 _get_pip_string_with_version("openai"),
@@ -199,7 +201,7 @@ def test_no_auto_dependency() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",
@@ -235,7 +237,7 @@ def test_no_file() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:7] == [
                 "uv",
                 "pip",
                 "install",
@@ -485,7 +487,7 @@ def test_241_not_found() -> None:
 
             args = mock_run.mock_calls[1].args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",

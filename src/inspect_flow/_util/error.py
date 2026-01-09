@@ -31,3 +31,9 @@ def set_exception_hook() -> None:
     if not _exception_hook_set:
         sys.excepthook = exception_hook()
         _exception_hook_set = True
+
+
+class NoLogsError(Exception):
+    """Raised when no logs are found in the specified log directory."""
+
+    pass

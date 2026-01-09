@@ -8,6 +8,7 @@ from inspect_flow._config.load import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._launcher.launch import launch
+from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
@@ -79,3 +80,14 @@ def config(
     spec = expand_spec(spec, base_dir=base_dir)
     dump = config_to_yaml(spec)
     return dump
+
+
+def store_get(store: str = "auto") -> FlowStore:
+    """Get a FlowStore instance.
+
+    Args:
+        store: The store location. Can be a path to the store directory or "auto" for the default store location.
+    """
+    flow_store = store_factory(store, base_dir=".")
+    assert flow_store is not None
+    return flow_store

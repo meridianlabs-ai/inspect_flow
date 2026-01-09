@@ -2,6 +2,7 @@ import click
 from dotenv import find_dotenv, load_dotenv
 
 from inspect_flow._cli.config import config_command
+from inspect_flow._cli.store import store_command
 from inspect_flow._util.error import set_exception_hook
 
 from .. import __version__
@@ -35,6 +36,7 @@ def flow(
 
 flow.add_command(run_command)
 flow.add_command(config_command)
+flow.add_command(store_command)
 
 
 def main() -> None:  # pragma: no cover

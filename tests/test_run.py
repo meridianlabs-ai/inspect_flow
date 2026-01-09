@@ -1,3 +1,4 @@
+import shutil
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -27,7 +28,7 @@ from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import _run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
 
-from .test_helpers.log_helpers import init_test_logs, verify_test_logs
+from .test_helpers.log_helpers import init_test_db, init_test_logs, verify_test_logs
 
 task_dir = (Path(__file__).parent / "local_eval" / "src" / "local_eval").resolve()
 task_file = str(task_dir / "noop.py")
@@ -161,6 +162,7 @@ def test_write_config() -> None:
     log_dir = init_test_logs()
 
     spec = FlowSpec(
+        store=None,
         log_dir=log_dir,
         tasks=[
             FlowTask(
@@ -1167,3 +1169,53 @@ def test_duplicate_task_identifier() -> None:
     with pytest.raises(ValueError) as e:
         _run_eval_set(spec=spec, base_dir=".")
     assert e.value.args[0].startswith("Duplicate task found:")
+
+
+def test_log_copy(capsys) -> None:
+    log_dir = init_test_logs()
+    db_dir = init_test_db()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=db_dir,
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    _run_eval_set(spec=spec, base_dir=".")
+
+    verify_test_logs(spec, log_dir)
+
+    capsys.readouterr()  # Clear previous output
+
+    log_dir2 = Path(log_dir + "_2")
+    if log_dir2.exists():
+        shutil.rmtree(log_dir2)
+    spec.log_dir = str(log_dir2)
+
+    _run_eval_set(spec=spec, base_dir=".")
+    verify_test_logs(spec, log_dir)
+
+    out = capsys.readouterr().out
+    assert "Copying existing log file" in out
+
+
+def test_store_log_gone(capsys) -> None:
+    log_dir = init_test_logs()
+    db_dir = init_test_db()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=db_dir,
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    _run_eval_set(spec=spec, base_dir=".")
+
+    verify_test_logs(spec, log_dir)
+
+    log_dir = init_test_logs()
+    capsys.readouterr()  # Clear previous output
+
+    with pytest.raises(FileNotFoundError):
+        _run_eval_set(spec=spec, base_dir=".")
+    out = capsys.readouterr().out
+    assert "Failed to read log" in out
+    assert "If expected, use 'flow store remove' to update the store." in out
