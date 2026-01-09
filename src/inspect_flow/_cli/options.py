@@ -82,18 +82,12 @@ def config_options(f):
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
     f = click.option(
-        "--database",
-        "--db",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
+        "--store",
+        "-s",
+        type=str,
         default=None,
-        help="Set the database directory. Will override the database specified in the config.",
-        envvar="INSPECT_FLOW_DATABASE",
+        help="Path to the store directory. Will override the store specified in the config. 'auto' for default location. 'none' for no store.",
+        envvar="INSPECT_FLOW_STORE",
     )(f)
     f = click.option(
         "--log-dir",
@@ -127,7 +121,7 @@ def config_options(f):
 
 class ConfigOptionArgs(TypedDict, total=False):
     log_level: str
-    database: str | None
+    store: str | None
     log_dir: str | None
     log_dir_create_unique: bool | None
     limit: int | None
@@ -138,8 +132,8 @@ class ConfigOptionArgs(TypedDict, total=False):
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     overrides = list(kwargs.get("set") or [])  # set may be a tuple (at least in tests)
-    if database := kwargs.get("database"):
-        overrides.append(f"database={database}")
+    if store := kwargs.get("store"):
+        overrides.append(f"store={store}")
     if log_dir := kwargs.get("log_dir"):
         overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):

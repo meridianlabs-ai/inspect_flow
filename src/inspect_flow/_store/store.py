@@ -6,7 +6,7 @@ from typing import Sequence
 import platformdirs
 from inspect_ai.log import EvalLog
 
-from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._types.flow_types import FlowSpec, NotGiven
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -100,11 +100,11 @@ def store_factory(
     spec_or_store: FlowSpec | str, base_dir: str
 ) -> FlowStoreInternal | None:
     store = spec_or_store if isinstance(spec_or_store, str) else spec_or_store.store
-    if store is None:
-        return None
-    if not store:
+    if isinstance(store, NotGiven):
         store = "auto"
-    if store == "auto":
+    elif store is None or store.lower() == "none":
+        return None
+    if store.lower() == "auto":
         store = str(_get_default_store_dir())
 
     # Import here to avoid circular imports

@@ -16,6 +16,18 @@ def store_options(f):
         type=str,
         default=None,
         help="Path to the store directory. Defaults to the default store location.",
+        envvar="INSPECT_FLOW_STORE",
+    )(f)
+    return f
+
+
+def log_dirs_argument(f):
+    f = click.argument(
+        "log_dirs",
+        nargs=-1,
+        required=True,
+        help="One or more log directories to add or remove from the store.",
+        envvar="INSPECT_FLOW_STORE_LOG_DIRS",
     )(f)
     return f
 
@@ -43,13 +55,14 @@ def store_command() -> None:
 
 @store_command.command("add", help="Add log directories to the store")
 @store_options
-@click.argument("log_dirs", nargs=-1, required=True)
+@log_dirs_argument
 @click.option(
     "--recursive",
     "-r",
     is_flag=True,
     default=False,
     help="Recursively search for log directories.",
+    envvar="INSPECT_FLOW_STORE_ADD_RECURSIVE",
 )
 def store_add(
     log_dirs: tuple[str, ...], recursive: bool, **kwargs: Unpack[StoreOptionArgs]
@@ -64,7 +77,7 @@ def store_add(
 
 @store_command.command("remove", help="Remove log directories from the store")
 @store_options
-@click.argument("log_dirs", nargs=-1, required=True)
+@log_dirs_argument
 def store_remove(log_dirs: tuple[str, ...], **kwargs: Unpack[StoreOptionArgs]) -> None:
     """Remove log directories from the flow store."""
     flow_store = init_store(**kwargs)

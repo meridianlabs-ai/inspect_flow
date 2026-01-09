@@ -49,13 +49,13 @@ def _run_eval_set(
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
-    database = store_factory(resolved_spec, base_dir=base_dir)
+    store = store_factory(resolved_spec, base_dir=base_dir)
 
     if dry_run:
         dump = config_to_yaml(resolved_spec)
         click.echo(dump)
-        if database:
-            _copy_existing_logs(task_ids, resolved_spec, database, dry_run=True)
+        if store:
+            _copy_existing_logs(task_ids, resolved_spec, store, dry_run=True)
         return False, []
 
     options = resolved_spec.options or FlowOptions()
@@ -64,8 +64,8 @@ def _run_eval_set(
 
     _write_config_file(resolved_spec)
 
-    if database:
-        _copy_existing_logs(task_ids, resolved_spec, database)
+    if store:
+        _copy_existing_logs(task_ids, resolved_spec, store)
 
     logger.info(f"Running eval set with {len(tasks)} tasks.")
 
@@ -125,12 +125,12 @@ def _run_eval_set(
         _fix_prerequisite_error_message(e)
         raise
 
-    if database:
+    if store:
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         # TODO:ransomr better monitoring of the log directory
         try:
             assert resolved_spec.log_dir
-            database.add_log_dir(resolved_spec.log_dir)
+            store.add_log_dir(resolved_spec.log_dir)
         except NoLogsError as e:
             logger.error(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"
