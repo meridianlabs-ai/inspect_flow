@@ -83,7 +83,6 @@ def config_options(f):
     )(f)
     f = click.option(
         "--store",
-        "-s",
         type=str,
         default=None,
         help="Path to the store directory. Will override the store specified in the config. 'auto' for default location. 'none' for no store.",

@@ -26,7 +26,6 @@ def log_dirs_argument(f):
         "log_dirs",
         nargs=-1,
         required=True,
-        help="One or more log directories to add or remove from the store.",
         envvar="INSPECT_FLOW_STORE_LOG_DIRS",
     )(f)
     return f
