@@ -1,15 +1,16 @@
 import json
 from dataclasses import dataclass
 from logging import getLogger
-from typing import Sequence
+from typing import Counter, Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
-from inspect_ai._eval.evalset import Log, list_all_eval_logs
-from inspect_ai._util.file import absolute_file_path, filesystem
-from inspect_ai.log import read_eval_log
+from inspect_ai._eval.evalset import Log, task_identifier
+from inspect_ai._util.file import absolute_file_path, dirname, filesystem
+from inspect_ai.log import list_eval_logs, read_eval_log
+from inspect_ai.log._file import read_eval_log_headers
 from semver import Version
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
@@ -98,28 +99,38 @@ def _check_table_description(table: TableDef, description: str) -> None:
             )
 
 
+# TODO:ransom move to inspect_ai
+def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
+    log_files = list_eval_logs(log_dir)
+    log_headers = read_eval_log_headers(log_files)
+    task_identifiers = [
+        task_identifier(log_header, None, None) for log_header in log_headers
+    ]
+    return [
+        Log(info=info, header=header, task_identifier=task_identifier)
+        for info, header, task_identifier in zip(
+            log_files, log_headers, task_identifiers, strict=True
+        )
+    ]
+
+
 def _add_log_dir(
     log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
 ) -> None:
-    dir_logs = list_all_eval_logs(log_dir=log_dir)
-    if dir_logs:
-        logger.info(f"Adding {log_dir} with {len(dir_logs)} logs")
-        dirs.add(log_dir)
-        logs.extend(dir_logs)
-    elif not recursive:
+    dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
+    if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
-
-    if recursive:
-        fs = filesystem(log_dir)
-        file_infos = fs.ls(log_dir)
-        for file_info in file_infos:
-            if file_info.type == "directory":
-                _add_log_dir(
-                    log_dir=file_info.name,
-                    recursive=recursive,
-                    dirs=dirs,
-                    logs=logs,
-                )
+    logs.extend(dir_logs)
+    if not recursive:
+        logger.info(f"Adding {log_dir} with {len(dir_logs)} logs")
+        dirs.add(dirname(dir_logs[0].info.name))
+    else:
+        subdirs = Counter[str]()
+        for log in dir_logs:
+            subdirs.update([dirname(log.info.name)])
+        for dir, count in subdirs.items():
+            logger.info(f"Adding {dir} with {count} logs")
+        dirs.update(subdirs.keys())
 
 
 class DeltaLakeStore(FlowStoreInternal):
