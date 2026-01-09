@@ -199,6 +199,13 @@ class DeltaLakeStore(FlowStoreInternal):
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
         if new_dirs:
+            if not self._fs.is_local():
+                for dir in new_dirs:
+                    if filesystem(dir).is_local():
+                        raise ValueError(
+                            f"Cannot add local log directory {dir} to remote store at {self._database_path}"
+                        )
+
             new_data = pa.Table.from_pylist(
                 [{"log_dir": log_dir} for log_dir in new_dirs],
                 schema=LOG_DIRS_SCHEMA,
