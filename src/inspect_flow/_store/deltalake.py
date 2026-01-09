@@ -15,6 +15,7 @@ from semver import Version
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.error import NoLogsError
 
 logger = getLogger(__name__)
 
@@ -88,9 +89,12 @@ def _add_log_dir(
     log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
 ) -> None:
     dir_logs = list_all_eval_logs(log_dir=log_dir)
-    if dir_logs or not recursive:
+    if dir_logs:
+        logger.info(f"Adding {log_dir} with {len(dir_logs)} logs")
         dirs.add(log_dir)
         logs.extend(dir_logs)
+    elif not recursive:
+        raise NoLogsError(f"No logs found in directory: {log_dir}")
 
     if recursive:
         fs = filesystem(log_dir)

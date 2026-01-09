@@ -22,6 +22,7 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
@@ -65,8 +66,6 @@ def _run_eval_set(
 
     if database:
         _copy_existing_logs(task_ids, resolved_spec, database)
-        assert resolved_spec.log_dir
-        database.add_log_dir(resolved_spec.log_dir)
 
     logger.info(f"Running eval set with {len(tasks)} tasks.")
 
@@ -129,8 +128,13 @@ def _run_eval_set(
     if database:
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         # TODO:ransomr better monitoring of the log directory
-        assert resolved_spec.log_dir
-        database.add_log_dir(resolved_spec.log_dir)
+        try:
+            assert resolved_spec.log_dir
+            database.add_log_dir(resolved_spec.log_dir)
+        except NoLogsError as e:
+            logger.error(
+                f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"
+            )
 
     if result[0]:
         _print_bundle_url(resolved_spec)

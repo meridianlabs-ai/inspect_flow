@@ -316,10 +316,11 @@ def test_options_to_overrides() -> None:
 
 
 def test_store_commands() -> None:
+    log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
-    result = runner.invoke(store_command, ["add", "./logs", "--log-level", "error"])
+    result = runner.invoke(store_command, ["add", log_dir, "--log-level", "error"])
     assert result.exit_code == 0
     result = runner.invoke(store_command, ["list", "--log-level", "error"])
     assert result.exit_code == 0
     # setting the log level is not working in the test, so only look at the last line of output to ignore logging
-    assert result.output.split("\n")[-2] == str(Path.cwd() / "logs")
+    assert result.output.split("\n")[-2] == str(Path.cwd() / log_dir)
