@@ -1,7 +1,6 @@
 import json
 from dataclasses import dataclass
 from logging import getLogger
-from pathlib import Path
 from typing import Sequence
 
 import pyarrow as pa
@@ -20,6 +19,20 @@ from inspect_flow._util.error import NoLogsError
 logger = getLogger(__name__)
 
 TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
+
+
+def _get_bucket_region(bucket_name: str) -> str | None:
+    """Get the region for an S3 bucket using the AWS API."""
+    try:
+        import boto3
+
+        s3_client = boto3.client("s3")
+        response = s3_client.get_bucket_location(Bucket=bucket_name)
+        # LocationConstraint is None for us-east-1
+        return response.get("LocationConstraint") or "us-east-1"
+    except Exception as e:
+        logger.warning(f"Failed to get bucket region for {bucket_name}: {e}")
+        return None
 
 
 @dataclass
@@ -116,33 +129,51 @@ class DeltaLakeStore(FlowStoreInternal):
     concurrent-safe storage with S3 compatibility.
     """
 
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: str) -> None:
         self._database_path = database_path
+        self._fs = filesystem(database_path)
+        self._storage_options = self._get_storage_options()
         for table in TABLES:
             self._init_table(table)
 
+    def _get_storage_options(self) -> dict[str, str] | None:
+        if not self._fs.is_s3():
+            return None
+        bucket_name, _, _ = self._fs.fs.split_path(self._database_path)
+        region = _get_bucket_region(bucket_name)
+
+        if region:
+            return {"AWS_REGION": region}
+        return None
+
+    def _table_path(self, table_name: str) -> str:
+        return f"{self._database_path}/{table_name}"
+
+    def _get_table(self, table_path: str) -> DeltaTable | None:
+        try:
+            return DeltaTable(table_path, storage_options=self._get_storage_options())
+        except (TableNotFoundError, OSError):
+            return None
+
     def _init_table(self, table: TableDef) -> None:
-        table_path = str(self._database_path / table.name)
-        if self._table_exists(table_path):
+        table_path = self._table_path(table.name)
+        if dt := self._get_table(table_path):
             logger.info(f"Existing table: {table_path}")
-            dt = DeltaTable(str(table_path))
             _check_table_description(table, dt.metadata().description)
         else:
             logger.info(f"Creating table: {table_path}")
+            fs = filesystem(table_path)
+            # Create _database_path first to make it less likely to need to create an s3 bucket, which can cause errors
+            fs.mkdir(self._database_path, exist_ok=True)
+            fs.mkdir(table_path, exist_ok=True)
             metadata = _create_table_description(table)
             empty_table = pa.Table.from_pylist([], schema=table.schema)
             write_deltalake(
                 table_path,
                 empty_table,
                 description=metadata,
+                storage_options=self._storage_options,
             )
-
-    def _table_exists(self, table_path: str) -> bool:
-        try:
-            DeltaTable(table_path)
-            return True
-        except TableNotFoundError:
-            return False
 
     def add_log_dir(
         self, log_dir: str | Sequence[str], recursive: bool = False
@@ -163,9 +194,10 @@ class DeltaLakeStore(FlowStoreInternal):
             )
 
             write_deltalake(
-                str(self._database_path / LOG_DIRS),
+                self._table_path(LOG_DIRS),
                 new_data,
                 mode="append",
+                storage_options=self._storage_options,
             )
 
         if logs:
@@ -179,7 +211,10 @@ class DeltaLakeStore(FlowStoreInternal):
             return
 
         log_dir = [absolute_file_path(d) for d in log_dir]
-        dt = DeltaTable(str(self._database_path / LOG_DIRS))
+        dt = DeltaTable(
+            self._table_path(LOG_DIRS),
+            storage_options=self._storage_options,
+        )
         metrics = dt.delete(predicate=pc.field("log_dir").isin(log_dir))
         if metrics.get("num_deleted_rows", 0):
             self.refresh()
@@ -201,9 +236,10 @@ class DeltaLakeStore(FlowStoreInternal):
         )
 
         write_deltalake(
-            str(self._database_path / LOGS),
+            self._table_path(LOGS),
             new_data,
             mode="overwrite",
+            storage_options=self._storage_options,
         )
 
     def _add_logs(self, logs: list[Log], overwrite: bool = False) -> None:
@@ -226,9 +262,10 @@ class DeltaLakeStore(FlowStoreInternal):
         )
 
         write_deltalake(
-            str(self._database_path / LOGS),
+            self._table_path(LOGS),
             new_data,
             mode="append",
+            storage_options=self._storage_options,
         )
 
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
@@ -258,12 +295,18 @@ class DeltaLakeStore(FlowStoreInternal):
         return results
 
     def get_log_dirs(self) -> set[str]:
-        dt = DeltaTable(str(self._database_path / LOG_DIRS))
+        dt = DeltaTable(
+            self._table_path(LOG_DIRS),
+            storage_options=self._storage_options,
+        )
         table = dt.to_pyarrow_table()
         return set(table["log_dir"].to_pylist())
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
-        dt = DeltaTable(str(self._database_path / LOGS))
+        dt = DeltaTable(
+            self._table_path(LOGS),
+            storage_options=self._storage_options,
+        )
         dataset = dt.to_pyarrow_dataset()
         table = dataset.to_table(filter=pc.field("task_identifier").isin(task_ids))
 

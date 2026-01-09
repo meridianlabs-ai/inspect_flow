@@ -110,5 +110,5 @@ def store_factory(
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore
 
-    database_path = Path(absolute_path_relative_to(store, base_dir=base_dir))
+    database_path = absolute_path_relative_to(store, base_dir=base_dir)
     return DeltaLakeStore(database_path)
