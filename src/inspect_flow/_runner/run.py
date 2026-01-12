@@ -178,7 +178,7 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
 def _copy_existing_logs(
     task_ids: set[str],
     spec: FlowSpec,
-    database: FlowStoreInternal,
+    store: FlowStoreInternal,
     dry_run: bool = False,
 ) -> None:
     # remove any tasks that already exist in the log_dir
@@ -193,7 +193,7 @@ def _copy_existing_logs(
                 return
 
     logger.info("Searching store for existing logs")
-    log_files = database.search_for_logs(task_ids)
+    log_files = store.search_for_logs(task_ids)
     for log_file in log_files:
         if dry_run:
             logger.info(f"Found existing log file {log_file}")
