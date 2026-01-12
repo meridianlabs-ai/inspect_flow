@@ -38,6 +38,15 @@ class FlowStore(ABC):
         pass
 
     @abstractmethod
+    def get_logs(self) -> set[str]:
+        """Get all log file paths in the store.
+
+        Returns:
+            List of all log file paths in the store.
+        """
+        pass
+
+    @abstractmethod
     def remove_log_dir(self, log_dir: str | Sequence[str]) -> None:
         """Remove a directory of log files.
 

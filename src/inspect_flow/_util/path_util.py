@@ -23,3 +23,10 @@ def absolute_path_relative_to(path: str, base_dir: str) -> str:
 
     base_relative_path = Path(base_dir) / path
     return absolute_file_path(str(base_relative_path))
+
+
+def path_str(path: str) -> str:
+    """Return a user friendly string representation of a path"""
+    if path.startswith("file://"):
+        return path[7:]
+    return path

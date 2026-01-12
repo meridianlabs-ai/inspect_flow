@@ -8,7 +8,7 @@ import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, task_identifier
-from inspect_ai._util.file import absolute_file_path, dirname, filesystem
+from inspect_ai._util.file import dirname, filesystem, to_uri
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_ai.log._file import read_eval_log_headers
 from semver import Version
@@ -101,7 +101,7 @@ def _check_table_description(table: TableDef, description: str) -> None:
 
 # TODO:ransom move to inspect_ai
 def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
-    log_files = list_eval_logs(log_dir)
+    log_files = list_eval_logs(log_dir, recursive=recursive)
     log_headers = read_eval_log_headers(log_files)
     task_identifiers = [
         task_identifier(log_header, None, None) for log_header in log_headers
@@ -123,11 +123,11 @@ def _add_log_dir(
     logs.extend(dir_logs)
     if not recursive:
         logger.info(f"Adding {log_dir} with {len(dir_logs)} logs")
-        dirs.add(dirname(dir_logs[0].info.name))
+        dirs.add(to_uri(dirname(dir_logs[0].info.name)))
     else:
         subdirs = Counter[str]()
         for log in dir_logs:
-            subdirs.update([dirname(log.info.name)])
+            subdirs.update([to_uri(dirname(log.info.name))])
         for dir, count in subdirs.items():
             logger.info(f"Adding {dir} with {count} logs")
         dirs.update(subdirs.keys())
@@ -194,7 +194,7 @@ class DeltaLakeStore(FlowStoreInternal):
         dirs = set()
         logs = []
         for dir in log_dir:
-            dir = absolute_file_path(dir)
+            dir = to_uri(dir)
             _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
@@ -228,7 +228,7 @@ class DeltaLakeStore(FlowStoreInternal):
         if not log_dir:
             return
 
-        log_dir = [absolute_file_path(d) for d in log_dir]
+        log_dir = [to_uri(d) for d in log_dir]
         dt = DeltaTable(
             self._table_path(LOG_DIRS),
             storage_options=self._storage_options,
@@ -247,7 +247,10 @@ class DeltaLakeStore(FlowStoreInternal):
 
         new_data = pa.Table.from_pylist(
             [
-                {"task_identifier": log.task_identifier, "log_path": log.info.name}
+                {
+                    "task_identifier": log.task_identifier,
+                    "log_path": to_uri(log.info.name),
+                }
                 for log in all_logs
             ],
             schema=LOGS_SCHEMA,
@@ -266,14 +269,18 @@ class DeltaLakeStore(FlowStoreInternal):
         new_logs = [
             log
             for log in logs
-            if log.info.name not in existing_logs.get(log.task_identifier, set())
+            if to_uri(log.info.name)
+            not in existing_logs.get(log.task_identifier, set())
         ]
         if not new_logs:
             return
 
         new_data = pa.Table.from_pylist(
             [
-                {"task_identifier": log.task_identifier, "log_path": log.info.name}
+                {
+                    "task_identifier": log.task_identifier,
+                    "log_path": to_uri(log.info.name),
+                }
                 for log in new_logs
             ],
             schema=LOGS_SCHEMA,
@@ -319,6 +326,14 @@ class DeltaLakeStore(FlowStoreInternal):
         )
         table = dt.to_pyarrow_table()
         return set(table["log_dir"].to_pylist())
+
+    def get_logs(self) -> set[str]:
+        dt = DeltaTable(
+            self._table_path(LOGS),
+            storage_options=self._storage_options,
+        )
+        table = dt.to_pyarrow_table()
+        return set(table["log_path"].to_pylist())
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
         dt = DeltaTable(
