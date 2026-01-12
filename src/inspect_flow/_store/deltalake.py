@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
-from logging import getLogger
-from typing import Counter, Sequence
+from logging import Logger, LoggerAdapter, getLogger
+from typing import Any, Counter, MutableMapping, Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -17,7 +17,19 @@ from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 
-logger = getLogger(__name__)
+
+class PrefixLogger(LoggerAdapter):
+    def __init__(self, logger: Logger, prefix: str) -> None:
+        super().__init__(logger, {})
+        self.prefix = prefix
+
+    def process(
+        self, msg: Any, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
+        return f"[{self.prefix}] {msg}", kwargs
+
+
+logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
 
 TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
 
