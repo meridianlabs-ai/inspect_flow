@@ -216,7 +216,15 @@ class DeltaLakeStore(FlowStoreInternal):
                 for dir in new_dirs:
                     if filesystem(dir).is_local():
                         raise ValueError(
-                            f"Cannot add local log directory {dir} to remote store at {self._store_path}"
+                            f"""Local log directories cannot be added to remote stores.
+
+Local log directory:
+  {path_str(dir)}
+
+Remote store:
+  {path_str(self._store_path)}
+
+Use a log directory on remote storage (e.g., s3://<bucket>/<path>)."""
                         )
 
             new_data = pa.Table.from_pylist(
