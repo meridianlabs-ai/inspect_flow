@@ -192,7 +192,7 @@ def _copy_existing_logs(
             if not task_ids:
                 return
 
-    logger.info("Searching database for existing logs")
+    logger.info("Searching store for existing logs")
     log_files = database.search_for_logs(task_ids)
     for log_file in log_files:
         if dry_run:

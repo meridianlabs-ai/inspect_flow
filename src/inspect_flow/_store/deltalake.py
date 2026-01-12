@@ -140,9 +140,9 @@ class DeltaLakeStore(FlowStoreInternal):
     concurrent-safe storage with S3 compatibility.
     """
 
-    def __init__(self, database_path: str) -> None:
-        self._database_path = database_path
-        self._fs = filesystem(database_path)
+    def __init__(self, store_path: str) -> None:
+        self._store_path = store_path
+        self._fs = filesystem(store_path)
         self._storage_options = self._get_storage_options()
         for table in TABLES:
             self._init_table(table)
@@ -150,7 +150,7 @@ class DeltaLakeStore(FlowStoreInternal):
     def _get_storage_options(self) -> dict[str, str] | None:
         if not self._fs.is_s3():
             return None
-        bucket_name, _, _ = self._fs.fs.split_path(self._database_path)
+        bucket_name, _, _ = self._fs.fs.split_path(self._store_path)
         region = _get_bucket_region(bucket_name)
 
         if region:
@@ -158,7 +158,7 @@ class DeltaLakeStore(FlowStoreInternal):
         return None
 
     def _table_path(self, table_name: str) -> str:
-        return f"{self._database_path}/{table_name}"
+        return f"{self._store_path}/{table_name}"
 
     def _get_table(self, table_path: str) -> DeltaTable | None:
         try:
@@ -174,8 +174,8 @@ class DeltaLakeStore(FlowStoreInternal):
         else:
             logger.info(f"Creating table: {table_path}")
             fs = filesystem(table_path)
-            # Create _database_path first to make it less likely to need to create an s3 bucket, which can cause errors
-            fs.mkdir(self._database_path, exist_ok=True)
+            # Create _store_path first to make it less likely to need to create an s3 bucket, which can cause errors
+            fs.mkdir(self._store_path, exist_ok=True)
             fs.mkdir(table_path, exist_ok=True)
             metadata = _create_table_description(table)
             empty_table = pa.Table.from_pylist([], schema=table.schema)
@@ -203,7 +203,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 for dir in new_dirs:
                     if filesystem(dir).is_local():
                         raise ValueError(
-                            f"Cannot add local log directory {dir} to remote store at {self._database_path}"
+                            f"Cannot add local log directory {dir} to remote store at {self._store_path}"
                         )
 
             new_data = pa.Table.from_pylist(

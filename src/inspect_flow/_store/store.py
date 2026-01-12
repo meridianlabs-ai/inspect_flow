@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 
 
 class FlowStore(ABC):
-    """Interface for flow database implementations."""
+    """Interface for flow store implementations."""
 
     @abstractmethod
     def add_log_dir(
@@ -53,7 +53,7 @@ class FlowStore(ABC):
 
 
 class FlowStoreInternal(FlowStore):
-    """Internal interface for flow database implementations."""
+    """Internal interface for flow store implementations."""
 
     @abstractmethod
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
@@ -110,5 +110,5 @@ def store_factory(
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore
 
-    database_path = absolute_path_relative_to(store, base_dir=base_dir)
-    return DeltaLakeStore(database_path)
+    store_path = absolute_path_relative_to(store, base_dir=base_dir)
+    return DeltaLakeStore(store_path)
