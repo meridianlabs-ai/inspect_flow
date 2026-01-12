@@ -9,7 +9,41 @@ import importlib.util
 import subprocess
 from typing import Any, Callable, TypeVar, cast
 
+import boto3
 import pytest
+from moto.server import ThreadedMotoServer
+
+
+@pytest.fixture(scope="session")
+def moto_server():
+    """Start moto server once for entire test session."""
+    server = ThreadedMotoServer(port=19100)
+    server.start()
+
+    os.environ["AWS_ENDPOINT_URL"] = "http://127.0.0.1:19100"
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+    yield server
+
+    server.stop()
+
+
+@pytest.fixture(scope="function")
+def mock_s3(moto_server):
+    """Create and cleanup bucket for each test."""
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(Bucket="test-bucket")
+
+    yield s3_client
+
+    # Cleanup after each test
+    response = s3_client.list_objects_v2(Bucket="test-bucket")
+    if "Contents" in response:
+        objects = [{"Key": obj["Key"]} for obj in response["Contents"]]
+        s3_client.delete_objects(Bucket="test-bucket", Delete={"Objects": objects})
+    s3_client.delete_bucket(Bucket="test-bucket")
 
 
 def pytest_addoption(parser: pytest.Parser):

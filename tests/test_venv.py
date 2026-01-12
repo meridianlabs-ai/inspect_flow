@@ -530,3 +530,25 @@ def test_325_uv_sync_args() -> None:
                     "--extra",
                     "test with space",
                 ]
+
+
+def test_369_flow_requirements_s3(mock_s3) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+        create_venv(
+            spec=FlowSpec(
+                log_dir="s3://test-bucket/logs",
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=".",
+            temp_dir=temp_dir,
+            env=env,
+        )
+
+        # Verify flow-requirements.txt was created in S3
+        response = mock_s3.get_object(
+            Bucket="test-bucket", Key="logs/flow-requirements.txt"
+        )
+        requirements = response["Body"].read().decode("utf-8")
+        assert "inspect_flow" in requirements
