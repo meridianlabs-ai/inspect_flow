@@ -296,13 +296,6 @@ def test_5_flow_requirements() -> None:
                 env=os.environ.copy(),
             )
 
-        assert mock_run.call_count == 3
-        args = mock_run.mock_calls[2].args[0]
-        assert args == [
-            "uv",
-            "pip",
-            "freeze",
-        ]
         requirements_path = log_dir / "flow-requirements.txt"
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
@@ -552,3 +545,4 @@ def test_369_flow_requirements_s3(mock_s3) -> None:
         )
         requirements = response["Body"].read().decode("utf-8")
         assert "inspect_flow" in requirements
+        assert "--hash=sha256:" in requirements
