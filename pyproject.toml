@@ -36,6 +36,8 @@ dev = [
     "anthropic",
     "datamodel-code-generator",
     "deepdiff",
+    "flask",
+    "flask-cors",
     "moto[s3]",
     "openai",
     "pre-commit",

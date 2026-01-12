@@ -532,24 +532,23 @@ def test_325_uv_sync_args() -> None:
                 ]
 
 
-def test_369_flow_requirements_s3(s3_client) -> None:
+def test_369_flow_requirements_s3(mock_s3) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         create_venv(
             spec=FlowSpec(
-                python_version="3.11",
-                log_dir="s3://bucket/logs",
+                log_dir="s3://test-bucket/logs",
                 tasks=[FlowTask(name="task_name")],
             ),
             base_dir=".",
             temp_dir=temp_dir,
-            env=os.environ.copy(),
+            env=env,
         )
 
         # Verify flow-requirements.txt was created in S3
-        response = s3_client.get_object(
-            Bucket="bucket", Key="logs/flow-requirements.txt"
+        response = mock_s3.get_object(
+            Bucket="test-bucket", Key="logs/flow-requirements.txt"
         )
         requirements = response["Body"].read().decode("utf-8")
-        assert "local_eval" in requirements
+        assert "inspect_flow" in requirements
