@@ -20,7 +20,7 @@ from inspect_flow._types.flow_types import (
 )
 
 
-class FlowAgentDict(TypedDict):
+class FlowAgentDict(TypedDict, closed=True):
     """Configuration for an Agent."""
 
     name: NotRequired[str | NotGiven | None]
@@ -33,14 +33,14 @@ class FlowAgentDict(TypedDict):
     """Type needed to differentiated solvers and agents in solver lists."""
 
 
-class FlowAgentMatrixDict(TypedDict):
+class FlowAgentMatrixDict(TypedDict, closed=True):
     """Configuration for an Agent."""
 
     args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to agent constructor."""
 
 
-class FlowModelDict(TypedDict):
+class FlowModelDict(TypedDict, closed=True):
     """Configuration for a Model."""
 
     name: NotRequired[str | NotGiven | None]
@@ -63,14 +63,14 @@ class FlowModelDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the model."""
 
 
-class FlowModelMatrixDict(TypedDict):
+class FlowModelMatrixDict(TypedDict, closed=True):
     """Configuration for a Model."""
 
     config: NotRequired[Sequence[GenerateConfig | NotGiven | None] | None]
     """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
 
 
-class FlowSolverDict(TypedDict):
+class FlowSolverDict(TypedDict, closed=True):
     """Configuration for a Solver."""
 
     name: NotRequired[str | NotGiven | None]
@@ -81,14 +81,14 @@ class FlowSolverDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the solver."""
 
 
-class FlowSolverMatrixDict(TypedDict):
+class FlowSolverMatrixDict(TypedDict, closed=True):
     """Configuration for a Solver."""
 
     args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to solver constructor."""
 
 
-class FlowTaskDict(TypedDict):
+class FlowTaskDict(TypedDict, closed=True):
     """
     Configuration for an evaluation task.
 
@@ -141,7 +141,7 @@ class FlowTaskDict(TypedDict):
     """Optional. Metadata stored in the flow config. Not passed to the task."""
 
 
-class FlowTaskMatrixDict(TypedDict):
+class FlowTaskMatrixDict(TypedDict, closed=True):
     """
     Configuration for an evaluation task.
 

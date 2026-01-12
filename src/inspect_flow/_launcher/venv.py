@@ -4,6 +4,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import List, Literal, Sequence
 
+from inspect_ai._util.file import file, filesystem
+
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
@@ -55,10 +57,29 @@ def create_venv(
             env=env,
             log_output=False,  # Don't log the full freeze output
         )
-        log_dir_path = Path(spec.log_dir)
-        log_dir_path.mkdir(parents=True, exist_ok=True)
-        requirements_path = log_dir_path / "flow-requirements.txt"
-        requirements_path.write_text(freeze_result.stdout)
+        requirements_in = Path(temp_dir) / "flow-requirements.in"
+        with open(requirements_in, "w") as f:
+            f.write(freeze_result.stdout)
+
+        compile_result = run_with_logging(
+            [
+                "uv",
+                "pip",
+                "compile",
+                "--generate-hashes",
+                "--no-header",
+                "--no-annotate",
+                str(requirements_in),
+            ],
+            cwd=temp_dir,
+            env=env,
+            log_output=False,
+        )
+
+        fs = filesystem(spec.log_dir)
+        fs.mkdir(spec.log_dir, exist_ok=True)
+        with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
+            f.write(compile_result.stdout)
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:

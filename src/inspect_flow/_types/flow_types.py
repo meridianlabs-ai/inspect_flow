@@ -20,6 +20,8 @@ from inspect_ai.util import (
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self, override
 
+from inspect_flow._util.args import MODEL_DUMP_ARGS
+
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
 
@@ -45,7 +47,17 @@ class NotGiven(BaseModel, extra="forbid"):
 not_given = NotGiven(type="NOT_GIVEN")
 
 
-class FlowModel(BaseModel, extra="forbid"):
+class FlowBase(BaseModel, extra="forbid"):
+    @override
+    def __str__(self) -> str:
+        return str(self.model_dump())
+
+    @override
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+        return super().model_dump(**(MODEL_DUMP_ARGS | kwargs))
+
+
+class FlowModel(FlowBase):
     """Configuration for a Model."""
 
     name: str | None | NotGiven = Field(
@@ -93,7 +105,7 @@ class FlowModel(BaseModel, extra="forbid"):
     )
 
 
-class FlowScorer(BaseModel, extra="forbid"):
+class FlowScorer(FlowBase):
     """Configuration for a Scorer."""
 
     name: str | None | NotGiven = Field(
@@ -112,7 +124,7 @@ class FlowScorer(BaseModel, extra="forbid"):
     )
 
 
-class FlowSolver(BaseModel, extra="forbid"):
+class FlowSolver(FlowBase):
     """Configuration for a Solver."""
 
     name: str | None | NotGiven = Field(
@@ -131,7 +143,7 @@ class FlowSolver(BaseModel, extra="forbid"):
     )
 
 
-class FlowAgent(BaseModel, extra="forbid"):
+class FlowAgent(FlowBase):
     """Configuration for an Agent."""
 
     name: str | None | NotGiven = Field(
@@ -160,7 +172,7 @@ class FlowAgent(BaseModel, extra="forbid"):
         return self
 
 
-class FlowEpochs(BaseModel, extra="forbid"):
+class FlowEpochs(FlowBase):
     """Configuration for task epochs.
 
     Number of epochs to repeat samples over and optionally one or more
@@ -176,7 +188,7 @@ class FlowEpochs(BaseModel, extra="forbid"):
     )
 
 
-class FlowTask(BaseModel, extra="forbid"):
+class FlowTask(FlowBase):
     """Configuration for an evaluation task.
 
     Tasks are the basis for defining and running evaluations.
@@ -294,7 +306,7 @@ class FlowTask(BaseModel, extra="forbid"):
         return None
 
 
-class FlowOptions(BaseModel, extra="forbid"):
+class FlowOptions(FlowBase):
     """Evaluation options."""
 
     retry_attempts: int | None | NotGiven = Field(
@@ -469,7 +481,7 @@ class FlowOptions(BaseModel, extra="forbid"):
     )
 
 
-class FlowDefaults(BaseModel, extra="forbid"):
+class FlowDefaults(FlowBase):
     """Default field values for Inspect objects. Will be overriden by more specific settings."""
 
     config: GenerateConfig | None | NotGiven = Field(
@@ -514,7 +526,7 @@ class FlowDefaults(BaseModel, extra="forbid"):
     )
 
 
-class FlowDependencies(BaseModel, extra="forbid"):
+class FlowDependencies(FlowBase):
     """Configuration for flow dependencies to install in the venv."""
 
     dependency_file: Literal["auto", "no_file"] | str | None | NotGiven = Field(
@@ -538,7 +550,7 @@ class FlowDependencies(BaseModel, extra="forbid"):
     )
 
 
-class FlowSpec(BaseModel, extra="forbid"):
+class FlowSpec(FlowBase):
     """Top-level flow specification."""
 
     includes: Sequence[str] | None | NotGiven = Field(

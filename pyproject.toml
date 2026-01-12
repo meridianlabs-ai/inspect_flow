@@ -35,19 +35,22 @@ doc = ["jupyter", "quarto-cli", "griffe", "panflute", "markdown", "click"]
 
 [dependency-groups]
 dev = [
-    "ruff",
-    "pytest",
-    "pytest-cov",
     "anthropic",
-    "openai",
-    "pytest-asyncio",
-    "pytest-dotenv",
-    "pyright",
-    "types-pyyaml>=6.0.12.20250915",
     "datamodel-code-generator",
-    "pre-commit",
-    "ty",
     "deepdiff",
+    "flask",
+    "flask-cors",
+    "moto[s3]",
+    "openai",
+    "pre-commit",
+    "pyright",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-dotenv",
+    "ruff",
+    "ty",
+    "types-pyyaml>=6.0.12.20250915",
 ]
 
 

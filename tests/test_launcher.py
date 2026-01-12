@@ -12,7 +12,7 @@ from inspect_flow._launcher.launch import launch
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
-CREATE_VENV_RUN_CALLS = 3
+CREATE_VENV_RUN_CALLS = 4
 
 
 def test_launch() -> None:
