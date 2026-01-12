@@ -1218,4 +1218,4 @@ def test_store_log_gone(capsys) -> None:
         _run_eval_set(spec=spec, base_dir=".")
     out = capsys.readouterr().out
     assert "Failed to read log" in out
-    assert "If expected, use 'flow store remove' to update the store." in out
+    assert "Use 'flow store remove' to update the store." in out

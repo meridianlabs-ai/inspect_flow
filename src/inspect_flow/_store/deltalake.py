@@ -16,6 +16,7 @@ from semver import Version
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
+from inspect_flow._util.path_util import path_str
 
 
 class PrefixLogger(LoggerAdapter):
@@ -134,14 +135,14 @@ def _add_log_dir(
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     logs.extend(dir_logs)
     if not recursive:
-        logger.info(f"Adding {log_dir} with {len(dir_logs)} logs")
+        logger.info(f"Adding {path_str(log_dir)} with {len(dir_logs)} logs")
         dirs.add(to_uri(dirname(dir_logs[0].info.name)))
     else:
         subdirs = Counter[str]()
         for log in dir_logs:
             subdirs.update([to_uri(dirname(log.info.name))])
         for dir, count in subdirs.items():
-            logger.info(f"Adding {dir} with {count} logs")
+            logger.info(f"Adding {path_str(dir)} with {count} logs")
         dirs.update(subdirs.keys())
 
 
@@ -245,9 +246,13 @@ class DeltaLakeStore(FlowStoreInternal):
             self._table_path(LOG_DIRS),
             storage_options=self._storage_options,
         )
-        metrics = dt.delete(predicate=pc.field("log_dir").isin(log_dir))
-        if metrics.get("num_deleted_rows", 0):
+        quoted_dirs = ", ".join(f"'{d}'" for d in log_dir)
+        metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
+        if num_deleted_rows := metrics.get("num_deleted_rows", 0):
+            logger.info(f"Removed {num_deleted_rows} log directories")
             self.refresh()
+        else:
+            logger.info("No log directories found to remove")
 
     def refresh(self) -> None:
         log_dirs = self.get_log_dirs()
@@ -321,7 +326,7 @@ class DeltaLakeStore(FlowStoreInternal):
                     eval_log = read_eval_log(log, header_only=True)
                 except Exception as e:
                     logger.error(
-                        f"Failed to read log {log} referenced from the store. This could be a permissions issue. If expected, use 'flow store remove' to update the store. {e}"
+                        f"Failed to read log {path_str(log)} referenced from the store. This could be a permissions issue. Use 'flow store remove' to update the store. {e}"
                     )
                     raise
                 if is_better_log(eval_log, best_eval_log):

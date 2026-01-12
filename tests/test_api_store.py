@@ -2,10 +2,12 @@ from pathlib import Path
 
 from inspect_flow.api import FlowStore, store_get
 
+parent = str(Path.cwd() / "tests/test_logs")
+dir1 = "file://" + str(Path.cwd() / "tests/test_logs/logs1")
+dir2 = "file://" + str(Path.cwd() / "tests/test_logs/logs2")
+
 
 def test_store_get() -> None:
-    dir1 = "file://" + str(Path.cwd() / "tests/test_logs/logs1")
-    dir2 = "file://" + str(Path.cwd() / "tests/test_logs/logs2")
     store: FlowStore = store_get()
     assert store.get_log_dirs() == set()
     store.add_log_dir(dir1)
@@ -17,10 +19,14 @@ def test_store_get() -> None:
 
 
 def test_store_add_recursive() -> None:
-    parent = str(Path.cwd() / "tests/test_logs")
-    dir1 = "file://" + str(Path.cwd() / "tests/test_logs/logs1")
-    dir2 = "file://" + str(Path.cwd() / "tests/test_logs/logs2")
     store: FlowStore = store_get()
     assert store.get_log_dirs() == set()
     store.add_log_dir(parent, recursive=True)
     assert sorted(store.get_log_dirs()) == sorted([dir1, dir2])
+
+
+def test_store_remove() -> None:
+    store: FlowStore = store_get()
+    store.add_log_dir(dir1)
+    store.remove_log_dir(dir1)
+    assert store.get_log_dirs() == set()

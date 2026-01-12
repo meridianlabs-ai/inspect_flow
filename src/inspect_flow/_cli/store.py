@@ -71,9 +71,6 @@ def store_add(
     """Add log directories to the flow store."""
     flow_store = init_store(**kwargs)
     flow_store.add_log_dir(list(log_dirs), recursive=recursive)
-    click.echo(
-        f"Added {len(log_dirs)} log director{'y' if len(log_dirs) == 1 else 'ies'} to the store."
-    )
 
 
 @store_command.command("remove", help="Remove log directories from the store")
@@ -83,9 +80,6 @@ def store_remove(log_dirs: tuple[str, ...], **kwargs: Unpack[StoreOptionArgs]) -
     """Remove log directories from the flow store."""
     flow_store = init_store(**kwargs)
     flow_store.remove_log_dir(list(log_dirs))
-    click.echo(
-        f"Removed {len(log_dirs)} log director{'y' if len(log_dirs) == 1 else 'ies'} from the store."
-    )
 
 
 @store_command.command("list", help="List log directories in the store")
@@ -125,4 +119,3 @@ def store_refresh(**kwargs: Unpack[StoreOptionArgs]) -> None:
     """Refresh the flow store to reflect the current state of the file system."""
     flow_store = init_store(**kwargs)
     flow_store.refresh()
-    click.echo("Store refreshed.")
