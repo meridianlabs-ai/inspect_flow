@@ -55,10 +55,29 @@ def create_venv(
             env=env,
             log_output=False,  # Don't log the full freeze output
         )
+        requirements_in = Path(temp_dir) / "flow-requirements.in"
+        with open(requirements_in, "w") as f:
+            f.write(freeze_result.stdout)
+
+        compile_result = run_with_logging(
+            [
+                "uv",
+                "pip",
+                "compile",
+                "--generate-hashes",
+                "--no-header",
+                "--no-annotate",
+                str(requirements_in),
+            ],
+            cwd=temp_dir,
+            env=env,
+            log_output=False,
+        )
+
         fs = filesystem(spec.log_dir)
         fs.mkdir(spec.log_dir, exist_ok=True)
         with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
-            f.write(freeze_result.stdout)
+            f.write(compile_result.stdout)
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
