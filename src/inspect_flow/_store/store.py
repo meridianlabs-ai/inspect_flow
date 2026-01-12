@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Sequence
 
 import platformdirs
+from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import FlowSpec, NotGiven
@@ -102,7 +103,7 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
 
 
 def _get_default_store_dir() -> Path:
-    return Path(platformdirs.user_data_dir(PKG_NAME)) / "store"
+    return Path(platformdirs.user_data_dir(PKG_NAME))
 
 
 def store_factory(
@@ -115,6 +116,8 @@ def store_factory(
         return None
     if store.lower() == "auto":
         store = str(_get_default_store_dir())
+
+    store = store + filesystem(store).sep + "flow_store"
 
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore
