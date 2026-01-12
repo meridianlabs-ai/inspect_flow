@@ -56,10 +56,10 @@ class TableDef:
     schema: pa.Schema
 
 
-LOG_DIRS = "log_dirs"
+LOG_DIRS = "_table_log_dirs"
 LOG_DIRS_SCHEMA = pa.schema([("log_dir", pa.string())])
 
-LOGS = "logs"
+LOGS = "_table_logs"
 LOGS_SCHEMA = pa.schema(
     [
         ("task_identifier", pa.string()),
