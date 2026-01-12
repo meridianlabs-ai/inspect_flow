@@ -42,6 +42,14 @@ def test_model_from_string():
     assert config.tasks[0].model_name == model_name
     assert config.tasks[0].model_roles
     assert config.tasks[0].model_roles[model_role] == model_name2
+    assert (
+        str(config)
+        == "{'tasks': [{'name': 'module/task', 'model': 'module/model', 'model_roles': {'mark': 'module/model2'}}]}"
+    )
+    assert (
+        str(config.tasks[0])
+        == "{'name': 'module/task', 'model': 'module/model', 'model_roles': {'mark': 'module/model2'}}"
+    )
 
 
 def test_solver_from_string():
