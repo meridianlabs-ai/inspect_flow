@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from inspect_flow._util.path_util import path_str
 from inspect_flow.api import FlowStore, store_get
 
 parent = str(Path.cwd() / "tests/test_logs")
@@ -7,14 +8,23 @@ dir1 = "file://" + str(Path.cwd() / "tests/test_logs/logs1")
 dir2 = "file://" + str(Path.cwd() / "tests/test_logs/logs2")
 
 
-def test_store_get() -> None:
+def test_store_get(capsys) -> None:
     store: FlowStore = store_get()
     assert store.get_log_dirs() == set()
     store.add_log_dir(dir1)
+    captured = capsys.readouterr().out
+    assert f"Found {path_str(dir1)} with 2 logs" in captured
+    assert f"Adding new log directory: {path_str(dir1)}" in captured
     assert store.get_log_dirs() == {dir1}
     store.add_log_dir(dir2)
+    captured = capsys.readouterr().out
+    assert f"Found {path_str(dir2)} with 2 logs" in captured
+    assert f"Adding new log directory: {path_str(dir2)}" in captured
     assert store.get_log_dirs() == {dir1, dir2}
     store.add_log_dir(dir1)
+    captured = capsys.readouterr().out
+    assert f"Found {path_str(dir1)} with 2 logs" in captured
+    assert "No new log directories to add" in captured
     assert store.get_log_dirs() == {dir1, dir2}
 
 

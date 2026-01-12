@@ -135,14 +135,14 @@ def _add_log_dir(
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     logs.extend(dir_logs)
     if not recursive:
-        logger.info(f"Adding {path_str(log_dir)} with {len(dir_logs)} logs")
+        logger.info(f"Found {path_str(log_dir)} with {len(dir_logs)} logs")
         dirs.add(to_uri(dirname(dir_logs[0].info.name)))
     else:
         subdirs = Counter[str]()
         for log in dir_logs:
             subdirs.update([to_uri(dirname(log.info.name))])
         for dir, count in subdirs.items():
-            logger.info(f"Adding {path_str(dir)} with {count} logs")
+            logger.info(f"Found {path_str(dir)} with {count} logs")
         dirs.update(subdirs.keys())
 
 
@@ -211,9 +211,12 @@ class DeltaLakeStore(FlowStoreInternal):
             _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
-        if new_dirs:
-            if not self._fs.is_local():
-                for dir in new_dirs:
+        if not new_dirs:
+            logger.info("No new log directories to add")
+        else:
+            for dir in new_dirs:
+                logger.info(f"Adding new log directory: {path_str(dir)}")
+                if not self._fs.is_local():
                     if filesystem(dir).is_local():
                         raise ValueError(
                             f"""Local log directories cannot be added to remote stores.
