@@ -29,7 +29,7 @@
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        5 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       61 |        0 |       18 |        0 |    100.00% |           |
-| src/inspect\_flow/\_types/flow\_types.py           |      133 |        0 |        4 |        0 |    100.00% |           |
+| src/inspect\_flow/\_types/flow\_types.py           |      141 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/generated.py             |      162 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |        0 |        0 |    100.00% |           |
@@ -44,7 +44,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1560** |   **34** |  **400** |    **9** | **96.99%** |           |
+| **TOTAL**                                          | **1568** |   **34** |  **400** |    **9** | **97.00%** |           |
 
 
 ## Setup coverage badge
