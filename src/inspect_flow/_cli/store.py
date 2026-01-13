@@ -16,7 +16,13 @@ def store_options(f):
     f = click.option(
         "--store",
         "-s",
-        type=str,
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
         default=None,
         help="Path to the store directory. Defaults to the default store location.",
         envvar="INSPECT_FLOW_STORE",
@@ -68,7 +74,14 @@ def store_command() -> None:
 )
 @click.option(
     "--copy-from",
-    type=str,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        resolve_path=False,
+    ),
     help="Recursively search for log directories.",
     envvar="INSPECT_FLOW_STORE_ADD_COPY_FROM",
 )

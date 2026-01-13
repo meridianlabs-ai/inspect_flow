@@ -83,7 +83,13 @@ def config_options(f):
     )(f)
     f = click.option(
         "--store",
-        type=str,
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
         default=None,
         help="Path to the store directory. Will override the store specified in the config. 'auto' for default location. 'none' for no store.",
         envvar="INSPECT_FLOW_STORE",
