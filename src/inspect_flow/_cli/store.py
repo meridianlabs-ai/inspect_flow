@@ -34,6 +34,13 @@ def log_dirs_argument(f):
     f = click.argument(
         "log_dirs",
         nargs=-1,
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
         required=True,
         envvar="INSPECT_FLOW_STORE_LOG_DIRS",
     )(f)
