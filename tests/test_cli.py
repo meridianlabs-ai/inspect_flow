@@ -328,13 +328,11 @@ def test_store_commands() -> None:
     assert result.exit_code == 0
     # setting the log level is not working in the test, so only look at the last line of output to ignore logging
     assert result.output.split("\n")[-4] == str(Path.cwd() / log_dir)
-    assert result.output.split("\n")[-3] == str(
-        Path.cwd()
-        / log_dir
-        / "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    assert (
+        result.output.split("\n")[-3]
+        == "    2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
     )
-    assert result.output.split("\n")[-2] == str(
-        Path.cwd()
-        / log_dir
-        / "2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
+    assert (
+        result.output.split("\n")[-2]
+        == "    2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
     )
