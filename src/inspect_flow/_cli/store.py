@@ -6,6 +6,7 @@ from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.logs import copy_all_logs
 from inspect_flow._util.path_util import path_str
 
 
@@ -65,11 +66,30 @@ def store_command() -> None:
     help="Recursively search for log directories.",
     envvar="INSPECT_FLOW_STORE_ADD_RECURSIVE",
 )
+@click.option(
+    "--copy-from",
+    type=str,
+    help="Recursively search for log directories.",
+    envvar="INSPECT_FLOW_STORE_ADD_COPY_FROM",
+)
 def store_add(
-    log_dirs: tuple[str, ...], recursive: bool, **kwargs: Unpack[StoreOptionArgs]
+    log_dirs: tuple[str, ...],
+    recursive: bool,
+    copy_from: str | None,
+    **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     """Add log directories to the flow store."""
     flow_store = init_store(**kwargs)
+    if copy_from:
+        if recursive:
+            raise click.UsageError(
+                "Cannot use --recursive with --copy-from. Recursive finds existing log directories."
+            )
+        if len(log_dirs) != 1:
+            raise click.UsageError(
+                "When using --copy-from, exactly one log_dir must be specified as the destination."
+            )
+        copy_all_logs(src_dir=copy_from, dest_dir=log_dirs[0])
     flow_store.add_log_dir(list(log_dirs), recursive=recursive)
 
 
