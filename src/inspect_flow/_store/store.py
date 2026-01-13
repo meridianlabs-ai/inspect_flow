@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Sequence
 
 import platformdirs
-from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import FlowSpec, NotGiven
@@ -116,8 +115,6 @@ def store_factory(
         return None
     if store.lower() == "auto":
         store = str(_get_default_store_dir())
-
-    store = store + filesystem(store).sep + "flow_store"
 
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore

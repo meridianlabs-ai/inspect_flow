@@ -40,3 +40,13 @@ def test_store_remove() -> None:
     store.add_log_dir(dir1)
     store.remove_log_dir(dir1)
     assert store.get_log_dirs() == set()
+
+
+def test_local_log_remote_store(mock_s3) -> None:
+    store: FlowStore = store_get(store="s3://test-bucket/test-store")
+    try:
+        store.add_log_dir(dir1)
+    except ValueError as e:
+        assert "Local log directories cannot be added to remote stores." in str(e)
+        # 374 Ensure default store subdir is not in the error
+        assert "flow_store" not in str(e)

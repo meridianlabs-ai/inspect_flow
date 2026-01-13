@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass
 from logging import Logger, LoggerAdapter, getLogger
 from typing import Any, Counter, MutableMapping, Sequence
@@ -154,8 +155,9 @@ class DeltaLakeStore(FlowStoreInternal):
     """
 
     def __init__(self, store_path: str) -> None:
-        self._store_path = store_path
-        self._fs = filesystem(store_path)
+        self._store_path = store_path + filesystem(store_path).sep + "flow_store"
+
+        self._fs = filesystem(self._store_path)
         self._storage_options = self._get_storage_options()
         for table in TABLES:
             self._init_table(table)
@@ -166,9 +168,18 @@ class DeltaLakeStore(FlowStoreInternal):
         bucket_name, _, _ = self._fs.fs.split_path(self._store_path)
         region = _get_bucket_region(bucket_name)
 
+        options: dict[str, str] = {}
         if region:
-            return {"AWS_REGION": region}
-        return None
+            options["AWS_REGION"] = region
+
+        # Support custom S3 endpoints (e.g., moto for testing, MinIO, LocalStack)
+        if endpoint_url := os.environ.get("AWS_ENDPOINT_URL"):
+            options["AWS_ENDPOINT_URL"] = endpoint_url
+            # Allow HTTP for local testing endpoints
+            if endpoint_url.startswith("http://127.0.0.1"):
+                options["AWS_ALLOW_HTTP"] = "true"
+
+        return options if options else None
 
     def _table_path(self, table_name: str) -> str:
         return f"{self._store_path}/{table_name}"
@@ -225,7 +236,7 @@ Local log directory:
   {path_str(dir)}
 
 Remote store:
-  {path_str(self._store_path)}
+  {path_str(self._store_path[: -len("flow_store")])}
 
 Use a log directory on remote storage (e.g., s3://<bucket>/<path>)."""
                         )
