@@ -1,5 +1,5 @@
 import click
-from inspect_ai._util.file import dirname
+from inspect_ai._util.file import basename, dirname
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
@@ -131,9 +131,22 @@ def store_remove(log_dirs: tuple[str, ...], **kwargs: Unpack[StoreOptionArgs]) -
     help="List logs in the store.",
     envvar="INSPECT_FLOW_STORE_LIST_LOGS",
 )
-def store_list(logs: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
+@click.option(
+    "--logs-only",
+    is_flag=True,
+    default=False,
+    help="List only logs in the store, with full paths.",
+    envvar="INSPECT_FLOW_STORE_LIST_LOGS_ONLY",
+)
+def store_list(logs: bool, logs_only: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     """List all log directories in the flow store."""
     flow_store = init_store(**kwargs)
+    if logs_only:
+        log_files = flow_store.get_logs()
+        for log_file in sorted(log_files):
+            click.echo(path_str(log_file))
+        return
+
     log_dirs = flow_store.get_log_dirs()
     if log_dirs:
         dir_to_logs: dict[str, list[str]] = {}
@@ -146,7 +159,7 @@ def store_list(logs: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
             if logs:
                 log_files = dir_to_logs.get(log_dir, [])
                 for log_file in sorted(log_files):
-                    click.echo(path_str(log_file))
+                    click.echo("    " + basename(log_file))
     else:
         click.echo("No log directories in the store.")
 
