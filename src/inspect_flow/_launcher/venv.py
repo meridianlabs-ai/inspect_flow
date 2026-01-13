@@ -44,6 +44,8 @@ def create_venv(
     if auto_detect_dependencies:
         dependencies.extend(collect_auto_dependencies(spec))
     dependencies.append(get_pip_string("inspect-flow"))
+    # Ensure same version of inspect-ai is installed (supports -e installs)
+    dependencies.append(get_pip_string("inspect-ai"))
 
     _uv_pip_install(dependencies, temp_dir, env)
 

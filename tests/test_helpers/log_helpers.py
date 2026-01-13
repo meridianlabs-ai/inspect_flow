@@ -15,6 +15,14 @@ def init_test_logs() -> str:
     return str(log_dir)
 
 
+def init_test_store() -> str:
+    relative_db_dir = "logs/test_store"
+    db_dir = (Path.cwd() / relative_db_dir).resolve()
+    if db_dir.exists():
+        shutil.rmtree(db_dir)
+    return str(db_dir)
+
+
 def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotGiven]:
     if isinstance(task, str):
         return task, None
@@ -24,7 +32,8 @@ def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotG
 
 def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
     # Check that logs/flow_test directory was created
-    assert Path(log_dir).exists()
+    if not log_dir.startswith("s3://"):
+        assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
 
     assert len(log_list) == len(spec.tasks or [])

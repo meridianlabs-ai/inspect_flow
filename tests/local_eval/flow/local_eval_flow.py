@@ -1,6 +1,7 @@
 from inspect_flow import FlowOptions, FlowSpec, tasks_matrix
 
 FlowSpec(
+    store=None,
     options=FlowOptions(limit=1),
     tasks=tasks_matrix(
         task=[

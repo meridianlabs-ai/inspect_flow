@@ -11,7 +11,24 @@ from typing import Any, Callable, TypeVar, cast
 
 import boto3
 import pytest
+from inspect_ai._util.logger import LogHandlerVar
+from inspect_flow._util.logging import init_flow_logging
 from moto.server import ThreadedMotoServer
+
+
+@pytest.fixture(autouse=True)
+def isolate_store(tmp_path, monkeypatch):
+    """Ensure tests never touch real user store."""
+    monkeypatch.setattr(
+        "inspect_flow._store.store._get_default_store_dir",
+        lambda: tmp_path / "test_store",
+    )
+
+
+@pytest.fixture(autouse=True)
+def init_log_handler() -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="info", log_handler_var=log_handler)
 
 
 @pytest.fixture(scope="session")

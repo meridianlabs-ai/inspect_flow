@@ -7,6 +7,7 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
+from inspect_flow._cli.store import store_command
 from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
@@ -64,6 +65,8 @@ def test_run_command_overrides() -> None:
                 "defaults.solver.args.tool_calls=none",
                 "--log-dir",
                 "s3://my-bucket/flow-logs",
+                "--store",
+                "s3://my-bucket/flow-db",
             ],
             catch_exceptions=False,
         )
@@ -78,6 +81,7 @@ def test_run_command_overrides() -> None:
                 overrides=[
                     "dependencies.additional_dependencies=dep1",
                     "defaults.solver.args.tool_calls=none",
+                    "store=s3://my-bucket/flow-db",
                     "log_dir=s3://my-bucket/flow-logs",
                 ],
                 args={},
@@ -309,3 +313,26 @@ def test_options_to_overrides() -> None:
         "log_dir=option_dir",
         "options.limit=1",
     ]
+
+
+def test_store_commands() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["add", log_dir, "--log-level", "error"])
+    assert result.exit_code == 0
+    result = runner.invoke(store_command, ["list", "--log-level", "error"])
+    assert result.exit_code == 0
+    # setting the log level is not working in the test, so only look at the last line of output to ignore logging
+    assert result.output.split("\n")[-2] == str(Path.cwd() / log_dir)
+    result = runner.invoke(store_command, ["list", "--logs"])
+    assert result.exit_code == 0
+    # setting the log level is not working in the test, so only look at the last line of output to ignore logging
+    assert result.output.split("\n")[-4] == str(Path.cwd() / log_dir)
+    assert (
+        result.output.split("\n")[-3]
+        == "    2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    )
+    assert (
+        result.output.split("\n")[-2]
+        == "    2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
+    )

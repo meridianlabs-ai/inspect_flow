@@ -4,15 +4,16 @@ import click
 import yaml
 from inspect_ai import Task, eval_set
 from inspect_ai._eval.eval import eval_resolve_tasks
-from inspect_ai._eval.evalset import task_identifier
+from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.file import file
+from inspect_ai._util.file import basename, copy_file, file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
+from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
@@ -20,11 +21,13 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
+from inspect_flow._util.path_util import path_join
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 
 def _read_config(config_file: str) -> FlowSpec:
@@ -43,26 +46,33 @@ def _write_config_file(spec: FlowSpec) -> None:
 def _run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
-    resolved_config = resolve_spec(spec, base_dir=base_dir)
-    tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
-    _ = _get_task_ids(tasks=tasks, spec=resolved_config)
+    resolved_spec = resolve_spec(spec, base_dir=base_dir)
+    tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
+    task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
+    store = store_factory(resolved_spec, base_dir=base_dir)
 
     if dry_run:
-        dump = config_to_yaml(resolved_config)
+        dump = config_to_yaml(resolved_spec)
         click.echo(dump)
+        if store:
+            _copy_existing_logs(task_ids, resolved_spec, store, dry_run=True)
         return False, []
 
-    options = resolved_config.options or FlowOptions()
-    if not resolved_config.log_dir:
+    options = resolved_spec.options or FlowOptions()
+    if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 
-    _write_config_file(resolved_config)
+    _write_config_file(resolved_spec)
+
+    if store:
+        _copy_existing_logs(task_ids, resolved_spec, store)
 
     logger.info(f"Running eval set with {len(tasks)} tasks.")
+
     try:
         result = eval_set(
             tasks=tasks,
-            log_dir=resolved_config.log_dir,
+            log_dir=resolved_spec.log_dir,
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
             retry_connections=default_none(options.retry_connections),
@@ -115,8 +125,19 @@ def _run_eval_set(
         _fix_prerequisite_error_message(e)
         raise
 
+    if store:
+        # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
+        # TODO:ransomr better monitoring of the log directory
+        try:
+            assert resolved_spec.log_dir
+            store.add_log_dir(resolved_spec.log_dir)
+        except NoLogsError as e:
+            logger.error(
+                f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"
+            )
+
     if result[0]:
-        _print_bundle_url(resolved_config)
+        _print_bundle_url(resolved_spec)
 
     return result
 
@@ -152,6 +173,34 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
 
         task_ids.add(task_id)
     return task_ids
+
+
+def _copy_existing_logs(
+    task_ids: set[str],
+    spec: FlowSpec,
+    store: FlowStoreInternal,
+    dry_run: bool = False,
+) -> None:
+    # remove any tasks that already exist in the log_dir
+    logger.info("Searching for existing logs in the log directory")
+    assert spec.log_dir
+    logs = list_all_eval_logs(log_dir=spec.log_dir)
+    for log in logs:
+        if log.task_identifier in task_ids:
+            logger.info(f"Found existing log file {log.info.name}")
+            task_ids.remove(log.task_identifier)
+            if not task_ids:
+                return
+
+    logger.info("Searching store for existing logs")
+    log_files = store.search_for_logs(task_ids)
+    for log_file in log_files:
+        if dry_run:
+            logger.info(f"Found existing log file {log_file}")
+        else:
+            logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
+            destination = path_join(spec.log_dir, basename(log_file))
+            copy_file(log_file, destination)
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
