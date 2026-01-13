@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 
 import click
 import yaml
@@ -26,6 +25,7 @@ from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
+from inspect_flow._util.path_util import path_join
 
 logger = getLogger(__name__)
 
@@ -199,8 +199,8 @@ def _copy_existing_logs(
             logger.info(f"Found existing log file {log_file}")
         else:
             logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
-            destination = Path(spec.log_dir) / basename(log_file)
-            copy_file(log_file, destination.as_posix())
+            destination = path_join(spec.log_dir, basename(log_file))
+            copy_file(log_file, destination)
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:

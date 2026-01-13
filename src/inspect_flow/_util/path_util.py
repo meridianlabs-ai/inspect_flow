@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from inspect_ai._util.file import absolute_file_path
+from inspect_ai._util.file import absolute_file_path, filesystem
 
 
 def find_file(file_path: str, base_dir: str) -> str | None:
@@ -30,3 +30,9 @@ def path_str(path: str) -> str:
     if path.startswith("file://"):
         return path[7:]
     return path
+
+
+def path_join(path: str, *paths: str) -> str:
+    """Join multiple paths into a single path string."""
+    sep = filesystem(path).sep
+    return sep.join([path, *paths])
