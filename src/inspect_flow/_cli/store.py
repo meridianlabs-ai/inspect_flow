@@ -1,5 +1,5 @@
 import click
-from inspect_ai._util.file import basename, dirname
+from inspect_ai._util.file import basename, dirname, exists
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
@@ -30,21 +30,23 @@ def store_options(f):
     return f
 
 
-def log_dirs_argument(f):
-    f = click.argument(
-        "log_dirs",
-        nargs=-1,
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
-        required=True,
-        envvar="INSPECT_FLOW_STORE_LOG_DIRS",
-    )(f)
-    return f
+def log_dirs_argument(*, required: bool = True):
+    def decorator(func):
+        return click.argument(
+            "log_dirs",
+            nargs=-1,
+            type=click.Path(
+                file_okay=False,
+                dir_okay=True,
+                writable=True,
+                readable=True,
+                resolve_path=False,
+            ),
+            required=required,
+            envvar="INSPECT_FLOW_STORE_LOG_DIRS",
+        )(func)
+
+    return decorator
 
 
 class StoreOptionArgs(TypedDict, total=False):
@@ -70,7 +72,7 @@ def store_command() -> None:
 
 @store_command.command("add", help="Add log directories to the store")
 @store_options
-@log_dirs_argument
+@log_dirs_argument()
 @click.option(
     "--recursive",
     "-r",
@@ -115,11 +117,31 @@ def store_add(
 
 @store_command.command("remove", help="Remove log directories from the store")
 @store_options
-@log_dirs_argument
-def store_remove(log_dirs: tuple[str, ...], **kwargs: Unpack[StoreOptionArgs]) -> None:
+@log_dirs_argument(required=False)
+@click.option(
+    "--missing",
+    is_flag=True,
+    default=False,
+    help="Remove log directories that are missing from the file system.",
+    envvar="INSPECT_FLOW_STORE_REMOVE_MISSING",
+)
+def store_remove(
+    log_dirs: tuple[str, ...], missing: bool, **kwargs: Unpack[StoreOptionArgs]
+) -> None:
     """Remove log directories from the flow store."""
+    if not log_dirs and not missing:
+        raise click.UsageError("Either log_dirs or --missing must be specified.")
+    if log_dirs and missing:
+        raise click.UsageError("Cannot specify both log_dirs and --missing.")
     flow_store = init_store(**kwargs)
-    flow_store.remove_log_dir(list(log_dirs))
+    if missing:
+        dirs = flow_store.get_log_dirs()
+        missing_dirs = [log_dir for log_dir in dirs if not exists(log_dir)]
+        for log_dir in missing_dirs:
+            click.echo(f"Removing missing log directory: {path_str(log_dir)}")
+        flow_store.remove_log_dir(missing_dirs)
+    else:
+        flow_store.remove_log_dir(list(log_dirs))
 
 
 @store_command.command("list", help="List log directories in the store")
