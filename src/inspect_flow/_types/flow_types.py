@@ -188,6 +188,27 @@ class FlowEpochs(FlowBase):
     )
 
 
+class FlowAdditionalArgs(FlowBase):
+    """Additional args to provide to the creation of Inspect objects."""
+
+    model: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Additional args to pass to model constructor.",
+    )
+    solver: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Additional args to pass to solver constructor.",
+    )
+    agent: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Additional args to pass to agent constructor.",
+    )
+    scorer: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Additional args to pass to scorer constructor.",
+    )
+
+
 class FlowTask(FlowBase):
     """Configuration for an evaluation task.
 
@@ -202,6 +223,11 @@ class FlowTask(FlowBase):
     args: CreateArgs | None | NotGiven = Field(
         default=not_given,
         description="Additional args to pass to task constructor",
+    )
+
+    additional_args: FlowAdditionalArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Additional args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent.",
     )
 
     solver: (

@@ -5,6 +5,7 @@ from inspect_ai._util.registry import registry_value
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
+    FlowAdditionalArgs,
     FlowAgent,
     FlowDefaults,
     FlowEpochs,
@@ -165,6 +166,39 @@ def test_agent_tools() -> None:
                     name="my_agent",
                     args={"tools": [registry_value(add())]},
                 ),
+            )
+        ],
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+
+def test_additional_args_agent_tools() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(tools: list[Any]) -> Agent:
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                additional_args=FlowAdditionalArgs(
+                    agent={"tools": [registry_value(add())]}
+                ),
+                solver=FlowAgent(name="my_agent"),
             )
         ],
     )

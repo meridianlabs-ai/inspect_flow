@@ -11,6 +11,7 @@ from inspect_ai.util import SandboxEnvironmentSpec
 from typing_extensions import NotRequired, TypedDict
 
 from inspect_flow._types.flow_types import (
+    FlowAdditionalArgs,
     FlowAgent,
     FlowEpochs,
     FlowModel,
@@ -99,6 +100,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
+    additional_args: NotRequired[FlowAdditionalArgs | NotGiven | None]
+    """Additional args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent."""
     solver: NotRequired[
         str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | NotGiven | None
     ]
