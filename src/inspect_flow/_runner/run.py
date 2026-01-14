@@ -4,7 +4,7 @@ import click
 import yaml
 from inspect_ai import Task, eval_set
 from inspect_ai._eval.eval import eval_resolve_tasks
-from inspect_ai._eval.evalset import task_identifier
+from inspect_ai._eval.evalset import EvalSetArgsInTaskIdentifier, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
@@ -141,7 +141,8 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
     task_ids = set()
     for i, task in enumerate(resolved_tasks):
         task_id = task_identifier(
-            task=task, eval_set_config=GenerateConfig(), eval_set_solver=None
+            task=task,
+            eval_set_args=EvalSetArgsInTaskIdentifier(config=GenerateConfig()),
         )
         if task_id in task_ids:
             assert spec.tasks
