@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import pytest
 from inspect_ai._util.logger import LogHandlerVar
-from inspect_ai._util.registry import registry_value
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
@@ -645,7 +644,7 @@ def test_389_tool_config() -> None:
                 name="inspect_evals/mmlu_0_shot",
                 solver=FlowAgent(
                     name="some_solver",
-                    args={"tools": [registry_value(add())]},
+                    args={"tools": [add()]},
                 ),
             )
         ],

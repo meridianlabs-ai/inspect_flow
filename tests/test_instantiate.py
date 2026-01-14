@@ -1,7 +1,6 @@
 from typing import Any
 
 import pytest
-from inspect_ai._util.registry import registry_value
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
@@ -164,7 +163,7 @@ def test_agent_tools() -> None:
                 name=task_name,
                 solver=FlowAgent(
                     name="my_agent",
-                    args={"tools": [registry_value(add())]},
+                    args={"tools": [add()]},
                 ),
             )
         ],
@@ -195,9 +194,7 @@ def test_additional_args_agent_tools() -> None:
         tasks=[
             FlowTask(
                 name=task_name,
-                additional_args=FlowAdditionalArgs(
-                    agent={"tools": [registry_value(add())]}
-                ),
+                additional_args=FlowAdditionalArgs(agent={"tools": [add()]}),
                 solver=FlowAgent(name="my_agent"),
             )
         ],
