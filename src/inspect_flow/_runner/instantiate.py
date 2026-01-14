@@ -72,7 +72,7 @@ def _kwargs(
 ) -> dict[str, Any]:
     base_args = args or {}
     additional_args: CreateArgs = (
-        task.additional_args and getattr(task.additional_args, type) or {}
+        task.extra_args and getattr(task.extra_args, type) or {}
     )
     return _registry_kwargs({**base_args, **additional_args})
 

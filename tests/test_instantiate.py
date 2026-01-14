@@ -4,10 +4,10 @@ import pytest
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
-    FlowAdditionalArgs,
     FlowAgent,
     FlowDefaults,
     FlowEpochs,
+    FlowExtraArgs,
     FlowModel,
     FlowScorer,
     FlowSolver,
@@ -194,7 +194,7 @@ def test_additional_args_agent_tools() -> None:
         tasks=[
             FlowTask(
                 name=task_name,
-                additional_args=FlowAdditionalArgs(agent={"tools": [add()]}),
+                extra_args=FlowExtraArgs(agent={"tools": [add()]}),
                 solver=FlowAgent(name="my_agent"),
             )
         ],
