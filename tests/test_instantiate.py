@@ -1,4 +1,8 @@
+from typing import Any
+
 import pytest
+from inspect_ai._util.registry import registry_value
+from inspect_ai.agent import Agent, AgentState, agent
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -10,6 +14,8 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
+
+from tests.local_eval.src.local_eval.tools import add
 
 task_name = "tests/local_eval/src/local_eval/noop.py@noop"  # task from a file relative to the base_dir
 
@@ -136,3 +142,36 @@ def test_missing_task() -> None:
     with pytest.raises(LookupError) as e:
         instantiate_tasks(spec=spec, base_dir=".")
     assert "unregistered_task" in str(e.value)
+
+
+def test_agent_tools() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(tools: list[Any]) -> Agent:
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                solver=FlowAgent(
+                    name="my_agent",
+                    args={"tools": [registry_value(add())]},
+                ),
+            )
+        ],
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"

@@ -1,11 +1,16 @@
 from collections.abc import Callable
-from typing import Sequence, TypeAlias, TypeVar
+from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.loader import scorer_from_spec
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
+from inspect_ai._util.registry import (
+    is_model_dict,
+    is_registry_dict,
+    model_create_from_dict,
+)
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -38,6 +43,26 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
+# TODO:ransom copied from inspect_ai._util.registry for bug fix - remove once fixed
+def _registry_arg(arg: Any) -> Any:
+    if isinstance(arg, dict):
+        if is_registry_dict(arg):
+            return registry_create(arg["type"], arg["name"], **arg["params"])
+        elif is_model_dict(arg):
+            return model_create_from_dict(arg)
+        else:
+            return {k: _registry_arg(v) for k, v in arg.items()}
+    elif isinstance(arg, (list, tuple)):
+        return [_registry_arg(item) for item in arg]
+    else:
+        return arg
+
+
+def _registry_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve any registry and model dicts in the given kwargs."""
+    return {k: _registry_arg(v) for k, v in kwargs.items()}
+
+
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     return [
         _instantiate_task(spec, task_config, base_dir=base_dir)
@@ -57,7 +82,7 @@ def _create_model(model: FlowModel) -> Model:
         base_url=default_none(model.base_url),
         api_key=default_none(model.api_key),
         memoize=default(model.memoize, True),
-        **(model.model_args or {}),
+        **_registry_kwargs(model.model_args or {}),
     )
 
 
@@ -76,7 +101,9 @@ def _create_single_scorer(scorer: str | FlowScorer) -> Scorer:
     if not scorer.name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
-        ScorerSpec(scorer=scorer.name), task_path=None, **(scorer.args or {})
+        ScorerSpec(scorer=scorer.name),
+        task_path=None,
+        **_registry_kwargs(scorer.args or {}),
     )
 
 
@@ -98,14 +125,18 @@ def _create_single_solver(solver: str | FlowSolver) -> Solver:
     if not solver.name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
-    return registry_create(type="solver", name=solver.name, **(solver.args or {}))
+    return registry_create(
+        type="solver", name=solver.name, **_registry_kwargs(solver.args or {})
+    )
 
 
 def _create_agent(agent: FlowAgent) -> Agent:
     if not agent.name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
-    return registry_create(type="agent", name=agent.name, **(agent.args or {}))
+    return registry_create(
+        type="agent", name=agent.name, **_registry_kwargs(agent.args or {})
+    )
 
 
 def _create_solver(
@@ -138,7 +169,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: str | FlowTask, base_dir: str) 
     task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
         init_active_model(model, model.config)
-    task = task_func(**(flow_task.args or {}))
+    task = task_func(**_registry_kwargs(flow_task.args or {}))
 
     if is_set(flow_task.sample_id):
         task.dataset = slice_dataset(

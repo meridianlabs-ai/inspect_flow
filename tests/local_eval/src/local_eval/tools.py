@@ -1,8 +1,8 @@
-from inspect_ai.tool import tool
+from inspect_ai.tool import Tool, tool
 
 
 @tool
-def add():
+def add() -> Tool:
     async def execute(x: int, y: int):
         """
         Add two numbers.

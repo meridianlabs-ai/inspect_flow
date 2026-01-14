@@ -637,7 +637,7 @@ def test_auto_include_protocol() -> None:
 
 
 def test_389_tool_config() -> None:
-    config = FlowSpec(
+    spec = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=[
@@ -650,4 +650,4 @@ def test_389_tool_config() -> None:
             )
         ],
     )
-    validate_config(config, "tool_config_flow.yaml")
+    validate_config(spec, "tool_config_flow.yaml")
