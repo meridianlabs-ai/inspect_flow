@@ -355,30 +355,36 @@ def test_241_dependency_file() -> None:
 def test_241_no_uvlock() -> None:
     # Delete uv.lock if it exists to test behavior without lockfile
     uv_lock_path = Path("tests/local_eval/uv.lock")
+    uv_lock_contents: bytes | None = None
     if uv_lock_path.exists():
+        uv_lock_contents = uv_lock_path.read_bytes()
         uv_lock_path.unlink()
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        env = os.environ.copy()
-        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-        create_venv(
-            spec=FlowSpec(
-                python_version="3.13",
-                log_dir="logs",
-                dependencies=FlowDependencies(
-                    dependency_file="tests/local_eval/pyproject.toml",
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env = os.environ.copy()
+            env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+            create_venv(
+                spec=FlowSpec(
+                    python_version="3.13",
+                    log_dir="logs",
+                    dependencies=FlowDependencies(
+                        dependency_file="tests/local_eval/pyproject.toml",
+                    ),
+                    tasks=[FlowTask(name="task_name")],
                 ),
-                tasks=[FlowTask(name="task_name")],
-            ),
-            base_dir=".",
-            temp_dir=temp_dir,
-            env=env,
-        )
-        requirements_path = Path("logs") / "flow-requirements.txt"
-        assert requirements_path.exists()
-        with open(requirements_path, "r") as f:
-            requirements = f.read()
-            assert "local_eval" in requirements
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=env,
+            )
+            requirements_path = Path("logs") / "flow-requirements.txt"
+            assert requirements_path.exists()
+            with open(requirements_path, "r") as f:
+                requirements = f.read()
+                assert "local_eval" in requirements
+    finally:
+        if uv_lock_contents is not None:
+            uv_lock_path.write_bytes(uv_lock_contents)
 
 
 def test_241_requirements_txt() -> None:
