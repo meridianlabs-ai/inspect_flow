@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 license = { text = "MIT License" }
 dependencies = [
     "click>=8.2.1",
-    "inspect-ai>=0.3.147",
+    "inspect-ai==0.3.161",
     "packaging>=21.0",
     "pydantic>=2.11.2",
     "python-dotenv>=1.1.1",
