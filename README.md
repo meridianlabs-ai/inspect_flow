@@ -17,7 +17,7 @@
 | src/inspect\_flow/\_config/load.py                 |      221 |        0 |       78 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/write.py                |        5 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/\_\_init\_\_.py       |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_launcher/auto\_dependencies.py |       66 |        0 |       34 |        0 |    100.00% |           |
+| src/inspect\_flow/\_launcher/auto\_dependencies.py |       73 |        0 |       38 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/launch.py             |       60 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       75 |       26 |       28 |        4 |     55.34% |20-24, 87-88, 95-105, 110->112, 115-132 |
 | src/inspect\_flow/\_launcher/python\_version.py    |       55 |        8 |       18 |        5 |     82.19% |10, 60-61, 92->91, 95, 117-119, 125 |
@@ -44,7 +44,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1569** |   **34** |  **400** |    **9** | **97.00%** |           |
+| **TOTAL**                                          | **1576** |   **34** |  **404** |    **9** | **97.02%** |           |
 
 
 ## Setup coverage badge
