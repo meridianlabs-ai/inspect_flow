@@ -294,18 +294,50 @@ def test_run_command_log_level() -> None:
         mock_run.assert_called_once()
 
 
+def test_run_command_allow_dirty() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir-allow-dirty"])
+
+        assert result.exit_code == 0
+
+        # Verify that load_spec was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                overrides=[
+                    "options.log_dir_allow_dirty=True",
+                ],
+                args={},
+            ),
+        )
+
+        mock_run.assert_called_once_with(
+            mock_config_obj,
+            **(COMMON_DEFAULTS),
+            base_dir=CONFIG_FILE_DIR,
+        )
+
+
 def test_options_to_overrides() -> None:
     overrides = _options_to_overrides(
         log_dir="option_dir",
         limit=1,
-        set=["log_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],
+        set=["log_dir=set_dir", "options.limit=5"],
+        log_dir_allow_dirty=True,
     )
 
     assert len(overrides) == 5
     assert overrides == [
         "log_dir=set_dir",
         "options.limit=5",
-        "options.log_dir_allow_dirty=True",
         "log_dir=option_dir",
         "options.limit=1",
+        "options.log_dir_allow_dirty=True",
     ]
