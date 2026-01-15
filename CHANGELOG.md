@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.4](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.3...v0.1.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* add hashes to flow-requirements.txt ([#381](https://github.com/meridianlabs-ai/inspect_flow/issues/381)) ([e870d79](https://github.com/meridianlabs-ai/inspect_flow/commit/e870d7904bcc886d4a3811c79a74abe29f0e2559))
+* correctly write flow-requirements.txt to s3 ([#375](https://github.com/meridianlabs-ai/inspect_flow/issues/375)) ([abaecd4](https://github.com/meridianlabs-ai/inspect_flow/commit/abaecd493a962717e7177a9462d6b9a434df429c))
+* improved str representation of flow_types ([#382](https://github.com/meridianlabs-ai/inspect_flow/issues/382)) ([eb04076](https://github.com/meridianlabs-ai/inspect_flow/commit/eb0407627c5d2fe08f7e339dbc84e5bfa61903d8))
+
 ## [0.1.3](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.2...v0.1.3) (2026-01-06)
 
 
