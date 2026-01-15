@@ -91,7 +91,11 @@ def _matrix_with_base(
 
     matrix_keys = matrix.keys()
     result = []
-    for matrix_values in product(*matrix.values()):
+    values = [
+        [v] if isinstance(v, str) or not isinstance(v, Sequence) else v
+        for v in matrix.values()
+    ]
+    for matrix_values in product(*values):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
         result.append(
             pydantic_type.model_validate(
