@@ -114,6 +114,7 @@ def config_options(f):
 class ConfigOptionArgs(TypedDict, total=False):
     log_level: str
     log_dir: str | None
+    log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
     limit: int | None
     set: list[str] | None
@@ -129,6 +130,8 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append(f"options.limit={limit}")
     if kwargs.get("log_dir_create_unique"):
         overrides.append("log_dir_create_unique=True")
+    if kwargs.get("log_dir_allow_dirty"):
+        overrides.append("options.log_dir_allow_dirty=True")
     return overrides
 
 

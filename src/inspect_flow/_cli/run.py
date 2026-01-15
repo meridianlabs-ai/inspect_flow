@@ -23,6 +23,13 @@ from inspect_flow._util.logging import init_flow_logging
     help="Do not run spec, but show a count of tasks that would be run.",
     envvar="INSPECT_FLOW_DRY_RUN",
 )
+@click.option(
+    "--log-dir-allow-dirty",
+    type=bool,
+    is_flag=True,
+    help="Do not fail if the log-dir contains files that are not part of the eval set.",
+    envvar="INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY",
+)
 @config_options
 def run_command(
     config_file: str,
