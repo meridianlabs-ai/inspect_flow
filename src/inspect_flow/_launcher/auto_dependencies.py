@@ -1,3 +1,4 @@
+import os
 from logging import getLogger
 from typing import Sequence
 
@@ -61,6 +62,7 @@ def collect_auto_dependencies(spec: FlowSpec) -> list[str]:
 
 def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> None:
     if isinstance(task, str):
+        _collect_env_model_dependencies(dependencies)
         return _collect_name_dependencies(task, dependencies)
 
     _collect_name_dependencies(task.name, dependencies)
@@ -74,6 +76,15 @@ def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> 
     if task.model_roles:
         for model_role in task.model_roles.values():
             _collect_model_dependencies(model_role, dependencies)
+    if not task.model and not task.model_roles:
+        _collect_env_model_dependencies(dependencies)
+
+
+def _collect_env_model_dependencies(
+    dependencies: set[str],
+) -> None:
+    if env_model := os.getenv("INSPECT_EVAL_MODEL"):
+        _collect_model_dependencies(env_model, dependencies)
 
 
 def _collect_name_dependencies(
