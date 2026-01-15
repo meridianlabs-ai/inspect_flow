@@ -10,8 +10,8 @@
 | src/inspect\_flow/\_cli/\_\_init\_\_.py            |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/config.py                  |       18 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/main.py                    |       19 |        0 |        4 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/options.py                 |       35 |        0 |        6 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/run.py                     |       19 |        0 |        0 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/options.py                 |       37 |        0 |        8 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/run.py                     |       20 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/defaults.py             |       68 |        0 |       28 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/load.py                 |      221 |        0 |       78 |        0 |    100.00% |           |
@@ -44,7 +44,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1576** |   **34** |  **404** |    **9** | **97.02%** |           |
+| **TOTAL**                                          | **1579** |   **34** |  **406** |    **9** | **97.03%** |           |
 
 
 ## Setup coverage badge
