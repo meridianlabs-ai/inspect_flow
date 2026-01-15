@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
+from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
 from inspect_flow._launcher.venv import create_venv
 
@@ -552,3 +553,17 @@ def test_369_flow_requirements_s3(mock_s3) -> None:
         requirements = response["Body"].read().decode("utf-8")
         assert "inspect_flow" in requirements
         assert "--hash=sha256:" in requirements
+
+
+def test_402_env_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("INSPECT_EVAL_MODEL", "openai/gpt-4o")
+
+    spec = FlowSpec(tasks=["task_name"])
+    dependencies = collect_auto_dependencies(spec)
+    assert len(dependencies) == 1
+    assert "openai" in dependencies[0]
+
+    spec = FlowSpec(tasks=[FlowTask(name="task_name")])
+    dependencies = collect_auto_dependencies(spec)
+    assert len(dependencies) == 1
+    assert "openai" in dependencies[0]
