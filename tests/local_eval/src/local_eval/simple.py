@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
 from inspect_flow import FlowAgent, FlowSpec, FlowTask
 from inspect_flow._types.flow_types import FlowExtraArgs
 
@@ -8,7 +13,7 @@ FlowSpec(
     tasks=[
         FlowTask(
             name="./agentic.py@cyber_ctf_task",
-            solver=FlowAgent(name="simple_agent"),
+            solver=FlowAgent(name="local_eval/simple_agent"),
             model="openai/gpt-4o-mini",
             extra_args=FlowExtraArgs(
                 agent={

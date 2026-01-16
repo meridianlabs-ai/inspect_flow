@@ -7,7 +7,7 @@ name = "local_eval"
 version = "0.1.0"
 description = "Example local evaluation project to demonstrate and test Inspect Flow functionality"
 authors = [{ name = "Meridian Labs" }]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "inspect-ai>=0.3.131",
     "python-dotenv>=1.1.1",
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.entry-points.inspect_ai]
-local_eval = "local_eval.noop"
+local_eval = "local_eval._registry"
 
 [tool.uv]
 package = true
