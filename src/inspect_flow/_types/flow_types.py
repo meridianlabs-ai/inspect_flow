@@ -11,6 +11,7 @@ from typing import (
     TypeAlias,
 )
 
+from inspect_ai._util.registry import registry_value
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import (
@@ -45,6 +46,14 @@ class NotGiven(BaseModel, extra="forbid"):
 
 
 not_given = NotGiven(type="NOT_GIVEN")
+
+
+def _process_create_args(
+    args: CreateArgs | None | NotGiven,
+) -> CreateArgs | None | NotGiven:
+    if not args:
+        return args
+    return registry_value(args)
 
 
 class FlowBase(BaseModel, extra="forbid"):
@@ -104,6 +113,11 @@ class FlowModel(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
+    @model_validator(mode="after")
+    def process_model_args(self) -> Self:
+        self.model_args = _process_create_args(self.model_args)
+        return self
+
 
 class FlowScorer(FlowBase):
     """Configuration for a Scorer."""
@@ -123,6 +137,11 @@ class FlowScorer(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the scorer.",
     )
 
+    @model_validator(mode="after")
+    def process_args(self) -> Self:
+        self.args = _process_create_args(self.args)
+        return self
+
 
 class FlowSolver(FlowBase):
     """Configuration for a Solver."""
@@ -141,6 +160,11 @@ class FlowSolver(FlowBase):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the solver.",
     )
+
+    @model_validator(mode="after")
+    def process_args(self) -> Self:
+        self.args = _process_create_args(self.args)
+        return self
 
 
 class FlowAgent(FlowBase):
@@ -167,8 +191,9 @@ class FlowAgent(FlowBase):
     )
 
     @model_validator(mode="after")
-    def set_type(self) -> Self:
+    def set_type_and_process_args(self) -> Self:
         self.type = "agent"
+        self.args = _process_create_args(self.args)
         return self
 
 
@@ -188,6 +213,35 @@ class FlowEpochs(FlowBase):
     )
 
 
+class FlowExtraArgs(FlowBase):
+    """Extra args to provide to the creation of Inspect objects."""
+
+    model: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to model constructor.",
+    )
+    solver: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to solver constructor.",
+    )
+    agent: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to agent constructor.",
+    )
+    scorer: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to scorer constructor.",
+    )
+
+    @model_validator(mode="after")
+    def process_args(self) -> Self:
+        self.model = _process_create_args(self.model)
+        self.solver = _process_create_args(self.solver)
+        self.agent = _process_create_args(self.agent)
+        self.scorer = _process_create_args(self.scorer)
+        return self
+
+
 class FlowTask(FlowBase):
     """Configuration for an evaluation task.
 
@@ -202,6 +256,11 @@ class FlowTask(FlowBase):
     args: CreateArgs | None | NotGiven = Field(
         default=not_given,
         description="Additional args to pass to task constructor",
+    )
+
+    extra_args: FlowExtraArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent.",
     )
 
     solver: (
@@ -291,6 +350,11 @@ class FlowTask(FlowBase):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
+
+    @model_validator(mode="after")
+    def process_args(self) -> Self:
+        self.args = _process_create_args(self.args)
+        return self
 
     @property
     def model_name(self) -> str | None | NotGiven:

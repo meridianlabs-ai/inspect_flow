@@ -1,11 +1,16 @@
 from collections.abc import Callable
-from typing import Sequence, TypeAlias, TypeVar
+from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.loader import scorer_from_spec
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
+from inspect_ai._util.registry import (
+    is_model_dict,
+    is_registry_dict,
+    model_create_from_dict,
+)
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
 from inspect_ai.model._model import init_active_model
@@ -14,8 +19,10 @@ from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
+from typing_extensions import Literal
 
 from inspect_flow._types.flow_types import (
+    CreateArgs,
     FlowAgent,
     FlowEpochs,
     FlowModel,
@@ -38,6 +45,38 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
+# TODO:ransom copied from inspect_ai._util.registry for bug fix - remove once fixed
+def _registry_arg(arg: Any) -> Any:
+    if isinstance(arg, dict):
+        if is_registry_dict(arg):
+            return registry_create(arg["type"], arg["name"], **arg["params"])
+        elif is_model_dict(arg):
+            return model_create_from_dict(arg)
+        else:
+            return {k: _registry_arg(v) for k, v in arg.items()}
+    elif isinstance(arg, (list, tuple)):
+        return [_registry_arg(item) for item in arg]
+    else:
+        return arg
+
+
+def _registry_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve any registry and model dicts in the given kwargs."""
+    return {k: _registry_arg(v) for k, v in kwargs.items()}
+
+
+def _kwargs(
+    type: Literal["model", "solver", "scorer", "agent"],
+    args: CreateArgs | None | NotGiven,
+    task: FlowTask,
+) -> dict[str, Any]:
+    base_args = args or {}
+    additional_args: CreateArgs = (
+        task.extra_args and getattr(task.extra_args, type) or {}
+    )
+    return _registry_kwargs({**base_args, **additional_args})
+
+
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     return [
         _instantiate_task(spec, task_config, base_dir=base_dir)
@@ -45,7 +84,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     ]
 
 
-def _create_model(model: FlowModel) -> Model:
+def _create_model(task: FlowTask, model: FlowModel) -> Model:
     if not model.name:
         raise ValueError(f"Model name is required. Model: {model}")
 
@@ -57,30 +96,33 @@ def _create_model(model: FlowModel) -> Model:
         base_url=default_none(model.base_url),
         api_key=default_none(model.api_key),
         memoize=default(model.memoize, True),
-        **(model.model_args or {}),
+        **_kwargs("model", model.model_args, task),
     )
 
 
-def _create_model_roles(model_roles: ModelRolesConfig) -> ModelRoles:
+def _create_model_roles(task: FlowTask, model_roles: ModelRolesConfig) -> ModelRoles:
     roles = {}
     for role, model in model_roles.items():
         if isinstance(model, FlowModel):
-            model = _create_model(model=model)
+            model = _create_model(task=task, model=model)
         roles[role] = model
     return roles
 
 
-def _create_single_scorer(scorer: str | FlowScorer) -> Scorer:
+def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer) -> Scorer:
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
     if not scorer.name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
-        ScorerSpec(scorer=scorer.name), task_path=None, **(scorer.args or {})
+        ScorerSpec(scorer=scorer.name),
+        task_path=None,
+        **_kwargs("scorer", scorer.args, task),
     )
 
 
 def _create_scorer(
+    task: FlowTask,
     scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven,
 ) -> Scorer | Sequence[Scorer] | None | InspectNotGiven:
     if isinstance(scorer, NotGiven):
@@ -88,34 +130,39 @@ def _create_scorer(
     if scorer is None:
         return None
     if isinstance(scorer, str | FlowScorer):
-        return _create_single_scorer(scorer)
-    return [_create_single_scorer(single_solver) for single_solver in scorer]
+        return _create_single_scorer(task, scorer)
+    return [_create_single_scorer(task, single_solver) for single_solver in scorer]
 
 
-def _create_single_solver(solver: str | FlowSolver) -> Solver:
+def _create_single_solver(task: FlowTask, solver: str | FlowSolver) -> Solver:
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
     if not solver.name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
-    return registry_create(type="solver", name=solver.name, **(solver.args or {}))
+    return registry_create(
+        type="solver", name=solver.name, **_kwargs("solver", solver.args, task)
+    )
 
 
-def _create_agent(agent: FlowAgent) -> Agent:
+def _create_agent(task: FlowTask, agent: FlowAgent) -> Agent:
     if not agent.name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
-    return registry_create(type="agent", name=agent.name, **(agent.args or {}))
+    return registry_create(
+        type="agent", name=agent.name, **_kwargs("agent", agent.args, task)
+    )
 
 
 def _create_solver(
+    task: FlowTask,
     solver: FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
 ) -> SingleSolver:
     if isinstance(solver, FlowSolver):
-        return _create_single_solver(solver)
+        return _create_single_solver(task, solver)
     if isinstance(solver, FlowAgent):
-        return _create_agent(solver)
-    return [_create_single_solver(single_solver) for single_solver in solver]
+        return _create_agent(task, solver)
+    return [_create_single_solver(task, single_solver) for single_solver in solver]
 
 
 def _instantiate_task(spec: FlowSpec, flow_task: str | FlowTask, base_dir: str) -> Task:
@@ -127,18 +174,20 @@ def _instantiate_task(spec: FlowSpec, flow_task: str | FlowTask, base_dir: str) 
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    model = _create_model(flow_task.model) if flow_task.model else NOT_GIVEN
-    scorer = _create_scorer(flow_task.scorer)
-    solver = _create_solver(flow_task.solver) if flow_task.solver else NOT_GIVEN
+    model = _create_model(flow_task, flow_task.model) if flow_task.model else NOT_GIVEN
+    scorer = _create_scorer(flow_task, flow_task.scorer)
+    solver = (
+        _create_solver(flow_task, flow_task.solver) if flow_task.solver else NOT_GIVEN
+    )
     model_roles = (
-        _create_model_roles(flow_task.model_roles)
+        _create_model_roles(flow_task, flow_task.model_roles)
         if flow_task.model_roles
         else NOT_GIVEN
     )
     task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
         init_active_model(model, model.config)
-    task = task_func(**(flow_task.args or {}))
+    task = task_func(**_registry_kwargs(flow_task.args or {}))
 
     if is_set(flow_task.sample_id):
         task.dataset = slice_dataset(

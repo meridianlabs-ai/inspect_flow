@@ -1,0 +1,13 @@
+log_dir: example_logs
+options:
+  limit: 1
+tasks:
+- name: inspect_evals/mmlu_0_shot
+  solver:
+    name: some_solver
+    args:
+      tools:
+      - type: tool
+        name: add
+        params: {}
+    type: agent

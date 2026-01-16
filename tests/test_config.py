@@ -31,6 +31,7 @@ from inspect_flow._types.flow_types import FlowDependencies
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 
+from tests.local_eval.src.local_eval.tools import add
 from tests.test_helpers.config_helpers import validate_config
 
 config_dir = str(Path(__file__).parent / "config")
@@ -632,3 +633,20 @@ def test_auto_include_protocol() -> None:
         spec1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )
     assert spec1 == spec2
+
+
+def test_389_tool_config() -> None:
+    spec = FlowSpec(
+        log_dir="example_logs",
+        options=FlowOptions(limit=1),
+        tasks=[
+            FlowTask(
+                name="inspect_evals/mmlu_0_shot",
+                solver=FlowAgent(
+                    name="some_solver",
+                    args={"tools": [add()]},
+                ),
+            )
+        ],
+    )
+    validate_config(spec, "tool_config_flow.yaml")
