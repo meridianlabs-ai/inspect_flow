@@ -10,6 +10,7 @@ from inspect_flow import (
     configs_matrix,
 )
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._types.factories import tasks_matrix
 from inspect_flow._types.flow_types import FlowAgent, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from pydantic_core import to_jsonable_python
@@ -120,3 +121,21 @@ def test_task_none_model_name():
     assert task.model_name is None
     task = FlowTask(name="module/task", model=FlowModel())
     assert task.model_name == not_given
+
+
+def test_403_task_matrix_model_str():
+    spec = FlowSpec(
+        log_dir="logs",
+        tasks=tasks_matrix(
+            task=[
+                FlowTask(
+                    name="inspect_evals/mmlu_0_shot",
+                ),
+            ],
+            model="openai/gpt-4o-mini",
+        ),
+    )
+    assert spec.tasks
+    assert len(spec.tasks) == 1
+    assert isinstance(spec.tasks[0], FlowTask)
+    assert spec.tasks[0].model == "openai/gpt-4o-mini"
