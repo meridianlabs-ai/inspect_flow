@@ -3,6 +3,8 @@
 # Important: All default values should be None. This supports merging of partial configs as None values are not merged.
 # But a different default value would override more specific settings.
 
+from __future__ import annotations
+
 from typing import (
     Any,
     Literal,
@@ -553,9 +555,9 @@ class FlowDependencies(FlowBase):
 class FlowSpec(FlowBase):
     """Top-level flow specification."""
 
-    includes: Sequence[str] | None | NotGiven = Field(
+    includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
         default=not_given,
-        description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
+        description="List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
     log_dir: str | None | NotGiven = Field(

@@ -632,3 +632,11 @@ def test_auto_include_protocol() -> None:
         spec1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )
     assert spec1 == spec2
+
+
+def test_418_spec_includes() -> None:
+    spec1 = FlowSpec(options=FlowOptions(log_dir_allow_dirty=True))
+    spec2 = FlowSpec(includes=[spec1])
+    spec3 = expand_spec(spec2, base_dir=".")
+    assert spec3.options
+    assert spec3.options.log_dir_allow_dirty is True
