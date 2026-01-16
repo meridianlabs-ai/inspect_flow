@@ -98,7 +98,8 @@ def _root_type_as_def(schema: Schema) -> None:
     del schema["$defs"]
     root_type = copy(schema)
     schema.clear()
-    defs[root_type["title"]] = root_type
+    if "title" in root_type:
+        defs[root_type["title"]] = root_type
     schema["$defs"] = defs
 
 

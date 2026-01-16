@@ -89,6 +89,9 @@ def _expand_includes(
     if args is None:
         args = dict()
     for include in spec.includes or []:
+        if isinstance(include, FlowSpec):
+            spec = _apply_include(spec, include)
+            continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
