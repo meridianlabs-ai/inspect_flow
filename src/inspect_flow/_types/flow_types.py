@@ -7,14 +7,19 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    Callable,
     Literal,
     Mapping,
     Sequence,
     TypeAlias,
 )
 
+from inspect_ai import Task
+from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.model import GenerateConfig
+from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.scorer import Scorer
+from inspect_ai.solver import Solver
 from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
@@ -25,7 +30,7 @@ from typing_extensions import Self, override
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 
 CreateArgs: TypeAlias = Mapping[str, Any]
-ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
+ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
 
 
 class NotGiven(BaseModel, extra="forbid"):
@@ -64,7 +69,12 @@ class FlowModel(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the model to use. Required to be set by the time the model is created.",
+        description="Name of the model to use. If factory is not provided, this is used to create the model.",
+    )
+
+    factory: Callable[..., Model] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the model instance.",
     )
 
     role: str | None | NotGiven = Field(
@@ -112,7 +122,12 @@ class FlowScorer(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the scorer. Required to be set by the time the scorer is created.",
+        description="Name of the scorer. Used to create the scorer if the factory is not provided.",
+    )
+
+    factory: Callable[..., Scorer] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the scorer instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -131,7 +146,12 @@ class FlowSolver(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the solver. Required to be set by the time the solver is created.",
+        description="Name of the solver. Used to create the solver if the factory is not provided.",
+    )
+
+    factory: Callable[..., Solver] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the solver instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -150,7 +170,12 @@ class FlowAgent(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the agent. Required to be set by the time the agent is created.",
+        description="Name of the agent. Used to create the agent if the factory is not provided.",
+    )
+
+    factory: Callable[..., Agent] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the agent instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -190,7 +215,7 @@ class FlowEpochs(FlowBase):
     )
 
 
-class FlowTask(FlowBase):
+class FlowTask(FlowBase, arbitrary_types_allowed=True):
     """Configuration for an evaluation task.
 
     Tasks are the basis for defining and running evaluations.
@@ -198,7 +223,12 @@ class FlowTask(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
+        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Used to create the task if the factory is not provided.',
+    )
+
+    factory: Callable[..., Task] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the task instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -207,18 +237,32 @@ class FlowTask(FlowBase):
     )
 
     solver: (
-        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | None | NotGiven
+        str
+        | FlowSolver
+        | FlowAgent
+        | Solver
+        | Agent
+        | Sequence[str | FlowSolver | Solver]
+        | None
+        | NotGiven
     ) = Field(
         default=not_given,
         description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven = Field(
+    scorer: (
+        str
+        | FlowScorer
+        | Scorer
+        | Sequence[str | FlowScorer | Scorer]
+        | None
+        | NotGiven
+    ) = Field(
         default=not_given,
         description="Scorer or list of scorers used to evaluate model output.",
     )
 
-    model: str | FlowModel | None | NotGiven = Field(
+    model: str | FlowModel | Model | None | NotGiven = Field(
         default=not_given,
         description="Default model for task (Optional, defaults to eval model).",
     )
@@ -552,7 +596,7 @@ class FlowDependencies(FlowBase):
     )
 
 
-class FlowSpec(FlowBase):
+class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     """Top-level flow specification."""
 
     includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
@@ -598,6 +642,6 @@ class FlowSpec(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
-    tasks: Sequence[str | FlowTask] | None | NotGiven = Field(
+    tasks: Sequence[str | FlowTask | Task] | None | NotGiven = Field(
         default=not_given, description="Tasks to run"
     )

@@ -1,6 +1,7 @@
 import sys
 from typing import TypeAlias, TypeVar
 
+from inspect_ai import Task
 from inspect_ai._util.registry import registry_lookup
 from inspect_ai.model import Model
 from pydantic import BaseModel
@@ -40,10 +41,12 @@ def resolve_spec(spec: FlowSpec, base_dir: str) -> FlowSpec:
     )
 
 
-def _resolve_task(task: str | FlowTask, base_dir: str) -> list[FlowTask]:
+def _resolve_task(task: str | FlowTask | Task, base_dir: str) -> list[FlowTask | Task]:
     assert isinstance(
         task, FlowTask
     )  # apply_defaults should have converted str to FlowTask
+    if isinstance(task, Task):
+        return [task]
     names = _get_task_creator_names(task, base_dir=base_dir)
     if names == [task.name]:
         return [task]

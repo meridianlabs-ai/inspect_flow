@@ -46,7 +46,7 @@ def test_launch() -> None:
         assert args[7] == DEFAULT_LOG_LEVEL
 
 
-def test_launch_no_venv() -> None:
+def test_launch_venv() -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="warning", log_handler_var=log_handler)
     with patch("subprocess.run") as mock_run:
@@ -56,7 +56,7 @@ def test_launch_no_venv() -> None:
         launch(
             spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
             base_dir=".",
-            no_venv=True,
+            venv=True,
         )
 
         assert mock_run.call_count == 1

@@ -45,7 +45,11 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     ]
 
 
-def _create_model(model: FlowModel) -> Model:
+def _create_model(model: FlowModel | Model) -> Model:
+    if isinstance(model, Model):
+        return model
+    if model.factory:
+        return model.factory(**(model.model_args or {}))
     if not model.name:
         raise ValueError(f"Model name is required. Model: {model}")
 
@@ -70,9 +74,13 @@ def _create_model_roles(model_roles: ModelRolesConfig) -> ModelRoles:
     return roles
 
 
-def _create_single_scorer(scorer: str | FlowScorer) -> Scorer:
+def _create_single_scorer(scorer: str | FlowScorer | Scorer) -> Scorer:
+    if isinstance(scorer, Scorer):
+        return scorer
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
+    if scorer.factory:
+        return scorer.factory(**(scorer.args or {}))
     if not scorer.name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
@@ -81,20 +89,31 @@ def _create_single_scorer(scorer: str | FlowScorer) -> Scorer:
 
 
 def _create_scorer(
-    scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven,
+    scorer: str
+    | FlowScorer
+    | Scorer
+    | Sequence[str | FlowScorer | Scorer]
+    | None
+    | NotGiven,
 ) -> Scorer | Sequence[Scorer] | None | InspectNotGiven:
     if isinstance(scorer, NotGiven):
         return NOT_GIVEN
     if scorer is None:
         return None
+    if isinstance(scorer, Scorer):
+        return scorer
     if isinstance(scorer, str | FlowScorer):
         return _create_single_scorer(scorer)
     return [_create_single_scorer(single_solver) for single_solver in scorer]
 
 
-def _create_single_solver(solver: str | FlowSolver) -> Solver:
+def _create_single_solver(solver: str | FlowSolver | Solver) -> Solver:
+    if isinstance(solver, Solver):
+        return solver
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
+    if solver.factory:
+        return solver.factory(**(solver.args or {}))
     if not solver.name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
@@ -102,6 +121,8 @@ def _create_single_solver(solver: str | FlowSolver) -> Solver:
 
 
 def _create_agent(agent: FlowAgent) -> Agent:
+    if agent.factory:
+        return agent.factory(**(agent.args or {}))
     if not agent.name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
@@ -109,16 +130,26 @@ def _create_agent(agent: FlowAgent) -> Agent:
 
 
 def _create_solver(
-    solver: FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
+    solver: FlowSolver
+    | Solver
+    | FlowAgent
+    | Agent
+    | Sequence[str | FlowSolver | Solver],
 ) -> SingleSolver:
     if isinstance(solver, FlowSolver):
         return _create_single_solver(solver)
     if isinstance(solver, FlowAgent):
         return _create_agent(solver)
+    if not isinstance(solver, Sequence):
+        return solver
     return [_create_single_solver(single_solver) for single_solver in solver]
 
 
-def _instantiate_task(spec: FlowSpec, flow_task: str | FlowTask, base_dir: str) -> Task:
+def _instantiate_task(
+    spec: FlowSpec, flow_task: str | FlowTask | Task, base_dir: str
+) -> Task:
+    if isinstance(flow_task, Task):
+        return flow_task
     if (
         spec.defaults
         or not isinstance(flow_task, FlowTask)
@@ -198,6 +229,8 @@ def _get_task_creator_from_file(
 
 
 def _get_task_creator(task: FlowTask, base_dir: str) -> Callable[..., Task]:
+    if task.factory:
+        return task.factory
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
     config_name = task.name

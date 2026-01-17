@@ -247,7 +247,7 @@ flow run config.py
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
 | `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
-| `INSPECT_FLOW_NO_VENV`                | `--no-venv`                | Do not create a virtual environment to run the Flow spec |
+| `INSPECT_FLOW_VENV`                   | `--venv`                   | Create a virtual environment to run the Flow spec |
 | `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Create virtual environment and print resolved YAML configuration |
 
 ::: callout-tip
@@ -255,7 +255,7 @@ flow run config.py
 
 Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 
-**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_NO_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowSpec`.
+**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowSpec`.
 
 **Settings with multiple override levels**:
 

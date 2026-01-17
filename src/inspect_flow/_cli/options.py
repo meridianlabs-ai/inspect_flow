@@ -102,11 +102,11 @@ def config_options(f):
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
     f = click.option(
-        "--no-venv",
+        "--venv",
         type=bool,
         is_flag=True,
-        help="If set run the flow in the current environment without creating a virtual environment.",
-        envvar="INSPECT_FLOW_NO_VENV",
+        help="If set run the flow in a virtual environment in a temporary directory.",
+        envvar="INSPECT_FLOW_VENV",
     )(f)
     return f
 
@@ -119,7 +119,7 @@ class ConfigOptionArgs(TypedDict, total=False):
     limit: int | None
     set: list[str] | None
     arg: list[str] | None
-    no_venv: bool | None
+    venv: bool | None
 
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:

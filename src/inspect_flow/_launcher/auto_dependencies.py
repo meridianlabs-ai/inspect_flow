@@ -2,11 +2,16 @@ import os
 from logging import getLogger
 from typing import Sequence
 
+from inspect_ai import Task
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
     registry_package_name,
 )
+from inspect_ai.agent import Agent
+from inspect_ai.model import Model
+from inspect_ai.scorer import Scorer
+from inspect_ai.solver import Solver
 from inspect_ai.util import SandboxEnvironmentType
 from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 
@@ -60,7 +65,11 @@ def collect_auto_dependencies(spec: FlowSpec) -> list[str]:
     return sorted({get_pip_string(dep) for dep in result if dep != "inspect_ai"})
 
 
-def _collect_task_dependencies(task: FlowTask | str, dependencies: set[str]) -> None:
+def _collect_task_dependencies(
+    task: Task | FlowTask | str, dependencies: set[str]
+) -> None:
+    if isinstance(task, Task):
+        return
     if isinstance(task, str):
         _collect_env_model_dependencies(dependencies)
         return _collect_name_dependencies(task, dependencies)
@@ -99,8 +108,10 @@ def _collect_name_dependencies(
 
 
 def _collect_model_dependencies(
-    model: str | FlowModel | None, dependencies: set[str]
+    model: str | FlowModel | Model | None, dependencies: set[str]
 ) -> None:
+    if isinstance(model, Model):
+        return
     name = model.name if isinstance(model, FlowModel) else model
     if not name:
         return
@@ -113,8 +124,11 @@ def _collect_maybe_sequence_dependencies(
     solver: str
     | FlowSolver
     | FlowScorer
-    | Sequence[str | FlowSolver | FlowScorer]
+    | Sequence[str | FlowSolver | FlowScorer | Solver | Scorer]
     | FlowAgent
+    | Solver
+    | Scorer
+    | Agent
     | None
     | NotGiven,
     dependencies: set[str],
@@ -127,7 +141,8 @@ def _collect_maybe_sequence_dependencies(
         for s in solver:
             _collect_maybe_sequence_dependencies(s, dependencies)
         return
-    _collect_name_dependencies(solver.name, dependencies)
+    if isinstance(solver, (FlowSolver, FlowScorer, FlowAgent)):
+        _collect_name_dependencies(solver.name, dependencies)
 
 
 def _collect_sandbox_dependencies(

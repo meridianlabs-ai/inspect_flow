@@ -16,7 +16,7 @@ CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
-    "no_venv": False,
+    "venv": False,
     "no_dotenv": False,
     "dry_run": False,
 }
@@ -251,7 +251,7 @@ def test_run_command_args() -> None:
         )
 
 
-def test_run_command_no_venv() -> None:
+def test_run_command_venv() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
@@ -260,7 +260,7 @@ def test_run_command_no_venv() -> None:
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
 
-        result = runner.invoke(run_command, [CONFIG_FILE, "--no-venv"])
+        result = runner.invoke(run_command, [CONFIG_FILE, "--venv"])
 
         assert result.exit_code == 0
 
@@ -268,7 +268,7 @@ def test_run_command_no_venv() -> None:
 
         mock_run.assert_called_once_with(
             mock_config_obj,
-            **(COMMON_DEFAULTS | {"no_venv": True}),
+            **(COMMON_DEFAULTS | {"venv": True}),
             base_dir=CONFIG_FILE_DIR,
         )
 

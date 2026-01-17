@@ -24,7 +24,9 @@ class FlowAgentDict(TypedDict, closed=True):
     """Configuration for an Agent."""
 
     name: NotRequired[str | NotGiven | None]
-    """Name of the agent. Required to be set by the time the agent is created."""
+    """Name of the agent. Used to create the agent if the factory is not provided."""
+    factory: NotRequired[NotGiven | None]
+    """Factory function to create the agent instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to agent constructor."""
     flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
@@ -44,7 +46,9 @@ class FlowModelDict(TypedDict, closed=True):
     """Configuration for a Model."""
 
     name: NotRequired[str | NotGiven | None]
-    """Name of the model to use. Required to be set by the time the model is created."""
+    """Name of the model to use. If factory is not provided, this is used to create the model."""
+    factory: NotRequired[NotGiven | None]
+    """Factory function to create the model instance."""
     role: NotRequired[str | NotGiven | None]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: NotRequired[str | NotGiven | None]
@@ -74,7 +78,9 @@ class FlowSolverDict(TypedDict, closed=True):
     """Configuration for a Solver."""
 
     name: NotRequired[str | NotGiven | None]
-    """Name of the solver. Required to be set by the time the solver is created."""
+    """Name of the solver. Used to create the solver if the factory is not provided."""
+    factory: NotRequired[NotGiven | None]
+    """Factory function to create the solver instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to solver constructor."""
     flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
@@ -96,11 +102,13 @@ class FlowTaskDict(TypedDict, closed=True):
     """
 
     name: NotRequired[str | NotGiven | None]
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created."""
+    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Used to create the task if the factory is not provided."""
+    factory: NotRequired[NotGiven | None]
+    """Factory function to create the task instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | NotGiven | None
+        str | FlowSolver | FlowAgent | Sequence[str | FlowSolver] | NotGiven | None
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
     scorer: NotRequired[str | FlowScorer | Sequence[str | FlowScorer] | NotGiven | None]
@@ -152,7 +160,7 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
     """Additional args to pass to task constructor"""
     solver: NotRequired[
         Sequence[
-            str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | NotGiven | None
+            str | FlowSolver | FlowAgent | Sequence[str | FlowSolver] | NotGiven | None
         ]
         | None
     ]
