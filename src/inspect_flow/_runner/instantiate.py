@@ -48,6 +48,8 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
 def _create_model(model: FlowModel | Model) -> Model:
     if isinstance(model, Model):
         return model
+    if model.factory:
+        return model.factory(**(model.model_args or {}))
     if not model.name:
         raise ValueError(f"Model name is required. Model: {model}")
 
@@ -77,6 +79,8 @@ def _create_single_scorer(scorer: str | FlowScorer | Scorer) -> Scorer:
         return scorer
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
+    if scorer.factory:
+        return scorer.factory(**(scorer.args or {}))
     if not scorer.name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
@@ -108,6 +112,8 @@ def _create_single_solver(solver: str | FlowSolver | Solver) -> Solver:
         return solver
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
+    if solver.factory:
+        return solver.factory(**(solver.args or {}))
     if not solver.name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
@@ -115,6 +121,8 @@ def _create_single_solver(solver: str | FlowSolver | Solver) -> Solver:
 
 
 def _create_agent(agent: FlowAgent) -> Agent:
+    if agent.factory:
+        return agent.factory(**(agent.args or {}))
     if not agent.name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
@@ -221,6 +229,8 @@ def _get_task_creator_from_file(
 
 
 def _get_task_creator(task: FlowTask, base_dir: str) -> Callable[..., Task]:
+    if task.factory:
+        return task.factory
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
     config_name = task.name
