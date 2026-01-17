@@ -40,7 +40,7 @@ def _write_config_file(spec: FlowSpec) -> None:
         f.write(yaml)
 
 
-def _run_eval_set(
+def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_spec(spec, base_dir=base_dir)
@@ -218,7 +218,7 @@ def flow_run(
     init_flow_logging(log_level=log_level)
 
     cfg = _read_config(file)
-    _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
 if __name__ == "__main__":

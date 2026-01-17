@@ -1,22 +1,57 @@
+import os
 import shlex
+import subprocess
 import sys
+import tempfile
 from logging import getLogger
 from pathlib import Path
 from typing import List, Literal, Sequence
 
-from inspect_ai._util.file import file, filesystem
+import yaml
+from dotenv import dotenv_values, find_dotenv
+from inspect_ai._util.file import absolute_file_path
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
+from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import run_with_logging
 
 logger = getLogger(__name__)
 
 
-def create_venv(
+def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -> None:
+    run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+    base_dir = absolute_file_path(base_dir)
+    run_args = ["--dry-run"] if dry_run else []
+    args = ["--base-dir", base_dir, "--log-level", get_last_log_level()] + run_args
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = _get_env(base_dir, no_dotenv=no_dotenv)
+        if spec.env:
+            env.update(**spec.env)
+
+        # Set the virtual environment so that it will be created in the temp directory
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+
+        _create_venv(
+            spec, base_dir=base_dir, temp_dir=temp_dir, env=env, dry_run=dry_run
+        )
+
+        python_path = Path(temp_dir) / ".venv" / "bin" / "python"
+        file = _write_flow_yaml(spec, temp_dir)
+        subprocess.run(
+            [str(python_path), str(run_path), "--file", file.as_posix(), *args],
+            check=True,
+            env=env,
+        )
+
+
+def _create_venv(
     spec: FlowSpec,
     base_dir: str,
     temp_dir: str,
@@ -47,37 +82,7 @@ def create_venv(
 
     _uv_pip_install(dependencies, temp_dir, env)
 
-    # Freeze installed packages to flow-requirements.txt in log_dir
-    if not dry_run and spec.log_dir:
-        freeze_result = run_with_logging(
-            ["uv", "pip", "freeze"],
-            cwd=temp_dir,
-            env=env,
-            log_output=False,  # Don't log the full freeze output
-        )
-        requirements_in = Path(temp_dir) / "flow-requirements.in"
-        with open(requirements_in, "w") as f:
-            f.write(freeze_result.stdout)
-
-        compile_result = run_with_logging(
-            [
-                "uv",
-                "pip",
-                "compile",
-                "--generate-hashes",
-                "--no-header",
-                "--no-annotate",
-                str(requirements_in),
-            ],
-            cwd=temp_dir,
-            env=env,
-            log_output=False,
-        )
-
-        fs = filesystem(spec.log_dir)
-        fs.mkdir(spec.log_dir, exist_ok=True)
-        with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
-            f.write(compile_result.stdout)
+    write_flow_requirements(spec, temp_dir, env, dry_run)
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
@@ -216,3 +221,31 @@ def _search_dependency_file(
             break
         current_dir = current_dir.parent
     return (found_file, found_path) if found_file and found_path else None
+
+
+def _write_flow_yaml(spec: FlowSpec, dir: str) -> Path:
+    flow_yaml_path = Path(dir) / "flow.yaml"
+    with open(flow_yaml_path, "w") as f:
+        yaml.dump(
+            spec.model_dump(**MODEL_DUMP_ARGS),
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+    return flow_yaml_path
+
+
+def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
+    env = os.environ.copy()
+    if no_dotenv:
+        return env
+    # Temporarily change to base_dir to find .env file
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(base_dir)
+        # Already loaded environment variables should take precedence
+        dotenv = dotenv_values(find_dotenv(usecwd=True))
+        env = {k: v for k, v in dotenv.items() if v is not None} | env
+    finally:
+        os.chdir(original_cwd)
+    return env
