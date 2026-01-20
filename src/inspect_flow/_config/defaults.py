@@ -18,8 +18,6 @@ from inspect_flow._types.flow_types import (
     NotGiven,
     not_given,
 )
-from inspect_flow._types.merge import merge_recursive
-from inspect_flow._util.pydantic_util import model_dump
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 
@@ -37,9 +35,24 @@ def apply_defaults(spec: FlowSpec) -> FlowSpec:
     )
 
 
-def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
-    default_dict = model_dump(defaults)
-    return merge_recursive(default_dict, config_dict)
+def _merge_default_into_config(config: _T, defaults: _T) -> _T:
+    """Merge default values into config, preserving config's existing values.
+
+    Only updates fields in config that are not set (i.e., are not_given).
+    Uses model_copy to preserve non-serializable objects.
+    """
+    updates: dict[str, Any] = {}
+    for field_name in type(defaults).model_fields:
+        default_value = getattr(defaults, field_name)
+        config_value = getattr(config, field_name)
+        # Only use default if config value is not_given and default is set
+        if isinstance(config_value, NotGiven) and not isinstance(
+            default_value, NotGiven
+        ):
+            updates[field_name] = default_value
+    if updates:
+        return config.model_copy(update=updates)
+    return config
 
 
 def _merge_defaults(
@@ -50,26 +63,28 @@ def _merge_defaults(
     if not defaults and not prefix_defaults:
         return config
 
-    config_dict = model_dump(config)
+    config_name = getattr(config, "name", None)
+    if isinstance(config_name, NotGiven):
+        config_name = None
 
     if prefix_defaults:
         # Filter the prefix defaults to only those that match the config name
-        prefix_defaults = {
+        filtered_prefix_defaults = {
             prefix: prefix_default
             for prefix, prefix_default in prefix_defaults.items()
-            if config_dict.get("name", "").startswith(prefix)
+            if config_name and config_name.startswith(prefix)
         }
         # Sort prefixes by length descending to match longest prefix first
-        prefix_defaults = dict(
-            sorted(prefix_defaults.items(), key=lambda item: -len(item[0]))
+        sorted_prefix_defaults = dict(
+            sorted(filtered_prefix_defaults.items(), key=lambda item: -len(item[0]))
         )
-        for vals in prefix_defaults.values():
-            config_dict = _merge_default(config_dict, vals)
+        for vals in sorted_prefix_defaults.values():
+            config = _merge_default_into_config(config, vals)
 
     if defaults:
-        config_dict = _merge_default(config_dict, defaults)
+        config = _merge_default_into_config(config, defaults)
 
-    return config.__class__.model_validate(config_dict, extra="forbid")
+    return config
 
 
 def _apply_model_defaults(
