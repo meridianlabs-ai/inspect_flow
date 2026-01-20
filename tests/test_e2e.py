@@ -20,12 +20,7 @@ def test_local_e2e() -> None:
 
     result = runner.invoke(
         flow,
-        [
-            "run",
-            str(config_path),
-            "--log-dir",
-            log_dir,
-        ],
+        ["run", str(config_path), "--log-dir", log_dir, "--venv"],
         catch_exceptions=False,
     )
     assert result.exit_code == 0
