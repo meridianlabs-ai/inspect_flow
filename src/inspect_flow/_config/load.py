@@ -4,7 +4,7 @@ import re
 import traceback
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, TypeAlias, TypeVar
 
 import yaml
 from attr import dataclass, field
@@ -15,7 +15,7 @@ from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowSpec, not_given
+from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
@@ -255,28 +255,70 @@ def _load_spec_from_file(
 
 
 def _apply_include(spec: FlowSpec, included_spec: FlowSpec) -> FlowSpec:
-    spec_dict = model_dump(spec)
-    include_dict = model_dump(included_spec)
-    merged_dict = _deep_merge_include(include_dict, spec_dict)
-    return FlowSpec.model_validate(merged_dict, extra="forbid")
+    """Merge included_spec into spec, with spec's values taking precedence.
+
+    Uses model_copy to preserve non-serializable objects like Task, Solver, etc.
+    """
+    return _merge_include_objects(spec, included_spec)
 
 
-def _deep_merge_include(
-    base: dict[str, Any], override: dict[str, Any]
-) -> dict[str, Any]:
-    result = base.copy()
-    for k, override_v in override.items():
-        if k not in result:
-            result[k] = override_v
-        else:
-            base_v = result[k]
-            if isinstance(override_v, dict) and isinstance(base_v, dict):
-                result[k] = _deep_merge_include(base_v, override_v)
-            elif isinstance(override_v, list) and isinstance(base_v, list):
-                result[k] = base_v + [item for item in override_v if item not in base_v]
-            else:
-                result[k] = override_v
-    return result
+_T = TypeVar("_T", bound=BaseModel)
+
+
+def _merge_include_objects(spec: _T, included: _T) -> _T:
+    """Recursively merge two BaseModel objects, with spec taking precedence.
+
+    - For fields set in spec (not NotGiven): use spec's value
+    - For fields not set in spec but set in included: use included's value
+    - For dict fields: merge dicts with spec's values taking precedence
+    - For list fields: concatenate, with included's items first, avoiding duplicates
+    - For nested BaseModel fields: recursively merge
+    """
+    updates: dict[str, Any] = {}
+
+    for field_name in type(spec).model_fields:
+        spec_value = getattr(spec, field_name)
+        included_value = getattr(included, field_name)
+
+        # If spec has a value set, use it (possibly merged for complex types)
+        if not isinstance(spec_value, NotGiven):
+            # For nested BaseModel, recursively merge if included also has a value
+            if (
+                isinstance(spec_value, BaseModel)
+                and isinstance(included_value, BaseModel)
+                and not isinstance(included_value, NotGiven)
+            ):
+                merged = _merge_include_objects(spec_value, included_value)
+                if merged is not spec_value:
+                    updates[field_name] = merged
+            # For dicts, merge with spec taking precedence
+            elif (
+                isinstance(spec_value, dict)
+                and isinstance(included_value, dict)
+                and not isinstance(included_value, NotGiven)
+            ):
+                merged_dict = {**included_value, **spec_value}
+                if merged_dict != spec_value:
+                    updates[field_name] = merged_dict
+            # For lists, concatenate with included first, avoiding duplicates
+            elif (
+                isinstance(spec_value, list)
+                and isinstance(included_value, list)
+                and not isinstance(included_value, NotGiven)
+            ):
+                merged_list = list(included_value) + [
+                    item for item in spec_value if item not in included_value
+                ]
+                if merged_list != spec_value:
+                    updates[field_name] = merged_list
+            # Otherwise keep spec's value (no update needed)
+        # If spec doesn't have a value but included does, use included's value
+        elif not isinstance(included_value, NotGiven):
+            updates[field_name] = included_value
+
+    if updates:
+        return spec.model_copy(update=updates)
+    return spec
 
 
 def _apply_auto_includes(
