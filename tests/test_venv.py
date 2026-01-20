@@ -8,8 +8,9 @@ import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
+from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
-from inspect_flow._launcher.venv import _create_venv, _deduplicate_freeze_requirements
+from inspect_flow._launcher.venv import _create_venv
 
 
 def test_no_dependencies() -> None:
