@@ -96,11 +96,27 @@ When using `run()` from the Python API to run the `FlowSpec` directly instead of
 
 ### Includes
 
-Use the `includes` field to explicitly merge other config files into your spec:
+Use the `includes` field to explicitly merge other configs into your spec. You can include either config file paths or `FlowSpec` objects:
+
+**File Path**
 
 ```python
 FlowSpec(
     includes=["../foo/other_config.py"],
+    log_dir="logs",
+    tasks=["my_task"]
+)
+```
+
+**FlowSpec Object**
+
+```python
+base_config = FlowSpec(
+    defaults=FlowDefaults(config=GenerateConfig(temperature=0.5))
+)
+
+FlowSpec(
+    includes=[base_config, "../foo/other_config.py"],
     log_dir="logs",
     tasks=["my_task"]
 )
@@ -141,11 +157,13 @@ Included files can themselves have `includes` fields, which are expanded recursi
 
 #### Path Resolution
 
-Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API):
+When including files by path, relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API):
 
 ``` {.python filename="config.py"}
 {{< include ../examples/includes.py >}}
 ```
+
+When including `FlowSpec` objects directly, no path resolution is needed as the objects are already loaded.
 
 ::: callout-note
 Automatic discovery does not look for `_flow.py` files in the parent directories of explicitly included files.

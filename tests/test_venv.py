@@ -9,7 +9,7 @@ from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
-from inspect_flow._launcher.venv import _create_venv
+from inspect_flow._launcher.venv import _create_venv, _deduplicate_freeze_requirements
 
 
 def test_no_dependencies() -> None:
@@ -567,3 +567,67 @@ def test_402_env_model(monkeypatch: pytest.MonkeyPatch) -> None:
     dependencies = collect_auto_dependencies(spec)
     assert len(dependencies) == 1
     assert "openai" in dependencies[0]
+
+
+def test_411_deduplicate_freeze_requirements() -> None:
+    # Test case 1: Duplicate git URLs with and without commit hash
+    freeze_output_with_duplicates = """
+inspect-ai @ git+https://github.com/UKGovernmentBEIS/inspect_ai.git@87842be92af543d1122b5d5fdf4009f3484c963e
+inspect-ai @ git+https://github.com/UKGovernmentBEIS/inspect_ai.git
+packaging==25.0
+pydantic==2.12.5
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_with_duplicates)
+    lines = result.strip().split("\n")
+
+    # Should only have one inspect-ai entry
+    inspect_ai_lines = [line for line in lines if line.startswith("inspect-ai")]
+    assert len(inspect_ai_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "@87842be92af543d1122b5d5fdf4009f3484c963e" in inspect_ai_lines[0], (
+        "Should keep the URL with commit hash"
+    )
+
+    # Should keep all other packages
+    assert any(line.startswith("packaging==") for line in lines)
+    assert any(line.startswith("pydantic==") for line in lines)
+
+    # Test case 2: Duplicate with branch vs commit hash
+    freeze_output_branch_vs_hash = """
+my-package @ git+https://github.com/foo/bar.git@main
+my-package @ git+https://github.com/foo/bar.git@abc123def456789012345678901234567890abcd
+requests==2.32.5
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_branch_vs_hash)
+    lines = result.strip().split("\n")
+
+    my_package_lines = [line for line in lines if line.startswith("my-package")]
+    assert len(my_package_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
+
+    # Test case 3: No duplicates - should pass through unchanged
+    freeze_output_no_duplicates = """
+packaging==25.0
+pydantic==2.12.5
+requests==2.32.5
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_no_duplicates)
+    lines = result.strip().split("\n")
+    assert len(lines) == 3
+    assert any(line.startswith("packaging==") for line in lines)
+    assert any(line.startswith("pydantic==") for line in lines)
+    assert any(line.startswith("requests==") for line in lines)
+
+    # Test case 4: Empty lines and comments should be filtered
+    freeze_output_with_comments = """# This is a comment
+packaging==25.0
+
+pydantic==2.12.5
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_with_comments)
+    lines = result.strip().split("\n")
+    # Should only have the two actual packages, no comments or empty lines
+    assert len(lines) == 2
+    assert all(not line.startswith("#") for line in lines)
+    assert all(line.strip() for line in lines)
