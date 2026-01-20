@@ -345,3 +345,20 @@ def test_options_to_overrides() -> None:
         "options.limit=1",
         "options.log_dir_allow_dirty=True",
     ]
+
+
+def test_inspect_object_overrides() -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        config_command,
+        [
+            "./tests/config/inspect_objects_flow.py",
+            "--set",
+            "defaults.solver.args.tool_calls=none",
+        ],
+        catch_exceptions=False,
+    )
+
+    # Check that the command executed successfully
+    assert result.exit_code == 0

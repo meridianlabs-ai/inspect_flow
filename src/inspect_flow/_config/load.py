@@ -4,7 +4,7 @@ import re
 import traceback
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, TypeVar
+from typing import Any, Callable, TypeAlias, TypeVar, get_args, get_origin
 
 import yaml
 from attr import dataclass, field
@@ -369,36 +369,95 @@ def _overrides_to_dict(overrides: list[str]) -> _OverrideDict:
     return result
 
 
-def _deep_merge_override(
-    base: dict[str, Any], override: _OverrideDict
-) -> dict[str, Any]:
+def _get_field_base_type(obj: BaseModel, field_name: str) -> type | None:
+    """Get the base type for a field, handling Optional and Union types.
+
+    Excludes NotGiven from consideration as it's a sentinel type.
+    """
+    field_info = type(obj).model_fields.get(field_name)
+    if not field_info:
+        return None
+    annotation = field_info.annotation
+    if annotation is None:
+        return None
+    # Handle Optional, Union, etc. by getting origin and args
+    origin = get_origin(annotation)
+    if origin is not None:
+        # For Union types (including Optional), find the BaseModel subclass
+        # but exclude NotGiven which is a sentinel type
+        args = get_args(annotation)
+        for arg in args:
+            if (
+                isinstance(arg, type)
+                and issubclass(arg, BaseModel)
+                and not issubclass(arg, NotGiven)
+            ):
+                return arg
+    elif isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        if not issubclass(annotation, NotGiven):
+            return annotation
+    return None
+
+
+def _apply_override_to_object(obj: _T, override: _OverrideDict) -> _T:
+    """Apply overrides to a BaseModel object using model_copy.
+
+    Preserves non-serializable objects like Task, Solver, etc.
+    """
+    updates: dict[str, Any] = {}
+
     for k, v in override.items():
-        base_v = base.get(k)
+        if not hasattr(obj, k):
+            raise ValueError(f"Invalid config key: {k}")
+
+        current_value = getattr(obj, k)
+
         if isinstance(v, dict):
-            if isinstance(base_v, dict):
-                _deep_merge_override(base_v, v)
+            # Nested override - recurse into BaseModel or dict
+            if isinstance(current_value, BaseModel) and not isinstance(
+                current_value, NotGiven
+            ):
+                updates[k] = _apply_override_to_object(current_value, v)
+            elif isinstance(current_value, dict):
+                # Merge dicts
+                updates[k] = {**current_value, **v}
+            elif isinstance(current_value, NotGiven):
+                # Create new nested object of the appropriate type
+                field_type = _get_field_base_type(obj, k)
+                if field_type is not None:
+                    new_obj = field_type()
+                    updates[k] = _apply_override_to_object(new_obj, v)
+                else:
+                    # Fall back to dict for non-BaseModel fields
+                    updates[k] = v
             else:
-                base[k] = v
-        elif isinstance(base_v, list):
+                updates[k] = v
+        elif isinstance(current_value, list):
             json_v = _maybe_json(v)
             if isinstance(json_v, list):
-                base[k] = json_v
+                updates[k] = json_v
             else:
-                base_v.append(v)
+                # Append to list
+                updates[k] = list(current_value) + [v]
+        elif isinstance(current_value, NotGiven):
+            # Check if this field expects a list
+            json_v = _maybe_json(v)
+            if isinstance(json_v, list):
+                updates[k] = json_v
+            else:
+                updates[k] = json_v
         else:
             json_v = _maybe_json(v)
-            if isinstance(json_v, list | dict):
-                base[k] = json_v
-            else:
-                base[k] = v
-    return base
+            updates[k] = json_v
+
+    if updates:
+        return obj.model_copy(update=updates)
+    return obj
 
 
 def _apply_overrides(spec: FlowSpec, overrides: list[str]) -> FlowSpec:
     overrides_dict = _overrides_to_dict(overrides)
-    base_dict = model_dump(spec)
-    merged_dict = _deep_merge_override(base_dict, overrides_dict)
-    return FlowSpec.model_validate(merged_dict, extra="forbid")
+    return _apply_override_to_object(spec, overrides_dict)
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
