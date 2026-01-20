@@ -1,0 +1,14 @@
+log_dir: logs
+tasks:
+- '{"type": "task", "name": "a_task", "params": {}}'
+- factory: a_task
+  solver:
+  - '{"type": "solver", "name": "a_solver", "params": {}}'
+  scorer: '{"type": "scorer", "name": "a_scorer", "params": {}}'
+  model: '{"model": "mockllm/model", "config": {}, "base_url": null, "model_args":
+    {}}'
+- factory: /Users/ransomrichardson/git/inspect_flow/tests/config/inspect_objects_flow.py@b_task
+  solver: '{"type": "agent", "name": "a_agent", "params": {}}'
+  scorer: '{"type": "scorer", "name": "a_scorer", "params": {}}'
+  model: '{"model": "mockllm/model", "config": {}, "base_url": null, "model_args":
+    {}}'

@@ -640,3 +640,9 @@ def test_418_spec_includes() -> None:
     spec3 = expand_spec(spec2, base_dir=".")
     assert spec3.options
     assert spec3.options.log_dir_allow_dirty is True
+
+
+def test_inspect_objects() -> None:
+    flow_file = str(Path(config_dir) / "inspect_objects_flow.py")
+    spec = load_spec(flow_file)
+    validate_config(spec, "inspect_objects_flow.yaml")
