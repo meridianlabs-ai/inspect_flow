@@ -21,7 +21,7 @@
 | src/inspect\_flow/\_launcher/launch.py             |       60 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       75 |       26 |       28 |        4 |     55.34% |20-24, 87-88, 95-105, 110->112, 115-132 |
 | src/inspect\_flow/\_launcher/python\_version.py    |       55 |        8 |       18 |        5 |     82.19% |10, 60-61, 92->91, 95, 117-119, 125 |
-| src/inspect\_flow/\_launcher/venv.py               |      105 |        0 |       40 |        0 |    100.00% |           |
+| src/inspect\_flow/\_launcher/venv.py               |      124 |        2 |       52 |        1 |     97.16% |   257-259 |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/instantiate.py          |      103 |        0 |       40 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/resolve.py              |       50 |        0 |       18 |        0 |    100.00% |           |
@@ -44,7 +44,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1583** |   **34** |  **408** |    **9** | **97.04%** |           |
+| **TOTAL**                                          | **1602** |   **36** |  **420** |   **10** | **96.83%** |           |
 
 
 ## Setup coverage badge
