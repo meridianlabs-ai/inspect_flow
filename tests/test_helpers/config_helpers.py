@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 from deepdiff import DeepDiff
 from inspect_flow import FlowSpec
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 update_examples = False
 
@@ -11,7 +11,7 @@ update_examples = False
 def write_flow_yaml(spec: FlowSpec, file_path: Path) -> None:
     with open(file_path, "w") as f:
         yaml.dump(
-            spec.model_dump(**MODEL_DUMP_ARGS),
+            model_dump(spec),
             f,
             default_flow_style=False,
             sort_keys=False,
@@ -28,7 +28,7 @@ def validate_config(spec: FlowSpec, file_name: str) -> None:
             expected_config = yaml.safe_load(f)
 
     # Compare the generated config with the example
-    generated_config = spec.model_dump(**MODEL_DUMP_ARGS)
+    generated_config = model_dump(spec)
     if update_examples and generated_config != expected_config:
         write_flow_yaml(spec, example_path)
     else:

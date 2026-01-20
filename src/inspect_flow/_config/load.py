@@ -10,14 +10,15 @@ import yaml
 from attr import dataclass, field
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
+from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowBase, FlowSpec, not_given
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._types.flow_types import FlowSpec, not_given
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__file__)
 
@@ -112,9 +113,9 @@ class _SpecFormatMapMapping:
             # Return simple types directly
             if isinstance(value, str | int | float | bool) or value is None:
                 return value
-            # Convert FlowBase objects to dicts for nested access like {defaults[model][name]}
-            if isinstance(value, FlowBase):
-                return value.model_dump(exclude_unset=True, exclude_defaults=True)
+            # Convert Pydantic objects to dicts for nested access like {defaults[model][name]}
+            if isinstance(value, BaseModel):
+                return model_dump(value)
             # Return dicts for nested access like {flow_metadata[key]}
             if isinstance(value, dict):
                 return value
@@ -150,8 +151,8 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
             return [substitute_strings(item) for item in obj]
         elif isinstance(obj, tuple):
             return tuple(substitute_strings(item) for item in obj)
-        elif isinstance(obj, FlowBase):
-            # Process FlowBase objects by iterating over their fields
+        elif isinstance(obj, BaseModel):
+            # Process Pydantic objects by iterating over their fields
             updates = {}
             for field_name in type(obj).model_fields:
                 value = getattr(obj, field_name)
@@ -254,8 +255,8 @@ def _load_spec_from_file(
 
 
 def _apply_include(spec: FlowSpec, included_spec: FlowSpec) -> FlowSpec:
-    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
-    include_dict = included_spec.model_dump(**MODEL_DUMP_ARGS)
+    spec_dict = model_dump(spec)
+    include_dict = model_dump(included_spec)
     merged_dict = _deep_merge_include(include_dict, spec_dict)
     return FlowSpec.model_validate(merged_dict, extra="forbid")
 
@@ -353,7 +354,7 @@ def _deep_merge_override(
 
 def _apply_overrides(spec: FlowSpec, overrides: list[str]) -> FlowSpec:
     overrides_dict = _overrides_to_dict(overrides)
-    base_dict = spec.model_dump(**MODEL_DUMP_ARGS)
+    base_dict = model_dump(spec)
     merged_dict = _deep_merge_override(base_dict, overrides_dict)
     return FlowSpec.model_validate(merged_dict, extra="forbid")
 

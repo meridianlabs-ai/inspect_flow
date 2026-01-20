@@ -19,7 +19,7 @@ from inspect_flow._types.flow_types import (
     not_given,
 )
 from inspect_flow._types.merge import merge_recursive
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 
@@ -38,7 +38,7 @@ def apply_defaults(spec: FlowSpec) -> FlowSpec:
 
 
 def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
-    default_dict = defaults.model_dump(**MODEL_DUMP_ARGS)
+    default_dict = model_dump(defaults)
     return merge_recursive(default_dict, config_dict)
 
 
@@ -50,7 +50,7 @@ def _merge_defaults(
     if not defaults and not prefix_defaults:
         return config
 
-    config_dict = config.model_dump(**MODEL_DUMP_ARGS)
+    config_dict = model_dump(config)
 
     if prefix_defaults:
         # Filter the prefix defaults to only those that match the config name

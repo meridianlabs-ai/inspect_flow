@@ -18,11 +18,11 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
-from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
+from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__file__)
 
@@ -148,7 +148,7 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
             assert spec.tasks
             flow_task = spec.tasks[i]
             assert isinstance(flow_task, FlowTask)
-            task_json = flow_task.model_dump(**MODEL_DUMP_ARGS)
+            task_json = model_dump(flow_task)
             raise ValueError(f"Duplicate task found: {task_json}")
 
         task_ids.add(task_id)

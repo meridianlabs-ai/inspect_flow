@@ -27,7 +27,7 @@ from inspect_ai.util import (
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self, override
 
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
@@ -57,11 +57,7 @@ not_given = NotGiven(type="NOT_GIVEN")
 class FlowBase(BaseModel, extra="forbid"):
     @override
     def __str__(self) -> str:
-        return str(self.model_dump())
-
-    @override
-    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
-        return super().model_dump(**(MODEL_DUMP_ARGS | kwargs))
+        return str(model_dump(self))
 
 
 class FlowModel(FlowBase):
