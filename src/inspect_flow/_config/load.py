@@ -109,8 +109,14 @@ class _SpecFormatMapMapping:
     def __getitem__(self, key: str, /) -> Any:
         if hasattr(self.spec, key):
             value = getattr(self.spec, key)
-            # Return simple types and dicts (for nested access like {flow_metadata[key]})
-            if isinstance(value, str | int | float | bool | dict) or value is None:
+            # Return simple types directly
+            if isinstance(value, str | int | float | bool) or value is None:
+                return value
+            # Convert FlowBase objects to dicts for nested access like {defaults[model][name]}
+            if isinstance(value, FlowBase):
+                return value.model_dump(exclude_unset=True, exclude_defaults=True)
+            # Return dicts for nested access like {flow_metadata[key]}
+            if isinstance(value, dict):
                 return value
         return f"{{{key}}}"
 
