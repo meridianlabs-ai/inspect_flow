@@ -42,10 +42,12 @@ def resolve_spec(spec: FlowSpec, base_dir: str) -> FlowSpec:
 
 
 def _resolve_task(task: str | FlowTask | Task, base_dir: str) -> list[FlowTask | Task]:
+    if isinstance(task, Task):
+        return [task]
     assert isinstance(
         task, FlowTask
     )  # apply_defaults should have converted str to FlowTask
-    if isinstance(task, Task):
+    if task.factory:
         return [task]
     names = _get_task_creator_names(task, base_dir=base_dir)
     if names == [task.name]:

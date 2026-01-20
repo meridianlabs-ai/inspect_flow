@@ -14,7 +14,7 @@ from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowSpec, not_given
+from inspect_flow._types.flow_types import FlowBase, FlowSpec, not_given
 from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -103,11 +103,16 @@ def _expand_includes(
 class _SpecFormatMapMapping:
     """Mapping for spec config substitutions. Preserves missing keys."""
 
-    def __init__(self, dict: dict[str, Any]) -> None:
-        self.dict = dict
+    def __init__(self, spec: FlowSpec) -> None:
+        self.spec = spec
 
     def __getitem__(self, key: str, /) -> Any:
-        return self.dict.get(key, f"{{{key}}}")
+        if hasattr(self.spec, key):
+            value = getattr(self.spec, key)
+            # Return simple types and dicts (for nested access like {flow_metadata[key]})
+            if isinstance(value, str | int | float | bool | dict) or value is None:
+                return value
+        return f"{{{key}}}"
 
 
 def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
@@ -116,8 +121,8 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
     if spec.log_dir:
         spec.log_dir = _resolve_log_dir(spec, base_dir=base_dir)
 
-    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
-    mapping = _SpecFormatMapMapping(spec_dict)
+    # Build mapping from serializable spec values only
+    mapping = _SpecFormatMapMapping(spec)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
@@ -137,11 +142,24 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
             return {k: substitute_strings(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [substitute_strings(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return tuple(substitute_strings(item) for item in obj)
+        elif isinstance(obj, FlowBase):
+            # Process FlowBase objects by iterating over their fields
+            updates = {}
+            for field_name in type(obj).model_fields:
+                value = getattr(obj, field_name)
+                new_value = substitute_strings(value)
+                if new_value is not value:
+                    updates[field_name] = new_value
+            if updates:
+                return obj.model_copy(update=updates)
+            return obj
         else:
+            # Leave non-serializable objects (Task, Solver, etc.) unchanged
             return obj
 
-    substituted_dict = substitute_strings(spec_dict)
-    return FlowSpec.model_validate(substituted_dict, extra="forbid")
+    return substitute_strings(spec)
 
 
 def _resolve_log_dir(spec: FlowSpec, base_dir: str) -> str:
