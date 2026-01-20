@@ -36,7 +36,6 @@ def run(
     *,
     dry_run: bool = False,
     log_level: str = DEFAULT_LOG_LEVEL,
-    venv: bool = False,
     no_dotenv: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
@@ -46,7 +45,6 @@ def run(
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
         log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
-        venv: If True, create a virtual environment to run the spec.
         no_dotenv: If True, do not load environment variables from a .env file.
     """
     init_flow_logging(log_level)
@@ -56,7 +54,6 @@ def run(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
-        venv=venv,
         no_dotenv=no_dotenv,
     )
 

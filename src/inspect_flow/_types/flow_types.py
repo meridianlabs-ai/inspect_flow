@@ -614,18 +614,23 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
         description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
     )
 
+    execution_type: Literal["inproc", "venv"] | None | NotGiven = Field(
+        default=not_given,
+        description="Execution environment for running tasks (defaults to 'inproc').",
+    )
+
     python_version: str | None | NotGiven = Field(
         default=not_given,
         description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
-    options: FlowOptions | None | NotGiven = Field(
-        default=not_given, description="Arguments for calls to eval_set."
-    )
-
     dependencies: FlowDependencies | None | NotGiven = Field(
         default=not_given,
         description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.",
+    )
+
+    options: FlowOptions | None | NotGiven = Field(
+        default=not_given, description="Arguments for calls to eval_set."
     )
 
     env: dict[str, str] | None | NotGiven = Field(

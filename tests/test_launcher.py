@@ -22,9 +22,8 @@ def test_launch_inproc() -> None:
         )
 
         launch(
-            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
+            spec=FlowSpec(execution_type="inproc", log_dir="logs", tasks=["task_name"]),
             base_dir=".",
-            venv=False,
         )
 
     assert mock_run.call_count == 2
@@ -37,9 +36,8 @@ def test_launch_venv() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
+            spec=FlowSpec(execution_type="venv", log_dir="logs", tasks=["task_name"]),
             base_dir=".",
-            venv=True,
         )
 
         assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
@@ -74,12 +72,12 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
         launch(
             spec=FlowSpec(
+                execution_type="venv",
                 log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
             ),
             base_dir=".",
-            venv=True,
         )
 
     assert mock_run.call_count == CREATE_VENV_RUN_CALLS + 1
@@ -96,11 +94,11 @@ def test_s3() -> None:
     ):
         launch(
             spec=FlowSpec(
+                execution_type="venv",
                 log_dir=log_dir,
                 tasks=["task_name"],
             ),
             base_dir=".",
-            venv=True,
         )
     mock_venv.assert_called_once()
     assert mock_venv.mock_calls[0].args[0].log_dir == log_dir
@@ -113,12 +111,12 @@ def test_config_relative_log_dir() -> None:
         patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         spec = load_spec("./tests/config/e2e_test_flow.py")
+        spec.execution_type = "venv"
         assert spec.log_dir
         expected_log_dir = Path("./tests/config/") / spec.log_dir
         launch(
             spec=spec,
             base_dir="./tests/config/",
-            venv=True,
         )
 
     mock_venv.assert_called_once()
@@ -143,10 +141,10 @@ def test_relative_bundle_dir() -> None:
                 ]
             ),
         )
+        spec.execution_type = "venv"
         launch(
             spec=spec,
             base_dir="tests/config/",
-            venv=True,
         )
 
     mock_venv.assert_called_once()
@@ -172,10 +170,10 @@ def test_bundle_dir() -> None:
                 ]
             ),
         )
+        spec.execution_type = "venv"
         launch(
             spec=spec,
             base_dir="tests/config/",
-            venv=True,
         )
 
     mock_venv.assert_called_once()
@@ -188,6 +186,7 @@ def test_bundle_dir() -> None:
 
 def test_259_dot_env() -> None:
     spec = FlowSpec(
+        execution_type="venv",
         log_dir="logs",
         tasks=[
             "local_eval/noop",
@@ -198,7 +197,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
-        launch(spec=spec, base_dir="./tests/config/", venv=True)
+        launch(spec=spec, base_dir="./tests/config/")
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert launch_env["TEST_ENV_VAR"] == "test_value"
@@ -207,7 +206,7 @@ def test_259_dot_env() -> None:
         patch("subprocess.run"),
         patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
-        launch(spec=spec, base_dir="./tests/config/", no_dotenv=True, venv=True)
+        launch(spec=spec, base_dir="./tests/config/", no_dotenv=True)
     mock_venv.assert_called_once()
     launch_env = mock_venv.mock_calls[0].kwargs["env"]
     assert "TEST_ENV_VAR" not in launch_env

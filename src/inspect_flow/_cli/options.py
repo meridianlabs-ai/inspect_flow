@@ -132,6 +132,8 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append("log_dir_create_unique=True")
     if kwargs.get("log_dir_allow_dirty"):
         overrides.append("options.log_dir_allow_dirty=True")
+    if kwargs.get("venv"):
+        overrides.append("execution_type=venv")
     return overrides
 
 

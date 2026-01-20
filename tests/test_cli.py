@@ -16,7 +16,6 @@ CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
-    "venv": False,
     "no_dotenv": False,
     "dry_run": False,
 }
@@ -264,11 +263,16 @@ def test_run_command_venv() -> None:
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once()
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                overrides=["execution_type=venv"],
+            ),
+        )
 
         mock_run.assert_called_once_with(
             mock_config_obj,
-            **(COMMON_DEFAULTS | {"venv": True}),
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
         )
 

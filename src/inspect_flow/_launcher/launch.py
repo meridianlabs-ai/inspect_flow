@@ -9,11 +9,7 @@ logger = getLogger(__name__)
 
 
 def launch(
-    spec: FlowSpec,
-    base_dir: str,
-    no_dotenv: bool = False,
-    dry_run: bool = False,
-    venv: bool = False,
+    spec: FlowSpec, base_dir: str, no_dotenv: bool = False, dry_run: bool = False
 ) -> None:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
@@ -31,7 +27,7 @@ def launch(
             }
     logger.info(f"Using log_dir: {spec.log_dir}")
 
-    if venv:
+    if spec.execution_type == "venv":
         venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run, no_dotenv=no_dotenv)
     else:
         inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
