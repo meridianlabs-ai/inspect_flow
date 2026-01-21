@@ -632,3 +632,31 @@ pydantic==2.12.5
     assert len(lines) == 2
     assert all(not line.startswith("#") for line in lines)
     assert all(line.strip() for line in lines)
+
+    # git overrides of pypi
+    freeze_output_branch_vs_hash = """
+my-package==1.0.0
+my-package @ git+https://github.com/foo/bar.git@main
+my-package @ git+https://github.com/foo/bar.git@abc123def456789012345678901234567890abcd
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_branch_vs_hash)
+    lines = result.strip().split("\n")
+
+    my_package_lines = [line for line in lines if line.startswith("my-package")]
+    assert len(my_package_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
+
+    # git overrides of pypi
+    freeze_output_branch_vs_hash = """
+my-package @ git+https://github.com/foo/bar.git@main
+my-package @ git+https://github.com/foo/bar.git@abc123def456789012345678901234567890abcd
+my-package==1.0.0
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_branch_vs_hash)
+    lines = result.strip().split("\n")
+
+    my_package_lines = [line for line in lines if line.startswith("my-package")]
+    assert len(my_package_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
