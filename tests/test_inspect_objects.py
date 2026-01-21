@@ -257,6 +257,14 @@ def test_inspect_object_instantiation() -> None:
     verify_test_logs(spec, log_dir, skip_names=True)
 
 
+def test_model_dump_no_registry() -> None:
+    spec = FlowSpec(
+        tasks=[b_task()],
+    )
+    dump = model_dump(spec)
+    assert "<inspect_ai._eval.task.task.Task object at" in dump["tasks"][0]
+
+
 def test_factory_instantiation() -> None:
     log_dir = init_test_logs()
     spec = FlowSpec(
