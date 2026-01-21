@@ -5,11 +5,16 @@ from unittest.mock import patch
 
 import pytest
 from inspect_ai import Task
+from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.venv import _check_spec_for_venv
+from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+
+from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 
 CREATE_VENV_RUN_CALLS = 4
 
@@ -245,8 +250,49 @@ def test_no_log_dir() -> None:
 def test_instantiated_venv_error() -> None:
     spec = FlowSpec(execution_type="venv", log_dir="logs", tasks=[Task()])
     with pytest.raises(ValueError) as e:
-        launch(
-            spec=spec,
-            base_dir=".",
-        )
+        launch(spec=spec, base_dir=".")
     assert "already-instantiated Task object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(model=get_model("mockllm/mock-llm1"))],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Model object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(scorer=a_scorer())],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Scorer object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=[a_solver()])],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Solver or Agent" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=a_agent())],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Solver or Agent" in str(e.value)
+
+    # Valid case should not throw
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
+    )
+    _check_spec_for_venv(spec)
