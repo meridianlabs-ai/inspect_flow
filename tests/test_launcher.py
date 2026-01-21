@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from inspect_ai import Task
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
@@ -220,3 +221,13 @@ def test_no_log_dir() -> None:
             base_dir=".",
         )
     assert "log_dir must be set" in str(e.value)
+
+
+def test_instantiated_venv_error() -> None:
+    spec = FlowSpec(execution_type="venv", log_dir="logs", tasks=[Task()])
+    with pytest.raises(ValueError) as e:
+        launch(
+            spec=spec,
+            base_dir=".",
+        )
+    assert "already-instantiated Task object" in str(e.value)

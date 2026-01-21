@@ -9,13 +9,16 @@ from typing import List, Literal, Sequence
 
 import yaml
 from dotenv import dotenv_values, find_dotenv
+from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
+from inspect_ai.model import Model
+from inspect_ai.scorer import Scorer
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
@@ -25,6 +28,7 @@ logger = getLogger(__name__)
 
 
 def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -> None:
+    _check_spec_for_venv(spec)
     run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
     base_dir = absolute_file_path(base_dir)
     run_args = ["--dry-run"] if dry_run else []
@@ -49,6 +53,35 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             check=True,
             env=env,
         )
+
+
+def _check_spec_for_venv(spec: FlowSpec) -> None:
+    for task in spec.tasks or []:
+        if isinstance(task, Task):
+            raise ValueError(
+                "In venv execution, Inspect Flow resolves tasks via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Task object, which can not be serialized/recreated. Fix: use FlowTask instead of Task or run using 'inproc' execution type."
+            )
+        if isinstance(task, FlowTask):
+            if isinstance(task.model, Model):
+                raise ValueError(
+                    "In venv execution, Inspect Flow resolves models via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Model object in a FlowTask, which can not be serialized/recreated. Fix: use FlowModel or run using 'inproc' execution type."
+                )
+            if isinstance(task.scorer, Scorer):
+                raise ValueError(
+                    "In venv execution, Inspect Flow resolves scorers via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Scorer object in a FlowTask, which can not be serialized/recreated. Fix: use FlowScorer or run using 'inproc' execution type."
+                )
+            if task.solver:
+                solver_list = (
+                    task.solver
+                    if isinstance(task.solver, Sequence)
+                    and not isinstance(task.solver, str)
+                    else [task.solver]
+                )
+                for solver in solver_list:
+                    if not isinstance(solver, (str, FlowSolver, FlowAgent)):
+                        raise ValueError(
+                            "In venv execution, Inspect Flow resolves solvers and agents via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Solver or Agent object as a solver in a FlowTask, which can not be serialized/recreated. Fix: use FlowSolver or FlowAgent instead or run using 'inproc' execution type."
+                        )
 
 
 def _create_venv(
