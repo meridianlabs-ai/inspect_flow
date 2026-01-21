@@ -4,7 +4,7 @@ import re
 import traceback
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, TypeVar, get_args, get_origin
+from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 
 import yaml
 from attr import dataclass, field
@@ -328,107 +328,73 @@ def _maybe_json(value: str) -> Any:
 _OverrideDict: TypeAlias = dict[str, "str | _OverrideDict"]
 
 
-def _overrides_to_dict(overrides: list[str]) -> _OverrideDict:
+def _override_value(keys: list[str], value: str) -> Any:
+    if not keys:
+        return _maybe_json(value)
     result: dict[str, Any] = {}
-    for override in overrides:
-        key_path, value = override.split("=", 1)
-        keys = key_path.split(".")
-        obj = result
-        for key in keys[:-1]:
-            obj = obj.setdefault(key, {})
-        obj[keys[-1]] = value
+    obj = result
+    for key in keys[:-1]:
+        obj = obj.setdefault(key, {})
+    obj[keys[-1]] = _maybe_json(value)
     return result
 
 
-def _get_field_base_type(obj: BaseModel, field_name: str) -> type | None:
-    """Get the base type for a field, handling Optional and Union types.
-
-    Excludes NotGiven from consideration as it's a sentinel type.
-    """
-    field_info = type(obj).model_fields.get(field_name)
-    if not field_info:
-        return None
-    annotation = field_info.annotation
-    if annotation is None:
-        return None
-    # Handle Optional, Union, etc. by getting origin and args
-    origin = get_origin(annotation)
-    if origin is not None:
-        # For Union types (including Optional), find the BaseModel subclass
-        # but exclude NotGiven which is a sentinel type
-        args = get_args(annotation)
-        for arg in args:
-            if (
-                isinstance(arg, type)
-                and issubclass(arg, BaseModel)
-                and not issubclass(arg, NotGiven)
-            ):
-                return arg
-    elif isinstance(annotation, type) and issubclass(annotation, BaseModel):
-        if not issubclass(annotation, NotGiven):
-            return annotation
-    return None
-
-
-def _apply_override_to_object(obj: _T, override: _OverrideDict) -> _T:
-    """Apply overrides to a BaseModel object using model_copy.
-
-    Preserves non-serializable objects like Task, Solver, etc.
-    """
-    updates: dict[str, Any] = {}
-
-    for k, v in override.items():
-        if not hasattr(obj, k):
-            raise ValueError(f"Invalid config key: {k}")
-
-        current_value = getattr(obj, k)
-
-        if isinstance(v, dict):
-            # Nested override - recurse into BaseModel or dict
-            if isinstance(current_value, BaseModel) and not isinstance(
-                current_value, NotGiven
-            ):
-                updates[k] = _apply_override_to_object(current_value, v)
-            elif isinstance(current_value, dict):
-                # Merge dicts
-                updates[k] = {**current_value, **v}
-            elif isinstance(current_value, NotGiven):
-                # Create new nested object of the appropriate type
-                field_type = _get_field_base_type(obj, k)
-                if field_type is not None:
-                    new_obj = field_type()
-                    updates[k] = _apply_override_to_object(new_obj, v)
-                else:
-                    # Fall back to dict for non-BaseModel fields
-                    updates[k] = v
-            else:
-                updates[k] = v
-        elif isinstance(current_value, list):
-            json_v = _maybe_json(v)
-            if isinstance(json_v, list):
-                updates[k] = json_v
-            else:
-                # Append to list
-                updates[k] = list(current_value) + [v]
-        elif isinstance(current_value, NotGiven):
-            # Check if this field expects a list
-            json_v = _maybe_json(v)
-            if isinstance(json_v, list):
-                updates[k] = json_v
-            else:
-                updates[k] = json_v
-        else:
-            json_v = _maybe_json(v)
-            updates[k] = json_v
-
-    if updates:
-        return obj.model_copy(update=updates)
+def _apply_override_to_list(
+    obj: Sequence[Any], keys: list[str], value: str
+) -> Sequence[Any]:
+    override_value = _override_value(keys, value)
+    if isinstance(override_value, list):
+        # Treat override of a list with a list as full replacement
+        return override_value
+    elif override_value not in obj:
+        # Append to list
+        return list(obj) + [override_value]
     return obj
 
 
+def _update_value(current_value: Any, keys: list[str], value: str) -> Any:
+    if isinstance(current_value, NotGiven):
+        return _override_value(keys, value)
+    elif is_sequence(current_value):
+        return _apply_override_to_list(current_value, keys, value)
+    elif not keys:
+        return _maybe_json(value)
+    elif isinstance(current_value, BaseModel):
+        return _apply_override_to_model(current_value, keys, value)
+    elif isinstance(current_value, dict):
+        return _apply_override_to_dict(current_value, keys, value)
+    else:
+        return _override_value(keys, value)
+
+
+def _apply_override_to_model(obj: _T, keys: list[str], value: str) -> _T:
+    current_value = getattr(obj, keys[0], not_given)
+    if isinstance(current_value, NotGiven):
+        # To support nested pydantic objects, need to figure out the field type for the override.
+        # Use model_validate to do that.
+        override_model = type(obj).model_validate(
+            _override_value(keys, value), extra="forbid"
+        )
+        update_value = getattr(override_model, keys[0])
+    else:
+        update_value = _update_value(current_value, keys[1:], value)
+    return obj.model_copy(update={keys[0]: update_value})
+
+
+def _apply_override_to_dict(
+    obj: dict[str, Any], keys: list[str], value: str
+) -> dict[str, Any]:
+    current_value = obj.get(keys[0], None)
+    update_value = _update_value(current_value, keys[1:], value)
+    return {**obj, keys[0]: update_value}
+
+
 def _apply_overrides(spec: FlowSpec, overrides: list[str]) -> FlowSpec:
-    overrides_dict = _overrides_to_dict(overrides)
-    return _apply_override_to_object(spec, overrides_dict)
+    for override in overrides:
+        key_path, value = override.split("=", 1)
+        keys = key_path.split(".")
+        spec = _apply_override_to_model(spec, keys, value)
+    return spec
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

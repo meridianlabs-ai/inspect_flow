@@ -214,7 +214,7 @@ def test_load_config_overrides():
 
 def test_overrides_of_lists():
     config = FlowSpec()
-    # Within a single override, later values replace earlier ones
+    # Setting values when the value is not set does not create a list. This is unfortunate!
     config = _apply_overrides(
         config,
         [
@@ -225,7 +225,6 @@ def test_overrides_of_lists():
     assert config.dependencies
     assert config.dependencies.additional_dependencies == "dep2"
     config.dependencies.additional_dependencies = ["dep2"]
-    # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
         config,
         [
@@ -234,7 +233,7 @@ def test_overrides_of_lists():
         ],
     )
     assert config.dependencies
-    assert config.dependencies.additional_dependencies == ["dep2", "dep4"]
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
         config,
