@@ -21,6 +21,7 @@ from inspect_flow import (
     FlowSolver,
     FlowSpec,
     FlowTask,
+    tasks_matrix,
     tasks_with,
 )
 from inspect_flow.api import run
@@ -164,6 +165,10 @@ def test_inspect_object_with() -> None:
                 task=[FlowTask(factory=a_task), FlowTask(factory=b_task)],
                 model="mockllm/model",
             ),
+            *tasks_with(
+                task=[FlowTask(factory=a_task), FlowTask(factory=b_task)],
+                model=get_model("mockllm/model2"),
+            ),
         ],
     )
     with (
@@ -175,5 +180,42 @@ def test_inspect_object_with() -> None:
         mock_eval_set.assert_called_once()
         call_args = mock_eval_set.call_args
         tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 3
-        assert isinstance(tasks_arg[0], Task)
+        assert len(tasks_arg) == 5
+        for i, task in enumerate(tasks_arg):
+            assert isinstance(task, Task)
+            if i == 0:
+                assert task.model is None
+            elif i < 3:
+                assert task.model
+                assert task.model.name == "model"
+            else:
+                assert task.model
+                assert task.model.name == "model2"
+
+
+def test_inspect_object_matrix() -> None:
+    spec = FlowSpec(
+        log_dir="logs",
+        tasks=tasks_matrix(
+            task=[FlowTask(factory=a_task), FlowTask(factory=b_task)],
+            model=["mockllm/model", get_model("mockllm/model2")],
+        ),
+    )
+    with (
+        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
+        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
+    ):
+        run(spec=spec)
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 4
+        for i, task in enumerate(tasks_arg):
+            assert isinstance(task, Task)
+            if not i % 2:
+                assert task.model
+                assert task.model.name == "model"
+            else:
+                assert task.model
+                assert task.model.name == "model2"
