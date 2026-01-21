@@ -21,6 +21,7 @@ from inspect_flow import (
     FlowSolver,
     FlowSpec,
     FlowTask,
+    tasks_with,
 )
 from inspect_flow.api import run
 
@@ -59,6 +60,10 @@ def a_agent() -> Agent:
 
 @task
 def a_task(task_arg: float = 0.0) -> Task:
+    return Task()
+
+
+def b_task(task_arg: float = 0.0) -> Task:
     return Task()
 
 
@@ -147,4 +152,28 @@ def test_inspect_object_includes() -> None:
         call_args = mock_eval_set.call_args
         tasks_arg = call_args.kwargs["tasks"]
         assert len(tasks_arg) == 2
+        assert isinstance(tasks_arg[0], Task)
+
+
+def test_inspect_object_with() -> None:
+    spec = FlowSpec(
+        log_dir="logs",
+        tasks=[
+            a_task(),
+            *tasks_with(
+                task=[FlowTask(factory=a_task), FlowTask(factory=b_task)],
+                model="mockllm/model",
+            ),
+        ],
+    )
+    with (
+        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
+        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
+    ):
+        run(spec=spec)
+
+        mock_eval_set.assert_called_once()
+        call_args = mock_eval_set.call_args
+        tasks_arg = call_args.kwargs["tasks"]
+        assert len(tasks_arg) == 3
         assert isinstance(tasks_arg[0], Task)
