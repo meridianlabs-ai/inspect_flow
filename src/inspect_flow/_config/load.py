@@ -353,9 +353,7 @@ def _apply_override_to_list(
 
 
 def _update_value(current_value: Any, keys: list[str], value: str) -> Any:
-    if isinstance(current_value, NotGiven):
-        return _override_value(keys, value)
-    elif is_sequence(current_value):
+    if is_sequence(current_value):
         return _apply_override_to_list(current_value, keys, value)
     elif not keys:
         return _maybe_json(value)

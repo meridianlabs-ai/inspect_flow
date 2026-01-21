@@ -234,6 +234,16 @@ def test_overrides_of_lists():
     )
     assert config.dependencies
     assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
+    # setting existing values does not modify the list
+    config = _apply_overrides(
+        config,
+        [
+            "dependencies.additional_dependencies=dep3",
+            "dependencies.additional_dependencies=dep4",
+        ],
+    )
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
         config,
@@ -280,6 +290,16 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+    # Can nest dicts
+    config = _apply_overrides(
+        config,
+        [
+            "options.metadata.new_key1.sub_key=sub_val",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["new_key1"] == {"sub_key": "sub_val"}
+    assert config.options.metadata["new_key2"] == "new_val2"
 
 
 def test_load_config_args() -> None:
