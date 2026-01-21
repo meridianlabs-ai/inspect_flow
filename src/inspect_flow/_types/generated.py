@@ -5,8 +5,17 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
+from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema
+from inspect_ai.model import (
+    BatchConfig,
+    CachePolicy,
+    GenerateConfig,
+    Model,
+    ResponseSchema,
+)
+from inspect_ai.scorer import Scorer
+from inspect_ai.solver import Solver
 from inspect_ai.util import SandboxEnvironmentSpec
 from typing_extensions import NotRequired, TypedDict
 
@@ -108,16 +117,30 @@ class FlowTaskDict(TypedDict, closed=True):
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
     solver: NotRequired[
-        str | FlowSolver | FlowAgent | Sequence[str | FlowSolver] | NotGiven | None
+        str
+        | FlowSolver
+        | FlowAgent
+        | Solver
+        | Agent
+        | Sequence[str | FlowSolver | Solver]
+        | NotGiven
+        | None
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    scorer: NotRequired[str | FlowScorer | Sequence[str | FlowScorer] | NotGiven | None]
+    scorer: NotRequired[
+        str
+        | FlowScorer
+        | Scorer
+        | Sequence[str | FlowScorer | Scorer]
+        | NotGiven
+        | None
+    ]
     """Scorer or list of scorers used to evaluate model output."""
-    model: NotRequired[str | FlowModel | NotGiven | None]
+    model: NotRequired[str | FlowModel | Model | NotGiven | None]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[GenerateConfig | NotGiven]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
-    model_roles: NotRequired[Mapping[str, FlowModel | str] | NotGiven | None]
+    model_roles: NotRequired[Mapping[str, FlowModel | str | Model] | NotGiven | None]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
         str | tuple[str, str] | SandboxEnvironmentSpec | NotGiven | None
@@ -160,17 +183,24 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
     """Additional args to pass to task constructor"""
     solver: NotRequired[
         Sequence[
-            str | FlowSolver | FlowAgent | Sequence[str | FlowSolver] | NotGiven | None
+            str
+            | FlowSolver
+            | FlowAgent
+            | Solver
+            | Agent
+            | Sequence[str | FlowSolver | Solver]
+            | NotGiven
+            | None
         ]
         | None
     ]
     """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
-    model: NotRequired[Sequence[str | FlowModel | NotGiven | None] | None]
+    model: NotRequired[Sequence[str | FlowModel | Model | NotGiven | None] | None]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Sequence[GenerateConfig | NotGiven] | None]
     """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
     model_roles: NotRequired[
-        Sequence[Mapping[str, FlowModel | str] | NotGiven | None] | None
+        Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None
     ]
     """Named roles for use in `get_model()`."""
 
