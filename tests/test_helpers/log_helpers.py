@@ -36,7 +36,7 @@ def _task_and_model(
         return _task_name(task), task.model_name
 
 
-def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
+def verify_test_logs(spec: FlowSpec, log_dir: str, skip_names: bool = False) -> None:
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
@@ -46,6 +46,7 @@ def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
-    assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [_task_and_model(task) for task in spec.tasks or []]
-    )
+    if not skip_names:
+        assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
+            [_task_and_model(task) for task in spec.tasks or []]
+        )

@@ -24,7 +24,10 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
+from inspect_flow._types.flow_types import FlowScorer
 from inspect_flow.api import run
+
+from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 
 @solver
@@ -219,3 +222,34 @@ def test_inspect_object_matrix() -> None:
             else:
                 assert task.model
                 assert task.model.name == "model2"
+
+
+def test_inspect_object_instantiation() -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=[
+            FlowTask(
+                factory=a_task,
+                model=FlowModel(factory=lambda: get_model("mockllm/model")),
+                solver=[FlowSolver(factory=a_solver)],
+                scorer=FlowScorer(factory=a_scorer),
+            ),
+            FlowTask(
+                factory=b_task,
+                model="mockllm/model2",
+                solver=FlowAgent(factory=a_agent),
+            ),
+            FlowTask(
+                factory=a_task,
+                model="mockllm/model3",
+                scorer=[a_scorer()],
+                solver=a_solver(),
+            ),
+        ],
+    )
+    with (
+        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
+    ):
+        run(spec=spec)
+    verify_test_logs(spec, log_dir, skip_names=True)

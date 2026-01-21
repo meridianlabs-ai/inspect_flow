@@ -65,7 +65,7 @@ def test_task_with_two_models() -> None:
     # So can not use a mock
     log_dir = init_test_logs()
 
-    config = FlowSpec(
+    spec = FlowSpec(
         log_dir=log_dir,
         tasks=tasks_matrix(
             task=task_file + "@noop",
@@ -75,9 +75,9 @@ def test_task_with_two_models() -> None:
             ],
         ),
     )
-    run_eval_set(spec=(config), base_dir=".")
+    run_eval_set(spec=(spec), base_dir=".")
 
-    verify_test_logs(config, log_dir)
+    verify_test_logs(spec, log_dir)
 
 
 def test_model_generate_config() -> None:
