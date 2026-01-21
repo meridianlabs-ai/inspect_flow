@@ -59,6 +59,15 @@ class FlowBase(BaseModel, extra="forbid"):
     def __str__(self) -> str:
         return str(model_dump(self))
 
+    @model_validator(mode="before")
+    @classmethod
+    def factory_string_to_name(cls, data: Any) -> Any:
+        """If factory is a string, move it to name and clear factory."""
+        if isinstance(data, dict) and isinstance(data.get("factory"), str):
+            data["name"] = data["factory"]
+            del data["factory"]
+        return data
+
 
 class FlowModel(FlowBase):
     """Configuration for a Model."""

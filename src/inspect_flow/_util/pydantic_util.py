@@ -1,8 +1,16 @@
 import json
-from typing import Any
+from typing import Any, Callable
 
 from inspect_ai._util.registry import is_registry_object, registry_info, registry_value
 from pydantic import BaseModel
+
+
+def callable_name(value: Callable) -> str:
+    if is_registry_object(value):
+        info = registry_info(value)
+        return f"{info.name}"
+    else:
+        return f"{value.__code__.co_filename}@{value.__name__}"
 
 
 def _serialize_fallback(obj: Any) -> str:
@@ -14,11 +22,7 @@ def _serialize_fallback(obj: Any) -> str:
     if isinstance(value, dict):
         return json.dumps(value)
     if callable(value):
-        if is_registry_object(value):
-            info = registry_info(value)
-            return f"{info.name}"
-        else:
-            return f"{value.__code__.co_filename}@{value.__name__}"
+        return callable_name(value)
     return repr(value)
 
 

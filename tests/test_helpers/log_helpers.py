@@ -5,6 +5,7 @@ from inspect_ai import Task
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow import FlowSpec, FlowTask
 from inspect_flow._types.flow_types import NotGiven
+from inspect_flow._util.pydantic_util import callable_name
 
 
 def init_test_logs() -> str:
@@ -16,6 +17,14 @@ def init_test_logs() -> str:
     return str(log_dir)
 
 
+def _task_name(task: FlowTask) -> str | None:
+    if task.name:
+        return task.name
+    if task.factory:
+        return callable_name(task.factory)
+    return None
+
+
 def _task_and_model(
     task: str | FlowTask | Task,
 ) -> tuple[str | None, str | None | NotGiven]:
@@ -24,7 +33,7 @@ def _task_and_model(
     elif isinstance(task, Task):
         return task.name if task.name else None, task.model.name if task.model else None
     else:
-        return task.name if task.name else None, task.model_name
+        return _task_name(task), task.model_name
 
 
 def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
