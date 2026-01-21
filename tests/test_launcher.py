@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 from unittest.mock import patch
@@ -85,6 +86,24 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     env = mock_run.mock_calls[CREATE_VENV_RUN_CALLS].kwargs["env"]
     assert env["myenv1"] == "value1"
     assert env["myenv2"] == "value2"
+
+
+def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("myenv1", raising=False)
+    monkeypatch.delenv("myenv2", raising=False)
+
+    with patch("inspect_flow._launcher.inproc.run_eval_set"):
+        launch(
+            spec=FlowSpec(
+                execution_type="inproc",
+                log_dir="logs",
+                tasks=["task_name"],
+                env={"myenv1": "value1", "myenv2": "value2"},
+            ),
+            base_dir=".",
+        )
+    assert os.environ["myenv1"] == "value1"
+    assert os.environ["myenv2"] == "value2"
 
 
 def test_s3() -> None:
