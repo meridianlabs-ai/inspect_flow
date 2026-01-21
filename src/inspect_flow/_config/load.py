@@ -16,6 +16,7 @@ from pydantic_core import ValidationError
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
+from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
@@ -108,17 +109,11 @@ class _SpecFormatMapMapping:
         self.spec = spec
 
     def __getitem__(self, key: str, /) -> Any:
-        if hasattr(self.spec, key):
-            value = getattr(self.spec, key)
-            # Return simple types directly
-            if isinstance(value, str | int | float | bool) or value is None:
-                return value
+        if value := getattr(self.spec, key, None):
             # Convert Pydantic objects to dicts for nested access like {defaults[model][name]}
             if isinstance(value, BaseModel):
                 return model_dump(value)
-            # Return dicts for nested access like {flow_metadata[key]}
-            if isinstance(value, dict):
-                return value
+            return value
         return f"{{{key}}}"
 
 
@@ -128,7 +123,6 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
     if spec.log_dir:
         spec.log_dir = _resolve_log_dir(spec, base_dir=base_dir)
 
-    # Build mapping from serializable spec values only
     mapping = _SpecFormatMapMapping(spec)
 
     # Recursively apply substitutions to all string fields
@@ -147,10 +141,8 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
             return new
         elif isinstance(obj, dict):
             return {k: substitute_strings(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        elif isinstance(obj, (list, tuple)):
             return [substitute_strings(item) for item in obj]
-        elif isinstance(obj, tuple):
-            return tuple(substitute_strings(item) for item in obj)
         elif isinstance(obj, BaseModel):
             # Process Pydantic objects by iterating over their fields
             updates = {}
@@ -266,55 +258,34 @@ _T = TypeVar("_T", bound=BaseModel)
 
 
 def _merge_include_objects(spec: _T, included: _T) -> _T:
-    """Recursively merge two BaseModel objects, with spec taking precedence.
-
-    - For fields set in spec (not NotGiven): use spec's value
-    - For fields not set in spec but set in included: use included's value
-    - For dict fields: merge dicts with spec's values taking precedence
-    - For list fields: concatenate, with included's items first, avoiding duplicates
-    - For nested BaseModel fields: recursively merge
-    """
+    """Recursively merge two BaseModel objects, with spec taking precedence."""
     updates: dict[str, Any] = {}
 
     for field_name in type(spec).model_fields:
         spec_value = getattr(spec, field_name)
         included_value = getattr(included, field_name)
 
-        # If spec has a value set, use it (possibly merged for complex types)
-        if not isinstance(spec_value, NotGiven):
-            # For nested BaseModel, recursively merge if included also has a value
-            if (
-                isinstance(spec_value, BaseModel)
-                and isinstance(included_value, BaseModel)
-                and not isinstance(included_value, NotGiven)
-            ):
-                merged = _merge_include_objects(spec_value, included_value)
-                if merged is not spec_value:
-                    updates[field_name] = merged
-            # For dicts, merge with spec taking precedence
-            elif (
-                isinstance(spec_value, dict)
-                and isinstance(included_value, dict)
-                and not isinstance(included_value, NotGiven)
-            ):
-                merged_dict = {**included_value, **spec_value}
-                if merged_dict != spec_value:
-                    updates[field_name] = merged_dict
-            # For lists, concatenate with included first, avoiding duplicates
-            elif (
-                isinstance(spec_value, list)
-                and isinstance(included_value, list)
-                and not isinstance(included_value, NotGiven)
-            ):
-                merged_list = list(included_value) + [
-                    item for item in spec_value if item not in included_value
-                ]
-                if merged_list != spec_value:
-                    updates[field_name] = merged_list
-            # Otherwise keep spec's value (no update needed)
-        # If spec doesn't have a value but included does, use included's value
-        elif not isinstance(included_value, NotGiven):
+        if isinstance(included_value, NotGiven):
+            pass
+        elif isinstance(spec_value, NotGiven):
             updates[field_name] = included_value
+        elif isinstance(spec_value, BaseModel) and isinstance(
+            included_value, BaseModel
+        ):
+            # recursively merge pydantic objects
+            merged = _merge_include_objects(spec_value, included_value)
+            updates[field_name] = merged
+        elif isinstance(spec_value, dict) and isinstance(included_value, dict):
+            # merge dicts, with spec taking precedence
+            merged_dict = {**included_value, **spec_value}
+            updates[field_name] = merged_dict
+        elif is_sequence(spec_value) and is_sequence(included_value):
+            # For lists, concatenate with included first, avoiding duplicates
+            merged_list = list(included_value) + [
+                item for item in spec_value if item not in included_value
+            ]
+            updates[field_name] = merged_list
+        # Otherwise keep spec's value (no update needed)
 
     if updates:
         return spec.model_copy(update=updates)
