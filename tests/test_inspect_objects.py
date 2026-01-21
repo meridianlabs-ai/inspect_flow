@@ -24,7 +24,9 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
+from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer
+from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow.api import run
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
@@ -252,4 +254,21 @@ def test_inspect_object_instantiation() -> None:
         patch("inspect_flow._launcher.inproc.write_flow_requirements"),
     ):
         run(spec=spec)
+    verify_test_logs(spec, log_dir, skip_names=True)
+
+
+def test_factory_instantiation() -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=[
+            FlowTask(
+                factory=a_task,
+                model="mockllm/model",
+            ),
+        ],
+    )
+    dump = model_dump(spec)
+    spec = FlowSpec.model_validate(dump)
+    run_eval_set(spec=(spec), base_dir=".")
     verify_test_logs(spec, log_dir, skip_names=True)
