@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from inspect_ai.agent import Agent, AgentState, agent
+from inspect_ai.model import Model, get_model
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -219,3 +220,42 @@ def test_additional_args_agent_tools() -> None:
     assert len(agent_tools) == 1
     assert callable(agent_tools[0])
     assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+
+def test_additional_args_agent_tools_dict() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(model: Model, tools: dict[str, list[Any]]) -> Agent:
+        assert model.name == "mock-llm1"
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                extra_args=FlowExtraArgs(
+                    agent={
+                        "model": get_model("mockllm/mock-llm1"),
+                        "tools": {"math": [add()]},
+                    }
+                ),
+                solver=FlowAgent(name="my_agent"),
+            )
+        ],
+    )
+    dump = model_dump(spec)
+    spec = FlowSpec.model_validate(dump)
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools["math"][0])
+    assert agent_tools["math"][0].__qualname__ == "add.<locals>.execute"
