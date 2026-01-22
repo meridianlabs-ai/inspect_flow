@@ -39,14 +39,14 @@
 | src/inspect\_flow/\_util/error.py                  |       16 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/list\_util.py             |        8 |        0 |        2 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/logging.py                |        8 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/module\_util.py           |       63 |        0 |       18 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/module\_util.py           |       72 |        0 |       24 |        1 |     98.96% |    52->59 |
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/path\_util.py             |       16 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/pydantic\_util.py         |       18 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1825** |   **40** |  **538** |    **9** | **97.08%** |           |
+| **TOTAL**                                          | **1834** |   **40** |  **544** |   **10** | **97.06%** |           |
 
 
 ## Setup coverage badge
