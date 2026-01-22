@@ -25,7 +25,7 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, model_validator
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from inspect_flow._util.pydantic_util import model_dump
 
@@ -197,6 +197,11 @@ class FlowAgent(FlowBase):
         default=None,
         description="Type needed to differentiated solvers and agents in solver lists.",
     )
+
+    @model_validator(mode="after")
+    def set_type(self) -> Self:
+        self.type = "agent"
+        return self
 
 
 class FlowEpochs(FlowBase):
