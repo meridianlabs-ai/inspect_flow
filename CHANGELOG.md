@@ -16,7 +16,6 @@
 * auto collect dependencies from INSPECT_EVAL_MODEL ([#415](https://github.com/meridianlabs-ai/inspect_flow/issues/415)) ([cba3f4d](https://github.com/meridianlabs-ai/inspect_flow/commit/cba3f4d2519dad62cf2833d1fb5af14301ba89a2))
 * Deduplicate pip freeze output ([#422](https://github.com/meridianlabs-ai/inspect_flow/issues/422)) ([a2fa987](https://github.com/meridianlabs-ai/inspect_flow/commit/a2fa987eca2ea31b8385ea92fe0cb2922b5dfc31))
 * handle non-Sequence input in matrix arguments ([#414](https://github.com/meridianlabs-ai/inspect_flow/issues/414)) ([bf46b9c](https://github.com/meridianlabs-ai/inspect_flow/commit/bf46b9c625abbd231ea9d86377948d18a4feab23))
-* pin inspect-ai version to prevent future breaks ([#413](https://github.com/meridianlabs-ai/inspect_flow/issues/413)) ([6fb1554](https://github.com/meridianlabs-ai/inspect_flow/commit/6fb1554c4a80d8d96a4fa4c046dcc1fcc6ec127b))
 * update test to not modify uv.lock ([#409](https://github.com/meridianlabs-ai/inspect_flow/issues/409)) ([a9ab22c](https://github.com/meridianlabs-ai/inspect_flow/commit/a9ab22c5e2d14523779d45eae82fc08c31e525c6))
 
 
