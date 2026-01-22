@@ -143,7 +143,7 @@ from inspect_ai.dataset import example_dataset
 from inspect_ai.solver import generate
 from inspect_flow import FlowTask
 
-@task  # Optional: use @task decorator to make function available in the registry
+@task  # @task decorator makes the function available in the registry and ensures that tasks with different args are considered unique
 def my_task_factory():
     return Task(dataset=example_dataset("security_guide"), solver=generate())
 
