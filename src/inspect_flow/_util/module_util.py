@@ -1,5 +1,6 @@
 import ast
 import builtins
+import sys
 from contextvars import ContextVar
 from functools import lru_cache
 from importlib.machinery import SourceFileLoader
@@ -8,7 +9,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from inspect_ai._util.file import file
+from inspect_ai._util.file import file, filesystem
 
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 
@@ -46,6 +47,15 @@ def execute_src_and_get_last_result(
     filename: str,
     args: dict[str, Any],
 ) -> tuple[object | None, dict[str, Any]]:
+    # For local files, add the parent directory to sys.path to enable imports
+    file_dir: str | None = None
+    if filesystem(filename).is_local():
+        file_dir = str(Path(filename).resolve().parent)
+        if file_dir not in sys.path:
+            sys.path.insert(0, file_dir)
+        else:
+            file_dir = None  # Don't remove it later if it was already there
+
     g = {
         "__name__": "__flow__",
         "__builtins__": builtins.__dict__,
@@ -85,6 +95,8 @@ def execute_src_and_get_last_result(
         exec(code, g, g)
     finally:
         _loading_spec.reset(token)
+        if file_dir is not None:
+            sys.path.remove(file_dir)
     if target_id is None:
         return None, g
     if not is_function_def:

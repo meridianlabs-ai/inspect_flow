@@ -683,3 +683,8 @@ def test_389_tool_config() -> None:
         ],
     )
     validate_config(spec, "tool_config_flow.yaml")
+
+
+def test_419_python_include() -> None:
+    config = load_spec(str(Path(__file__).parent / "config" / "python_import_flow.py"))
+    validate_config(config, "python_import_flow.yaml")
