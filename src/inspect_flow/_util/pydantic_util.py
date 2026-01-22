@@ -1,4 +1,3 @@
-import json
 from typing import Any, Callable
 
 from inspect_ai._util.registry import is_registry_object, registry_info, registry_value
@@ -13,14 +12,14 @@ def callable_name(value: Callable) -> str:
         return f"{value.__code__.co_filename}@{value.__name__}"
 
 
-def _serialize_fallback(obj: Any) -> str:
+def _serialize_fallback(obj: Any) -> Any:
     """Convert non-serializable objects to their string representation.
 
     Uses JSON format for dicts to avoid quote escaping issues in YAML output.
     """
     value = registry_value(obj)
     if isinstance(value, dict):
-        return json.dumps(value)
+        return value
     if callable(value):
         return callable_name(value)
     return repr(value)

@@ -41,7 +41,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.solver import Solver\n",
     "from inspect_ai.util import SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig\n",
-    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
+    "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowExtraArgs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]

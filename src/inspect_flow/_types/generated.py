@@ -22,6 +22,7 @@ from typing_extensions import NotRequired, TypedDict
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowEpochs,
+    FlowExtraArgs,
     FlowModel,
     FlowScorer,
     FlowSolver,
@@ -116,6 +117,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Factory function to create the task instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
+    extra_args: NotRequired[FlowExtraArgs | NotGiven | None]
+    """Extra args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent."""
     solver: NotRequired[
         str
         | FlowSolver
