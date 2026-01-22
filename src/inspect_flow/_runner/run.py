@@ -147,9 +147,11 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
         if task_id in task_ids:
             assert spec.tasks
             flow_task = spec.tasks[i]
-            assert isinstance(flow_task, FlowTask)
-            task_json = model_dump(flow_task)
-            raise ValueError(f"Duplicate task found: {task_json}")
+            if isinstance(flow_task, FlowTask):
+                task_json = model_dump(flow_task)
+                raise ValueError(f"Duplicate task found: {task_json}")
+            else:
+                raise ValueError(f"Duplicate task found: {task}")
 
         task_ids.add(task_id)
     return task_ids

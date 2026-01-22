@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import pytest
 from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.model import get_model
@@ -280,3 +281,17 @@ def test_factory_instantiation() -> None:
     spec = FlowSpec.model_validate(dump)
     run_eval_set(spec=(spec), base_dir=".")
     verify_test_logs(spec, log_dir, skip_names=True)
+
+
+def test_duplicate_task_objects() -> None:
+    spec = FlowSpec(
+        log_dir="logs",
+        tasks=[a_task(), a_task()],
+    )
+    with (
+        pytest.raises(ValueError) as e,
+        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
+    ):
+        run(spec=spec)
+    assert "Duplicate task found" in str(e.value)
+    assert "<inspect_ai._eval.task.task.Task object at" in str(e.value)
