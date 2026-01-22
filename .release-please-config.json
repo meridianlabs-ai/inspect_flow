@@ -8,6 +8,10 @@
           "section": "Features"
         },
         {
+          "type": "feature",
+          "section": "Features"
+        },
+        {
           "type": "fix",
           "section": "Bug Fixes"
         },
