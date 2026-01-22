@@ -1,0 +1,7 @@
+log_dir: ./logs/python_import_flow
+tasks:
+- name: local_eval/noop
+  model:
+    name: openai/gpt-4o-mini
+    model_args:
+      mock_model_arg: 3
