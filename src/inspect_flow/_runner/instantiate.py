@@ -84,7 +84,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     ]
 
 
-def _create_model(model: FlowModel | Model) -> Model:
+def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     if isinstance(model, Model):
         return model
     if model.factory:
@@ -113,7 +113,7 @@ def _create_model_roles(task: FlowTask, model_roles: ModelRolesConfig) -> ModelR
     return roles
 
 
-def _create_single_scorer(scorer: str | FlowScorer | Scorer) -> Scorer:
+def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer | Scorer) -> Scorer:
     if isinstance(scorer, Scorer):
         return scorer
     if isinstance(scorer, str):
@@ -130,6 +130,8 @@ def _create_single_scorer(scorer: str | FlowScorer | Scorer) -> Scorer:
 
 
 def _create_scorer(
+    task: FlowTask,
+    scorer: str
     | FlowScorer
     | Scorer
     | Sequence[str | FlowScorer | Scorer]
@@ -147,7 +149,7 @@ def _create_scorer(
     return [_create_single_scorer(task, single_solver) for single_solver in scorer]
 
 
-def _create_single_solver(solver: str | FlowSolver | Solver) -> Solver:
+def _create_single_solver(task: FlowTask, solver: str | FlowSolver | Solver) -> Solver:
     if isinstance(solver, Solver):
         return solver
     if not isinstance(solver, FlowSolver):
@@ -162,7 +164,7 @@ def _create_single_solver(solver: str | FlowSolver | Solver) -> Solver:
     )
 
 
-def _create_agent(agent: FlowAgent) -> Agent:
+def _create_agent(task: FlowTask, agent: FlowAgent) -> Agent:
     if agent.factory:
         return agent.factory(**(agent.args or {}))
     if not agent.name:
@@ -174,6 +176,7 @@ def _create_agent(agent: FlowAgent) -> Agent:
 
 
 def _create_solver(
+    task: FlowTask,
     solver: FlowSolver
     | Solver
     | FlowAgent
@@ -181,12 +184,12 @@ def _create_solver(
     | Sequence[str | FlowSolver | Solver],
 ) -> SingleSolver:
     if isinstance(solver, FlowSolver):
-        return _create_single_solver(solver)
+        return _create_single_solver(task, solver)
     if isinstance(solver, FlowAgent):
-        return _create_agent(solver)
+        return _create_agent(task, solver)
     if not isinstance(solver, Sequence):
         return solver
-    return [_create_single_solver(single_solver) for single_solver in solver]
+    return [_create_single_solver(task, single_solver) for single_solver in solver]
 
 
 def _instantiate_task(

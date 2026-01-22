@@ -25,7 +25,7 @@ from inspect_ai.util import (
     SandboxEnvironmentType,
 )
 from pydantic import BaseModel, Field, model_validator
-from typing_extensions import Self, override
+from typing_extensions import override
 
 from inspect_flow._util.pydantic_util import model_dump
 
@@ -52,14 +52,6 @@ class NotGiven(BaseModel, extra="forbid"):
 
 
 not_given = NotGiven(type="NOT_GIVEN")
-
-
-def _process_create_args(
-    args: CreateArgs | None | NotGiven,
-) -> CreateArgs | None | NotGiven:
-    if not args:
-        return args
-    return registry_value(args)
 
 
 class FlowBase(BaseModel, extra="forbid"):
@@ -129,11 +121,6 @@ class FlowModel(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
-    @model_validator(mode="after")
-    def process_model_args(self) -> Self:
-        self.model_args = _process_create_args(self.model_args)
-        return self
-
 
 class FlowScorer(FlowBase):
     """Configuration for a Scorer."""
@@ -158,11 +145,6 @@ class FlowScorer(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the scorer.",
     )
 
-    @model_validator(mode="after")
-    def process_args(self) -> Self:
-        self.args = _process_create_args(self.args)
-        return self
-
 
 class FlowSolver(FlowBase):
     """Configuration for a Solver."""
@@ -186,11 +168,6 @@ class FlowSolver(FlowBase):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the solver.",
     )
-
-    @model_validator(mode="after")
-    def process_args(self) -> Self:
-        self.args = _process_create_args(self.args)
-        return self
 
 
 class FlowAgent(FlowBase):
@@ -220,12 +197,6 @@ class FlowAgent(FlowBase):
         default=None,
         description="Type needed to differentiated solvers and agents in solver lists.",
     )
-
-    @model_validator(mode="after")
-    def set_type_and_process_args(self) -> Self:
-        self.type = "agent"
-        self.args = _process_create_args(self.args)
-        return self
 
 
 class FlowEpochs(FlowBase):
@@ -263,14 +234,6 @@ class FlowExtraArgs(FlowBase):
         default=not_given,
         description="Extra args to pass to scorer constructor.",
     )
-
-    @model_validator(mode="after")
-    def process_args(self) -> Self:
-        self.model = _process_create_args(self.model)
-        self.solver = _process_create_args(self.solver)
-        self.agent = _process_create_args(self.agent)
-        self.scorer = _process_create_args(self.scorer)
-        return self
 
 
 class FlowTask(FlowBase, arbitrary_types_allowed=True):
@@ -400,11 +363,6 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
-
-    @model_validator(mode="after")
-    def process_args(self) -> Self:
-        self.args = _process_create_args(self.args)
-        return self
 
     @property
     def model_name(self) -> str | None | NotGiven:
