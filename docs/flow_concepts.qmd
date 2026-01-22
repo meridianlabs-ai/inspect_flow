@@ -14,7 +14,7 @@ Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 -   **`FlowScorer`** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
 -   **`FlowOptions`** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 -   **`FlowDefaults`** — System for setting default values across tasks, models, solvers, and agents.
--   **`FlowDependencies`** — Configuration for evaluation dependencies to install.
+-   **`FlowDependencies`** — Configuration for evaluation dependencies (used in virtual environment mode).
 
 ## Config Files
 
@@ -24,6 +24,10 @@ Flow configuration files are Python files where the last expression is either:
 - A function that returns a `FlowSpec` object
 
 Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!
+
+::: {.callout-note appearance="default"}
+This last expression requirement only applies when loading configs from files (via CLI or `load_spec()`). When using the Python API directly with `run()`, you pass the `FlowSpec` object programmatically—no file or last expression needed.
+:::
 
 ## Basic Example
 
@@ -41,21 +45,27 @@ In [Welcome - Basic Example](index.qmd#basic-example), we showed a simple `FlowS
 
 4.  Specify model to evaluate by name
 
-To run the task, run the following command in your shell.
+To run the task, first ensure you have the necessary dependencies installed (`inspect-evals` and `openai` for this example), then run the following command in your shell.
 
 ``` bash
 flow run config.py
 ```
 
+Alternatively, use the `--venv` flag to automatically install dependencies in an isolated virtual environment:
+
+``` bash
+flow run config.py --venv
+```
+
 ![Progress bar in terminal](images/first_config_progress_terminal.png)
 
-**What happens when you run this?**
+**What happens when you run this (default in-process mode)?**
 
-1.  Flow creates an isolated virtual environment
-2.  Installs `inspect-evals` and `openai` (auto-detected)
-3.  Loads the `gpqa_diamond` task from the `inspect_evals` registry
-4.  Runs the evaluation with GPT-5
-5.  Stores results in `logs/`
+1.  Flow loads the `gpqa_diamond` task from the `inspect_evals` registry
+2.  Runs the evaluation with GPT-5 in the current Python process
+3.  Stores results in `logs/`
+
+When using `--venv`, Flow additionally creates an isolated virtual environment, installs dependencies automatically, executes the evaluation in that environment, and cleans up the temporary environment after completion.
 
 ## Jobs
 
@@ -71,11 +81,12 @@ flow run config.py
 
 | Field | Description | Default |
 |------------------|--------------------------------|----------------------|
-| `tasks` | List of tasks to run (`FlowTask` objects or strings) | `None` |
+| `tasks` | List of tasks to run (`FlowTask` objects, Inspect AI `Task` objects, or strings) | `None` |
 | `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
 | `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
-| `python_version` | Python version for the isolated virtual environment (e.g., `"3.11"`) | Same as current environment |
-| `dependencies` | `FlowDependencies` object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names |
+| `execution_type` | Execution environment: `"inproc"` runs tasks in the current Python process, `"venv"` runs tasks in an isolated virtual environment | `"inproc"` |
+| `python_version` | Python version for the isolated virtual environment when `execution_type="venv"` (e.g., `"3.11"`) | Same as current environment |
+| `dependencies` | `FlowDependencies` object configuring package installation in venv mode. Controls dependency file detection, additional packages, and auto-detection behavior. Ignored in inproc mode. | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names (venv mode only) |
 | `env` | Environment variables to set when running tasks | `None` |
 | `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
 | `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
@@ -87,7 +98,11 @@ flow run config.py
 
 ### Specification
 
-In the example above, we used a registry name (`"inspect_evals/gpqa_diamond"`). Flow supports multiple ways to reference tasks:
+Flow supports multiple ways to specify tasks, from simple registry names to programmatic Task objects. Choose the approach that best fits your needs:
+
+- **Registry names and file paths**: Simple string-based references for tasks from packages or local files
+- **Task factory functions**: Use `FlowTask(factory=...)` when you have a Task object but want to override parameters like model or config
+- **Direct Task objects**: Pass Task objects directly to `FlowSpec.tasks` when you don't need Flow-level parameter overrides
 
 **Registry Name**
 
@@ -119,6 +134,31 @@ FlowTask(
 )
 ```
 
+**Task Factory Function**
+
+``` python
+# Use a factory function that returns an Inspect AI Task
+from inspect_ai import Task, task
+from inspect_ai.dataset import example_dataset
+from inspect_ai.solver import generate
+from inspect_flow import FlowTask
+
+@task  # Optional: use @task decorator to make function available in the registry
+def my_task_factory():
+    return Task(dataset=example_dataset("security_guide"), solver=generate())
+
+FlowTask(
+    factory=my_task_factory,
+    model="openai/gpt-5",  # Override the model
+)
+```
+
+**Direct Task Object in FlowSpec**
+
+``` {.python filename="direct_task_object.py"}
+{{< include ../examples/direct_task_object.py >}}
+```
+
 ### Configuration
 
 `FlowTask` accepts parameters that map to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) fields. The examples below show commonly used fields; see the `FlowTask` reference documentation for the complete list of available parameters.
@@ -139,15 +179,15 @@ FlowTask(
 )
 ```
 
-1.  **Task name** — Maps to Inspect AI `Task.name`. Can be a registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`).
+1.  **Task name or factory** — Use `name` to specify a task by registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`). Alternatively, use `factory` to provide a callable that returns an Inspect AI `Task` object (see [Task Factory Function](#specification) example above). When using `factory`, you can still override task parameters like `model`, `solver`, or `config` via other `FlowTask` fields.
 
-2.  **Model** — Maps to Inspect AI `Task.model`. Optional model for this task. If not specified, uses the model from `INSPECT_EVAL_MODEL` environment variable. Can be a string (`"openai/gpt-5"`) or a `FlowModel` object for advanced configuration.
+2.  **Model** — Maps to Inspect AI `Task.model`. Optional model for this task. If not specified, uses the model from `INSPECT_EVAL_MODEL` environment variable. Can be a string (`"openai/gpt-5"`), a `FlowModel` object for advanced configuration, or an Inspect AI `Model` object.
 
 3.  **Epochs** — Maps to Inspect AI `Task.epochs`. Number of times to repeat evaluation over the dataset samples. Can be an integer (`epochs=3`) or a `FlowEpochs` object to specify custom reducer functions (`FlowEpochs(epochs=3, reducer="median")`). By default, scores are combined using the `"mean"` reducer across epochs.
 
 4.  **Generation config** — Maps to Inspect AI `Task.config` (`GenerateConfig`). Model generation parameters like `temperature`, `max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override config on `FlowSpec.config` but are overridden by settings on `FlowModel.config`.
 
-5.  **Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s) for solving the task. Can be a string (`"chain_of_thought"`), `FlowSolver` object, `FlowAgent` object, or a list of solvers for chaining. Defaults to `generate()` if not specified.
+5.  **Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s) for solving the task. Can be a string (`"chain_of_thought"`), `FlowSolver` object, `FlowAgent` object, Inspect AI `Solver` or `Agent` object, or a list of solvers for chaining. Defaults to `generate()` if not specified.
 
 6.  **Task arguments** — Maps to task function parameters. Dictionary of arguments passed to the task constructor or `@task` decorated function. Enables parameterization of tasks (e.g., selecting dataset subsets, configuring difficulty levels).
 
@@ -157,7 +197,7 @@ FlowTask(
 
 ## Models
 
-When specifying a task, you can provide the model for the task as either a string with a model name or as a `FlowModel`. When using the simple string, the default values for that model will be used. For example:
+When specifying a task, you can provide the model for the task as a string with a model name, a `FlowModel`, or an Inspect AI `Model` object. When using the simple string, the default values for that model will be used. For example:
 
 ``` python
 FlowTask(name="task", model="openai/gpt-5")
@@ -177,6 +217,24 @@ FlowTask(
         base_url="https://custom-endpoint.com",
         api_key="${CUSTOM_API_KEY}",
     )
+)
+```
+
+You can also pass an Inspect AI `Model` object directly when you need programmatic model configuration:
+
+``` python
+from inspect_ai.model import get_model
+
+# Create a Model instance with custom configuration
+custom_model = get_model(
+    "openai/gpt-5",
+    config=GenerateConfig(reasoning_effort="high"),
+    base_url="https://custom-endpoint.com"
+)
+
+FlowTask(
+    name="task",
+    model=custom_model
 )
 ```
 
