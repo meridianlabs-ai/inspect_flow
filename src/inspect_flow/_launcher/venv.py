@@ -1,22 +1,90 @@
+import os
 import shlex
+import subprocess
 import sys
+import tempfile
 from logging import getLogger
 from pathlib import Path
 from typing import List, Literal, Sequence
 
-from inspect_ai._util.file import file, filesystem
+import yaml
+from dotenv import dotenv_values, find_dotenv
+from inspect_ai import Task
+from inspect_ai._util.file import absolute_file_path
+from inspect_ai.model import Model
+from inspect_ai.scorer import Scorer
 
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
+from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
+from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.subprocess_util import run_with_logging
 
 logger = getLogger(__name__)
 
 
-def create_venv(
+def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -> None:
+    _check_spec_for_venv(spec)
+    run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+    base_dir = absolute_file_path(base_dir)
+    run_args = ["--dry-run"] if dry_run else []
+    args = ["--base-dir", base_dir, "--log-level", get_last_log_level()] + run_args
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        env = _get_env(base_dir, no_dotenv=no_dotenv)
+        if spec.env:
+            env.update(**spec.env)
+
+        # Set the virtual environment so that it will be created in the temp directory
+        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+
+        _create_venv(
+            spec, base_dir=base_dir, temp_dir=temp_dir, env=env, dry_run=dry_run
+        )
+
+        python_path = Path(temp_dir) / ".venv" / "bin" / "python"
+        file = _write_flow_yaml(spec, temp_dir)
+        subprocess.run(
+            [str(python_path), str(run_path), "--file", file.as_posix(), *args],
+            check=True,
+            env=env,
+        )
+
+
+def _check_spec_for_venv(spec: FlowSpec) -> None:
+    for task in spec.tasks or []:
+        if isinstance(task, Task):
+            raise ValueError(
+                "In venv execution, Inspect Flow resolves tasks via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Task object, which can not be serialized/recreated. Fix: use FlowTask instead of Task or run using 'inproc' execution type."
+            )
+        if isinstance(task, FlowTask):
+            if isinstance(task.model, Model):
+                raise ValueError(
+                    "In venv execution, Inspect Flow resolves models via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Model object in a FlowTask, which can not be serialized/recreated. Fix: use FlowModel or run using 'inproc' execution type."
+                )
+            if isinstance(task.scorer, Scorer):
+                raise ValueError(
+                    "In venv execution, Inspect Flow resolves scorers via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Scorer object in a FlowTask, which can not be serialized/recreated. Fix: use FlowScorer or run using 'inproc' execution type."
+                )
+            if task.solver:
+                solver_list = (
+                    task.solver
+                    if isinstance(task.solver, Sequence)
+                    and not isinstance(task.solver, str)
+                    else [task.solver]
+                )
+                for solver in solver_list:
+                    if not isinstance(solver, (str, FlowSolver, FlowAgent)):
+                        raise ValueError(
+                            "In venv execution, Inspect Flow resolves solvers and agents via the registry so they can be recreated inside the virtualenv process. You provided an already-instantiated Solver or Agent object as a solver in a FlowTask, which can not be serialized/recreated. Fix: use FlowSolver or FlowAgent instead or run using 'inproc' execution type."
+                        )
+
+
+def _create_venv(
     spec: FlowSpec,
     base_dir: str,
     temp_dir: str,
@@ -47,40 +115,7 @@ def create_venv(
 
     _uv_pip_install(dependencies, temp_dir, env)
 
-    # Freeze installed packages to flow-requirements.txt in log_dir
-    if not dry_run and spec.log_dir:
-        freeze_result = run_with_logging(
-            ["uv", "pip", "freeze"],
-            cwd=temp_dir,
-            env=env,
-            log_output=False,  # Don't log the full freeze output
-        )
-        # Deduplicate freeze output to avoid conflicting URLs
-        deduplicated_freeze = _deduplicate_freeze_requirements(freeze_result.stdout)
-
-        requirements_in = Path(temp_dir) / "flow-requirements.in"
-        with open(requirements_in, "w") as f:
-            f.write(deduplicated_freeze)
-
-        compile_result = run_with_logging(
-            [
-                "uv",
-                "pip",
-                "compile",
-                "--generate-hashes",
-                "--no-header",
-                "--no-annotate",
-                str(requirements_in),
-            ],
-            cwd=temp_dir,
-            env=env,
-            log_output=False,
-        )
-
-        fs = filesystem(spec.log_dir)
-        fs.mkdir(spec.log_dir, exist_ok=True)
-        with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
-            f.write(compile_result.stdout)
+    write_flow_requirements(spec, temp_dir, env, dry_run)
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
@@ -221,41 +256,29 @@ def _search_dependency_file(
     return (found_file, found_path) if found_file and found_path else None
 
 
-def _deduplicate_freeze_requirements(freeze_output: str) -> str:
-    """Deduplicate package entries in freeze output, keeping the most specific URL."""
-    lines = freeze_output.strip().split("\n")
-    packages: dict[str, str] = {}
+def _write_flow_yaml(spec: FlowSpec, dir: str) -> Path:
+    flow_yaml_path = Path(dir) / "flow.yaml"
+    with open(flow_yaml_path, "w") as f:
+        yaml.dump(
+            model_dump(spec),
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+    return flow_yaml_path
 
-    for line in lines:
-        if not line.strip() or line.startswith("#"):
-            continue
 
-        # Extract package name (handle both regular and URL-based packages)
-        # Format: "package==version" or "package @ url"
-        package_name = line.split("==")[0].split(" @ ")[0].strip()
-
-        if package_name not in packages:
-            packages[package_name] = line
-        else:
-            existing = packages[package_name]
-            # Check if either line has a git URL with commit hash (@<hash>)
-            # Prefer: git+...@<commit_hash> over git+...@<branch> over git+...
-            if " @ git+" in line and " @ git+" in existing:
-                # Both are git URLs, prefer the one with what looks like a commit hash
-                # Commit hashes are typically 40 chars, branches are shorter
-                line_ref = (
-                    line.split("@")[-1] if "@" in line.split(" @ git+")[-1] else ""
-                )
-                existing_ref = (
-                    existing.split("@")[-1]
-                    if "@" in existing.split(" @ git+")[-1]
-                    else ""
-                )
-
-                if len(line_ref) > len(existing_ref):
-                    packages[package_name] = line
-            elif " @ git+" in line:
-                # New line is git URL, existing is not - prefer git URL
-                packages[package_name] = line
-
-    return "\n".join(packages.values()) + "\n"
+def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
+    env = os.environ.copy()
+    if no_dotenv:
+        return env
+    # Temporarily change to base_dir to find .env file
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(base_dir)
+        # Already loaded environment variables should take precedence
+        dotenv = dotenv_values(find_dotenv(usecwd=True))
+        env = {k: v for k, v in dotenv.items() if v is not None} | env
+    finally:
+        os.chdir(original_cwd)
+    return env

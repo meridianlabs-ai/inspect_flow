@@ -9,6 +9,7 @@ from inspect_flow._types.flow_types import (
     FlowSolver,
     FlowTask,
     GenerateConfig,
+    NotGiven,
 )
 from inspect_flow._types.generated import (
     FlowAgentDict,
@@ -28,6 +29,22 @@ BaseType = TypeVar(
     "BaseType", FlowAgent, FlowModel, FlowSolver, FlowTask, GenerateConfig
 )
 
+
+def _validate_updates(
+    updates: dict[str, Any], pydantic_type: type[BaseType]
+) -> dict[str, Any]:
+    """Validate update values against the model's field types.
+
+    Creates a temporary object to trigger Pydantic validation, ensuring
+    invalid nested types are caught. Returns the validated updates.
+    """
+    # Create a temporary object with just the update fields to validate them
+    # This triggers Pydantic validation for the field types
+    temp = pydantic_type.model_validate(updates)
+    # Return the validated values from the temporary object
+    return {k: getattr(temp, k) for k in updates.keys()}
+
+
 MatrixDict = (
     FlowAgentMatrixDict
     | GenerateConfigMatrixDict
@@ -42,19 +59,35 @@ def _with_base(
     values: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> BaseType:
-    base_dict: dict[str, Any] = {}
     if isinstance(base, str):
-        base_dict = {"name": base}
-    else:
-        base_dict = to_dict(base)
+        assert "name" in pydantic_type.model_fields
+        # For string base, create new object with name and values
+        return pydantic_type.model_validate({"name": base, **values})
 
+    # Check for conflicts (except config which can be merged)
     for key in values.keys():
-        if key != "config" and key in base_dict:
-            raise ValueError(f"{key} provided in both base and values")
+        if key != "config":
+            base_value = getattr(base, key, None)
+            if base_value is not None and not isinstance(base_value, NotGiven):
+                raise ValueError(f"{key} provided in both base and values")
 
-    return pydantic_type.model_validate(
-        merge_recursive(base_dict, values), extra="forbid"
-    )
+    # Build updates, handling config merging specially
+    updates = dict(values)
+    if "config" in updates and hasattr(base, "config"):
+        assert isinstance(base, (FlowModel, FlowTask))
+        base_config = base.config
+        if base_config is not None and not isinstance(base_config, NotGiven):
+            # Merge configs: base_config values are overridden by new config values
+            merged_config = merge_recursive(
+                to_dict(base_config), to_dict(updates["config"])
+            )
+            updates["config"] = type(base_config).model_validate(merged_config)
+
+    # Validate updates against the model's field types
+    validated_updates = _validate_updates(updates, pydantic_type)
+
+    # Use model_copy to preserve non-serializable objects from base
+    return base.model_copy(update=validated_updates)
 
 
 def _with(
@@ -79,29 +112,46 @@ def _matrix_with_base(
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
-    base_dict: dict[str, Any] = {}
-    if isinstance(base, str):
-        base_dict = {"name": base}
-    else:
-        base_dict = to_dict(base)
+    is_string_base = isinstance(base, str)
 
-    for key in matrix.keys():
-        if key != "config" and key in base_dict and base_dict[key] is not None:
-            raise ValueError(f"{key} provided in both base and matrix")
+    # Check for conflicts (except config which can be merged)
+    if not is_string_base:
+        for key in matrix.keys():
+            if key != "config":
+                base_value = getattr(base, key, None)
+                if base_value is not None and not isinstance(base_value, NotGiven):
+                    raise ValueError(f"{key} provided in both base and matrix")
 
-    matrix_keys = matrix.keys()
-    result = []
+    matrix_keys = list(matrix.keys())
+    result: list[BaseType] = []
     values = [
         [v] if isinstance(v, str) or not isinstance(v, Sequence) else v
         for v in matrix.values()
     ]
     for matrix_values in product(*values):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
-        result.append(
-            pydantic_type.model_validate(
-                merge_recursive(base_dict, add_dict), extra="forbid"
-            )
-        )
+
+        if is_string_base:
+            # For string base, create new object with name and values
+            result.append(pydantic_type.model_validate({"name": base, **add_dict}))
+        else:
+            # Build updates, handling config merging specially
+            updates = add_dict
+            if "config" in updates and hasattr(base, "config"):
+                assert isinstance(base, (FlowModel, FlowTask))
+                base_config = base.config
+                if base_config is not None and not isinstance(base_config, NotGiven):
+                    merged_config = merge_recursive(
+                        to_dict(base_config), to_dict(updates["config"])
+                    )
+                    updates["config"] = type(base_config).model_validate(merged_config)
+
+            # Validate updates against the model's field types
+            validated_updates = _validate_updates(updates, pydantic_type)
+
+            # Use model_copy to preserve non-serializable objects from base
+            result.append(base.model_copy(update=validated_updates))  # type: ignore[arg-type]
+
     return result
 
 

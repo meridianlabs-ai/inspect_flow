@@ -8,8 +8,9 @@ import pytest
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
+from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
-from inspect_flow._launcher.venv import _deduplicate_freeze_requirements, create_venv
+from inspect_flow._launcher.venv import _create_venv
 
 
 def test_no_dependencies() -> None:
@@ -19,7 +20,7 @@ def test_no_dependencies() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
 
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(tasks=[FlowTask(name="task_name")]),
                 base_dir=".",
                 temp_dir=temp_dir,
@@ -47,7 +48,7 @@ def test_dependencies() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
 
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     dependencies=FlowDependencies(
                         additional_dependencies=additional_dependencies
@@ -81,7 +82,7 @@ def test_relative_dependency() -> None:
             args=[], returncode=0, stdout="mocked output"
         )
 
-        create_venv(
+        _create_venv(
             spec=FlowSpec(
                 dependencies=FlowDependencies(additional_dependencies="../local_eval"),
                 tasks=[FlowTask(name="task_name")],
@@ -144,7 +145,7 @@ def test_auto_dependency() -> None:
             assert isinstance(spec.tasks[0], FlowTask)
             spec.tasks[0].solver = "solver_package/solver_name"
 
-            create_venv(
+            _create_venv(
                 spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
@@ -190,7 +191,7 @@ def test_no_auto_dependency() -> None:
                 ],
             )
 
-            create_venv(
+            _create_venv(
                 spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
@@ -226,7 +227,7 @@ def test_no_file() -> None:
                 ],
             )
 
-            create_venv(
+            _create_venv(
                 spec=spec,
                 base_dir=".",
                 temp_dir=temp_dir,
@@ -253,7 +254,7 @@ def test_python_version() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
                     tasks=[FlowTask(name="task_name")],
@@ -286,7 +287,7 @@ def test_5_flow_requirements() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
 
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
                     log_dir=log_dir.as_posix(),
@@ -312,7 +313,7 @@ def test_333_no_flow_requirements() -> None:
                 args=[], returncode=0, stdout="mocked output"
             )
 
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
                     log_dir=log_dir.as_posix(),
@@ -333,7 +334,7 @@ def test_241_dependency_file() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-        create_venv(
+        _create_venv(
             spec=FlowSpec(
                 python_version="3.12",
                 log_dir="logs",
@@ -365,7 +366,7 @@ def test_241_no_uvlock() -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             env = os.environ.copy()
             env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.13",
                     log_dir="logs",
@@ -392,7 +393,7 @@ def test_241_requirements_txt() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-        create_venv(
+        _create_venv(
             spec=FlowSpec(
                 python_version="3.12",
                 log_dir="logs",
@@ -417,7 +418,7 @@ def test_241_does_not_exist() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         with pytest.raises(FileNotFoundError):
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
                     log_dir="logs",
@@ -437,7 +438,7 @@ def test_241_unsupported() -> None:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
         with pytest.raises(subprocess.CalledProcessError):
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
                     log_dir="logs",
@@ -461,7 +462,7 @@ def test_241_not_found() -> None:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="mocked output"
             )
-            create_venv(
+            _create_venv(
                 spec=FlowSpec(
                     dependencies=FlowDependencies(
                         dependency_file="auto",
@@ -503,7 +504,7 @@ def test_325_uv_sync_args() -> None:
                 mock_run.return_value = subprocess.CompletedProcess(
                     args=[], returncode=0, stdout="mocked output"
                 )
-                create_venv(
+                _create_venv(
                     spec=FlowSpec(
                         dependencies=FlowDependencies(uv_sync_args=uv_sync_args),
                         python_version="3.11",
@@ -536,7 +537,7 @@ def test_369_flow_requirements_s3(mock_s3) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
-        create_venv(
+        _create_venv(
             spec=FlowSpec(
                 log_dir="s3://test-bucket/logs",
                 tasks=[FlowTask(name="task_name")],
@@ -631,3 +632,31 @@ pydantic==2.12.5
     assert len(lines) == 2
     assert all(not line.startswith("#") for line in lines)
     assert all(line.strip() for line in lines)
+
+    # git overrides of pypi
+    freeze_output_branch_vs_hash = """
+my-package==1.0.0
+my-package @ git+https://github.com/foo/bar.git@main
+my-package @ git+https://github.com/foo/bar.git@abc123def456789012345678901234567890abcd
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_branch_vs_hash)
+    lines = result.strip().split("\n")
+
+    my_package_lines = [line for line in lines if line.startswith("my-package")]
+    assert len(my_package_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
+
+    # git overrides of pypi
+    freeze_output_branch_vs_hash = """
+my-package @ git+https://github.com/foo/bar.git@main
+my-package @ git+https://github.com/foo/bar.git@abc123def456789012345678901234567890abcd
+my-package==1.0.0
+"""
+    result = _deduplicate_freeze_requirements(freeze_output_branch_vs_hash)
+    lines = result.strip().split("\n")
+
+    my_package_lines = [line for line in lines if line.startswith("my-package")]
+    assert len(my_package_lines) == 1
+    # Should keep the one with commit hash (longer ref)
+    assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]

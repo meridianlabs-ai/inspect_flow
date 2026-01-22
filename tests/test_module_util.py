@@ -26,7 +26,7 @@ def test_no_body() -> None:
     src = ""
     result, g = execute_src_and_get_last_result(src, "test.py", {})
     assert result is None
-    assert g["__name__"] == "__main__"
+    assert g["__name__"] == "__flow__"
     assert g["__file__"] == "test.py"
 
 

@@ -1,27 +1,49 @@
+import os
 import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from inspect_ai._util.logger import LogHandlerVar
+from inspect_ai import Task
+from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.venv import _check_spec_for_venv
+from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.logging import init_flow_logging
+
+from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 
 CREATE_VENV_RUN_CALLS = 4
 
 
-def test_launch() -> None:
+def test_launch_inproc() -> None:
+    with (
+        patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
+        patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        launch(
+            spec=FlowSpec(execution_type="inproc", log_dir="logs", tasks=["task_name"]),
+            base_dir=".",
+        )
+
+    assert mock_run.call_count == 2
+    mock_run_eval_set.assert_called_once()
+
+
+def test_launch_venv() -> None:
     with patch("subprocess.run") as mock_run:
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
         launch(
-            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
+            spec=FlowSpec(execution_type="venv", log_dir="logs", tasks=["task_name"]),
             base_dir=".",
         )
 
@@ -46,40 +68,6 @@ def test_launch() -> None:
         assert args[7] == DEFAULT_LOG_LEVEL
 
 
-def test_launch_no_venv() -> None:
-    log_handler: LogHandlerVar = {"handler": None}
-    init_flow_logging(log_level="warning", log_handler_var=log_handler)
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="mocked output"
-        )
-        launch(
-            spec=FlowSpec(log_dir="logs", tasks=["task_name"]),
-            base_dir=".",
-            no_venv=True,
-        )
-
-        assert mock_run.call_count == 1
-        args = mock_run.mock_calls[0].args[0]
-        assert len(args) == 8
-        assert args[0] == sys.executable
-        assert args[1] == str(
-            (
-                Path(__file__).parents[1]
-                / "src"
-                / "inspect_flow"
-                / "_runner"
-                / "run.py"
-            ).resolve()
-        )
-        assert args[2] == "--file"
-        assert args[3] == "flow.yaml"
-        assert args[4] == "--base-dir"
-        assert args[5] == Path.cwd().as_posix()
-        assert args[6] == "--log-level"
-        assert args[7] == "warning"
-
-
 def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv1", raising=False)
     monkeypatch.delenv("myenv2", raising=False)
@@ -91,6 +79,7 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
         launch(
             spec=FlowSpec(
+                execution_type="venv",
                 log_dir="logs",
                 tasks=["task_name"],
                 env={"myenv1": "value1", "myenv2": "value2"},
@@ -104,14 +93,33 @@ def test_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert env["myenv2"] == "value2"
 
 
+def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("myenv1", raising=False)
+    monkeypatch.delenv("myenv2", raising=False)
+
+    with patch("inspect_flow._launcher.inproc.run_eval_set"):
+        launch(
+            spec=FlowSpec(
+                execution_type="inproc",
+                log_dir="logs",
+                tasks=["task_name"],
+                env={"myenv1": "value1", "myenv2": "value2"},
+            ),
+            base_dir=".",
+        )
+    assert os.environ["myenv1"] == "value1"
+    assert os.environ["myenv2"] == "value2"
+
+
 def test_s3() -> None:
     log_dir = "s3://my-bucket/flow-logs"
     with (
         patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         launch(
             spec=FlowSpec(
+                execution_type="venv",
                 log_dir=log_dir,
                 tasks=["task_name"],
             ),
@@ -125,9 +133,10 @@ def test_s3() -> None:
 def test_config_relative_log_dir() -> None:
     with (
         patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         spec = load_spec("./tests/config/e2e_test_flow.py")
+        spec.execution_type = "venv"
         assert spec.log_dir
         expected_log_dir = Path("./tests/config/") / spec.log_dir
         launch(
@@ -146,7 +155,7 @@ def test_config_relative_log_dir() -> None:
 def test_relative_bundle_dir() -> None:
     with (
         patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         spec = int_load_spec(
             "./tests/config/e2e_test_flow.py",
@@ -157,6 +166,7 @@ def test_relative_bundle_dir() -> None:
                 ]
             ),
         )
+        spec.execution_type = "venv"
         launch(
             spec=spec,
             base_dir="tests/config/",
@@ -175,7 +185,7 @@ def test_relative_bundle_dir() -> None:
 def test_bundle_dir() -> None:
     with (
         patch("subprocess.run") as mock_run,
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         spec = int_load_spec(
             "./tests/config/e2e_test_flow.py",
@@ -185,6 +195,7 @@ def test_bundle_dir() -> None:
                 ]
             ),
         )
+        spec.execution_type = "venv"
         launch(
             spec=spec,
             base_dir="tests/config/",
@@ -200,6 +211,7 @@ def test_bundle_dir() -> None:
 
 def test_259_dot_env() -> None:
     spec = FlowSpec(
+        execution_type="venv",
         log_dir="logs",
         tasks=[
             "local_eval/noop",
@@ -208,7 +220,7 @@ def test_259_dot_env() -> None:
 
     with (
         patch("subprocess.run"),
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         launch(spec=spec, base_dir="./tests/config/")
     mock_venv.assert_called_once()
@@ -217,7 +229,7 @@ def test_259_dot_env() -> None:
     # Now test with no_dotenv=True
     with (
         patch("subprocess.run"),
-        patch("inspect_flow._launcher.launch.create_venv") as mock_venv,
+        patch("inspect_flow._launcher.venv._create_venv") as mock_venv,
     ):
         launch(spec=spec, base_dir="./tests/config/", no_dotenv=True)
     mock_venv.assert_called_once()
@@ -233,3 +245,54 @@ def test_no_log_dir() -> None:
             base_dir=".",
         )
     assert "log_dir must be set" in str(e.value)
+
+
+def test_instantiated_venv_error() -> None:
+    spec = FlowSpec(execution_type="venv", log_dir="logs", tasks=[Task()])
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Task object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(model=get_model("mockllm/mock-llm1"))],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Model object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(scorer=a_scorer())],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Scorer object" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=[a_solver()])],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Solver or Agent" in str(e.value)
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=a_agent())],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Solver or Agent" in str(e.value)
+
+    # Valid case should not throw
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
+    )
+    _check_spec_for_venv(spec)

@@ -39,7 +39,7 @@ def execute_src_and_get_last_result(
     args: dict[str, Any],
 ) -> tuple[object | None, dict[str, Any]]:
     g = {
-        "__name__": "__main__",
+        "__name__": "__flow__",
         "__builtins__": builtins.__dict__,
         "__file__": filename,
     }
