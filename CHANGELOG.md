@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.4...v0.2.0) (2026-01-22)
+
+
+### Features
+
+* default to running inproc and support for inspect-ai types ([#421](https://github.com/meridianlabs-ai/inspect_flow/issues/421)) ([0ad7ff1](https://github.com/meridianlabs-ai/inspect_flow/commit/0ad7ff1))
+* support specifying tools for a FlowTask ([#401](https://github.com/meridianlabs-ai/inspect_flow/issues/401)) ([3a5903a](https://github.com/meridianlabs-ai/inspect_flow/commit/3a5903a3077c4850c5664976ee4615b7a6935a4c))
+
+
+### Bug Fixes
+
+* add --log-dir-allow-dirty flag ([#416](https://github.com/meridianlabs-ai/inspect_flow/issues/416)) ([a27f79d](https://github.com/meridianlabs-ai/inspect_flow/commit/a27f79d936b62996a8936890104d3e93306e5815))
+* Allow including flow spec objects ([#420](https://github.com/meridianlabs-ai/inspect_flow/issues/420)) ([52dade6](https://github.com/meridianlabs-ai/inspect_flow/commit/52dade680a09d2df7f3b8905770e3b21aa9bcbe2))
+* auto collect dependencies from INSPECT_EVAL_MODEL ([#415](https://github.com/meridianlabs-ai/inspect_flow/issues/415)) ([cba3f4d](https://github.com/meridianlabs-ai/inspect_flow/commit/cba3f4d2519dad62cf2833d1fb5af14301ba89a2))
+* Deduplicate pip freeze output ([#422](https://github.com/meridianlabs-ai/inspect_flow/issues/422)) ([a2fa987](https://github.com/meridianlabs-ai/inspect_flow/commit/a2fa987eca2ea31b8385ea92fe0cb2922b5dfc31))
+* handle non-Sequence input in matrix arguments ([#414](https://github.com/meridianlabs-ai/inspect_flow/issues/414)) ([bf46b9c](https://github.com/meridianlabs-ai/inspect_flow/commit/bf46b9c625abbd231ea9d86377948d18a4feab23))
+* update test to not modify uv.lock ([#409](https://github.com/meridianlabs-ai/inspect_flow/issues/409)) ([a9ab22c](https://github.com/meridianlabs-ai/inspect_flow/commit/a9ab22c5e2d14523779d45eae82fc08c31e525c6))
+
+
+### Documentation
+
+* inproc execution mode updates ([#433](https://github.com/meridianlabs-ai/inspect_flow/issues/433)) ([8c56f9f](https://github.com/meridianlabs-ai/inspect_flow/commit/8c56f9f9790957a01a0188927634f67fb83a40f3))
+* update defaults.qmd for FlowSpec includes ([#425](https://github.com/meridianlabs-ai/inspect_flow/issues/425)) ([c979e0b](https://github.com/meridianlabs-ai/inspect_flow/commit/c979e0bd6072f4c85fb49b56e719b6eb5dc25fdc))
+
 ## [0.1.4](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.3...v0.1.4) (2026-01-14)
 
 
