@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -459,15 +459,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowagent">FlowAgent</h3>
 <p>Configuration for an Agent.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L134">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L173">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowAgent(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowAgent(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
 <dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Name of the agent. Required to be set by the time the agent is created.</p>
+<p>Name of the agent. Used to create the agent if the factory is not provided.</p>
+</dd>
+<dt><code class="ref-definition">factory</code> <span class="element-type"><span class="element-type-name">Callable</span>[..., <span class="element-type-name">Agent</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Factory function to create the agent instance.</p>
 </dd>
 <dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -488,9 +492,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowdefaults">FlowDefaults</h3>
 <p>Default field values for Inspect objects. Will be overriden by more specific settings.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L472">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L561">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDefaults(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDefaults(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -537,9 +541,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowdependencies">FlowDependencies</h3>
 <p>Configuration for flow dependencies to install in the venv.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L517">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L606">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDependencies(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDependencies(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -555,6 +559,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with ‘openai/’, the ‘openai’ package will be installed. If a task name is ‘inspect_evals/mmlu’ then the ‘inspect-evals’ package will be installed.</p>
 </dd>
+<dt><code class="ref-definition">uv_sync_args</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Additional arguments to pass to ‘uv sync’ when creating the virtual environment using a pyproject.toml file. May be a string (‘–dev –extra test’) or a list of strings ([‘–dev’, ‘–extra’, ‘test’]).</p>
+</dd>
 </dl>
 </section>
 </section>
@@ -563,9 +571,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Configuration for task epochs.</p>
 <p>Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L163">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L207">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowEpochs(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowEpochs(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -584,15 +592,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowspec">FlowSpec</h3>
 <p>Top-level flow specification.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L536">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L630">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSpec(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSpec(FlowBase, arbitrary_types_allowed<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
-<dt><code class="ref-definition">includes</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">includes</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.</p>
+<p>List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.</p>
 </dd>
 <dt><code class="ref-definition">log_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -602,17 +610,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.</p>
 </dd>
+<dt><code class="ref-definition">execution_type</code> <span class="element-type"><span class="element-type-name">Literal</span>['inproc', 'venv'] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Execution environment for running tasks (defaults to ‘inproc’).</p>
+</dd>
 <dt><code class="ref-definition">python_version</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Python version to use in the flow virtual environment (e.g.&nbsp;‘3.11’)</p>
 </dd>
-<dt><code class="ref-definition">options</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowoptions">FlowOptions</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
-<dd>
-<p>Arguments for calls to eval_set.</p>
-</dd>
 <dt><code class="ref-definition">dependencies</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.</p>
+</dd>
+<dt><code class="ref-definition">options</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowoptions">FlowOptions</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Arguments for calls to eval_set.</p>
 </dd>
 <dt><code class="ref-definition">env</code> <span class="element-type">dict[<span class="element-type-name">str</span>, <span class="element-type-name">str</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -626,7 +638,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Optional. Metadata stored in the flow config. Not passed to the model.</p>
 </dd>
-<dt><code class="ref-definition">tasks</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">tasks</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> | <span class="element-type-name">Task</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Tasks to run</p>
 </dd>
@@ -637,15 +649,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowmodel">FlowModel</h3>
 <p>Configuration for a Model.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L48">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L72">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowModel(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowModel(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
 <dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Name of the model to use. Required to be set by the time the model is created.</p>
+<p>Name of the model to use. If factory is not provided, this is used to create the model.</p>
+</dd>
+<dt><code class="ref-definition">factory</code> <span class="element-type"><span class="element-type-name">Callable</span>[..., <span class="element-type-name">Model</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Factory function to create the model instance.</p>
 </dd>
 <dt><code class="ref-definition">role</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -686,9 +702,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowoptions">FlowOptions</h3>
 <p>Evaluation options.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L297">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L386">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowOptions(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowOptions(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -839,15 +855,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowscorer">FlowScorer</h3>
 <p>Configuration for a Scorer.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L96">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L125">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowScorer(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowScorer(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
 <dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Name of the scorer. Required to be set by the time the scorer is created.</p>
+<p>Name of the scorer. Used to create the scorer if the factory is not provided.</p>
+</dd>
+<dt><code class="ref-definition">factory</code> <span class="element-type"><span class="element-type-name">Callable</span>[..., <span class="element-type-name">Scorer</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Factory function to create the scorer instance.</p>
 </dd>
 <dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -864,15 +884,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowsolver">FlowSolver</h3>
 <p>Configuration for a Solver.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L115">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L149">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSolver(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSolver(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
 <dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Name of the solver. Required to be set by the time the solver is created.</p>
+<p>Name of the solver. Used to create the solver if the factory is not provided.</p>
+</dd>
+<dt><code class="ref-definition">factory</code> <span class="element-type"><span class="element-type-name">Callable</span>[..., <span class="element-type-name">Solver</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Factory function to create the solver instance.</p>
 </dd>
 <dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -890,29 +914,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Configuration for an evaluation task.</p>
 <p>Tasks are the basis for defining and running evaluations.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/flow_types.py#L179">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/flow_types.py#L244">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowTask(BaseModel, extra<span class="op">=</span><span class="st">"forbid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowTask(FlowBase, arbitrary_types_allowed<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
 <dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Task name. Any of registry name (“inspect_evals/mbpp”), file name (“./my_task.py”), or a file name and attr (“./<a href="mailto:my_task.py@task" class="email">my_task.py@task</a>_name”). Required to be set by the time the task is created.</p>
+<p>Task name. Any of registry name (“inspect_evals/mbpp”), file name (“./my_task.py”), or a file name and attr (“./<a href="mailto:my_task.py@task" class="email">my_task.py@task</a>_name”). Used to create the task if the factory is not provided.</p>
+</dd>
+<dt><code class="ref-definition">factory</code> <span class="element-type"><span class="element-type-name">Callable</span>[..., <span class="element-type-name">Task</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Factory function to create the task instance.</p>
 </dd>
 <dt><code class="ref-definition">args</code> <span class="element-type"><span class="element-type-name">CreateArgs</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Additional args to pass to task constructor</p>
 </dd>
-<dt><code class="ref-definition">solver</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span>] | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">extra_args</code> <span class="element-type"><span class="element-type-name">FlowExtraArgs</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Extra args to provide to creation of inspect objects for this task. Will override args provided in the ‘args’ field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent.</p>
+</dd>
+<dt><code class="ref-definition">solver</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span> | <span class="element-type-name">Solver</span> | <span class="element-type-name">Agent</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span> | <span class="element-type-name">Solver</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Solver or list of solvers. Defaults to generate(), a normal call to the model.</p>
 </dd>
-<dt><code class="ref-definition">scorer</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowscorer">FlowScorer</a></span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowscorer">FlowScorer</a></span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">scorer</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowscorer">FlowScorer</a></span> | <span class="element-type-name">Scorer</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowscorer">FlowScorer</a></span> | <span class="element-type-name">Scorer</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Scorer or list of scorers used to evaluate model output.</p>
 </dd>
-<dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">Model</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Default model for task (Optional, defaults to eval model).</p>
 </dd>
@@ -995,7 +1027,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <p>…</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/decorator.py#L6">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/decorator.py#L6">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> after_load(func: Callable) <span class="op">-&gt;</span> Callable</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1012,7 +1044,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="agents_matrix">agents_matrix</h3>
 <p>Create a list of agents from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L193">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L247">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_matrix(</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1034,7 +1066,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="agents_with">agents_with</h3>
 <p>Set fields on a list of agents.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L123">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L177">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_with(</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1056,7 +1088,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="configs_matrix">configs_matrix</h3>
 <p>Create a list of generate configs from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L207">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L261">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_matrix(</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1078,7 +1110,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="configs_with">configs_with</h3>
 <p>Set fields on a list of generate configs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L137">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L191">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_with(</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1100,7 +1132,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="merge">merge</h3>
 <p>Merge two flow objects.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/merge.py#L52">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/merge.py#L52">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> merge(base: _T, add: _T) <span class="op">-&gt;</span> _T</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1118,7 +1150,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="models_matrix">models_matrix</h3>
 <p>Create a list of models from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L222">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L276">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_matrix(</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1140,7 +1172,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="models_with">models_with</h3>
 <p>Set fields on a list of models.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L151">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L205">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_with(</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1162,7 +1194,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="solvers_matrix">solvers_matrix</h3>
 <p>Create a list of solvers from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L236">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L290">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_matrix(</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1184,7 +1216,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="solvers_with">solvers_with</h3>
 <p>Set fields on a list of solvers.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L165">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L219">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_with(</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1206,7 +1238,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="tasks_matrix">tasks_matrix</h3>
 <p>Create a list of tasks from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L250">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L304">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_matrix(</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1228,7 +1260,7 @@ files: List of file paths that were loaded to create the FlowSpec.</code></pre>
 <h3 class="anchored" data-anchor-id="tasks_with">tasks_with</h3>
 <p>Set fields on a list of tasks.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/88381db0c5c436b301ffb03332082bfa2fd41b14/src/inspect_flow/_types/factories.py#L179">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/3a5903a3077c4850c5664976ee4615b7a6935a4c/src/inspect_flow/_types/factories.py#L233">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_with(</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>

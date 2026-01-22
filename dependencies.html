@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -290,27 +290,71 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Inspect Flow automatically creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment. Because each run starts with a fresh environment, dependencies must be resolved—either automatically detected from your project files or explicitly specified in your configuration.</p>
-<p>When you run <code>flow run config.py</code>, Flow:</p>
+<p>When running in <strong>virtual environment mode</strong> (<code>execution_type="venv"</code> or <code>--venv</code> flag), Flow creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.</p>
+<p>When you run <code>flow run config.py --venv</code>, Flow:</p>
 <ol type="1">
 <li>Creates a temporary virtual environment with <a href="https://github.com/astral-sh/uv"><code>uv</code></a></li>
 <li>Installs dependencies from dependency files and/or config file</li>
 <li>Executes your evaluations in this isolated environment</li>
 <li>Cleans up the temporary environment after completion (logs persist in <code>log_dir</code>)</li>
 </ol>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Execution Mode Matters
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Flow’s dependency management behavior depends on your <a href="./run.html#execution-modes">execution mode</a>:</p>
+<ul>
+<li><strong>In-process mode (default)</strong>: You manually install dependencies. Flow does not install packages automatically.</li>
+<li><strong>Virtual environment mode</strong>: Flow automatically creates isolated environments and installs dependencies.</li>
+</ul>
+<p>This page primarily describes virtual environment mode. See <a href="./run.html#execution-modes">Execution Modes</a> for details on choosing between modes.</p>
+</div>
+</div>
 <section id="automatic-dependency-discovery" class="level2">
 <h2 class="anchored" data-anchor-id="automatic-dependency-discovery">Automatic Dependency Discovery</h2>
-<p>By default, Flow automatically discovers and installs dependencies without requiring explicit configuration:</p>
+<p>In virtual environment mode, Flow automatically discovers and installs dependencies without requiring explicit configuration:</p>
 <ul>
 <li><strong>Dependency files</strong>: Searches upward from your config file directory for <code>pyproject.toml</code> or <code>requirements.txt</code>. Relative paths will be resolved relative to the config file (when using the CLI) or <code>base_dir</code> arg (when using the API)</li>
-<li><strong>Package inference</strong>: Detects packages from object names in your config:
+<li><strong>Package inference</strong>: Detects packages from Flow type names in your config:
 <ul>
 <li>Models: <code>model="openai/gpt-4"</code> → installs <code>openai</code></li>
-<li>Tasks: <code>name="inspect_evals/mmlu"</code> → installs <code>inspect-evals</code></li>
+<li>Tasks: <code>FlowTask(name="inspect_evals/mmlu")</code> → installs <code>inspect-evals</code></li>
+<li>Note: Package inference only works with Flow types (<span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, etc.), not direct Inspect AI objects</li>
 </ul></li>
-<li><strong>Config inheritance</strong>: Automatically includes any <code>_flow.py</code> files in the config directory or parent directories (see <a href="./defaults.html#inheritance">Inheritance</a>). These files can specify default dependencies that apply to all including configs.</li>
 </ul>
 <p>This means most workflows require no dependency configuration at all!</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>In-Process Mode Dependencies
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In in-process mode (the default), these files are <strong>ignored</strong> for automatic installation. You’re responsible for installing dependencies yourself using your preferred package manager (<code>uv</code>, <code>pip</code>, <code>conda</code>, etc.). However, you can still use the same <code>pyproject.toml</code> or <code>requirements.txt</code> files to manage your dependencies manually.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Config Inheritance
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Flow automatically includes any <code>_flow.py</code> files in the config directory or parent directories (see <a href="./defaults.html#inheritance">Inheritance</a>). When these files specify <code>dependencies</code> in venv mode, those dependencies are automatically installed. This works in both execution modes—the inheritance mechanism applies everywhere, but dependency installation only happens in venv mode.</p>
+</div>
+</div>
 </section>
 <section id="explicit-dependencies" class="level2">
 <h2 class="anchored" data-anchor-id="explicit-dependencies">Explicit Dependencies</h2>
@@ -323,60 +367,81 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowDependencies, FlowSpec, FlowTask</span>
 <span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>    dependencies<span class="op">=</span>FlowDependencies(</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-5" class="code-annotation-target"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>        dependency_file<span class="op">=</span><span class="st">"../foo/pyproject.toml"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-6" class="code-annotation-target"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>        additional_dependencies<span class="op">=</span>[<span class="st">"pandas==2.0.0"</span>],</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3">3</button><span id="annotated-cell-1-7" class="code-annotation-target"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>        auto_detect_dependencies<span class="op">=</span><span class="va">True</span>,</span>
-<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="annotated-cell-1-13"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
-<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="annotated-cell-1-16"><a href="#annotated-cell-1-16" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
+<span id="annotated-cell-1-5"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>    dependencies<span class="op">=</span>FlowDependencies(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-6" class="code-annotation-target"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>        dependency_file<span class="op">=</span><span class="st">"../foo/pyproject.toml"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-7" class="code-annotation-target"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>        additional_dependencies<span class="op">=</span>[<span class="st">"pandas==2.0.0"</span>],</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3">3</button><span id="annotated-cell-1-8" class="code-annotation-target"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>        auto_detect_dependencies<span class="op">=</span><span class="va">True</span>,</span>
+<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-1-13"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-1-16"><a href="#annotated-cell-1-16" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-1-17"><a href="#annotated-cell-1-17" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="5" data-code-annotation="1">How to find dependency files: Defaults to <code>"auto"</code> which auto-detects a <code>requirements.txt</code> or a <code>pyproject.toml</code> file. May also be set to a path to a dependency file or <code>"no_file"</code> to not use a dependency file. When using <code>pyproject.toml</code>, if a <code>uv.lock</code> file exists in the same directory, it will be used automatically for reproducible installs.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="6" data-code-annotation="1">How to find dependency files: Defaults to <code>"auto"</code> which auto-detects a <code>requirements.txt</code> or a <code>pyproject.toml</code> file. May also be set to a path to a dependency file or <code>"no_file"</code> to not use a dependency file. When using <code>pyproject.toml</code>, if a <code>uv.lock</code> file exists in the same directory, it will be used automatically for reproducible installs.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="6" data-code-annotation="2">Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="7" data-code-annotation="2">Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="7" data-code-annotation="3">Auto-install packages based on task and model names in the config (default: <code>True</code>). For example, <code>model="openai/gpt-4"</code> installs <code>openai</code>, and <code>name="inspect_evals/mmlu"</code> installs <code>inspect-evals</code>.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="8" data-code-annotation="3">Auto-install packages based on task and model names in the config (default: <code>True</code>). For example, <code>model="openai/gpt-4"</code> installs <code>openai</code>, and <code>name="inspect_evals/mmlu"</code> installs <code>inspect-evals</code>.</span>
 </dd>
 </dl>
 </section>
 <section id="python-version" class="level2">
 <h2 class="anchored" data-anchor-id="python-version">Python Version</h2>
-<p>Specify the Python version for your spec’s virtual environment:</p>
+<p>Specify the Python version for your spec’s virtual environment when using venv mode:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy"><code class="sourceCode python"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
 <span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    python_version<span class="op">=</span><span class="st">"3.11"</span>,</span>
-<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
-<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-4" class="code-annotation-target"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
+<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>    python_version<span class="op">=</span><span class="st">"3.11"</span>,</span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="4" data-code-annotation="1">Required for python_version to take effect.</span>
+</dd>
+</dl>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <code>python_version</code> field only applies to virtual environment mode. In in-process mode, evaluations run using your current Python interpreter.</p>
+</div>
 </div>
 </section>
 <section id="checking-config" class="level2">
 <h2 class="anchored" data-anchor-id="checking-config">Checking Config</h2>
 <p>To verify which dependencies and Python version will be used:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span> <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -387,13 +452,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>For repeatable workflows:</p>
+<p>For repeatable workflows, use <strong>virtual environment mode</strong> with the following practices:</p>
 <ul>
-<li>Pin PyPI package versions: <code>"inspect-evals==0.3.15"</code></li>
-<li>Pin Git commits: <code>"git+https://github.com/user/repo@commit_hash"</code></li>
-<li>Specify <code>python_version</code> explicitly</li>
-<li>Use <code>uv.lock</code> with <code>pyproject.toml</code> for locked dependencies (automatically detected if present)</li>
+<li><strong>Enable venv mode</strong>: Set <code>execution_type="venv"</code> in your <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> or use the <code>--venv</code> flag. This ensures isolated environments and automatic dependency installation.</li>
+<li><strong>Pin package versions</strong>: Use exact versions for PyPI packages (<code>"inspect-evals==0.3.15"</code>) and commit hashes for Git repositories (<code>"git+https://github.com/user/repo@commit_hash"</code>).</li>
+<li><strong>Specify Python version</strong>: Explicitly set <code>python_version</code> (e.g., <code>"3.11"</code>) to ensure consistent Python environments.</li>
+<li><strong>Use lockfiles</strong>: When using <code>pyproject.toml</code>, include a <code>uv.lock</code> file for fully reproducible dependency resolution (automatically detected if present).</li>
 </ul>
+<p>This combination ensures your evaluations can be reliably repeated and shared with others.</p>
 </div>
 </div>
 

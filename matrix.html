@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -306,6 +306,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides <code>*_matrix()</code> and <code>*_with()</code> functions to declaratively generate evaluation grids.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>*_matrix()</code> and <code>*_with()</code> functions work with Flow types (<span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span>) and strings (for registry references). They cannot operate directly on Inspect AI objects (<code>Task</code>, <code>Model</code>, <code>Solver</code>, <code>Agent</code>).</p>
+</div>
+</div>
 <section id="matrix-functions" class="level2">
 <h2 class="anchored" data-anchor-id="matrix-functions">Matrix Functions</h2>
 <p>Matrix functions generate all combinations of their parameters using Cartesian products.</p>
@@ -734,7 +747,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>3 solver configurations</li>
 </ul>
 <p>Results in 3 × 4 × 5 × 3 = <strong>180 evaluations</strong>.</p>
-<p>Always use <code>--dry-run</code> to check the number of evaluations before running expensive grids.</p>
+<p>Always preview with <code>--dry-run</code> to check the number of evaluations before running expensive grids.</p>
 </div>
 </div>
 </section>

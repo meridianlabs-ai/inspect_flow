@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -314,7 +314,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowscorer">FlowScorer</a></span></strong> — Configuration for a Scorer. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/scorer.html">Scorer</a>.</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span></strong> — Runtime execution options. Maps to Inspect AI <a href="https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set">eval_set()</a> parameters.</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span></strong> — System for setting default values across tasks, models, solvers, and agents.</li>
-<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span></strong> — Configuration for evaluation dependencies to install.</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span></strong> — Configuration for evaluation dependencies (used in virtual environment mode).</li>
 </ul>
 <section id="config-files" class="level2">
 <h2 class="anchored" data-anchor-id="config-files">Config Files</h2>
@@ -324,6 +324,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>A function that returns a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> object</li>
 </ul>
 <p>Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This last expression requirement only applies when loading configs from files (via CLI or <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#load_spec">load_spec()</a></span>). When using the Python API directly with <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span>, you pass the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> object programmatically—no file or last expression needed.</p>
+</div>
+</div>
 </section>
 <section id="basic-example" class="level2">
 <h2 class="anchored" data-anchor-id="basic-example">Basic Example</h2>
@@ -362,22 +375,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span data-code-cell="annotated-cell-1" data-code-lines="8" data-code-annotation="4">Specify model to evaluate by name</span>
 </dd>
 </dl>
-<p>To run the task, run the following command in your shell.</p>
+<p>To run the task, first ensure you have the necessary dependencies installed (<code>inspect-evals</code> and <code>openai</code> for this example), then run the following command in your shell.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Alternatively, use the <code>--venv</code> flag to automatically install dependencies in an isolated virtual environment:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/first_config_progress_terminal.png" class="img-fluid figure-img"></p>
 <figcaption>Progress bar in terminal</figcaption>
 </figure>
 </div>
-<p><strong>What happens when you run this?</strong></p>
+<p><strong>What happens when you run this (default in-process mode)?</strong></p>
 <ol type="1">
-<li>Flow creates an isolated virtual environment</li>
-<li>Installs <code>inspect-evals</code> and <code>openai</code> (auto-detected)</li>
-<li>Loads the <code>gpqa_diamond</code> task from the <code>inspect_evals</code> registry</li>
-<li>Runs the evaluation with GPT-5</li>
+<li>Flow loads the <code>gpqa_diamond</code> task from the <code>inspect_evals</code> registry</li>
+<li>Runs the evaluation with GPT-5 in the current Python process</li>
 <li>Stores results in <code>logs/</code></li>
 </ol>
+<p>When using <code>--venv</code>, Flow additionally creates an isolated virtual environment, installs dependencies automatically, executes the evaluation in that environment, and cleans up the temporary environment after completion.</p>
 </section>
 <section id="jobs" class="level2">
 <h2 class="anchored" data-anchor-id="jobs">Jobs</h2>
@@ -418,7 +432,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td><code>tasks</code></td>
-<td>List of tasks to run (<span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> objects or strings)</td>
+<td>List of tasks to run (<span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> objects, Inspect AI <code>Task</code> objects, or strings)</td>
 <td><code>None</code></td>
 </tr>
 <tr class="even">
@@ -432,31 +446,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>False</code></td>
 </tr>
 <tr class="even">
-<td><code>python_version</code></td>
-<td>Python version for the isolated virtual environment (e.g., <code>"3.11"</code>)</td>
-<td>Same as current environment</td>
+<td><code>execution_type</code></td>
+<td>Execution environment: <code>"inproc"</code> runs tasks in the current Python process, <code>"venv"</code> runs tasks in an isolated virtual environment</td>
+<td><code>"inproc"</code></td>
 </tr>
 <tr class="odd">
-<td><code>dependencies</code></td>
-<td><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span> object configuring package installation. Controls dependency file detection, additional packages, and auto-detection behavior</td>
-<td>Auto-detect from <code>pyproject.toml</code> or <code>requirements.txt</code>, and config object names</td>
+<td><code>python_version</code></td>
+<td>Python version for the isolated virtual environment when <code>execution_type="venv"</code> (e.g., <code>"3.11"</code>)</td>
+<td>Same as current environment</td>
 </tr>
 <tr class="even">
+<td><code>dependencies</code></td>
+<td><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span> object configuring package installation in venv mode. Controls dependency file detection, additional packages, and auto-detection behavior. Ignored in inproc mode.</td>
+<td>Auto-detect from <code>pyproject.toml</code> or <code>requirements.txt</code>, and config object names (venv mode only)</td>
+</tr>
+<tr class="odd">
 <td><code>env</code></td>
 <td>Environment variables to set when running tasks</td>
 <td><code>None</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>options</code></td>
 <td>Runtime options passed to <code>eval_set</code> (see <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> reference)</td>
 <td><code>None</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>defaults</code></td>
 <td>Default values applied across tasks, models, solvers, and agents (see <a href="./defaults.html">Defaults</a> and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span> reference)</td>
 <td><code>None</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>flow_metadata</code></td>
 <td>Metadata stored in the flow config (not passed to Inspect AI, see <a href="./advanced.html#flow_metadata-flow-only-metadata">flow_metadata</a>)</td>
 <td><code>None</code></td>
@@ -469,106 +488,169 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> defines the configuration for a single evaluation. Each <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> maps to an Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> and accepts the same parameters—including the model to evaluate, solver chain, generation config, sandbox environment, and dataset filters.</p>
 <section id="specification" class="level3">
 <h3 class="anchored" data-anchor-id="specification">Specification</h3>
-<p>In the example above, we used a registry name (<code>"inspect_evals/gpqa_diamond"</code>). Flow supports multiple ways to reference tasks:</p>
+<p>Flow supports multiple ways to specify tasks, from simple registry names to programmatic Task objects. Choose the approach that best fits your needs:</p>
+<ul>
+<li><strong>Registry names and file paths</strong>: Simple string-based references for tasks from packages or local files</li>
+<li><strong>Task factory functions</strong>: Use <code>FlowTask(factory=...)</code> when you have a Task object but want to override parameters like model or config</li>
+<li><strong>Direct Task objects</strong>: Pass Task objects directly to <code>FlowSpec.tasks</code> when you don’t need Flow-level parameter overrides</li>
+</ul>
 <p><strong>Registry Name</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tasks from installed packages</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>File Path</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tasks from installed packages</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>File with Function</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicitly selects a specific function from the file</span></span>
+<p><strong>File Path</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py@custom_eval"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py"</span>,</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>File with Function</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicitly selects a specific function from the file</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"./my_task.py@custom_eval"</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Task Factory Function</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a factory function that returns an Inspect AI Task</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai <span class="im">import</span> Task, task</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.dataset <span class="im">import</span> example_dataset</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.solver <span class="im">import</span> generate</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowTask</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span>  <span class="co"># @task decorator makes the function available in the registry and ensures that tasks with different args are considered unique</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> my_task_factory():</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Task(dataset<span class="op">=</span>example_dataset(<span class="st">"security_guide"</span>), solver<span class="op">=</span>generate())</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    factory<span class="op">=</span>my_task_factory,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,  <span class="co"># Override the model</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Direct Task Object in FlowSpec</strong></p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>direct_task_object.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" data-filename="direct_task_object.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass Task objects directly to FlowSpec.tasks</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Use this when you don't need to override task parameters</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai <span class="im">import</span> Task, task</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.dataset <span class="im">import</span> example_dataset</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.solver <span class="im">import</span> generate</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span>  <span class="co"># Optional: use @task decorator to make function available in the registry</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> my_custom_task():</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Task(</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        dataset<span class="op">=</span>example_dataset(<span class="st">"security_guide"</span>),</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>generate(),</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        my_custom_task(),</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 </section>
 <section id="configuration" class="level3">
 <h3 class="anchored" data-anchor-id="configuration">Configuration</h3>
 <p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> accepts parameters that map to Inspect AI <a href="https://inspect.aisi.org.uk/tasks.html">Task</a> fields. The examples below show commonly used fields; see the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> reference documentation for the complete list of available parameters.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-6"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-6-1"><a href="#annotated-cell-6-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="1">1</button><span id="annotated-cell-6-2" class="code-annotation-target"><a href="#annotated-cell-6-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="2">2</button><span id="annotated-cell-6-3" class="code-annotation-target"><a href="#annotated-cell-6-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="3">3</button><span id="annotated-cell-6-4" class="code-annotation-target"><a href="#annotated-cell-6-4" aria-hidden="true" tabindex="-1"></a>    epochs<span class="op">=</span><span class="dv">3</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="4">4</button><span id="annotated-cell-6-5" class="code-annotation-target"><a href="#annotated-cell-6-5" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>GenerateConfig(</span>
-<span id="annotated-cell-6-6"><a href="#annotated-cell-6-6" aria-hidden="true" tabindex="-1"></a>        temperature<span class="op">=</span><span class="fl">0.7</span>,</span>
-<span id="annotated-cell-6-7"><a href="#annotated-cell-6-7" aria-hidden="true" tabindex="-1"></a>        max_tokens<span class="op">=</span><span class="dv">1000</span>,</span>
-<span id="annotated-cell-6-8"><a href="#annotated-cell-6-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="5">5</button><span id="annotated-cell-6-9" class="code-annotation-target"><a href="#annotated-cell-6-9" aria-hidden="true" tabindex="-1"></a>    solver<span class="op">=</span><span class="st">"chain_of_thought"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="6">6</button><span id="annotated-cell-6-10" class="code-annotation-target"><a href="#annotated-cell-6-10" aria-hidden="true" tabindex="-1"></a>    args<span class="op">=</span>{<span class="st">"subject"</span>: <span class="st">"physics"</span>},</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="7">7</button><span id="annotated-cell-6-11" class="code-annotation-target"><a href="#annotated-cell-6-11" aria-hidden="true" tabindex="-1"></a>    sandbox<span class="op">=</span><span class="st">"docker"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="8">8</button><span id="annotated-cell-6-12" class="code-annotation-target"><a href="#annotated-cell-6-12" aria-hidden="true" tabindex="-1"></a>    sample_id<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>],</span>
-<span id="annotated-cell-6-13"><a href="#annotated-cell-6-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-9"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-9-1"><a href="#annotated-cell-9-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="1">1</button><span id="annotated-cell-9-2" class="code-annotation-target"><a href="#annotated-cell-9-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="2">2</button><span id="annotated-cell-9-3" class="code-annotation-target"><a href="#annotated-cell-9-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="3">3</button><span id="annotated-cell-9-4" class="code-annotation-target"><a href="#annotated-cell-9-4" aria-hidden="true" tabindex="-1"></a>    epochs<span class="op">=</span><span class="dv">3</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="4">4</button><span id="annotated-cell-9-5" class="code-annotation-target"><a href="#annotated-cell-9-5" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>GenerateConfig(</span>
+<span id="annotated-cell-9-6"><a href="#annotated-cell-9-6" aria-hidden="true" tabindex="-1"></a>        temperature<span class="op">=</span><span class="fl">0.7</span>,</span>
+<span id="annotated-cell-9-7"><a href="#annotated-cell-9-7" aria-hidden="true" tabindex="-1"></a>        max_tokens<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="annotated-cell-9-8"><a href="#annotated-cell-9-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="5">5</button><span id="annotated-cell-9-9" class="code-annotation-target"><a href="#annotated-cell-9-9" aria-hidden="true" tabindex="-1"></a>    solver<span class="op">=</span><span class="st">"chain_of_thought"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="6">6</button><span id="annotated-cell-9-10" class="code-annotation-target"><a href="#annotated-cell-9-10" aria-hidden="true" tabindex="-1"></a>    args<span class="op">=</span>{<span class="st">"subject"</span>: <span class="st">"physics"</span>},</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="7">7</button><span id="annotated-cell-9-11" class="code-annotation-target"><a href="#annotated-cell-9-11" aria-hidden="true" tabindex="-1"></a>    sandbox<span class="op">=</span><span class="st">"docker"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="8">8</button><span id="annotated-cell-9-12" class="code-annotation-target"><a href="#annotated-cell-9-12" aria-hidden="true" tabindex="-1"></a>    sample_id<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>],</span>
+<span id="annotated-cell-9-13"><a href="#annotated-cell-9-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-6" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="2" data-code-annotation="1"><strong>Task name</strong> — Maps to Inspect AI <code>Task.name</code>. Can be a registry name (<code>"inspect_evals/mmlu"</code>), file path (<code>"./task.py"</code>), or file with function (<code>"./task.py@eval_fn"</code>).</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="2" data-code-annotation="1"><strong>Task name or factory</strong> — Use <code>name</code> to specify a task by registry name (<code>"inspect_evals/mmlu"</code>), file path (<code>"./task.py"</code>), or file with function (<code>"./task.py@eval_fn"</code>). Alternatively, use <code>factory</code> to provide a callable that returns an Inspect AI <code>Task</code> object (see <a href="#specification">Task Factory Function</a> example above). When using <code>factory</code>, you can still override task parameters like <code>model</code>, <code>solver</code>, or <code>config</code> via other <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> fields.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="3" data-code-annotation="2"><strong>Model</strong> — Maps to Inspect AI <code>Task.model</code>. Optional model for this task. If not specified, uses the model from <code>INSPECT_EVAL_MODEL</code> environment variable. Can be a string (<code>"openai/gpt-5"</code>) or a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> object for advanced configuration.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="3" data-code-annotation="2"><strong>Model</strong> — Maps to Inspect AI <code>Task.model</code>. Optional model for this task. If not specified, uses the model from <code>INSPECT_EVAL_MODEL</code> environment variable. Can be a string (<code>"openai/gpt-5"</code>), a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> object for advanced configuration, or an Inspect AI <code>Model</code> object.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="4" data-code-annotation="3"><strong>Epochs</strong> — Maps to Inspect AI <code>Task.epochs</code>. Number of times to repeat evaluation over the dataset samples. Can be an integer (<code>epochs=3</code>) or a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowepochs">FlowEpochs</a></span> object to specify custom reducer functions (<code>FlowEpochs(epochs=3, reducer="median")</code>). By default, scores are combined using the <code>"mean"</code> reducer across epochs.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="4" data-code-annotation="3"><strong>Epochs</strong> — Maps to Inspect AI <code>Task.epochs</code>. Number of times to repeat evaluation over the dataset samples. Can be an integer (<code>epochs=3</code>) or a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowepochs">FlowEpochs</a></span> object to specify custom reducer functions (<code>FlowEpochs(epochs=3, reducer="median")</code>). By default, scores are combined using the <code>"mean"</code> reducer across epochs.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="5,6,7,8" data-code-annotation="4"><strong>Generation config</strong> — Maps to Inspect AI <code>Task.config</code> (<code>GenerateConfig</code>). Model generation parameters like <code>temperature</code>, <code>max_tokens</code>, <code>top_p</code>, <code>reasoning_effort</code>, etc. These settings override config on <code>FlowSpec.config</code> but are overridden by settings on <code>FlowModel.config</code>.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="5,6,7,8" data-code-annotation="4"><strong>Generation config</strong> — Maps to Inspect AI <code>Task.config</code> (<code>GenerateConfig</code>). Model generation parameters like <code>temperature</code>, <code>max_tokens</code>, <code>top_p</code>, <code>reasoning_effort</code>, etc. These settings override config on <code>FlowSpec.config</code> but are overridden by settings on <code>FlowModel.config</code>.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="5">5</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="9" data-code-annotation="5"><strong>Solver chain</strong> — Maps to Inspect AI <code>Task.solver</code>. The algorithm(s) for solving the task. Can be a string (<code>"chain_of_thought"</code>), <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span> object, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span> object, or a list of solvers for chaining. Defaults to <code>generate()</code> if not specified.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="9" data-code-annotation="5"><strong>Solver chain</strong> — Maps to Inspect AI <code>Task.solver</code>. The algorithm(s) for solving the task. Can be a string (<code>"chain_of_thought"</code>), <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span> object, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span> object, Inspect AI <code>Solver</code> or <code>Agent</code> object, or a list of solvers for chaining. Defaults to <code>generate()</code> if not specified.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="6">6</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="10" data-code-annotation="6"><strong>Task arguments</strong> — Maps to task function parameters. Dictionary of arguments passed to the task constructor or <code>@task</code> decorated function. Enables parameterization of tasks (e.g., selecting dataset subsets, configuring difficulty levels).</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="10" data-code-annotation="6"><strong>Task arguments</strong> — Maps to task function parameters. Dictionary of arguments passed to the task constructor or <code>@task</code> decorated function. Enables parameterization of tasks (e.g., selecting dataset subsets, configuring difficulty levels).</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="7">7</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="11" data-code-annotation="7"><strong>Sandbox environment</strong> — Maps to Inspect AI <code>Task.sandbox</code>. Can be a string (<code>"docker"</code>, <code>"local"</code>), a tuple with additional config, or a <code>SandboxEnvironmentType</code> object.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="11" data-code-annotation="7"><strong>Sandbox environment</strong> — Maps to Inspect AI <code>Task.sandbox</code>. Can be a string (<code>"docker"</code>, <code>"local"</code>), a tuple with additional config, or a <code>SandboxEnvironmentType</code> object.</span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="8">8</dt>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-lines="12" data-code-annotation="8"><strong>Sample selection</strong> — Evaluate specific samples from the dataset. Accepts a single ID (<code>sample_id=0</code>), list of IDs (<code>sample_id=[0, 1, 2]</code>), or list of string IDs.</span>
+<span data-code-cell="annotated-cell-9" data-code-lines="12" data-code-annotation="8"><strong>Sample selection</strong> — Evaluate specific samples from the dataset. Accepts a single ID (<code>sample_id=0</code>), list of IDs (<code>sample_id=[0, 1, 2]</code>), or list of string IDs.</span>
 </dd>
 </dl>
 </section>
 </section>
 <section id="models" class="level2">
 <h2 class="anchored" data-anchor-id="models">Models</h2>
-<p>When specifying a task, you can provide the model for the task as either a string with a model name or as a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>. When using the simple string, the default values for that model will be used. For example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When specifying a task, you can provide the model for the task as a string with a model name, a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, or an Inspect AI <code>Model</code> object. When using the simple string, the default values for that model will be used. For example:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Using <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> allows you to specify additional parameters for the model (e.g.&nbsp;<code>GenerateConfig</code>). Use <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span> when you need to set custom <code>GenerateConfig</code>, API endpoints, custom API keys for a specific model, or perform other custom configuration. For example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"task"</span>,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>FlowModel(</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>            reasoning_effort<span class="op">=</span><span class="st">"medium"</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>            max_connections<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        base_url<span class="op">=</span><span class="st">"https://custom-endpoint.com"</span>,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        api_key<span class="op">=</span><span class="st">"$</span><span class="sc">{CUSTOM_API_KEY}</span><span class="st">"</span>,</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"task"</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>FlowModel(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>GenerateConfig(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>            reasoning_effort<span class="op">=</span><span class="st">"medium"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>            max_connections<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        base_url<span class="op">=</span><span class="st">"https://custom-endpoint.com"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        api_key<span class="op">=</span><span class="st">"$</span><span class="sc">{CUSTOM_API_KEY}</span><span class="st">"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You can also pass an Inspect AI <code>Model</code> object directly when you need programmatic model configuration:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.model <span class="im">import</span> get_model</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a Model instance with custom configuration</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>custom_model <span class="op">=</span> get_model(</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"openai/gpt-5"</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>GenerateConfig(reasoning_effort<span class="op">=</span><span class="st">"high"</span>),</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    base_url<span class="op">=</span><span class="st">"https://custom-endpoint.com"</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"task"</span>,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span>custom_model</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="model-roles" class="level3">
 <h3 class="anchored" data-anchor-id="model-roles">Model Roles</h3>
 <p>For agent evaluations with multiple model roles, use <code>model_roles</code> to specify which model to use for each role. For example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For agent evaluations with multiple roles</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"multi_agent_task"</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    model_roles<span class="op">=</span>{</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"assistant"</span>: <span class="st">"openai/gpt-5"</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"critic"</span>: <span class="st">"anthropic/claude-3-5-sonnet"</span>,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For agent evaluations with multiple roles</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>FlowTask(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"multi_agent_task"</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    model_roles<span class="op">=</span>{</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"assistant"</span>: <span class="st">"openai/gpt-5"</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"critic"</span>: <span class="st">"anthropic/claude-3-5-sonnet"</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
