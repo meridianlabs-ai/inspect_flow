@@ -362,3 +362,20 @@ def test_inspect_object_overrides() -> None:
 
     # Check that the command executed successfully
     assert result.exit_code == 0
+
+
+def test_417_invalid_run() -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        run_command,
+        [
+            "./tests/config/invalid_run_flow.py",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, RuntimeError)
+    assert "run() cannot be called from within a flow spec file" in str(
+        result.exception
+    )

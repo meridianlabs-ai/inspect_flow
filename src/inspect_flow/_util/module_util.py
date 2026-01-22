@@ -1,5 +1,6 @@
 import ast
 import builtins
+from contextvars import ContextVar
 from functools import lru_cache
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -10,6 +11,13 @@ from typing import Any
 from inspect_ai._util.file import file
 
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
+
+_loading_spec: ContextVar[bool] = ContextVar("_loading_spec", default=False)
+
+
+def is_loading_spec() -> bool:
+    """Check if we're currently loading a spec file."""
+    return _loading_spec.get()
 
 
 @lru_cache(maxsize=None)
@@ -72,7 +80,11 @@ def execute_src_and_get_last_result(
     # else: leave as-is; result will be None
 
     code = compile(ast.fix_missing_locations(mod), filename=filename, mode="exec")
-    exec(code, g, g)
+    token = _loading_spec.set(True)
+    try:
+        exec(code, g, g)
+    finally:
+        _loading_spec.reset(token)
     if target_id is None:
         return None, g
     if not is_function_def:

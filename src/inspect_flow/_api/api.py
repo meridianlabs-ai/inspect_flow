@@ -11,6 +11,7 @@ from inspect_flow._launcher.launch import launch
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.module_util import is_loading_spec
 
 
 def load_spec(
@@ -46,7 +47,16 @@ def run(
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
         log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
         no_dotenv: If True, do not load environment variables from a .env file.
+
+    Raises:
+        RuntimeError: If called from within a flow spec file being loaded.
     """
+    if is_loading_spec():
+        raise RuntimeError(
+            "run() cannot be called from within a flow spec file. "
+            "Return the FlowSpec object instead and let the CLI handle execution. "
+            "Or execute the file directly using python."
+        )
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir)
