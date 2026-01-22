@@ -7,5 +7,7 @@ tasks:
     name: some_solver
     args:
       tools:
-      - '{"type": "tool", "name": "add", "params": {}}'
+      - type: tool
+        name: add
+        params: {}
     type: agent

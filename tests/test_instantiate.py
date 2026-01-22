@@ -14,6 +14,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
+from inspect_flow._util.pydantic_util import model_dump
 
 from tests.local_eval.src.local_eval.tools import add
 
@@ -168,6 +169,18 @@ def test_agent_tools() -> None:
             )
         ],
     )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+    # Test that dumping and re-loading the spec works
+    agent_tools = None
+    dump = model_dump(spec)
+    spec = FlowSpec.model_validate(dump)
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
     assert tasks[0].solver
