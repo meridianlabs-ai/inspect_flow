@@ -77,7 +77,7 @@ To avoid overriding a FlowTask field, omit it entirely rather than setting it to
 {{< include ../examples/merge_none_generate_config.py >}}
 ```
 
-**Validating the resolved config:** You can always review and validate the final resolved configuration by running `flow run config.py --dry-run` or `flow config config.py` which will print the resolved config in YAML format.
+**Validating the resolved config:** You can always review and validate the final resolved configuration by running `flow run config.py --dry-run` or `flow config config.py` which will print the resolved config in YAML format. Note that `--dry-run` performs the full setup process (including creating a virtual environment and installing dependencies in venv mode) but stops before running evaluations.
 :::
 
 ## Inheritance {#inheritance}
@@ -266,14 +266,16 @@ flow run config.py
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
 | `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
 | `INSPECT_FLOW_VENV`                   | `--venv`                   | Create a virtual environment to run the Flow spec |
-| `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Create virtual environment and print resolved YAML configuration |
+| `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Preview resolved configuration without running evaluations. In venv mode, creates virtual environment and installs dependencies. |
 
 ::: callout-tip
 ### Override Priority
 
 Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 
-**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_VENV`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--no-venv`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowSpec`.
+**Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in `FlowSpec`.
+
+**Execution mode**: The `execution_type` field can be set in `FlowSpec` (as `execution_type="venv"`) or overridden at runtime with `INSPECT_FLOW_VENV` environment variable or `--venv` CLI flag.
 
 **Settings with multiple override levels**:
 
@@ -302,4 +304,4 @@ To see the fully resolved configuration with all defaults, inheritance, and over
 flow run config.py --dry-run
 ```
 
-This shows exactly what settings each task will use after applying all defaults and overrides.
+This performs the full setup process—applying all defaults, expanding matrix functions, and instantiating Python objects—and prints exactly what settings each task will use. In virtual environment mode, it also creates the environment and installs dependencies to ensure the configuration is fully validated before you run evaluations.
