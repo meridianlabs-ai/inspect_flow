@@ -6,7 +6,7 @@
 |--------------------------------------------------- | -------: | -------: | -------: | -------: | ---------: | --------: |
 | src/inspect\_flow/\_\_init\_\_.py                  |        7 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_api/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_api/api.py                     |       22 |        0 |        0 |        0 |    100.00% |           |
+| src/inspect\_flow/\_api/api.py                     |       25 |        0 |        2 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/\_\_init\_\_.py            |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/config.py                  |       18 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/main.py                    |       19 |        0 |        4 |        0 |    100.00% |           |
@@ -39,14 +39,14 @@
 | src/inspect\_flow/\_util/error.py                  |       16 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/list\_util.py             |        8 |        0 |        2 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/logging.py                |        8 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/module\_util.py           |       56 |        0 |       18 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/module\_util.py           |       63 |        0 |       18 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/path\_util.py             |       16 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/pydantic\_util.py         |       18 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1815** |   **40** |  **536** |    **9** | **97.07%** |           |
+| **TOTAL**                                          | **1825** |   **40** |  **538** |    **9** | **97.08%** |           |
 
 
 ## Setup coverage badge
