@@ -7,6 +7,7 @@ from inspect_flow import (
     tasks_matrix,
     tasks_with,
 )
+from inspect_flow._types.flow_types import not_given
 from pydantic import ValidationError
 
 
@@ -130,3 +131,11 @@ def test_with_duplicate_value() -> None:
             task=FlowTask(name="task1", model="model2"),
             model="model1",
         )
+
+
+def test_with_none_config() -> None:
+    config = GenerateConfig(max_connections=5)
+    result = tasks_with(task=FlowTask(name="task1", config=not_given), config=config)
+    assert len(result) == 1
+    assert result[0].name == "task1"
+    assert result[0].config == config

@@ -13,6 +13,15 @@ from datamodel_code_generator import (
     generate,
 )
 from datamodel_code_generator.enums import DataModelType
+from pydantic.json_schema import (
+    CoreModeRef,
+    CoreRef,
+    DefsRef,
+    GenerateJsonSchema,
+    JsonRef,
+    JsonSchemaValue,
+)
+from pydantic_core import core_schema
 
 from inspect_flow._types.flow_types import FlowSpec
 
@@ -25,13 +34,64 @@ GENERATED_CODE_COMMENT = [
 
 ADDITIONAL_IMPORTS = [
     "from typing_extensions import TypedDict\n",
-    "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ResponseSchema\n",
+    "from inspect_ai import Task\n",
+    "from inspect_ai.agent import Agent\n",
+    "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, Model, ResponseSchema\n",
+    "from inspect_ai.scorer import Scorer\n",
+    "from inspect_ai.solver import Solver\n",
     "from inspect_ai.util import SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig\n",
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowExtraArgs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
 ]
 
 STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
+
+# Inspect types that are not JSON-serializable but should be included in generated types.
+# These are abstract classes/protocols from inspect_ai that Pydantic can't serialize.
+INSPECT_TYPES = ["Model", "Solver", "Agent", "Scorer", "Task"]
+
+
+class InspectAwareJsonSchema(GenerateJsonSchema):
+    """Custom JSON schema generator that handles inspect_ai types.
+
+    By default, Pydantic skips types that can't be JSON-serialized (like abstract
+    classes). This subclass overrides is_instance_schema to generate proper $ref
+    references for inspect_ai types instead of skipping them.
+    """
+
+    def is_instance_schema(
+        self, schema: core_schema.IsInstanceSchema
+    ) -> JsonSchemaValue:
+        cls = schema["cls"]
+        type_name = cls.__name__
+        if type_name in INSPECT_TYPES:
+            # Create a fake core_ref for this type to register with Pydantic's tracking
+            core_ref = CoreRef(f"inspect_ai:{type_name}")
+            core_mode_ref: CoreModeRef = (core_ref, self.mode)
+
+            # Check if already registered
+            if core_mode_ref in self.core_to_json_refs:
+                return {"$ref": self.core_to_json_refs[core_mode_ref]}
+
+            # Register the definition with Pydantic's internal tracking
+            defs_ref = DefsRef(type_name)  # Use the simple type name as the defs ref
+            json_ref = JsonRef(self.ref_template.format(model=defs_ref))
+
+            self.core_to_defs_refs[core_mode_ref] = defs_ref
+            self.defs_to_core_refs[defs_ref] = core_mode_ref
+            self.core_to_json_refs[core_mode_ref] = json_ref
+            self.json_to_defs_refs[json_ref] = defs_ref
+
+            # Add to prioritized choices (used for definition remapping)
+            self._prioritized_defsref_choices[defs_ref] = [defs_ref]
+
+            # Add a minimal definition (just needs title for code generation)
+            self.definitions[defs_ref] = {"title": type_name}
+
+            return {"$ref": json_ref}
+        # Fall back to default behavior for other types
+        return super().is_instance_schema(schema)
+
 
 MATRIX_CLASS_FIELDS = {
     "FlowTask": ["args", "solver", "model", "config", "model_roles"],
@@ -98,7 +158,8 @@ def _root_type_as_def(schema: Schema) -> None:
     del schema["$defs"]
     root_type = copy(schema)
     schema.clear()
-    defs[root_type["title"]] = root_type
+    if "title" in root_type:
+        defs[root_type["title"]] = root_type
     schema["$defs"] = defs
 
 
@@ -159,7 +220,9 @@ def _update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -
 
 
 def _update_refs(type_def: Schema) -> None:
-    properties: Schema = type_def["properties"]
+    properties: Schema | None = type_def.get("properties")
+    if properties is None:
+        return  # Skip types without properties (e.g., inspect type markers)
     for field_value in properties.values():
         _update_field_refs(field_value, None)
 
@@ -188,7 +251,7 @@ class GeneratedCode:
 
 
 def _generate_dict_code() -> GeneratedCode:
-    schema = FlowSpec.model_json_schema()
+    schema = FlowSpec.model_json_schema(schema_generator=InspectAwareJsonSchema)
     _root_type_as_def(schema)
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]

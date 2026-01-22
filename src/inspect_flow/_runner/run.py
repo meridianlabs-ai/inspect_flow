@@ -18,11 +18,11 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
-from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
+from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__file__)
 
@@ -40,7 +40,7 @@ def _write_config_file(spec: FlowSpec) -> None:
         f.write(yaml)
 
 
-def _run_eval_set(
+def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_spec(spec, base_dir=base_dir)
@@ -147,9 +147,11 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
         if task_id in task_ids:
             assert spec.tasks
             flow_task = spec.tasks[i]
-            assert isinstance(flow_task, FlowTask)
-            task_json = flow_task.model_dump(**MODEL_DUMP_ARGS)
-            raise ValueError(f"Duplicate task found: {task_json}")
+            if isinstance(flow_task, FlowTask):
+                task_json = model_dump(flow_task)
+                raise ValueError(f"Duplicate task found: {task_json}")
+            else:
+                raise ValueError(f"Duplicate task found: {task}")
 
         task_ids.add(task_id)
     return task_ids
@@ -218,7 +220,7 @@ def flow_run(
     init_flow_logging(log_level=log_level)
 
     cfg = _read_config(file)
-    _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
 if __name__ == "__main__":

@@ -103,7 +103,7 @@ Let's walk through creating your first Flow configuration. We'll use `FlowSpec` 
 {{< include ../examples/config.py >}}
 ```
 
-To run the evaluations, execute the following command. It creates a virtual environment for this spec run and installs the dependencies—note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, execute the following command. Make sure you have the necessary dependencies installed (like `inspect-evals` and `openai` for this example).
 
 ``` bash
 flow run config.py
@@ -161,7 +161,7 @@ Before running evaluations, preview the resolved configuration with `--dry-run`:
 flow run matrix.py --dry-run
 ```
 
-This creates the virtual environment, installs all dependencies, imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
+This imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
 
 To run the config:
 
@@ -170,6 +170,18 @@ flow run matrix.py
 ```
 
 This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
+
+::: callout-tip
+### Virtual Environment Mode
+
+For reproducible evaluation runs, you can use virtual environment mode which automatically creates an isolated environment and installs dependencies:
+
+``` bash
+flow run matrix.py --venv
+```
+
+Or set `execution_type="venv"` in your `FlowSpec`. Virtual environment mode automatically installs packages based on your config (e.g., `model="openai/gpt-4"` installs `openai`) and dependency files, making it easy to share workflows with others. See [Execution Modes](run.qmd#execution-modes) to learn more.
+:::
 
 ![Log path printed in terminal](images/logs_terminal.png)
 

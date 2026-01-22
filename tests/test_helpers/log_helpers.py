@@ -1,9 +1,11 @@
 import shutil
 from pathlib import Path
 
+from inspect_ai import Task
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow import FlowSpec, FlowTask
 from inspect_flow._types.flow_types import NotGiven
+from inspect_flow._util.pydantic_util import callable_name
 
 
 def init_test_logs() -> str:
@@ -15,14 +17,26 @@ def init_test_logs() -> str:
     return str(log_dir)
 
 
-def _task_and_model(task: str | FlowTask) -> tuple[str | None, str | None | NotGiven]:
+def _task_name(task: FlowTask) -> str | None:
+    if task.name:
+        return task.name
+    if task.factory:
+        return callable_name(task.factory)
+    return None
+
+
+def _task_and_model(
+    task: str | FlowTask | Task,
+) -> tuple[str | None, str | None | NotGiven]:
     if isinstance(task, str):
         return task, None
+    elif isinstance(task, Task):
+        return task.name if task.name else None, task.model.name if task.model else None
     else:
-        return task.name if task.name else None, task.model_name
+        return _task_name(task), task.model_name
 
 
-def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
+def verify_test_logs(spec: FlowSpec, log_dir: str, skip_names: bool = False) -> None:
     # Check that logs/flow_test directory was created
     assert Path(log_dir).exists()
     log_list = list_eval_logs(log_dir)
@@ -32,6 +46,7 @@ def verify_test_logs(spec: FlowSpec, log_dir: str) -> None:
     assert all(log.status == "success" for log in logs), (
         "All logs should have status 'success'"
     )
-    assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
-        [_task_and_model(task) for task in spec.tasks or []]
-    )
+    if not skip_names:
+        assert sorted([(log.eval.task, log.eval.model) for log in logs]) == sorted(
+            [_task_and_model(task) for task in spec.tasks or []]
+        )

@@ -1,3 +1,3 @@
-from .noop import noop
+from .noop import noop, noop2
 
-__all__ = ["noop"]
+__all__ = ["noop", "noop2"]

@@ -4,20 +4,22 @@ import re
 import traceback
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 
 import yaml
 from attr import dataclass, field
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file
+from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowSpec, not_given
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
+from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__file__)
 
@@ -89,6 +91,9 @@ def _expand_includes(
     if args is None:
         args = dict()
     for include in spec.includes or []:
+        if isinstance(include, FlowSpec):
+            spec = _apply_include(spec, include)
+            continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
@@ -100,11 +105,16 @@ def _expand_includes(
 class _SpecFormatMapMapping:
     """Mapping for spec config substitutions. Preserves missing keys."""
 
-    def __init__(self, dict: dict[str, Any]) -> None:
-        self.dict = dict
+    def __init__(self, spec: FlowSpec) -> None:
+        self.spec = spec
 
     def __getitem__(self, key: str, /) -> Any:
-        return self.dict.get(key, f"{{{key}}}")
+        if value := getattr(self.spec, key, None):
+            # Convert Pydantic objects to dicts for nested access like {defaults[model][name]}
+            if isinstance(value, BaseModel):
+                return model_dump(value)
+            return value
+        return f"{{{key}}}"
 
 
 def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
@@ -113,8 +123,7 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
     if spec.log_dir:
         spec.log_dir = _resolve_log_dir(spec, base_dir=base_dir)
 
-    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
-    mapping = _SpecFormatMapMapping(spec_dict)
+    mapping = _SpecFormatMapMapping(spec)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
@@ -132,13 +141,24 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
             return new
         elif isinstance(obj, dict):
             return {k: substitute_strings(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        elif isinstance(obj, (list, tuple)):
             return [substitute_strings(item) for item in obj]
+        elif isinstance(obj, BaseModel):
+            # Process Pydantic objects by iterating over their fields
+            updates = {}
+            for field_name in type(obj).model_fields:
+                value = getattr(obj, field_name)
+                new_value = substitute_strings(value)
+                if new_value is not value:
+                    updates[field_name] = new_value
+            if updates:
+                return obj.model_copy(update=updates)
+            return obj
         else:
+            # Leave non-serializable objects (Task, Solver, etc.) unchanged
             return obj
 
-    substituted_dict = substitute_strings(spec_dict)
-    return FlowSpec.model_validate(substituted_dict, extra="forbid")
+    return substitute_strings(spec)
 
 
 def _resolve_log_dir(spec: FlowSpec, base_dir: str) -> str:
@@ -227,28 +247,49 @@ def _load_spec_from_file(
 
 
 def _apply_include(spec: FlowSpec, included_spec: FlowSpec) -> FlowSpec:
-    spec_dict = spec.model_dump(**MODEL_DUMP_ARGS)
-    include_dict = included_spec.model_dump(**MODEL_DUMP_ARGS)
-    merged_dict = _deep_merge_include(include_dict, spec_dict)
-    return FlowSpec.model_validate(merged_dict, extra="forbid")
+    """Merge included_spec into spec, with spec's values taking precedence.
+
+    Uses model_copy to preserve non-serializable objects like Task, Solver, etc.
+    """
+    return _merge_include_objects(spec, included_spec)
 
 
-def _deep_merge_include(
-    base: dict[str, Any], override: dict[str, Any]
-) -> dict[str, Any]:
-    result = base.copy()
-    for k, override_v in override.items():
-        if k not in result:
-            result[k] = override_v
-        else:
-            base_v = result[k]
-            if isinstance(override_v, dict) and isinstance(base_v, dict):
-                result[k] = _deep_merge_include(base_v, override_v)
-            elif isinstance(override_v, list) and isinstance(base_v, list):
-                result[k] = base_v + [item for item in override_v if item not in base_v]
-            else:
-                result[k] = override_v
-    return result
+_T = TypeVar("_T", bound=BaseModel)
+
+
+def _merge_include_objects(spec: _T, included: _T) -> _T:
+    """Recursively merge two BaseModel objects, with spec taking precedence."""
+    updates: dict[str, Any] = {}
+
+    for field_name in type(spec).model_fields:
+        spec_value = getattr(spec, field_name)
+        included_value = getattr(included, field_name)
+
+        if isinstance(included_value, NotGiven):
+            pass
+        elif isinstance(spec_value, NotGiven):
+            updates[field_name] = included_value
+        elif isinstance(spec_value, BaseModel) and isinstance(
+            included_value, BaseModel
+        ):
+            # recursively merge pydantic objects
+            merged = _merge_include_objects(spec_value, included_value)
+            updates[field_name] = merged
+        elif isinstance(spec_value, dict) and isinstance(included_value, dict):
+            # merge dicts, with spec taking precedence
+            merged_dict = {**included_value, **spec_value}
+            updates[field_name] = merged_dict
+        elif is_sequence(spec_value) and is_sequence(included_value):
+            # For lists, concatenate with included first, avoiding duplicates
+            merged_list = list(included_value) + [
+                item for item in spec_value if item not in included_value
+            ]
+            updates[field_name] = merged_list
+        # Otherwise keep spec's value (no update needed)
+
+    if updates:
+        return spec.model_copy(update=updates)
+    return spec
 
 
 def _apply_auto_includes(
@@ -287,48 +328,71 @@ def _maybe_json(value: str) -> Any:
 _OverrideDict: TypeAlias = dict[str, "str | _OverrideDict"]
 
 
-def _overrides_to_dict(overrides: list[str]) -> _OverrideDict:
+def _override_value(keys: list[str], value: str) -> Any:
+    if not keys:
+        return _maybe_json(value)
     result: dict[str, Any] = {}
-    for override in overrides:
-        key_path, value = override.split("=", 1)
-        keys = key_path.split(".")
-        obj = result
-        for key in keys[:-1]:
-            obj = obj.setdefault(key, {})
-        obj[keys[-1]] = value
+    obj = result
+    for key in keys[:-1]:
+        obj = obj.setdefault(key, {})
+    obj[keys[-1]] = _maybe_json(value)
     return result
 
 
-def _deep_merge_override(
-    base: dict[str, Any], override: _OverrideDict
+def _apply_override_to_list(
+    obj: Sequence[Any], keys: list[str], value: str
+) -> Sequence[Any]:
+    override_value = _override_value(keys, value)
+    if isinstance(override_value, list):
+        # Treat override of a list with a list as full replacement
+        return override_value
+    elif override_value not in obj:
+        # Append to list
+        return list(obj) + [override_value]
+    return obj
+
+
+def _update_value(current_value: Any, keys: list[str], value: str) -> Any:
+    if is_sequence(current_value):
+        return _apply_override_to_list(current_value, keys, value)
+    elif not keys:
+        return _maybe_json(value)
+    elif isinstance(current_value, BaseModel):
+        return _apply_override_to_model(current_value, keys, value)
+    elif isinstance(current_value, dict):
+        return _apply_override_to_dict(current_value, keys, value)
+    else:
+        return _override_value(keys, value)
+
+
+def _apply_override_to_model(obj: _T, keys: list[str], value: str) -> _T:
+    current_value = getattr(obj, keys[0], not_given)
+    if isinstance(current_value, NotGiven):
+        # To support nested pydantic objects, need to figure out the field type for the override.
+        # Use model_validate to do that.
+        override_model = type(obj).model_validate(
+            _override_value(keys, value), extra="forbid"
+        )
+        update_value = getattr(override_model, keys[0])
+    else:
+        update_value = _update_value(current_value, keys[1:], value)
+    return obj.model_copy(update={keys[0]: update_value})
+
+
+def _apply_override_to_dict(
+    obj: dict[str, Any], keys: list[str], value: str
 ) -> dict[str, Any]:
-    for k, v in override.items():
-        base_v = base.get(k)
-        if isinstance(v, dict):
-            if isinstance(base_v, dict):
-                _deep_merge_override(base_v, v)
-            else:
-                base[k] = v
-        elif isinstance(base_v, list):
-            json_v = _maybe_json(v)
-            if isinstance(json_v, list):
-                base[k] = json_v
-            else:
-                base_v.append(v)
-        else:
-            json_v = _maybe_json(v)
-            if isinstance(json_v, list | dict):
-                base[k] = json_v
-            else:
-                base[k] = v
-    return base
+    current_value = obj.get(keys[0], None)
+    update_value = _update_value(current_value, keys[1:], value)
+    return {**obj, keys[0]: update_value}
 
 
 def _apply_overrides(spec: FlowSpec, overrides: list[str]) -> FlowSpec:
-    overrides_dict = _overrides_to_dict(overrides)
-    base_dict = spec.model_dump(**MODEL_DUMP_ARGS)
-    merged_dict = _deep_merge_override(base_dict, overrides_dict)
-    return FlowSpec.model_validate(merged_dict, extra="forbid")
+    for override in overrides:
+        key_path, value = override.split("=", 1)
+        keys = key_path.split(".")
+        spec = _apply_override_to_model(spec, keys, value)
+    return spec
 
 
 def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:

@@ -1,6 +1,9 @@
 from typing import Any, Sequence, TypeAlias, TypeVar
 
+from inspect_ai import Task
+from inspect_ai.agent import Agent
 from inspect_ai.model import Model
+from inspect_ai.solver import Solver
 from pydantic import BaseModel
 
 from inspect_flow._types.flow_types import (
@@ -15,8 +18,6 @@ from inspect_flow._types.flow_types import (
     NotGiven,
     not_given,
 )
-from inspect_flow._types.merge import merge_recursive
-from inspect_flow._util.args import MODEL_DUMP_ARGS
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 
@@ -34,9 +35,24 @@ def apply_defaults(spec: FlowSpec) -> FlowSpec:
     )
 
 
-def _merge_default(config_dict: dict[str, Any], defaults: BaseModel) -> dict[str, Any]:
-    default_dict = defaults.model_dump(**MODEL_DUMP_ARGS)
-    return merge_recursive(default_dict, config_dict)
+def _merge_default_into_config(config: _T, defaults: _T) -> _T:
+    """Merge default values into config, preserving config's existing values.
+
+    Only updates fields in config that are not set (i.e., are not_given).
+    Uses model_copy to preserve non-serializable objects.
+    """
+    updates: dict[str, Any] = {}
+    for field_name in type(defaults).model_fields:
+        default_value = getattr(defaults, field_name)
+        config_value = getattr(config, field_name)
+        # Only use default if config value is not_given and default is set
+        if isinstance(config_value, NotGiven) and not isinstance(
+            default_value, NotGiven
+        ):
+            updates[field_name] = default_value
+    if updates:
+        return config.model_copy(update=updates)
+    return config
 
 
 def _merge_defaults(
@@ -47,29 +63,35 @@ def _merge_defaults(
     if not defaults and not prefix_defaults:
         return config
 
-    config_dict = config.model_dump(**MODEL_DUMP_ARGS)
+    config_name = getattr(config, "name", None)
+    if isinstance(config_name, NotGiven):
+        config_name = None
 
     if prefix_defaults:
         # Filter the prefix defaults to only those that match the config name
-        prefix_defaults = {
+        filtered_prefix_defaults = {
             prefix: prefix_default
             for prefix, prefix_default in prefix_defaults.items()
-            if config_dict.get("name", "").startswith(prefix)
+            if config_name and config_name.startswith(prefix)
         }
         # Sort prefixes by length descending to match longest prefix first
-        prefix_defaults = dict(
-            sorted(prefix_defaults.items(), key=lambda item: -len(item[0]))
+        sorted_prefix_defaults = dict(
+            sorted(filtered_prefix_defaults.items(), key=lambda item: -len(item[0]))
         )
-        for vals in prefix_defaults.values():
-            config_dict = _merge_default(config_dict, vals)
+        for vals in sorted_prefix_defaults.values():
+            config = _merge_default_into_config(config, vals)
 
     if defaults:
-        config_dict = _merge_default(config_dict, defaults)
+        config = _merge_default_into_config(config, defaults)
 
-    return config.__class__.model_validate(config_dict, extra="forbid")
+    return config
 
 
-def _apply_model_defaults(model: str | FlowModel, spec: FlowSpec) -> FlowModel:
+def _apply_model_defaults(
+    model: str | FlowModel | Model, spec: FlowSpec
+) -> FlowModel | Model:
+    if isinstance(model, Model):
+        return model
     if isinstance(model, str):
         model = FlowModel(name=model)
     defaults = spec.defaults or FlowDefaults()
@@ -88,8 +110,10 @@ def _apply_model_roles_defaults(
 
 
 def _apply_single_solver_defaults(
-    solver: str | FlowSolver, spec: FlowSpec
-) -> FlowSolver:
+    solver: str | FlowSolver | Solver, spec: FlowSpec
+) -> FlowSolver | Solver:
+    if isinstance(solver, Solver):
+        return solver
     if isinstance(solver, str):
         solver = FlowSolver(name=solver)
     defaults = spec.defaults or FlowDefaults()
@@ -102,19 +126,31 @@ def _apply_agent_defaults(agent: FlowAgent, spec: FlowSpec) -> FlowAgent:
 
 
 def _apply_solver_defaults(
-    solver: str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent,
+    solver: str
+    | FlowSolver
+    | Sequence[str | FlowSolver | Solver]
+    | FlowAgent
+    | Agent
+    | Solver,
     spec: FlowSpec,
-) -> FlowSolver | list[FlowSolver] | FlowAgent:
+) -> FlowSolver | list[FlowSolver | Solver] | FlowAgent | Solver | Agent:
     if isinstance(solver, str | FlowSolver):
         return _apply_single_solver_defaults(solver, spec)
     if isinstance(solver, FlowAgent):
         return _apply_agent_defaults(solver, spec)
-    return [
-        _apply_single_solver_defaults(single_config, spec) for single_config in solver
-    ]
+    if isinstance(solver, Sequence):
+        return [
+            _apply_single_solver_defaults(single_config, spec)
+            for single_config in solver
+        ]
+    return solver
 
 
-def _apply_task_defaults(spec: FlowSpec, task: str | FlowTask) -> FlowTask:
+def _apply_task_defaults(
+    spec: FlowSpec, task: str | FlowTask | Task
+) -> FlowTask | Task:
+    if isinstance(task, Task):
+        return task
     if isinstance(task, str):
         task = FlowTask(name=task)
 

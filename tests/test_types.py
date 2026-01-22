@@ -12,7 +12,7 @@ from inspect_flow import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._types.factories import tasks_matrix
 from inspect_flow._types.flow_types import FlowAgent, not_given
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 from pydantic_core import to_jsonable_python
 
 
@@ -89,7 +89,7 @@ def test_none_in_list():
 
 def test_task_not_given():
     task1 = FlowTask(name="module/task", model=None)
-    task2 = FlowTask.model_validate(task1.model_dump(**MODEL_DUMP_ARGS))
+    task2 = FlowTask.model_validate(model_dump(task1))
     assert task2.model != not_given
     assert task2.epochs == not_given
     jsonable = to_jsonable_python(task1)

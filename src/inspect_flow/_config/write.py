@@ -1,12 +1,12 @@
 import yaml
 
 from inspect_flow._types.flow_types import FlowSpec
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 
 def config_to_yaml(spec: FlowSpec) -> str:
     return yaml.dump(
-        spec.model_dump(**MODEL_DUMP_ARGS),
+        model_dump(spec),
         default_flow_style=False,
         sort_keys=False,
     )

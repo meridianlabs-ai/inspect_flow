@@ -1,4 +1,4 @@
-from typing import Any, Sequence, TypeVar
+from typing import Any, Sequence, TypeGuard, TypeVar
 
 _T = TypeVar("_T", int, str)
 
@@ -9,3 +9,7 @@ def sequence_to_list(
     if isinstance(value, str) or not isinstance(value, Sequence):
         return value
     return list(value)
+
+
+def is_sequence(value: Any) -> TypeGuard[Sequence[Any]]:
+    return isinstance(value, Sequence) and not isinstance(value, str)

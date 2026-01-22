@@ -215,7 +215,7 @@ def test_load_config_overrides():
 
 def test_overrides_of_lists():
     config = FlowSpec()
-    # Within a single override, later values replace earlier ones
+    # Setting values when the value is not set does not create a list. This is unfortunate!
     config = _apply_overrides(
         config,
         [
@@ -226,7 +226,6 @@ def test_overrides_of_lists():
     assert config.dependencies
     assert config.dependencies.additional_dependencies == "dep2"
     config.dependencies.additional_dependencies = ["dep2"]
-    # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
         config,
         [
@@ -235,7 +234,17 @@ def test_overrides_of_lists():
         ],
     )
     assert config.dependencies
-    assert config.dependencies.additional_dependencies == ["dep2", "dep4"]
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
+    # setting existing values does not modify the list
+    config = _apply_overrides(
+        config,
+        [
+            "dependencies.additional_dependencies=dep3",
+            "dependencies.additional_dependencies=dep4",
+        ],
+    )
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
         config,
@@ -282,6 +291,16 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+    # Can nest dicts
+    config = _apply_overrides(
+        config,
+        [
+            "options.metadata.new_key1.sub_key=sub_val",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["new_key1"] == {"sub_key": "sub_val"}
+    assert config.options.metadata["new_key2"] == "new_val2"
 
 
 def test_load_config_args() -> None:
@@ -633,6 +652,20 @@ def test_auto_include_protocol() -> None:
         spec1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )
     assert spec1 == spec2
+
+
+def test_418_spec_includes() -> None:
+    spec1 = FlowSpec(options=FlowOptions(log_dir_allow_dirty=True))
+    spec2 = FlowSpec(includes=[spec1])
+    spec3 = expand_spec(spec2, base_dir=".")
+    assert spec3.options
+    assert spec3.options.log_dir_allow_dirty is True
+
+
+def test_inspect_objects() -> None:
+    flow_file = str(Path(config_dir) / "inspect_objects_flow.py")
+    spec = load_spec(flow_file)
+    validate_config(spec, "inspect_objects_flow.yaml")
 
 
 def test_389_tool_config() -> None:

@@ -46,6 +46,5 @@ def run_command(
         spec,
         base_dir=str(Path(config_file).parent),
         dry_run=dry_run,
-        no_venv=kwargs.get("no_venv", False) or False,
         no_dotenv=False,
     )
