@@ -5,6 +5,7 @@
 
 ### Features
 
+* default to running inproc and support for inspect-ai types ([#421](https://github.com/meridianlabs-ai/inspect_flow/issues/421)) ([0ad7ff1](https://github.com/meridianlabs-ai/inspect_flow/commit/0ad7ff1))
 * support specifying tools for a FlowTask ([#401](https://github.com/meridianlabs-ai/inspect_flow/issues/401)) ([3a5903a](https://github.com/meridianlabs-ai/inspect_flow/commit/3a5903a3077c4850c5664976ee4615b7a6935a4c))
 
 
