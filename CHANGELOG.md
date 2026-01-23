@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.0...v0.2.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* apply substitutions, defaults, and call [@after](https://github.com/after)_load functions after overrides ([#440](https://github.com/meridianlabs-ai/inspect_flow/issues/440)) ([0b507c9](https://github.com/meridianlabs-ai/inspect_flow/commit/0b507c96d26adf713636b7484535c9fe476e57c6))
+* enable relative imports for local file ([#436](https://github.com/meridianlabs-ai/inspect_flow/issues/436)) ([50d8a43](https://github.com/meridianlabs-ai/inspect_flow/commit/50d8a43920c9d7c5c66e7da5a99841ee73b1798e))
+* RuntimeError when calling run while loading a spec file ([#434](https://github.com/meridianlabs-ai/inspect_flow/issues/434)) ([411aa08](https://github.com/meridianlabs-ai/inspect_flow/commit/411aa08ac5ff52573501c61d2ff794bd7c78b1db))
+
+
+### Documentation
+
+* document extra_args for per-task customization ([#439](https://github.com/meridianlabs-ai/inspect_flow/issues/439)) ([8210b3a](https://github.com/meridianlabs-ai/inspect_flow/commit/8210b3a6dcfed85d282937304e37a25afc04d722))
+
 ## [0.2.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.4...v0.2.0) (2026-01-22)
 
 
