@@ -88,6 +88,14 @@ def test_py_config() -> None:
     validate_config(config, "model_and_task_flow.yaml")
 
 
+def test_py_config_s3(mock_s3) -> None:
+    local_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
+    s3_path = "s3://test-bucket/configs/model_and_task_flow.py"
+    mock_s3.upload_file(local_path, "test-bucket", "configs/model_and_task_flow.py")
+    config = load_spec(s3_path)
+    validate_config(config, "model_and_task_flow.yaml")
+
+
 def test_py_config_with_assign() -> None:
     config = load_spec(
         str(Path(__file__).parent / "config" / "model_and_task2_flow.py")

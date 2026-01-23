@@ -2,7 +2,7 @@ from logging import getLogger
 
 import click
 import yaml
-from inspect_ai import Task, eval_set
+from inspect_ai import eval_set
 from inspect_ai._eval.eval import eval_resolve_tasks
 from inspect_ai._eval.evalset import EvalSetArgsInTaskIdentifier, task_identifier
 from inspect_ai._util.error import PrerequisiteError
@@ -11,7 +11,7 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
     FlowOptions,
@@ -61,7 +61,7 @@ def run_eval_set(
     logger.info(f"Running eval set with {len(tasks)} tasks.")
     try:
         result = eval_set(
-            tasks=tasks,
+            tasks=[t.task for t in tasks],
             log_dir=resolved_config.log_dir,
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
@@ -121,14 +121,14 @@ def run_eval_set(
     return result
 
 
-def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
+def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
     if not tasks:
         return set()
 
     options = spec.options or FlowOptions()
 
     resolved_tasks, _ = eval_resolve_tasks(
-        tasks=tasks,
+        tasks=[t.task for t in tasks],
         task_args=dict(),
         models=[get_model("none")],
         model_roles=None,
@@ -145,8 +145,7 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
             eval_set_args=EvalSetArgsInTaskIdentifier(config=GenerateConfig()),
         )
         if task_id in task_ids:
-            assert spec.tasks
-            flow_task = spec.tasks[i]
+            flow_task = tasks[i].flow_task
             if isinstance(flow_task, FlowTask):
                 task_json = model_dump(flow_task)
                 raise ValueError(f"Duplicate task found: {task_json}")

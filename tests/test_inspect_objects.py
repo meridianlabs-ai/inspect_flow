@@ -255,7 +255,7 @@ def test_inspect_object_instantiation() -> None:
         patch("inspect_flow._launcher.inproc.write_flow_requirements"),
     ):
         run(spec=spec)
-    verify_test_logs(spec, log_dir, skip_names=True)
+    verify_test_logs(spec, log_dir)
 
 
 def test_model_dump_no_registry() -> None:
@@ -280,7 +280,7 @@ def test_factory_instantiation() -> None:
     dump = model_dump(spec)
     spec = FlowSpec.model_validate(dump)
     run_eval_set(spec=(spec), base_dir=".")
-    verify_test_logs(spec, log_dir, skip_names=True)
+    verify_test_logs(spec, log_dir)
 
 
 def test_duplicate_task_objects() -> None:
