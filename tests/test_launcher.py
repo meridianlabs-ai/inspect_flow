@@ -162,7 +162,7 @@ def test_relative_bundle_dir() -> None:
             options=ConfigOptions(
                 overrides=[
                     "options.bundle_dir=bundle_dir",
-                    "options.bundle_url_mappings.bundle_dir=http://example.com/bundle}",
+                    "options.bundle_url_mappings.bundle_dir=http://example.com/bundle",
                 ]
             ),
         )

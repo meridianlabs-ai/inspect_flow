@@ -61,8 +61,7 @@ def expand_spec(
         base_dir=base_dir,
     )
     spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
-    if options.overrides:
-        return _apply_overrides(spec, options.overrides)
+    spec = _apply_overrides(spec, options.overrides)
     spec = _apply_substitutions(spec, base_dir=base_dir)
     spec = apply_defaults(spec)
     _after_flow_spec_loaded(spec, state)

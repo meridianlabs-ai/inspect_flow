@@ -27,7 +27,7 @@ from inspect_flow._config.load import (
     expand_spec,
     int_load_spec,
 )
-from inspect_flow._types.flow_types import FlowDependencies
+from inspect_flow._types.flow_types import FlowDependencies, not_given
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 
@@ -207,10 +207,8 @@ def test_load_config_overrides():
     assert config.log_dir == "./logs/overridden_flow"
     assert config.options
     assert config.options.limit == 2
-    assert config.defaults
-    assert config.defaults.solver
-    assert config.defaults.solver.args
-    assert config.defaults.solver.args["tool_calls"] == "none"
+    # Defaults are applied as part of loading the spec
+    assert config.defaults is not_given
 
 
 def test_overrides_of_lists():
@@ -355,6 +353,16 @@ def test_absolute_include() -> None:
     spec = expand_spec(
         FlowSpec(includes=[include_path]),
         base_dir=config_dir,
+    )
+    validate_config(spec, "absolute_include_flow.yaml")
+
+
+def test_437_absolute_include() -> None:
+    include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
+    spec = expand_spec(
+        FlowSpec(includes=[include_path]),
+        base_dir=config_dir,
+        options=ConfigOptions(overrides=["options.limit=1"]),
     )
     validate_config(spec, "absolute_include_flow.yaml")
 
