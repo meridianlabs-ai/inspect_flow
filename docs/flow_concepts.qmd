@@ -176,6 +176,9 @@ FlowTask(
     args={"subject": "physics"},        # <6>
     sandbox="docker",                   # <7>
     sample_id=[0, 1, 2],                # <8>
+    extra_args=FlowExtraArgs(           # <9>
+        solver={"max_attempts": 3}      # <9>
+    ),                                  # <9>
 )
 ```
 
@@ -194,6 +197,8 @@ FlowTask(
 7.  **Sandbox environment** — Maps to Inspect AI `Task.sandbox`. Can be a string (`"docker"`, `"local"`), a tuple with additional config, or a `SandboxEnvironmentType` object.
 
 8.  **Sample selection** — Evaluate specific samples from the dataset. Accepts a single ID (`sample_id=0`), list of IDs (`sample_id=[0, 1, 2]`), or list of string IDs.
+
+9.  **Extra arguments** — Additional arguments to pass when creating Inspect AI objects (models, solvers, agents, scorers) for this specific task. Useful for per-task customization, such as providing different tools to an agent depending on the task. Values in `extra_args` override any args specified in the object's own `args` field.
 
 ## Models
 
