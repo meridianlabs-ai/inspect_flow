@@ -260,3 +260,14 @@ def test_additional_args_agent_tools_dict() -> None:
     assert len(agent_tools) == 1
     assert callable(agent_tools["math"][0])
     assert agent_tools["math"][0].__qualname__ == "add.<locals>.execute"
+
+
+def test_instantiate_s3(mock_s3) -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name="./tests/local_eval/src/local_eval/noop.py@noop"),
+        ]
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir="s3://test-bucket/configs/")
+    assert len(tasks) == 1
+    assert tasks[0].name == "./tests/local_eval/src/local_eval/noop.py@noop"
