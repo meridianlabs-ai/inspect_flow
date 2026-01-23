@@ -1180,7 +1180,7 @@ def test_log_copy(capsys) -> None:
         store=store_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
-    _run_eval_set(spec=spec, base_dir=".")
+    run_eval_set(spec=spec, base_dir=".")
 
     verify_test_logs(spec, log_dir)
 
@@ -1191,7 +1191,7 @@ def test_log_copy(capsys) -> None:
         shutil.rmtree(log_dir2)
     spec.log_dir = log_dir2
 
-    _run_eval_set(spec=spec, base_dir=".")
+    run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir2)
 
     out = capsys.readouterr().out
@@ -1207,7 +1207,7 @@ def test_store_log_gone(capsys) -> None:
         store=store_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
-    _run_eval_set(spec=spec, base_dir=".")
+    run_eval_set(spec=spec, base_dir=".")
 
     verify_test_logs(spec, log_dir)
 
@@ -1215,7 +1215,7 @@ def test_store_log_gone(capsys) -> None:
     capsys.readouterr()  # Clear previous output
 
     with pytest.raises(FileNotFoundError):
-        _run_eval_set(spec=spec, base_dir=".")
+        run_eval_set(spec=spec, base_dir=".")
     out = capsys.readouterr().out
     assert "Failed to read log" in out
     assert "Use 'flow store remove' to update the store." in out
@@ -1230,7 +1230,7 @@ def test_log_copy_s3(capsys, mock_s3) -> None:
         store=store_dir,
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
-    _run_eval_set(spec=spec, base_dir=".")
+    run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir)
 
     capsys.readouterr()  # Clear previous output
@@ -1239,7 +1239,7 @@ def test_log_copy_s3(capsys, mock_s3) -> None:
     spec.log_dir = log_dir2
 
     with patch("inspect_flow._runner.run.eval_set"):
-        _run_eval_set(spec=spec, base_dir=".")
+        run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir2)
 
     out = capsys.readouterr().out

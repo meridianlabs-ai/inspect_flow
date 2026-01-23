@@ -117,9 +117,7 @@ def _check_table_description(table: TableDef, description: str) -> None:
 def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
     log_files = list_eval_logs(log_dir, recursive=recursive)
     log_headers = read_eval_log_headers(log_files)
-    task_identifiers = [
-        task_identifier(log_header, None, None) for log_header in log_headers
-    ]
+    task_identifiers = [task_identifier(log_header, None) for log_header in log_headers]
     return [
         Log(info=info, header=header, task_identifier=task_identifier)
         for info, header, task_identifier in zip(
