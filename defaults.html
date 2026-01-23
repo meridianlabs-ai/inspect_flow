@@ -264,6 +264,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#flowdefaults" id="toc-flowdefaults" class="nav-link active" data-scroll-target="#flowdefaults">FlowDefaults</a>
   <ul class="collapse">
   <li><a href="#merge-priority" id="toc-merge-priority" class="nav-link" data-scroll-target="#merge-priority">Merge Priority</a></li>
+  <li><a href="#constructor-arguments" id="toc-constructor-arguments" class="nav-link" data-scroll-target="#constructor-arguments">Constructor Arguments</a></li>
   </ul></li>
   <li><a href="#inheritance" id="toc-inheritance" class="nav-link" data-scroll-target="#inheritance">Inheritance</a>
   <ul class="collapse">
@@ -507,6 +508,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>Validating the resolved config:</strong> You can always review and validate the final resolved configuration by running <code>flow run config.py --dry-run</code> or <code>flow config config.py</code> which will print the resolved config in YAML format. Note that <code>--dry-run</code> performs the full setup process (including creating a virtual environment and installing dependencies in venv mode) but stops before running evaluations.</p>
 </div>
 </div>
+</section>
+<section id="constructor-arguments" class="level3">
+<h3 class="anchored" data-anchor-id="constructor-arguments">Constructor Arguments</h3>
+<p>When passing arguments to Inspect AI object constructors (models, solvers, agents, scorers), <code>extra_args</code> on <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> provides the highest priority override:</p>
+<ol type="1">
+<li>Global defaults for the object type (e.g., <code>defaults.agent.args</code>)</li>
+<li>Prefix defaults (e.g., <code>defaults.agent_prefix.args</code>)</li>
+<li>Object-specific args (e.g., <code>FlowAgent.args</code>)</li>
+<li><strong>Task <code>extra_args</code> wins</strong> (e.g., <code>task.extra_args.agent</code>) — <strong>highest priority</strong></li>
+</ol>
+<p>This allows you to set default tool configurations globally while overriding them for specific tasks.</p>
+<p><strong>Example:</strong></p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>config.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-3" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-3-1"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.tool <span class="im">import</span> bash, web_search</span>
+<span id="annotated-cell-3-2"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> (</span>
+<span id="annotated-cell-3-3"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>    FlowAgent,</span>
+<span id="annotated-cell-3-4"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a>    FlowDefaults,</span>
+<span id="annotated-cell-3-5"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a>    FlowExtraArgs,</span>
+<span id="annotated-cell-3-6"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>    FlowSpec,</span>
+<span id="annotated-cell-3-7"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>    FlowTask,</span>
+<span id="annotated-cell-3-8"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="annotated-cell-3-9"><a href="#annotated-cell-3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-3-10"><a href="#annotated-cell-3-10" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="annotated-cell-3-11"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-3-12"><a href="#annotated-cell-3-12" aria-hidden="true" tabindex="-1"></a>    defaults<span class="op">=</span>FlowDefaults(</span>
+<span id="annotated-cell-3-13"><a href="#annotated-cell-3-13" aria-hidden="true" tabindex="-1"></a>        agent<span class="op">=</span>FlowAgent(</span>
+<span id="annotated-cell-3-14"><a href="#annotated-cell-3-14" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"react"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-15" class="code-annotation-target"><a href="#annotated-cell-3-15" aria-hidden="true" tabindex="-1"></a>            args<span class="op">=</span>{<span class="st">"tools"</span>: [web_search()]},</span>
+<span id="annotated-cell-3-16"><a href="#annotated-cell-3-16" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-3-17"><a href="#annotated-cell-3-17" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-3-18"><a href="#annotated-cell-3-18" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-19" class="code-annotation-target"><a href="#annotated-cell-3-19" aria-hidden="true" tabindex="-1"></a>        FlowTask(name<span class="op">=</span><span class="st">"task1"</span>),</span>
+<span id="annotated-cell-3-20"><a href="#annotated-cell-3-20" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-3-21"><a href="#annotated-cell-3-21" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"task2"</span>,</span>
+<span id="annotated-cell-3-22"><a href="#annotated-cell-3-22" aria-hidden="true" tabindex="-1"></a>            extra_args<span class="op">=</span>FlowExtraArgs(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-23" class="code-annotation-target"><a href="#annotated-cell-3-23" aria-hidden="true" tabindex="-1"></a>                agent<span class="op">=</span>{<span class="st">"tools"</span>: [bash()]}</span>
+<span id="annotated-cell-3-24"><a href="#annotated-cell-3-24" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="annotated-cell-3-25"><a href="#annotated-cell-3-25" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-3-26"><a href="#annotated-cell-3-26" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-3-27"><a href="#annotated-cell-3-27" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="15" data-code-annotation="1">Default agent has <code>web_search</code> tool</span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="19" data-code-annotation="2"><code>task1</code> inherits the default: uses <code>web_search</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="23" data-code-annotation="3"><code>task2</code> overrides with <code>extra_args</code>: uses <code>bash</code> instead</span>
+</dd>
+</dl>
 </section>
 </section>
 <section id="inheritance" class="level2">

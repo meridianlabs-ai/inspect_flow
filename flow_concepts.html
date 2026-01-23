@@ -572,7 +572,10 @@ Note
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="6">6</button><span id="annotated-cell-9-10" class="code-annotation-target"><a href="#annotated-cell-9-10" aria-hidden="true" tabindex="-1"></a>    args<span class="op">=</span>{<span class="st">"subject"</span>: <span class="st">"physics"</span>},</span>
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="7">7</button><span id="annotated-cell-9-11" class="code-annotation-target"><a href="#annotated-cell-9-11" aria-hidden="true" tabindex="-1"></a>    sandbox<span class="op">=</span><span class="st">"docker"</span>,</span>
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="8">8</button><span id="annotated-cell-9-12" class="code-annotation-target"><a href="#annotated-cell-9-12" aria-hidden="true" tabindex="-1"></a>    sample_id<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>],</span>
-<span id="annotated-cell-9-13"><a href="#annotated-cell-9-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-9" data-target-annotation="9">9</button><span id="annotated-cell-9-13" class="code-annotation-target"><a href="#annotated-cell-9-13" aria-hidden="true" tabindex="-1"></a>    extra_args<span class="op">=</span>FlowExtraArgs(</span>
+<span id="annotated-cell-9-14"><a href="#annotated-cell-9-14" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>{<span class="st">"max_attempts"</span>: <span class="dv">3</span>}</span>
+<span id="annotated-cell-9-15"><a href="#annotated-cell-9-15" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-9-16"><a href="#annotated-cell-9-16" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-9" data-target-annotation="1">1</dt>
 <dd>
@@ -605,6 +608,10 @@ Note
 <dt data-target-cell="annotated-cell-9" data-target-annotation="8">8</dt>
 <dd>
 <span data-code-cell="annotated-cell-9" data-code-lines="12" data-code-annotation="8"><strong>Sample selection</strong> — Evaluate specific samples from the dataset. Accepts a single ID (<code>sample_id=0</code>), list of IDs (<code>sample_id=[0, 1, 2]</code>), or list of string IDs.</span>
+</dd>
+<dt data-target-cell="annotated-cell-9" data-target-annotation="9">9</dt>
+<dd>
+<span data-code-cell="annotated-cell-9" data-code-lines="13,14,15" data-code-annotation="9"><strong>Extra arguments</strong> — Additional arguments to pass when creating Inspect AI objects (models, solvers, agents, scorers) for this specific task. Useful for per-task customization, such as providing different tools to an agent depending on the task. Values in <code>extra_args</code> override any args specified in the object’s own <code>args</code> field.</span>
 </dd>
 </dl>
 </section>
