@@ -1,0 +1,6 @@
+log_dir: logs
+tasks:
+- type: task
+  name: my_custom_task
+  params: {}
+- name: inspect_evals/gpqa_diamond

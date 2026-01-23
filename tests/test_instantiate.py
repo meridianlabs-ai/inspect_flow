@@ -1,15 +1,23 @@
+from typing import Any
+
 import pytest
+from inspect_ai.agent import Agent, AgentState, agent
+from inspect_ai.model import Model, get_model
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowDefaults,
     FlowEpochs,
+    FlowExtraArgs,
     FlowModel,
     FlowScorer,
     FlowSolver,
     FlowSpec,
     FlowTask,
 )
+from inspect_flow._util.pydantic_util import model_dump
+
+from tests.local_eval.src.local_eval.tools import add
 
 task_name = "tests/local_eval/src/local_eval/noop.py@noop"  # task from a file relative to the base_dir
 
@@ -56,7 +64,7 @@ def test_none_scorer() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].scorer is None
+    assert tasks[0].task.scorer is None
 
 
 def test_unresolved_solver() -> None:
@@ -100,9 +108,11 @@ def test_flow_epochs() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].epochs == 3
-    assert tasks[0].epochs_reducer
-    assert tasks[0].epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
+    assert tasks[0].task.epochs == 3
+    assert tasks[0].task.epochs_reducer
+    assert (
+        tasks[0].task.epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
+    )
 
 
 def test_file_not_found() -> None:
@@ -113,7 +123,8 @@ def test_file_not_found() -> None:
     )
     with pytest.raises(FileNotFoundError) as e:
         instantiate_tasks(spec=spec, base_dir=".")
-    assert "File not found:" in str(e.value)
+    assert "No such file or directory:" in str(e.value)
+    assert "missing_file.py" in str(e.value)
 
 
 def test_missing_task_name() -> None:
@@ -136,3 +147,129 @@ def test_missing_task() -> None:
     with pytest.raises(LookupError) as e:
         instantiate_tasks(spec=spec, base_dir=".")
     assert "unregistered_task" in str(e.value)
+
+
+def test_agent_tools() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(tools: list[Any]) -> Agent:
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                solver=FlowAgent(
+                    name="my_agent",
+                    args={"tools": [add()]},
+                ),
+            )
+        ],
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+    # Test that dumping and re-loading the spec works
+    agent_tools = None
+    dump = model_dump(spec)
+    spec = FlowSpec.model_validate(dump)
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+
+def test_additional_args_agent_tools() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(tools: list[Any]) -> Agent:
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                extra_args=FlowExtraArgs(agent={"tools": [add()]}),
+                solver=FlowAgent(name="my_agent"),
+            )
+        ],
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools[0])
+    assert agent_tools[0].__qualname__ == "add.<locals>.execute"
+
+
+def test_additional_args_agent_tools_dict() -> None:
+    agent_tools = None
+
+    @agent
+    def my_agent(model: Model, tools: dict[str, list[Any]]) -> Agent:
+        assert model.name == "mock-llm1"
+        nonlocal agent_tools
+        agent_tools = tools
+
+        async def execute(state: AgentState) -> AgentState:
+            return state
+
+        return execute
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                extra_args=FlowExtraArgs(
+                    agent={
+                        "model": get_model("mockllm/mock-llm1"),
+                        "tools": {"math": [add()]},
+                    }
+                ),
+                solver=FlowAgent(name="my_agent"),
+            )
+        ],
+    )
+    dump = model_dump(spec)
+    spec = FlowSpec.model_validate(dump)
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.solver
+    assert agent_tools is not None
+    assert len(agent_tools) == 1
+    assert callable(agent_tools["math"][0])
+    assert agent_tools["math"][0].__qualname__ == "add.<locals>.execute"
+
+
+def test_instantiate_s3(mock_s3) -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name="./tests/local_eval/src/local_eval/noop.py@noop"),
+        ]
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir="s3://test-bucket/configs/")
+    assert len(tasks) == 1
+    assert tasks[0].task.name == "noop"

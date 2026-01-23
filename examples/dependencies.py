@@ -1,6 +1,7 @@
 from inspect_flow import FlowDependencies, FlowSpec, FlowTask
 
 FlowSpec(
+    execution_type="venv",
     dependencies=FlowDependencies(
         dependency_file="../foo/pyproject.toml",  # <1>
         additional_dependencies=["pandas==2.0.0"],  # <2>

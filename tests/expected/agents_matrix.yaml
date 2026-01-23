@@ -2,19 +2,37 @@ log_dir: logs
 tasks:
 - name: my_task
   solver:
-    name: system_message
+    name: react
     args:
-      message: You are a helpful assistant.
+      tools:
+      - type: tool
+        name: web_search
+        params: {}
     type: agent
 - name: my_task
   solver:
-    name: system_message
+    name: react
     args:
-      message: You are a creative writer.
+      tools:
+      - type: tool
+        name: bash
+        params: {}
+      - type: tool
+        name: python
+        params: {}
     type: agent
 - name: my_task
   solver:
-    name: system_message
+    name: react
     args:
-      message: You are a technical expert.
+      tools:
+      - type: tool
+        name: web_search
+        params: {}
+      - type: tool
+        name: bash
+        params: {}
+      - type: tool
+        name: python
+        params: {}
     type: agent

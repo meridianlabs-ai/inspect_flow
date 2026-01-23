@@ -3,16 +3,23 @@
 # Important: All default values should be None. This supports merging of partial configs as None values are not merged.
 # But a different default value would override more specific settings.
 
+from __future__ import annotations
+
 from typing import (
     Any,
+    Callable,
     Literal,
     Mapping,
     Sequence,
     TypeAlias,
 )
 
+from inspect_ai import Task
+from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.model import GenerateConfig
+from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.scorer import Scorer
+from inspect_ai.solver import Solver
 from inspect_ai.util import (
     DisplayType,
     SandboxEnvironmentType,
@@ -20,10 +27,10 @@ from inspect_ai.util import (
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self, override
 
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 CreateArgs: TypeAlias = Mapping[str, Any]
-ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str"]
+ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
 
 
 class NotGiven(BaseModel, extra="forbid"):
@@ -50,11 +57,16 @@ not_given = NotGiven(type="NOT_GIVEN")
 class FlowBase(BaseModel, extra="forbid"):
     @override
     def __str__(self) -> str:
-        return str(self.model_dump())
+        return str(model_dump(self))
 
-    @override
-    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
-        return super().model_dump(**(MODEL_DUMP_ARGS | kwargs))
+    @model_validator(mode="before")
+    @classmethod
+    def factory_string_to_name(cls, data: Any) -> Any:
+        """If factory is a string, move it to name and clear factory."""
+        if isinstance(data, dict) and isinstance(data.get("factory"), str):
+            data["name"] = data["factory"]
+            del data["factory"]
+        return data
 
 
 class FlowModel(FlowBase):
@@ -62,7 +74,12 @@ class FlowModel(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the model to use. Required to be set by the time the model is created.",
+        description="Name of the model to use. If factory is not provided, this is used to create the model.",
+    )
+
+    factory: Callable[..., Model] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the model instance.",
     )
 
     role: str | None | NotGiven = Field(
@@ -110,7 +127,12 @@ class FlowScorer(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the scorer. Required to be set by the time the scorer is created.",
+        description="Name of the scorer. Used to create the scorer if the factory is not provided.",
+    )
+
+    factory: Callable[..., Scorer] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the scorer instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -129,7 +151,12 @@ class FlowSolver(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the solver. Required to be set by the time the solver is created.",
+        description="Name of the solver. Used to create the solver if the factory is not provided.",
+    )
+
+    factory: Callable[..., Solver] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the solver instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -148,7 +175,12 @@ class FlowAgent(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description="Name of the agent. Required to be set by the time the agent is created.",
+        description="Name of the agent. Used to create the agent if the factory is not provided.",
+    )
+
+    factory: Callable[..., Agent] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the agent instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -188,7 +220,28 @@ class FlowEpochs(FlowBase):
     )
 
 
-class FlowTask(FlowBase):
+class FlowExtraArgs(FlowBase):
+    """Extra args to provide to the creation of Inspect objects."""
+
+    model: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to model constructor.",
+    )
+    solver: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to solver constructor.",
+    )
+    agent: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to agent constructor.",
+    )
+    scorer: CreateArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to pass to scorer constructor.",
+    )
+
+
+class FlowTask(FlowBase, arbitrary_types_allowed=True):
     """Configuration for an evaluation task.
 
     Tasks are the basis for defining and running evaluations.
@@ -196,7 +249,12 @@ class FlowTask(FlowBase):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Required to be set by the time the task is created.',
+        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Used to create the task if the factory is not provided.',
+    )
+
+    factory: Callable[..., Task] | None | NotGiven = Field(
+        default=not_given,
+        description="Factory function to create the task instance.",
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -204,19 +262,38 @@ class FlowTask(FlowBase):
         description="Additional args to pass to task constructor",
     )
 
+    extra_args: FlowExtraArgs | None | NotGiven = Field(
+        default=not_given,
+        description="Extra args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent.",
+    )
+
     solver: (
-        str | FlowSolver | Sequence[str | FlowSolver] | FlowAgent | None | NotGiven
+        str
+        | FlowSolver
+        | FlowAgent
+        | Solver
+        | Agent
+        | Sequence[str | FlowSolver | Solver]
+        | None
+        | NotGiven
     ) = Field(
         default=not_given,
         description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
     )
 
-    scorer: str | FlowScorer | Sequence[str | FlowScorer] | None | NotGiven = Field(
+    scorer: (
+        str
+        | FlowScorer
+        | Scorer
+        | Sequence[str | FlowScorer | Scorer]
+        | None
+        | NotGiven
+    ) = Field(
         default=not_given,
         description="Scorer or list of scorers used to evaluate model output.",
     )
 
-    model: str | FlowModel | None | NotGiven = Field(
+    model: str | FlowModel | Model | None | NotGiven = Field(
         default=not_given,
         description="Default model for task (Optional, defaults to eval model).",
     )
@@ -550,12 +627,12 @@ class FlowDependencies(FlowBase):
     )
 
 
-class FlowSpec(FlowBase):
+class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     """Top-level flow specification."""
 
-    includes: Sequence[str] | None | NotGiven = Field(
+    includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
         default=not_given,
-        description="List of other flow configs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
+        description="List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
     )
 
     store: Literal["auto"] | str | None | NotGiven = Field(
@@ -573,18 +650,23 @@ class FlowSpec(FlowBase):
         description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
     )
 
+    execution_type: Literal["inproc", "venv"] | None | NotGiven = Field(
+        default=not_given,
+        description="Execution environment for running tasks (defaults to 'inproc').",
+    )
+
     python_version: str | None | NotGiven = Field(
         default=not_given,
         description="Python version to use in the flow virtual environment (e.g. '3.11')",
     )
 
-    options: FlowOptions | None | NotGiven = Field(
-        default=not_given, description="Arguments for calls to eval_set."
-    )
-
     dependencies: FlowDependencies | None | NotGiven = Field(
         default=not_given,
         description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.",
+    )
+
+    options: FlowOptions | None | NotGiven = Field(
+        default=not_given, description="Arguments for calls to eval_set."
     )
 
     env: dict[str, str] | None | NotGiven = Field(
@@ -601,6 +683,6 @@ class FlowSpec(FlowBase):
         description="Optional. Metadata stored in the flow config. Not passed to the model.",
     )
 
-    tasks: Sequence[str | FlowTask] | None | NotGiven = Field(
+    tasks: Sequence[str | FlowTask | Task] | None | NotGiven = Field(
         default=not_given, description="Tasks to run"
     )

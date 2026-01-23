@@ -3,27 +3,48 @@ title: "Dependencies"
 tbl-colwidths: [30,70]
 ---
 
-Inspect Flow automatically creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.
-Because each run starts with a fresh environment, dependencies must be resolved—either automatically detected from your project files or explicitly specified in your configuration.
+When running in **virtual environment mode** (`execution_type="venv"` or `--venv` flag), Flow creates isolated virtual environments for each workflow run, ensuring repeatability and avoiding dependency conflicts with your system Python environment.
 
-When you run `flow run config.py`, Flow:
+When you run `flow run config.py --venv`, Flow:
 
 1.  Creates a temporary virtual environment with [`uv`](https://github.com/astral-sh/uv)
 2.  Installs dependencies from dependency files and/or config file
-5.  Executes your evaluations in this isolated environment
-6.  Cleans up the temporary environment after completion (logs persist in `log_dir`)
+3.  Executes your evaluations in this isolated environment
+4.  Cleans up the temporary environment after completion (logs persist in `log_dir`)
+
+::: callout-important
+### Execution Mode Matters
+
+Flow's dependency management behavior depends on your [execution mode](run.qmd#execution-modes):
+
+- **In-process mode (default)**: You manually install dependencies. Flow does not install packages automatically.
+- **Virtual environment mode**: Flow automatically creates isolated environments and installs dependencies.
+
+This page primarily describes virtual environment mode. See [Execution Modes](run.qmd#execution-modes) for details on choosing between modes.
+:::
 
 ## Automatic Dependency Discovery
 
-By default, Flow automatically discovers and installs dependencies without requiring explicit configuration:
+In virtual environment mode, Flow automatically discovers and installs dependencies without requiring explicit configuration:
 
 - **Dependency files**: Searches upward from your config file directory for `pyproject.toml` or `requirements.txt`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API)
-- **Package inference**: Detects packages from object names in your config:
+- **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
-  - Tasks: `name="inspect_evals/mmlu"` → installs `inspect-evals`
-- **Config inheritance**: Automatically includes any `_flow.py` files in the config directory or parent directories (see [Inheritance](defaults.qmd#inheritance)). These files can specify default dependencies that apply to all including configs.
+  - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Note: Package inference only works with Flow types (`FlowTask`, `FlowModel`, etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
+
+::: callout-note
+### In-Process Mode Dependencies
+
+In in-process mode (the default), these files are **ignored** for automatic installation. You're responsible for installing dependencies yourself using your preferred package manager (`uv`, `pip`, `conda`, etc.). However, you can still use the same `pyproject.toml` or `requirements.txt` files to manage your dependencies manually.
+:::
+
+::: callout-note
+### Config Inheritance
+Flow automatically includes any `_flow.py` files in the config directory or parent directories (see [Inheritance](defaults.qmd#inheritance)). When these files specify `dependencies` in venv mode, those dependencies are automatically installed. This works in both execution modes—the inheritance mechanism applies everywhere, but dependency installation only happens in venv mode.
+:::
 
 ## Explicit Dependencies
 
@@ -45,27 +66,35 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 ## Python Version
 
-Specify the Python version for your spec's virtual environment:
+Specify the Python version for your spec's virtual environment when using venv mode:
 
 ``` {.python filename="config.py"}
 {{< include ../examples/python_version.py >}}
 ```
+
+1. Required for python_version to take effect.
+
+::: callout-note
+The `python_version` field only applies to virtual environment mode. In in-process mode, evaluations run using your current Python interpreter.
+:::
 
 ## Checking Config
 
 To verify which dependencies and Python version will be used:
 
 ``` bash
-flow run config.py --dry-run
+flow run config.py --dry-run --venv
 ```
 
 ::: callout-tip
 ### Repeatability Best Practices
 
-For repeatable workflows:
+For repeatable workflows, use **virtual environment mode** with the following practices:
 
--   Pin PyPI package versions: `"inspect-evals==0.3.15"`
--   Pin Git commits: `"git+https://github.com/user/repo@commit_hash"`
--   Specify `python_version` explicitly
--   Use `uv.lock` with `pyproject.toml` for locked dependencies (automatically detected if present)
+-   **Enable venv mode**: Set `execution_type="venv"` in your `FlowSpec` or use the `--venv` flag. This ensures isolated environments and automatic dependency installation.
+-   **Pin package versions**: Use exact versions for PyPI packages (`"inspect-evals==0.3.15"`) and commit hashes for Git repositories (`"git+https://github.com/user/repo@commit_hash"`).
+-   **Specify Python version**: Explicitly set `python_version` (e.g., `"3.11"`) to ensure consistent Python environments.
+-   **Use lockfiles**: When using `pyproject.toml`, include a `uv.lock` file for fully reproducible dependency resolution (automatically detected if present).
+
+This combination ensures your evaluations can be reliably repeated and shared with others.
 :::

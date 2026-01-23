@@ -2,32 +2,29 @@ from logging import getLogger
 
 import click
 import yaml
-from inspect_ai import Task, eval_set
+from inspect_ai import eval_set
 from inspect_ai._eval.eval import eval_resolve_tasks
-from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
+from inspect_ai._eval.evalset import EvalSetArgsInTaskIdentifier, task_identifier
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.file import basename, copy_file, file
+from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
-from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
     FlowTask,
 )
-from inspect_flow._util.args import MODEL_DUMP_ARGS
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
-from inspect_flow._util.path_util import path_join
+from inspect_flow._util.pydantic_util import model_dump
 
-logger = getLogger(__name__)
+logger = getLogger(__file__)
 
 
 def _read_config(config_file: str) -> FlowSpec:
@@ -43,7 +40,7 @@ def _write_config_file(spec: FlowSpec) -> None:
         f.write(yaml)
 
 
-def _run_eval_set(
+def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
@@ -71,7 +68,7 @@ def _run_eval_set(
 
     try:
         result = eval_set(
-            tasks=tasks,
+            tasks=[t.task for t in tasks],
             log_dir=resolved_spec.log_dir,
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
@@ -142,14 +139,14 @@ def _run_eval_set(
     return result
 
 
-def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
+def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
     if not tasks:
         return set()
 
     options = spec.options or FlowOptions()
 
     resolved_tasks, _ = eval_resolve_tasks(
-        tasks=tasks,
+        tasks=[t.task for t in tasks],
         task_args=dict(),
         models=[get_model("none")],
         model_roles=None,
@@ -162,14 +159,16 @@ def _get_task_ids(tasks: list[Task], spec: FlowSpec) -> set[str]:
     task_ids = set()
     for i, task in enumerate(resolved_tasks):
         task_id = task_identifier(
-            task=task, eval_set_config=GenerateConfig(), eval_set_solver=None
+            task=task,
+            eval_set_args=EvalSetArgsInTaskIdentifier(config=GenerateConfig()),
         )
         if task_id in task_ids:
-            assert spec.tasks
-            flow_task = spec.tasks[i]
-            assert isinstance(flow_task, FlowTask)
-            task_json = flow_task.model_dump(**MODEL_DUMP_ARGS)
-            raise ValueError(f"Duplicate task found: {task_json}")
+            flow_task = tasks[i].flow_task
+            if isinstance(flow_task, FlowTask):
+                task_json = model_dump(flow_task)
+                raise ValueError(f"Duplicate task found: {task_json}")
+            else:
+                raise ValueError(f"Duplicate task found: {task}")
 
         task_ids.add(task_id)
     return task_ids
@@ -266,7 +265,7 @@ def flow_run(
     init_flow_logging(log_level=log_level)
 
     cfg = _read_config(file)
-    _run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
 if __name__ == "__main__":

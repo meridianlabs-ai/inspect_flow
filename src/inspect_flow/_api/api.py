@@ -12,6 +12,7 @@ from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.module_util import is_loading_spec
 
 
 def load_spec(
@@ -37,7 +38,6 @@ def run(
     *,
     dry_run: bool = False,
     log_level: str = DEFAULT_LOG_LEVEL,
-    no_venv: bool = False,
     no_dotenv: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
@@ -47,9 +47,17 @@ def run(
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
         log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
-        no_venv: If True, do not create a virtual environment to run the spec.
         no_dotenv: If True, do not load environment variables from a .env file.
+
+    Raises:
+        RuntimeError: If called from within a flow spec file being loaded.
     """
+    if is_loading_spec():
+        raise RuntimeError(
+            "run() cannot be called from within a flow spec file. "
+            "Return the FlowSpec object instead and let the CLI handle execution. "
+            "Or execute the file directly using python."
+        )
     init_flow_logging(log_level)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir)
@@ -57,7 +65,6 @@ def run(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
-        no_venv=no_venv,
         no_dotenv=no_dotenv,
     )
 

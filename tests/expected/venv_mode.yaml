@@ -1,0 +1,7 @@
+log_dir: logs
+execution_type: venv
+python_version: '3.11'
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model:
+    name: openai/gpt-4

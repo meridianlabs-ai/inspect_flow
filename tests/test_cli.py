@@ -17,7 +17,6 @@ CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
-    "no_venv": False,
     "no_dotenv": False,
     "dry_run": False,
 }
@@ -255,7 +254,7 @@ def test_run_command_args() -> None:
         )
 
 
-def test_run_command_no_venv() -> None:
+def test_run_command_venv() -> None:
     runner = CliRunner()
     with (
         patch("inspect_flow._cli.run.launch") as mock_run,
@@ -264,15 +263,20 @@ def test_run_command_no_venv() -> None:
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
 
-        result = runner.invoke(run_command, [CONFIG_FILE, "--no-venv"])
+        result = runner.invoke(run_command, [CONFIG_FILE, "--venv"])
 
         assert result.exit_code == 0
 
-        mock_config.assert_called_once()
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                overrides=["execution_type=venv"],
+            ),
+        )
 
         mock_run.assert_called_once_with(
             mock_config_obj,
-            **(COMMON_DEFAULTS | {"no_venv": True}),
+            **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
         )
 
@@ -298,21 +302,87 @@ def test_run_command_log_level() -> None:
         mock_run.assert_called_once()
 
 
+def test_run_command_allow_dirty() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir-allow-dirty"])
+
+        assert result.exit_code == 0
+
+        # Verify that load_spec was called with the correct file
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                overrides=[
+                    "options.log_dir_allow_dirty=True",
+                ],
+                args={},
+            ),
+        )
+
+        mock_run.assert_called_once_with(
+            mock_config_obj,
+            **(COMMON_DEFAULTS),
+            base_dir=CONFIG_FILE_DIR,
+        )
+
+
 def test_options_to_overrides() -> None:
     overrides = _options_to_overrides(
         log_dir="option_dir",
         limit=1,
-        set=["log_dir=set_dir", "options.limit=5", "options.log_dir_allow_dirty=True"],
+        set=["log_dir=set_dir", "options.limit=5"],
+        log_dir_allow_dirty=True,
     )
 
     assert len(overrides) == 5
     assert overrides == [
         "log_dir=set_dir",
         "options.limit=5",
-        "options.log_dir_allow_dirty=True",
         "log_dir=option_dir",
         "options.limit=1",
+        "options.log_dir_allow_dirty=True",
     ]
+
+
+def test_inspect_object_overrides() -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        config_command,
+        [
+            "./tests/config/inspect_objects_flow.py",
+            "--set",
+            "defaults.solver.args.tool_calls=none",
+        ],
+        catch_exceptions=False,
+    )
+
+    # Check that the command executed successfully
+    assert result.exit_code == 0
+
+
+def test_417_invalid_run() -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        run_command,
+        [
+            "./tests/config/invalid_run_flow.py",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, RuntimeError)
+    assert "run() cannot be called from within a flow spec file" in str(
+        result.exception
+    )
 
 
 def test_store_commands() -> None:

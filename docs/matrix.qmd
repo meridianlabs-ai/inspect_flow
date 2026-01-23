@@ -5,6 +5,10 @@ tbl-colwidths: [30,70]
 
 Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides `*_matrix()` and `*_with()` functions to declaratively generate evaluation grids.
 
+::: callout-note
+`*_matrix()` and `*_with()` functions work with Flow types (`FlowTask`, `FlowModel`, `FlowSolver`, `FlowAgent`) and strings (for registry references). They cannot operate directly on Inspect AI objects (`Task`, `Model`, `Solver`, `Agent`).
+:::
+
 ## Matrix Functions
 
 Matrix functions generate all combinations of their parameters using Cartesian products.
@@ -177,7 +181,7 @@ Parameter sweeps grow multiplicatively. A sweep with:
 
 Results in 3 × 4 × 5 × 3 = **180 evaluations**.
 
-Always use `--dry-run` to check the number of evaluations before running expensive grids.
+Always preview with `--dry-run` to check the number of evaluations before running expensive grids.
 :::
 
 ## Matrix Merge

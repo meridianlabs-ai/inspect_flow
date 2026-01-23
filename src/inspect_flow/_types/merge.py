@@ -10,14 +10,14 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     GenerateConfig,
 )
-from inspect_flow._util.args import MODEL_DUMP_ARGS
+from inspect_flow._util.pydantic_util import model_dump
 
 
 def to_dict(input: Any) -> dict[str, Any]:
     if isinstance(input, Mapping):
         return dict(input)
     if isinstance(input, BaseModel):
-        return input.model_dump(**MODEL_DUMP_ARGS)
+        return model_dump(input)
     return to_jsonable_python(input, exclude_none=True)
 
 

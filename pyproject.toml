@@ -13,7 +13,7 @@ license = { text = "MIT License" }
 dependencies = [
     "click>=8.2.1",
     "deltalake>=0.18.0",
-    "inspect-ai>=0.3.147",
+    "inspect-ai>=0.3.162",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
     "pydantic>=2.11.2",
@@ -40,6 +40,7 @@ dev = [
     "deepdiff",
     "flask",
     "flask-cors",
+    "local-eval",
     "moto[s3]",
     "openai",
     "pre-commit",
@@ -52,6 +53,9 @@ dev = [
     "ty",
     "types-pyyaml>=6.0.12.20250915",
 ]
+
+[tool.uv.sources]
+local-eval = { path = "tests/local_eval", editable = true }
 
 
 [tool.hatch.build]

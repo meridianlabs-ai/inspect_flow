@@ -27,10 +27,11 @@ from inspect_flow._config.load import (
     expand_spec,
     int_load_spec,
 )
-from inspect_flow._types.flow_types import FlowDependencies
+from inspect_flow._types.flow_types import FlowDependencies, not_given
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 
+from tests.local_eval.src.local_eval.tools import add
 from tests.test_helpers.config_helpers import validate_config
 
 config_dir = str(Path(__file__).parent / "config")
@@ -84,6 +85,14 @@ def test_config_model_and_task() -> None:
 
 def test_py_config() -> None:
     config = load_spec(str(Path(__file__).parent / "config" / "model_and_task_flow.py"))
+    validate_config(config, "model_and_task_flow.yaml")
+
+
+def test_py_config_s3(mock_s3) -> None:
+    local_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
+    s3_path = "s3://test-bucket/configs/model_and_task_flow.py"
+    mock_s3.upload_file(local_path, "test-bucket", "configs/model_and_task_flow.py")
+    config = load_spec(s3_path)
     validate_config(config, "model_and_task_flow.yaml")
 
 
@@ -206,15 +215,13 @@ def test_load_config_overrides():
     assert config.log_dir == "./logs/overridden_flow"
     assert config.options
     assert config.options.limit == 2
-    assert config.defaults
-    assert config.defaults.solver
-    assert config.defaults.solver.args
-    assert config.defaults.solver.args["tool_calls"] == "none"
+    # Defaults are applied as part of loading the spec
+    assert config.defaults is not_given
 
 
 def test_overrides_of_lists():
     config = FlowSpec()
-    # Within a single override, later values replace earlier ones
+    # Setting values when the value is not set does not create a list. This is unfortunate!
     config = _apply_overrides(
         config,
         [
@@ -225,7 +232,6 @@ def test_overrides_of_lists():
     assert config.dependencies
     assert config.dependencies.additional_dependencies == "dep2"
     config.dependencies.additional_dependencies = ["dep2"]
-    # Within a single override, later values replace earlier ones - even when the type is already a list
     config = _apply_overrides(
         config,
         [
@@ -234,7 +240,17 @@ def test_overrides_of_lists():
         ],
     )
     assert config.dependencies
-    assert config.dependencies.additional_dependencies == ["dep2", "dep4"]
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
+    # setting existing values does not modify the list
+    config = _apply_overrides(
+        config,
+        [
+            "dependencies.additional_dependencies=dep3",
+            "dependencies.additional_dependencies=dep4",
+        ],
+    )
+    assert config.dependencies
+    assert config.dependencies.additional_dependencies == ["dep2", "dep3", "dep4"]
     # Can set a list directly
     config = _apply_overrides(
         config,
@@ -281,6 +297,16 @@ def test_overrides_of_dicts():
     assert config.options.metadata["new_key1"] == "new_val1"
     assert config.options.metadata["new_key2"] == "new_val2"
     assert "key1" not in config.options.metadata
+    # Can nest dicts
+    config = _apply_overrides(
+        config,
+        [
+            "options.metadata.new_key1.sub_key=sub_val",
+        ],
+    )
+    assert config.options and config.options.metadata
+    assert config.options.metadata["new_key1"] == {"sub_key": "sub_val"}
+    assert config.options.metadata["new_key2"] == "new_val2"
 
 
 def test_load_config_args() -> None:
@@ -335,6 +361,16 @@ def test_absolute_include() -> None:
     spec = expand_spec(
         FlowSpec(includes=[include_path]),
         base_dir=config_dir,
+    )
+    validate_config(spec, "absolute_include_flow.yaml")
+
+
+def test_437_absolute_include() -> None:
+    include_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
+    spec = expand_spec(
+        FlowSpec(includes=[include_path]),
+        base_dir=config_dir,
+        options=ConfigOptions(overrides=["options.limit=1"]),
     )
     validate_config(spec, "absolute_include_flow.yaml")
 
@@ -632,3 +668,39 @@ def test_auto_include_protocol() -> None:
         spec1, base_dir="file://parent/file", options=ConfigOptions(), state=LoadState()
     )
     assert spec1 == spec2
+
+
+def test_418_spec_includes() -> None:
+    spec1 = FlowSpec(options=FlowOptions(log_dir_allow_dirty=True))
+    spec2 = FlowSpec(includes=[spec1])
+    spec3 = expand_spec(spec2, base_dir=".")
+    assert spec3.options
+    assert spec3.options.log_dir_allow_dirty is True
+
+
+def test_inspect_objects() -> None:
+    flow_file = str(Path(config_dir) / "inspect_objects_flow.py")
+    spec = load_spec(flow_file)
+    validate_config(spec, "inspect_objects_flow.yaml")
+
+
+def test_389_tool_config() -> None:
+    spec = FlowSpec(
+        log_dir="example_logs",
+        options=FlowOptions(limit=1),
+        tasks=[
+            FlowTask(
+                name="inspect_evals/mmlu_0_shot",
+                solver=FlowAgent(
+                    name="some_solver",
+                    args={"tools": [add()]},
+                ),
+            )
+        ],
+    )
+    validate_config(spec, "tool_config_flow.yaml")
+
+
+def test_419_python_include() -> None:
+    config = load_spec(str(Path(__file__).parent / "config" / "python_import_flow.py"))
+    validate_config(config, "python_import_flow.yaml")

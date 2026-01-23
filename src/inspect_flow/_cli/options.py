@@ -115,11 +115,11 @@ def config_options(f):
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
     f = click.option(
-        "--no-venv",
+        "--venv",
         type=bool,
         is_flag=True,
-        help="If set run the flow in the current environment without creating a virtual environment.",
-        envvar="INSPECT_FLOW_NO_VENV",
+        help="If set run the flow in a virtual environment in a temporary directory.",
+        envvar="INSPECT_FLOW_VENV",
     )(f)
     return f
 
@@ -128,11 +128,12 @@ class ConfigOptionArgs(TypedDict, total=False):
     log_level: str
     store: str | None
     log_dir: str | None
+    log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
     limit: int | None
     set: list[str] | None
     arg: list[str] | None
-    no_venv: bool | None
+    venv: bool | None
 
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
@@ -145,6 +146,10 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append(f"options.limit={limit}")
     if kwargs.get("log_dir_create_unique"):
         overrides.append("log_dir_create_unique=True")
+    if kwargs.get("log_dir_allow_dirty"):
+        overrides.append("options.log_dir_allow_dirty=True")
+    if kwargs.get("venv"):
+        overrides.append("execution_type=venv")
     return overrides
 
 
