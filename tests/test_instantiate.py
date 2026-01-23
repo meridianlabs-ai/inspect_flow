@@ -64,7 +64,7 @@ def test_none_scorer() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].scorer is None
+    assert tasks[0].task.scorer is None
 
 
 def test_unresolved_solver() -> None:
@@ -108,9 +108,11 @@ def test_flow_epochs() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].epochs == 3
-    assert tasks[0].epochs_reducer
-    assert tasks[0].epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
+    assert tasks[0].task.epochs == 3
+    assert tasks[0].task.epochs_reducer
+    assert (
+        tasks[0].task.epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
+    )
 
 
 def test_file_not_found() -> None:
@@ -173,7 +175,7 @@ def test_agent_tools() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].solver
+    assert tasks[0].task.solver
     assert agent_tools is not None
     assert len(agent_tools) == 1
     assert callable(agent_tools[0])
@@ -185,7 +187,7 @@ def test_agent_tools() -> None:
     spec = FlowSpec.model_validate(dump)
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].solver
+    assert tasks[0].task.solver
     assert agent_tools is not None
     assert len(agent_tools) == 1
     assert callable(agent_tools[0])
@@ -216,7 +218,7 @@ def test_additional_args_agent_tools() -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].solver
+    assert tasks[0].task.solver
     assert agent_tools is not None
     assert len(agent_tools) == 1
     assert callable(agent_tools[0])
@@ -255,7 +257,7 @@ def test_additional_args_agent_tools_dict() -> None:
     spec = FlowSpec.model_validate(dump)
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
-    assert tasks[0].solver
+    assert tasks[0].task.solver
     assert agent_tools is not None
     assert len(agent_tools) == 1
     assert callable(agent_tools["math"][0])
@@ -270,4 +272,4 @@ def test_instantiate_s3(mock_s3) -> None:
     )
     tasks = instantiate_tasks(spec=spec, base_dir="s3://test-bucket/configs/")
     assert len(tasks) == 1
-    assert tasks[0].name == "./tests/local_eval/src/local_eval/noop.py@noop"
+    assert tasks[0].task.name == "noop"

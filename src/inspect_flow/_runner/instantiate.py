@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
-from inspect_ai._eval.loader import create_tasks, scorer_from_spec
+from inspect_ai._eval.loader import load_tasks, scorer_from_spec
 from inspect_ai._eval.task.util import slice_dataset
 from inspect_ai._util.file import filesystem
 from inspect_ai._util.notgiven import NOT_GIVEN
@@ -76,9 +77,18 @@ def _kwargs(
     return _registry_kwargs({**base_args, **additional_args})
 
 
-def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
+@dataclass
+class InstantiatedTask:
+    flow_task: FlowTask | None
+    task: Task
+
+
+def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     return [
-        task
+        InstantiatedTask(
+            flow_task=task_config if isinstance(task_config, FlowTask) else None,
+            task=task,
+        )
         for task_config in spec.tasks or []
         for task in _instantiate_task(spec, task_config, base_dir=base_dir)
     ]
@@ -259,7 +269,7 @@ def _instantiate_task(
             token_limit=ng(flow_task.token_limit),
             time_limit=ng(flow_task.time_limit),
             working_limit=ng(flow_task.working_limit),
-            name=ng(flow_task.name),
+            # name= should be set when loaded
             version=ng(flow_task.version),
             metadata=ng(flow_task.metadata),
         )
@@ -275,19 +285,12 @@ def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
 
-    # Try to create by registry
-    try:
-        return [registry_create(type="task", name=task.name, **task_args)]
-    except LookupError:
-        pass
-
     # Try to create by finding task functions in files
     if filesystem(base_dir).is_local():
-        # create_tasks root_dir param does not work. Use chdir instead.
         with chdir_python(base_dir):
-            tasks = create_tasks(globs=[task.name], task_args=task_args)
+            tasks = load_tasks(task_specs=[task.name], task_args=task_args)
     else:
-        tasks = create_tasks(globs=[task.name], task_args=task_args)
+        tasks = load_tasks(task_specs=[task.name], task_args=task_args)
     if not tasks:
         raise LookupError(f"No tasks found for name: {task.name}")
     return tasks

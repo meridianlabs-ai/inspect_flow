@@ -29,8 +29,8 @@ from inspect_flow._types.flow_types import FlowScorer, not_given
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
-task_dir = (Path(__file__).parent / "local_eval" / "src" / "local_eval").resolve()
-task_file = str(task_dir / "noop.py")
+task_dir = "tests/local_eval/src/local_eval"
+task_file = task_dir + "/noop.py"
 
 
 def test_task_with_get_model() -> None:
@@ -320,7 +320,7 @@ def test_sample_id() -> None:
 
 
 def test_all_tasks_in_file() -> None:
-    file = str(task_dir / "three_tasks.py")
+    file = task_dir + "/three_tasks.py"
     with patch("inspect_flow._runner.run.eval_set") as mock_eval_set:
         run_eval_set(
             spec=FlowSpec(
@@ -334,9 +334,9 @@ def test_all_tasks_in_file() -> None:
         call_args = mock_eval_set.call_args
         tasks_arg = call_args.kwargs["tasks"]
         assert len(tasks_arg) == 3
-        assert tasks_arg[0].name == file + "@noop1"
-        assert tasks_arg[1].name == file + "@noop2"
-        assert tasks_arg[2].name == file + "@noop3"
+        assert tasks_arg[0].name == "noop1"
+        assert tasks_arg[1].name == "noop2"
+        assert tasks_arg[2].name == "noop3"
 
 
 def test_config_generate_config() -> None:
