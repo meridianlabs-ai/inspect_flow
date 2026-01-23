@@ -80,6 +80,27 @@ To avoid overriding a FlowTask field, omit it entirely rather than setting it to
 **Validating the resolved config:** You can always review and validate the final resolved configuration by running `flow run config.py --dry-run` or `flow config config.py` which will print the resolved config in YAML format. Note that `--dry-run` performs the full setup process (including creating a virtual environment and installing dependencies in venv mode) but stops before running evaluations.
 :::
 
+### Constructor Arguments
+
+When passing arguments to Inspect AI object constructors (models, solvers, agents, scorers), `extra_args` on `FlowTask` provides the highest priority override:
+
+1.  Global defaults for the object type (e.g., `defaults.agent.args`)
+2.  Prefix defaults (e.g., `defaults.agent_prefix.args`)
+3.  Object-specific args (e.g., `FlowAgent.args`)
+4.  **Task `extra_args` wins** (e.g., `task.extra_args.agent`) — **highest priority**
+
+This allows you to set default tool configurations globally while overriding them for specific tasks.
+
+**Example:**
+
+``` {.python filename="config.py"}
+{{< include ../examples/extra_args_priority.py >}}
+```
+
+1. Default agent has `web_search` tool
+2. `task1` inherits the default: uses `web_search`
+3. `task2` overrides with `extra_args`: uses `bash` instead
+
 ## Inheritance {#inheritance}
 
 Inspect Flow supports configuration inheritance to share settings across multiple config files. This is particularly useful for defining global defaults at a repository level that apply to all evaluations.

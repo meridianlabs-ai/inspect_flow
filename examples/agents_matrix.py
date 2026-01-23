@@ -1,3 +1,4 @@
+from inspect_ai.tool import bash, python, web_search
 from inspect_flow import FlowSpec, agents_matrix, tasks_matrix
 
 FlowSpec(
@@ -5,11 +6,11 @@ FlowSpec(
     tasks=tasks_matrix(
         task="my_task",
         solver=agents_matrix(
-            agent="system_message",
+            agent="react",
             args=[
-                {"message": "You are a helpful assistant."},
-                {"message": "You are a creative writer."},
-                {"message": "You are a technical expert."},
+                {"tools": [web_search()]},
+                {"tools": [bash(), python()]},
+                {"tools": [web_search(), bash(), python()]},
             ],
         ),
     ),

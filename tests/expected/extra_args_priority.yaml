@@ -1,0 +1,10 @@
+log_dir: logs
+tasks:
+- name: task1
+- name: task2
+  extra_args:
+    agent:
+      tools:
+      - type: tool
+        name: bash
+        params: {}
