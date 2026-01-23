@@ -1,11 +1,12 @@
-from collections.abc import Callable
 from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
-from inspect_ai._eval.loader import scorer_from_spec
+from inspect_ai._eval.loader import create_tasks, scorer_from_spec
 from inspect_ai._eval.task.util import slice_dataset
+from inspect_ai._util.file import filesystem
 from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
+from inspect_ai._util.path import chdir_python
 from inspect_ai._util.registry import (
     is_model_dict,
     is_registry_dict,
@@ -35,9 +36,7 @@ from inspect_flow._types.flow_types import (
     NotGiven,
 )
 from inspect_flow._util.list_util import sequence_to_list
-from inspect_flow._util.module_util import get_module_from_file
 from inspect_flow._util.not_given import default, default_none, is_set
-from inspect_flow._util.path_util import find_file
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
@@ -79,8 +78,9 @@ def _kwargs(
 
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[Task]:
     return [
-        _instantiate_task(spec, task_config, base_dir=base_dir)
+        task
         for task_config in spec.tasks or []
+        for task in _instantiate_task(spec, task_config, base_dir=base_dir)
     ]
 
 
@@ -194,9 +194,9 @@ def _create_solver(
 
 def _instantiate_task(
     spec: FlowSpec, flow_task: str | FlowTask | Task, base_dir: str
-) -> Task:
+) -> list[Task]:
     if isinstance(flow_task, Task):
-        return flow_task
+        return [flow_task]
     if (
         spec.defaults
         or not isinstance(flow_task, FlowTask)
@@ -215,81 +215,79 @@ def _instantiate_task(
         if flow_task.model_roles
         else NOT_GIVEN
     )
-    task_func = _get_task_creator(flow_task, base_dir=base_dir)
     if model:
         init_active_model(model, model.config)
-    task = task_func(**_registry_kwargs(flow_task.args or {}))
+    tasks = _create_task(flow_task, base_dir=base_dir)
 
-    if is_set(flow_task.sample_id):
-        task.dataset = slice_dataset(
-            task.dataset,
-            limit=None,
-            sample_id=sequence_to_list(flow_task.sample_id),
+    for task in tasks:
+        if is_set(flow_task.sample_id):
+            task.dataset = slice_dataset(
+                task.dataset,
+                limit=None,
+                sample_id=sequence_to_list(flow_task.sample_id),
+            )
+
+        epochs = flow_task.epochs
+        if isinstance(epochs, FlowEpochs):
+            epochs = Epochs(
+                epochs=epochs.epochs,
+                reducer=sequence_to_list(epochs.reducer),
+            )
+
+        _T = TypeVar("_T")
+
+        def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
+            return NOT_GIVEN if isinstance(value, NotGiven) else value
+
+        task_with(
+            task,
+            # dataset= Not Supported
+            # setup= Not Supported
+            solver=solver,
+            # cleanup= Not Supported
+            scorer=scorer,
+            # metrics= Not Supported
+            model=model,
+            config=ng(flow_task.config),
+            model_roles=model_roles,
+            sandbox=ng(flow_task.sandbox),
+            approval=ng(flow_task.approval),
+            epochs=ng(epochs),
+            fail_on_error=ng(flow_task.fail_on_error),
+            continue_on_fail=ng(flow_task.continue_on_fail),
+            message_limit=ng(flow_task.message_limit),
+            token_limit=ng(flow_task.token_limit),
+            time_limit=ng(flow_task.time_limit),
+            working_limit=ng(flow_task.working_limit),
+            name=ng(flow_task.name),
+            version=ng(flow_task.version),
+            metadata=ng(flow_task.metadata),
         )
-
-    epochs = flow_task.epochs
-    if isinstance(epochs, FlowEpochs):
-        epochs = Epochs(
-            epochs=epochs.epochs,
-            reducer=sequence_to_list(epochs.reducer),
-        )
-
-    _T = TypeVar("_T")
-
-    def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
-        return NOT_GIVEN if isinstance(value, NotGiven) else value
-
-    task_with(
-        task,
-        # dataset= Not Supported
-        # setup= Not Supported
-        solver=solver,
-        # cleanup= Not Supported
-        scorer=scorer,
-        # metrics= Not Supported
-        model=model,
-        config=ng(flow_task.config),
-        model_roles=model_roles,
-        sandbox=ng(flow_task.sandbox),
-        approval=ng(flow_task.approval),
-        epochs=ng(epochs),
-        fail_on_error=ng(flow_task.fail_on_error),
-        continue_on_fail=ng(flow_task.continue_on_fail),
-        message_limit=ng(flow_task.message_limit),
-        token_limit=ng(flow_task.token_limit),
-        time_limit=ng(flow_task.time_limit),
-        working_limit=ng(flow_task.working_limit),
-        name=ng(flow_task.name),
-        version=ng(flow_task.version),
-        metadata=ng(flow_task.metadata),
-    )
-    return task
+    return tasks
 
 
-def _get_task_creator_from_file(
-    file_path: str, base_dir: str, attr: str
-) -> Callable[..., Task]:
-    file = find_file(file_path, base_dir=base_dir)
-    if not file:
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    module = get_module_from_file(file)
-    return getattr(module, attr)
-
-
-def _get_task_creator(task: FlowTask, base_dir: str) -> Callable[..., Task]:
+def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
+    task_args = _registry_kwargs(task.args or {})
+    # Use factory if provided
     if task.factory:
-        return task.factory
+        return [task.factory(**task_args)]
+
     if not task.name:
         raise ValueError(f"Task name is required. Task: {task}")
-    config_name = task.name
 
-    if task.name.find("@") != -1:
-        file, attr = task.name.split("@", 1)
-        return _get_task_creator_from_file(file, base_dir=base_dir, attr=attr)
+    # Try to create by registry
+    try:
+        return [registry_create(type="task", name=task.name, **task_args)]
+    except LookupError:
+        pass
+
+    # Try to create by finding task functions in files
+    if filesystem(base_dir).is_local():
+        # create_tasks root_dir param does not work. Use chdir instead.
+        with chdir_python(base_dir):
+            tasks = create_tasks(globs=[task.name], task_args=task_args)
     else:
-
-        def task_func(**kwargs):
-            return registry_create(type="task", name=config_name, **kwargs)
-
-        return task_func
+        tasks = create_tasks(globs=[task.name], task_args=task_args)
+    if not tasks:
+        raise LookupError(f"No tasks found for name: {task.name}")
+    return tasks

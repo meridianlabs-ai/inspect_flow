@@ -121,7 +121,8 @@ def test_file_not_found() -> None:
     )
     with pytest.raises(FileNotFoundError) as e:
         instantiate_tasks(spec=spec, base_dir=".")
-    assert "File not found:" in str(e.value)
+    assert "No such file or directory:" in str(e.value)
+    assert "missing_file.py" in str(e.value)
 
 
 def test_missing_task_name() -> None:
