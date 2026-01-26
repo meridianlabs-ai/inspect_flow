@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence, TypeAlias, TypeVar
+from typing import Any, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.loader import load_tasks, scorer_from_spec
@@ -9,9 +9,7 @@ from inspect_ai._util.notgiven import NOT_GIVEN
 from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
 from inspect_ai._util.path import chdir_python
 from inspect_ai._util.registry import (
-    is_model_dict,
-    is_registry_dict,
-    model_create_from_dict,
+    registry_kwargs,
 )
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
@@ -45,26 +43,6 @@ SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 _T = TypeVar("_T", bound=BaseModel)
 
 
-# TODO:ransom copied from inspect_ai._util.registry for bug fix - remove once fixed
-def _registry_arg(arg: Any) -> Any:
-    if isinstance(arg, dict):
-        if is_registry_dict(arg):
-            return registry_create(arg["type"], arg["name"], **arg["params"])
-        elif is_model_dict(arg):
-            return model_create_from_dict(arg)
-        else:
-            return {k: _registry_arg(v) for k, v in arg.items()}
-    elif isinstance(arg, (list, tuple)):
-        return [_registry_arg(item) for item in arg]
-    else:
-        return arg
-
-
-def _registry_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
-    """Resolve any registry and model dicts in the given kwargs."""
-    return {k: _registry_arg(v) for k, v in kwargs.items()}
-
-
 def _kwargs(
     type: Literal["model", "solver", "scorer", "agent"],
     args: CreateArgs | None | NotGiven,
@@ -74,7 +52,7 @@ def _kwargs(
     additional_args: CreateArgs = (
         task.extra_args and getattr(task.extra_args, type) or {}
     )
-    return _registry_kwargs({**base_args, **additional_args})
+    return registry_kwargs(**{**base_args, **additional_args})
 
 
 @dataclass
@@ -277,7 +255,7 @@ def _instantiate_task(
 
 
 def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
-    task_args = _registry_kwargs(task.args or {})
+    task_args = registry_kwargs(**(task.args or {}))
     # Use factory if provided
     if task.factory:
         return [task.factory(**task_args)]
