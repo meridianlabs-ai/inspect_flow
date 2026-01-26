@@ -70,7 +70,7 @@ def store_command() -> None:
     pass
 
 
-@store_command.command("add", help="Add log directories to the store")
+@store_command.command("import", help="Import existing log directories to the store")
 @store_options
 @log_dirs_argument()
 @click.option(
@@ -79,7 +79,7 @@ def store_command() -> None:
     is_flag=True,
     default=False,
     help="Recursively search for log directories.",
-    envvar="INSPECT_FLOW_STORE_ADD_RECURSIVE",
+    envvar="INSPECT_FLOW_STORE_IMPORT_RECURSIVE",
 )
 @click.option(
     "--copy-from",
@@ -91,16 +91,16 @@ def store_command() -> None:
         readable=True,
         resolve_path=False,
     ),
-    help="Recursively search for log directories.",
-    envvar="INSPECT_FLOW_STORE_ADD_COPY_FROM",
+    help="Copy logs to the directory being imported.",
+    envvar="INSPECT_FLOW_STORE_IMPORT_COPY_FROM",
 )
-def store_add(
+def store_import(
     log_dirs: tuple[str, ...],
     recursive: bool,
     copy_from: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    """Add log directories to the flow store."""
+    """Import existing log directories to the flow store."""
     flow_store = init_store(**kwargs)
     if copy_from:
         if recursive:
@@ -112,7 +112,7 @@ def store_add(
                 "When using --copy-from, exactly one log_dir must be specified as the destination."
             )
         copy_all_logs(src_dir=copy_from, dest_dir=log_dirs[0])
-    flow_store.add_log_dir(list(log_dirs), recursive=recursive)
+    flow_store.import_log_dir(list(log_dirs), recursive=recursive)
 
 
 @store_command.command("remove", help="Remove log directories from the store")

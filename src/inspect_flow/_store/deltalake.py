@@ -208,7 +208,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 storage_options=self._storage_options,
             )
 
-    def add_log_dir(
+    def import_log_dir(
         self, log_dir: str | Sequence[str], recursive: bool = False
     ) -> None:
         if isinstance(log_dir, str):

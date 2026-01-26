@@ -388,7 +388,7 @@ def test_417_invalid_run() -> None:
 def test_store_commands() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
-    result = runner.invoke(store_command, ["add", log_dir, "--log-level", "error"])
+    result = runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
     assert result.exit_code == 0
     result = runner.invoke(store_command, ["list", "--log-level", "error"])
     assert result.exit_code == 0

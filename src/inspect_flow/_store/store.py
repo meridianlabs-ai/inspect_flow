@@ -17,10 +17,10 @@ class FlowStore(ABC):
     """Interface for flow store implementations."""
 
     @abstractmethod
-    def add_log_dir(
+    def import_log_dir(
         self, log_dir: str | Sequence[str], recursive: bool = False
     ) -> None:
-        """Add a directory of log files.
+        """Import a directory of log files.
 
         Args:
             log_dir: Path or paths to directories containing log files.
