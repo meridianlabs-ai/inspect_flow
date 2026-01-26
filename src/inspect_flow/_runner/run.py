@@ -28,7 +28,7 @@ from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.path_util import path_join
 from inspect_flow._util.pydantic_util import model_dump
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 
 def _read_config(config_file: str) -> FlowSpec:
