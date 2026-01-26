@@ -186,6 +186,12 @@ class DeltaLakeStore(FlowStoreInternal):
     def _table_path(self, table_name: str) -> str:
         return f"{self._store_path}/{table_name}"
 
+    def _open_table(self, table_name: str) -> DeltaTable:
+        return DeltaTable(
+            self._table_path(table_name),
+            storage_options=self._storage_options,
+        )
+
     def _get_table(self, table_path: str) -> DeltaTable | None:
         try:
             return DeltaTable(table_path, storage_options=self._get_storage_options())
@@ -266,10 +272,7 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
             return
 
         log_dir = [to_uri(d) for d in log_dir]
-        dt = DeltaTable(
-            self._table_path(LOG_DIRS),
-            storage_options=self._storage_options,
-        )
+        dt = self._open_table(LOG_DIRS)
         quoted_dirs = ", ".join(f"'{_escape_sql_string(d)}'" for d in log_dir)
         metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
         if num_deleted_rows := metrics.get("num_deleted_rows", 0):
@@ -304,7 +307,7 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
             storage_options=self._storage_options,
         )
 
-    def _add_logs(self, logs: list[Log], overwrite: bool = False) -> None:
+    def _add_logs(self, logs: list[Log]) -> None:
         task_ids = {log.task_identifier for log in logs}
         existing_logs = self._get_logs(task_ids)
         new_logs = [
@@ -361,26 +364,17 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
         return results
 
     def get_log_dirs(self) -> set[str]:
-        dt = DeltaTable(
-            self._table_path(LOG_DIRS),
-            storage_options=self._storage_options,
-        )
+        dt = self._open_table(LOG_DIRS)
         table = dt.to_pyarrow_table()
         return set(table["log_dir"].to_pylist())
 
     def get_logs(self) -> set[str]:
-        dt = DeltaTable(
-            self._table_path(LOGS),
-            storage_options=self._storage_options,
-        )
+        dt = self._open_table(LOGS)
         table = dt.to_pyarrow_table()
         return set(table["log_path"].to_pylist())
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
-        dt = DeltaTable(
-            self._table_path(LOGS),
-            storage_options=self._storage_options,
-        )
+        dt = self._open_table(LOGS)
         dataset = dt.to_pyarrow_dataset()
         table = dataset.to_table(filter=pc.field("task_identifier").isin(task_ids))
 

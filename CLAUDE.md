@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prefer the shortest readable code that accomplishes the task. Think hard to optimize for clarity and maintainability.
 
-DO use internal functions from inspect-ai. DO NOT re-implement functionality that already exists in inspect-ai.
+DO use internal private functions from inspect-ai. DO NOT re-implement functionality that already exists in inspect-ai.
 
 ## Project Overview
 
