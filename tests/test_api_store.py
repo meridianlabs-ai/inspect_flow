@@ -28,7 +28,7 @@ def test_store_get(capsys) -> None:
     assert store.get_log_dirs() == {dir1, dir2}
 
 
-def test_store_add_recursive() -> None:
+def test_store_import_recursive() -> None:
     store: FlowStore = store_get()
     assert store.get_log_dirs() == set()
     store.import_log_dir(parent, recursive=True)

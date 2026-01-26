@@ -236,7 +236,7 @@ Local log directory:
 Remote store:
   {path_str(self._store_path[: -len("flow_store")])}
 
-Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow store add --copy-from local_path s3://<bucket>/<path>' to copy local logs to remote storage."""
+Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow store import --copy-from local_path s3://<bucket>/<path>' to copy local logs to remote storage."""
                         )
 
             new_data = pa.Table.from_pylist(
