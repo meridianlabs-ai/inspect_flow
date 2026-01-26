@@ -36,6 +36,10 @@ logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
 TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
 
 
+def _escape_sql_string(s: str) -> str:
+    return s.replace("'", "''")
+
+
 def _get_bucket_region(bucket_name: str) -> str | None:
     """Get the region for an S3 bucket using the AWS API."""
     try:
@@ -266,7 +270,7 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
             self._table_path(LOG_DIRS),
             storage_options=self._storage_options,
         )
-        quoted_dirs = ", ".join(f"'{d}'" for d in log_dir)
+        quoted_dirs = ", ".join(f"'{_escape_sql_string(d)}'" for d in log_dir)
         metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
         if num_deleted_rows := metrics.get("num_deleted_rows", 0):
             logger.info(f"Removed {num_deleted_rows} log directories")

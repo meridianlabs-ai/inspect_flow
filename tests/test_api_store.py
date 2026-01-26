@@ -4,8 +4,10 @@ from inspect_flow._util.path_util import path_str
 from inspect_flow.api import FlowStore, store_get
 
 parent = str(Path.cwd() / "tests/test_logs")
-dir1 = "file://" + str(Path.cwd() / "tests/test_logs/logs1")
-dir2 = "file://" + str(Path.cwd() / "tests/test_logs/logs2")
+dir1base = str(Path.cwd() / "tests/test_logs/logs1")
+dir2base = str(Path.cwd() / "tests/test_logs/logs2")
+dir1 = "file://" + dir1base
+dir2 = "file://" + dir2base
 
 
 def test_store_get(capsys) -> None:
@@ -39,6 +41,18 @@ def test_store_remove() -> None:
     store: FlowStore = store_get()
     store.import_log_dir(dir1)
     store.remove_log_dir(dir1)
+    assert store.get_log_dirs() == set()
+
+
+def test_store_remove_escaping(mock_s3) -> None:
+    dir = "s3://test-bucket/user's logs"
+    log_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    local_path = dir1base + "/" + log_name
+    mock_s3.upload_file(local_path, "test-bucket", "user's logs/" + log_name)
+
+    store: FlowStore = store_get()
+    store.import_log_dir(dir)
+    store.remove_log_dir(dir)
     assert store.get_log_dirs() == set()
 
 
