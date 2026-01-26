@@ -11,6 +11,7 @@ import yaml
 from dotenv import dotenv_values, find_dotenv
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
+from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
@@ -275,12 +276,8 @@ def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
     if no_dotenv:
         return env
     # Temporarily change to base_dir to find .env file
-    original_cwd = os.getcwd()
-    try:
-        os.chdir(base_dir)
+    with chdir_python(base_dir):
         # Already loaded environment variables should take precedence
         dotenv = dotenv_values(find_dotenv(usecwd=True))
         env = {k: v for k, v in dotenv.items() if v is not None} | env
-    finally:
-        os.chdir(original_cwd)
     return env
