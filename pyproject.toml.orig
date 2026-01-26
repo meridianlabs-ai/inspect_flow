@@ -14,9 +14,9 @@ dependencies = [
     "click>=8.2.1",
 <<<<<<< HEAD
     "deltalake>=0.18.0",
-    "inspect-ai>=0.3.147",
-=======
     "inspect-ai>=0.3.162",
+=======
+    "inspect-ai>=0.3.164",
 >>>>>>> main
     "packaging>=21.0",
     "pyarrow>=17.0.0",
