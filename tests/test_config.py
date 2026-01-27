@@ -610,6 +610,10 @@ def test_log_dir_create_unique() -> None:
         mock_exists.side_effect = [True, True, False]
         assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
         assert mock_exists.call_count == 3
+    with patch("inspect_flow._config.load.exists") as mock_exists:
+        mock_exists.side_effect = [True, True, False]
+        assert _log_dir_create_unique("log_dir_12/") == "log_dir_14"
+        assert mock_exists.call_count == 3
 
 
 def test_apply_substitutions_log_dir_create_unique() -> None:
