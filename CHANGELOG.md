@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.1...v0.2.2) (2026-01-26)
+
+
+### Bug Fixes
+
+* remove duplicated inspect_ai code ([#444](https://github.com/meridianlabs-ai/inspect_flow/issues/444)) ([c6c141c](https://github.com/meridianlabs-ai/inspect_flow/commit/c6c141cad42f997a2b128add00688e9c4a2024ec))
+* use inspect-ai load_tasks to ensure task path is captured correctly ([#441](https://github.com/meridianlabs-ai/inspect_flow/issues/441)) ([b34e303](https://github.com/meridianlabs-ai/inspect_flow/commit/b34e303c7e504402c894ffc8b92539d18e94914a))
+
 ## [0.2.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.0...v0.2.1) (2026-01-23)
 
 
