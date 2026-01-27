@@ -112,7 +112,7 @@ def store_import(
                 "When using --copy-from, exactly one log_dir must be specified as the destination."
             )
         copy_all_logs(src_dir=copy_from, dest_dir=log_dirs[0])
-    flow_store.import_log_dir(list(log_dirs), recursive=recursive)
+    flow_store.import_log_dir(list(log_dirs), type="import", recursive=recursive)
 
 
 @store_command.command("remove", help="Remove log directories from the store")

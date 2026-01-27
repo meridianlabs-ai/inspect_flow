@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from typing import Sequence
+from typing import Literal, Sequence
 
 import platformdirs
 from inspect_ai.log import EvalLog
@@ -12,18 +12,24 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
 
+LogDirType = Literal["import", "run"]
+
 
 class FlowStore(ABC):
     """Interface for flow store implementations."""
 
     @abstractmethod
     def import_log_dir(
-        self, log_dir: str | Sequence[str], recursive: bool = False
+        self,
+        log_dir: str | Sequence[str],
+        type: LogDirType = "import",
+        recursive: bool = False,
     ) -> None:
         """Import a directory of log files.
 
         Args:
             log_dir: Path or paths to directories containing log files.
+            type: The type of log directory ("import" or "run").
             recursive: Whether to search directories recursively.
         """
         pass

@@ -1,6 +1,7 @@
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field, fields
+from datetime import datetime
 from logging import Logger, LoggerAdapter, getLogger
 from typing import Any, Counter, MutableMapping, Sequence
 
@@ -14,10 +15,11 @@ from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_ai.log._file import read_eval_log_headers
 from semver import Version
 
-from inspect_flow._store.store import FlowStoreInternal, is_better_log
+from inspect_flow._store.store import FlowStoreInternal, LogDirType, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.path_util import path_str
+from inspect_flow._util.util import now
 
 
 class PrefixLogger(LoggerAdapter):
@@ -32,6 +34,14 @@ class PrefixLogger(LoggerAdapter):
 
 
 logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
+
+
+def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
+    """Create a dataclass field with PyArrow type metadata."""
+    metadata = kwargs.pop("metadata", {})
+    metadata["pa_type"] = pa_type
+    return field(metadata=metadata, **kwargs)
+
 
 TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
 
@@ -62,34 +72,64 @@ class TableDef:
 
 
 LOG_DIRS = "_table_log_dirs"
-LOG_DIRS_SCHEMA = pa.schema([("log_dir", pa.string())])
+
+
+@dataclass
+class LogDirRecord:
+    log_dir: str = pa_field(pa.string())
+    type: LogDirType = pa_field(pa.string())
+    recursive: bool = pa_field(pa.bool_())
+    ts: datetime = pa_field(pa.timestamp("ms"), default=None)
+
+    def __post_init__(self) -> None:
+        if self.ts is None:
+            self.ts = now()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def to_schema(cls) -> pa.Schema:
+        return pa.schema([(f.name, f.metadata["pa_type"]) for f in fields(cls)])
+
 
 LOGS = "_table_logs"
-LOGS_SCHEMA = pa.schema(
-    [
-        ("task_identifier", pa.string()),
-        ("log_path", pa.string()),
-    ]
-)
+
+
+@dataclass
+class LogRecord:
+    log_path: str = pa_field(pa.string())
+    task_identifier_1: str = pa_field(pa.string())
+    ts: datetime = pa_field(pa.timestamp("ms"), default=None)
+
+    def __post_init__(self) -> None:
+        if self.ts is None:
+            self.ts = now()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def to_schema(cls) -> pa.Schema:
+        return pa.schema([(f.name, f.metadata["pa_type"]) for f in fields(cls)])
+
 
 TABLES: list[TableDef] = [
     TableDef(
         name=LOG_DIRS,
-        version="0.1",
-        schema=LOG_DIRS_SCHEMA,
+        version="0.2.0",
+        schema=LogDirRecord.to_schema(),
     ),
     TableDef(
         name=LOGS,
-        version="0.1",
-        schema=LOGS_SCHEMA,
+        version="0.2.0",
+        schema=LogRecord.to_schema(),
     ),
 ]
 
 
 def _create_table_description(table: TableDef) -> str:
     description = {"name": table.name, "version": table.version}
-    if table.name == LOGS:
-        description["task_identifier_version"] = str(TASK_IDENTIFIER_VERSION)
     return json.dumps(description)
 
 
@@ -100,20 +140,11 @@ def _check_table_description(table: TableDef, description: str) -> None:
             f"Table name mismatch: expected {table.name}, got {parsed.get('name')}"
         )
     if parsed.get("version") != table.version:
-        stored = Version.parse(parsed.get("version"))
-        code = Version.parse(table.version)
-        if stored > code:
+        stored = Version.parse(parsed.get("version"), optional_minor_and_patch=True)
+        code = Version.parse(table.version, optional_minor_and_patch=True)
+        if stored.major > code.major or stored.minor > code.minor:
             raise ValueError(
                 f"Table {table.name} version mismatch: supported {table.version}, got {parsed.get('version')}. {PKG_NAME} upgrade required."
-            )
-        else:
-            raise ValueError(
-                f"Table {table.name} version mismatch: supported {table.version}, got {parsed.get('version')}. Store upgrade required."
-            )
-    if table.name == LOGS:
-        if parsed.get("task_identifier_version") != str(TASK_IDENTIFIER_VERSION):
-            raise ValueError(
-                f"Table {table.name} task identifier version mismatch: expected {TASK_IDENTIFIER_VERSION}, got {parsed.get('task_identifier_version')}. Store update required."
             )
 
 
@@ -194,7 +225,7 @@ class DeltaLakeStore(FlowStoreInternal):
 
     def _get_table(self, table_path: str) -> DeltaTable | None:
         try:
-            return DeltaTable(table_path, storage_options=self._get_storage_options())
+            return DeltaTable(table_path, storage_options=self._storage_options)
         except (TableNotFoundError, OSError):
             return None
 
@@ -219,7 +250,10 @@ class DeltaLakeStore(FlowStoreInternal):
             )
 
     def import_log_dir(
-        self, log_dir: str | Sequence[str], recursive: bool = False
+        self,
+        log_dir: str | Sequence[str],
+        type: LogDirType = "import",
+        recursive: bool = False,
     ) -> None:
         if isinstance(log_dir, str):
             log_dir = [log_dir]
@@ -250,8 +284,11 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
                         )
 
             new_data = pa.Table.from_pylist(
-                [{"log_dir": log_dir} for log_dir in new_dirs],
-                schema=LOG_DIRS_SCHEMA,
+                [
+                    LogDirRecord(log_dir=d, type=type, recursive=recursive).to_dict()
+                    for d in new_dirs
+                ],
+                schema=LogDirRecord.to_schema(),
             )
 
             write_deltalake(
@@ -291,13 +328,13 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
 
         new_data = pa.Table.from_pylist(
             [
-                {
-                    "task_identifier": log.task_identifier,
-                    "log_path": to_uri(log.info.name),
-                }
+                LogRecord(
+                    log_path=to_uri(log.info.name),
+                    task_identifier_1=log.task_identifier,
+                ).to_dict()
                 for log in all_logs
             ],
-            schema=LOGS_SCHEMA,
+            schema=LogRecord.to_schema(),
         )
 
         write_deltalake(
@@ -321,13 +358,13 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
 
         new_data = pa.Table.from_pylist(
             [
-                {
-                    "task_identifier": log.task_identifier,
-                    "log_path": to_uri(log.info.name),
-                }
+                LogRecord(
+                    log_path=to_uri(log.info.name),
+                    task_identifier_1=log.task_identifier,
+                ).to_dict()
                 for log in new_logs
             ],
-            schema=LOGS_SCHEMA,
+            schema=LogRecord.to_schema(),
         )
 
         write_deltalake(
@@ -376,11 +413,11 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
         dt = self._open_table(LOGS)
         dataset = dt.to_pyarrow_dataset()
-        table = dataset.to_table(filter=pc.field("task_identifier").isin(task_ids))
+        table = dataset.to_table(filter=pc.field("task_identifier_1").isin(task_ids))
 
         result: dict[str, set[str]] = {}
         for task_id, log_path in zip(
-            table["task_identifier"].to_pylist(),
+            table["task_identifier_1"].to_pylist(),
             table["log_path"].to_pylist(),
             strict=True,
         ):
