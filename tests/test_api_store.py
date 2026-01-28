@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from inspect_ai._util.file import to_uri
 from inspect_flow._util.path_util import path_str
 from inspect_flow.api import FlowStore, store_get
 
@@ -20,7 +21,7 @@ def test_store_get(capsys) -> None:
     assert store.get_log_dirs() == {dir1}
     store.import_log_path(dir2)
     captured = capsys.readouterr().out
-    assert f"Found {path_str(dir2)} with 2 logs" in captured
+    assert f"Found {path_str(dir2)} with 1 logs" in captured
     assert f"Adding new log directory: {path_str(dir2)}" in captured
     assert store.get_log_dirs() == {dir1, dir2}
     store.import_log_path(dir1)
@@ -34,7 +35,19 @@ def test_store_import_recursive() -> None:
     store: FlowStore = store_get()
     assert store.get_log_dirs() == set()
     store.import_log_path(parent, recursive=True)
-    assert sorted(store.get_log_dirs()) == sorted([dir1, dir2])
+    assert sorted(store.get_log_dirs()) == [to_uri(parent)]
+    assert len(store.get_logs()) == 4
+
+
+def test_store_import_add_recursive() -> None:
+    store: FlowStore = store_get()
+    assert store.get_log_dirs() == set()
+    store.import_log_path(dir2, recursive=False)
+    assert sorted(store.get_log_dirs()) == [dir2]
+    assert len(store.get_logs()) == 1
+    store.import_log_path(dir2, recursive=True)
+    assert sorted(store.get_log_dirs()) == [dir2]
+    assert len(store.get_logs()) == 2
 
 
 def test_store_remove() -> None:

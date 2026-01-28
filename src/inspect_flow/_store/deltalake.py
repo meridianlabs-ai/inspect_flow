@@ -174,20 +174,21 @@ def file_to_eval_log(log_file: str) -> Log:
 def _add_log_dir(
     log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
 ) -> None:
+    if recursive:
+        dirs.add(log_dir)
     dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     logs.extend(dir_logs)
+    dirs.add(to_uri(log_dir))
     if not recursive:
         logger.info(f"Found {path_str(log_dir)} with {len(dir_logs)} logs")
-        dirs.add(to_uri(dirname(dir_logs[0].info.name)))
     else:
         subdirs = Counter[str]()
         for log in dir_logs:
             subdirs.update([to_uri(dirname(log.info.name))])
         for dir, count in subdirs.items():
             logger.info(f"Found {path_str(dir)} with {count} logs")
-        dirs.update(subdirs.keys())
 
 
 def _remove_path(
