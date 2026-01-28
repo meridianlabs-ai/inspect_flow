@@ -481,6 +481,8 @@ class DeltaLakeStore(FlowStoreInternal):
         return set(table["log_path"].to_pylist())
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
+        self._set_task_identifiers()
+
         dt = self._open_table(LOGS)
         dataset = dt.to_pyarrow_dataset()
         table = dataset.to_table(filter=pc.field("task_identifier_1").isin(task_ids))
@@ -495,3 +497,41 @@ class DeltaLakeStore(FlowStoreInternal):
                 result[task_id] = set()
             result[task_id].add(log_path)
         return result
+
+    def _set_task_identifiers(self) -> None:
+        """Find logs with missing task_identifier_1 and compute it from the log header."""
+        dt = self._open_table(LOGS)
+        table = dt.to_pyarrow_table()
+
+        # Find entries with empty or null task_identifier_1
+        task_ids = table["task_identifier_1"].to_pylist()
+        log_paths = table["log_path"].to_pylist()
+
+        logs_to_update: list[tuple[str, str]] = []
+        for log_path, task_id in zip(log_paths, task_ids, strict=True):
+            if not task_id:
+                try:
+                    log = file_to_eval_log(log_path)
+                    logs_to_update.append((log_path, log.task_identifier))
+                except Exception as e:
+                    logger.warning(f"Failed to read log {path_str(log_path)}: {e}")
+
+        if not logs_to_update:
+            return
+
+        # Update using merge
+        update_table = pa.Table.from_pydict(
+            {
+                "log_path": [log_path for log_path, _ in logs_to_update],
+                "task_identifier_1": [task_id for _, task_id in logs_to_update],
+            }
+        )
+
+        dt.merge(
+            source=update_table,
+            predicate="target.log_path = source.log_path",
+            source_alias="source",
+            target_alias="target",
+        ).when_matched_update(
+            {"task_identifier_1": "source.task_identifier_1"}
+        ).execute()

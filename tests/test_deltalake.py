@@ -1,12 +1,26 @@
 import json
+from pathlib import Path
 
+import pyarrow as pa
+from deltalake import write_deltalake
+from inspect_ai._util.file import to_uri
 from inspect_flow._store.deltalake import (
     LOGS,
     TABLES,
     DeltaLakeStore,
+    LogRecord,
     _create_table_description,
+    file_to_eval_log,
 )
 from semver import Version
+
+parent = str(Path.cwd() / "tests/test_logs")
+dir1base = str(Path.cwd() / "tests/test_logs/logs1")
+dir2base = str(Path.cwd() / "tests/test_logs/logs2")
+dir1 = "file://" + dir1base
+dir2 = "file://" + dir2base
+log1_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+log1_path = dir1 + "/" + log1_name
 
 
 def test_version_maintained(tmp_path) -> None:
@@ -45,3 +59,34 @@ def test_version_maintained(tmp_path) -> None:
     dt.alter.set_table_description(metadata)
     store = DeltaLakeStore(store_path=store_path)
     check_version(store, old_version)
+
+
+def test_missing_task_identifier(tmp_path) -> None:
+    store_path = str(tmp_path)
+    store = DeltaLakeStore(store_path=store_path)
+    table_def = TABLES[1]
+    assert table_def.name == LOGS
+
+    record = LogRecord(
+        log_path=to_uri(log1_path),
+        task_identifier_1="invalid",
+    )
+    dict = record.to_dict()
+    dict.pop("task_identifier_1")  # don't set the task_identifier
+
+    new_data = pa.Table.from_pylist(
+        [dict],
+        schema=LogRecord.to_schema(),
+    )
+
+    write_deltalake(
+        store._table_path(LOGS),
+        new_data,
+        mode="append",
+        storage_options=store._storage_options,
+    )
+
+    log = file_to_eval_log(log1_path)
+
+    logs = store.search_for_logs({log.task_identifier})
+    assert logs == [to_uri(log1_path)]
