@@ -9,7 +9,7 @@ from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 import yaml
 from attr import dataclass, field
 from fsspec.core import split_protocol
-from inspect_ai._util.file import absolute_file_path, exists, file
+from inspect_ai._util.file import absolute_file_path, exists, file, filesystem
 from pydantic import BaseModel
 from pydantic_core import ValidationError
 
@@ -182,6 +182,7 @@ def _log_dir_create_unique(log_dir: str) -> str:
     if not exists(log_dir):
         return log_dir
 
+    log_dir = log_dir.rstrip(filesystem(log_dir).sep)
     # Check if log_dir ends with _<number>
     match = re.match(r"^(.+)_(\d+)$", log_dir)
     if match:
