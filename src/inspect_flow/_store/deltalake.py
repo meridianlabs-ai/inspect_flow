@@ -10,9 +10,9 @@ import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, task_identifier
-from inspect_ai._util.file import dirname, filesystem, to_uri
+from inspect_ai._util.file import dirname, exists, filesystem, to_uri
 from inspect_ai.log import list_eval_logs, read_eval_log
-from inspect_ai.log._file import read_eval_log_headers
+from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
 from semver import Version
 
 from inspect_flow._store.store import FlowStoreInternal, LogDirType, is_better_log
@@ -161,6 +161,16 @@ def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
     ]
 
 
+def file_to_eval_log(log_file: str) -> Log:
+    info = filesystem(log_file).info(log_file)
+    log_files = log_files_from_ls([info])
+    if not log_files:
+        raise NoLogsError(f"No log found: {log_file}")
+    header = read_eval_log_headers([log_file])[0]
+    task_id = task_identifier(header, None)
+    return Log(info=log_files[0], header=header, task_identifier=task_id)
+
+
 def _add_log_dir(
     log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
 ) -> None:
@@ -178,6 +188,32 @@ def _add_log_dir(
         for dir, count in subdirs.items():
             logger.info(f"Found {path_str(dir)} with {count} logs")
         dirs.update(subdirs.keys())
+
+
+def _remove_path(
+    path: str,
+    recursive: bool,
+    logs: set[str],
+    dirs: set[str],
+    logs_to_remove: set[str],
+    dirs_to_remove: set[str],
+) -> None:
+    path = to_uri(path)
+    if not recursive:
+        if path in dirs:
+            dirs_to_remove.add(path)
+        elif path in logs:
+            logs_to_remove.add(path)
+    else:
+        path_prefix = (
+            path if path.endswith(filesystem(path).sep) else path + filesystem(path).sep
+        )
+        for log in list(logs):
+            if log.startswith(path_prefix):
+                logs_to_remove.add(log)
+        for dir in list(dirs):
+            if dir.startswith(path_prefix):
+                dirs_to_remove.add(dir)
 
 
 class DeltaLakeStore(FlowStoreInternal):
@@ -249,39 +285,46 @@ class DeltaLakeStore(FlowStoreInternal):
                 storage_options=self._storage_options,
             )
 
-    def import_log_dir(
+    def add_run_log_path(self, log_path: str) -> None:
+        self._add_log_path(log_path=log_path, recursive=False, type="run")
+
+    def import_log_path(
         self,
-        log_dir: str | Sequence[str],
-        type: LogDirType = "import",
+        log_path: str | Sequence[str],
         recursive: bool = False,
     ) -> None:
-        if isinstance(log_dir, str):
-            log_dir = [log_dir]
+        self._add_log_path(log_path=log_path, recursive=recursive, type="import")
+
+    def _add_log_path(
+        self,
+        log_path: str | Sequence[str],
+        recursive: bool,
+        type: LogDirType,
+    ) -> None:
+        if isinstance(log_path, str):
+            log_path = [log_path]
+        # Collect dirs and logs to add
         dirs = set()
-        logs = []
-        for dir in log_dir:
-            dir = to_uri(dir)
-            _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
+        logs: list[Log] = []
+        for path in log_path:
+            fs = filesystem(path)
+            if not fs.exists(path):
+                raise FileNotFoundError(f"Log path does not exist: {path_str(path)}")
+            info = fs.info(path)
+            if info.type == "file":
+                logs.append(file_to_eval_log(path))
+            else:
+                dir = to_uri(path)
+                _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
+
         existing_dirs = self.get_log_dirs()
         new_dirs = dirs - existing_dirs
+        # TODO:ransom change recursive
         if not new_dirs:
             logger.info("No new log directories to add")
         else:
             for dir in new_dirs:
                 logger.info(f"Adding new log directory: {path_str(dir)}")
-                if not self._fs.is_local():
-                    if filesystem(dir).is_local():
-                        raise ValueError(
-                            f"""Local log directories cannot be added to remote stores.
-
-Local log directory:
-  {path_str(dir)}
-
-Remote store:
-  {path_str(self._store_path[: -len("flow_store")])}
-
-Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow store import --copy-from local_path s3://<bucket>/<path>' to copy local logs to remote storage."""
-                        )
 
             new_data = pa.Table.from_pylist(
                 [
@@ -301,22 +344,48 @@ Use a log directory on remote storage (e.g., s3://<bucket>/<path>). Use 'flow st
         if logs:
             self._add_logs(logs)
 
-    def remove_log_dir(self, log_dir: str | Sequence[str]) -> None:
-        if isinstance(log_dir, str):
-            log_dir = [log_dir]
-
-        if not log_dir:
+    def remove_log_path(
+        self,
+        log_path: str | Sequence[str],
+        missing: bool = False,
+        recursive: bool = False,
+    ) -> None:
+        if isinstance(log_path, str):
+            log_path = [log_path]
+        if not log_path:
             return
 
-        log_dir = [to_uri(d) for d in log_dir]
-        dt = self._open_table(LOG_DIRS)
-        quoted_dirs = ", ".join(f"'{_escape_sql_string(d)}'" for d in log_dir)
-        metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
-        if num_deleted_rows := metrics.get("num_deleted_rows", 0):
-            logger.info(f"Removed {num_deleted_rows} log directories")
-            self.refresh()
-        else:
-            logger.info("No log directories found to remove")
+        logs = self.get_logs()
+        dirs = self.get_log_dirs()
+        logs_to_remove = set()
+        dirs_to_remove = set()
+        for path in log_path:
+            _remove_path(path, recursive, logs, dirs, logs_to_remove, dirs_to_remove)
+        if missing:
+            logs_to_remove.update([log for log in logs if not exists(log)])
+            dirs_to_remove.update([dir for dir in dirs if not exists(dir)])
+
+        if dirs_to_remove:
+            dt = self._open_table(LOG_DIRS)
+            quoted_dirs = ", ".join(
+                f"'{_escape_sql_string(d)}'" for d in dirs_to_remove
+            )
+            metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
+            if num_deleted_rows := metrics.get("num_deleted_rows", 0):
+                logger.info(f"Removed {num_deleted_rows} log directories")
+            else:
+                logger.info("No log directories found to remove")
+
+        if logs_to_remove:
+            dt = self._open_table(LOGS)
+            quoted_logs = ", ".join(
+                f"'{_escape_sql_string(log)}'" for log in logs_to_remove
+            )
+            metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
+            if num_deleted_rows := metrics.get("num_deleted_rows", 0):
+                logger.info(f"Removed {num_deleted_rows} logs from store")
+            else:
+                logger.info("No logs found to remove from store")
 
     def refresh(self) -> None:
         log_dirs = self.get_log_dirs()

@@ -32,7 +32,7 @@ def test_version_maintained(tmp_path) -> None:
     table_def.version = old_version
     store = DeltaLakeStore(store_path=store_path)
     check_version(store, new_version)
-    store.import_log_dir("tests/test_logs/logs1")
+    store.import_log_path("tests/test_logs/logs1")
     check_version(store, new_version)
     store = DeltaLakeStore(store_path=store_path)
     check_version(store, new_version)

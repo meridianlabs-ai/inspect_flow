@@ -131,7 +131,7 @@ def run_eval_set(
         # TODO:ransomr better monitoring of the log directory
         try:
             assert resolved_spec.log_dir
-            store.import_log_dir(resolved_spec.log_dir, type="run", recursive=False)
+            store.add_run_log_path(resolved_spec.log_dir)
         except NoLogsError as e:
             logger.error(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"

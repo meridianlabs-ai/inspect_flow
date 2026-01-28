@@ -19,16 +19,15 @@ class FlowStore(ABC):
     """Interface for flow store implementations."""
 
     @abstractmethod
-    def import_log_dir(
+    def import_log_path(
         self,
-        log_dir: str | Sequence[str],
-        type: LogDirType = "import",
+        log_path: str | Sequence[str],
         recursive: bool = False,
     ) -> None:
-        """Import a directory of log files.
+        """Import a log file(s) or directory(ies) into the store.
 
         Args:
-            log_dir: Path or paths to directories containing log files.
+            log_path: Path or paths to log files or directories containing log files.
             type: The type of log directory ("import" or "run").
             recursive: Whether to search directories recursively.
         """
@@ -53,11 +52,18 @@ class FlowStore(ABC):
         pass
 
     @abstractmethod
-    def remove_log_dir(self, log_dir: str | Sequence[str]) -> None:
+    def remove_log_path(
+        self,
+        log_path: str | Sequence[str],
+        missing: bool = False,
+        recursive: bool = False,
+    ) -> None:
         """Remove a directory of log files.
 
         Args:
-            log_dir: Path or paths to directories containing log files.
+            log_path: Path or paths to log files or directories containing log files.
+            missing: Whether to remove log paths that are missing from the file system.
+            recursive: Whether to remove log files recursively.
         """
         pass
 
@@ -72,14 +78,9 @@ class FlowStoreInternal(FlowStore):
 
     @abstractmethod
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
-        """Search for logs matching the given task IDs.
+        pass
 
-        Args:
-            task_ids: Set of task identifiers to search for.
-
-        Returns:
-            List of log file paths for the best log of each task.
-        """
+    def add_run_log_path(self, log_path: str) -> None:
         pass
 
 

@@ -1,5 +1,5 @@
 import click
-from inspect_ai._util.file import basename, dirname, exists
+from inspect_ai._util.file import basename, dirname
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
@@ -30,10 +30,10 @@ def store_options(f):
     return f
 
 
-def log_dirs_argument(*, required: bool = True):
+def log_paths_arguments(*, required: bool = True):
     def decorator(func):
-        return click.argument(
-            "log_dirs",
+        func = click.argument(
+            "log_paths",
             nargs=-1,
             type=click.Path(
                 file_okay=False,
@@ -43,8 +43,18 @@ def log_dirs_argument(*, required: bool = True):
                 resolve_path=False,
             ),
             required=required,
-            envvar="INSPECT_FLOW_STORE_LOG_DIRS",
+            envvar="INSPECT_FLOW_STORE_LOG_PATHS",
         )(func)
+        func = click.option(
+            "--recursive",
+            "-r",
+            is_flag=True,
+            default=False,
+            help="Recursively search for log directories.",
+            envvar="INSPECT_FLOW_STORE_RECURSIVE",
+        )(func)
+
+        return func
 
     return decorator
 
@@ -72,15 +82,7 @@ def store_command() -> None:
 
 @store_command.command("import", help="Import existing log directories to the store")
 @store_options
-@log_dirs_argument()
-@click.option(
-    "--recursive",
-    "-r",
-    is_flag=True,
-    default=False,
-    help="Recursively search for log directories.",
-    envvar="INSPECT_FLOW_STORE_IMPORT_RECURSIVE",
-)
+@log_paths_arguments()
 @click.option(
     "--copy-from",
     type=click.Path(
@@ -95,7 +97,7 @@ def store_command() -> None:
     envvar="INSPECT_FLOW_STORE_IMPORT_COPY_FROM",
 )
 def store_import(
-    log_dirs: tuple[str, ...],
+    log_paths: tuple[str, ...],
     recursive: bool,
     copy_from: str | None,
     **kwargs: Unpack[StoreOptionArgs],
@@ -107,63 +109,52 @@ def store_import(
             raise click.UsageError(
                 "Cannot use --recursive with --copy-from. Recursive finds existing log directories."
             )
-        if len(log_dirs) != 1:
+        if len(log_paths) != 1:
             raise click.UsageError(
-                "When using --copy-from, exactly one log_dir must be specified as the destination."
+                "When using --copy-from, exactly one log_path must be specified as the destination."
             )
-        copy_all_logs(src_dir=copy_from, dest_dir=log_dirs[0])
-    flow_store.import_log_dir(list(log_dirs), type="import", recursive=recursive)
+        copy_all_logs(src_dir=copy_from, dest_dir=log_paths[0])
+    flow_store.import_log_path(list(log_paths), recursive=recursive)
 
 
 @store_command.command("remove", help="Remove log directories from the store")
 @store_options
-@log_dirs_argument(required=False)
+@log_paths_arguments(required=False)
 @click.option(
     "--missing",
     is_flag=True,
     default=False,
-    help="Remove log directories that are missing from the file system.",
+    help="Remove log paths that are missing from the file system.",
     envvar="INSPECT_FLOW_STORE_REMOVE_MISSING",
 )
 def store_remove(
-    log_dirs: tuple[str, ...], missing: bool, **kwargs: Unpack[StoreOptionArgs]
+    log_paths: tuple[str, ...],
+    recursive: bool,
+    missing: bool,
+    **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    """Remove log directories from the flow store."""
-    if not log_dirs and not missing:
-        raise click.UsageError("Either log_dirs or --missing must be specified.")
-    if log_dirs and missing:
-        raise click.UsageError("Cannot specify both log_dirs and --missing.")
+    """Remove log paths from the flow store."""
+    if not log_paths and not missing:
+        raise click.UsageError("Either log_paths or --missing must be specified.")
+    if log_paths and missing:
+        raise click.UsageError("Cannot specify both log_paths and --missing.")
     flow_store = init_store(**kwargs)
-    if missing:
-        dirs = flow_store.get_log_dirs()
-        missing_dirs = [log_dir for log_dir in dirs if not exists(log_dir)]
-        for log_dir in missing_dirs:
-            click.echo(f"Removing missing log directory: {path_str(log_dir)}")
-        flow_store.remove_log_dir(missing_dirs)
-    else:
-        flow_store.remove_log_dir(list(log_dirs))
+    flow_store.remove_log_path(list(log_paths), missing=missing, recursive=recursive)
 
 
-@store_command.command("list", help="List log directories in the store")
+@store_command.command("list", help="List log paths in the store")
 @store_options
 @click.option(
-    "--logs",
+    "--type",
+    type=click.Choice(["logs", "dirs", "all"], case_sensitive=False),
     is_flag=True,
-    default=False,
-    help="List logs in the store.",
-    envvar="INSPECT_FLOW_STORE_LIST_LOGS",
+    default="all",
+    help="Type of log paths to list",
+    envvar="INSPECT_FLOW_STORE_LIST_TYPE",
 )
-@click.option(
-    "--logs-only",
-    is_flag=True,
-    default=False,
-    help="List only logs in the store, with full paths.",
-    envvar="INSPECT_FLOW_STORE_LIST_LOGS_ONLY",
-)
-def store_list(logs: bool, logs_only: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
-    """List all log directories in the flow store."""
+def store_list(type: str, **kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_store = init_store(**kwargs)
-    if logs_only:
+    if type == "logs":
         log_files = flow_store.get_logs()
         for log_file in sorted(log_files):
             click.echo(path_str(log_file))
@@ -172,18 +163,24 @@ def store_list(logs: bool, logs_only: bool, **kwargs: Unpack[StoreOptionArgs]) -
     log_dirs = flow_store.get_log_dirs()
     if log_dirs:
         dir_to_logs: dict[str, list[str]] = {}
-        if logs:
+        if type == "all":
             log_files = flow_store.get_logs()
             for log_file in log_files:
-                dir_to_logs.setdefault(dirname(log_file), []).append(log_file)
+                dir = dirname(log_file)
+                if dir in log_dirs:
+                    dir_to_logs.setdefault(dir, []).append(log_file)
+                else:
+                    dir_to_logs.setdefault("", []).append(log_file)
         for log_dir in sorted(log_dirs):
             click.echo(path_str(log_dir))
-            if logs:
+            if type == "all":
                 log_files = dir_to_logs.get(log_dir, [])
                 for log_file in sorted(log_files):
                     click.echo("    " + basename(log_file))
-    else:
-        click.echo("No log directories in the store.")
+        if unparented := dir_to_logs.get(""):
+            click.echo("logs not in imported directories:")
+            for log_file in sorted(unparented):
+                click.echo("    " + basename(log_file))
 
 
 @store_command.command(
