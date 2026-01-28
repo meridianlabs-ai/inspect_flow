@@ -147,7 +147,6 @@ def store_remove(
 @click.option(
     "--type",
     type=click.Choice(["logs", "dirs", "all"], case_sensitive=False),
-    is_flag=True,
     default="all",
     help="Type of log paths to list",
     envvar="INSPECT_FLOW_STORE_LIST_TYPE",

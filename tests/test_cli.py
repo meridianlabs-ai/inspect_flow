@@ -390,11 +390,14 @@ def test_store_commands() -> None:
     runner = CliRunner()
     result = runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
     assert result.exit_code == 0
-    result = runner.invoke(store_command, ["list", "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["list", "--type", "dirs", "--log-level", "error"]
+    )
     assert result.exit_code == 0
+    lines = result.output.strip().split("\n")
     # setting the log level is not working in the test, so only look at the last line of output to ignore logging
-    assert result.output.split("\n")[-2] == str(Path.cwd() / log_dir)
-    result = runner.invoke(store_command, ["list", "--logs"])
+    assert lines[-1] == str(Path.cwd() / log_dir)
+    result = runner.invoke(store_command, ["list", "--type", "all"])
     assert result.exit_code == 0
     # setting the log level is not working in the test, so only look at the last line of output to ignore logging
     assert result.output.split("\n")[-4] == str(Path.cwd() / log_dir)
