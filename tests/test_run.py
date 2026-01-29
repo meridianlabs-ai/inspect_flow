@@ -1214,11 +1214,9 @@ def test_store_log_gone(capsys) -> None:
     log_dir = init_test_logs()
     capsys.readouterr()  # Clear previous output
 
-    with pytest.raises(FileNotFoundError):
-        run_eval_set(spec=spec, base_dir=".")
+    run_eval_set(spec=spec, base_dir=".")
     out = capsys.readouterr().out
     assert "Failed to read log" in out
-    assert "Use 'flow store remove' to update the store." in out
 
 
 def test_log_copy_s3(capsys, mock_s3) -> None:

@@ -454,10 +454,10 @@ class DeltaLakeStore(FlowStoreInternal):
                 try:
                     eval_log = read_eval_log(log, header_only=True)
                 except Exception as e:
-                    logger.error(
-                        f"Failed to read log {path_str(log)} referenced from the store. This could be a permissions issue. Use 'flow store remove' to update the store. {e}"
+                    logger.info(
+                        f"Failed to read log {path_str(log)} referenced from the store. {e}"
                     )
-                    raise
+                    continue
                 if is_better_log(eval_log, best_eval_log):
                     best_log = log
                     best_eval_log = eval_log
