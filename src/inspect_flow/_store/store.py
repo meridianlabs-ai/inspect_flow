@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Sequence
 
 import platformdirs
 from inspect_ai.log import EvalLog
@@ -11,8 +11,6 @@ from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
-
-LogDirType = Literal["import", "run"]
 
 
 class FlowStore(ABC):
@@ -80,7 +78,7 @@ class FlowStoreInternal(FlowStore):
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
         pass
 
-    def add_run_log_path(self, log_path: str) -> None:
+    def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
         pass
 
 

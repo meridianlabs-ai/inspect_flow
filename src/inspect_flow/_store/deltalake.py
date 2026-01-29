@@ -11,11 +11,11 @@ from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import dirname, exists, filesystem, to_uri
-from inspect_ai.log import list_eval_logs, read_eval_log
+from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
 from semver import Version
 
-from inspect_flow._store.store import FlowStoreInternal, LogDirType, is_better_log
+from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.logging import PrefixLogger
@@ -70,7 +70,6 @@ LOG_DIRS = "_table_log_dirs"
 @dataclass
 class LogDirRecord:
     log_dir: str = pa_field(pa.string())
-    type: LogDirType = pa_field(pa.string())
     recursive: bool = pa_field(pa.bool_())
     ts: datetime = pa_field(pa.timestamp("ms"), default=None)
 
@@ -161,7 +160,12 @@ def _file_to_log(log_file: str) -> Log:
         raise NoLogsError(f"No log found: {log_file}")
     header = read_eval_log_headers([log_file])[0]
     task_id = task_identifier(header, None)
+    assert task_id
     return Log(info=log_files[0], header=header, task_identifier=task_id)
+
+
+def _eval_log_to_log(eval_log: EvalLog) -> Log:
+    return _file_to_log(eval_log.location)
 
 
 def _add_log_dir(
@@ -279,21 +283,21 @@ class DeltaLakeStore(FlowStoreInternal):
                 storage_options=self._storage_options,
             )
 
-    def add_run_log_path(self, log_path: str) -> None:
-        self._add_log_path(log_path=log_path, recursive=False, type="run")
+    def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
+        logs = [_eval_log_to_log(eval_log) for eval_log in eval_logs]
+        self._add_logs(logs)
 
     def import_log_path(
         self,
         log_path: str | Sequence[str],
         recursive: bool = False,
     ) -> None:
-        self._add_log_path(log_path=log_path, recursive=recursive, type="import")
+        self._add_log_path(log_path=log_path, recursive=recursive)
 
     def _add_log_path(
         self,
         log_path: str | Sequence[str],
         recursive: bool,
-        type: LogDirType,
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
@@ -322,7 +326,7 @@ class DeltaLakeStore(FlowStoreInternal):
 
             new_data = pa.Table.from_pylist(
                 [
-                    LogDirRecord(log_dir=d, type=type, recursive=recursive).to_dict()
+                    LogDirRecord(log_dir=d, recursive=recursive).to_dict()
                     for d in new_dirs
                 ],
                 schema=LogDirRecord.to_schema(),
@@ -334,9 +338,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 mode="append",
                 storage_options=self._storage_options,
             )
-
-        if logs:
-            self._add_logs(logs)
+        self._add_logs(logs)
 
     def remove_log_path(
         self,
@@ -409,6 +411,8 @@ class DeltaLakeStore(FlowStoreInternal):
         )
 
     def _add_logs(self, logs: list[Log]) -> None:
+        if not logs:
+            return
         task_ids = {log.task_identifier for log in logs}
         existing_logs = self._get_logs(task_ids)
         new_logs = [

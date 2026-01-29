@@ -130,8 +130,7 @@ def run_eval_set(
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         # TODO:ransomr better monitoring of the log directory
         try:
-            assert resolved_spec.log_dir
-            store.add_run_log_path(resolved_spec.log_dir)
+            store.add_run_logs(result[1])
         except NoLogsError as e:
             logger.error(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"

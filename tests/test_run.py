@@ -918,10 +918,10 @@ def test_bundle_url_map_no_change(capsys) -> None:
     assert "Bundle URL:" not in captured.out
 
 
-def test_217_bundle_error_message() -> None:
+def test_217_bundle_error_message(tmp_path) -> None:
     log_dir = init_test_logs()
 
-    bundle_dir = log_dir + "/bundle_test"
+    bundle_dir = str(tmp_path / "bundle_test")
     config = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(bundle_dir=bundle_dir),

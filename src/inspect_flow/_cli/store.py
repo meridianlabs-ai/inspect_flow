@@ -36,7 +36,7 @@ def log_paths_arguments(*, required: bool = True):
             "log_paths",
             nargs=-1,
             type=click.Path(
-                file_okay=False,
+                file_okay=True,
                 dir_okay=True,
                 writable=True,
                 readable=True,
