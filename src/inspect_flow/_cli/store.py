@@ -11,7 +11,6 @@ from inspect_flow._util.path_util import path_str
 
 
 def store_options(f):
-    """Shared options for store commands."""
     f = log_level_option(f)
     f = click.option(
         "--store",
@@ -50,7 +49,7 @@ def log_paths_arguments(*, required: bool = True):
             "-r",
             is_flag=True,
             default=False,
-            help="Recursively search for log directories.",
+            help="Recursively search sub directories for logs.",
             envvar="INSPECT_FLOW_STORE_RECURSIVE",
         )(func)
 
@@ -65,7 +64,6 @@ class StoreOptionArgs(TypedDict, total=False):
 
 
 def init_store(**kwargs: Unpack[StoreOptionArgs]) -> FlowStore:
-    """Initialize logging and return a FlowStore instance."""
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     store_location = kwargs.get("store") or "auto"
@@ -80,7 +78,7 @@ def store_command() -> None:
     pass
 
 
-@store_command.command("import", help="Import existing log directories to the store")
+@store_command.command("import", help="Import existing logs to the store")
 @store_options
 @log_paths_arguments()
 @click.option(
@@ -102,7 +100,6 @@ def store_import(
     copy_from: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    """Import existing log directories to the flow store."""
     flow_store = init_store(**kwargs)
     if copy_from:
         if recursive:
@@ -117,14 +114,14 @@ def store_import(
     flow_store.import_log_path(list(log_paths), recursive=recursive)
 
 
-@store_command.command("remove", help="Remove log directories from the store")
+@store_command.command("remove", help="Remove logs from the store")
 @store_options
 @log_paths_arguments(required=False)
 @click.option(
     "--missing",
     is_flag=True,
     default=False,
-    help="Remove log paths that are missing from the file system.",
+    help="Remove logs that are missing from the file system.",
     envvar="INSPECT_FLOW_STORE_REMOVE_MISSING",
 )
 def store_remove(
@@ -133,7 +130,6 @@ def store_remove(
     missing: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    """Remove log paths from the flow store."""
     if not log_paths and not missing:
         raise click.UsageError("Either log_paths or --missing must be specified.")
     if log_paths and missing:
@@ -142,7 +138,13 @@ def store_remove(
     flow_store.remove_log_path(list(log_paths), missing=missing, recursive=recursive)
 
 
-@store_command.command("list", help="List log paths in the store")
+def _echo_logs(flow_store: FlowStore) -> None:
+    log_files = flow_store.get_logs()
+    for log_file in sorted(log_files):
+        click.echo(path_str(log_file))
+
+
+@store_command.command("list", help="List logs and log directories in the store")
 @store_options
 @click.option(
     "--type",
@@ -154,39 +156,40 @@ def store_remove(
 def store_list(type: str, **kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_store = init_store(**kwargs)
     if type == "logs":
-        log_files = flow_store.get_logs()
-        for log_file in sorted(log_files):
-            click.echo(path_str(log_file))
-        return
+        return _echo_logs(flow_store)
 
     log_dirs = flow_store.get_log_dirs()
-    if log_dirs:
-        dir_to_logs: dict[str, list[str]] = {}
+    if not log_dirs:
         if type == "all":
-            log_files = flow_store.get_logs()
-            for log_file in log_files:
-                dir = dirname(log_file)
-                if dir in log_dirs:
-                    dir_to_logs.setdefault(dir, []).append(log_file)
-                else:
-                    dir_to_logs.setdefault("", []).append(log_file)
-        for log_dir in sorted(log_dirs):
-            click.echo(path_str(log_dir))
-            if type == "all":
-                log_files = dir_to_logs.get(log_dir, [])
-                for log_file in sorted(log_files):
-                    click.echo("    " + basename(log_file))
-        if unparented := dir_to_logs.get(""):
-            click.echo("logs not in imported directories:")
-            for log_file in sorted(unparented):
+            return _echo_logs(flow_store)
+        return
+
+    dir_to_logs: dict[str, list[str]] = {}
+    if type == "all":
+        log_files = flow_store.get_logs()
+        for log_file in log_files:
+            dir = dirname(log_file)
+            if dir in log_dirs:
+                dir_to_logs.setdefault(dir, []).append(log_file)
+            else:
+                dir_to_logs.setdefault("", []).append(log_file)
+    for log_dir in sorted(log_dirs):
+        click.echo(path_str(log_dir))
+        if type == "all":
+            log_files = dir_to_logs.get(log_dir, [])
+            for log_file in sorted(log_files):
                 click.echo("    " + basename(log_file))
+    if unparented := dir_to_logs.get(""):
+        click.echo("logs not in imported directories:")
+        for log_file in sorted(unparented):
+            click.echo("    " + basename(log_file))
 
 
 @store_command.command(
-    "refresh", help="Refresh the store to reflect the current file system state"
+    "refresh",
+    help="Refresh the store. Removes paths that are not found and re-imports from directories",
 )
 @store_options
 def store_refresh(**kwargs: Unpack[StoreOptionArgs]) -> None:
-    """Refresh the flow store to reflect the current state of the file system."""
     flow_store = init_store(**kwargs)
     flow_store.refresh()
