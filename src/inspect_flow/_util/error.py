@@ -3,6 +3,9 @@ import sys
 from types import TracebackType
 from typing import Callable
 
+import click
+from rich.traceback import install
+
 
 def exception_hook() -> Callable[..., None]:
     sys_handler = sys.excepthook
@@ -29,6 +32,7 @@ _exception_hook_set: bool = False
 def set_exception_hook() -> None:
     global _exception_hook_set
     if not _exception_hook_set:
+        install(show_locals=False, suppress=[click])
         sys.excepthook = exception_hook()
         _exception_hook_set = True
 

@@ -14,6 +14,7 @@ from typing import (
     TypeAlias,
 )
 
+import rich.repr
 from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
@@ -67,6 +68,11 @@ class FlowBase(BaseModel, extra="forbid"):
             data["name"] = data["factory"]
             del data["factory"]
         return data
+
+    def __rich_repr__(self) -> rich.repr.Result:
+        for field in self.model_fields_set:
+            if (value := getattr(self, field)) is not not_given:
+                yield field, value
 
 
 class FlowModel(FlowBase):
