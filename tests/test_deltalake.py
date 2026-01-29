@@ -10,7 +10,8 @@ from inspect_flow._store.deltalake import (
     DeltaLakeStore,
     LogRecord,
     _create_table_description,
-    file_to_eval_log,
+    _file_to_log,
+    _task_id_col,
 )
 from semver import Version
 
@@ -72,7 +73,7 @@ def test_missing_task_identifier(tmp_path) -> None:
         task_identifier_1="invalid",
     )
     dict = record.to_dict()
-    dict.pop("task_identifier_1")  # don't set the task_identifier
+    dict.pop(_task_id_col())  # don't set the task_identifier
 
     new_data = pa.Table.from_pylist(
         [dict],
@@ -86,7 +87,7 @@ def test_missing_task_identifier(tmp_path) -> None:
         storage_options=store._storage_options,
     )
 
-    log = file_to_eval_log(log1_path)
+    log = _file_to_log(log1_path)
 
     logs = store.search_for_logs({log.task_identifier})
     assert logs == [to_uri(log1_path)]

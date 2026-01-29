@@ -2,8 +2,8 @@ import json
 import os
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
-from logging import Logger, LoggerAdapter, getLogger
-from typing import Any, Counter, MutableMapping, Sequence
+from logging import getLogger
+from typing import Any, Counter, Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -18,20 +18,9 @@ from semver import Version
 from inspect_flow._store.store import FlowStoreInternal, LogDirType, is_better_log
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
+from inspect_flow._util.logging import PrefixLogger
 from inspect_flow._util.path_util import path_str
 from inspect_flow._util.util import now
-
-
-class PrefixLogger(LoggerAdapter):
-    def __init__(self, logger: Logger, prefix: str) -> None:
-        super().__init__(logger, {})
-        self.prefix = prefix
-
-    def process(
-        self, msg: Any, kwargs: MutableMapping[str, Any]
-    ) -> tuple[str, MutableMapping[str, Any]]:
-        return f"[{self.prefix}] {msg}", kwargs
-
 
 logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
 
@@ -44,6 +33,10 @@ def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
 
 
 TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
+
+
+def _task_id_col() -> str:
+    return f"task_identifier_{TASK_IDENTIFIER_VERSION}"
 
 
 def _escape_sql_string(s: str) -> str:
@@ -161,7 +154,7 @@ def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
     ]
 
 
-def file_to_eval_log(log_file: str) -> Log:
+def _file_to_log(log_file: str) -> Log:
     info = filesystem(log_file).info(log_file)
     log_files = log_files_from_ls([info])
     if not log_files:
@@ -313,7 +306,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 raise FileNotFoundError(f"Log path does not exist: {path_str(path)}")
             info = fs.info(path)
             if info.type == "file":
-                logs.append(file_to_eval_log(path))
+                logs.append(_file_to_log(path))
             else:
                 dir = to_uri(path)
                 _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
@@ -398,10 +391,11 @@ class DeltaLakeStore(FlowStoreInternal):
 
         new_data = pa.Table.from_pylist(
             [
-                LogRecord(
-                    log_path=to_uri(log.info.name),
-                    task_identifier_1=log.task_identifier,
-                ).to_dict()
+                {
+                    "log_path": to_uri(log.info.name),
+                    _task_id_col(): log.task_identifier,
+                    "ts": now(),
+                }
                 for log in all_logs
             ],
             schema=LogRecord.to_schema(),
@@ -485,11 +479,11 @@ class DeltaLakeStore(FlowStoreInternal):
 
         dt = self._open_table(LOGS)
         dataset = dt.to_pyarrow_dataset()
-        table = dataset.to_table(filter=pc.field("task_identifier_1").isin(task_ids))
+        table = dataset.to_table(filter=pc.field(_task_id_col()).isin(task_ids))
 
         result: dict[str, set[str]] = {}
         for task_id, log_path in zip(
-            table["task_identifier_1"].to_pylist(),
+            table[_task_id_col()].to_pylist(),
             table["log_path"].to_pylist(),
             strict=True,
         ):
@@ -499,19 +493,19 @@ class DeltaLakeStore(FlowStoreInternal):
         return result
 
     def _set_task_identifiers(self) -> None:
-        """Find logs with missing task_identifier_1 and compute it from the log header."""
+        """Find logs with missing task_identifier and compute it from the log header."""
         dt = self._open_table(LOGS)
         table = dt.to_pyarrow_table()
 
-        # Find entries with empty or null task_identifier_1
-        task_ids = table["task_identifier_1"].to_pylist()
+        # Find entries with empty or null task_identifier
+        task_ids = table[_task_id_col()].to_pylist()
         log_paths = table["log_path"].to_pylist()
 
         logs_to_update: list[tuple[str, str]] = []
         for log_path, task_id in zip(log_paths, task_ids, strict=True):
             if not task_id:
                 try:
-                    log = file_to_eval_log(log_path)
+                    log = _file_to_log(log_path)
                     logs_to_update.append((log_path, log.task_identifier))
                 except Exception as e:
                     logger.warning(f"Failed to read log {path_str(log_path)}: {e}")
@@ -532,6 +526,4 @@ class DeltaLakeStore(FlowStoreInternal):
             predicate="target.log_path = source.log_path",
             source_alias="source",
             target_alias="target",
-        ).when_matched_update(
-            {"task_identifier_1": "source.task_identifier_1"}
-        ).execute()
+        ).when_matched_update({_task_id_col(): f"source.{_task_id_col()}"}).execute()

@@ -1,3 +1,6 @@
+from logging import Logger, LoggerAdapter
+from typing import Any, MutableMapping
+
 from inspect_ai._util.logger import LogHandlerVar, init_logger
 
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL, PKG_NAME
@@ -21,3 +24,14 @@ def init_flow_logging(
 
 def get_last_log_level() -> str:
     return _last_log_level
+
+
+class PrefixLogger(LoggerAdapter):
+    def __init__(self, logger: Logger, prefix: str) -> None:
+        super().__init__(logger, {})
+        self.prefix = prefix
+
+    def process(
+        self, msg: Any, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
+        return f"[{self.prefix}] {msg}", kwargs
