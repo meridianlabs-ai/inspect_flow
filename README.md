@@ -31,12 +31,12 @@
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        5 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       84 |        0 |       32 |        0 |    100.00% |           |
-| src/inspect\_flow/\_types/flow\_types.py           |      162 |        0 |        6 |        0 |    100.00% |           |
+| src/inspect\_flow/\_types/flow\_types.py           |      167 |        3 |       10 |        0 |     96.05% |     73-75 |
 | src/inspect\_flow/\_types/generated.py             |      175 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/constants.py              |        3 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/error.py                  |       16 |        0 |        4 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/error.py                  |       19 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/list\_util.py             |        8 |        0 |        2 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/logging.py                |        8 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/module\_util.py           |       57 |        0 |       22 |        0 |    100.00% |           |
@@ -46,7 +46,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       18 |        0 |       12 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1751** |   **40** |  **508** |    **9** | **96.95%** |           |
+| **TOTAL**                                          | **1759** |   **43** |  **512** |    **9** | **96.65%** |           |
 
 
 ## Setup coverage badge
