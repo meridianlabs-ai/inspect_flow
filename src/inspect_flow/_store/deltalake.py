@@ -358,29 +358,46 @@ class DeltaLakeStore(FlowStoreInternal):
             dirs_to_remove.update([dir for dir in dirs if not exists(dir)])
 
         if dirs_to_remove:
-            dt = self._open_table(LOG_DIRS)
-            quoted_dirs = ", ".join(
-                f"'{_escape_sql_string(d)}'" for d in dirs_to_remove
-            )
-            metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
-            if num_deleted_rows := metrics.get("num_deleted_rows", 0):
+            if num_deleted_rows := self._remove_log_dirs(list(dirs_to_remove)):
                 logger.info(f"Removed {num_deleted_rows} log directories")
             else:
                 logger.info("No log directories found to remove")
 
         if logs_to_remove:
-            dt = self._open_table(LOGS)
-            quoted_logs = ", ".join(
-                f"'{_escape_sql_string(log)}'" for log in logs_to_remove
-            )
-            metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
-            if num_deleted_rows := metrics.get("num_deleted_rows", 0):
+            if num_deleted_rows := self._remove_logs(list(logs_to_remove)):
                 logger.info(f"Removed {num_deleted_rows} logs from store")
             else:
                 logger.info("No logs found to remove from store")
 
+    def _remove_log_dirs(self, dirs_to_remove: Sequence[str]) -> int:
+        if not dirs_to_remove:
+            return 0
+        dt = self._open_table(LOG_DIRS)
+        quoted_dirs = ", ".join(f"'{_escape_sql_string(d)}'" for d in dirs_to_remove)
+        metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
+        return metrics.get("num_deleted_rows", 0)
+
+    def _remove_logs(self, logs_to_remove: Sequence[str]) -> int:
+        if not logs_to_remove:
+            return 0
+        dt = self._open_table(LOGS)
+        quoted_logs = ", ".join(
+            f"'{_escape_sql_string(log)}'" for log in logs_to_remove
+        )
+        metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
+        return metrics.get("num_deleted_rows", 0)
+
     def refresh(self) -> None:
         log_dirs = self._get_log_dir_records()
+
+        dirs_to_remove = [d for d in log_dirs.keys() if not exists(d)]
+        for dir in dirs_to_remove:
+            log_dirs.pop(dir)
+        self._remove_log_dirs(dirs_to_remove)
+
+        logs = self.get_logs()
+        logs_to_remove = [log for log in logs if not exists(log)]
+        self._remove_logs(logs_to_remove)
 
         all_logs = []
         for record in log_dirs.values():
@@ -463,8 +480,7 @@ class DeltaLakeStore(FlowStoreInternal):
             table["ts"].to_pylist(),
             strict=True,
         ):
-            record = records.get(log_dir)
-            if record is None or recursive:
+            if log_dir not in records or recursive:
                 records[log_dir] = LogDirRecord(
                     log_dir=log_dir,
                     recursive=recursive,

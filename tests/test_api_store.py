@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 from inspect_ai._util.file import to_uri
@@ -9,6 +10,8 @@ dir1base = str(Path.cwd() / "tests/test_logs/logs1")
 dir2base = str(Path.cwd() / "tests/test_logs/logs2")
 dir1 = "file://" + dir1base
 dir2 = "file://" + dir2base
+log1_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+log1_path = dir1base + "/" + log1_name
 
 
 def test_store_get(capsys) -> None:
@@ -90,3 +93,24 @@ def test_local_log_remote_store(mock_s3) -> None:
         assert "Local log directories cannot be added to remote stores." in str(e)
         # 374 Ensure default store subdir is not in the error
         assert "flow_store" not in str(e)
+
+
+def test_refresh_removes(tmp_path) -> None:
+    store: FlowStore = store_get()
+    dir1 = tmp_path / "logs1"
+    dir1.mkdir()
+    shutil.copy(log1_path, dir1)
+    dir2 = tmp_path / "logs2"
+    dir2.mkdir()
+    shutil.copy(log1_path, dir2)
+
+    store.import_log_path(str(dir1 / log1_name))
+    store.import_log_path(str(dir2))
+    assert len(store.get_logs()) == 2
+    assert len(store.get_log_dirs()) == 1
+
+    shutil.rmtree(dir1)
+    shutil.rmtree(dir2)
+    store.refresh()
+    assert len(store.get_logs()) == 0
+    assert len(store.get_log_dirs()) == 0
