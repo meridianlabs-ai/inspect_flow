@@ -44,10 +44,23 @@ def test_store_import_add_recursive() -> None:
     assert store.get_log_dirs() == set()
     store.import_log_path(dir2, recursive=False)
     assert sorted(store.get_log_dirs()) == [dir2]
+    logs = store.get_logs()
+    assert len(logs) == 1
+    store.remove_log_path(list(logs))
+    assert len(store.get_logs()) == 0
+    store.refresh()
     assert len(store.get_logs()) == 1
+
     store.import_log_path(dir2, recursive=True)
     assert sorted(store.get_log_dirs()) == [dir2]
-    assert len(store.get_logs()) == 2
+    logs = store.get_logs()
+    assert len(logs) == 2
+    store.remove_log_path(list(logs))
+    logs = store.get_logs()
+    assert len(logs) == 0
+    store.refresh()
+    logs = store.get_logs()
+    assert len(logs) == 2
 
 
 def test_store_remove() -> None:
