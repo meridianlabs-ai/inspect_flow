@@ -12,6 +12,7 @@ from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 from rich.panel import Panel
+from rich.rule import Rule
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -63,6 +64,7 @@ def run_eval_set(
     _write_config_file(resolved_config)
 
     print(f"\nRunning {quantity(len(tasks), 'task')}\n")
+    print(Rule("Begin Eval Set Execution"))
     start_time = time.time()
     try:
         result = eval_set(
@@ -119,6 +121,8 @@ def run_eval_set(
     except PrerequisiteError as e:
         _fix_prerequisite_error_message(e)
         raise
+    finally:
+        print(Rule("End Eval Set Execution"))
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_config, result, elapsed_time)
