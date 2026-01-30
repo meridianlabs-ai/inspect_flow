@@ -9,6 +9,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
+from rich import print as rprint
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -58,7 +59,7 @@ def run_eval_set(
 
     _write_config_file(resolved_config)
 
-    logger.info(f"Running eval set with {len(tasks)} tasks.")
+    rprint(f"Running {len(tasks)} task{'s' if len(tasks) != 1 else ''}.")
     try:
         result = eval_set(
             tasks=[t.task for t in tasks],
