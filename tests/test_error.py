@@ -3,6 +3,7 @@ import sys
 import pytest
 from inspect_flow._util import error
 from inspect_flow._util.error import set_exception_hook
+from pytest import CaptureFixture
 
 
 @pytest.fixture(autouse=True)
@@ -61,7 +62,7 @@ def test_exception_hook_handles_called_process_error():
     assert exc_info.value.code == 42
 
 
-def test_exception_hook_handles_other_exceptions(capsys):
+def test_exception_hook_handles_other_exceptions(capsys: CaptureFixture[str]) -> None:
     """Test that the custom hook logs and exits for other exceptions."""
     set_exception_hook()
 
