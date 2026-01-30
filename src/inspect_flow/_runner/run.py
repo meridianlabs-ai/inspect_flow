@@ -63,7 +63,9 @@ def run_eval_set(
 
     _write_config_file(resolved_config)
 
-    print(f"\nRunning {quantity(len(tasks), 'task')}\n")
+    print(f"\nRunning {quantity(len(tasks), 'task')}")
+    print(f"Using log directory: {path(resolved_config.log_dir)}\n", format="info")
+
     print(Rule("Begin Eval Set Execution"))
     start_time = time.time()
     try:
