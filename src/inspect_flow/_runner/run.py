@@ -9,7 +9,6 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
-from rich import print as rprint
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -19,6 +18,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
+from inspect_flow._util.console import print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
@@ -59,7 +59,7 @@ def run_eval_set(
 
     _write_config_file(resolved_config)
 
-    rprint(f"Running {len(tasks)} task{'s' if len(tasks) != 1 else ''}.")
+    print(f"Running {quantity(len(tasks), 'task')}.")
     try:
         result = eval_set(
             tasks=[t.task for t in tasks],

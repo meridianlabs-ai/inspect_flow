@@ -1,10 +1,9 @@
 from logging import getLogger
 
-from rich import print as rprint
-
 from inspect_flow._launcher.inproc import inproc_launch
 from inspect_flow._launcher.venv import venv_launch
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.console import print
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -27,7 +26,7 @@ def launch(
                 absolute_path_relative_to(k, base_dir=base_dir): v
                 for k, v in spec.options.bundle_url_mappings.items()
             }
-    rprint(f"Using log directory: {spec.log_dir}")
+    print(f"Using log directory: {spec.log_dir}")
 
     if spec.execution_type == "venv":
         venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run, no_dotenv=no_dotenv)
