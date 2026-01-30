@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from rich.console import Console
 
@@ -6,21 +6,25 @@ from inspect_flow._util.path_util import path_str
 
 console = Console()
 
-Formats = Literal["default", "success", "info"]
+Formats = Literal["default", "success", "info", "warning"]
 
 
-def _apply_format(msg: str, format: Formats) -> str:
-    if format == "success":
-        return f"[green]✔[/green] {msg}"
+def format_prefix(format: Formats) -> str:
+    if format == "default":
+        return ""
+    elif format == "success":
+        return "[green]✔[/green]"
     elif format == "info":
-        return f"[blue]ℹ[/blue] {msg}"
-    elif format == "default":
-        return msg
+        return "[blue]ℹ[/blue]"
+    elif format == "warning":
+        return "[yellow]⚠[/yellow]"
 
 
-def print(msg: str, format: Formats = "default") -> None:
-    msg = _apply_format(msg, format)
-    console.print(msg)
+def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
+    prefix = format_prefix(format)
+    if prefix:
+        objects = (prefix, *objects)
+    console.print(*objects, **kwargs)
 
 
 def path(p: str) -> str:

@@ -40,7 +40,7 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
-    print(f"Loading config: {path(file)}")
+    print(f"\nLoading config: {path(file)}")
 
     state = LoadState()
     file = absolute_file_path(file)

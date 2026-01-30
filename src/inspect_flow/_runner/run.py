@@ -1,3 +1,5 @@
+import time
+from datetime import timedelta
 from logging import getLogger
 
 import click
@@ -9,6 +11,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
+from rich.panel import Panel
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -18,7 +21,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
-from inspect_flow._util.console import print, quantity
+from inspect_flow._util.console import format_prefix, path, print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
@@ -59,7 +62,8 @@ def run_eval_set(
 
     _write_config_file(resolved_config)
 
-    print(f"Running {quantity(len(tasks), 'task')}.")
+    print(f"\nRunning {quantity(len(tasks), 'task')}\n")
+    start_time = time.time()
     try:
         result = eval_set(
             tasks=[t.task for t in tasks],
@@ -115,11 +119,45 @@ def run_eval_set(
     except PrerequisiteError as e:
         _fix_prerequisite_error_message(e)
         raise
+    elapsed_time = time.time() - start_time
+
+    _print_result(resolved_config, result, elapsed_time)
 
     if result[0]:
         _print_bundle_url(resolved_config)
 
     return result
+
+
+def _print_result(
+    spec: FlowSpec, result: tuple[bool, list[EvalLog]], elapsed_time: float
+) -> None:
+    success, logs = result
+    num_success = len([log for log in logs if log.status == "success"])
+    if success and num_success < len(logs):
+        logger.error("Some logs failured even though the eval set succeeded.")
+    elif not success and num_success == len(logs):
+        logger.error("All logs successful even though the eval set failed.")
+
+    if num_success < len(logs):
+        summary = format_prefix("warning") + " Completed with errors"
+        tasks = f"Tasks: {num_success}/{len(logs)} successful, {len(logs) - num_success} failed"
+    else:
+        summary = format_prefix("success") + " All tasks completed"
+        tasks = f"Tasks: {len(logs)}/{len(logs)} successful"
+    assert spec.log_dir
+    elapsed = str(timedelta(seconds=int(elapsed_time)))
+    print(
+        "\n",
+        Panel(
+            f"""\
+{summary}
+
+Total Time: {elapsed}
+{tasks}
+Log Directory: {path(spec.log_dir)}"""
+        ),
+    )
 
 
 def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:

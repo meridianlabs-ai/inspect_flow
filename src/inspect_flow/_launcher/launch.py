@@ -26,7 +26,7 @@ def launch(
                 absolute_path_relative_to(k, base_dir=base_dir): v
                 for k, v in spec.options.bundle_url_mappings.items()
             }
-    print(f"Using log directory: {path(spec.log_dir)}")
+    print(f"\nUsing log directory: {path(spec.log_dir)}")
 
     if spec.execution_type == "venv":
         venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run, no_dotenv=no_dotenv)
