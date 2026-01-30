@@ -1,9 +1,12 @@
-from typing import Callable
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 INSPECT_FLOW_AFTER_LOAD_ATTR = "_inspect_flow_after_load"
 
+F = TypeVar("F", bound=Callable[..., Any])
 
-def after_load(func: Callable) -> Callable:
+
+def after_load(func: F) -> F:
     """Decorator to mark a function to be called after a FlowSpec is loaded.
 
     The decorated function should have the signature (args are all optional and may be omitted):

@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
@@ -30,6 +31,7 @@ from inspect_flow._config.load import (
 from inspect_flow._types.flow_types import FlowDependencies, not_given
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
+from pytest import CaptureFixture
 
 from tests.local_eval.src.local_eval.tools import add
 from tests.test_helpers.config_helpers import validate_config
@@ -88,7 +90,7 @@ def test_py_config() -> None:
     validate_config(config, "model_and_task_flow.yaml")
 
 
-def test_py_config_s3(mock_s3) -> None:
+def test_py_config_s3(mock_s3: BaseClient) -> None:
     local_path = str(Path(__file__).parent / "config" / "model_and_task_flow.py")
     s3_path = "s3://test-bucket/configs/model_and_task_flow.py"
     mock_s3.upload_file(local_path, "test-bucket", "configs/model_and_task_flow.py")
@@ -398,7 +400,7 @@ def test_multiple_includes() -> None:
     validate_config(spec, "multiple_includes_flow.yaml")
 
 
-def test_auto_include(capsys) -> None:
+def test_auto_include(capsys: CaptureFixture[str]) -> None:
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
@@ -413,7 +415,7 @@ def test_auto_include(capsys) -> None:
     assert "_other_flow.py" in out_normalized
 
 
-def test_auto_include_two(capsys) -> None:
+def test_auto_include_two(capsys: CaptureFixture[str]) -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="warning", log_handler_var=log_handler)
     spec = load_spec(

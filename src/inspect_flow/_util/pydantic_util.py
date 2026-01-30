@@ -1,10 +1,11 @@
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from inspect_ai._util.registry import is_registry_object, registry_info, registry_value
 from pydantic import BaseModel
 
 
-def callable_name(value: Callable) -> str:
+def callable_name(value: Callable[..., Any]) -> str:
     if is_registry_object(value):
         info = registry_info(value)
         return f"{info.name}"

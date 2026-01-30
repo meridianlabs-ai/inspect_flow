@@ -26,6 +26,7 @@ from inspect_flow import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
+from pytest import CaptureFixture
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -874,7 +875,7 @@ def test_logs_allow_dirty() -> None:
     assert call_args.kwargs["log_dir_allow_dirty"] is True
 
 
-def test_bundle_url_map(capsys) -> None:
+def test_bundle_url_map(capsys: CaptureFixture[str]) -> None:
     path = Path.cwd().as_posix()
     config = FlowSpec(
         log_dir="logs/flow_test",
@@ -895,7 +896,7 @@ def test_bundle_url_map(capsys) -> None:
     assert "Bundle URL: http://example.com/bundle" in captured.out
 
 
-def test_bundle_url_map_no_change(capsys) -> None:
+def test_bundle_url_map_no_change(capsys: CaptureFixture[str]) -> None:
     path = Path.cwd().as_posix()
     config = FlowSpec(
         log_dir="logs/flow_test",
@@ -916,10 +917,10 @@ def test_bundle_url_map_no_change(capsys) -> None:
     assert "Bundle URL:" not in captured.out
 
 
-def test_217_bundle_error_message() -> None:
+def test_217_bundle_error_message(tmp_path: Path) -> None:
     log_dir = init_test_logs()
 
-    bundle_dir = log_dir + "/bundle_test"
+    bundle_dir = str(tmp_path / "bundle_test")
     config = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(bundle_dir=bundle_dir),
