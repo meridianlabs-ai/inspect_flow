@@ -57,7 +57,7 @@ def run_eval_set(
     if dry_run:
         dump = config_to_yaml(resolved_config)
         yaml_syntax = Syntax(dump, "yaml", theme="monokai", background_color="default")
-        print(" ", Rule("Resolved configuration as YAML"), yaml_syntax)
+        print("", Rule("Resolved configuration as YAML"), yaml_syntax, Rule())
         return False, []
 
     options = resolved_config.options or FlowOptions()
