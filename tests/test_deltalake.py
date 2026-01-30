@@ -24,7 +24,7 @@ log1_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
 log1_path = dir1 + "/" + log1_name
 
 
-def test_version_maintained(tmp_path) -> None:
+def test_version_maintained(tmp_path: Path) -> None:
     """Test that opening a table with a higher patch version maintains that version."""
     store_path = str(tmp_path)
     # Create a table with a higher patch version
@@ -35,7 +35,7 @@ def test_version_maintained(tmp_path) -> None:
     table_def.version = new_version
     DeltaLakeStore(store_path=store_path)
 
-    def check_version(store, version) -> None:
+    def check_version(store: DeltaLakeStore, version: str) -> None:
         table_path = store._table_path(table_def.name)
         dt = store._get_table(table_path)
         assert dt
@@ -62,7 +62,7 @@ def test_version_maintained(tmp_path) -> None:
     check_version(store, old_version)
 
 
-def test_missing_task_identifier(tmp_path) -> None:
+def test_missing_task_identifier(tmp_path: Path) -> None:
     store_path = str(tmp_path)
     store = DeltaLakeStore(store_path=store_path)
     table_def = TABLES[1]

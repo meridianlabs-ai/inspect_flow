@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import TypeVar
+
 import click
 from typing_extensions import TypedDict, Unpack
 
@@ -8,8 +11,10 @@ from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
 from inspect_flow._util.path_util import path_str
 
+F = TypeVar("F", bound=Callable[..., object])
 
-def store_options(f):
+
+def store_options(f: F) -> F:
     f = log_level_option(f)
     f = click.option(
         "--store",
@@ -28,8 +33,8 @@ def store_options(f):
     return f
 
 
-def log_paths_arguments(*, required: bool = True):
-    def decorator(func):
+def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
+    def decorator(func: F) -> F:
         func = click.argument(
             "log_paths",
             nargs=-1,

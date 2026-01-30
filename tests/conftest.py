@@ -8,17 +8,19 @@ os.environ["NO_COLOR"] = "1"
 import importlib.util
 import subprocess
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any, Callable, TypeVar, cast
 
 import boto3
 import pytest
 from botocore.client import BaseClient
+from inspect_ai._util.logger import LogHandlerVar
 from inspect_flow._util.logging import init_flow_logging
 from moto.server import ThreadedMotoServer
 
 
 @pytest.fixture(autouse=True)
-def isolate_store(tmp_path, monkeypatch):
+def isolate_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure tests never touch real user store."""
     monkeypatch.setattr(
         "inspect_flow._store.store._get_default_store_dir",

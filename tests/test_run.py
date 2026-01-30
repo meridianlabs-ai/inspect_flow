@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 import yaml
+from botocore.client import BaseClient
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
@@ -1172,7 +1173,7 @@ def test_duplicate_task_identifier() -> None:
     assert e.value.args[0].startswith("Duplicate task found:")
 
 
-def test_log_copy(capsys) -> None:
+def test_log_copy(capsys: CaptureFixture[str]) -> None:
     log_dir = init_test_logs()
     store_dir = init_test_store()
 
@@ -1199,7 +1200,7 @@ def test_log_copy(capsys) -> None:
     assert "Copying existing log file" in out
 
 
-def test_store_log_gone(capsys) -> None:
+def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
     log_dir = init_test_logs()
     store_dir = init_test_store()
 
@@ -1220,7 +1221,7 @@ def test_store_log_gone(capsys) -> None:
     assert "Failed to read log" in out
 
 
-def test_log_copy_s3(capsys, mock_s3) -> None:
+def test_log_copy_s3(capsys: CaptureFixture[str], mock_s3: BaseClient) -> None:
     log_dir = "s3://test-bucket/logs"
     store_dir = init_test_store()
 

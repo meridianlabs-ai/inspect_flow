@@ -44,6 +44,7 @@ dev = [
     "moto[s3]",
     "openai",
     "pre-commit",
+    "pyarrow-stubs>=20.0.0.20251215",
     "pyright",
     "pytest",
     "pytest-asyncio",

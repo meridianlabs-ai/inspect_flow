@@ -378,7 +378,7 @@ class DeltaLakeStore(FlowStoreInternal):
     def get_logs(self) -> set[str]:
         dt = self._open_table(LOGS)
         table = dt.to_pyarrow_table()
-        return set(table["log_path"].to_pylist())
+        return {path for path in table["log_path"].to_pylist() if path is not None}
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
         self._set_task_identifiers()
@@ -409,7 +409,7 @@ class DeltaLakeStore(FlowStoreInternal):
 
         logs_to_update: list[tuple[str, str]] = []
         for log_path, task_id in zip(log_paths, task_ids, strict=True):
-            if not task_id:
+            if not task_id and log_path is not None:
                 try:
                     log = _file_to_log(log_path)
                     logs_to_update.append((log_path, log.task_identifier))
