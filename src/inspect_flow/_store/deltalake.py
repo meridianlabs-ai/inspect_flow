@@ -14,6 +14,7 @@ from inspect_ai._util.file import dirname, exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
 from semver import Version
+from typing_extensions import override
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.constants import PKG_NAME
@@ -64,27 +65,6 @@ class TableDef:
     schema: pa.Schema
 
 
-LOG_DIRS = "_table_log_dirs"
-
-
-@dataclass
-class LogDirRecord:
-    log_dir: str = pa_field(pa.string())
-    recursive: bool = pa_field(pa.bool_())
-    ts: datetime = pa_field(pa.timestamp("ms"), default=None)
-
-    def __post_init__(self) -> None:
-        if self.ts is None:
-            self.ts = now()
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def to_schema(cls) -> pa.Schema:
-        return pa.schema([(f.name, f.metadata["pa_type"]) for f in fields(cls)])
-
-
 LOGS = "_table_logs"
 
 
@@ -107,11 +87,6 @@ class LogRecord:
 
 
 TABLES: list[TableDef] = [
-    TableDef(
-        name=LOG_DIRS,
-        version="0.2.0",
-        schema=LogDirRecord.to_schema(),
-    ),
     TableDef(
         name=LOGS,
         version="0.2.0",
@@ -192,15 +167,12 @@ def _remove_path(
     path: str,
     recursive: bool,
     logs: set[str],
-    dirs: set[str],
     logs_to_remove: set[str],
-    dirs_to_remove: set[str],
 ) -> None:
     path = to_uri(path)
     if not recursive:
-        if path in dirs:
-            dirs_to_remove.add(path)
-        elif path in logs:
+        # TODO:remove files in dir (flat)
+        if path in logs:
             logs_to_remove.add(path)
     else:
         path_prefix = (
@@ -209,9 +181,6 @@ def _remove_path(
         for log in list(logs):
             if log.startswith(path_prefix):
                 logs_to_remove.add(log)
-        for dir in list(dirs):
-            if dir.startswith(path_prefix):
-                dirs_to_remove.add(dir)
 
 
 class DeltaLakeStore(FlowStoreInternal):
@@ -283,10 +252,12 @@ class DeltaLakeStore(FlowStoreInternal):
                 storage_options=self._storage_options,
             )
 
+    @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
         logs = [_eval_log_to_log(eval_log) for eval_log in eval_logs]
         self._add_logs(logs)
 
+    @override
     def import_log_path(
         self,
         log_path: str | Sequence[str],
@@ -307,35 +278,9 @@ class DeltaLakeStore(FlowStoreInternal):
             else:
                 dir = to_uri(path)
                 _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
-
-        existing_dirs = self._get_log_dir_records()
-        new_dirs = {
-            d
-            for d in dirs
-            if d not in existing_dirs or (recursive and not existing_dirs[d].recursive)
-        }
-        if not new_dirs:
-            logger.info("No new log directories to add")
-        else:
-            for dir in new_dirs:
-                logger.info(f"Adding new log directory: {path_str(dir)}")
-
-            new_data = pa.Table.from_pylist(
-                [
-                    LogDirRecord(log_dir=d, recursive=recursive).to_dict()
-                    for d in new_dirs
-                ],
-                schema=LogDirRecord.to_schema(),
-            )
-
-            write_deltalake(
-                self._table_path(LOG_DIRS),
-                new_data,
-                mode="append",
-                storage_options=self._storage_options,
-            )
         self._add_logs(logs)
 
+    @override
     def remove_log_path(
         self,
         log_path: str | Sequence[str],
@@ -348,34 +293,17 @@ class DeltaLakeStore(FlowStoreInternal):
             return
 
         logs = self.get_logs()
-        dirs = self.get_log_dirs()
         logs_to_remove = set()
-        dirs_to_remove = set()
         for path in log_path:
-            _remove_path(path, recursive, logs, dirs, logs_to_remove, dirs_to_remove)
+            _remove_path(path, recursive, logs, logs_to_remove)
         if missing:
             logs_to_remove.update([log for log in logs if not exists(log)])
-            dirs_to_remove.update([dir for dir in dirs if not exists(dir)])
-
-        if dirs_to_remove:
-            if num_deleted_rows := self._remove_log_dirs(list(dirs_to_remove)):
-                logger.info(f"Removed {num_deleted_rows} log directories")
-            else:
-                logger.info("No log directories found to remove")
 
         if logs_to_remove:
             if num_deleted_rows := self._remove_logs(list(logs_to_remove)):
                 logger.info(f"Removed {num_deleted_rows} logs from store")
             else:
                 logger.info("No logs found to remove from store")
-
-    def _remove_log_dirs(self, dirs_to_remove: Sequence[str]) -> int:
-        if not dirs_to_remove:
-            return 0
-        dt = self._open_table(LOG_DIRS)
-        quoted_dirs = ", ".join(f"'{_escape_sql_string(d)}'" for d in dirs_to_remove)
-        metrics = dt.delete(predicate=f"log_dir IN ({quoted_dirs})")
-        return metrics.get("num_deleted_rows", 0)
 
     def _remove_logs(self, logs_to_remove: Sequence[str]) -> int:
         if not logs_to_remove:
@@ -386,26 +314,6 @@ class DeltaLakeStore(FlowStoreInternal):
         )
         metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
         return metrics.get("num_deleted_rows", 0)
-
-    def refresh(self) -> None:
-        log_dirs = self._get_log_dir_records()
-
-        dirs_to_remove = [d for d in log_dirs.keys() if not exists(d)]
-        for dir in dirs_to_remove:
-            log_dirs.pop(dir)
-        self._remove_log_dirs(dirs_to_remove)
-
-        logs = self.get_logs()
-        logs_to_remove = [log for log in logs if not exists(log)]
-        self._remove_logs(logs_to_remove)
-
-        all_logs = []
-        for record in log_dirs.values():
-            logs = list_all_eval_logs(
-                log_dir=record.log_dir, recursive=record.recursive
-            )
-            all_logs.extend(logs)
-        self._add_logs(all_logs)
 
     def _add_logs(self, logs: list[Log]) -> None:
         if not logs:
@@ -439,6 +347,7 @@ class DeltaLakeStore(FlowStoreInternal):
             storage_options=self._storage_options,
         )
 
+    @override
     def search_for_logs(self, task_ids: set[str]) -> list[str]:
         results = []
         remaining_task_ids = set(task_ids)
@@ -465,29 +374,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 results.append(best_log)
         return results
 
-    def get_log_dirs(self) -> set[str]:
-        dt = self._open_table(LOG_DIRS)
-        table = dt.to_pyarrow_table()
-        return set(table["log_dir"].to_pylist())
-
-    def _get_log_dir_records(self) -> dict[str, LogDirRecord]:
-        dt = self._open_table(LOG_DIRS)
-        table = dt.to_pyarrow_table()
-        records = {}
-        for log_dir, recursive, ts in zip(
-            table["log_dir"].to_pylist(),
-            table["recursive"].to_pylist(),
-            table["ts"].to_pylist(),
-            strict=True,
-        ):
-            if log_dir not in records or recursive:
-                records[log_dir] = LogDirRecord(
-                    log_dir=log_dir,
-                    recursive=recursive,
-                    ts=ts,
-                )
-        return records
-
+    @override
     def get_logs(self) -> set[str]:
         dt = self._open_table(LOGS)
         table = dt.to_pyarrow_table()

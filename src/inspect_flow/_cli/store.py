@@ -1,5 +1,4 @@
 import click
-from inspect_ai._util.file import basename, dirname
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
@@ -146,50 +145,6 @@ def _echo_logs(flow_store: FlowStore) -> None:
 
 @store_command.command("list", help="List logs and log directories in the store")
 @store_options
-@click.option(
-    "--type",
-    type=click.Choice(["logs", "dirs", "all"], case_sensitive=False),
-    default="all",
-    help="Type of log paths to list",
-    envvar="INSPECT_FLOW_STORE_LIST_TYPE",
-)
-def store_list(type: str, **kwargs: Unpack[StoreOptionArgs]) -> None:
+def store_list(**kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_store = init_store(**kwargs)
-    if type == "logs":
-        return _echo_logs(flow_store)
-
-    log_dirs = flow_store.get_log_dirs()
-    if not log_dirs:
-        if type == "all":
-            return _echo_logs(flow_store)
-        return
-
-    dir_to_logs: dict[str, list[str]] = {}
-    if type == "all":
-        log_files = flow_store.get_logs()
-        for log_file in log_files:
-            dir = dirname(log_file)
-            if dir in log_dirs:
-                dir_to_logs.setdefault(dir, []).append(log_file)
-            else:
-                dir_to_logs.setdefault("", []).append(log_file)
-    for log_dir in sorted(log_dirs):
-        click.echo(path_str(log_dir))
-        if type == "all":
-            log_files = dir_to_logs.get(log_dir, [])
-            for log_file in sorted(log_files):
-                click.echo("    " + basename(log_file))
-    if unparented := dir_to_logs.get(""):
-        click.echo("logs not in imported directories:")
-        for log_file in sorted(unparented):
-            click.echo("    " + basename(log_file))
-
-
-@store_command.command(
-    "refresh",
-    help="Refresh the store. Removes paths that are not found and re-imports from directories",
-)
-@store_options
-def store_refresh(**kwargs: Unpack[StoreOptionArgs]) -> None:
-    flow_store = init_store(**kwargs)
-    flow_store.refresh()
+    return _echo_logs(flow_store)

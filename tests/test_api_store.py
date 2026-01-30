@@ -1,7 +1,6 @@
 import shutil
 from pathlib import Path
 
-from inspect_ai._util.file import to_uri
 from inspect_flow._util.path_util import path_str
 from inspect_flow.api import FlowStore, store_get
 
@@ -16,61 +15,46 @@ log1_path = dir1base + "/" + log1_name
 
 def test_store_get(capsys) -> None:
     store: FlowStore = store_get()
-    assert store.get_log_dirs() == set()
     store.import_log_path(dir1)
     captured = capsys.readouterr().out
     assert f"Found {path_str(dir1)} with 2 logs" in captured
-    assert f"Adding new log directory: {path_str(dir1)}" in captured
-    assert store.get_log_dirs() == {dir1}
     store.import_log_path(dir2)
     captured = capsys.readouterr().out
     assert f"Found {path_str(dir2)} with 1 logs" in captured
-    assert f"Adding new log directory: {path_str(dir2)}" in captured
-    assert store.get_log_dirs() == {dir1, dir2}
     store.import_log_path(dir1)
     captured = capsys.readouterr().out
     assert f"Found {path_str(dir1)} with 2 logs" in captured
-    assert "No new log directories to add" in captured
-    assert store.get_log_dirs() == {dir1, dir2}
 
 
 def test_store_import_recursive() -> None:
     store: FlowStore = store_get()
-    assert store.get_log_dirs() == set()
+    assert len(store.get_logs()) == 0
     store.import_log_path(parent, recursive=True)
-    assert sorted(store.get_log_dirs()) == [to_uri(parent)]
     assert len(store.get_logs()) == 4
 
 
 def test_store_import_add_recursive() -> None:
     store: FlowStore = store_get()
-    assert store.get_log_dirs() == set()
+    assert len(store.get_logs()) == 0
     store.import_log_path(dir2, recursive=False)
-    assert sorted(store.get_log_dirs()) == [dir2]
     logs = store.get_logs()
     assert len(logs) == 1
     store.remove_log_path(list(logs))
     assert len(store.get_logs()) == 0
-    store.refresh()
-    assert len(store.get_logs()) == 1
 
     store.import_log_path(dir2, recursive=True)
-    assert sorted(store.get_log_dirs()) == [dir2]
     logs = store.get_logs()
     assert len(logs) == 2
     store.remove_log_path(list(logs))
     logs = store.get_logs()
     assert len(logs) == 0
-    store.refresh()
-    logs = store.get_logs()
-    assert len(logs) == 2
 
 
 def test_store_remove() -> None:
     store: FlowStore = store_get()
     store.import_log_path(dir1)
     store.remove_log_path(dir1)
-    assert store.get_log_dirs() == set()
+    assert len(store.get_logs()) == 0
 
 
 def test_store_remove_escaping(mock_s3) -> None:
@@ -82,7 +66,7 @@ def test_store_remove_escaping(mock_s3) -> None:
     store: FlowStore = store_get()
     store.import_log_path(dir)
     store.remove_log_path(dir)
-    assert store.get_log_dirs() == set()
+    assert len(store.get_logs()) == 0
 
 
 def test_local_log_remote_store(mock_s3) -> None:
@@ -107,10 +91,8 @@ def test_refresh_removes(tmp_path) -> None:
     store.import_log_path(str(dir1 / log1_name))
     store.import_log_path(str(dir2))
     assert len(store.get_logs()) == 2
-    assert len(store.get_log_dirs()) == 1
 
     shutil.rmtree(dir1)
     shutil.rmtree(dir2)
-    store.refresh()
+    store.remove_log_path([], missing=True)
     assert len(store.get_logs()) == 0
-    assert len(store.get_log_dirs()) == 0

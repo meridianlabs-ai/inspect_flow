@@ -26,17 +26,7 @@ class FlowStore(ABC):
 
         Args:
             log_path: Path or paths to log files or directories containing log files.
-            type: The type of log directory ("import" or "run").
             recursive: Whether to search directories recursively.
-        """
-        pass
-
-    @abstractmethod
-    def get_log_dirs(self) -> set[str]:
-        """Get all registered log directories.
-
-        Returns:
-            Set of log directory paths that have been added to the store.
         """
         pass
 
@@ -56,18 +46,13 @@ class FlowStore(ABC):
         missing: bool = False,
         recursive: bool = False,
     ) -> None:
-        """Remove a directory of log files.
+        """Remove a log files.
 
         Args:
             log_path: Path or paths to log files or directories containing log files.
             missing: Whether to remove log paths that are missing from the file system.
             recursive: Whether to remove log files recursively.
         """
-        pass
-
-    @abstractmethod
-    def refresh(self) -> None:
-        """Refresh the store to reflect the current state of the file system."""
         pass
 
 
