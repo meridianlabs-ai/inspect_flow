@@ -115,14 +115,14 @@ def resolve_python_version(pyproject_path: str | Path) -> str:
     if not requires_python:
         # Fall back to current Python version
         current = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-        logger.info(f"No requires-python found, using current Python: {current}")
+        logger.debug(f"No requires-python found, using current Python: {current}")
         return current
 
-    logger.info(f"Found requires-python: {requires_python}")
+    logger.debug(f"Found requires-python: {requires_python}")
 
     best_version = _find_best_python_version(requires_python)
     if best_version is None:
         raise ValueError(f"No available Python version satisfies: {requires_python}")
 
-    logger.info(f"Selected Python version: {best_version}")
+    logger.debug(f"Selected Python version: {best_version}")
     return str(best_version)

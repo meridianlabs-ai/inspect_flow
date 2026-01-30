@@ -24,7 +24,16 @@ def format_prefix(format: Formats) -> str:
 
 def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
     prefix = format_prefix(format)
-    if prefix:
+    if (
+        prefix
+        and objects
+        and isinstance(objects[0], str)
+        and objects[0].startswith("\n")
+    ):
+        stripped = objects[0].lstrip("\n")
+        leading = objects[0][: len(objects[0]) - len(stripped)]
+        objects = (leading, prefix, stripped, *objects[1:])
+    elif prefix:
         objects = (prefix, *objects)
     console.print(*objects, **kwargs)
 

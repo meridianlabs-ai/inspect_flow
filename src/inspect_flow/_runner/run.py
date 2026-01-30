@@ -13,6 +13,7 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.syntax import Syntax
 
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -54,7 +55,8 @@ def run_eval_set(
 
     if dry_run:
         dump = config_to_yaml(resolved_config)
-        click.echo(dump)
+        yaml_syntax = Syntax(dump, "yaml", theme="monokai", background_color="default")
+        print(" ", Rule("Resolved configuration as YAML"), yaml_syntax)
         return False, []
 
     options = resolved_config.options or FlowOptions()
@@ -271,6 +273,7 @@ def flow_run(
         raise NotImplementedError("Run has no subcommands.")
 
     init_flow_logging(log_level=log_level)
+    logger.info("Starting runner")
 
     cfg = _read_config(file)
     run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
