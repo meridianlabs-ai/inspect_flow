@@ -16,7 +16,7 @@ from pydantic_core import ValidationError
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
-from inspect_flow._util.console import print, quantity
+from inspect_flow._util.console import path, print, quantity
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -40,6 +40,8 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
+    print(f"Loading config: {path(file)}")
+
     state = LoadState()
     file = absolute_file_path(file)
     spec = _load_spec_from_file(file, args=options.args, state=state)
@@ -209,7 +211,6 @@ def _load_spec_from_file(
     config_file: str, args: dict[str, Any], state: LoadState
 ) -> FlowSpec | None:
     config_path = Path(absolute_file_path(config_file))
-    print(f"Loading config: {config_file}")
 
     try:
         with file(config_file, "r") as f:

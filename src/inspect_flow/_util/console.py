@@ -2,6 +2,8 @@ from typing import Literal
 
 from rich.console import Console
 
+from inspect_flow._util.path_util import path_str
+
 console = Console()
 
 Formats = Literal["default", "success", "info"]
@@ -19,6 +21,11 @@ def _apply_format(msg: str, format: Formats) -> str:
 def print(msg: str, format: Formats = "default") -> None:
     msg = _apply_format(msg, format)
     console.print(msg)
+
+
+def path(p: str) -> str:
+    """Wrap a path for Rich highlighting."""
+    return f"[repr.path]{path_str(p)}[/repr.path]"
 
 
 def pluralize(word: str, count: int, plural: str | None = None) -> str:
