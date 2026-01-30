@@ -6,18 +6,20 @@ from inspect_flow._util.path_util import path_str
 
 console = Console()
 
-Formats = Literal["default", "success", "info", "warning"]
+Formats = Literal["default", "success", "info", "warning", "error"]
 
 
 def format_prefix(format: Formats) -> str:
     if format == "default":
         return ""
     elif format == "success":
-        return "[green]✔[/green]"
+        return "[green]✓[/green]"
     elif format == "info":
         return "[blue]ℹ[/blue]"
     elif format == "warning":
         return "[yellow]⚠[/yellow]"
+    elif format == "error":
+        return "[red]✗[/red]"
 
 
 def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:

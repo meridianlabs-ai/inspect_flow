@@ -159,6 +159,15 @@ Log Directory: {path(spec.log_dir)}"""
         ),
     )
 
+    if num_success < len(logs):
+        print("\nFailed Tasks:")
+        for log in logs:
+            if log.status == "error":
+                print(
+                    f"{log.eval.task}: {log.error.message if log.error else 'Unknown error'}",
+                    format="error",
+                )
+
 
 def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
     if not tasks:
