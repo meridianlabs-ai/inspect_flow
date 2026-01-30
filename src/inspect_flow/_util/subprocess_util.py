@@ -1,10 +1,42 @@
 """Utilities for running subprocesses with logging support."""
 
+import os
 import subprocess
 from logging import getLogger
 from typing import Any
 
 logger = getLogger(__name__)
+
+# Environment variable names for passing synchronization fd numbers to child.
+# The parent sets these before spawning the child process.
+CHILD_READY_FD_ENV = "INSPECT_FLOW_CHILD_READY_FD"
+PARENT_ACK_FD_ENV = "INSPECT_FLOW_PARENT_ACK_FD"
+
+
+def signal_ready_and_wait() -> None:
+    """Signal parent process we're ready, then wait for acknowledgment.
+
+    This should be called early in a child process that was spawned with
+    the synchronization fds passed via pass_fds and the fd numbers set in
+    environment variables. If the env vars aren't set (e.g., running
+    standalone), this function does nothing.
+    """
+    child_ready_fd_str = os.environ.get(CHILD_READY_FD_ENV)
+    parent_ack_fd_str = os.environ.get(PARENT_ACK_FD_ENV)
+
+    if not child_ready_fd_str or not parent_ack_fd_str:
+        return  # Not spawned with synchronization fds
+
+    try:
+        child_ready_fd = int(child_ready_fd_str)
+        parent_ack_fd = int(parent_ack_fd_str)
+
+        os.write(child_ready_fd, b"r")
+        os.close(child_ready_fd)
+        os.read(parent_ack_fd, 1)
+        os.close(parent_ack_fd)
+    except (OSError, ValueError) as e:
+        logger.warning(f"Parent-child synchronization failed: {e}")
 
 
 def run_with_logging(

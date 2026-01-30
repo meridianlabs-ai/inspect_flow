@@ -29,6 +29,7 @@ from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.pydantic_util import model_dump
+from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
 logger = getLogger(__file__)
 
@@ -273,7 +274,7 @@ def flow_run(
         raise NotImplementedError("Run has no subcommands.")
 
     init_flow_logging(log_level=log_level)
-    logger.info("Starting runner")
+    signal_ready_and_wait()
 
     cfg = _read_config(file)
     run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
