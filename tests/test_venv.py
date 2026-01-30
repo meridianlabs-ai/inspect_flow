@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
@@ -535,7 +536,7 @@ def test_325_uv_sync_args() -> None:
                 ]
 
 
-def test_369_flow_requirements_s3(mock_s3) -> None:
+def test_369_flow_requirements_s3(mock_s3: BaseClient) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")

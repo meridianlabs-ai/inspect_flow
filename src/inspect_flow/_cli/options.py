@@ -1,4 +1,5 @@
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 import click
 from inspect_ai._cli.util import parse_cli_args
@@ -10,8 +11,10 @@ from typing_extensions import TypedDict, Unpack
 from inspect_flow._config.load import ConfigOptions
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 
+F = TypeVar("F", bound=Callable[..., Any])
 
-def log_level_option(f):
+
+def log_level_option(f: F) -> F:
     f = click.option(
         "--log-level",
         type=click.Choice(
@@ -25,7 +28,7 @@ def log_level_option(f):
     return f
 
 
-def config_options(f):
+def config_options(f: F) -> F:
     """Options for overriding the config."""
     f = log_level_option(f)
     f = click.argument(

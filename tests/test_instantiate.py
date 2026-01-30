@@ -1,6 +1,7 @@
 from typing import Any
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.model import Model, get_model
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -264,7 +265,7 @@ def test_additional_args_agent_tools_dict() -> None:
     assert agent_tools["math"][0].__qualname__ == "add.<locals>.execute"
 
 
-def test_instantiate_s3(mock_s3) -> None:
+def test_instantiate_s3(mock_s3: BaseClient) -> None:
     spec = FlowSpec(
         tasks=[
             FlowTask(name="./tests/local_eval/src/local_eval/noop.py@noop"),

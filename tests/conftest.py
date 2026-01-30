@@ -7,11 +7,12 @@ os.environ["NO_COLOR"] = "1"
 
 import importlib.util
 import subprocess
+from collections.abc import Generator
 from typing import Any, Callable, TypeVar, cast
 
 import boto3
 import pytest
-from inspect_ai._util.logger import LogHandlerVar
+from botocore.client import BaseClient
 from inspect_flow._util.logging import init_flow_logging
 from moto.server import ThreadedMotoServer
 
@@ -32,7 +33,7 @@ def init_log_handler() -> None:
 
 
 @pytest.fixture(scope="session")
-def moto_server():
+def moto_server() -> Generator[ThreadedMotoServer, None, None]:
     """Start moto server once for entire test session."""
     server = ThreadedMotoServer(port=19100)
     server.start()
@@ -48,7 +49,7 @@ def moto_server():
 
 
 @pytest.fixture(scope="function")
-def mock_s3(moto_server):
+def mock_s3(moto_server: ThreadedMotoServer) -> Generator[BaseClient, None, None]:
     """Create and cleanup bucket for each test."""
     s3_client = boto3.client("s3")
     s3_client.create_bucket(Bucket="test-bucket")
