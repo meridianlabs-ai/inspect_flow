@@ -13,6 +13,16 @@ def absolute_path_relative_to(path: str, base_dir: str) -> str:
     return absolute_file_path(str(base_relative_path))
 
 
+def cwd_relative_path(path: str) -> str:
+    p = path
+    if p.startswith("file://"):
+        p = p[7:]
+    cwd = Path.cwd().as_posix()
+    if p.startswith(cwd):
+        return p[len(cwd) + 1 :]
+    return path
+
+
 def path_str(path: str) -> str:
     """Return a user friendly string representation of a path"""
     if path.startswith("file://"):

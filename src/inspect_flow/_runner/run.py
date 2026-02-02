@@ -28,6 +28,7 @@ from inspect_flow._util.error import FlowHandledError, set_exception_hook
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
+from inspect_flow._util.path_util import cwd_relative_path
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
@@ -72,7 +73,7 @@ def run_eval_set(
     try:
         result = eval_set(
             tasks=[t.task for t in tasks],
-            log_dir=resolved_config.log_dir,
+            log_dir=cwd_relative_path(resolved_config.log_dir),
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
             retry_connections=default_none(options.retry_connections),
