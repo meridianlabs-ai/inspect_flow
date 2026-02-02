@@ -32,7 +32,8 @@ def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
     ):
         stripped = objects[0].lstrip("\n")
         leading = objects[0][: len(objects[0]) - len(stripped)]
-        objects = (leading, prefix, stripped, *objects[1:])
+        console.print(leading, end="")
+        objects = (prefix, stripped, *objects[1:])
     elif prefix:
         objects = (prefix, *objects)
     console.print(*objects, **kwargs)
