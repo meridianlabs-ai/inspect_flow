@@ -66,7 +66,7 @@ def run_eval_set(
     print(f"\nRunning {quantity(len(tasks), 'task')}")
     print(f"Using log directory: {path(resolved_config.log_dir)}\n", format="info")
 
-    print(Rule("Begin Eval Set Execution"))
+    print(Rule("Running Eval Set"))
     start_time = time.time()
     try:
         result = eval_set(
@@ -124,7 +124,7 @@ def run_eval_set(
         _fix_prerequisite_error_message(e)
         raise
     finally:
-        print(Rule("End Eval Set Execution"))
+        print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_config, result, elapsed_time)

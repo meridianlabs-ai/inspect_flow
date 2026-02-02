@@ -80,7 +80,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             assert bytes == b"r", f"parent got bytes {bytes} instead of b'r'"
             os.close(child_ready_r)
 
-        print("Flow process started", format="success")
+        print("Flow process started\n", format="success")
 
         # Signal child to continue
         os.write(parent_ack_w, b"g")

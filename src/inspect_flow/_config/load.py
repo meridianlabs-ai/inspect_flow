@@ -51,7 +51,7 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
     base_dir = Path(file).parent.as_posix()
     spec = expand_spec(spec, base_dir=base_dir, options=options)
     print(
-        f"Loaded {quantity(len(spec.tasks or []), 'task')}",
+        f"Loaded {quantity(len(spec.tasks or []), 'task')}\n",
         format="success",
     )
     return spec

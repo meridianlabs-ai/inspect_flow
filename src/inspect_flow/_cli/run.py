@@ -39,7 +39,7 @@ def run_command(
 ) -> None:
     """CLI command to run a spec."""
     if dry_run:
-        print("\n[DRY RUN] Preview mode - no tasks will be executed")
+        print("\n[blue][DRY RUN][/blue] Preview mode - no tasks will be executed\n")
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     config_options = parse_config_options(**kwargs)
