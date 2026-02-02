@@ -101,6 +101,7 @@ def _expand_includes(
             spec = _apply_include(spec, include)
             continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
+        print(f"Including: {path(include_path)}", format="info")
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
             spec = _apply_include(spec, included_spec)
@@ -302,7 +303,7 @@ def _apply_auto_includes(
     spec: FlowSpec, base_dir: str, options: ConfigOptions, state: LoadState
 ) -> FlowSpec:
     absolute_path = absolute_file_path(base_dir)
-    protocol, path = split_protocol(absolute_path)
+    protocol, _ = split_protocol(absolute_path)
 
     parent_dir = Path(base_dir)
     auto_include_count = 0
@@ -313,9 +314,12 @@ def _apply_auto_includes(
         if exists(auto_file):
             auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
             if (auto_include_count := auto_include_count + 1) > 1:
-                logger.warning(
-                    f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {auto_file}"
+                print(
+                    f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {path(auto_file)}",
+                    format="warning",
                 )
+            else:
+                print(f"Auto-include: {path(auto_file)}", format="info")
             if auto_spec:
                 spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:

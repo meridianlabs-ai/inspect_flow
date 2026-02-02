@@ -16,6 +16,7 @@ import boto3
 import pytest
 from botocore.client import BaseClient
 from moto.server import ThreadedMotoServer
+from rich.console import Console
 
 
 @pytest.fixture(scope="session")
@@ -157,6 +158,17 @@ def mock_eval_set() -> Generator[MagicMock, None, None]:
     with patch("inspect_flow._runner.run.eval_set") as mock:
         mock.return_value = (True, [])
         yield mock
+
+
+@pytest.fixture
+def recording_console() -> Generator[Console, None, None]:
+    """Fixture that replaces the global Rich console with a recording console.
+
+    Use `recording_console.export_text()` to get the captured output.
+    """
+    recording = Console(record=True, force_terminal=True)
+    with patch("inspect_flow._util.console.console", recording):
+        yield recording
 
 
 @dataclass

@@ -26,7 +26,7 @@ from inspect_flow import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
-from pytest import CaptureFixture
+from rich.console import Console
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -844,7 +844,7 @@ def test_logs_allow_dirty(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["log_dir_allow_dirty"] is True
 
 
-def test_bundle_url_map(mock_eval_set: MagicMock, capsys: CaptureFixture[str]) -> None:
+def test_bundle_url_map(mock_eval_set: MagicMock, recording_console: Console) -> None:
     path = Path.cwd().as_posix()
     config = FlowSpec(
         log_dir="logs/flow_test",
@@ -860,12 +860,12 @@ def test_bundle_url_map(mock_eval_set: MagicMock, capsys: CaptureFixture[str]) -
     run_eval_set(spec=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
-    captured = capsys.readouterr()
-    assert "Bundle URL: http://example.com/bundle" in captured.out
+    out = recording_console.export_text()
+    assert "Bundle URL: http://example.com/bundle" in out
 
 
 def test_bundle_url_map_no_change(
-    mock_eval_set: MagicMock, capsys: CaptureFixture[str]
+    mock_eval_set: MagicMock, recording_console: Console
 ) -> None:
     path = Path.cwd().as_posix()
     config = FlowSpec(
@@ -882,8 +882,8 @@ def test_bundle_url_map_no_change(
     run_eval_set(spec=(config), base_dir=".")
 
     mock_eval_set.assert_called_once()
-    captured = capsys.readouterr()
-    assert "Bundle URL:" not in captured.out
+    out = recording_console.export_text()
+    assert "Bundle URL:" not in out
 
 
 def test_217_bundle_error_message(tmp_path: Path) -> None:

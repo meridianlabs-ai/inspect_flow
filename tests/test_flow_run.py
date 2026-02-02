@@ -25,7 +25,15 @@ def test_run_command_overrides() -> None:
 
         # Check that the command executed successfully
         assert result.exit_code == 0
-        data = yaml.safe_load(result.stdout)
+
+        # Extract YAML content from between the Rich Rule decorations
+        # Output format: \n─── Title ───\nyaml_content\n────────\n
+        lines = result.stdout.strip().split("\n")
+        yaml_lines = [
+            line for line in lines if not line.startswith("─") and line.strip()
+        ]
+        yaml_content = "\n".join(yaml_lines)
+        data = yaml.safe_load(yaml_content)
 
         output_spec = FlowSpec.model_validate(data, extra="forbid")
         assert output_spec == FlowSpec(

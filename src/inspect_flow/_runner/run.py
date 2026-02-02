@@ -232,7 +232,7 @@ def _print_bundle_url(spec: FlowSpec) -> None:
         for local, url in spec.options.bundle_url_mappings.items():
             bundle_url = bundle_url.replace(local, url)
         if bundle_url != spec.options.bundle_dir:
-            click.echo(f"Bundle URL: {bundle_url}")
+            print(f"Bundle URL: {bundle_url}")
 
 
 @click.group(invoke_without_command=True)
