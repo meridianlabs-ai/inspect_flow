@@ -13,9 +13,8 @@ from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
 from rich.panel import Panel
 from rich.rule import Rule
-from rich.syntax import Syntax
 
-from inspect_flow._config.write import config_to_yaml
+from inspect_flow._config.write import config_to_yaml, print_config_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._types.flow_types import (
@@ -55,9 +54,7 @@ def run_eval_set(
     _ = _get_task_ids(tasks=tasks, spec=resolved_config)
 
     if dry_run:
-        dump = config_to_yaml(resolved_config)
-        yaml_syntax = Syntax(dump, "yaml", theme="monokai", background_color="default")
-        print("", Rule("Resolved configuration as YAML"), yaml_syntax, Rule())
+        print_config_yaml(resolved_config, resolved=True)
         return False, []
 
     options = resolved_config.options or FlowOptions()
