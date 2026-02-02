@@ -9,6 +9,7 @@ import importlib.util
 import subprocess
 from collections.abc import Generator
 from typing import Any, Callable, TypeVar, cast
+from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
@@ -147,3 +148,11 @@ def skip_if_no_docker(func: F) -> F:
             reason="Test doesn't work without Docker installed.",
         )(func),
     )
+
+
+@pytest.fixture
+def mock_eval_set() -> Generator[MagicMock, None, None]:
+    """Mock eval_set with a valid return value for tests that don't run real evaluations."""
+    with patch("inspect_flow._runner.run.eval_set") as mock:
+        mock.return_value = (True, [])
+        yield mock
