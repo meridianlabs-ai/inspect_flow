@@ -240,8 +240,8 @@ def _load_spec_from_file(
                     )
                 spec = FlowSpec.model_validate(data, extra="forbid")
     except ValidationError as e:
+        print(e, format="error")
         _print_filtered_traceback(e, config_file)
-        logger.error(e)
         e._flow_handled = True  # type: ignore
         raise
 
@@ -408,4 +408,4 @@ def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
         frame for frame in stack_summary if frame.filename in config_file
     ]
     for item in traceback.format_list(filtered_frames):
-        logger.error(item)
+        print(item)
