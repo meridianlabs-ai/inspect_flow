@@ -29,6 +29,7 @@ from inspect_flow._config.load import (
     int_load_spec,
 )
 from inspect_flow._types.flow_types import FlowDependencies, not_given
+from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 from rich.console import Console
@@ -636,16 +637,16 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
 
 def test_load_invalid() -> None:
     invalid_config_path = str(Path(config_dir) / "invalid_flow.py")
-    with pytest.raises(ValidationError) as e:
+    with pytest.raises(FlowHandledError) as e:
         load_spec(invalid_config_path)
-    assert getattr(e.value, "_flow_handled", False) is True
+    assert e.value.__cause__
+    assert isinstance(e.value.__cause__, ValidationError)
 
 
 def test_load_no_spec() -> None:
     config_path = str(Path(config_dir) / "dirty_repo_flow.py")
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         load_spec(config_path)
-    assert getattr(e.value, "_flow_handled", False) is False
 
 
 def test_load_yaml() -> None:

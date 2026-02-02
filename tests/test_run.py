@@ -26,6 +26,7 @@ from inspect_flow import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
+from inspect_flow._util.error import FlowHandledError
 from rich.console import Console
 
 from .test_helpers.log_helpers import init_test_logs, verify_test_logs
@@ -903,10 +904,11 @@ def test_217_bundle_error_message(tmp_path: Path) -> None:
         FlowTask(name=task_file + "@noop", model="mockllm/mock-llm2")
     ]
 
-    with pytest.raises(PrerequisiteError) as e:
+    with pytest.raises(FlowHandledError) as e:
         run_eval_set(spec=(config), base_dir=".")
-    assert "'bundle_overwrite'" in str(e)
-    assert "'bundle_overwrite'" in str(e.value.message)
+    assert e.value.__cause__
+    assert isinstance(e.value.__cause__, PrerequisiteError)
+    assert "'bundle_overwrite'" in str(e.value.__cause__.message)
 
 
 def test_prerequisite_error() -> None:
@@ -921,13 +923,15 @@ def test_prerequisite_error() -> None:
 
     config.options = FlowOptions(eval_set_id="different_id")
 
-    with pytest.raises(PrerequisiteError) as e:
+    with pytest.raises(FlowHandledError) as e:
         run_eval_set(spec=(config), base_dir=".")
+    assert e.value.__cause__
+    assert isinstance(e.value.__cause__, PrerequisiteError)
     assert (
         "The eval set ID 'different_id' is not the same as the existing eval set ID"
-        in str(e.value.message)
+        in str(e.value.__cause__.message)
     )
-    assert "overwrite" not in str(e.value.message)
+    assert "overwrite" not in str(e.value.__cause__.message)
 
 
 @solver

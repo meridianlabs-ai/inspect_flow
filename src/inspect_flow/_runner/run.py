@@ -24,6 +24,7 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.console import format_prefix, path, print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.error import FlowHandledError, set_exception_hook
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
@@ -120,9 +121,11 @@ def run_eval_set(
             eval_set_id=default_none(options.eval_set_id),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except PrerequisiteError as e:
-        _fix_prerequisite_error_message(e)
-        raise
+    except Exception as e:
+        if isinstance(e, PrerequisiteError):
+            _fix_prerequisite_error_message(e)
+        print(str(e))
+        raise FlowHandledError from e
     finally:
         print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
@@ -266,6 +269,8 @@ def _print_bundle_url(spec: FlowSpec) -> None:
 def flow_run(
     ctx: click.Context, file: str, base_dir: str, log_level: str, dry_run: bool
 ) -> None:
+    set_exception_hook()
+
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         raise NotImplementedError("Run has no subcommands.")

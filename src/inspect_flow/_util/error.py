@@ -15,9 +15,7 @@ def exception_hook() -> Callable[..., None]:
         exception: BaseException,
         traceback: TracebackType,
     ) -> None:
-        if getattr(exception, "_flow_handled", False) or isinstance(
-            exception, subprocess.CalledProcessError
-        ):
+        if isinstance(exception, (FlowHandledError, subprocess.CalledProcessError)):
             # Exception already handled, do not print again
             sys.exit(getattr(exception, "returncode", 1))
         else:
@@ -29,9 +27,15 @@ def exception_hook() -> Callable[..., None]:
 _exception_hook_set: bool = False
 
 
-def set_exception_hook() -> None:
+def set_exception_hook(force: bool = False) -> None:
     global _exception_hook_set
-    if not _exception_hook_set:
+    if not _exception_hook_set or force:
         install(show_locals=False, suppress=[click])
         sys.excepthook = exception_hook()
         _exception_hook_set = True
+
+
+class FlowHandledError(Exception):
+    """Wrapper for exceptions that have already been printed to the console."""
+
+    pass

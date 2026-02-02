@@ -17,6 +17,7 @@ from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.console import path, print, quantity
+from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
@@ -243,8 +244,7 @@ def _load_spec_from_file(
     except ValidationError as e:
         print(e, format="error")
         _print_filtered_traceback(e, config_file)
-        e._flow_handled = True  # type: ignore
-        raise
+        raise FlowHandledError from e
 
     if spec:
         return _expand_includes(
