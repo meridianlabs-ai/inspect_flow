@@ -23,7 +23,7 @@ def log_level_option(f: F) -> F:
         ),
         default=DEFAULT_LOG_LEVEL,
         envvar="INSPECT_FLOW_LOG_LEVEL",
-        help="Set the log level (defaults to 'info')",
+        help="Set the log level (defaults to 'warning')",
     )(f)
     return f
 

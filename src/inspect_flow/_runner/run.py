@@ -1,3 +1,5 @@
+import time
+from datetime import timedelta
 from logging import getLogger
 
 import click
@@ -9,8 +11,10 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file, file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
+from rich.panel import Panel
+from rich.rule import Rule
 
-from inspect_flow._config.write import config_to_yaml
+from inspect_flow._config.write import config_to_yaml, print_config_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._store.deltalake import list_all_eval_logs
@@ -20,13 +24,15 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
+from inspect_flow._util.console import format_prefix, path, print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.error import NoLogsError
+from inspect_flow._util.error import FlowHandledError, NoLogsError, set_exception_hook
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
-from inspect_flow._util.path_util import path_join
+from inspect_flow._util.path_util import cwd_relative_path, path_join
 from inspect_flow._util.pydantic_util import model_dump
+from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
 logger = getLogger(__name__)
 
@@ -53,8 +59,7 @@ def run_eval_set(
     store = store_factory(resolved_spec, base_dir=base_dir)
 
     if dry_run:
-        dump = config_to_yaml(resolved_spec)
-        click.echo(dump)
+        print_config_yaml(resolved_spec, resolved=True)
         if store:
             _copy_existing_logs(task_ids, resolved_spec, store, dry_run=True)
         return False, []
@@ -68,12 +73,15 @@ def run_eval_set(
     if store:
         _copy_existing_logs(task_ids, resolved_spec, store)
 
-    logger.info(f"Running eval set with {len(tasks)} tasks.")
+    print(f"\nRunning {quantity(len(tasks), 'task')}")
+    print(f"Using log directory: {path(resolved_spec.log_dir)}\n", format="info")
 
+    print(Rule("Running Eval Set"))
+    start_time = time.time()
     try:
         result = eval_set(
             tasks=[t.task for t in tasks],
-            log_dir=resolved_spec.log_dir,
+            log_dir=cwd_relative_path(resolved_spec.log_dir),
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
             retry_connections=default_none(options.retry_connections),
@@ -122,9 +130,16 @@ def run_eval_set(
             eval_set_id=default_none(options.eval_set_id),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except PrerequisiteError as e:
-        _fix_prerequisite_error_message(e)
-        raise
+    except Exception as e:
+        if isinstance(e, PrerequisiteError):
+            _fix_prerequisite_error_message(e)
+        print(str(e))
+        raise FlowHandledError from e
+    finally:
+        print(Rule("Eval Set Finished"))
+    elapsed_time = time.time() - start_time
+
+    _print_result(resolved_spec, result, elapsed_time)
 
     if store:
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
@@ -140,6 +155,46 @@ def run_eval_set(
         _print_bundle_url(resolved_spec)
 
     return result
+
+
+def _print_result(
+    spec: FlowSpec, result: tuple[bool, list[EvalLog]], elapsed_time: float
+) -> None:
+    success, logs = result
+    num_success = len([log for log in logs if log.status == "success"])
+    if success and num_success < len(logs):
+        logger.error("Some logs failured even though the eval set succeeded.")
+    elif not success and num_success == len(logs):
+        logger.error("All logs successful even though the eval set failed.")
+
+    if num_success < len(logs):
+        summary = format_prefix("warning") + " Completed with errors"
+        tasks = f"Tasks: {num_success}/{len(logs)} successful, {len(logs) - num_success} failed"
+    else:
+        summary = format_prefix("success") + " All tasks completed"
+        tasks = f"Tasks: {len(logs)}/{len(logs)} successful"
+    assert spec.log_dir
+    elapsed = str(timedelta(seconds=int(elapsed_time)))
+    print(
+        "\n",
+        Panel(
+            f"""\
+{summary}
+
+Total Time: {elapsed}
+{tasks}
+Log Directory: {path(spec.log_dir)}"""
+        ),
+    )
+
+    if num_success < len(logs):
+        print("\nFailed Tasks:")
+        for log in logs:
+            if log.status == "error":
+                print(
+                    f"{log.eval.task}: {log.error.message if log.error else 'Unknown error'}",
+                    format="error",
+                )
 
 
 def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
@@ -224,7 +279,7 @@ def _print_bundle_url(spec: FlowSpec) -> None:
         for local, url in spec.options.bundle_url_mappings.items():
             bundle_url = bundle_url.replace(local, url)
         if bundle_url != spec.options.bundle_dir:
-            click.echo(f"Bundle URL: {bundle_url}")
+            print(f"Bundle URL: {bundle_url}")
 
 
 @click.group(invoke_without_command=True)
@@ -261,11 +316,14 @@ def _print_bundle_url(spec: FlowSpec) -> None:
 def flow_run(
     ctx: click.Context, file: str, base_dir: str, log_level: str, dry_run: bool
 ) -> None:
+    set_exception_hook()
+
     # if this was a subcommand then allow it to execute
     if ctx.invoked_subcommand is not None:
         raise NotImplementedError("Run has no subcommands.")
 
     init_flow_logging(log_level=log_level)
+    signal_ready_and_wait()
 
     cfg = _read_config(file)
     run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)

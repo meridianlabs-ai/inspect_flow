@@ -11,7 +11,8 @@ from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, Flow
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
-from inspect_flow._launcher.venv import _create_venv
+from inspect_flow._launcher.venv import _create_venv, venv_launch
+from rich.console import Console
 
 
 def test_no_dependencies() -> None:
@@ -663,3 +664,26 @@ my-package==1.0.0
     assert len(my_package_lines) == 1
     # Should keep the one with commit hash (longer ref)
     assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
+
+
+def test_pip_error(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir="logs",
+        dependencies=FlowDependencies(
+            additional_dependencies=["not-existing-package>=0.1.0"],
+        ),
+        tasks=[FlowTask(name="task_name")],
+    )
+    with pytest.raises(subprocess.CalledProcessError):
+        venv_launch(
+            spec=spec,
+            base_dir=".",
+            dry_run=False,
+            no_dotenv=False,
+        )
+
+    output = " ".join(recording_console.export_text().split())
+    assert (
+        "Because not-existing-package was not found in the package registry and you require not-existing-package>=0.1.0, we can conclude that your requirements are unsatisfiable."
+        in output
+    )
