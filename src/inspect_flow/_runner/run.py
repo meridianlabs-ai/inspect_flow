@@ -11,6 +11,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
+from inspect_ai.util._display import init_display_type
 from rich.panel import Panel
 from rich.rule import Rule
 
@@ -52,6 +53,12 @@ def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_config = resolve_spec(spec, base_dir=base_dir)
+    # 470 - eval_resolve_tasks uses the display, which sets a global that causes it to be ignored when passed to eval_set
+    # so we need to initialize the display type here first
+    options = resolved_config.options or FlowOptions()
+    if options.display:
+        init_display_type(options.display)
+
     tasks = instantiate_tasks(resolved_config, base_dir=base_dir)
     _ = _get_task_ids(tasks=tasks, spec=resolved_config)
 
@@ -59,7 +66,6 @@ def run_eval_set(
         print_config_yaml(resolved_config, resolved=True)
         return False, []
 
-    options = resolved_config.options or FlowOptions()
     if not resolved_config.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 
