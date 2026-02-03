@@ -277,3 +277,23 @@ def test_instantiated_venv_error() -> None:
         tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
     )
     _check_spec_for_venv(spec)
+
+
+def test_flow_process_error(mock_venv_subprocess: MockVenvSubprocess) -> None:
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[
+            "local_eval/noop",
+        ],
+    )
+
+    mock_venv_subprocess.popen.return_value.returncode = 123
+
+    with (
+        patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv,
+        pytest.raises(subprocess.CalledProcessError) as e,
+    ):
+        launch(spec=spec, base_dir="./tests/config/")
+    mock_create_venv.assert_called_once()
+    assert e.value.returncode == 123

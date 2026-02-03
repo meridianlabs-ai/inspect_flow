@@ -18,7 +18,7 @@ def cwd_relative_path(path: str) -> str:
     if p.startswith("file://"):
         p = p[7:]
     cwd = Path.cwd().as_posix()
-    if p.startswith(cwd):
+    if len(cwd) > 1 and p.startswith(cwd):
         return p[len(cwd) + 1 :]
     return path
 
@@ -28,6 +28,6 @@ def path_str(path: str) -> str:
     if path.startswith("file://"):
         path = path[7:]
     cwd = Path.cwd().as_posix()
-    if path.startswith(cwd):
+    if len(cwd) > 1 and path.startswith(cwd):
         path = path[len(cwd) + 1 :]
     return path

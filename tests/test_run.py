@@ -1129,8 +1129,10 @@ def test_no_log_dir() -> None:
 
 
 def test_duplicate_task_identifier() -> None:
+    log_dir = init_test_logs()
+
     spec = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=log_dir,
         tasks=tasks_matrix(
             task=[task_file + "@noop"], model=["mockllm/model1", "mockllm/model1"]
         ),
@@ -1138,3 +1140,19 @@ def test_duplicate_task_identifier() -> None:
     with pytest.raises(ValueError) as e:
         run_eval_set(spec=spec, base_dir=".")
     assert e.value.args[0].startswith("Duplicate task found:")
+
+
+def test_eval_set_error(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=tasks_matrix(task=[task_file + "@noop"], model=["mockllm/model1"]),
+    )
+    mock_eval_set.side_effect = ValueError("Test error from eval_set")
+
+    with pytest.raises(FlowHandledError) as e:
+        run_eval_set(spec=spec, base_dir=".")
+
+    assert e.value.__cause__ is not None
+    assert isinstance(e.value.__cause__, ValueError)
+    assert "Test error from eval_set" in str(e.value.__cause__)
