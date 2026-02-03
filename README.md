@@ -25,7 +25,7 @@
 | src/inspect\_flow/\_launcher/python\_version.py    |       55 |       14 |       18 |        5 |     68.49% |10, 33-40, 53->51, 60-61, 89-95, 117-119, 125 |
 | src/inspect\_flow/\_launcher/venv.py               |      175 |        0 |       60 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/instantiate.py          |      128 |        0 |       64 |        0 |    100.00% |           |
+| src/inspect\_flow/\_runner/instantiate.py          |      150 |        0 |       74 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/run.py                  |      137 |        2 |       44 |        3 |     97.24% |159, 161, 186->185 |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
@@ -47,7 +47,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       40 |       10 |       16 |        2 |     78.57% | 32-41, 98 |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1927** |   **61** |  **570** |   **18** | **95.88%** |           |
+| **TOTAL**                                          | **1949** |   **61** |  **580** |   **18** | **95.93%** |           |
 
 
 ## Setup coverage badge
