@@ -73,6 +73,8 @@ def _get_task_name(task_config: str | FlowTask | Task) -> str:
 
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     task_configs = spec.tasks or []
+    if not task_configs:
+        return []
     results: list[InstantiatedTask] = []
     print("\nInstantiating tasks")
     with Progress(
