@@ -19,6 +19,7 @@ from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Literal
 
 from inspect_flow._types.flow_types import (
@@ -34,6 +35,7 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
+from inspect_flow._util.console import console, print
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 
@@ -61,15 +63,43 @@ class InstantiatedTask:
     task: Task
 
 
+def _get_task_name(task_config: str | FlowTask | Task) -> str:
+    if isinstance(task_config, str):
+        return task_config
+    if isinstance(task_config, FlowTask):
+        return task_config.name or "<unnamed>"
+    return task_config.name
+
+
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
-    return [
-        InstantiatedTask(
-            flow_task=task_config if isinstance(task_config, FlowTask) else None,
-            task=task,
-        )
-        for task_config in spec.tasks or []
-        for task in _instantiate_task(spec, task_config, base_dir=base_dir)
-    ]
+    task_configs = spec.tasks or []
+    if not task_configs:
+        return []
+    results: list[InstantiatedTask] = []
+    print("\nInstantiating tasks")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.percentage]{task.completed}/{task.total}"),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress_task = progress.add_task("Instantiating", total=len(task_configs))
+        for task_config in task_configs:
+            task_name = _get_task_name(task_config)
+            progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
+            for task in _instantiate_task(spec, task_config, base_dir=base_dir):
+                results.append(
+                    InstantiatedTask(
+                        flow_task=task_config
+                        if isinstance(task_config, FlowTask)
+                        else None,
+                        task=task,
+                    )
+                )
+            progress.advance(progress_task)
+    print(f"Instantiated {len(results)} tasks\n", format="success")
+    return results
 
 
 def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:

@@ -11,6 +11,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file, file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, get_model
+from inspect_ai.util._display import init_display_type
 from rich.panel import Panel
 from rich.rule import Rule
 
@@ -54,6 +55,12 @@ def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
+    # 470 - eval_resolve_tasks uses the display, which sets a global that causes it to be ignored when passed to eval_set
+    # so we need to initialize the display type here first
+    options = resolved_spec.options or FlowOptions()
+    if options.display:
+        init_display_type(options.display)
+
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir)
@@ -64,7 +71,6 @@ def run_eval_set(
             _copy_existing_logs(task_ids, resolved_spec, store, dry_run=True)
         return False, []
 
-    options = resolved_spec.options or FlowOptions()
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 
@@ -130,13 +136,18 @@ def run_eval_set(
             eval_set_id=default_none(options.eval_set_id),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except Exception as e:
+    except BaseException as e:
         if isinstance(e, PrerequisiteError):
             _fix_prerequisite_error_message(e)
-        print(str(e))
-        raise FlowHandledError from e
-    finally:
-        print(Rule("Eval Set Finished"))
+        if error_string := str(e):
+            print(error_string, format="error")
+        print(Rule("Eval Set Failed with Exception"))
+        if error_string:
+            raise FlowHandledError from e
+        else:
+            raise
+
+    print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_spec, result, elapsed_time)

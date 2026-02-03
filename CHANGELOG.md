@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.2...v0.3.0) (2026-02-03)
+
+
+### Features
+
+* improved console output ([#466](https://github.com/meridianlabs-ai/inspect_flow/issues/466)) ([247725f](https://github.com/meridianlabs-ai/inspect_flow/commit/247725fd141182b20b568733c6bf7f1c71e841f9))
+
+
+### Bug Fixes
+
+* _flow.py should not include itself when loaded directly ([#467](https://github.com/meridianlabs-ai/inspect_flow/issues/467)) ([3e26333](https://github.com/meridianlabs-ai/inspect_flow/commit/3e2633372f1950b0c6f86ae0f4de51843d293f18)), closes [#465](https://github.com/meridianlabs-ai/inspect_flow/issues/465)
+* log-dir-create-unique corrected handling of paths ending in / ([#451](https://github.com/meridianlabs-ai/inspect_flow/issues/451)) ([2f5b3ab](https://github.com/meridianlabs-ai/inspect_flow/commit/2f5b3ab9744d86a9a697d65de29391f69dba43a3))
+* test bundle_dir location and stricter type checking ([#463](https://github.com/meridianlabs-ai/inspect_flow/issues/463)) ([11f2328](https://github.com/meridianlabs-ai/inspect_flow/commit/11f232806c1a3292433f8401918d4865ad5357fc))
+* use rich display of exception traceback ([#459](https://github.com/meridianlabs-ai/inspect_flow/issues/459)) ([70d0ff7](https://github.com/meridianlabs-ai/inspect_flow/commit/70d0ff743b4820e25ed2b9a77d8aa72d2a4de8db))
+
 ## [0.2.2](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.1...v0.2.2) (2026-01-26)
 
 
