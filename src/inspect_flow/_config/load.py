@@ -50,7 +50,7 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
         raise ValueError(f"No value returned from Python config file: {file}")
 
     base_dir = Path(file).parent.as_posix()
-    spec = expand_spec(spec, base_dir=base_dir, options=options)
+    spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
     print(
         f"Loaded {quantity(len(spec.tasks or []), 'task')}\n",
         format="success",
@@ -59,10 +59,13 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
 
 
 def expand_spec(
-    spec: FlowSpec, base_dir: str, options: ConfigOptions | None = None
+    spec: FlowSpec,
+    base_dir: str,
+    options: ConfigOptions | None = None,
+    state: LoadState | None = None,
 ) -> FlowSpec:
     options = options or ConfigOptions()
-    state = LoadState()
+    state = state or LoadState()
     spec = _expand_includes(
         spec,
         state,
@@ -312,16 +315,21 @@ def _apply_auto_includes(
         if protocol:
             auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
-            auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
-            if (auto_include_count := auto_include_count + 1) > 1:
-                print(
-                    f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {path(auto_file)}",
-                    format="warning",
+            # Skip if this file was already loaded (e.g., when loading _flow.py directly)
+            absolute_auto_file = absolute_file_path(auto_file)
+            if absolute_auto_file not in state.files_to_specs:
+                auto_spec = _load_spec_from_file(
+                    auto_file, args=options.args, state=state
                 )
-            else:
-                print(f"Auto-include: {path(auto_file)}", format="info")
-            if auto_spec:
-                spec = _apply_include(spec, auto_spec)
+                if (auto_include_count := auto_include_count + 1) > 1:
+                    print(
+                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {path(auto_file)}",
+                        format="warning",
+                    )
+                else:
+                    print(f"Auto-include: {path(auto_file)}", format="info")
+                if auto_spec:
+                    spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:
             break
         parent_dir = parent_dir.parent
