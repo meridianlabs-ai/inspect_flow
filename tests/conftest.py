@@ -17,9 +17,16 @@ import boto3
 import pytest
 from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from moto.server import ThreadedMotoServer
 from rich.console import Console
+
+
+@pytest.fixture(autouse=True)
+def init_log_handler() -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level=DEFAULT_LOG_LEVEL, log_handler_var=log_handler)
 
 
 @pytest.fixture(autouse=True)
@@ -29,12 +36,6 @@ def isolate_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "inspect_flow._store.store._get_default_store_dir",
         lambda: tmp_path / "test_store",
     )
-
-
-@pytest.fixture(autouse=True)
-def init_log_handler() -> None:
-    log_handler: LogHandlerVar = {"handler": None}
-    init_flow_logging(log_level="info", log_handler_var=log_handler)
 
 
 @pytest.fixture(scope="session")
