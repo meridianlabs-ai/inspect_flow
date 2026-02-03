@@ -17,6 +17,7 @@ from semver import Version
 from typing_extensions import override
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
+from inspect_flow._util.console import path, print
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.logging import PrefixLogger
@@ -195,8 +196,12 @@ class DeltaLakeStore(FlowStoreInternal):
 
         self._fs = filesystem(self._store_path)
         self._storage_options = self._get_storage_options()
-        for table in TABLES:
-            self._init_table(table)
+        found = [self._init_table(table) for table in TABLES]
+        if any(found):
+            print(f"\nUsing store: {path(store_path)}")
+        else:
+            print("\nStore not found")
+            print(f"Creating store: {path(store_path)}", format="info")
 
     def _get_storage_options(self) -> dict[str, str] | None:
         if not self._fs.is_s3():
@@ -232,11 +237,12 @@ class DeltaLakeStore(FlowStoreInternal):
         except (TableNotFoundError, OSError):
             return None
 
-    def _init_table(self, table: TableDef) -> None:
+    def _init_table(self, table: TableDef) -> bool:
         table_path = self._table_path(table.name)
         if dt := self._get_table(table_path):
             logger.info(f"Existing table: {table_path}")
             _check_table_description(table, dt.metadata().description)
+            return True
         else:
             logger.info(f"Creating table: {table_path}")
             fs = filesystem(table_path)
@@ -251,6 +257,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 description=metadata,
                 storage_options=self._storage_options,
             )
+            return False
 
     @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
@@ -268,15 +275,15 @@ class DeltaLakeStore(FlowStoreInternal):
         # Collect dirs and logs to add
         dirs = set()
         logs: list[Log] = []
-        for path in log_path:
-            fs = filesystem(path)
-            if not fs.exists(path):
-                raise FileNotFoundError(f"Log path does not exist: {path_str(path)}")
-            info = fs.info(path)
+        for p in log_path:
+            fs = filesystem(p)
+            if not fs.exists(p):
+                raise FileNotFoundError(f"Log path does not exist: {path_str(p)}")
+            info = fs.info(p)
             if info.type == "file":
-                logs.append(_file_to_log(path))
+                logs.append(_file_to_log(p))
             else:
-                dir = to_uri(path)
+                dir = to_uri(p)
                 _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
         self._add_logs(logs)
 
@@ -294,8 +301,8 @@ class DeltaLakeStore(FlowStoreInternal):
 
         logs = self.get_logs()
         logs_to_remove = set()
-        for path in log_path:
-            _remove_path(path, recursive, logs, logs_to_remove)
+        for p in log_path:
+            _remove_path(p, recursive, logs, logs_to_remove)
         if missing:
             logs_to_remove.update([log for log in logs if not exists(log)])
 
