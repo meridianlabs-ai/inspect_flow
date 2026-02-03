@@ -27,7 +27,7 @@
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/instantiate.py          |      128 |        0 |       64 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |      130 |        2 |       38 |        3 |     97.02% |148, 150, 175->174 |
+| src/inspect\_flow/\_runner/run.py                  |      133 |        2 |       40 |        3 |     97.11% |154, 156, 181->180 |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        7 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       84 |        0 |       32 |        0 |    100.00% |           |
@@ -47,7 +47,7 @@
 | src/inspect\_flow/\_util/subprocess\_util.py       |       40 |       10 |       16 |        2 |     78.57% | 32-41, 98 |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        2 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **1916** |   **61** |  **560** |   **18** | **95.84%** |           |
+| **TOTAL**                                          | **1919** |   **61** |  **562** |   **18** | **95.85%** |           |
 
 
 ## Setup coverage badge
