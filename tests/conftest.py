@@ -8,12 +8,15 @@ os.environ["NO_COLOR"] = "1"
 import importlib.util
 import subprocess
 from collections.abc import Generator
+from dataclasses import dataclass
 from typing import Any, Callable, TypeVar, cast
+from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
 from botocore.client import BaseClient
 from moto.server import ThreadedMotoServer
+from rich.console import Console
 
 
 @pytest.fixture(scope="session")
@@ -147,3 +150,68 @@ def skip_if_no_docker(func: F) -> F:
             reason="Test doesn't work without Docker installed.",
         )(func),
     )
+
+
+@pytest.fixture
+def mock_eval_set() -> Generator[MagicMock, None, None]:
+    """Mock eval_set with a valid return value for tests that don't run real evaluations."""
+    with patch("inspect_flow._runner.run.eval_set") as mock:
+        mock.return_value = (True, [])
+        yield mock
+
+
+@pytest.fixture
+def recording_console() -> Generator[Console, None, None]:
+    """Fixture that replaces the global Rich console with a recording console.
+
+    Use `recording_console.export_text()` to get the captured output.
+    """
+    recording = Console(record=True, force_terminal=True)
+    with patch("inspect_flow._util.console.console", recording):
+        yield recording
+
+
+@dataclass
+class MockVenvSubprocess:
+    """Container for venv subprocess mocks."""
+
+    run: MagicMock
+    """Mock for subprocess.run (used for venv setup commands like uv sync, pip install)."""
+
+    popen: MagicMock
+    """Mock for subprocess.Popen (used for launching the Python process)."""
+
+
+@pytest.fixture
+def mock_venv_subprocess() -> Generator[MockVenvSubprocess, None, None]:
+    """Mock subprocess.run and subprocess.Popen for venv launch tests.
+
+    Also mocks os.read to handle the parent-child synchronization pipes.
+    """
+    import subprocess
+
+    def mock_os_read(fd: int, n: int) -> bytes:  # noqa: ARG001
+        # Return the expected synchronization byte for the child_ready pipe
+        # The code expects b"r" from the child process
+        return b"r"
+
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("subprocess.Popen") as mock_popen,
+        patch("os.read", side_effect=mock_os_read),
+        patch("os.write"),
+        patch("os.close"),
+        patch("os.pipe", return_value=(10, 11)),  # Return fake file descriptors
+    ):
+        # Configure subprocess.run to return success
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        # Configure subprocess.Popen to return a mock process
+        mock_process = MagicMock()
+        mock_process.wait.return_value = None
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+
+        yield MockVenvSubprocess(run=mock_run, popen=mock_popen)

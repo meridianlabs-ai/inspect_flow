@@ -29,9 +29,10 @@ from inspect_flow._config.load import (
     int_load_spec,
 )
 from inspect_flow._types.flow_types import FlowDependencies, not_given
+from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
-from pytest import CaptureFixture
+from rich.console import Console
 
 from tests.local_eval.src.local_eval.tools import add
 from tests.test_helpers.config_helpers import validate_config
@@ -400,13 +401,13 @@ def test_multiple_includes() -> None:
     validate_config(spec, "multiple_includes_flow.yaml")
 
 
-def test_auto_include(capsys: CaptureFixture[str]) -> None:
+def test_auto_include(recording_console: Console) -> None:
     spec = load_spec(
         str(
             Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
         )
     )
-    out = capsys.readouterr().out
+    out = recording_console.export_text()
     validate_config(spec, "auto_include_flow.yaml")
     # Remove all whitespace from rich console formatting to handle line wrapping
     out_normalized = "".join(out.split())
@@ -415,7 +416,7 @@ def test_auto_include(capsys: CaptureFixture[str]) -> None:
     assert "_other_flow.py" in out_normalized
 
 
-def test_auto_include_two(capsys: CaptureFixture[str]) -> None:
+def test_auto_include_two(recording_console: Console) -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="warning", log_handler_var=log_handler)
     spec = load_spec(
@@ -423,7 +424,7 @@ def test_auto_include_two(capsys: CaptureFixture[str]) -> None:
             Path(__file__).parent / "config" / "auto" / "another_flow" / "test_flow.py"
         ),
     )
-    out = capsys.readouterr().out
+    out = recording_console.export_text()
     validate_config(spec, "auto_include_two_flow.yaml")
     # Remove all whitespace from rich console formatting to handle line wrapping
     out_normalized = "".join(out.split())
@@ -636,16 +637,16 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
 
 def test_load_invalid() -> None:
     invalid_config_path = str(Path(config_dir) / "invalid_flow.py")
-    with pytest.raises(ValidationError) as e:
+    with pytest.raises(FlowHandledError) as e:
         load_spec(invalid_config_path)
-    assert getattr(e.value, "_flow_handled", False) is True
+    assert e.value.__cause__
+    assert isinstance(e.value.__cause__, ValidationError)
 
 
 def test_load_no_spec() -> None:
     config_path = str(Path(config_dir) / "dirty_repo_flow.py")
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         load_spec(config_path)
-    assert getattr(e.value, "_flow_handled", False) is False
 
 
 def test_load_yaml() -> None:

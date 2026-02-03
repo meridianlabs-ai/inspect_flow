@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from inspect_ai import Task, task
@@ -74,7 +74,7 @@ def b_task(task_arg: float = 0.0) -> Task:
     return Task()
 
 
-def test_inspect_objects() -> None:
+def test_inspect_objects(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     spec = FlowSpec(
         log_dir="logs",
@@ -85,20 +85,17 @@ def test_inspect_objects() -> None:
             ),
         ],
     )
-    with (
-        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
-        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
-    ):
+    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
         run(spec=spec)
 
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert isinstance(tasks_arg[0], Task)
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    tasks_arg = call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 2
+    assert isinstance(tasks_arg[0], Task)
 
 
-def test_inspect_object_defaults() -> None:
+def test_inspect_object_defaults(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     spec = FlowSpec(
         log_dir="logs",
@@ -115,20 +112,17 @@ def test_inspect_object_defaults() -> None:
             ),
         ],
     )
-    with (
-        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
-        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
-    ):
+    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
         run(spec=spec)
 
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert isinstance(tasks_arg[0], Task)
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    tasks_arg = call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 2
+    assert isinstance(tasks_arg[0], Task)
 
 
-def test_inspect_object_includes() -> None:
+def test_inspect_object_includes(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     include = FlowSpec(
         log_dir="logs",
@@ -149,20 +143,17 @@ def test_inspect_object_includes() -> None:
             ),
         ],
     )
-    with (
-        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
-        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
-    ):
+    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
         run(spec=spec)
 
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 2
-        assert isinstance(tasks_arg[0], Task)
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    tasks_arg = call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 2
+    assert isinstance(tasks_arg[0], Task)
 
 
-def test_inspect_object_with() -> None:
+def test_inspect_object_with(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
         log_dir="logs",
         tasks=[
@@ -177,29 +168,26 @@ def test_inspect_object_with() -> None:
             ),
         ],
     )
-    with (
-        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
-        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
-    ):
+    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
         run(spec=spec)
 
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 5
-        for i, task in enumerate(tasks_arg):
-            assert isinstance(task, Task)
-            if i == 0:
-                assert task.model is None
-            elif i < 3:
-                assert task.model
-                assert task.model.name == "model"
-            else:
-                assert task.model
-                assert task.model.name == "model2"
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    tasks_arg = call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 5
+    for i, t in enumerate(tasks_arg):
+        assert isinstance(t, Task)
+        if i == 0:
+            assert t.model is None
+        elif i < 3:
+            assert t.model
+            assert t.model.name == "model"
+        else:
+            assert t.model
+            assert t.model.name == "model2"
 
 
-def test_inspect_object_matrix() -> None:
+def test_inspect_object_matrix(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
         log_dir="logs",
         tasks=tasks_matrix(
@@ -207,24 +195,21 @@ def test_inspect_object_matrix() -> None:
             model=["mockllm/model", get_model("mockllm/model2")],
         ),
     )
-    with (
-        patch("inspect_flow._runner.run.eval_set") as mock_eval_set,
-        patch("inspect_flow._launcher.inproc.write_flow_requirements"),
-    ):
+    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
         run(spec=spec)
 
-        mock_eval_set.assert_called_once()
-        call_args = mock_eval_set.call_args
-        tasks_arg = call_args.kwargs["tasks"]
-        assert len(tasks_arg) == 4
-        for i, task in enumerate(tasks_arg):
-            assert isinstance(task, Task)
-            if not i % 2:
-                assert task.model
-                assert task.model.name == "model"
-            else:
-                assert task.model
-                assert task.model.name == "model2"
+    mock_eval_set.assert_called_once()
+    call_args = mock_eval_set.call_args
+    tasks_arg = call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 4
+    for i, t in enumerate(tasks_arg):
+        assert isinstance(t, Task)
+        if not i % 2:
+            assert t.model
+            assert t.model.name == "model"
+        else:
+            assert t.model
+            assert t.model.name == "model2"
 
 
 def test_inspect_object_instantiation() -> None:

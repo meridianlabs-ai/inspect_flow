@@ -287,11 +287,11 @@ def test_run_command_log_level() -> None:
         mock_config_obj = MagicMock()
         mock_config.return_value = mock_config_obj
 
-        result = runner.invoke(run_command, [CONFIG_FILE, "--log-level", "warning"])
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-level", "debug"])
 
         assert result.exit_code == 0
 
-        mock_init_flow_logging.assert_called_once_with("warning")
+        mock_init_flow_logging.assert_called_once_with("debug")
 
         mock_config.assert_called_once()
 

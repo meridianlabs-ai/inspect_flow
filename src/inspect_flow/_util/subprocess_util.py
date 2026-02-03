@@ -1,10 +1,44 @@
 """Utilities for running subprocesses with logging support."""
 
+import os
 import subprocess
 from logging import getLogger
 from typing import Any
 
+from inspect_flow._util.console import print
+
 logger = getLogger(__name__)
+
+# Environment variable names for passing synchronization fd numbers to child.
+# The parent sets these before spawning the child process.
+CHILD_READY_FD_ENV = "INSPECT_FLOW_CHILD_READY_FD"
+PARENT_ACK_FD_ENV = "INSPECT_FLOW_PARENT_ACK_FD"
+
+
+def signal_ready_and_wait() -> None:
+    """Signal parent process we're ready, then wait for acknowledgment.
+
+    This should be called early in a child process that was spawned with
+    the synchronization fds passed via pass_fds and the fd numbers set in
+    environment variables. If the env vars aren't set (e.g., running
+    standalone), this function does nothing.
+    """
+    child_ready_fd_str = os.environ.get(CHILD_READY_FD_ENV)
+    parent_ack_fd_str = os.environ.get(PARENT_ACK_FD_ENV)
+
+    if not child_ready_fd_str or not parent_ack_fd_str:
+        return  # Not spawned with synchronization fds
+
+    try:
+        child_ready_fd = int(child_ready_fd_str)
+        parent_ack_fd = int(parent_ack_fd_str)
+
+        os.write(child_ready_fd, b"r")
+        os.close(child_ready_fd)
+        os.read(parent_ack_fd, 1)
+        os.close(parent_ack_fd)
+    except (OSError, ValueError) as e:
+        logger.warning(f"Parent-child synchronization failed: {e}")
 
 
 def run_with_logging(
@@ -44,18 +78,24 @@ def run_with_logging(
     )
 
     if log_output:
-        # Log stdout at INFO level
         if result.stdout:
             for line in result.stdout.strip().split("\n"):
-                logger.info(line)
+                logger.debug(line)
 
-        # Log stderr at INFO level
         if result.stderr:
             for line in result.stderr.strip().split("\n"):
-                logger.info(line)
+                logger.debug(line)
 
     # Check return code after logging
     if check and result.returncode != 0:
+        print(
+            f"Command {' '.join(args)} failed with exit code {result.returncode}",
+            format="error",
+        )
+        if result.stderr:
+            print(result.stderr, format="error")
+        else:
+            print(result.stdout, format="error")
         raise subprocess.CalledProcessError(
             result.returncode,
             result.args,
