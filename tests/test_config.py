@@ -711,3 +711,13 @@ def test_389_tool_config() -> None:
 def test_419_python_include() -> None:
     config = load_spec(str(Path(__file__).parent / "config" / "python_import_flow.py"))
     validate_config(config, "python_import_flow.yaml")
+
+
+def test_465_flow_file_should_not_include_itself(recording_console: Console) -> None:
+    """Loading a _flow.py file directly should not auto-include itself."""
+    load_spec(str(Path(__file__).parent / "config" / "auto" / "_flow.py"))
+    out = recording_console.export_text()
+    # Remove all whitespace from rich console formatting to handle line wrapping
+    out_normalized = "".join(out.split())
+    # The _flow.py file should NOT be auto-included when loaded directly
+    assert "Auto-include" not in out_normalized
