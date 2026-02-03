@@ -18,6 +18,12 @@ def exception_hook() -> Callable[..., None]:
         if isinstance(exception, (FlowHandledError, subprocess.CalledProcessError)):
             # Exception already handled, do not print again
             sys.exit(getattr(exception, "returncode", 1))
+        elif isinstance(exception, KeyboardInterrupt):
+            # Exit cleanly without traceback (130 = 128 + SIGINT)
+            sys.exit(130)
+        elif isinstance(exception, click.Abort):
+            # Exit cleanly without traceback
+            sys.exit(1)
         else:
             sys_handler(exception_type, exception, traceback)
 
