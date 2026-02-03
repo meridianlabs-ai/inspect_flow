@@ -4,6 +4,7 @@ import pytest
 from inspect_flow._util import error
 from inspect_flow._util.error import FlowHandledError, set_exception_hook
 from pytest import CaptureFixture
+from rich.console import Console
 
 
 @pytest.fixture(autouse=True)
@@ -69,3 +70,47 @@ def test_exception_hook_handles_other_exceptions(capsys: CaptureFixture[str]) ->
     sys.excepthook(type(exc), exc, None)
 
     assert "Exception: test" in capsys.readouterr().err
+
+
+def test_469_exception_hook_handles_keyboard_interrupt(
+    recording_console: Console,
+) -> None:
+    """Test that the custom hook exits cleanly for KeyboardInterrupt without traceback.
+
+    Issue #469: When a user presses Ctrl+C, the exception hook should exit cleanly
+    without printing a full traceback (which is "clutter").
+    """
+    set_exception_hook()
+
+    exc = KeyboardInterrupt()
+
+    with pytest.raises(SystemExit) as exc_info:
+        sys.excepthook(type(exc), exc, None)
+
+    # Should exit with code 130 (standard Unix exit code for SIGINT)
+    assert exc_info.value.code == 130
+
+    # Should NOT print anything (clean exit)
+    assert recording_console.export_text() == ""
+
+
+def test_469_exception_hook_handles_click_abort(recording_console: Console) -> None:
+    """Test that the custom hook exits cleanly for click.Abort without traceback.
+
+    Issue #469: When a user aborts a click prompt (Ctrl+C), the exception hook
+    should exit cleanly without printing a full traceback.
+    """
+    import click
+
+    set_exception_hook()
+
+    exc = click.Abort()
+
+    with pytest.raises(SystemExit) as exc_info:
+        sys.excepthook(type(exc), exc, None)
+
+    # Should exit with code 1
+    assert exc_info.value.code == 1
+
+    # Should NOT print anything (clean exit)
+    assert recording_console.export_text() == ""

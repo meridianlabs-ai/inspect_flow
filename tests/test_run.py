@@ -1156,3 +1156,20 @@ def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     assert e.value.__cause__ is not None
     assert isinstance(e.value.__cause__, ValueError)
     assert "Test error from eval_set" in str(e.value.__cause__)
+
+
+def test_eval_set_keyboard_interrupt(
+    mock_eval_set: MagicMock, recording_console: Console
+) -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=tasks_matrix(task=[task_file + "@noop"], model=["mockllm/model1"]),
+    )
+    mock_eval_set.side_effect = KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt):
+        run_eval_set(spec=spec, base_dir=".")
+
+    out = recording_console.export_text()
+    assert "Eval Set Failed with Exception" in out

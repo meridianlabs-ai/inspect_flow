@@ -128,13 +128,18 @@ def run_eval_set(
             eval_set_id=default_none(options.eval_set_id),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except Exception as e:
+    except BaseException as e:
         if isinstance(e, PrerequisiteError):
             _fix_prerequisite_error_message(e)
-        print(str(e))
-        raise FlowHandledError from e
-    finally:
-        print(Rule("Eval Set Finished"))
+        if error_string := str(e):
+            print(error_string, format="error")
+        print(Rule("Eval Set Failed with Exception"))
+        if error_string:
+            raise FlowHandledError from e
+        else:
+            raise
+
+    print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_config, result, elapsed_time)
