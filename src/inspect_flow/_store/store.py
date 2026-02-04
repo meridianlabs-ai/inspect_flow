@@ -60,7 +60,7 @@ class FlowStoreInternal(FlowStore):
     """Internal interface for flow store implementations."""
 
     @abstractmethod
-    def search_for_logs(self, task_ids: set[str]) -> list[str]:
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
         pass
 
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:

@@ -62,7 +62,7 @@ def run_eval_set(
         init_display_type(options.display)
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
-    task_ids = _get_task_ids(tasks=tasks, spec=resolved_spec)
+    task_ids = _get_task_ids_to_name(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir)
 
     if dry_run:
@@ -208,9 +208,11 @@ Log Directory: {path(spec.log_dir)}"""
                 )
 
 
-def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
+def _get_task_ids_to_name(
+    tasks: list[InstantiatedTask], spec: FlowSpec
+) -> dict[str, str]:
     if not tasks:
-        return set()
+        return dict()
 
     options = spec.options or FlowOptions()
 
@@ -225,7 +227,7 @@ def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
         sample_shuffle=default_none(options.sample_shuffle),
     )
 
-    task_ids = set()
+    task_ids = dict()
     for i, task in enumerate(resolved_tasks):
         task_id = task_identifier(
             task=task,
@@ -239,36 +241,50 @@ def _get_task_ids(tasks: list[InstantiatedTask], spec: FlowSpec) -> set[str]:
             else:
                 raise ValueError(f"Duplicate task found: {task}")
 
-        task_ids.add(task_id)
+        task_ids[task_id] = task.task.name
     return task_ids
 
 
 def _copy_existing_logs(
-    task_ids: set[str],
+    task_ids_to_name: dict[str, str],
     spec: FlowSpec,
     store: FlowStoreInternal,
     dry_run: bool = False,
 ) -> None:
     # remove any tasks that already exist in the log_dir
-    logger.info("Searching for existing logs in the log directory")
+    print("Checking for existing logs")
     assert spec.log_dir
     logs = list_all_eval_logs(log_dir=spec.log_dir)
+    found_logs = False
     for log in logs:
-        if log.task_identifier in task_ids:
-            logger.info(f"Found existing log file {log.info.name}")
-            task_ids.remove(log.task_identifier)
-            if not task_ids:
+        matching_logs = [log for log in logs if log.task_identifier in task_ids_to_name]
+        if matching_logs:
+            found_logs = True
+            print(
+                f"Found {quantity(len(matching_logs), 'existing log')} in log directory",
+                format="info",
+            )
+            for log in matching_logs:
+                print(f"{log.info.task} ({path(log.info.name)})", format="info")
+                task_ids_to_name.pop(log.task_identifier, None)
+            if not task_ids_to_name:
                 return
 
-    logger.info("Searching store for existing logs")
-    log_files = store.search_for_logs(task_ids)
-    for log_file in log_files:
-        if dry_run:
-            logger.info(f"Found existing log file {log_file}")
-        else:
-            logger.info(f"Copying existing log file {log_file} to {spec.log_dir}")
-            destination = path_join(spec.log_dir, basename(log_file))
-            copy_file(log_file, destination)
+    log_files = store.search_for_logs(set(task_ids_to_name.keys()))
+    if log_files:
+        found_logs = True
+        print(
+            f"Found {quantity(len(log_files), 'existing log')}{', copying to log directory' if not dry_run else ''}",
+            format="info",
+        )
+        for task_id, log_file in log_files.items():
+            print(f"{task_ids_to_name[task_id]} ({path(log_file)})", format="info")
+            if not dry_run:
+                destination = path_join(spec.log_dir, basename(log_file))
+                copy_file(log_file, destination)
+
+    if not found_logs:
+        print("No existing logs found", format="info")
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:

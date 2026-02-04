@@ -90,4 +90,4 @@ def test_missing_task_identifier(tmp_path: Path) -> None:
     log = _file_to_log(log1_path)
 
     logs = store.search_for_logs({log.task_identifier})
-    assert logs == [to_uri(log1_path)]
+    assert logs == {log.task_identifier: to_uri(log1_path)}

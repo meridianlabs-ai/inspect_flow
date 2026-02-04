@@ -13,11 +13,12 @@ from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import dirname, exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
-from inspect_flow._util.console import path, print
+from inspect_flow._util.console import console, path, print
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.logging import PrefixLogger
@@ -355,8 +356,8 @@ class DeltaLakeStore(FlowStoreInternal):
         )
 
     @override
-    def search_for_logs(self, task_ids: set[str]) -> list[str]:
-        results = []
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
+        results = dict()
         remaining_task_ids = set(task_ids)
 
         indexed_logs = self._get_logs(remaining_task_ids)
@@ -378,7 +379,7 @@ class DeltaLakeStore(FlowStoreInternal):
                     best_log = log
                     best_eval_log = eval_log
             if best_log:
-                results.append(best_log)
+                results[task_id] = best_log
         return results
 
     @override
@@ -414,14 +415,34 @@ class DeltaLakeStore(FlowStoreInternal):
         task_ids = table[_task_id_col()].to_pylist()
         log_paths = table["log_path"].to_pylist()
 
+        log_paths_to_update: list[str] = [
+            log_path
+            for log_path, task_id in zip(log_paths, task_ids, strict=True)
+            if not task_id and log_path is not None
+        ]
+
+        if not log_paths_to_update:
+            return
+
+        print("\nUpdating store task identifiers")
         logs_to_update: list[tuple[str, str]] = []
-        for log_path, task_id in zip(log_paths, task_ids, strict=True):
-            if not task_id and log_path is not None:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TextColumn("[progress.percentage]{task.completed}/{task.total}"),
+            console=console,
+            transient=True,
+        ) as progress:
+            progress_task = progress.add_task(
+                "Updating", total=len(log_paths_to_update)
+            )
+            for log_path in log_paths_to_update:
                 try:
                     log = _file_to_log(log_path)
                     logs_to_update.append((log_path, log.task_identifier))
                 except Exception as e:
                     logger.warning(f"Failed to read log {path_str(log_path)}: {e}")
+                progress.advance(progress_task)
 
         if not logs_to_update:
             return
