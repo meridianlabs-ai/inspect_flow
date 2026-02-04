@@ -2,14 +2,42 @@ from collections.abc import Callable
 from typing import TypeVar
 
 import click
+from click import Context, HelpFormatter
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
+from inspect_flow._util.console import print
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
 from inspect_flow._util.path_util import path_str
+
+
+class ArgumentsHelpCommand(click.Command):
+    """Command that displays arguments help section aligned with Options."""
+
+    def __init__(
+        self,
+        *args: object,
+        arguments_help: dict[str, str] | None = None,
+        **kwargs: object,
+    ) -> None:
+        self.arguments_help = arguments_help or {}
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+
+    def format_help(self, ctx: Context, formatter: HelpFormatter) -> None:
+        self.format_usage(ctx, formatter)
+        self.format_help_text(ctx, formatter)
+        if self.arguments_help:
+            self.format_arguments(formatter)
+        self.format_options(ctx, formatter)
+        self.format_epilog(ctx, formatter)
+
+    def format_arguments(self, formatter: HelpFormatter) -> None:
+        with formatter.section("Arguments"):
+            formatter.write_dl(list(self.arguments_help.items()))
+
 
 F = TypeVar("F", bound=Callable[..., object])
 
@@ -27,7 +55,7 @@ def store_options(f: F) -> F:
             resolve_path=False,
         ),
         default=None,
-        help="Path to the store directory. Defaults to the default store location.",
+        help="Path to the store directory",
         envvar="INSPECT_FLOW_STORE",
     )(f)
     return f
@@ -36,7 +64,7 @@ def store_options(f: F) -> F:
 def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         func = click.argument(
-            "log_paths",
+            "path",
             nargs=-1,
             type=click.Path(
                 file_okay=True,
@@ -46,14 +74,14 @@ def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
                 resolve_path=False,
             ),
             required=required,
-            envvar="INSPECT_FLOW_STORE_LOG_PATHS",
+            envvar="INSPECT_FLOW_STORE_PATH",
         )(func)
         func = click.option(
             "--recursive",
             "-r",
             is_flag=True,
             default=False,
-            help="Recursively search sub directories for logs.",
+            help="Search directories recursively for logs",
             envvar="INSPECT_FLOW_STORE_RECURSIVE",
         )(func)
 
@@ -82,7 +110,13 @@ def store_command() -> None:
     pass
 
 
-@store_command.command("import", help="Import existing logs to the store")
+@store_command.command(
+    "import",
+    cls=ArgumentsHelpCommand,
+    arguments_help={
+        "PATH...": "One or more paths to log files or directories [required]"
+    },
+)
 @store_options
 @log_paths_arguments()
 @click.option(
@@ -95,43 +129,64 @@ def store_command() -> None:
         readable=True,
         resolve_path=False,
     ),
-    help="Copy logs to the directory being imported.",
+    help="Copy logs from this directory to PATH before importing.",
     envvar="INSPECT_FLOW_STORE_IMPORT_COPY_FROM",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Preview what would be imported without making changes",
+    envvar="INSPECT_FLOW_STORE_IMPORT_DRY_RUN",
+)
 def store_import(
-    log_paths: tuple[str, ...],
+    path: tuple[str, ...],
     recursive: bool,
     copy_from: str | None,
+    dry_run: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
+    if dry_run:
+        print("\n[blue][DRY RUN][/blue] Preview mode - logs will be imported\n")
+
     flow_store = init_store(**kwargs)
     if copy_from:
         if recursive:
+            raise click.UsageError("Cannot use --copy-from with --recursive")
+        if len(path) != 1:
             raise click.UsageError(
-                "Cannot use --recursive with --copy-from. Recursive finds existing log directories."
+                "When using --copy-from, exactly one PATH must be specified"
             )
-        if len(log_paths) != 1:
-            raise click.UsageError(
-                "When using --copy-from, exactly one log_path must be specified as the destination."
-            )
-        copy_all_logs(src_dir=copy_from, dest_dir=log_paths[0])
-    flow_store.import_log_path(list(log_paths), recursive=recursive)
+        copy_all_logs(src_dir=copy_from, dest_dir=path[0], dry_run=dry_run)
+    flow_store.import_log_path(list(path), recursive=recursive, dry_run=dry_run)
 
 
-@store_command.command("remove", help="Remove logs from the store")
+@store_command.command(
+    "remove",
+    cls=ArgumentsHelpCommand,
+    arguments_help={
+        "PATH...": "One or more paths to log files or directories [optional]"
+    },
+)
 @store_options
 @log_paths_arguments(required=False)
 @click.option(
     "--missing",
     is_flag=True,
     default=False,
-    help="Remove logs that are missing from the file system.",
+    help="Remove logs that no longer exist on file system",
     envvar="INSPECT_FLOW_STORE_REMOVE_MISSING",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Preview what would be removed without making changes",
+    envvar="INSPECT_FLOW_STORE_REMOVE_DRY_RUN",
 )
 def store_remove(
     log_paths: tuple[str, ...],
     recursive: bool,
     missing: bool,
+    dry_run: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if not log_paths and not missing:
@@ -139,7 +194,9 @@ def store_remove(
     if log_paths and missing:
         raise click.UsageError("Cannot specify both log_paths and --missing.")
     flow_store = init_store(**kwargs)
-    flow_store.remove_log_path(list(log_paths), missing=missing, recursive=recursive)
+    flow_store.remove_log_path(
+        list(log_paths), missing=missing, recursive=recursive, dry_run=dry_run
+    )
 
 
 def _echo_logs(flow_store: FlowStore) -> None:

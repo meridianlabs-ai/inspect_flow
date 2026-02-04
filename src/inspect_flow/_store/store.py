@@ -21,12 +21,14 @@ class FlowStore(ABC):
         self,
         log_path: str | Sequence[str],
         recursive: bool = False,
+        dry_run: bool = False,
     ) -> None:
         """Import a log file(s) or directory(ies) into the store.
 
         Args:
             log_path: Path or paths to log files or directories containing log files.
             recursive: Whether to search directories recursively.
+            dry_run: Preview what would be imported without making changes
         """
         pass
 
@@ -45,6 +47,7 @@ class FlowStore(ABC):
         log_path: str | Sequence[str],
         missing: bool = False,
         recursive: bool = False,
+        dry_run: bool = False,
     ) -> None:
         """Remove a log files.
 
@@ -52,6 +55,7 @@ class FlowStore(ABC):
             log_path: Path or paths to log files or directories containing log files.
             missing: Whether to remove log paths that are missing from the file system.
             recursive: Whether to remove log files recursively.
+            dry_run: Preview what would be removed without making changes
         """
         pass
 

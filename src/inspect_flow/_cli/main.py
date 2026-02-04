@@ -12,7 +12,7 @@ from .. import __version__
 from .run import run_command
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings={"max_content_width": 120})
 @click.option(
     "--version",
     type=bool,

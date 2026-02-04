@@ -3,14 +3,14 @@ import os
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from logging import getLogger
-from typing import Any, Counter, Sequence
+from typing import Any, Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, task_identifier
-from inspect_ai._util.file import dirname, exists, filesystem, to_uri
+from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -18,7 +18,7 @@ from semver import Version
 from typing_extensions import override
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
-from inspect_flow._util.console import console, path, print
+from inspect_flow._util.console import console, path, print, quantity
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.logging import PrefixLogger
@@ -145,24 +145,14 @@ def _eval_log_to_log(eval_log: EvalLog) -> Log:
     return _file_to_log(eval_log.location)
 
 
-def _add_log_dir(
-    log_dir: str, recursive: bool, dirs: set[str], logs: list[Log]
-) -> None:
-    if recursive:
-        dirs.add(log_dir)
-    dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
+def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log]) -> None:
+    with console.status(f"Scanning {path_str(log_dir)}..."):
+        dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
+    for log in dir_logs:
+        print(f"{path(log.info.name)}", format="info")
     logs.extend(dir_logs)
-    dirs.add(to_uri(log_dir))
-    if not recursive:
-        logger.info(f"Found {path_str(log_dir)} with {len(dir_logs)} logs")
-    else:
-        subdirs = Counter[str]()
-        for log in dir_logs:
-            subdirs.update([to_uri(dirname(log.info.name))])
-        for dir, count in subdirs.items():
-            logger.info(f"Found {path_str(dir)} with {count} logs")
 
 
 def _remove_path(
@@ -271,11 +261,12 @@ class DeltaLakeStore(FlowStoreInternal):
         self,
         log_path: str | Sequence[str],
         recursive: bool = False,
+        dry_run: bool = False,
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
         # Collect dirs and logs to add
-        dirs = set()
+        print("\nImporting logs to store")
         logs: list[Log] = []
         for p in log_path:
             fs = filesystem(p)
@@ -283,11 +274,16 @@ class DeltaLakeStore(FlowStoreInternal):
                 raise FileNotFoundError(f"Log path does not exist: {path_str(p)}")
             info = fs.info(p)
             if info.type == "file":
+                print(f"{path(p)}", format="info")
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
-                _add_log_dir(log_dir=dir, recursive=recursive, dirs=dirs, logs=logs)
-        self._add_logs(logs)
+                _add_log_dir(log_dir=dir, recursive=recursive, logs=logs)
+        num_added = self._add_logs(logs)
+        print(
+            f"Imported {quantity(num_added, 'new log')} to store",
+            format="success",
+        )
 
     @override
     def remove_log_path(
@@ -295,22 +291,36 @@ class DeltaLakeStore(FlowStoreInternal):
         log_path: str | Sequence[str],
         missing: bool = False,
         recursive: bool = False,
+        dry_run: bool = False,
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
 
+        print("\nRemoving logs from store")
         logs = self.get_logs()
         logs_to_remove = set()
         for p in log_path:
             _remove_path(p, recursive, logs, logs_to_remove)
         if missing:
-            logs_to_remove.update([log for log in logs if not exists(log)])
+            with console.status("Scanning for missing logs..."):
+                logs_to_remove.update([log for log in logs if not exists(log)])
 
-        if logs_to_remove:
-            if num_deleted_rows := self._remove_logs(list(logs_to_remove)):
-                logger.info(f"Removed {num_deleted_rows} logs from store")
+        if not logs_to_remove:
+            print("No logs found to remove from store", format="info")
+        else:
+            for log in sorted(logs_to_remove):
+                print(f"{path(log)}", format="info")
+            if dry_run:
+                print(
+                    f"Removed {quantity(len(logs_to_remove), 'log')} from store",
+                    format="success",
+                )
             else:
-                logger.info("No logs found to remove from store")
+                num_deleted_rows = self._remove_logs(list(logs_to_remove))
+                print(
+                    f"Removed {quantity(num_deleted_rows, 'log')} from store",
+                    format="success",
+                )
 
     def _remove_logs(self, logs_to_remove: Sequence[str]) -> int:
         if not logs_to_remove:
@@ -322,9 +332,9 @@ class DeltaLakeStore(FlowStoreInternal):
         metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
         return metrics.get("num_deleted_rows", 0)
 
-    def _add_logs(self, logs: list[Log]) -> None:
+    def _add_logs(self, logs: list[Log]) -> int:
         if not logs:
-            return
+            return 0
         task_ids = {log.task_identifier for log in logs}
         existing_logs = self._get_logs(task_ids)
         new_logs = [
@@ -334,7 +344,7 @@ class DeltaLakeStore(FlowStoreInternal):
             not in existing_logs.get(log.task_identifier, set())
         ]
         if not new_logs:
-            return
+            return 0
 
         new_data = pa.Table.from_pylist(
             [
@@ -353,6 +363,7 @@ class DeltaLakeStore(FlowStoreInternal):
             mode="append",
             storage_options=self._storage_options,
         )
+        return len(new_logs)
 
     @override
     def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
