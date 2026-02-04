@@ -55,8 +55,19 @@ def test_store_import_add_recursive() -> None:
 def test_store_remove() -> None:
     store: FlowStore = store_get()
     store.import_log_path(dir1)
-    assert len(store.get_logs()) == 2
+    logs = store.get_logs()
+    assert len(logs) == 2
+    store.remove_log_path(logs.pop())
+    assert len(store.get_logs()) == 1
     store.remove_log_path(dir1)
+    assert len(store.get_logs()) == 0
+
+
+def test_store_trailing_slash() -> None:
+    store: FlowStore = store_get()
+    store.import_log_path(dir1 + "/")
+    assert len(store.get_logs()) == 2
+    store.remove_log_path(dir1 + "/")
     assert len(store.get_logs()) == 0
 
 

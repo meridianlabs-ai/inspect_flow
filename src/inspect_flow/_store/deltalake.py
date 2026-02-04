@@ -172,11 +172,13 @@ def _remove_path(
     logs_to_remove: set[str],
 ) -> None:
     path = to_uri(path)
+    if path in logs:
+        logs_to_remove.add(path)
+        return
     sep = filesystem(path).sep
     path_prefix = path if path.endswith(sep) else path + sep
     prefix_len = len(path_prefix)
     for log in list(logs):
-        log = log.rstrip(sep)
         if log.startswith(path_prefix):
             if recursive:
                 logs_to_remove.add(log)
