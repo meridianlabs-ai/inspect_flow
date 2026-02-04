@@ -172,16 +172,15 @@ def _remove_path(
     logs_to_remove: set[str],
 ) -> None:
     path = to_uri(path)
-    if not recursive:
-        # TODO:remove files in dir (flat)
-        if path in logs:
-            logs_to_remove.add(path)
-    else:
-        path_prefix = (
-            path if path.endswith(filesystem(path).sep) else path + filesystem(path).sep
-        )
-        for log in list(logs):
-            if log.startswith(path_prefix):
+    sep = filesystem(path).sep
+    path_prefix = path if path.endswith(sep) else path + sep
+    prefix_len = len(path_prefix)
+    for log in list(logs):
+        log = log.rstrip(sep)
+        if log.startswith(path_prefix):
+            if recursive:
+                logs_to_remove.add(log)
+            elif sep not in path[prefix_len:]:
                 logs_to_remove.add(log)
 
 
