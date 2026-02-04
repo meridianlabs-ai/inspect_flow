@@ -1,5 +1,6 @@
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from logging import getLogger
@@ -12,7 +13,7 @@ from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
-from inspect_ai.log._file import log_files_from_ls, read_eval_log_headers
+from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
@@ -118,9 +119,21 @@ def _check_table_description(table: TableDef, description: str) -> None:
 
 
 # TODO:ransom move to inspect_ai
+def _read_eval_log_headers_parallel(
+    log_files: list[str], max_workers: int = 50
+) -> list[EvalLog]:
+    """Read eval log headers in parallel using threads."""
+
+    def read_header(log_file: str) -> EvalLog:
+        return read_eval_log(log_file, header_only=True)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        return list(executor.map(read_header, log_files))
+
+
 def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
     log_files = list_eval_logs(log_dir, recursive=recursive)
-    log_headers = read_eval_log_headers(log_files)
+    log_headers = _read_eval_log_headers_parallel([f.name for f in log_files])
     task_identifiers = [task_identifier(log_header, None) for log_header in log_headers]
     return [
         Log(info=info, header=header, task_identifier=task_identifier)
@@ -135,7 +148,7 @@ def _file_to_log(log_file: str) -> Log:
     log_files = log_files_from_ls([info])
     if not log_files:
         raise NoLogsError(f"No log found: {log_file}")
-    header = read_eval_log_headers([log_file])[0]
+    header = read_eval_log(log_file, header_only=True)
     task_id = task_identifier(header, None)
     assert task_id
     return Log(info=log_files[0], header=header, task_identifier=task_id)
