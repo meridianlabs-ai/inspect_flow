@@ -290,7 +290,8 @@ class DeltaLakeStore(FlowStoreInternal):
         for p in log_path:
             fs = filesystem(p)
             if not fs.exists(p):
-                raise FileNotFoundError(f"Log path does not exist: {path_str(p)}")
+                print("Error: Path", path(p), "does not exist", format="error")
+                continue
             info = fs.info(p)
             if info.type == "file":
                 print(path(p), format="info")
@@ -301,7 +302,7 @@ class DeltaLakeStore(FlowStoreInternal):
         num_added = self._add_logs(logs)
         print(
             f"Imported {quantity(num_added, 'new log')} to store",
-            format="success",
+            format="success" if num_added > 0 else "warning",
         )
 
     @override

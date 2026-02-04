@@ -11,7 +11,6 @@ from inspect_flow._util.console import path, print
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
-from inspect_flow._util.path_util import path_str
 
 
 class ArgumentsHelpCommand(click.Command):
@@ -212,8 +211,11 @@ def store_remove(
 
 def _echo_logs(flow_store: FlowStore) -> None:
     log_files = flow_store.get_logs()
+    if not log_files:
+        print("\nNo logs in store")
+        return
     for log_file in sorted(log_files):
-        click.echo(path_str(log_file))
+        print(path(log_file))
 
 
 @store_command.command("list", help="List logs and log directories in the store")
