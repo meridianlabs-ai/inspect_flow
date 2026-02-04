@@ -1,10 +1,10 @@
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from logging import getLogger
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -14,7 +14,7 @@ from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
@@ -123,16 +123,40 @@ def _read_eval_log_headers_parallel(
     log_files: list[str], max_workers: int = 50
 ) -> list[EvalLog]:
     """Read eval log headers in parallel using threads."""
+    if not log_files:
+        return []
 
     def read_header(log_file: str) -> EvalLog:
         return read_eval_log(log_file, header_only=True)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        return list(executor.map(read_header, log_files))
+    results: list[EvalLog | None] = [None] * len(log_files)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.completed}/{task.total}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress_task = progress.add_task("Reading logs", total=len(log_files))
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_idx = {
+                executor.submit(read_header, log_file): idx
+                for idx, log_file in enumerate(log_files)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                results[idx] = future.result()
+                progress.advance(progress_task)
+
+    return cast(list[EvalLog], results)
 
 
 def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
-    log_files = list_eval_logs(log_dir, recursive=recursive)
+    with console.status(f"Scanning {path_str(log_dir)}..."):
+        log_files = list_eval_logs(log_dir, recursive=recursive)
     log_headers = _read_eval_log_headers_parallel([f.name for f in log_files])
     task_identifiers = [task_identifier(log_header, None) for log_header in log_headers]
     return [
@@ -159,8 +183,7 @@ def _eval_log_to_log(eval_log: EvalLog) -> Log:
 
 
 def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log]) -> None:
-    with console.status(f"Scanning {path_str(log_dir)}..."):
-        dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
+    dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     for log in dir_logs:
