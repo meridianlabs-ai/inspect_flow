@@ -14,7 +14,10 @@ from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls
+from rich.console import Group
+from rich.live import Live
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 from semver import Version
 from typing_extensions import override
 
@@ -130,17 +133,26 @@ def _read_eval_log_headers_parallel(
         return read_eval_log(log_file, header_only=True)
 
     results: list[EvalLog | None] = [None] * len(log_files)
+    recent_files: list[str] = []
 
-    with Progress(
+    progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TextColumn("[progress.percentage]{task.completed}/{task.total}"),
         console=console,
-        transient=True,
-    ) as progress:
-        progress_task = progress.add_task("Reading logs", total=len(log_files))
+    )
+    progress_task = progress.add_task("Reading logs", total=len(log_files))
 
+    def make_display() -> Group:
+        if recent_files:
+            file_lines = [f"  {path_str(f)}" for f in recent_files[-5:]]
+            return Group(progress, Text("\n".join(file_lines), style="dim"))
+        return Group(progress)
+
+    with Live(
+        make_display(), console=console, transient=True, refresh_per_second=10
+    ) as live:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {
                 executor.submit(read_header, log_file): idx
@@ -149,7 +161,9 @@ def _read_eval_log_headers_parallel(
             for future in as_completed(future_to_idx):
                 idx = future_to_idx[future]
                 results[idx] = future.result()
+                recent_files.append(log_files[idx])
                 progress.advance(progress_task)
+                live.update(make_display())
 
     return cast(list[EvalLog], results)
 
@@ -186,8 +200,8 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log]) -> None:
     dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
-    for log in dir_logs:
-        print(path(log.info.name), format="info")
+    # for log in dir_logs:
+    #     print(path(log.info.name), format="info")
     logs.extend(dir_logs)
 
 
@@ -317,7 +331,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 continue
             info = fs.info(p)
             if info.type == "file":
-                print(path(p), format="info")
+                # print(path(p), format="info")
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
@@ -349,10 +363,10 @@ class DeltaLakeStore(FlowStoreInternal):
                 logs_to_remove.update([log for log in logs if not exists(log)])
 
         if not logs_to_remove:
-            print("No logs found to remove from store", format="info")
+            print("No logs found to remove from store", format="warning")
         else:
-            for log in sorted(logs_to_remove):
-                print(path(log), format="info")
+            # for log in sorted(logs_to_remove):
+            #     print(path(log), format="info")
             if dry_run:
                 print(
                     f"Removed {quantity(len(logs_to_remove), 'log')} from store",

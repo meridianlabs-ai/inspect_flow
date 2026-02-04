@@ -10,17 +10,17 @@ console = Console()
 Formats = Literal["default", "success", "info", "warning", "error"]
 
 
-def format_prefix(format: Formats) -> str:
+def format_prefix(format: Formats) -> Text:
     if format == "default":
-        return ""
+        return Text("")
     elif format == "success":
-        return "[green]✓[/green]"
+        return Text("✓", style="green")
     elif format == "info":
-        return "[blue]ℹ[/blue]"
+        return Text("ℹ", style="blue")
     elif format == "warning":
-        return "[yellow]⚠[/yellow]"
+        return Text("⚠", style="yellow")
     elif format == "error":
-        return "[red]✗[/red]"
+        return Text("✗", style="red")
 
 
 def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:

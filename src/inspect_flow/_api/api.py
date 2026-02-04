@@ -89,12 +89,14 @@ def config(
     return dump
 
 
-def store_get(store: str = "auto") -> FlowStore:
+def store_get(store: str = "auto", create: bool = True) -> FlowStore:
     """Get a FlowStore instance.
 
     Args:
         store: The store location. Can be a path to the store directory or "auto" for the default store location.
+        create: Whether to create the store if it does not exist.
     """
-    flow_store = store_factory(store, base_dir=".")
-    assert flow_store is not None
+    flow_store = store_factory(store, base_dir=".", create=create)
+    if not flow_store:
+        raise ValueError(f"Could not open store at {store}")
     return flow_store
