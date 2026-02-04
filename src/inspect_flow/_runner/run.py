@@ -14,6 +14,7 @@ from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util._display import init_display_type
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml, print_config_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -80,7 +81,7 @@ def run_eval_set(
         _copy_existing_logs(task_ids, resolved_spec, store)
 
     print(f"\nRunning {quantity(len(tasks), 'task')}")
-    print(f"Using log directory: {path(resolved_spec.log_dir)}\n", format="info")
+    print("Using log directory:", path(resolved_spec.log_dir), "\n", format="info")
 
     print(Rule("Running Eval Set"))
     start_time = time.time()
@@ -189,12 +190,15 @@ def _print_result(
     print(
         "\n",
         Panel(
-            f"""\
-{summary}
-
-Total Time: {elapsed}
-{tasks}
-Log Directory: {path(spec.log_dir)}"""
+            Text.assemble(
+                summary,
+                "\n\nTotal Time: ",
+                elapsed,
+                "\n",
+                tasks,
+                "\nLog Directory: ",
+                path(spec.log_dir),
+            )
         ),
     )
 
@@ -265,7 +269,10 @@ def _copy_existing_logs(
                 format="info",
             )
             for log in matching_logs:
-                print(f"{log.info.task} ({path(log.info.name)})", format="info")
+                print(
+                    Text.assemble(log.info.task, " (", path(log.info.name), ")"),
+                    format="info",
+                )
                 task_ids_to_name.pop(log.task_identifier, None)
             if not task_ids_to_name:
                 return
@@ -278,7 +285,10 @@ def _copy_existing_logs(
             format="info",
         )
         for task_id, log_file in log_files.items():
-            print(f"{task_ids_to_name[task_id]} ({path(log_file)})", format="info")
+            print(
+                Text.assemble(task_ids_to_name[task_id], " (", path(log_file), ")"),
+                format="info",
+            )
             if not dry_run:
                 destination = path_join(spec.log_dir, basename(log_file))
                 copy_file(log_file, destination)

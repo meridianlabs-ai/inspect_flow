@@ -41,7 +41,7 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
-    print(f"\nLoading config: {path(file)}")
+    print("\nLoading config:", path(file))
 
     state = LoadState()
     file = absolute_file_path(file)
@@ -105,7 +105,7 @@ def _expand_includes(
             spec = _apply_include(spec, include)
             continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
-        print(f"Including: {path(include_path)}", format="info")
+        print("Including:", path(include_path), format="info")
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
             spec = _apply_include(spec, included_spec)
@@ -323,11 +323,12 @@ def _apply_auto_includes(
                 )
                 if (auto_include_count := auto_include_count + 1) > 1:
                     print(
-                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {path(auto_file)}",
+                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
+                        path(auto_file),
                         format="warning",
                     )
                 else:
-                    print(f"Auto-include: {path(auto_file)}", format="info")
+                    print("Auto-include:", path(auto_file), format="info")
                 if auto_spec:
                     spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:

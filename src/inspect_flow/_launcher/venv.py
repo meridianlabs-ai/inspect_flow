@@ -186,7 +186,7 @@ def _get_create_venv_with_base_dependencies(
         return create_venv_func
 
     file_type, file_path = dependency_file_info
-    print(f"Dependency file: {path(file_path)}", format="info")
+    print("Dependency file:", path(file_path), format="info")
     if file_type == "requirements.txt":
 
         def create_venv_func() -> None:

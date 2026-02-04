@@ -151,7 +151,7 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log]) -> None:
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     for log in dir_logs:
-        print(f"{path(log.info.name)}", format="info")
+        print(path(log.info.name), format="info")
     logs.extend(dir_logs)
 
 
@@ -191,12 +191,12 @@ class DeltaLakeStore(FlowStoreInternal):
         self.exists = False
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
-            print(f"\nUsing store: {path(store_path)}")
+            print("\nUsing store:", path(store_path))
             self.exists = True
         else:
             print("\nStore not found")
             if create:
-                print(f"Creating store: {path(store_path)}", format="info")
+                print("Creating store:", path(store_path), format="info")
                 self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:
@@ -280,7 +280,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 raise FileNotFoundError(f"Log path does not exist: {path_str(p)}")
             info = fs.info(p)
             if info.type == "file":
-                print(f"{path(p)}", format="info")
+                print(path(p), format="info")
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
@@ -315,7 +315,7 @@ class DeltaLakeStore(FlowStoreInternal):
             print("No logs found to remove from store", format="info")
         else:
             for log in sorted(logs_to_remove):
-                print(f"{path(log)}", format="info")
+                print(path(log), format="info")
             if dry_run:
                 print(
                     f"Removed {quantity(len(logs_to_remove), 'log')} from store",

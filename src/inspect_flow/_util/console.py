@@ -1,6 +1,7 @@
 from typing import Any, Literal
 
 from rich.console import Console
+from rich.text import Text
 
 from inspect_flow._util.path_util import path_str
 
@@ -39,9 +40,9 @@ def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
     console.print(*objects, **kwargs)
 
 
-def path(p: str) -> str:
+def path(p: str) -> Text:
     """Wrap a path for Rich highlighting."""
-    return f"[repr.path]{path_str(p)}[/repr.path]"
+    return Text(path_str(p), style="magenta")
 
 
 def pluralize(word: str, count: int, plural: str | None = None) -> str:

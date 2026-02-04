@@ -104,7 +104,9 @@ def init_store(
     flow_store = store_factory(store_location, base_dir=".", create=create)
     if not flow_store:
         print(
-            f"Error: Store not found at {path(store_location)} Run 'flow store import' to create the store and import logs.",
+            "Error: Store not found at",
+            path(store_location),
+            "Run 'flow store import' to create the store and import logs.",
             format="error",
         )
     return flow_store
@@ -191,20 +193,20 @@ def store_import(
     envvar="INSPECT_FLOW_STORE_REMOVE_DRY_RUN",
 )
 def store_remove(
-    log_paths: tuple[str, ...],
+    path: tuple[str, ...],
     recursive: bool,
     missing: bool,
     dry_run: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    if not log_paths and not missing:
-        raise click.UsageError("Either log_paths or --missing must be specified.")
-    if log_paths and missing:
-        raise click.UsageError("Cannot specify both log_paths and --missing.")
+    if not path and not missing:
+        raise click.UsageError("Either path or --missing must be specified.")
+    if path and missing:
+        raise click.UsageError("Cannot specify both path and --missing.")
     flow_store = init_store(**kwargs)
     if flow_store:
         flow_store.remove_log_path(
-            list(log_paths), missing=missing, recursive=recursive, dry_run=dry_run
+            list(path), missing=missing, recursive=recursive, dry_run=dry_run
         )
 
 
