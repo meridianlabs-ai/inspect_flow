@@ -183,17 +183,21 @@ class DeltaLakeStore(FlowStoreInternal):
     concurrent-safe storage with S3 compatibility.
     """
 
-    def __init__(self, store_path: str) -> None:
+    def __init__(self, store_path: str, create: bool = False) -> None:
         self._store_path = store_path + filesystem(store_path).sep + "flow_store"
 
         self._fs = filesystem(self._store_path)
         self._storage_options = self._get_storage_options()
-        found = [self._init_table(table) for table in TABLES]
+        self.exists = False
+        found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
             print(f"\nUsing store: {path(store_path)}")
+            self.exists = True
         else:
             print("\nStore not found")
-            print(f"Creating store: {path(store_path)}", format="info")
+            if create:
+                print(f"Creating store: {path(store_path)}", format="info")
+                self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:
         if not self._fs.is_s3():
@@ -229,13 +233,13 @@ class DeltaLakeStore(FlowStoreInternal):
         except (TableNotFoundError, OSError):
             return None
 
-    def _init_table(self, table: TableDef) -> bool:
+    def _init_table(self, table: TableDef, create: bool) -> bool:
         table_path = self._table_path(table.name)
         if dt := self._get_table(table_path):
             logger.info(f"Existing table: {table_path}")
             _check_table_description(table, dt.metadata().description)
             return True
-        else:
+        elif create:
             logger.info(f"Creating table: {table_path}")
             fs = filesystem(table_path)
             # Create _store_path first to make it less likely to need to create an s3 bucket, which can cause errors
@@ -249,6 +253,8 @@ class DeltaLakeStore(FlowStoreInternal):
                 description=metadata,
                 storage_options=self._storage_options,
             )
+            return False
+        else:
             return False
 
     @override

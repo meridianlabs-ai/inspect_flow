@@ -7,7 +7,7 @@ from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
-from inspect_flow._util.console import print
+from inspect_flow._util.console import path, print
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
@@ -95,12 +95,18 @@ class StoreOptionArgs(TypedDict, total=False):
     store: str | None
 
 
-def init_store(**kwargs: Unpack[StoreOptionArgs]) -> FlowStore:
+def init_store(
+    create: bool = False, **kwargs: Unpack[StoreOptionArgs]
+) -> FlowStore | None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     store_location = kwargs.get("store") or "auto"
-    flow_store = store_factory(store_location, base_dir=".")
-    assert flow_store is not None
+    flow_store = store_factory(store_location, base_dir=".", create=create)
+    if not flow_store:
+        print(
+            f"Error: Store not found at {path(store_location)} Run 'flow store import' to create the store and import logs.",
+            format="error",
+        )
     return flow_store
 
 
@@ -148,7 +154,9 @@ def store_import(
     if dry_run:
         print("\n[blue][DRY RUN][/blue] Preview mode - logs will be imported\n")
 
-    flow_store = init_store(**kwargs)
+    flow_store = init_store(create=True, **kwargs)
+    if not flow_store:
+        return
     if copy_from:
         if recursive:
             raise click.UsageError("Cannot use --copy-from with --recursive")
@@ -194,9 +202,10 @@ def store_remove(
     if log_paths and missing:
         raise click.UsageError("Cannot specify both log_paths and --missing.")
     flow_store = init_store(**kwargs)
-    flow_store.remove_log_path(
-        list(log_paths), missing=missing, recursive=recursive, dry_run=dry_run
-    )
+    if flow_store:
+        flow_store.remove_log_path(
+            list(log_paths), missing=missing, recursive=recursive, dry_run=dry_run
+        )
 
 
 def _echo_logs(flow_store: FlowStore) -> None:
@@ -209,4 +218,5 @@ def _echo_logs(flow_store: FlowStore) -> None:
 @store_options
 def store_list(**kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_store = init_store(**kwargs)
-    return _echo_logs(flow_store)
+    if flow_store:
+        _echo_logs(flow_store)

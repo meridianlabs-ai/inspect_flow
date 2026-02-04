@@ -100,7 +100,7 @@ def _get_default_store_dir() -> Path:
 
 
 def store_factory(
-    spec_or_store: FlowSpec | str, base_dir: str
+    spec_or_store: FlowSpec | str, base_dir: str, create: bool = False
 ) -> FlowStoreInternal | None:
     store = spec_or_store if isinstance(spec_or_store, str) else spec_or_store.store
     if isinstance(store, NotGiven):
@@ -114,4 +114,5 @@ def store_factory(
     from inspect_flow._store.deltalake import DeltaLakeStore
 
     store_path = absolute_path_relative_to(store, base_dir=base_dir)
-    return DeltaLakeStore(store_path)
+    store = DeltaLakeStore(store_path, create=create)
+    return store if store.exists else None
