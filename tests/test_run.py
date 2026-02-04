@@ -8,6 +8,7 @@ import yaml
 from botocore.client import BaseClient
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
+from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
@@ -29,6 +30,7 @@ from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
+from inspect_flow._util.logging import init_flow_logging
 from pytest import CaptureFixture
 from rich.console import Console
 
@@ -1146,7 +1148,7 @@ def test_duplicate_task_identifier() -> None:
     assert e.value.args[0].startswith("Duplicate task found:")
 
 
-def test_log_copy(capsys: CaptureFixture[str]) -> None:
+def test_log_copy(recording_console: Console) -> None:
     log_dir = init_test_logs()
     store_dir = init_test_store()
 
@@ -1159,7 +1161,7 @@ def test_log_copy(capsys: CaptureFixture[str]) -> None:
 
     verify_test_logs(spec, log_dir)
 
-    capsys.readouterr()  # Clear previous output
+    recording_console.export_text()  # Clear previous output
 
     log_dir2 = log_dir + "_2"
     if Path(log_dir2).exists():
@@ -1169,11 +1171,14 @@ def test_log_copy(capsys: CaptureFixture[str]) -> None:
     run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir2)
 
-    out = capsys.readouterr().out
-    assert "Copying existing log file" in out
+    out = recording_console.export_text()
+    assert "Found 1 existing log, copying to log directory" in out
 
 
 def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level="info", log_handler_var=log_handler)
+
     log_dir = init_test_logs()
     store_dir = init_test_store()
 
@@ -1194,7 +1199,7 @@ def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
     assert "Failed to read log" in out
 
 
-def test_log_copy_s3(capsys: CaptureFixture[str], mock_s3: BaseClient) -> None:
+def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     log_dir = "s3://test-bucket/logs"
     store_dir = init_test_store()
 
@@ -1206,17 +1211,18 @@ def test_log_copy_s3(capsys: CaptureFixture[str], mock_s3: BaseClient) -> None:
     run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir)
 
-    capsys.readouterr()  # Clear previous output
+    recording_console.export_text()  # Clear previous output
 
     log_dir2 = log_dir + "_2"
     spec.log_dir = log_dir2
 
-    with patch("inspect_flow._runner.run.eval_set"):
+    with patch("inspect_flow._runner.run.eval_set") as mock:
+        mock.return_value = (True, [])
         run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir2)
 
-    out = capsys.readouterr().out
-    assert "Copying existing log file" in out
+    out = recording_console.export_text()
+    assert "copying to log directory" in out
 
 
 def test_eval_set_error(mock_eval_set: MagicMock) -> None:

@@ -28,7 +28,7 @@ def test_version_maintained(tmp_path: Path) -> None:
     """Test that opening a table with a higher patch version maintains that version."""
     store_path = str(tmp_path)
     # Create a table with a higher patch version
-    table_def = TABLES[1]
+    table_def = TABLES[0]
     assert table_def.name == LOGS
     old_version = table_def.version
     new_version = str(Version.parse(old_version).bump_patch())
@@ -65,7 +65,7 @@ def test_version_maintained(tmp_path: Path) -> None:
 def test_missing_task_identifier(tmp_path: Path) -> None:
     store_path = str(tmp_path)
     store = DeltaLakeStore(store_path=store_path)
-    table_def = TABLES[1]
+    table_def = TABLES[0]
     assert table_def.name == LOGS
 
     record = LogRecord(
