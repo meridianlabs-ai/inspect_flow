@@ -33,7 +33,7 @@ def test_version_maintained(tmp_path: Path) -> None:
     old_version = table_def.version
     new_version = str(Version.parse(old_version).bump_patch())
     table_def.version = new_version
-    DeltaLakeStore(store_path=store_path)
+    DeltaLakeStore(store_path=store_path, create=True)
 
     def check_version(store: DeltaLakeStore, version: str) -> None:
         table_path = store._table_path(table_def.name)

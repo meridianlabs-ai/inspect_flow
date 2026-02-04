@@ -5,7 +5,7 @@ from inspect_flow._types.flow_types import FlowSpec
 
 def test_store_defaults() -> None:
     spec = FlowSpec()
-    store = store_factory(spec, base_dir=".")
+    store = store_factory(spec, base_dir=".", create=True)
     assert store
     assert isinstance(store, DeltaLakeStore)
     assert store._store_path.endswith("test_store/flow_store")

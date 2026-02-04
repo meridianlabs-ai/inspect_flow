@@ -64,7 +64,7 @@ def run_eval_set(
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_ids = _get_task_ids_to_name(tasks=tasks, spec=resolved_spec)
-    store = store_factory(resolved_spec, base_dir=base_dir)
+    store = store_factory(resolved_spec, base_dir=base_dir, create=True)
 
     if dry_run:
         print_config_yaml(resolved_spec, resolved=True)
