@@ -298,8 +298,6 @@ class DeltaLakeStore(FlowStoreInternal):
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
-        if not log_path:
-            return
 
         logs = self.get_logs()
         logs_to_remove = set()

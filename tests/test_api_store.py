@@ -1,9 +1,7 @@
 import shutil
 from pathlib import Path
 
-import pytest
 from botocore.client import BaseClient
-from inspect_flow._util.path_util import path_str
 from inspect_flow.api import FlowStore, store_get
 
 parent = str(Path.cwd() / "tests/test_logs")
@@ -15,17 +13,18 @@ log1_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
 log1_path = dir1base + "/" + log1_name
 
 
-def test_store_get(capsys: pytest.CaptureFixture[str]) -> None:
+def test_store_import() -> None:
     store: FlowStore = store_get()
     store.import_log_path(dir1)
-    captured = capsys.readouterr().out
-    assert f"Found {path_str(dir1)} with 2 logs" in captured
+    assert len(store.get_logs()) == 2
     store.import_log_path(dir2)
-    captured = capsys.readouterr().out
-    assert f"Found {path_str(dir2)} with 1 logs" in captured
+    assert len(store.get_logs()) == 3
     store.import_log_path(dir1)
-    captured = capsys.readouterr().out
-    assert f"Found {path_str(dir1)} with 2 logs" in captured
+    assert len(store.get_logs()) == 3
+    store.import_log_path(dir2, recursive=True)
+    assert len(store.get_logs()) == 4
+    store.import_log_path(dir1)
+    assert len(store.get_logs()) == 4
 
 
 def test_store_import_recursive() -> None:

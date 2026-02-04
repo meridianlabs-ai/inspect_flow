@@ -390,22 +390,16 @@ def test_store_commands() -> None:
     runner = CliRunner()
     result = runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
     assert result.exit_code == 0
-    result = runner.invoke(
-        store_command, ["list", "--type", "dirs", "--log-level", "error"]
-    )
+    result = runner.invoke(store_command, ["list", "--log-level", "error"])
     assert result.exit_code == 0
     lines = result.output.strip().split("\n")
-    # setting the log level is not working in the test, so only look at the last line of output to ignore logging
-    assert lines[-1] == str(Path.cwd() / log_dir)
-    result = runner.invoke(store_command, ["list", "--type", "all"])
-    assert result.exit_code == 0
-    # setting the log level is not working in the test, so only look at the last line of output to ignore logging
-    assert result.output.split("\n")[-4] == str(Path.cwd() / log_dir)
     assert (
-        result.output.split("\n")[-3]
-        == "    2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+        lines[-2]
+        == log_dir
+        + "/2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
     )
     assert (
-        result.output.split("\n")[-2]
-        == "    2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
+        lines[-1]
+        == log_dir
+        + "/2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
     )
