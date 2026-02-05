@@ -6,6 +6,7 @@ from inspect_ai._cli.util import parse_cli_args
 from inspect_ai._util.constants import (
     ALL_LOG_LEVELS,
 )
+from inspect_ai._util.file import absolute_file_path
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
@@ -142,8 +143,11 @@ class ConfigOptionArgs(TypedDict, total=False):
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     overrides = list(kwargs.get("set") or [])  # set may be a tuple (at least in tests)
     if store := kwargs.get("store"):
+        if store.lower() not in ("auto", "none"):
+            store = absolute_file_path(store)
         overrides.append(f"store={store}")
     if log_dir := kwargs.get("log_dir"):
+        log_dir = absolute_file_path(log_dir)
         overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
