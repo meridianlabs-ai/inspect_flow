@@ -14,15 +14,18 @@ from inspect_ai._eval.evalset import Log, task_identifier
 from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 from inspect_ai.log._file import log_files_from_ls
-from rich.console import Group
-from rich.live import Live
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
-from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
-from inspect_flow._util.console import console, path, print, quantity
+from inspect_flow._util.console import (
+    PathProgressDisplay,
+    console,
+    path,
+    print,
+    quantity,
+)
 from inspect_flow._util.constants import PKG_NAME
 from inspect_flow._util.error import NoLogsError
 from inspect_flow._util.logging import PrefixLogger
@@ -133,26 +136,8 @@ def _read_eval_log_headers_parallel(
         return read_eval_log(log_file, header_only=True)
 
     results: list[EvalLog | None] = [None] * len(log_files)
-    recent_files: list[str] = []
 
-    progress = Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.completed}/{task.total}"),
-        console=console,
-    )
-    progress_task = progress.add_task("Reading logs", total=len(log_files))
-
-    def make_display() -> Group:
-        if recent_files:
-            file_lines = [f"  {path_str(f)}" for f in recent_files[-5:]]
-            return Group(progress, Text("\n".join(file_lines), style="dim"))
-        return Group(progress)
-
-    with Live(
-        make_display(), console=console, transient=True, refresh_per_second=10
-    ) as live:
+    with PathProgressDisplay("Reading logs", len(log_files)) as display:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {
                 executor.submit(read_header, log_file): idx
@@ -161,9 +146,7 @@ def _read_eval_log_headers_parallel(
             for future in as_completed(future_to_idx):
                 idx = future_to_idx[future]
                 results[idx] = future.result()
-                recent_files.append(log_files[idx])
-                progress.advance(progress_task)
-                live.update(make_display())
+                display.advance(log_files[idx])
 
     return cast(list[EvalLog], results)
 
@@ -365,8 +348,14 @@ class DeltaLakeStore(FlowStoreInternal):
         for p in log_path:
             _remove_path(p, recursive, logs, logs_to_remove)
         if missing:
-            with console.status("Scanning for missing logs..."):
-                logs_to_remove.update([log for log in logs if not exists(log)])
+            logs_list = list(logs)
+            with PathProgressDisplay(
+                "Scanning for missing logs", len(logs_list)
+            ) as display:
+                for log in logs_list:
+                    if not exists(log):
+                        logs_to_remove.add(log)
+                    display.advance(log)
 
         if not logs_to_remove:
             print("No logs found to remove from store", format="warning")
