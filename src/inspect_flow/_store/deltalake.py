@@ -220,6 +220,7 @@ class DeltaLakeStore(FlowStoreInternal):
     """
 
     def __init__(self, store_path: str, create: bool = False) -> None:
+        self._root_path = store_path
         self._store_path = store_path + filesystem(store_path).sep + "flow_store"
 
         self._fs = filesystem(self._store_path)
@@ -292,6 +293,18 @@ class DeltaLakeStore(FlowStoreInternal):
             return False
         else:
             return False
+
+    @property
+    @override
+    def store_path(self) -> str:
+        return self._root_path
+
+    @property
+    @override
+    def version(self) -> str:
+        dt = self._open_table(LOGS)
+        desc = json.loads(dt.metadata().description)
+        return desc.get("version", "unknown")
 
     @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:

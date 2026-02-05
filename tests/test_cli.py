@@ -405,6 +405,24 @@ def test_store_commands() -> None:
     )
 
 
+def test_store_info() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "2 logs" in result.output
+    assert "1 log dir" in result.output
+    assert "0.2.0" in result.output
+
+
+def test_store_info_empty() -> None:
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Store not found" in result.output
+
+
 def test_store_list_format_flat() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()

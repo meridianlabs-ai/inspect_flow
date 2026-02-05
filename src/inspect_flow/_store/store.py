@@ -16,6 +16,16 @@ logger = getLogger(__name__)
 class FlowStore(ABC):
     """Interface for flow store implementations."""
 
+    @property
+    @abstractmethod
+    def store_path(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def version(self) -> str:
+        pass
+
     @abstractmethod
     def import_log_path(
         self,

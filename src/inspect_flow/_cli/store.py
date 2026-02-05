@@ -9,7 +9,7 @@ from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
-from inspect_flow._util.console import console, path, print
+from inspect_flow._util.console import console, path, print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
@@ -274,6 +274,20 @@ def _echo_logs_tree(log_files: list[str]) -> None:
         parent.add(path(filename))
 
     console.print(tree)
+
+
+@store_command.command("info", help="Print store information")
+@store_options
+def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
+    flow_store = init_store(**kwargs)
+    if not flow_store:
+        return
+    logs = flow_store.get_logs()
+    log_dirs = {log.rsplit("/", 1)[0] for log in logs}
+    print("Path:    ", path(flow_store.store_path))
+    print("Logs:    ", quantity(len(logs), "log"))
+    print("Log dirs:", quantity(len(log_dirs), "log dir"))
+    print("Version: ", flow_store.version)
 
 
 @store_command.command("list", help="List logs and log directories in the store")
