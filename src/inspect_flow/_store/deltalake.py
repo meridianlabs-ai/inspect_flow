@@ -189,24 +189,26 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) 
     logs.extend(dir_logs)
 
 
-def _remove_path(
-    path: str,
+def _remove_prefix(
+    prefix: str,
     recursive: bool,
     logs: set[str],
     logs_to_remove: set[str],
 ) -> None:
-    path = to_uri(path)
-    if path in logs:
-        logs_to_remove.add(path)
+    prefix = to_uri(prefix)
+    if prefix in logs:
+        logs_to_remove.add(prefix)
         return
-    sep = filesystem(path).sep
-    path_prefix = path if path.endswith(sep) else path + sep
-    prefix_len = len(path_prefix)
+    sep = filesystem(prefix).sep
+    prefix_len = len(prefix)
     for log in list(logs):
-        if log.startswith(path_prefix):
+        if log.startswith(prefix):
+            remainder = log[prefix_len:]
+            if remainder.startswith(sep):
+                remainder = remainder[len(sep) :]
             if recursive:
                 logs_to_remove.add(log)
-            elif sep not in path[prefix_len:]:
+            elif sep not in remainder:
                 logs_to_remove.add(log)
 
 
@@ -331,22 +333,22 @@ class DeltaLakeStore(FlowStoreInternal):
         )
 
     @override
-    def remove_log_path(
+    def remove_log_prefix(
         self,
-        log_path: str | Sequence[str],
+        prefix: str | Sequence[str],
         missing: bool = False,
         recursive: bool = False,
         dry_run: bool = False,
         verbose: bool = False,
     ) -> None:
-        if isinstance(log_path, str):
-            log_path = [log_path]
+        if isinstance(prefix, str):
+            prefix = [prefix]
 
         print("\nRemoving logs from store")
         logs = self.get_logs()
         logs_to_remove: set[str] = set()
-        for p in log_path:
-            _remove_path(p, recursive, logs, logs_to_remove)
+        for p in prefix:
+            _remove_prefix(p, recursive, logs, logs_to_remove)
         if missing:
             logs_list = list(logs)
             with PathProgressDisplay(

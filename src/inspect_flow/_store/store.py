@@ -44,18 +44,18 @@ class FlowStore(ABC):
         pass
 
     @abstractmethod
-    def remove_log_path(
+    def remove_log_prefix(
         self,
-        log_path: str | Sequence[str],
+        prefix: str | Sequence[str],
         missing: bool = False,
         recursive: bool = False,
         dry_run: bool = False,
         verbose: bool = False,
     ) -> None:
-        """Remove a log files.
+        """Remove logs matching the given prefixes.
 
         Args:
-            log_path: Path or paths to log files or directories containing log files.
+            prefix: One or more prefixes to match against log paths.
             missing: Whether to remove log paths that are missing from the file system.
             recursive: Whether to remove log files recursively.
             dry_run: Preview what would be removed without making changes

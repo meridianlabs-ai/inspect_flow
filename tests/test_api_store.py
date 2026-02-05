@@ -40,13 +40,13 @@ def test_store_import_add_recursive() -> None:
     store.import_log_path(dir2, recursive=False)
     logs = store.get_logs()
     assert len(logs) == 1
-    store.remove_log_path(list(logs))
+    store.remove_log_prefix(list(logs))
     assert len(store.get_logs()) == 0
 
     store.import_log_path(dir2, recursive=True)
     logs = store.get_logs()
     assert len(logs) == 2
-    store.remove_log_path(list(logs))
+    store.remove_log_prefix(list(logs))
     logs = store.get_logs()
     assert len(logs) == 0
 
@@ -56,9 +56,9 @@ def test_store_remove() -> None:
     store.import_log_path(dir1)
     logs = store.get_logs()
     assert len(logs) == 2
-    store.remove_log_path(logs.pop())
+    store.remove_log_prefix(logs.pop())
     assert len(store.get_logs()) == 1
-    store.remove_log_path(dir1)
+    store.remove_log_prefix(dir1)
     assert len(store.get_logs()) == 0
 
 
@@ -66,7 +66,7 @@ def test_store_trailing_slash() -> None:
     store: FlowStore = store_get()
     store.import_log_path(dir1 + "/")
     assert len(store.get_logs()) == 2
-    store.remove_log_path(dir1 + "/")
+    store.remove_log_prefix(dir1 + "/")
     assert len(store.get_logs()) == 0
 
 
@@ -78,7 +78,7 @@ def test_store_remove_escaping(mock_s3: BaseClient) -> None:
 
     store: FlowStore = store_get()
     store.import_log_path(dir)
-    store.remove_log_path(dir)
+    store.remove_log_prefix(dir)
     assert len(store.get_logs()) == 0
 
 
@@ -107,5 +107,5 @@ def test_refresh_removes(tmp_path: Path) -> None:
 
     shutil.rmtree(dir1)
     shutil.rmtree(dir2)
-    store.remove_log_path([], missing=True)
+    store.remove_log_prefix([], missing=True)
     assert len(store.get_logs()) == 0

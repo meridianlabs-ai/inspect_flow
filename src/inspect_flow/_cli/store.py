@@ -182,11 +182,19 @@ def store_import(
     "remove",
     cls=ArgumentsHelpCommand,
     arguments_help={
-        "PATH...": "One or more paths to log files or directories [optional]"
+        "PREFIX...": "One or more prefixes to match against log paths [optional]"
     },
 )
 @store_options
-@log_paths_arguments(required=False)
+@click.argument("prefix", nargs=-1, required=False, envvar="INSPECT_FLOW_STORE_PREFIX")
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Search directories recursively for logs",
+    envvar="INSPECT_FLOW_STORE_RECURSIVE",
+)
 @click.option(
     "--missing",
     is_flag=True,
@@ -207,21 +215,21 @@ def store_import(
     help="Print paths of files being removed",
 )
 def store_remove(
-    path: tuple[str, ...],
+    prefix: tuple[str, ...],
     recursive: bool,
     missing: bool,
     dry_run: bool,
     verbose: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    if not path and not missing:
-        raise click.UsageError("Either path or --missing must be specified.")
-    if path and missing:
-        raise click.UsageError("Cannot specify both path and --missing.")
+    if not prefix and not missing:
+        raise click.UsageError("Either prefix or --missing must be specified.")
+    if prefix and missing:
+        raise click.UsageError("Cannot specify both prefix and --missing.")
     flow_store = init_store(**kwargs)
     if flow_store:
-        flow_store.remove_log_path(
-            list(path),
+        flow_store.remove_log_prefix(
+            list(prefix),
             missing=missing,
             recursive=recursive,
             dry_run=dry_run,
