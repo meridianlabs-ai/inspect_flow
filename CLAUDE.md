@@ -42,8 +42,8 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 - **Imports**: Use isort order (enforced by ruff). Always place imports at the top of the file, not inside functions.
 - **Types**: Strict typing is required. All functions must have type annotations
 - **Naming**: Use snake_case for variables, functions, methods; PascalCase for classes
-- **Docstrings**: Google-style docstrings required for public APIs. No docstrings for private/internal functions.
-- **Comments**: Prefer self-documenting code to comments. Use comments to explain why, not what, and only when complex.
+- **Docstrings**: Google-style docstrings required for public APIs. No docstrings for private/internal functions. Never write docstrings that describe implementation details—these duplicate the code and become stale when the code changes.
+- **Comments**: Prefer self-documenting code to comments. Use comments to explain why, not what, and only when complex. Do not add comments that merely restate what the code does.
 - **Error Handling**: Use appropriate exception types; include context in error messages. Avoid try/except blocks unless absolutely necessary—if you add one, include a test that exercises that code path.
 - **Testing**: Write tests with pytest; maintain high coverage
 - **Bug Fixes**: Include a test that reproduces the bug before fixing it
