@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Sequence
 
 import platformdirs
+from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import FlowSpec, NotGiven
@@ -130,3 +131,26 @@ def store_factory(
     store_path = absolute_path_relative_to(store, base_dir=base_dir)
     store = DeltaLakeStore(store_path, create=create)
     return store if store.exists else None
+
+
+def resolve_store_path(store: str | None, base_dir: str = ".") -> str:
+    location = store or "auto"
+    if location.lower() == "auto":
+        location = str(_get_default_store_dir())
+    return absolute_path_relative_to(location, base_dir=base_dir)
+
+
+def _flow_store_path(store_path: str) -> str:
+    fs = filesystem(store_path)
+    return store_path + fs.sep + "flow_store"
+
+
+def store_exists(store_path: str) -> bool:
+    fs = filesystem(store_path)
+    return fs.exists(_flow_store_path(store_path))
+
+
+def delete_store(store_path: str) -> None:
+    path = _flow_store_path(store_path)
+    fs = filesystem(path)
+    fs.rm(path, recursive=True)

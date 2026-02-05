@@ -8,7 +8,13 @@ from rich.tree import Tree
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
-from inspect_flow._store.store import FlowStore, store_factory
+from inspect_flow._store.store import (
+    FlowStore,
+    delete_store,
+    resolve_store_path,
+    store_exists,
+    store_factory,
+)
 from inspect_flow._util.console import console, path, print, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
@@ -288,6 +294,30 @@ def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
     print("Logs:    ", quantity(len(logs), "log"))
     print("Log dirs:", quantity(len(log_dirs), "log dir"))
     print("Version: ", flow_store.version)
+
+
+@store_command.command("delete", help="Delete the flow store")
+@store_options
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Skip confirmation prompt",
+)
+def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
+    init_flow_logging(log_level)
+    store_path = resolve_store_path(kwargs.get("store"))
+    if not store_exists(store_path):
+        print("Store not found at", path(store_path), format="error")
+        return
+    if not yes:
+        click.confirm(
+            f"Are you sure you want to delete the store at {store_path}?",
+            abort=True,
+        )
+    delete_store(store_path)
+    print("Deleted store at", path(store_path), format="success")
 
 
 @store_command.command("list", help="List logs and log directories in the store")

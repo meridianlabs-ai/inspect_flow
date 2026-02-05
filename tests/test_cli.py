@@ -423,6 +423,47 @@ def test_store_info_empty() -> None:
     assert "Store not found" in result.output
 
 
+def test_store_delete() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["delete", "--log-level", "error"], input="y\n"
+    )
+    assert result.exit_code == 0
+    assert "Deleted store" in result.output
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "Store not found" in result.output
+
+
+def test_store_delete_yes_flag() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(store_command, ["delete", "--yes", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Deleted store" in result.output
+
+
+def test_store_delete_abort() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["delete", "--log-level", "error"], input="n\n"
+    )
+    assert result.exit_code != 0
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "2 logs" in result.output
+
+
+def test_store_delete_not_found() -> None:
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["delete", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Store not found" in result.output
+
+
 def test_store_list_format_flat() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
