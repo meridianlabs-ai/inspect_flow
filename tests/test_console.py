@@ -28,6 +28,15 @@ def test_path_highlights_task_name_in_log_path() -> None:
     assert spans[2].start == task_end
 
 
+def test_path_highlights_task_name_in_json_log_path() -> None:
+    log_path = "logs/2025-09-03T18-56-06+00-00_my-task_abc123.json"
+    result = path(log_path)
+
+    assert str(result) == log_path
+    assert len(result._spans) == 3
+    assert result._spans[1].style == "#ffaaff"
+
+
 def test_path_no_highlight_for_non_log_path() -> None:
     regular_path = "/some/regular/path/file.txt"
     result = path(regular_path)
@@ -36,4 +45,20 @@ def test_path_no_highlight_for_non_log_path() -> None:
     assert str(result) == regular_path
 
     # Non-log paths should have no spans (base style applies to whole text)
+    assert len(result._spans) == 0
+
+
+def test_path_no_highlight_for_config_path() -> None:
+    config_path = "tests/config/e2e_test_flow.py"
+    result = path(config_path)
+
+    assert str(result) == config_path
+    assert len(result._spans) == 0
+
+
+def test_path_no_highlight_for_directory() -> None:
+    dir_path = "tests/config/logs/flow_test_101"
+    result = path(dir_path)
+
+    assert str(result) == dir_path
     assert len(result._spans) == 0

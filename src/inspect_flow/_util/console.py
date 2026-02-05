@@ -49,9 +49,12 @@ def path(p: str) -> Text:
     """
     display_path = path_str(p)
 
-    # Try to parse as a log file to extract task name
-    info = log_file_info(FileInfo(name=p, type="file", size=0, mtime=0))
-    if info.task:
+    # Try to parse as a log file to extract task name (only for .eval or .json files)
+    if p.endswith(".eval") or p.endswith(".json"):
+        info = log_file_info(FileInfo(name=p, type="file", size=0, mtime=0))
+    else:
+        info = None
+    if info and info.task:
         # Find the task name in the display path and highlight it
         task_start = display_path.find(f"_{info.task}_")
         if task_start != -1:
