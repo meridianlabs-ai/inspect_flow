@@ -1,13 +1,15 @@
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 import click
 from click import Context, HelpFormatter
+from rich.text import Text
+from rich.tree import Tree
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._cli.options import log_level_option
 from inspect_flow._store.store import FlowStore, store_factory
-from inspect_flow._util.console import path, print
+from inspect_flow._util.console import console, path, print
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
@@ -237,18 +239,55 @@ def store_remove(
         )
 
 
-def _echo_logs(flow_store: FlowStore) -> None:
+ListFormat = Literal["flat", "tree"]
+
+
+def _echo_logs(flow_store: FlowStore, format: ListFormat = "flat") -> None:
     log_files = flow_store.get_logs()
     if not log_files:
         print("\nNo logs in store")
         return
-    for log_file in sorted(log_files):
-        print(path(log_file))
+    if format == "tree":
+        _echo_logs_tree(sorted(log_files))
+    else:
+        for log_file in sorted(log_files):
+            print(path(log_file))
+
+
+def _echo_logs_tree(log_files: list[str]) -> None:
+    tree = Tree("", hide_root=True)
+    nodes: dict[str, Tree] = {}
+    for log_file in log_files:
+        display = path(log_file)
+        parts = display.plain.split("/")
+        dirs = parts[:-1]
+
+        current_path = ""
+        parent = tree
+        for part in dirs:
+            current_path = f"{current_path}/{part}" if current_path else part
+            if current_path not in nodes:
+                nodes[current_path] = parent.add(Text(part, style="magenta"))
+            parent = nodes[current_path]
+
+        filename = parts[-1]
+        parent.add(path(filename))
+
+    console.print(tree)
 
 
 @store_command.command("list", help="List logs and log directories in the store")
 @store_options
-def store_list(**kwargs: Unpack[StoreOptionArgs]) -> None:
+@click.option(
+    "--format",
+    "format",
+    type=click.Choice(["flat", "tree"]),
+    default="flat",
+    help="Output format: tree, flat",
+    envvar="INSPECT_FLOW_STORE_LIST_FORMAT",
+)
+def store_list(format: str, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    assert format in ("flat", "tree")
     flow_store = init_store(**kwargs)
     if flow_store:
-        _echo_logs(flow_store)
+        _echo_logs(flow_store, format=format)

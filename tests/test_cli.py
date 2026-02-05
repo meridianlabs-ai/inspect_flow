@@ -403,3 +403,31 @@ def test_store_commands() -> None:
         == log_dir
         + "/2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
     )
+
+
+def test_store_list_format_flat() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["list", "--format", "flat", "--log-level", "error"]
+    )
+    assert result.exit_code == 0
+    lines = result.output.strip().split("\n")
+    assert (
+        lines[-2]
+        == log_dir
+        + "/2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    )
+
+
+def test_store_list_format_tree() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["list", "--format", "tree", "--log-level", "error"]
+    )
+    assert result.exit_code == 0
+    assert "logs1" in result.output
+    assert "gpqa-diamond" in result.output
