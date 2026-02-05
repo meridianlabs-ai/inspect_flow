@@ -196,12 +196,13 @@ def _eval_log_to_log(eval_log: EvalLog) -> Log:
     return _file_to_log(eval_log.location)
 
 
-def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log]) -> None:
+def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) -> None:
     dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
-    # for log in dir_logs:
-    #     print(path(log.info.name), format="info")
+    if verbose:
+        for log in dir_logs:
+            print(path(log.info.name), format="info")
     logs.extend(dir_logs)
 
 
@@ -318,6 +319,7 @@ class DeltaLakeStore(FlowStoreInternal):
         log_path: str | Sequence[str],
         recursive: bool = False,
         dry_run: bool = False,
+        verbose: bool = False,
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
@@ -331,11 +333,14 @@ class DeltaLakeStore(FlowStoreInternal):
                 continue
             info = fs.info(p)
             if info.type == "file":
-                # print(path(p), format="info")
+                if verbose:
+                    print(path(p), format="info")
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
-                _add_log_dir(log_dir=dir, recursive=recursive, logs=logs)
+                _add_log_dir(
+                    log_dir=dir, recursive=recursive, logs=logs, verbose=verbose
+                )
         num_added = self._add_logs(logs)
         print(
             f"Imported {quantity(num_added, 'new log')} to store",
@@ -349,13 +354,14 @@ class DeltaLakeStore(FlowStoreInternal):
         missing: bool = False,
         recursive: bool = False,
         dry_run: bool = False,
+        verbose: bool = False,
     ) -> None:
         if isinstance(log_path, str):
             log_path = [log_path]
 
         print("\nRemoving logs from store")
         logs = self.get_logs()
-        logs_to_remove = set()
+        logs_to_remove: set[str] = set()
         for p in log_path:
             _remove_path(p, recursive, logs, logs_to_remove)
         if missing:
@@ -365,8 +371,9 @@ class DeltaLakeStore(FlowStoreInternal):
         if not logs_to_remove:
             print("No logs found to remove from store", format="warning")
         else:
-            # for log in sorted(logs_to_remove):
-            #     print(path(log), format="info")
+            if verbose:
+                for log in sorted(logs_to_remove):
+                    print(path(log), format="info")
             if dry_run:
                 print(
                     f"Removed {quantity(len(logs_to_remove), 'log')} from store",

@@ -145,11 +145,18 @@ def store_command() -> None:
     help="Preview what would be imported without making changes",
     envvar="INSPECT_FLOW_STORE_IMPORT_DRY_RUN",
 )
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Print paths of files being added",
+)
 def store_import(
     path: tuple[str, ...],
     recursive: bool,
     copy_from: str | None,
     dry_run: bool,
+    verbose: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if dry_run:
@@ -166,7 +173,9 @@ def store_import(
                 "When using --copy-from, exactly one PATH must be specified"
             )
         copy_all_logs(src_dir=copy_from, dest_dir=path[0], dry_run=dry_run)
-    flow_store.import_log_path(list(path), recursive=recursive, dry_run=dry_run)
+    flow_store.import_log_path(
+        list(path), recursive=recursive, dry_run=dry_run, verbose=verbose
+    )
 
 
 @store_command.command(
@@ -191,11 +200,18 @@ def store_import(
     help="Preview what would be removed without making changes",
     envvar="INSPECT_FLOW_STORE_REMOVE_DRY_RUN",
 )
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Print paths of files being removed",
+)
 def store_remove(
     path: tuple[str, ...],
     recursive: bool,
     missing: bool,
     dry_run: bool,
+    verbose: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if not path and not missing:
@@ -205,7 +221,11 @@ def store_remove(
     flow_store = init_store(**kwargs)
     if flow_store:
         flow_store.remove_log_path(
-            list(path), missing=missing, recursive=recursive, dry_run=dry_run
+            list(path),
+            missing=missing,
+            recursive=recursive,
+            dry_run=dry_run,
+            verbose=verbose,
         )
 
 
