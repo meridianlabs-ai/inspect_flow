@@ -1,5 +1,7 @@
 from typing import Any, Literal
 
+from inspect_ai._util.file import FileInfo
+from inspect_ai.log._file import log_file_info
 from rich.console import Console
 from rich.text import Text
 
@@ -41,8 +43,27 @@ def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
 
 
 def path(p: str) -> Text:
-    """Wrap a path for Rich highlighting."""
-    return Text(path_str(p), style="magenta")
+    """Wrap a path for Rich highlighting.
+
+    For log paths, highlights the task name in bright magenta.
+    """
+    display_path = path_str(p)
+
+    # Try to parse as a log file to extract task name
+    info = log_file_info(FileInfo(name=p, type="file", size=0, mtime=0))
+    if info.task:
+        # Find the task name in the display path and highlight it
+        task_start = display_path.find(f"_{info.task}_")
+        if task_start != -1:
+            task_start += 1  # Skip the leading underscore
+            task_end = task_start + len(info.task)
+            text = Text()
+            text.append(display_path[:task_start], style="magenta")
+            text.append(display_path[task_start:task_end], style="#ffaaff")
+            text.append(display_path[task_end:], style="magenta")
+            return text
+
+    return Text(display_path, style="magenta")
 
 
 def pluralize(word: str, count: int, plural: str | None = None) -> str:
