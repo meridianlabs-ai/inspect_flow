@@ -234,7 +234,7 @@ class GenerateConfigDict(TypedDict):
     max_tool_output: NotRequired[int | None]
     cache_prompt: NotRequired[Literal["auto"] | bool | None]
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
-    effort: NotRequired[Literal["low", "medium", "high"] | None]
+    effort: NotRequired[Literal["low", "medium", "high", "max"] | None]
     reasoning_effort: NotRequired[
         Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None
     ]
@@ -244,6 +244,7 @@ class GenerateConfigDict(TypedDict):
     ]
     reasoning_history: NotRequired[Literal["none", "all", "last", "auto"] | None]
     response_schema: NotRequired[ResponseSchema | None]
+    extra_headers: NotRequired[Mapping[str, str] | None]
     extra_body: NotRequired[Mapping[str, Any] | None]
     cache: NotRequired[bool | CachePolicy | None]
     batch: NotRequired[bool | int | BatchConfig | None]
