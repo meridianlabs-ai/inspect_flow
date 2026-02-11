@@ -302,15 +302,14 @@ def _copy_existing_logs(
         matching_logs = [log for log in logs if log.task_identifier in task_id_to_task]
         if matching_logs:
             num_found += len(matching_logs)
-            flow_print(
-                f"Found {quantity(len(matching_logs), 'existing log')} in log directory",
-                format="info",
+            action.update(
+                info=f"Found {quantity(len(matching_logs), 'existing log')} in log directory"
             )
             for log in matching_logs:
                 task = task_id_to_task[log.task_identifier]
                 if _is_complete_log(log.header, task, limit):
                     num_complete += 1
-                flow_print(
+                action.print(
                     Text.assemble(log.info.task, " (", path(log.info.name), ")"),
                     format="info",
                 )
@@ -321,16 +320,15 @@ def _copy_existing_logs(
         log_files = store.search_for_logs(set(task_id_to_task.keys()))
         if log_files:
             num_found += len(log_files)
-            flow_print(
-                f"Found {quantity(len(log_files), 'existing log')}{', copying to log directory' if not dry_run else ''}",
-                format="info",
+            action.update(
+                info=f"Found {quantity(len(log_files), 'existing log')}, copying to log directory"
             )
             for task_id, log_file in log_files.items():
                 task = task_id_to_task[task_id]
                 header = read_eval_log(log_file, header_only=True)
                 if _is_complete_log(header, task, limit):
                     num_complete += 1
-                flow_print(
+                action.print(
                     Text.assemble(task.name, " (", path(log_file), ")"),
                     format="info",
                 )
@@ -339,7 +337,11 @@ def _copy_existing_logs(
                     copy_file(log_file, destination)
 
         if not num_found:
-            flow_print("No existing logs found", format="info")
+            action.update(info="No existing logs found", status="success")
+        else:
+            action.update(
+                info=f"Found {quantity(num_found, 'existing log')}", status="success"
+            )
     return num_complete
 
 
