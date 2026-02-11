@@ -109,12 +109,14 @@ class _BorderedTable:
         messages: dict[str, list[Text]] | None = None,
         footer: RenderableType | None = None,
         title: RenderableType | list[RenderableType] | None = None,
+        height: int | None = None,
     ) -> None:
         self._inner = inner
         self._dry_run = dry_run
         self._messages = messages or {}
         self._footer = footer
         self._title = title
+        self._height = height
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
@@ -149,10 +151,12 @@ class _BorderedTable:
         yield Segment(f"{'─' * right_fill}{tr}{inset}╮\n")
 
         inner_options = options.update_width(inner_width)
+        lines_yielded = 1  # top border
         for line in console.render_lines(self._inner, inner_options, pad=True):
             yield Segment("│ ")
             yield from line
             yield Segment(" │\n")
+            lines_yielded += 1
 
         separator = f"├{'─' * (width - 2)}┤\n"
         blank = f"│{' ' * (width - 2)}│\n"
@@ -162,21 +166,31 @@ class _BorderedTable:
                 continue
             if first_group:
                 yield Segment(separator)
+                lines_yielded += 1
                 first_group = False
             else:
                 yield Segment(blank)
+                lines_yielded += 1
             for msg in msgs:
                 for line in console.render_lines(msg, inner_options, pad=True):
                     yield Segment("│ ")
                     yield from line
                     yield Segment(" │\n")
+                    lines_yielded += 1
 
         if self._footer is not None:
             yield Segment(separator if first_group else blank)
+            lines_yielded += 1
             for line in console.render_lines(self._footer, inner_options, pad=True):
                 yield Segment("│ ")
                 yield from line
                 yield Segment(" │\n")
+                lines_yielded += 1
+
+        if self._height is not None:
+            padding = self._height - lines_yielded - 1  # -1 for bottom border
+            for _ in range(padding):
+                yield Segment(blank)
 
         fill = max(0, width - len(bl) - len(br) - 2 * len(inset) - 2)
         yield Segment(f"╰{inset}{bl}{'─' * fill}{br}{inset}╯\n")
@@ -258,6 +272,7 @@ class LiveDisplay(Display):
 
     def __exit__(self, *args: Any) -> None:
         if self._live:
+            self._live.update(self._make_display(fill_height=False))
             self._live.__exit__(*args)
         global _display
         _display = None
@@ -277,7 +292,7 @@ class LiveDisplay(Display):
         char, style = _ICON[status]
         return Text(char, style=style)
 
-    def _make_display(self) -> _BorderedTable:
+    def _make_display(self, fill_height: bool = True) -> _BorderedTable:
         table = Table(show_header=False, show_edge=False, box=None, padding=(0, 1))
         table.add_column(width=1)
         table.add_column()
@@ -289,7 +304,12 @@ class LiveDisplay(Display):
                 *_info_renderables(action.info),
             )
         return _BorderedTable(
-            table, self.dry_run, self._messages, self._footer, self._title
+            table,
+            self.dry_run,
+            self._messages,
+            self._footer,
+            self._title,
+            height=console.height - 2 if fill_height else None,
         )
 
     def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
