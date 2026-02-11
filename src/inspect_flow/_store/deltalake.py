@@ -22,8 +22,8 @@ from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
     PathProgressDisplay,
     console,
+    flow_print,
     path,
-    print,
     quantity,
 )
 from inspect_flow._util.constants import PKG_NAME
@@ -185,7 +185,7 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) 
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     if verbose:
         for log in dir_logs:
-            print(path(log.info.name), format="info")
+            flow_print(path(log.info.name), format="info")
     logs.extend(dir_logs)
 
 
@@ -228,12 +228,12 @@ class DeltaLakeStore(FlowStoreInternal):
         self.exists = False
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
-            print("\nUsing store:", path(store_path))
+            flow_print("\nUsing store:", path(store_path))
             self.exists = True
         else:
-            print("\nStore not found")
+            flow_print("\nStore not found")
             if create:
-                print("Creating store:", path(store_path), format="info")
+                flow_print("Creating store:", path(store_path), format="info")
                 self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:
@@ -322,17 +322,17 @@ class DeltaLakeStore(FlowStoreInternal):
         if isinstance(log_path, str):
             log_path = [log_path]
         # Collect dirs and logs to add
-        print("\nImporting logs to store")
+        flow_print("\nImporting logs to store")
         logs: list[Log] = []
         for p in log_path:
             fs = filesystem(p)
             if not fs.exists(p):
-                print("Error: Path", path(p), "does not exist", format="error")
+                flow_print("Error: Path", path(p), "does not exist", format="error")
                 continue
             info = fs.info(p)
             if info.type == "file":
                 if verbose:
-                    print(path(p), format="info")
+                    flow_print(path(p), format="info")
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
@@ -340,7 +340,7 @@ class DeltaLakeStore(FlowStoreInternal):
                     log_dir=dir, recursive=recursive, logs=logs, verbose=verbose
                 )
         num_added = self._add_logs(logs)
-        print(
+        flow_print(
             f"Imported {quantity(num_added, 'new log')} to store",
             format="success" if num_added > 0 else "warning",
         )
@@ -357,7 +357,7 @@ class DeltaLakeStore(FlowStoreInternal):
         if isinstance(prefix, str):
             prefix = [prefix]
 
-        print("\nRemoving logs from store")
+        flow_print("\nRemoving logs from store")
         logs = self.get_logs()
         logs_to_remove: set[str] = set()
         for p in prefix:
@@ -373,19 +373,19 @@ class DeltaLakeStore(FlowStoreInternal):
                     display.advance(log)
 
         if not logs_to_remove:
-            print("No logs found to remove from store", format="warning")
+            flow_print("No logs found to remove from store", format="warning")
         else:
             if verbose:
                 for log in sorted(logs_to_remove):
-                    print(path(log), format="info")
+                    flow_print(path(log), format="info")
             if dry_run:
-                print(
+                flow_print(
                     f"Removed {quantity(len(logs_to_remove), 'log')} from store",
                     format="success",
                 )
             else:
                 num_deleted_rows = self._remove_logs(list(logs_to_remove))
-                print(
+                flow_print(
                     f"Removed {quantity(num_deleted_rows, 'log')} from store",
                     format="success",
                 )
@@ -502,7 +502,7 @@ class DeltaLakeStore(FlowStoreInternal):
         if not log_paths_to_update:
             return
 
-        print("\nUpdating store task identifiers")
+        flow_print("\nUpdating store task identifiers")
         logs_to_update: list[tuple[str, str]] = []
         with Progress(
             SpinnerColumn(),

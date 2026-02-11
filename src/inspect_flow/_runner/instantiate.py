@@ -35,7 +35,7 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
-from inspect_flow._util.console import console, print
+from inspect_flow._util.console import console, flow_print
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 
@@ -76,7 +76,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     if not task_configs:
         return []
     results: list[InstantiatedTask] = []
-    print("\nInstantiating tasks")
+    flow_print("\nInstantiating tasks")
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.percentage]{task.completed}/{task.total}"),
@@ -98,7 +98,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
                     )
                 )
             progress.advance(progress_task)
-    print(f"Instantiated {len(results)} tasks\n", format="success")
+    flow_print(f"Instantiated {len(results)} tasks\n", format="success")
     return results
 
 

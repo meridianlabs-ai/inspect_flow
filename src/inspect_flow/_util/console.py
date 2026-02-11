@@ -27,7 +27,7 @@ def format_prefix(format: Formats) -> Text:
         return Text("✗", style="red")
 
 
-def print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
+def flow_print(*objects: Any, format: Formats = "default", **kwargs: Any) -> None:
     prefix = format_prefix(format)
     if (
         prefix

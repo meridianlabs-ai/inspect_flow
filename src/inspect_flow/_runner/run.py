@@ -31,7 +31,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
 )
-from inspect_flow._util.console import format_prefix, path, print, quantity
+from inspect_flow._util.console import flow_print, format_prefix, path, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.error import FlowHandledError, NoLogsError, set_exception_hook
 from inspect_flow._util.list_util import sequence_to_list
@@ -87,14 +87,14 @@ def run_eval_set(
 
     if num_complete_logs > 0:
         remaining_tasks = len(tasks) - num_complete_logs
-        print(
+        flow_print(
             f"\nRunning {quantity(remaining_tasks, 'task')} ({quantity(num_complete_logs, 'task')} already complete)"
         )
     else:
-        print(f"\nRunning {quantity(len(tasks), 'task')}")
-    print("Using log directory:", path(resolved_spec.log_dir), "\n", format="info")
+        flow_print(f"\nRunning {quantity(len(tasks), 'task')}")
+    flow_print("Using log directory:", path(resolved_spec.log_dir), "\n", format="info")
 
-    print(Rule("Running Eval Set"))
+    flow_print(Rule("Running Eval Set"))
     start_time = time.time()
     try:
         result = eval_set(
@@ -152,14 +152,14 @@ def run_eval_set(
         if isinstance(e, PrerequisiteError):
             _fix_prerequisite_error_message(e)
         if error_string := str(e):
-            print(error_string, format="error")
-        print(Rule("Eval Set Failed with Exception"))
+            flow_print(error_string, format="error")
+        flow_print(Rule("Eval Set Failed with Exception"))
         if error_string:
             raise FlowHandledError from e
         else:
             raise
 
-    print(Rule("Eval Set Finished"))
+    flow_print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_spec, result, elapsed_time)
@@ -198,7 +198,7 @@ def _print_result(
         tasks = f"Tasks: {len(logs)}/{len(logs)} successful"
     assert spec.log_dir
     elapsed = str(timedelta(seconds=int(elapsed_time)))
-    print(
+    flow_print(
         "\n",
         Panel(
             Text.assemble(
@@ -214,10 +214,10 @@ def _print_result(
     )
 
     if num_success < len(logs):
-        print("\nFailed Tasks:")
+        flow_print("\nFailed Tasks:")
         for log in logs:
             if log.status == "error":
-                print(
+                flow_print(
                     f"{log.eval.task}: {log.error.message if log.error else 'Unknown error'}",
                     format="error",
                 )
@@ -290,7 +290,7 @@ def _copy_existing_logs(
     store: FlowStoreInternal,
     dry_run: bool = False,
 ) -> int:
-    print("Checking for existing logs")
+    flow_print("Checking for existing logs")
     assert spec.log_dir
     logs = list_all_eval_logs(log_dir=spec.log_dir)
     num_found = 0
@@ -301,7 +301,7 @@ def _copy_existing_logs(
     matching_logs = [log for log in logs if log.task_identifier in task_id_to_task]
     if matching_logs:
         num_found += len(matching_logs)
-        print(
+        flow_print(
             f"Found {quantity(len(matching_logs), 'existing log')} in log directory",
             format="info",
         )
@@ -309,7 +309,7 @@ def _copy_existing_logs(
             task = task_id_to_task[log.task_identifier]
             if _is_complete_log(log.header, task, limit):
                 num_complete += 1
-            print(
+            flow_print(
                 Text.assemble(log.info.task, " (", path(log.info.name), ")"),
                 format="info",
             )
@@ -320,7 +320,7 @@ def _copy_existing_logs(
     log_files = store.search_for_logs(set(task_id_to_task.keys()))
     if log_files:
         num_found += len(log_files)
-        print(
+        flow_print(
             f"Found {quantity(len(log_files), 'existing log')}{', copying to log directory' if not dry_run else ''}",
             format="info",
         )
@@ -329,7 +329,7 @@ def _copy_existing_logs(
             header = read_eval_log(log_file, header_only=True)
             if _is_complete_log(header, task, limit):
                 num_complete += 1
-            print(
+            flow_print(
                 Text.assemble(task.name, " (", path(log_file), ")"),
                 format="info",
             )
@@ -338,7 +338,7 @@ def _copy_existing_logs(
                 copy_file(log_file, destination)
 
     if not num_found:
-        print("No existing logs found", format="info")
+        flow_print("No existing logs found", format="info")
     return num_complete
 
 
@@ -361,7 +361,7 @@ def _print_bundle_url(spec: FlowSpec) -> None:
         for local, url in spec.options.bundle_url_mappings.items():
             bundle_url = bundle_url.replace(local, url)
         if bundle_url != spec.options.bundle_dir:
-            print(f"Bundle URL: {bundle_url}")
+            flow_print(f"Bundle URL: {bundle_url}")
 
 
 @click.group(invoke_without_command=True)

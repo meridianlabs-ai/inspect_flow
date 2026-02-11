@@ -17,7 +17,7 @@ from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._display.display import RunAction, display
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
-from inspect_flow._util.console import path, print, quantity
+from inspect_flow._util.console import flow_print, path, quantity
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
@@ -247,7 +247,7 @@ def _load_spec_from_file(
                     )
                 spec = FlowSpec.model_validate(data, extra="forbid")
     except ValidationError as e:
-        print(e, format="error")
+        flow_print(e, format="error")
         _print_filtered_traceback(e, config_file)
         raise FlowHandledError from e
 
@@ -324,13 +324,13 @@ def _apply_auto_includes(
                     auto_file, args=options.args, state=state
                 )
                 if (auto_include_count := auto_include_count + 1) > 1:
-                    print(
+                    flow_print(
                         f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
                         path(auto_file),
                         format="warning",
                     )
                 else:
-                    print("Auto-include:", path(auto_file), format="info")
+                    flow_print("Auto-include:", path(auto_file), format="info")
                 if auto_spec:
                     spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:
@@ -423,4 +423,4 @@ def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
         frame for frame in stack_summary if frame.filename in config_file
     ]
     for item in traceback.format_list(filtered_frames):
-        print(item)
+        flow_print(item)

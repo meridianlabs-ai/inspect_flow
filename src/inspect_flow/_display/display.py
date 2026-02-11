@@ -7,7 +7,7 @@ from dataclasses import dataclass, fields
 from types import TracebackType
 from typing import Any, Literal, Optional, Type, TypedDict
 
-from inspect_flow._util.console import Formats, console, format_prefix, print
+from inspect_flow._util.console import Formats, console, flow_print, format_prefix
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.live import Live
 from rich.measure import Measurement
@@ -189,7 +189,7 @@ class SimpleDisplay(Display):
         if self._last_action_key is not None and self._last_action_key != action_key:
             console.print()
         self._last_action_key = action_key
-        print(*objects, format=format, **kwargs)
+        flow_print(*objects, format=format, **kwargs)
 
 
 class LiveDisplay(Display):

@@ -15,7 +15,7 @@ from inspect_flow._store.store import (
     store_exists,
     store_factory,
 )
-from inspect_flow._util.console import console, path, print, quantity
+from inspect_flow._util.console import console, flow_print, path, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
@@ -110,7 +110,7 @@ def init_store(
     store_location = kwargs.get("store") or "auto"
     flow_store = store_factory(store_location, base_dir=".", create=create)
     if not flow_store:
-        print(
+        flow_print(
             "Error: Store not found at",
             path(store_location),
             "Run 'flow store import' to create the store and import logs.",
@@ -168,7 +168,7 @@ def store_import(
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if dry_run:
-        print("\n[blue][DRY RUN][/blue] Preview mode - logs will be imported\n")
+        flow_print("\n[blue][DRY RUN][/blue] Preview mode - logs will be imported\n")
 
     flow_store = init_store(create=True, **kwargs)
     if not flow_store:
@@ -251,13 +251,13 @@ ListFormat = Literal["flat", "tree"]
 def _echo_logs(flow_store: FlowStore, format: ListFormat = "flat") -> None:
     log_files = flow_store.get_logs()
     if not log_files:
-        print("\nNo logs in store")
+        flow_print("\nNo logs in store")
         return
     if format == "tree":
         _echo_logs_tree(sorted(log_files))
     else:
         for log_file in sorted(log_files):
-            print(path(log_file))
+            flow_print(path(log_file))
 
 
 def _echo_logs_tree(log_files: list[str]) -> None:
@@ -290,10 +290,10 @@ def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
         return
     logs = flow_store.get_logs()
     log_dirs = {log.rsplit("/", 1)[0] for log in logs}
-    print("Path:    ", path(flow_store.store_path))
-    print("Logs:    ", quantity(len(logs), "log"))
-    print("Log dirs:", quantity(len(log_dirs), "log dir"))
-    print("Version: ", flow_store.version)
+    flow_print("Path:    ", path(flow_store.store_path))
+    flow_print("Logs:    ", quantity(len(logs), "log"))
+    flow_print("Log dirs:", quantity(len(log_dirs), "log dir"))
+    flow_print("Version: ", flow_store.version)
 
 
 @store_command.command("delete", help="Delete the flow store")
@@ -309,7 +309,7 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     init_flow_logging(log_level)
     store_path = resolve_store_path(kwargs.get("store"))
     if not store_exists(store_path):
-        print("Store not found at", path(store_path), format="error")
+        flow_print("Store not found at", path(store_path), format="error")
         return
     if not yes:
         click.confirm(
@@ -317,7 +317,7 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
             abort=True,
         )
     delete_store(store_path)
-    print("Deleted store at", path(store_path), format="success")
+    flow_print("Deleted store at", path(store_path), format="success")
 
 
 @store_command.command("list", help="List logs and log directories in the store")
