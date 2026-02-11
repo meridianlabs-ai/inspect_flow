@@ -21,7 +21,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.text import Text
 
-from inspect_flow._config.write import config_to_yaml, print_config_yaml
+from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._store.deltalake import list_all_eval_logs
@@ -72,7 +72,6 @@ def run_eval_set(
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
 
     if dry_run:
-        print_config_yaml(resolved_spec, resolved=True)
         if store:
             _copy_existing_logs(task_id_to_task, resolved_spec, store, dry_run=True)
         return False, []

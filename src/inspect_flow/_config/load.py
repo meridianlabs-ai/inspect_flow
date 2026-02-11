@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
-from inspect_flow._display.display import DisplayAction, display
+from inspect_flow._display.display import DisplayAction, RunAction, display
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.console import path, print, quantity
@@ -42,25 +42,22 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
-    display().update_action(
-        DisplayAction(key="load", info=path(file), status="running")
-    )
+    with RunAction(DisplayAction(key="load", info=path(file))) as action:
+        state = LoadState()
+        file = absolute_file_path(file)
+        spec = _load_spec_from_file(file, args=options.args, state=state)
+        if spec is None:
+            raise ValueError(f"No value returned from Python config file: {file}")
 
-    state = LoadState()
-    file = absolute_file_path(file)
-    spec = _load_spec_from_file(file, args=options.args, state=state)
-    if spec is None:
-        raise ValueError(f"No value returned from Python config file: {file}")
-
-    base_dir = Path(file).parent.as_posix()
-    spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
-    display().update_action(
-        DisplayAction(
-            key="load",
-            info=[path(file), f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
-            status="success",
+        base_dir = Path(file).parent.as_posix()
+        spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
+        action.update(
+            DisplayAction(
+                key="load",
+                info=[path(file), f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
+                status="success",
+            )
         )
-    )
     return spec
 
 
@@ -111,7 +108,9 @@ def _expand_includes(
             spec = _apply_include(spec, include)
             continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
-        print("Including:", path(include_path), format="info")
+        display().print(
+            "Including:", path(include_path), action_key="load", format="info"
+        )
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
             spec = _apply_include(spec, included_spec)
