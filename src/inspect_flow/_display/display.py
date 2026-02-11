@@ -7,7 +7,6 @@ from dataclasses import dataclass, fields
 from types import TracebackType
 from typing import Any, Literal, Optional, Type, TypedDict
 
-from inspect_flow._util.console import Formats, console, flow_print, format_prefix
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.live import Live
 from rich.measure import Measurement
@@ -16,6 +15,8 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 from typing_extensions import Unpack
+
+from inspect_flow._util.console import Formats, console, flow_print, format_prefix
 
 ActionStatus = Literal["pending", "running", "success", "error"]
 
@@ -106,10 +107,12 @@ class _BorderedTable:
         inner: Table,
         dry_run: bool,
         messages: dict[str, list[Text]] | None = None,
+        footer: RenderableType | None = None,
     ) -> None:
         self._inner = inner
         self._dry_run = dry_run
         self._messages = messages or {}
+        self._footer = footer
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
@@ -149,6 +152,13 @@ class _BorderedTable:
                     yield from line
                     yield Segment(" │\n")
 
+        if self._footer is not None:
+            yield Segment(separator if first_group else blank)
+            for line in console.render_lines(self._footer, inner_options, pad=True):
+                yield Segment("│ ")
+                yield from line
+                yield Segment(" │\n")
+
         fill = max(0, width - len(bl) - len(br) - 2 * len(inset) - 2)
         yield Segment(f"╰{inset}{bl}{'─' * fill}{br}{inset}╯\n")
 
@@ -169,6 +179,9 @@ class Display(ABC):
     def print(
         self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
     ) -> None: ...
+
+    @abstractmethod
+    def set_footer(self, renderable: RenderableType | None) -> None: ...
 
 
 class SimpleDisplay(Display):
@@ -191,12 +204,16 @@ class SimpleDisplay(Display):
         self._last_action_key = action_key
         flow_print(*objects, format=format, **kwargs)
 
+    def set_footer(self, renderable: RenderableType | None) -> None:
+        pass
+
 
 class LiveDisplay(Display):
     def __init__(self, dry_run: bool, actions: dict[str, DisplayAction]) -> None:
         self.dry_run = dry_run
         self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[Text]] = {}
+        self._footer: RenderableType | None = None
         self._live: Live | None = None
 
     def __enter__(self) -> Display:
@@ -243,7 +260,12 @@ class LiveDisplay(Display):
                 Text(action.description or key),
                 *_info_renderables(action.info),
             )
-        return _BorderedTable(table, self.dry_run, self._messages)
+        return _BorderedTable(table, self.dry_run, self._messages, self._footer)
+
+    def set_footer(self, renderable: RenderableType | None) -> None:
+        self._footer = renderable
+        if self._live:
+            self._live.update(self._make_display())
 
     def print(
         self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any

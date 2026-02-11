@@ -22,6 +22,7 @@ from rich.rule import Rule
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._display.display import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._store.deltalake import list_all_eval_logs
@@ -290,55 +291,55 @@ def _copy_existing_logs(
     store: FlowStoreInternal,
     dry_run: bool = False,
 ) -> int:
-    flow_print("Checking for existing logs")
-    assert spec.log_dir
-    logs = list_all_eval_logs(log_dir=spec.log_dir)
-    num_found = 0
-    num_complete = 0
-    options = spec.options or FlowOptions()
-    limit = default_none(options.limit)
+    with RunAction("logs") as action:
+        assert spec.log_dir
+        logs = list_all_eval_logs(log_dir=spec.log_dir, action=action)
+        num_found = 0
+        num_complete = 0
+        options = spec.options or FlowOptions()
+        limit = default_none(options.limit)
 
-    matching_logs = [log for log in logs if log.task_identifier in task_id_to_task]
-    if matching_logs:
-        num_found += len(matching_logs)
-        flow_print(
-            f"Found {quantity(len(matching_logs), 'existing log')} in log directory",
-            format="info",
-        )
-        for log in matching_logs:
-            task = task_id_to_task[log.task_identifier]
-            if _is_complete_log(log.header, task, limit):
-                num_complete += 1
+        matching_logs = [log for log in logs if log.task_identifier in task_id_to_task]
+        if matching_logs:
+            num_found += len(matching_logs)
             flow_print(
-                Text.assemble(log.info.task, " (", path(log.info.name), ")"),
+                f"Found {quantity(len(matching_logs), 'existing log')} in log directory",
                 format="info",
             )
-            task_id_to_task.pop(log.task_identifier, None)
-        if not task_id_to_task:
-            return num_complete
+            for log in matching_logs:
+                task = task_id_to_task[log.task_identifier]
+                if _is_complete_log(log.header, task, limit):
+                    num_complete += 1
+                flow_print(
+                    Text.assemble(log.info.task, " (", path(log.info.name), ")"),
+                    format="info",
+                )
+                task_id_to_task.pop(log.task_identifier, None)
+            if not task_id_to_task:
+                return num_complete
 
-    log_files = store.search_for_logs(set(task_id_to_task.keys()))
-    if log_files:
-        num_found += len(log_files)
-        flow_print(
-            f"Found {quantity(len(log_files), 'existing log')}{', copying to log directory' if not dry_run else ''}",
-            format="info",
-        )
-        for task_id, log_file in log_files.items():
-            task = task_id_to_task[task_id]
-            header = read_eval_log(log_file, header_only=True)
-            if _is_complete_log(header, task, limit):
-                num_complete += 1
+        log_files = store.search_for_logs(set(task_id_to_task.keys()))
+        if log_files:
+            num_found += len(log_files)
             flow_print(
-                Text.assemble(task.name, " (", path(log_file), ")"),
+                f"Found {quantity(len(log_files), 'existing log')}{', copying to log directory' if not dry_run else ''}",
                 format="info",
             )
-            if not dry_run:
-                destination = path_join(spec.log_dir, basename(log_file))
-                copy_file(log_file, destination)
+            for task_id, log_file in log_files.items():
+                task = task_id_to_task[task_id]
+                header = read_eval_log(log_file, header_only=True)
+                if _is_complete_log(header, task, limit):
+                    num_complete += 1
+                flow_print(
+                    Text.assemble(task.name, " (", path(log_file), ")"),
+                    format="info",
+                )
+                if not dry_run:
+                    destination = path_join(spec.log_dir, basename(log_file))
+                    copy_file(log_file, destination)
 
-    if not num_found:
-        flow_print("No existing logs found", format="info")
+        if not num_found:
+            flow_print("No existing logs found", format="info")
     return num_complete
 
 

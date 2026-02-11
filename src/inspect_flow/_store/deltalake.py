@@ -18,9 +18,10 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
+from inspect_flow._display.display import RunAction
+from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
-    PathProgressDisplay,
     console,
     flow_print,
     path,
@@ -126,7 +127,7 @@ def _check_table_description(table: TableDef, description: str) -> None:
 
 # TODO:ransom move to inspect_ai
 def _read_eval_log_headers_parallel(
-    log_files: list[str], max_workers: int = 50
+    log_files: list[str], max_workers: int = 50, action: RunAction | None = None
 ) -> list[EvalLog]:
     """Read eval log headers in parallel using threads."""
     if not log_files:
@@ -137,7 +138,7 @@ def _read_eval_log_headers_parallel(
 
     results: list[EvalLog | None] = [None] * len(log_files)
 
-    with PathProgressDisplay("Reading logs", len(log_files)) as display:
+    with PathProgressDisplay("Reading logs", len(log_files), action) as display:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {
                 executor.submit(read_header, log_file): idx
@@ -151,10 +152,13 @@ def _read_eval_log_headers_parallel(
     return cast(list[EvalLog], results)
 
 
-def list_all_eval_logs(log_dir: str, recursive: bool = True) -> list[Log]:
-    with console.status(f"Scanning {path_str(log_dir)}..."):
-        log_files = list_eval_logs(log_dir, recursive=recursive)
-    log_headers = _read_eval_log_headers_parallel([f.name for f in log_files])
+def list_all_eval_logs(
+    log_dir: str, recursive: bool = True, action: RunAction | None = None
+) -> list[Log]:
+    log_files = list_eval_logs(log_dir, recursive=recursive)
+    log_headers = _read_eval_log_headers_parallel(
+        [f.name for f in log_files], action=action
+    )
     task_identifiers = [task_identifier(log_header, None) for log_header in log_headers]
     return [
         Log(info=info, header=header, task_identifier=task_identifier)

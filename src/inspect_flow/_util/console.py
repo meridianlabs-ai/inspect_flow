@@ -2,9 +2,7 @@ from typing import Any, Literal
 
 from inspect_ai._util.file import FileInfo
 from inspect_ai.log._file import log_file_info
-from rich.console import Console, Group
-from rich.live import Live
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.console import Console
 from rich.text import Text
 
 from inspect_flow._util.path_util import path_str
@@ -80,45 +78,3 @@ def pluralize(word: str, count: int, plural: str | None = None) -> str:
 
 def quantity(count: int, units: str, plural: str | None = None) -> str:
     return f"{count} {pluralize(word=units, count=count, plural=plural)}"
-
-
-class PathProgressDisplay:
-    """Progress display that shows recent paths being processed."""
-
-    def __init__(self, description: str, total: int) -> None:
-        self._recent_paths: list[str] = []
-        self._progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.completed}/{task.total}"),
-            console=console,
-        )
-        self._task = self._progress.add_task(description, total=total)
-        self._live: Live | None = None
-
-    def __enter__(self) -> "PathProgressDisplay":
-        self._live = Live(
-            self._make_display(),
-            console=console,
-            transient=True,
-            refresh_per_second=10,
-        )
-        self._live.__enter__()
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        if self._live:
-            self._live.__exit__(*args)
-
-    def _make_display(self) -> Group:
-        if self._recent_paths:
-            path_lines = [f"  {path_str(p)}" for p in self._recent_paths[-5:]]
-            return Group(self._progress, Text("\n".join(path_lines), style="dim"))
-        return Group(self._progress)
-
-    def advance(self, path: str) -> None:
-        self._recent_paths.append(path)
-        self._progress.advance(self._task)
-        if self._live:
-            self._live.update(self._make_display())
