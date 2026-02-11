@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
 from types import TracebackType
-from typing import Any, Literal, Optional, Type
+from typing import Any, Literal, Optional, Type, TypedDict
 
 from inspect_flow._util.console import Formats, console, format_prefix, print
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
@@ -15,6 +15,7 @@ from rich.segment import Segment
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
+from typing_extensions import Unpack
 
 ActionStatus = Literal["pending", "running", "success", "error"]
 
@@ -45,9 +46,13 @@ def display() -> Display:
     return _display
 
 
+class DisplayActionArgs(TypedDict, total=False):
+    status: ActionStatus
+    info: RenderableType | list[RenderableType]
+
+
 @dataclass
 class DisplayAction:
-    key: str
     description: str | None = None
     status: ActionStatus | None = None
     info: RenderableType | list[RenderableType] | None = None
@@ -60,12 +65,13 @@ class DisplayAction:
 
 
 class RunAction:
-    def __init__(self, action: DisplayAction) -> None:
-        self.action = action
+    def __init__(self, key: str, **kwargs: Unpack[DisplayActionArgs]) -> None:
+        self.key = key
+        self.action = DisplayAction(**kwargs)
 
     def __enter__(self) -> RunAction:
         self.action.status = "running"
-        display().update_action(self.action)
+        display().update_action(self.key, self.action)
         return self
 
     def __exit__(
@@ -82,11 +88,14 @@ class RunAction:
             self.action.info = str(exc_val)
         else:
             self.action.status = "success"
-        display().update_action(self.action)
+        display().update_action(self.key, self.action)
 
-    def update(self, action: DisplayAction) -> None:
-        self.action.update(action)
-        display().update_action(self.action)
+    def update(self, **kwargs: Unpack[DisplayActionArgs]) -> None:
+        self.action.update(DisplayAction(**kwargs))
+        display().update_action(self.key, self.action)
+
+    def print(self, *objects: Any, format: Formats = "default", **kwargs: Any) -> None:
+        display().print(*objects, action_key=self.key, format=format, **kwargs)
 
 
 class _BorderedTable:
@@ -154,7 +163,7 @@ class _BorderedTable:
 
 class Display(ABC):
     @abstractmethod
-    def update_action(self, action: DisplayAction) -> None: ...
+    def update_action(self, key: str, action: DisplayAction) -> None: ...
 
     @abstractmethod
     def print(
@@ -166,12 +175,12 @@ class SimpleDisplay(Display):
     def __init__(self) -> None:
         self._last_action_key: str | None = None
 
-    def update_action(self, action: DisplayAction) -> None:
+    def update_action(self, key: str, action: DisplayAction) -> None:
         status = action.status or "pending"
         char, style = _ICON.get(status, _ICON["pending"])
         line = Text()
         line.append(char, style=style)
-        line.append(f" {action.description or action.key}")
+        line.append(f" {action.description or key}")
         console.print(line, *_info_renderables(action.info))
 
     def print(
@@ -184,9 +193,9 @@ class SimpleDisplay(Display):
 
 
 class LiveDisplay(Display):
-    def __init__(self, dry_run: bool, actions: list[DisplayAction]) -> None:
+    def __init__(self, dry_run: bool, actions: dict[str, DisplayAction]) -> None:
         self.dry_run = dry_run
-        self._actions: dict[str, DisplayAction] = {a.key: a for a in actions}
+        self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[Text]] = {}
         self._live: Live | None = None
 
@@ -208,12 +217,12 @@ class LiveDisplay(Display):
         global _display
         _display = None
 
-    def update_action(self, action: DisplayAction) -> None:
-        existing = self._actions.get(action.key)
+    def update_action(self, key: str, action: DisplayAction) -> None:
+        existing = self._actions.get(key)
         if existing:
             existing.update(action)
         else:
-            self._actions[action.key] = action
+            self._actions[key] = action
         if self._live:
             self._live.update(self._make_display())
 
@@ -228,10 +237,10 @@ class LiveDisplay(Display):
         table.add_column(width=1)
         table.add_column()
         table.add_column()
-        for action in self._actions.values():
+        for key, action in self._actions.items():
             table.add_row(
                 self._status_icon(action.status or "pending"),
-                Text(action.description or action.key),
+                Text(action.description or key),
                 *_info_renderables(action.info),
             )
         return _BorderedTable(table, self.dry_run, self._messages)

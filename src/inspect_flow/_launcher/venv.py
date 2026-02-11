@@ -15,12 +15,13 @@ from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
+from inspect_flow._display.display import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
-from inspect_flow._util.console import console, path, print
+from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
@@ -34,37 +35,48 @@ logger = getLogger(__name__)
 
 
 def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -> None:
-    print("\nSetting up virtual environment")
-    _check_spec_for_venv(spec)
-    run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
-    base_dir = absolute_file_path(base_dir)
-    run_args = ["--dry-run"] if dry_run else []
-    args = ["--base-dir", base_dir, "--log-level", get_last_log_level()] + run_args
-
     with tempfile.TemporaryDirectory() as temp_dir:
-        env = _get_env(base_dir, no_dotenv=no_dotenv)
-        if spec.env:
-            env.update(**spec.env)
+        with RunAction("env", info="venv") as action:
+            _check_spec_for_venv(spec)
+            run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+            base_dir = absolute_file_path(base_dir)
+            run_args = ["--dry-run"] if dry_run else []
+            args = [
+                "--base-dir",
+                base_dir,
+                "--log-level",
+                get_last_log_level(),
+            ] + run_args
 
-        # Set the virtual environment so that it will be created in the temp directory
-        env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
+            env = _get_env(base_dir, no_dotenv=no_dotenv)
+            if spec.env:
+                env.update(**spec.env)
 
-        _create_venv(
-            spec, base_dir=base_dir, temp_dir=temp_dir, env=env, dry_run=dry_run
-        )
+            # Set the virtual environment so that it will be created in the temp directory
+            env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
 
-        python_path = Path(temp_dir) / ".venv" / "bin" / "python"
-        file = _write_flow_yaml(spec, temp_dir)
+            _create_venv(
+                spec,
+                base_dir=base_dir,
+                temp_dir=temp_dir,
+                env=env,
+                dry_run=dry_run,
+                action=action,
+            )
 
-        # Create pipes for bidirectional signaling with child process
-        child_ready_r, child_ready_w = os.pipe()
-        parent_ack_r, parent_ack_w = os.pipe()
+            action.update(info="venv created")
 
-        # Pass fd numbers to child via environment variables
-        env[CHILD_READY_FD_ENV] = str(child_ready_w)
-        env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
+            python_path = Path(temp_dir) / ".venv" / "bin" / "python"
+            file = _write_flow_yaml(spec, temp_dir)
 
-        with console.status("Starting flow process..."):
+            # Create pipes for bidirectional signaling with child process
+            child_ready_r, child_ready_w = os.pipe()
+            parent_ack_r, parent_ack_w = os.pipe()
+
+            # Pass fd numbers to child via environment variables
+            env[CHILD_READY_FD_ENV] = str(child_ready_w)
+            env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
+
             process = subprocess.Popen(
                 [str(python_path), str(run_path), "--file", file.as_posix(), *args],
                 env=env,
@@ -80,19 +92,21 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             assert bytes == b"r", f"parent got bytes {bytes} instead of b'r'"
             os.close(child_ready_r)
 
-        print("Flow process started\n", format="success")
+            action.update(
+                info="Created venv and started flow process", status="success"
+            )
 
         # Signal child to continue
         os.write(parent_ack_w, b"g")
         os.close(parent_ack_w)
 
-        # Wait for process to complete
-        process.wait()
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(
-                returncode=process.returncode,
-                cmd=process.args,
-            )
+    # Wait for process to complete
+    process.wait()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(
+            returncode=process.returncode,
+            cmd=process.args,
+        )
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:
@@ -129,40 +143,38 @@ def _create_venv(
     base_dir: str,
     temp_dir: str,
     env: dict[str, str],
-    dry_run: bool = False,
+    dry_run: bool,
+    action: RunAction,
 ) -> None:
     create_venv_func = _get_create_venv_with_base_dependencies(
-        spec, base_dir=base_dir, temp_dir=temp_dir, env=env
+        spec, base_dir=base_dir, temp_dir=temp_dir, env=env, action=action
     )
 
-    with console.status("Creating venv..."):
-        create_venv_func()
+    create_venv_func()
 
-        dependencies: List[str] = []
-        if spec.dependencies and spec.dependencies.additional_dependencies:
-            if isinstance(spec.dependencies.additional_dependencies, str):
-                dependencies.append(spec.dependencies.additional_dependencies)
-            else:
-                dependencies.extend(spec.dependencies.additional_dependencies)
-            dependencies = [
-                _resolve_dependency(dep, base_dir=base_dir) for dep in dependencies
-            ]
+    dependencies: List[str] = []
+    if spec.dependencies and spec.dependencies.additional_dependencies:
+        if isinstance(spec.dependencies.additional_dependencies, str):
+            dependencies.append(spec.dependencies.additional_dependencies)
+        else:
+            dependencies.extend(spec.dependencies.additional_dependencies)
+        dependencies = [
+            _resolve_dependency(dep, base_dir=base_dir) for dep in dependencies
+        ]
 
-        auto_detect_dependencies = True
-        if spec.dependencies and spec.dependencies.auto_detect_dependencies is False:
-            auto_detect_dependencies = False
+    auto_detect_dependencies = True
+    if spec.dependencies and spec.dependencies.auto_detect_dependencies is False:
+        auto_detect_dependencies = False
 
-        if auto_detect_dependencies:
-            dependencies.extend(collect_auto_dependencies(spec))
-        dependencies.append(get_pip_string("inspect-flow"))
-        # Ensure same version of inspect-ai is installed (supports -e installs)
-        dependencies.append(get_pip_string("inspect-ai"))
+    if auto_detect_dependencies:
+        dependencies.extend(collect_auto_dependencies(spec))
+    dependencies.append(get_pip_string("inspect-flow"))
+    # Ensure same version of inspect-ai is installed (supports -e installs)
+    dependencies.append(get_pip_string("inspect-ai"))
 
-        _uv_pip_install(dependencies, temp_dir, env)
+    _uv_pip_install(dependencies, temp_dir, env)
 
-        write_flow_requirements(spec, temp_dir, env, dry_run)
-
-    print("Virtual environment ready", format="success")
+    write_flow_requirements(spec, temp_dir, env, dry_run)
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
@@ -172,25 +184,25 @@ def _resolve_dependency(dependency: str, base_dir: str) -> str:
 
 
 def _get_create_venv_with_base_dependencies(
-    spec: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str]
+    spec: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str], action: RunAction
 ) -> Callable[..., None]:
     file_type: Literal["requirements.txt", "pyproject.toml"] | None = None
     file_path: str | None = None
     dependency_file_info = _get_dependency_file(spec, base_dir=base_dir)
     if not dependency_file_info:
-        print("Dependency file: none", format="info")
+        action.print("Dependency file: none", format="info")
 
         def create_venv_func() -> None:
-            return _uv_venv(spec, temp_dir, env)
+            return _uv_venv(spec, temp_dir, env, action)
 
         return create_venv_func
 
     file_type, file_path = dependency_file_info
-    print("Dependency file:", path(file_path), format="info")
+    action.print("Dependency file:", path(file_path), format="info")
     if file_type == "requirements.txt":
 
         def create_venv_func() -> None:
-            _uv_venv(spec, temp_dir, env)
+            _uv_venv(spec, temp_dir, env, action)
             # Need to run in the directory containing the requirements.txt to handle relative paths
             _uv_pip_install(["-r", file_path], Path(file_path).parent.as_posix(), env)
 
@@ -199,7 +211,7 @@ def _get_create_venv_with_base_dependencies(
     project_dir = Path(file_path).parent
     if not spec.python_version:
         spec.python_version = resolve_python_version(file_path)
-    print(f"Python: {spec.python_version}", format="info")
+    action.print(f"Python: {spec.python_version}", format="info")
 
     uv_args = [
         "--no-dev",
@@ -233,12 +245,14 @@ def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
     return []
 
 
-def _uv_venv(spec: FlowSpec, temp_dir: str, env: dict[str, str]) -> None:
+def _uv_venv(
+    spec: FlowSpec, temp_dir: str, env: dict[str, str], action: RunAction
+) -> None:
     spec.python_version = (
         spec.python_version
         or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )
-    print(f"Python: {spec.python_version}", format="info")
+    action.print(f"Python: {spec.python_version}", format="info")
 
     run_with_logging(
         ["uv", "venv", "--python", spec.python_version],

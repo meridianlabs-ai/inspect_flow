@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
-from inspect_flow._display.display import DisplayAction, RunAction, display
+from inspect_flow._display.display import RunAction, display
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.console import path, print, quantity
@@ -42,7 +42,7 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
-    with RunAction(DisplayAction(key="load", info=path(file))) as action:
+    with RunAction("load", info=path(file)) as action:
         state = LoadState()
         file = absolute_file_path(file)
         spec = _load_spec_from_file(file, args=options.args, state=state)
@@ -52,11 +52,8 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
         base_dir = Path(file).parent.as_posix()
         spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
         action.update(
-            DisplayAction(
-                key="load",
-                info=[path(file), f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
-                status="success",
-            )
+            info=[path(file), f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
+            status="success",
         )
     return spec
 

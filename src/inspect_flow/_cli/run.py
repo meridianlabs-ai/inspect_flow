@@ -15,13 +15,13 @@ from inspect_flow._launcher.launch import launch
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
-_run_actions = [
-    DisplayAction(key="load", description="Load config"),
-    DisplayAction(key="env", description="Set up environment"),
-    DisplayAction(key="instantiate", description="Instantiate tasks"),
-    DisplayAction(key="logs", description="Check for existing logs"),
-    DisplayAction(key="evalset", description="Run evalset"),
-]
+_run_actions = {
+    "load": DisplayAction(description="Load config"),
+    "env": DisplayAction(description="Set up environment"),
+    "instantiate": DisplayAction(description="Instantiate tasks"),
+    "logs": DisplayAction(description="Check for existing logs"),
+    "evalset": DisplayAction(description="Run evalset"),
+}
 
 
 @click.command("run", help="Run a spec")
