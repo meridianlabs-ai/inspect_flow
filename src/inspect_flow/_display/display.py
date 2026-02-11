@@ -108,11 +108,13 @@ class _BorderedTable:
         dry_run: bool,
         messages: dict[str, list[Text]] | None = None,
         footer: RenderableType | None = None,
+        title: RenderableType | list[RenderableType] | None = None,
     ) -> None:
         self._inner = inner
         self._dry_run = dry_run
         self._messages = messages or {}
         self._footer = footer
+        self._title = title
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
@@ -126,8 +128,25 @@ class _BorderedTable:
         inner_width = width - 4  # "│ " + " │"
 
         inset = "─" if self._dry_run else ""
-        fill = max(0, width - len(tl) - len(tr) - 2 * len(inset) - 2)
-        yield Segment(f"╭{inset}{tl}{'─' * fill}{tr}{inset}╮\n")
+        if self._title is not None:
+            parts = self._title if isinstance(self._title, list) else [self._title]
+            assembled: list[str | Text] = []
+            for i, p in enumerate(parts):
+                if i > 0:
+                    assembled.append(" ")
+                assembled.append(p if isinstance(p, (str, Text)) else str(p))
+            title_text = Text.assemble(" ", *assembled, " ")
+            title_width = title_text.cell_len
+        else:
+            title_text = None
+            title_width = 0
+        fill = max(0, width - len(tl) - len(tr) - title_width - 2 * len(inset) - 2)
+        left_fill = fill // 2
+        right_fill = fill - left_fill
+        yield Segment(f"╭{inset}{tl}{'─' * left_fill}")
+        if title_text:
+            yield from title_text.render(console)
+        yield Segment(f"{'─' * right_fill}{tr}{inset}╮\n")
 
         inner_options = options.update_width(inner_width)
         for line in console.render_lines(self._inner, inner_options, pad=True):
@@ -183,6 +202,11 @@ class Display(ABC):
     @abstractmethod
     def set_footer(self, renderable: RenderableType | None) -> None: ...
 
+    @abstractmethod
+    def set_title(
+        self, title: RenderableType | list[RenderableType] | None
+    ) -> None: ...
+
 
 class SimpleDisplay(Display):
     def __init__(self) -> None:
@@ -207,6 +231,9 @@ class SimpleDisplay(Display):
     def set_footer(self, renderable: RenderableType | None) -> None:
         pass
 
+    def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
+        pass
+
 
 class LiveDisplay(Display):
     def __init__(self, dry_run: bool, actions: dict[str, DisplayAction]) -> None:
@@ -214,6 +241,7 @@ class LiveDisplay(Display):
         self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[Text]] = {}
         self._footer: RenderableType | None = None
+        self._title: RenderableType | list[RenderableType] | None = None
         self._live: Live | None = None
 
     def __enter__(self) -> Display:
@@ -260,7 +288,14 @@ class LiveDisplay(Display):
                 Text(action.description or key),
                 *_info_renderables(action.info),
             )
-        return _BorderedTable(table, self.dry_run, self._messages, self._footer)
+        return _BorderedTable(
+            table, self.dry_run, self._messages, self._footer, self._title
+        )
+
+    def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
+        self._title = title
+        if self._live:
+            self._live.update(self._make_display())
 
     def set_footer(self, renderable: RenderableType | None) -> None:
         self._footer = renderable

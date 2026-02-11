@@ -18,7 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.display import RunAction, display
 from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
@@ -232,12 +232,14 @@ class DeltaLakeStore(FlowStoreInternal):
         self.exists = False
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
-            flow_print("\nUsing store:", path(store_path))
+            logger.info("\nUsing store: %s", path(store_path))
+            display().set_title(["Using Store:", path(store_path)])
             self.exists = True
         else:
-            flow_print("\nStore not found")
+            logger.info("\nStore not found")
             if create:
-                flow_print("Creating store:", path(store_path), format="info")
+                logger.info("Creating store: %s", path(store_path))
+                display().set_title(["Using Store:", path(store_path)])
                 self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:
