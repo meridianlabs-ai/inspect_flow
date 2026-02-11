@@ -100,6 +100,9 @@ select = [
 ignore = [
     "E203", # whitespace before ':'
     "E501", # line too long
+    "D101", # Missing docstring in a pulic class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
     "D105", # missing docstring in magic method
     "D107", # missing docstring in __init__
     "D212", # multi-line docstring summary should start at the first line
