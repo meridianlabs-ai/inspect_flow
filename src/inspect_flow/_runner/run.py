@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import time
 from datetime import timedelta
 from logging import getLogger
+from typing import Any
 
 import click
 import yaml
@@ -9,12 +12,14 @@ from inspect_ai._eval.eval import eval_resolve_tasks
 from inspect_ai._eval.evalset import (
     EvalSetArgsInTaskIdentifier,
     epochs_changed,
+    list_all_eval_logs,
     task_identifier,
 )
 from inspect_ai._eval.task.task import resolve_epochs
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file, file
 from inspect_ai.log import EvalLog, read_eval_log
+from inspect_ai.log._file import ReadEvalLogsProgress
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util._display import init_display_type
 from rich.panel import Panel
@@ -22,10 +27,10 @@ from rich.rule import Rule
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
-from inspect_flow._store.deltalake import list_all_eval_logs
 from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
@@ -43,6 +48,28 @@ from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
 logger = getLogger(__name__)
+
+
+class _DisplayProgress(ReadEvalLogsProgress):
+    def __init__(self, action: RunAction | None = None) -> None:
+        self._action = action
+        self._display: PathProgressDisplay | None = None
+
+    def __enter__(self) -> _DisplayProgress:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        if self._display:
+            self._display.__exit__(*args)
+            self._display = None
+
+    def before_reading_logs(self, total_files: int) -> None:
+        self._display = PathProgressDisplay("Reading logs", total_files, self._action)
+        self._display.__enter__()
+
+    def after_read_log(self, log_file: str) -> None:
+        if self._display:
+            self._display.advance(log_file)
 
 
 def _read_config(config_file: str) -> FlowSpec:
@@ -293,7 +320,8 @@ def _copy_existing_logs(
 ) -> int:
     with RunAction("logs") as action:
         assert spec.log_dir
-        logs = list_all_eval_logs(log_dir=spec.log_dir, action=action)
+        with _DisplayProgress(action=action) as progress:
+            logs = list_all_eval_logs(log_dir=spec.log_dir, progress=progress)
         num_found = 0
         num_complete = 0
         options = spec.options or FlowOptions()

@@ -1,18 +1,17 @@
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from logging import getLogger
-from typing import Any, Sequence, cast
+from typing import Any, Sequence
 
 import pyarrow as pa
 import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
-from inspect_ai._eval.evalset import Log, task_identifier
+from inspect_ai._eval.evalset import Log, list_all_eval_logs, task_identifier
 from inspect_ai._util.file import exists, filesystem, to_uri
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
+from inspect_ai.log import EvalLog, read_eval_log
 from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
@@ -20,7 +19,6 @@ from typing_extensions import override
 
 from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay
-from inspect_flow._display.run_action import RunAction
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
     console,
@@ -124,49 +122,6 @@ def _check_table_description(table: TableDef, description: str) -> None:
             raise ValueError(
                 f"Table {table.name} version mismatch: supported {table.version}, got {parsed.get('version')}. {PKG_NAME} upgrade required."
             )
-
-
-# TODO:ransom move to inspect_ai
-def _read_eval_log_headers_parallel(
-    log_files: list[str], max_workers: int = 50, action: RunAction | None = None
-) -> list[EvalLog]:
-    """Read eval log headers in parallel using threads."""
-    if not log_files:
-        return []
-
-    def read_header(log_file: str) -> EvalLog:
-        return read_eval_log(log_file, header_only=True)
-
-    results: list[EvalLog | None] = [None] * len(log_files)
-
-    with PathProgressDisplay("Reading logs", len(log_files), action) as display:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_idx = {
-                executor.submit(read_header, log_file): idx
-                for idx, log_file in enumerate(log_files)
-            }
-            for future in as_completed(future_to_idx):
-                idx = future_to_idx[future]
-                results[idx] = future.result()
-                display.advance(log_files[idx])
-
-    return cast(list[EvalLog], results)
-
-
-def list_all_eval_logs(
-    log_dir: str, recursive: bool = True, action: RunAction | None = None
-) -> list[Log]:
-    log_files = list_eval_logs(log_dir, recursive=recursive)
-    log_headers = _read_eval_log_headers_parallel(
-        [f.name for f in log_files], action=action
-    )
-    task_identifiers = [task_identifier(log_header, None) for log_header in log_headers]
-    return [
-        Log(info=info, header=header, task_identifier=task_identifier)
-        for info, header, task_identifier in zip(
-            log_files, log_headers, task_identifiers, strict=True
-        )
-    ]
 
 
 def _file_to_log(log_file: str) -> Log:
