@@ -1,29 +1,31 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from datetime import timedelta
 from logging import getLogger
 from typing import Any
 
 import click
 import yaml
-from inspect_ai import Task, eval_set
+from inspect_ai import Epochs, Task, eval_set
 from inspect_ai._eval.eval import eval_resolve_tasks
 from inspect_ai._eval.evalset import (
     EvalSetArgsInTaskIdentifier,
-    epochs_changed,
+    Log,
     list_all_eval_logs,
     task_identifier,
 )
 from inspect_ai._eval.task.task import resolve_epochs
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file, file
-from inspect_ai.log import EvalLog, read_eval_log
+from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.log._file import ReadEvalLogsProgress
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util._display import init_display_type
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.table import Table
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
@@ -43,7 +45,7 @@ from inspect_flow._util.error import FlowHandledError, NoLogsError, set_exceptio
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.not_given import default, default_none
-from inspect_flow._util.path_util import cwd_relative_path, path_join
+from inspect_flow._util.path_util import cwd_relative_path, path_join, path_str
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
@@ -99,30 +101,21 @@ def run_eval_set(
     task_id_to_task = _get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
 
-    if dry_run:
-        if store:
-            _copy_existing_logs(task_id_to_task, resolved_spec, store, dry_run=True)
-        return False, []
-
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 
-    _write_config_file(resolved_spec)
+    if not dry_run:
+        _write_config_file(resolved_spec)
 
-    num_complete_logs = 0
-    if store:
-        num_complete_logs = _copy_existing_logs(task_id_to_task, resolved_spec, store)
+    task_log_info = _find_existing_logs(task_id_to_task, resolved_spec, store)
 
-    if num_complete_logs > 0:
-        remaining_tasks = len(tasks) - num_complete_logs
-        flow_print(
-            f"\nRunning {quantity(remaining_tasks, 'task')} ({quantity(num_complete_logs, 'task')} already complete)"
-        )
-    else:
-        flow_print(f"\nRunning {quantity(len(tasks), 'task')}")
-    flow_print("Using log directory:", path(resolved_spec.log_dir), "\n", format="info")
+    with RunAction("evalset") as action:
+        action.print(_create_task_log_display(task_log_info))
+        action.print("\nUsing log directory:", path(resolved_spec.log_dir))
 
-    flow_print(Rule("Running Eval Set"))
+    if dry_run:
+        return False, []
+
     start_time = time.time()
     try:
         result = eval_set(
@@ -288,16 +281,9 @@ def _get_task_ids_to_tasks(
     return task_ids
 
 
-def _is_complete_log(
-    header: EvalLog, task: Task, limit: int | tuple[int, int] | None
-) -> bool:
-    if not header.results or header.invalidated:
-        return False
+def _num_samples(task: Task, limit: int | tuple[int, int] | None) -> int:
     epochs = resolve_epochs(task.epochs)
-    if epochs_changed(epochs, header.eval.config):
-        return False
     epoch_count = epochs.epochs if epochs else 1
-
     count = len(task.dataset)
     if isinstance(limit, tuple):
         start, stop = limit
@@ -307,43 +293,132 @@ def _is_complete_log(
             count = min(stop, count) - start
     elif isinstance(limit, int):
         count = min(limit, count)
-
-    expected_samples = count * epoch_count
-    return header.results.completed_samples == expected_samples
+    return count * epoch_count
 
 
-def _copy_existing_logs(
+def _epochs_reducer_changed(epochs: Epochs | None, config: EvalConfig) -> bool:
+    # user didn't say anything about epochs on subsequent call (not changed)
+    if epochs is None:
+        return False
+    default_epoch_reducer = ["mean"]
+    if epochs.reducer is None and config.epochs_reducer == default_epoch_reducer:
+        return False
+    return [r.__name__ for r in (epochs.reducer or [])] != [
+        r for r in (config.epochs_reducer or [])
+    ]
+
+
+def _num_log_samples(
+    header: EvalLog, log_info: TaskLogInfo, limit: int | tuple[int, int] | None
+) -> int:
+    if not header.results or header.invalidated:
+        return 0
+    epochs = resolve_epochs(log_info.task.epochs)
+    if _epochs_reducer_changed(epochs, header.eval.config):
+        return 0
+    epoch_count = epochs.epochs if epochs else 1
+    log_epoch_count = header.eval.config.epochs or 1
+    if log_epoch_count <= epoch_count:
+        return header.results.completed_samples
+    else:
+        # Log has more epochs than the current task - unclear how many samples can be reused.
+        # Assume that samples are evenly distributed across epochs.
+        return int(header.results.completed_samples * epoch_count / log_epoch_count)
+
+
+@dataclass
+class TaskLogInfo:
+    task: Task
+    task_samples: int | None = None
+    log_file: str | None = None
+    log_samples: int = 0
+
+
+def _create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
+    total = len(task_log_info)
+    num_complete = sum(
+        1
+        for info in task_log_info.values()
+        if info.task_samples is not None and info.log_samples >= info.task_samples
+    )
+    if num_complete > 0:
+        remaining = total - num_complete
+        header = f"Running {quantity(remaining, 'task')} ({quantity(num_complete, 'task')} already complete)"
+    else:
+        header = f"Running {quantity(total, 'task')}"
+
+    table = Table(show_edge=False, box=None, padding=(0, 1))
+    table.add_column(header)
+    table.add_column("Existing Samples", justify="right")
+    for info in task_log_info.values():
+        name = Text(info.task.name)
+        if info.log_file:
+            name.append(f"\n{path_str(info.log_file)}", style="dim")
+        samples = (
+            f"{info.log_samples}/{info.task_samples}"
+            if info.task_samples is not None
+            else ""
+        )
+        table.add_row(name, samples)
+    return table
+
+
+def _find_existing_logs(
     task_id_to_task: dict[str, Task],
     spec: FlowSpec,
-    store: FlowStoreInternal,
+    store: FlowStoreInternal | None,
     dry_run: bool = False,
-) -> int:
+) -> dict[str, TaskLogInfo]:
     with RunAction("logs") as action:
         assert spec.log_dir
         with _DisplayProgress(action=action) as progress:
             logs = list_all_eval_logs(log_dir=spec.log_dir, progress=progress)
         num_found = 0
-        num_complete = 0
         options = spec.options or FlowOptions()
         limit = default_none(options.limit)
 
-        matching_logs = [log for log in logs if log.task_identifier in task_id_to_task]
-        if matching_logs:
-            num_found += len(matching_logs)
-            action.update(
-                info=f"Found {quantity(len(matching_logs), 'existing log')} in log directory"
-            )
-            for log in matching_logs:
-                task = task_id_to_task[log.task_identifier]
-                if _is_complete_log(log.header, task, limit):
-                    num_complete += 1
-                action.print(
-                    Text.assemble(log.info.task, " (", path(log.info.name), ")"),
-                    format="info",
+        logs_by_task: dict[str, list[Log]] = {}
+        for log in logs:
+            if log.task_identifier in task_id_to_task:
+                logs_by_task.setdefault(log.task_identifier, []).append(log)
+            elif not options.log_dir_allow_dirty:
+                action.update(
+                    status="error",
+                    info=[
+                        "log_dir contains unexpected log. Use --log-dir-allow-dirty to allow.",
+                        path(log.info.name),
+                    ],
                 )
-                task_id_to_task.pop(log.task_identifier, None)
-            if not task_id_to_task:
-                return num_complete
+                raise PrerequisiteError(
+                    f"[bold]ERROR[/bold]: Existing log file '{path_str(log.info.name)}' in log_dir is not "
+                    + "associated with a task. You can use the `--log-dir-allow-dirty` option to allow "
+                    + "logs from other evals to be present in the log directory."
+                )
+
+        result = {
+            id: TaskLogInfo(task=task, task_samples=_num_samples(task, limit))
+            for id, task in task_id_to_task.items()
+        }
+
+        num_found = 0
+        for id, log_info in result.items():
+            for log in logs_by_task.get(id, []):
+                log_samples = _num_log_samples(log.header, log_info, limit)
+                if log_samples >= log_info.log_samples:
+                    log_info.log_samples = log_samples
+                    log_info.log_file = log.info.name
+                    if task_id_to_task.pop(id, None):
+                        num_found += 1
+
+        if num_found:
+            action.update(
+                info=f"Found {quantity(num_found, 'existing log')} in log directory"
+            )
+        else:
+            action.update(info="No existing logs found in log directory")
+
+        if not task_id_to_task or not store:
+            return result
 
         log_files = store.search_for_logs(set(task_id_to_task.keys()))
         if log_files:
@@ -352,14 +427,10 @@ def _copy_existing_logs(
                 info=f"Found {quantity(len(log_files), 'existing log')}, copying to log directory"
             )
             for task_id, log_file in log_files.items():
-                task = task_id_to_task[task_id]
+                log_info = result[task_id]
                 header = read_eval_log(log_file, header_only=True)
-                if _is_complete_log(header, task, limit):
-                    num_complete += 1
-                action.print(
-                    Text.assemble(task.name, " (", path(log_file), ")"),
-                    format="info",
-                )
+                log_info.log_file = log_file
+                log_info.log_samples = _num_log_samples(header, log_info, limit)
                 if not dry_run:
                     destination = path_join(spec.log_dir, basename(log_file))
                     copy_file(log_file, destination)
@@ -370,7 +441,7 @@ def _copy_existing_logs(
             action.update(
                 info=f"Found {quantity(num_found, 'existing log')}", status="success"
             )
-    return num_complete
+    return result
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:

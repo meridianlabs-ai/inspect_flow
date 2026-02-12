@@ -87,4 +87,4 @@ def join(renderables: RenderableType | list[RenderableType]) -> Text:
         if i > 0:
             assembled.append(" ")
         assembled.append(p if isinstance(p, (str, Text)) else str(p))
-    return Text.assemble(" ", *assembled, " ")
+    return Text.assemble(*assembled)

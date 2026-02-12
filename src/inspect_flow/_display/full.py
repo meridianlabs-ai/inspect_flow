@@ -32,7 +32,7 @@ class _BorderedTable:
         self,
         inner: Table,
         dry_run: bool,
-        messages: dict[str, list[Text]] | None = None,
+        messages: dict[str, list[RenderableType]] | None = None,
         footer: RenderableType | None = None,
         title: RenderableType | list[RenderableType] | None = None,
         height: int | None = None,
@@ -146,7 +146,7 @@ class FullDisplay(Display):
     def __init__(self, dry_run: bool, actions: dict[str, DisplayAction]) -> None:
         self.dry_run = dry_run
         self._actions: dict[str, DisplayAction] = actions
-        self._messages: dict[str, list[Text]] = {}
+        self._messages: dict[str, list[RenderableType]] = {}
         self._footer: RenderableType | None = None
         self._title: RenderableType | list[RenderableType] | None = None
         self._live: Live | None = None
@@ -231,10 +231,13 @@ class FullDisplay(Display):
     def print(
         self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
     ) -> None:
-        prefix = format_prefix(format)
-        parts = [prefix, *objects] if prefix else [*objects]
-        text = join(parts)
-        self._messages.setdefault(action_key, []).append(text)
+        if len(objects) == 1 and not isinstance(objects[0], (str, Text)):
+            renderable: RenderableType = objects[0]
+        else:
+            prefix = format_prefix(format)
+            parts = [prefix, *objects] if prefix else [*objects]
+            renderable = join(parts)
+        self._messages.setdefault(action_key, []).append(renderable)
         if self._live:
             self._live.update(self._make_display())
 
