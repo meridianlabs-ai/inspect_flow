@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import timedelta
 from logging import getLogger
@@ -19,6 +20,7 @@ from inspect_ai._eval.evalset import (
 from inspect_ai._eval.task.task import resolve_epochs
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file, file
+from inspect_ai._util.registry import registry_info
 from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.log._file import ReadEvalLogsProgress
 from inspect_ai.model import GenerateConfig, get_model
@@ -38,6 +40,7 @@ from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
     FlowTask,
+    NotGiven,
 )
 from inspect_flow._util.console import flow_print, format_prefix, path, quantity
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
@@ -246,7 +249,7 @@ def _print_result(
 
 def _get_task_ids_to_tasks(
     tasks: list[InstantiatedTask], spec: FlowSpec
-) -> dict[str, Task]:
+) -> dict[str, InstantiatedTask]:
     if not tasks:
         return dict()
 
@@ -263,7 +266,7 @@ def _get_task_ids_to_tasks(
         sample_shuffle=default_none(options.sample_shuffle),
     )
 
-    task_ids: dict[str, Task] = dict()
+    task_ids: dict[str, InstantiatedTask] = dict()
     for i, resolved_task in enumerate(resolved_tasks):
         task_id = task_identifier(
             task=resolved_task,
@@ -277,7 +280,7 @@ def _get_task_ids_to_tasks(
             else:
                 raise ValueError(f"Duplicate task found: {resolved_task}")
 
-        task_ids[task_id] = resolved_task.task
+        task_ids[task_id] = tasks[i]
     return task_ids
 
 
@@ -329,9 +332,142 @@ def _num_log_samples(
 @dataclass
 class TaskLogInfo:
     task: Task
+    flow_task: FlowTask | None = None
     task_samples: int | None = None
     log_file: str | None = None
     log_samples: int = 0
+
+
+@dataclass
+class _TaskField:
+    extract: Callable[[TaskLogInfo], Any]
+    format: Callable[[Any], str]
+
+
+def _config(name: str) -> _TaskField:
+    return _TaskField(
+        lambda info, n=name: getattr(info.task.config, n),
+        lambda v, n=name: f"{n}={v}",
+    )
+
+
+def _attr(name: str) -> _TaskField:
+    return _TaskField(
+        lambda info, n=name: getattr(info.task, n),
+        lambda v, n=name: f"{n}={v}",
+    )
+
+
+def _arg(name: str) -> _TaskField:
+    return _TaskField(
+        lambda info, n=name: (
+            (info.flow_task.args or {}).get(n) if info.flow_task else None
+        ),
+        lambda v, n=name: f"{n}={v}",
+    )
+
+
+def _model_role(name: str) -> _TaskField:
+    return _TaskField(
+        lambda info, n=name: (
+            str(info.task.model_roles[n])
+            if info.task.model_roles and n in info.task.model_roles
+            else None
+        ),
+        lambda v, n=name: f"{n}={v}",
+    )
+
+
+def _dict_fields(
+    dicts: list[Mapping[str, Any] | NotGiven | None],
+    make_field: Callable[[str], _TaskField],
+) -> list[_TaskField]:
+    all_keys: set[str] = set()
+    for d in dicts:
+        if d:
+            all_keys.update(d.keys())
+    return [make_field(k) for k in sorted(all_keys)]
+
+
+def _solver_name(info: TaskLogInfo) -> str | None:
+    ri = registry_info(info.task.solver)
+    return ri.name if ri else None
+
+
+def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
+    fields = [
+        # Task Args
+        *_dict_fields(
+            [info.flow_task.args if info.flow_task else None for info in infos], _arg
+        ),
+        # Model
+        _TaskField(lambda info: str(info.task.model) if info.task.model else None, str),
+        # Model Roles
+        *_dict_fields([info.task.model_roles for info in infos], _model_role),
+        # Solver and Approval
+        _TaskField(_solver_name, lambda v: f"solver={v}"),
+        _TaskField(
+            lambda info: str(info.task.approval) if info.task.approval else None,
+            lambda v: f"approval={v}",
+        ),
+        # Task-level fields in task_identifier
+        _attr("version"),
+        _attr("message_limit"),
+        _attr("token_limit"),
+        _attr("time_limit"),
+        _attr("working_limit"),
+        # GenerateConfig fields included in task_identifier
+        # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
+        _config("temperature"),
+        _config("top_p"),
+        _config("max_tokens"),
+        _config("seed"),
+        _config("top_k"),
+        _config("num_choices"),
+        _config("best_of"),
+        _config("frequency_penalty"),
+        _config("presence_penalty"),
+        _config("stop_seqs"),
+        _config("logit_bias"),
+        _config("logprobs"),
+        _config("top_logprobs"),
+        _config("parallel_tool_calls"),
+        _config("system_message"),
+        _config("cache_prompt"),
+        _config("reasoning_effort"),
+        _config("reasoning_tokens"),
+        _config("effort"),
+    ]
+    return fields
+
+
+def _unique_task_names(infos: list[TaskLogInfo]) -> list[str]:
+    names = [info.task.name for info in infos]
+    qualifiers: list[list[str]] = [[] for _ in infos]
+
+    for field in _task_fields(infos):
+        groups: dict[str, list[int]] = {}
+        for i in range(len(infos)):
+            key = names[i] + "\0" + ",".join(qualifiers[i])
+            groups.setdefault(key, []).append(i)
+
+        for group in groups.values():
+            if len(group) < 2:
+                continue
+            values = [field.extract(infos[i]) for i in group]
+            if len(set(str(v) for v in values)) <= 1:
+                continue
+            for i, val in zip(group, values, strict=True):
+                if val is not None:
+                    qualifiers[i].append(field.format(val))
+
+    result: list[str] = []
+    for i, name in enumerate(names):
+        if qualifiers[i]:
+            result.append(f"{name} ({', '.join(qualifiers[i])})")
+        else:
+            result.append(name)
+    return result
 
 
 def _create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
@@ -347,11 +483,14 @@ def _create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
     else:
         header = f"Running {quantity(total, 'task')}"
 
+    infos = list(task_log_info.values())
+    display_names = _unique_task_names(infos)
+
     table = Table(show_edge=False, box=None, padding=(0, 1))
     table.add_column(header)
     table.add_column("Existing Samples", justify="right")
-    for info in task_log_info.values():
-        name = Text(info.task.name)
+    for info, display_name in zip(infos, display_names, strict=True):
+        name = Text(display_name)
         if info.log_file:
             name.append(f"\n{path_str(info.log_file)}", style="dim")
         samples = (
@@ -364,7 +503,7 @@ def _create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
 
 
 def _find_existing_logs(
-    task_id_to_task: dict[str, Task],
+    task_id_to_task: dict[str, InstantiatedTask],
     spec: FlowSpec,
     store: FlowStoreInternal | None,
     dry_run: bool = False,
@@ -396,8 +535,12 @@ def _find_existing_logs(
                 )
 
         result = {
-            id: TaskLogInfo(task=task, task_samples=_num_samples(task, limit))
-            for id, task in task_id_to_task.items()
+            id: TaskLogInfo(
+                task=it.task,
+                flow_task=it.flow_task,
+                task_samples=_num_samples(it.task, limit),
+            )
+            for id, it in task_id_to_task.items()
         }
 
         num_found = 0
