@@ -4,16 +4,26 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
 from rich.table import Table
 from rich.text import Text
 
-from inspect_flow._runner.run import TaskLogInfo
 from inspect_flow._types.flow_types import (
+    FlowTask,
     NotGiven,
 )
 from inspect_flow._util.console import quantity
 from inspect_flow._util.path_util import path_str
+
+
+@dataclass
+class TaskLogInfo:
+    task: Task
+    flow_task: FlowTask | None = None
+    task_samples: int | None = None
+    log_file: str | None = None
+    log_samples: int = 0
 
 
 @dataclass

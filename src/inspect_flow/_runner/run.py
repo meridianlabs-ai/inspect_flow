@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
 from datetime import timedelta
 from logging import getLogger
 from typing import Any
@@ -32,7 +31,7 @@ from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
-from inspect_flow._runner.task_log import _create_task_log_display
+from inspect_flow._runner.task_log import TaskLogInfo, _create_task_log_display
 from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
@@ -324,15 +323,6 @@ def _num_log_samples(
         # Log has more epochs than the current task - unclear how many samples can be reused.
         # Assume that samples are evenly distributed across epochs.
         return int(header.results.completed_samples * epoch_count / log_epoch_count)
-
-
-@dataclass
-class TaskLogInfo:
-    task: Task
-    flow_task: FlowTask | None = None
-    task_samples: int | None = None
-    log_file: str | None = None
-    log_samples: int = 0
 
 
 def _find_existing_logs(
