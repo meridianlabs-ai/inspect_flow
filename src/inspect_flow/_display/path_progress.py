@@ -3,7 +3,8 @@ from typing import Any
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.text import Text
 
-from inspect_flow._display.display import RunAction, display
+from inspect_flow._display.display import display
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._util.console import console
 from inspect_flow._util.path_util import path_str
 

@@ -15,7 +15,7 @@ from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
@@ -56,8 +56,8 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             env["VIRTUAL_ENV"] = str(Path(temp_dir) / ".venv")
 
             _create_venv(
-                spec,
                 base_dir=base_dir,
+                spec=spec,
                 temp_dir=temp_dir,
                 env=env,
                 dry_run=dry_run,

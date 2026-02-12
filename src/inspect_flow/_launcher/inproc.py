@@ -1,7 +1,7 @@
 import os
 from logging import getLogger
 
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowSpec

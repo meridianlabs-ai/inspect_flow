@@ -2,7 +2,7 @@ from typing import Any, Literal
 
 from inspect_ai._util.file import FileInfo
 from inspect_ai.log._file import log_file_info
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.text import Text
 
 from inspect_flow._util.path_util import path_str
@@ -78,3 +78,13 @@ def pluralize(word: str, count: int, plural: str | None = None) -> str:
 
 def quantity(count: int, units: str, plural: str | None = None) -> str:
     return f"{count} {pluralize(word=units, count=count, plural=plural)}"
+
+
+def join(renderables: RenderableType | list[RenderableType]) -> Text:
+    parts = renderables if isinstance(renderables, list) else [renderables]
+    assembled: list[str | Text] = []
+    for i, p in enumerate(parts):
+        if i > 0:
+            assembled.append(" ")
+        assembled.append(p if isinstance(p, (str, Text)) else str(p))
+    return Text.assemble(" ", *assembled, " ")

@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Literal
 
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.flow_types import (
     CreateArgs,
     FlowAgent,

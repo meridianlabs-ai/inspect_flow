@@ -14,7 +14,8 @@ from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
-from inspect_flow._display.display import RunAction, display
+from inspect_flow._display.display import display
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.console import flow_print, path, quantity

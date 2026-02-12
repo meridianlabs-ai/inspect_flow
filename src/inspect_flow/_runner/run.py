@@ -22,7 +22,7 @@ from rich.rule import Rule
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._store.deltalake import list_all_eval_logs

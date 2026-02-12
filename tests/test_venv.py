@@ -8,7 +8,7 @@ import pytest
 from botocore.client import BaseClient
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
-from inspect_flow._display.display import RunAction
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version

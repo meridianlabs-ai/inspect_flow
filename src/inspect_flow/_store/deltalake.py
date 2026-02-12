@@ -18,8 +18,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
-from inspect_flow._display.display import RunAction, display
+from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
     console,
