@@ -10,12 +10,14 @@ from inspect_ai._util.file import absolute_file_path
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
+from inspect_flow._display.display import DisplayType, set_display_type
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.logging import init_flow_logging
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def log_level_option(f: F) -> F:
+def output_options(f: F) -> F:
     f = click.option(
         "--log-level",
         type=click.Choice(
@@ -26,12 +28,22 @@ def log_level_option(f: F) -> F:
         envvar="INSPECT_FLOW_LOG_LEVEL",
         help="Set the log level (defaults to 'warning')",
     )(f)
+    f = click.option(
+        "--display",
+        type=click.Choice(
+            ["full", "plain"],
+            case_sensitive=False,
+        ),
+        default="full",
+        envvar="INSPECT_FLOW_DISPLAY",
+        help="Set the display mode (defaults to 'full')",
+    )(f)
     return f
 
 
 def config_options(f: F) -> F:
     """Options for overriding the config."""
-    f = log_level_option(f)
+    f = output_options(f)
     f = click.argument(
         "config-file",
         type=click.Path(
@@ -130,6 +142,7 @@ def config_options(f: F) -> F:
 
 class ConfigOptionArgs(TypedDict, total=False):
     log_level: str
+    display: DisplayType
     store: str | None
     log_dir: str | None
     log_dir_allow_dirty: bool | None
@@ -138,6 +151,13 @@ class ConfigOptionArgs(TypedDict, total=False):
     set: list[str] | None
     arg: list[str] | None
     venv: bool | None
+
+
+def init_output(**kwargs: Unpack[ConfigOptionArgs]) -> None:
+    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
+    init_flow_logging(log_level)
+    display = kwargs.get("display", "full")
+    set_display_type(display)
 
 
 def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:

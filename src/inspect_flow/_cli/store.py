@@ -7,7 +7,7 @@ from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import TypedDict, Unpack
 
-from inspect_flow._cli.options import log_level_option
+from inspect_flow._cli.options import output_options
 from inspect_flow._store.store import (
     FlowStore,
     delete_store,
@@ -50,7 +50,7 @@ F = TypeVar("F", bound=Callable[..., object])
 
 
 def store_options(f: F) -> F:
-    f = log_level_option(f)
+    f = output_options(f)
     f = click.option(
         "--store",
         "-s",

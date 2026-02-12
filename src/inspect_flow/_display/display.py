@@ -37,7 +37,14 @@ def _info_renderables(
     return [info]
 
 
+DisplayType = Literal["full", "plain"]
+_display_type: DisplayType
 _display: Display | None = None
+
+
+def set_display_type(display_type: DisplayType) -> None:
+    global _display_type
+    _display_type = display_type
 
 
 def display() -> Display:
@@ -99,6 +106,16 @@ class RunAction:
         display().print(*objects, action_key=self.key, format=format, **kwargs)
 
 
+def join(renderables: RenderableType | list[RenderableType]) -> Text:
+    parts = renderables if isinstance(renderables, list) else [renderables]
+    assembled: list[str | Text] = []
+    for i, p in enumerate(parts):
+        if i > 0:
+            assembled.append(" ")
+        assembled.append(p if isinstance(p, (str, Text)) else str(p))
+    return Text.assemble(" ", *assembled, " ")
+
+
 class _BorderedTable:
     """Table wrapped in a box border. Shows [DRY RUN] in each corner when enabled."""
 
@@ -131,13 +148,7 @@ class _BorderedTable:
 
         inset = "─" if self._dry_run else ""
         if self._title is not None:
-            parts = self._title if isinstance(self._title, list) else [self._title]
-            assembled: list[str | Text] = []
-            for i, p in enumerate(parts):
-                if i > 0:
-                    assembled.append(" ")
-                assembled.append(p if isinstance(p, (str, Text)) else str(p))
-            title_text = Text.assemble(" ", *assembled, " ")
+            title_text = join(self._title)
             title_width = title_text.cell_len
         else:
             title_text = None
@@ -221,6 +232,12 @@ class Display(ABC):
         self, title: RenderableType | list[RenderableType] | None
     ) -> None: ...
 
+    @abstractmethod
+    def __enter__(self) -> Display: ...
+
+    @abstractmethod
+    def __exit__(self, *args: Any) -> None: ...
+
 
 class SimpleDisplay(Display):
     def __init__(self) -> None:
@@ -246,7 +263,17 @@ class SimpleDisplay(Display):
         pass
 
     def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
-        pass
+        if title:
+            console.print(join(title))
+
+    def __enter__(self) -> Display:
+        global _display
+        _display = self
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        global _display
+        _display = None
 
 
 class LiveDisplay(Display):
@@ -325,14 +352,16 @@ class LiveDisplay(Display):
     def print(
         self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
     ) -> None:
-        parts: list[str | Text] = []
         prefix = format_prefix(format)
-        if prefix:
-            parts.extend([prefix, " "])
-        for i, obj in enumerate(objects):
-            if i > 0:
-                parts.append(" ")
-            parts.append(obj if isinstance(obj, (str, Text)) else str(obj))
-        self._messages.setdefault(action_key, []).append(Text.assemble(*parts))
+        parts = [prefix, *objects] if prefix else [*objects]
+        text = join(parts)
+        self._messages.setdefault(action_key, []).append(text)
         if self._live:
             self._live.update(self._make_display())
+
+
+def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
+    if _display_type == "full":
+        return LiveDisplay(dry_run=dry_run, actions=actions)
+    else:
+        return SimpleDisplay()
