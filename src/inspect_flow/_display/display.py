@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
+from time import sleep
 from types import TracebackType
 from typing import Any, Literal, Optional, Type, TypedDict
 
@@ -127,6 +130,7 @@ class _BorderedTable:
         footer: RenderableType | None = None,
         title: RenderableType | list[RenderableType] | None = None,
         height: int | None = None,
+        console_output: list[str] | None = None,
     ) -> None:
         self._inner = inner
         self._dry_run = dry_run
@@ -134,6 +138,7 @@ class _BorderedTable:
         self._footer = footer
         self._title = title
         self._height = height
+        self._console_output = console_output or []
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
@@ -198,8 +203,24 @@ class _BorderedTable:
                 yield Segment(" │\n")
                 lines_yielded += 1
 
-        if self._height is not None:
-            padding = self._height - lines_yielded - 1  # -1 for bottom border
+        if self._height is not None and self._console_output:
+            available = self._height - lines_yielded - 1  # -1 for bottom border
+            num_lines = max(min(available, len(self._console_output)), 5)
+            output_lines = self._console_output[-num_lines:]
+            yield Segment(separator if first_group else blank)
+            lines_yielded += 1
+            for ol in output_lines:
+                text = Text.from_ansi(ol, style="dim", no_wrap=True, overflow="crop")
+                for line in console.render_lines(text, inner_options, pad=True):
+                    yield Segment("│ ")
+                    yield from line
+                    yield Segment(" │\n")
+                    lines_yielded += 1
+            remaining = self._height - lines_yielded - 1
+            for _ in range(remaining):
+                yield Segment(blank)
+        elif self._height is not None:
+            padding = self._height - lines_yielded - 1
             for _ in range(padding):
                 yield Segment(blank)
 
@@ -284,23 +305,32 @@ class LiveDisplay(Display):
         self._footer: RenderableType | None = None
         self._title: RenderableType | list[RenderableType] | None = None
         self._live: Live | None = None
+        self._output_capture = _OutputCapture()
 
     def __enter__(self) -> Display:
         global _display
         _display = self
+        self._output_capture.start()
         self._live = Live(
             self._make_display(),
             console=console,
-            transient=False,
+            transient=True,
             refresh_per_second=10,
         )
         self._live.__enter__()
         return self
 
     def __exit__(self, *args: Any) -> None:
+        sleep(5)
         if self._live:
-            self._live.update(self._make_display(fill_height=False))
             self._live.__exit__(*args)
+        captured = self._output_capture.stop()
+        if captured:
+            import sys
+
+            sys.stdout.buffer.write(captured)
+            sys.stdout.flush()
+        console.print(self._make_display(fill_height=False))
         global _display
         _display = None
 
@@ -330,6 +360,11 @@ class LiveDisplay(Display):
                 Text(action.description or key),
                 *_info_renderables(action.info),
             )
+        console_output = (
+            self._output_capture.get_recent_lines(console.height)
+            if fill_height
+            else None
+        )
         return _BorderedTable(
             table,
             self.dry_run,
@@ -337,6 +372,7 @@ class LiveDisplay(Display):
             self._footer,
             self._title,
             height=console.height - 2 if fill_height else None,
+            console_output=console_output,
         )
 
     def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
@@ -358,6 +394,63 @@ class LiveDisplay(Display):
         self._messages.setdefault(action_key, []).append(text)
         if self._live:
             self._live.update(self._make_display())
+
+
+class _OutputCapture:
+    """Captures stdout/stderr at the fd level while giving the console direct terminal access."""
+
+    def __init__(self) -> None:
+        self._captured = bytearray()
+        self._lock = threading.Lock()
+        self._saved_fds: dict[int, int] = {}
+        self._pipes: dict[int, int] = {}
+        self._threads: list[threading.Thread] = []
+        self._console_file: Any = None
+
+    def start(self) -> None:
+        for fd in (1, 2):
+            self._saved_fds[fd] = os.dup(fd)
+            pipe_r, pipe_w = os.pipe()
+            self._pipes[fd] = pipe_r
+            os.dup2(pipe_w, fd)
+            os.close(pipe_w)
+            thread = threading.Thread(target=self._drain, args=(fd,), daemon=True)
+            thread.start()
+            self._threads.append(thread)
+        # Give the console a direct file to the terminal (bypassing redirected fd 1)
+        self._console_file = os.fdopen(os.dup(self._saved_fds[1]), "w")
+        console._file = self._console_file
+
+    def _drain(self, fd: int) -> None:
+        pipe_r = self._pipes[fd]
+        while True:
+            try:
+                data = os.read(pipe_r, 4096)
+                if not data:
+                    break
+                with self._lock:
+                    self._captured.extend(data)
+            except OSError:
+                break
+
+    def get_recent_lines(self, max_lines: int) -> list[str]:
+        with self._lock:
+            text = self._captured.decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        return lines[-max_lines:] if lines else []
+
+    def stop(self) -> bytes:
+        for fd, saved in self._saved_fds.items():
+            os.dup2(saved, fd)
+            os.close(saved)
+        for thread in self._threads:
+            thread.join()
+        for pipe_r in self._pipes.values():
+            os.close(pipe_r)
+        console._file = None
+        if self._console_file:
+            self._console_file.close()
+        return bytes(self._captured)
 
 
 def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
