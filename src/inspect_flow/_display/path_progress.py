@@ -5,7 +5,6 @@ from rich.text import Text
 
 from inspect_flow._display.display import display
 from inspect_flow._display.run_action import RunAction
-from inspect_flow._util.console import console
 from inspect_flow._util.path_util import path_str
 
 
@@ -21,7 +20,6 @@ class PathProgressDisplay:
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TextColumn("[progress.percentage]{task.completed}/{task.total}"),
-            console=console,
         )
         self._task = self._progress.add_task(description, total=total)
         if action:

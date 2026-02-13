@@ -36,7 +36,6 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
-from inspect_flow._util.console import console
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 
@@ -77,29 +76,28 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     if not task_configs:
         return []
     results: list[InstantiatedTask] = []
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.percentage]{task.completed}/{task.total}"),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-        transient=True,
-    ) as progress:
-        with RunAction("instantiate", info=progress) as action:
-            progress_task = progress.add_task("Instantiating", total=len(task_configs))
-            for task_config in task_configs:
-                task_name = _get_task_name(task_config)
-                progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
-                for task in _instantiate_task(spec, task_config, base_dir=base_dir):
-                    results.append(
-                        InstantiatedTask(
-                            flow_task=task_config
-                            if isinstance(task_config, FlowTask)
-                            else None,
-                            task=task,
-                        )
+    with RunAction("instantiate") as action:
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.percentage]{task.completed}/{task.total}"),
+            TextColumn("[progress.description]{task.description}"),
+        )
+        action.update(info=progress)
+        progress_task = progress.add_task("Instantiating", total=len(task_configs))
+        for task_config in task_configs:
+            task_name = _get_task_name(task_config)
+            progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
+            for task in _instantiate_task(spec, task_config, base_dir=base_dir):
+                results.append(
+                    InstantiatedTask(
+                        flow_task=task_config
+                        if isinstance(task_config, FlowTask)
+                        else None,
+                        task=task,
                     )
-                progress.advance(progress_task)
-            action.update(info=f"Instantiated {len(results)} tasks")
+                )
+            progress.advance(progress_task)
+        action.update(info=f"Instantiated {len(results)} tasks")
     return results
 
 
