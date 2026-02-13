@@ -59,7 +59,7 @@ class _BorderedTable:
 
         inset = "─" if self._dry_run else ""
         if self._title is not None:
-            title_text = join(self._title)
+            title_text = Text.assemble("[", join(self._title), "]")
             title_width = title_text.cell_len
         else:
             title_text = None
