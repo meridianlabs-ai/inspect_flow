@@ -169,7 +169,8 @@ class FullDisplay(Display):
         return self
 
     def __exit__(self, *args: Any) -> None:
-        sleep(5)
+        if duration := os.environ.get("INSPECT_FLOW_DISPLAY_SLEEP"):
+            sleep(float(duration))
         if self._live:
             self._live.__exit__(*args)
         captured = self._output_capture.stop()
