@@ -106,14 +106,11 @@ class _BorderedTable:
 
         separator = f"├{'─' * (width - 2)}┤\n"
         blank = f"│{' ' * (width - 2)}│\n"
-        first_group = True
+        yield Segment(separator)
+        lines_yielded += 1
         for msgs in self._messages.values():
             if not msgs:
                 continue
-            if first_group:
-                yield Segment(separator)
-                lines_yielded += 1
-                first_group = False
             else:
                 yield Segment(blank)
                 lines_yielded += 1
@@ -125,7 +122,7 @@ class _BorderedTable:
                     lines_yielded += 1
 
         if self._footer is not None:
-            yield Segment(separator if first_group else blank)
+            yield Segment(blank)
             lines_yielded += 1
             for line in console.render_lines(self._footer, inner_options, pad=True):
                 yield Segment("│ ")
@@ -137,7 +134,7 @@ class _BorderedTable:
             available = self._height - lines_yielded - 1  # -1 for bottom border
             num_lines = max(min(available, len(self._console_output)), 5)
             output_lines = self._console_output[-num_lines:]
-            yield Segment(separator if first_group else blank)
+            yield Segment(blank)
             lines_yielded += 1
             for ol in output_lines:
                 text = Text.from_ansi(ol, style="dim", no_wrap=True, overflow="crop")

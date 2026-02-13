@@ -116,9 +116,9 @@ def run_eval_set(
 
     with RunAction("evalset") as action:
         action.print(create_task_log_display(task_log_info))
-        action.print("\nLog dir:", path(resolved_spec.log_dir))
         if option_str := _option_string(options):
-            action.print("\nOptions\n", option_str)
+            action.print("\nOptions:", option_str)
+        action.print("\nLog dir:", path(resolved_spec.log_dir))
 
     if dry_run:
         return False, []

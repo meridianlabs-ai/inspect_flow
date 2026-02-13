@@ -53,7 +53,7 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
         base_dir = Path(file).parent.as_posix()
         spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
         action.update(
-            info=[f"Loaded {quantity(len(spec.tasks or []), 'task')}", path(file)],
+            info=[f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
             status="success",
         )
     return spec
