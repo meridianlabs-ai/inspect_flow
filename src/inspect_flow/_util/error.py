@@ -4,7 +4,10 @@ from types import TracebackType
 from typing import Callable
 
 import click
+from botocore.exceptions import TokenRetrievalError
 from rich.traceback import install
+
+from inspect_flow._util.console import flow_print
 
 
 def exception_hook() -> Callable[..., None]:
@@ -23,6 +26,12 @@ def exception_hook() -> Callable[..., None]:
             sys.exit(130)
         elif isinstance(exception, click.Abort):
             # Exit cleanly without traceback
+            sys.exit(1)
+        elif isinstance(exception, TokenRetrievalError):
+            # No need for stack trace - just print the error message
+            flow_print(
+                f"[bold red]{exception.__class__.__name__}:[/bold red] {str(exception)}"
+            )
             sys.exit(1)
         else:
             sys_handler(exception_type, exception, traceback)

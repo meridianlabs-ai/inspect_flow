@@ -86,6 +86,12 @@ def _write_config_file(spec: FlowSpec) -> None:
         f.write(yaml)
 
 
+def _option_string(options: FlowOptions) -> str | None:
+    if not options.model_fields_set:
+        return None
+    return ", ".join(f"{k}={getattr(options, k)!r}" for k in options.model_fields_set)
+
+
 def run_eval_set(
     spec: FlowSpec, base_dir: str, dry_run: bool = False
 ) -> tuple[bool, list[EvalLog]]:
@@ -110,7 +116,9 @@ def run_eval_set(
 
     with RunAction("evalset") as action:
         action.print(create_task_log_display(task_log_info))
-        action.print("\nUsing log directory:", path(resolved_spec.log_dir))
+        action.print("\nLog dir:", path(resolved_spec.log_dir))
+        if option_str := _option_string(options):
+            action.print("\nOptions\n", option_str)
 
     if dry_run:
         return False, []

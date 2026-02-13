@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Literal
 
 from rich.console import RenderableType
+from rich.text import Text
 
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
@@ -47,9 +48,7 @@ class Display(ABC):
     def set_footer(self, renderable: RenderableType | None) -> None: ...
 
     @abstractmethod
-    def set_title(
-        self, title: RenderableType | list[RenderableType] | None
-    ) -> None: ...
+    def set_title(self, title: str | Text | list[str | Text] | None) -> None: ...
 
     @abstractmethod
     def __enter__(self) -> Display: ...

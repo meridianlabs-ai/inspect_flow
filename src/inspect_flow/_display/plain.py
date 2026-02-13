@@ -42,7 +42,7 @@ class PlainDisplay(Display):
     def set_footer(self, renderable: RenderableType | None) -> None:
         pass
 
-    def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
+    def set_title(self, title: str | Text | list[str | Text] | None) -> None:
         if title:
             console.print(join(title))
 

@@ -34,7 +34,7 @@ class _BorderedTable:
         dry_run: bool,
         messages: dict[str, list[RenderableType]] | None = None,
         footer: RenderableType | None = None,
-        title: RenderableType | list[RenderableType] | None = None,
+        title: str | Text | list[str | Text] | None = None,
         height: int | None = None,
         console_output: list[str] | None = None,
     ) -> None:
@@ -59,7 +59,11 @@ class _BorderedTable:
 
         inset = "─" if self._dry_run else ""
         if self._title is not None:
-            title_text = Text.assemble("[", join(self._title), "]")
+            title_parts = (
+                self._title if isinstance(self._title, list) else [self._title]
+            )
+            spaced = [x for p in title_parts for x in (" ", p)][1:]
+            title_text = Text.assemble("[", *spaced, "]")
             title_width = title_text.cell_len
         else:
             title_text = None
@@ -148,7 +152,7 @@ class FullDisplay(Display):
         self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[RenderableType]] = {}
         self._footer: RenderableType | None = None
-        self._title: RenderableType | list[RenderableType] | None = None
+        self._title: str | Text | list[str | Text] | None = None
         self._live: Live | None = None
         self._output_capture = _OutputCapture()
 
@@ -218,7 +222,7 @@ class FullDisplay(Display):
             console_output=console_output,
         )
 
-    def set_title(self, title: RenderableType | list[RenderableType] | None) -> None:
+    def set_title(self, title: str | Text | list[str | Text] | None) -> None:
         self._title = title
         if self._live:
             self._live.update(self._make_display())
@@ -231,12 +235,9 @@ class FullDisplay(Display):
     def print(
         self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
     ) -> None:
-        if len(objects) == 1 and not isinstance(objects[0], (str, Text)):
-            renderable: RenderableType = objects[0]
-        else:
-            prefix = format_prefix(format)
-            parts = [prefix, *objects] if prefix else [*objects]
-            renderable = join(parts)
+        prefix = format_prefix(format)
+        parts = [prefix, *objects] if prefix else [*objects]
+        renderable = join(parts)
         self._messages.setdefault(action_key, []).append(renderable)
         if self._live:
             self._live.update(self._make_display())
