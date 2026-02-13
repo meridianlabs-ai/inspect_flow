@@ -291,10 +291,11 @@ class _OutputCapture:
         for fd, saved in self._saved_fds.items():
             os.dup2(saved, fd)
             os.close(saved)
-        for thread in self._threads:
-            thread.join()
+        # Close pipe read ends to unblock drain threads (os.read returns OSError)
         for pipe_r in self._pipes.values():
             os.close(pipe_r)
+        for thread in self._threads:
+            thread.join()
         console._file = None
         if self._console_file:
             self._console_file.close()
