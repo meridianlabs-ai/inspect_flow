@@ -25,7 +25,7 @@ def display() -> Display:
     if _display is None:
         from inspect_flow._display.plain import PlainDisplay
 
-        _display = PlainDisplay()
+        _display = PlainDisplay(actions={})
     return _display
 
 
@@ -66,4 +66,4 @@ def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
     else:
         from inspect_flow._display.plain import PlainDisplay
 
-        return PlainDisplay()
+        return PlainDisplay(actions=actions)

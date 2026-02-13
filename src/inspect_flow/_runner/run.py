@@ -31,7 +31,7 @@ from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.resolve import resolve_spec
-from inspect_flow._runner.task_log import TaskLogInfo, _create_task_log_display
+from inspect_flow._runner.task_log import TaskLogInfo, create_task_log_display
 from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
@@ -109,7 +109,7 @@ def run_eval_set(
     task_log_info = _find_existing_logs(task_id_to_task, resolved_spec, store)
 
     with RunAction("evalset") as action:
-        action.print(_create_task_log_display(task_log_info))
+        action.print(create_task_log_display(task_log_info))
         action.print("\nUsing log directory:", path(resolved_spec.log_dir))
 
     if dry_run:

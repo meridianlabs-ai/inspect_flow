@@ -13,10 +13,17 @@ from inspect_flow._util.console import Formats, console, flow_print, join
 
 
 class PlainDisplay(Display):
-    def __init__(self) -> None:
+    def __init__(self, actions: dict[str, DisplayAction]) -> None:
         self._last_action_key: str | None = None
+        self._actions = actions
 
     def update_action(self, key: str, action: DisplayAction) -> None:
+        existing = self._actions.get(key)
+        if existing:
+            existing.update(action)
+            action = existing
+        else:
+            self._actions[key] = action
         status = action.status or "pending"
         char, style = ACTION_ICONS.get(status, ACTION_ICONS["pending"])
         line = Text()

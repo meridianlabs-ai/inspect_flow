@@ -158,7 +158,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[str]:
     return result
 
 
-def _create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
+def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
     total = len(task_log_info)
     num_complete = sum(
         1
