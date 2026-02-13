@@ -6,6 +6,7 @@ from typing import Any
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
+from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
@@ -13,7 +14,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
-from inspect_flow._util.console import path, quantity
+from inspect_flow._util.console import path, pluralize
 
 
 @dataclass
@@ -87,8 +88,6 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
         *_dict_fields(
             [info.flow_task.args if info.flow_task else None for info in infos], _arg
         ),
-        # Model
-        _TaskField(lambda info: str(info.task.model) if info.task.model else None, str),
         # Model Roles
         *_dict_fields([info.task.model_roles for info in infos], _model_role),
         # Solver and Approval
@@ -135,6 +134,10 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
     names = [info.task.name for info in infos]
     qualifiers: list[list[str]] = [[] for _ in infos]
 
+    for i, info in enumerate(infos):
+        if info.task.model:
+            qualifiers[i].append(str(info.task.model))
+
     for field in _task_fields(infos):
         groups: dict[str, list[int]] = {}
         for i in range(len(infos)):
@@ -171,47 +174,59 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
     return result
 
 
-def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
+def create_task_log_display(
+    task_log_info: dict[str, TaskLogInfo],
+) -> RenderableType:
     total = len(task_log_info)
     num_complete = sum(
         1
         for info in task_log_info.values()
         if info.task_samples is not None and info.log_samples >= info.task_samples
     )
+    NUM = "bold cyan"
     if num_complete > 0:
         remaining = total - num_complete
-        header = f"Running {quantity(remaining, 'task')} ({quantity(num_complete, 'task')} complete)"
+        header = Text.assemble(
+            "Running ",
+            (str(remaining), NUM),
+            f" {pluralize('task', remaining)} (",
+            (str(num_complete), NUM),
+            f" {pluralize('task', num_complete)} complete)",
+            style="bold",
+        )
     else:
-        header = f"Running {quantity(total, 'task')}"
+        header = Text.assemble(
+            "Running ", (str(total), NUM), f" {pluralize('task', total)}", style="bold"
+        )
 
     infos = list(task_log_info.values())
     name_quals = _unique_task_names(infos)
-    max_name_len = max((len(n) for n, _ in name_quals), default=0)
 
     have_logs = any(info.log_file for info in infos)
 
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
-    table.add_column(header, ratio=1, overflow="ellipsis")
+    table.add_column("Task", overflow="ellipsis", justify="left")
+    table.add_column("")
     if have_logs:
         table.add_column(
             "Existing Log File", no_wrap=True, ratio=2, overflow="ellipsis"
         )
-    table.add_column("Samples", justify="right")
-    table.add_row("", "", "")
+    table.add_column("Existing\nSamples", justify="right")
+    if not have_logs:
+        table.add_row("", "", "")
+    else:
+        table.add_row("", "", "", "")
     for info, (base_name, qual) in zip(infos, name_quals, strict=True):
         name = Text(base_name)
-        if qual.plain:
-            name.append(" " * (max_name_len - len(base_name) + 1))
-            name.append_text(qual)
         samples = (
             f"{info.log_samples}/{info.task_samples}"
             if info.task_samples is not None
             else ""
         )
         if have_logs:
-            table.add_row(name, path(info.log_file) if info.log_file else "", samples)
-            # table.add_row("", "", "")
+            table.add_row(
+                name, qual, path(info.log_file) if info.log_file else "", samples
+            )
         else:
-            table.add_row(name, samples)
-            # table.add_row("", "")
-    return table
+            table.add_row(name, qual, samples)
+    return Group(header, table)

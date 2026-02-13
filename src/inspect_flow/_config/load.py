@@ -106,9 +106,7 @@ def _expand_includes(
             spec = _apply_include(spec, include)
             continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
-        display().print(
-            "Including:", path(include_path), action_key="load", format="info"
-        )
+        display().print("Including:", path(include_path), action_key="load")
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
             spec = _apply_include(spec, included_spec)
