@@ -396,10 +396,15 @@ def _find_existing_logs(
 
         log_files = store.search_for_logs(set(task_id_to_task.keys()))
         if log_files:
+            if num_found:
+                action.update(
+                    info=f"Found {quantity(num_found, 'existing log')} in log directory. Copying {quantity(len(log_files), 'existing log')}, to log directory"
+                )
+            else:
+                action.update(
+                    info=f"Copying {quantity(len(log_files), 'existing log')} to log dir"
+                )
             num_found += len(log_files)
-            action.update(
-                info=f"Found {quantity(len(log_files), 'existing log')}, copying to log directory"
-            )
             for task_id, log_file in log_files.items():
                 log_info = result[task_id]
                 header = read_eval_log(log_file, header_only=True)
@@ -411,10 +416,6 @@ def _find_existing_logs(
 
         if not num_found:
             action.update(info="No existing logs found", status="success")
-        else:
-            action.update(
-                info=f"Found {quantity(num_found, 'existing log')}", status="success"
-            )
     return result
 
 

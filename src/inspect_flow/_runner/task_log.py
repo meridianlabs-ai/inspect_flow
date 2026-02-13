@@ -13,8 +13,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
-from inspect_flow._util.console import quantity
-from inspect_flow._util.path_util import path_str
+from inspect_flow._util.console import path, quantity
 
 
 @dataclass
@@ -120,7 +119,10 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
         _config("logprobs"),
         _config("top_logprobs"),
         _config("parallel_tool_calls"),
-        _config("system_message"),
+        _TaskField(
+            lambda info: getattr(info.task.config, "system_message", None),
+            lambda v: "system_message=...",
+        ),
         _config("cache_prompt"),
         _config("reasoning_effort"),
         _config("reasoning_tokens"),
@@ -129,7 +131,7 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
     return fields
 
 
-def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, str]]:
+def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
     names = [info.task.name for info in infos]
     qualifiers: list[list[str]] = [[] for _ in infos]
 
@@ -149,10 +151,24 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, str]]:
                 if val is not None:
                     qualifiers[i].append(field.format(val))
 
-    return [
-        (name, f"({', '.join(qualifiers[i])})" if qualifiers[i] else "")
-        for i, name in enumerate(names)
-    ]
+    result: list[tuple[str, Text]] = []
+    for i, name in enumerate(names):
+        if qualifiers[i]:
+            qual = Text("(", style="dim")
+            for j, q in enumerate(qualifiers[i]):
+                if j > 0:
+                    qual.append(", ", style="dim")
+                key, sep, val = q.partition("=")
+                if val:
+                    qual.append(key + sep, style="dim")
+                    qual.append(val, style="cyan")
+                else:
+                    qual.append(key, style="cyan")
+            qual.append(")", style="dim")
+            result.append((name, qual))
+        else:
+            result.append((name, Text("")))
+    return result
 
 
 def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
@@ -164,7 +180,7 @@ def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
     )
     if num_complete > 0:
         remaining = total - num_complete
-        header = f"Running {quantity(remaining, 'task')} ({quantity(num_complete, 'task')} already complete)"
+        header = f"Running {quantity(remaining, 'task')} ({quantity(num_complete, 'task')} complete)"
     else:
         header = f"Running {quantity(total, 'task')}"
 
@@ -172,23 +188,30 @@ def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
     name_quals = _unique_task_names(infos)
     max_name_len = max((len(n) for n, _ in name_quals), default=0)
 
-    table = Table(show_edge=False, box=None, padding=(0, 1))
-    table.add_column(header)
-    table.add_column("Existing Samples", justify="right")
-    table.add_row("", "")
+    have_logs = any(info.log_file for info in infos)
+
+    table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
+    table.add_column(header, ratio=1, overflow="ellipsis")
+    if have_logs:
+        table.add_column(
+            "Existing Log File", no_wrap=True, ratio=2, overflow="ellipsis"
+        )
+    table.add_column("Samples", justify="right")
+    table.add_row("", "", "")
     for info, (base_name, qual) in zip(infos, name_quals, strict=True):
         name = Text(base_name)
-        if qual:
+        if qual.plain:
             name.append(" " * (max_name_len - len(base_name) + 1))
-            name.append(qual)
-        if info.log_file:
-            name.append(
-                f"\n{' ' * (max_name_len + 1)}{path_str(info.log_file)}", style="dim"
-            )
+            name.append_text(qual)
         samples = (
             f"{info.log_samples}/{info.task_samples}"
             if info.task_samples is not None
             else ""
         )
-        table.add_row(name, samples)
+        if have_logs:
+            table.add_row(name, path(info.log_file) if info.log_file else "", samples)
+            # table.add_row("", "", "")
+        else:
+            table.add_row(name, samples)
+            # table.add_row("", "")
     return table
