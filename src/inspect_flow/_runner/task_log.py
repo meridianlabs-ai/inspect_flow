@@ -129,7 +129,7 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
     return fields
 
 
-def _unique_task_names(infos: list[TaskLogInfo]) -> list[str]:
+def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, str]]:
     names = [info.task.name for info in infos]
     qualifiers: list[list[str]] = [[] for _ in infos]
 
@@ -149,13 +149,10 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[str]:
                 if val is not None:
                     qualifiers[i].append(field.format(val))
 
-    result: list[str] = []
-    for i, name in enumerate(names):
-        if qualifiers[i]:
-            result.append(f"{name} ({', '.join(qualifiers[i])})")
-        else:
-            result.append(name)
-    return result
+    return [
+        (name, f"({', '.join(qualifiers[i])})" if qualifiers[i] else "")
+        for i, name in enumerate(names)
+    ]
 
 
 def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
@@ -172,15 +169,22 @@ def create_task_log_display(task_log_info: dict[str, TaskLogInfo]) -> Table:
         header = f"Running {quantity(total, 'task')}"
 
     infos = list(task_log_info.values())
-    display_names = _unique_task_names(infos)
+    name_quals = _unique_task_names(infos)
+    max_name_len = max((len(n) for n, _ in name_quals), default=0)
 
     table = Table(show_edge=False, box=None, padding=(0, 1))
     table.add_column(header)
     table.add_column("Existing Samples", justify="right")
-    for info, display_name in zip(infos, display_names, strict=True):
-        name = Text(display_name)
+    table.add_row("", "")
+    for info, (base_name, qual) in zip(infos, name_quals, strict=True):
+        name = Text(base_name)
+        if qual:
+            name.append(" " * (max_name_len - len(base_name) + 1))
+            name.append(qual)
         if info.log_file:
-            name.append(f"\n{path_str(info.log_file)}", style="dim")
+            name.append(
+                f"\n{' ' * (max_name_len + 1)}{path_str(info.log_file)}", style="dim"
+            )
         samples = (
             f"{info.log_samples}/{info.task_samples}"
             if info.task_samples is not None
