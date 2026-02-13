@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Optional, Type
 
+from rich.console import RenderableType
 from typing_extensions import Unpack
 
 from inspect_flow._display.action import DisplayAction, DisplayActionArgs
@@ -42,5 +43,5 @@ class RunAction:
         self.action.update(DisplayAction(**kwargs))
         display().update_action(self.key, self.action)
 
-    def print(self, *objects: Any, format: Formats = "default", **kwargs: Any) -> None:
-        display().print(*objects, action_key=self.key, format=format, **kwargs)
+    def print(self, *objects: RenderableType, format: Formats = "default") -> None:
+        display().print(*objects, action_key=self.key, format=format)

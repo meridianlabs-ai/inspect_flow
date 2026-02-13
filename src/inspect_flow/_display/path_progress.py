@@ -1,6 +1,6 @@
 from typing import Any
 
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, Progress, TextColumn
 from rich.text import Text
 
 from inspect_flow._display.display import display
@@ -16,7 +16,6 @@ class PathProgressDisplay:
     ) -> None:
         self._recent_paths: list[str] = []
         self._progress = Progress(
-            SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TextColumn("[progress.percentage]{task.completed}/{task.total}"),

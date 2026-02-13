@@ -32,19 +32,19 @@ class PlainDisplay(Display):
         console.print(line, *info_renderables(action.info))
 
     def print(
-        self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
+        self, *objects: RenderableType, action_key: str, format: Formats = "default"
     ) -> None:
         if self._last_action_key is not None and self._last_action_key != action_key:
             console.print()
         self._last_action_key = action_key
-        flow_print(*objects, format=format, **kwargs)
+        flow_print(*objects, format=format)
 
     def set_footer(self, renderable: RenderableType | None) -> None:
         pass
 
-    def set_title(self, title: str | Text | list[str | Text] | None) -> None:
-        if title:
-            console.print(join(title))
+    def set_title(self, *objects: str | Text) -> None:
+        if objects:
+            console.print(join(list(objects)))
 
     def __enter__(self) -> Display:
         set_display(self)

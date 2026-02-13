@@ -41,14 +41,14 @@ class Display(ABC):
 
     @abstractmethod
     def print(
-        self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
+        self, *objects: RenderableType, action_key: str, format: Formats = "default"
     ) -> None: ...
 
     @abstractmethod
     def set_footer(self, renderable: RenderableType | None) -> None: ...
 
     @abstractmethod
-    def set_title(self, title: str | Text | list[str | Text] | None) -> None: ...
+    def set_title(self, *objects: str | Text) -> None: ...
 
     @abstractmethod
     def __enter__(self) -> Display: ...

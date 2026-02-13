@@ -189,13 +189,13 @@ class DeltaLakeStore(FlowStoreInternal):
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
             logger.info("\nUsing store: %s", path(store_path))
-            display().set_title(["Using Store:", path(store_path)])
+            display().print("Using Store:", path(store_path), action_key="logs")
             self.exists = True
         else:
             logger.info("\nStore not found")
             if create:
                 logger.info("Creating store: %s", path(store_path))
-                display().set_title(["Using Store:", path(store_path)])
+                display().print("Using Store:", path(store_path), action_key="logs")
                 self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:

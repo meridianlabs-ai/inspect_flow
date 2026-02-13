@@ -19,7 +19,7 @@ from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, TextColumn
 from typing_extensions import Literal
 
 from inspect_flow._display.run_action import RunAction
@@ -78,7 +78,6 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     results: list[InstantiatedTask] = []
     with RunAction("instantiate") as action:
         progress = Progress(
-            SpinnerColumn(),
             TextColumn("[progress.percentage]{task.completed}/{task.total}"),
             TextColumn("[progress.description]{task.description}"),
         )

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
+import traceback
 from time import sleep
 from typing import Any
 
@@ -24,6 +26,27 @@ from inspect_flow._display.action import (
 from inspect_flow._display.display import Display, set_display
 from inspect_flow._util.console import Formats, console, format_prefix, join
 
+logger = logging.getLogger(__name__)
+
+
+class _SafeRenderable:
+    """Wraps a renderable to catch errors, preventing Live's refresh thread from dying silently."""
+
+    def __init__(self, inner: RenderableType) -> None:
+        self._inner = inner
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        try:
+            yield from console.render(self._inner, options)
+        except Exception:
+            logger.exception("Display render error")
+            try:
+                yield from console.render(traceback.format_exc(), options)
+            except Exception:
+                pass
+
 
 class _BorderedTable:
     """Table wrapped in a box border. Shows [DRY RUN] in each corner when enabled."""
@@ -34,7 +57,7 @@ class _BorderedTable:
         dry_run: bool,
         messages: dict[str, list[RenderableType]] | None = None,
         footer: RenderableType | None = None,
-        title: str | Text | list[str | Text] | None = None,
+        title: list[str | Text] | None = None,
         height: int | None = None,
         console_output: list[str] | None = None,
     ) -> None:
@@ -59,10 +82,7 @@ class _BorderedTable:
 
         inset = "─" if self._dry_run else ""
         if self._title is not None:
-            title_parts = (
-                self._title if isinstance(self._title, list) else [self._title]
-            )
-            spaced = [x for p in title_parts for x in (" ", p)][1:]
+            spaced = [x for p in self._title for x in (" ", p)][1:]
             title_text = Text.assemble("[", *spaced, "]")
             title_width = title_text.cell_len
         else:
@@ -152,7 +172,7 @@ class FullDisplay(Display):
         self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[RenderableType]] = {}
         self._footer: RenderableType | None = None
-        self._title: str | Text | list[str | Text] | None = None
+        self._title: list[str | Text] | None = None
         self._live: Live | None = None
         self._output_capture = _OutputCapture()
 
@@ -197,7 +217,7 @@ class FullDisplay(Display):
         char, style = ACTION_ICONS[status]
         return Text(char, style=style)
 
-    def _make_display(self, fill_height: bool = True) -> _BorderedTable:
+    def _make_display(self, fill_height: bool = True) -> _SafeRenderable:
         table = Table(show_header=False, show_edge=False, box=None, padding=(0, 1))
         table.add_column(width=1)
         table.add_column()
@@ -213,18 +233,20 @@ class FullDisplay(Display):
             if fill_height
             else None
         )
-        return _BorderedTable(
-            table,
-            self.dry_run,
-            self._messages,
-            self._footer,
-            self._title,
-            height=console.height - 2 if fill_height else None,
-            console_output=console_output,
+        return _SafeRenderable(
+            _BorderedTable(
+                table,
+                self.dry_run,
+                self._messages,
+                self._footer,
+                self._title,
+                height=console.height - 2 if fill_height else None,
+                console_output=console_output,
+            )
         )
 
-    def set_title(self, title: str | Text | list[str | Text] | None) -> None:
-        self._title = title
+    def set_title(self, *objects: str | Text) -> None:
+        self._title = list(objects) if objects else None
         if self._live:
             self._live.update(self._make_display())
 
@@ -234,10 +256,16 @@ class FullDisplay(Display):
             self._live.update(self._make_display())
 
     def print(
-        self, *objects: Any, action_key: str, format: Formats = "default", **kwargs: Any
+        self,
+        *objects: RenderableType,
+        action_key: str,
+        format: Formats = "default",
     ) -> None:
-        prefix = format_prefix(format)
-        parts = [prefix, *objects] if prefix else [*objects]
+        if format != "default":
+            prefix = format_prefix(format)
+            parts = [prefix, *objects] if prefix else [*objects]
+        else:
+            parts = list(objects)
         renderable = join(parts)
         self._messages.setdefault(action_key, []).append(renderable)
         if self._live:
