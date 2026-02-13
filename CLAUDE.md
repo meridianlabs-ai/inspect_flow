@@ -40,7 +40,7 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 ## Code Style Guidelines
 - **Formatting**: Follow Google style convention. Use ruff for formatting
 - **Imports**: Use isort order (enforced by ruff). Always place imports at the top of the file, not inside functions.
-- **Types**: Strict typing is required. All functions must have type annotations
+- **Types**: Strict typing is required. All functions must have type annotations. Never use `# type: ignore` to suppress warnings—fix the type signature instead. Even if all current callers use a more restrictive type, the method signature defines the contract for future callers, so it must be correct.
 - **Naming**: Use snake_case for variables, functions, methods; PascalCase for classes
 - **Docstrings**: Google-style docstrings required for public APIs. No docstrings for private/internal functions. Never write docstrings that describe implementation details—these duplicate the code and become stale when the code changes.
 - **Comments**: Prefer self-documenting code to comments. Use comments to explain why, not what, and only when complex. Do not add comments that merely restate what the code does.
