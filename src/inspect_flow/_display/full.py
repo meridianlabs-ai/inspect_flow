@@ -81,7 +81,7 @@ class _BorderedTable:
 
         if self._title is not None:
             spaced = [x for p in self._title for x in (" ", p)][1:]
-            title_text = Text.assemble("[", *spaced, "]")
+            title_text = Text.assemble(" [", *spaced, "] ")
             title_width = title_text.cell_len
         else:
             title_text = None
