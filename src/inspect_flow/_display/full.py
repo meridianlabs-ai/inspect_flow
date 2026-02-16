@@ -74,15 +74,11 @@ class _BorderedTable:
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        if self._dry_run:
-            tl = tr = bl = br = "[DRY RUN]"
-        else:
-            tl, tr, bl, br = "╭", "╮", "╰", "╯"
+        inset = "─[DRY RUN]─" if self._dry_run else ""
 
         width = options.max_width
         inner_width = width - 4  # "│ " + " │"
 
-        inset = "─" if self._dry_run else ""
         if self._title is not None:
             spaced = [x for p in self._title for x in (" ", p)][1:]
             title_text = Text.assemble("[", *spaced, "]")
@@ -90,13 +86,13 @@ class _BorderedTable:
         else:
             title_text = None
             title_width = 0
-        fill = max(0, width - len(tl) - len(tr) - title_width - 2 * len(inset) - 2)
+        fill = max(0, width - 2 - title_width - 2 * len(inset))
         left_fill = fill // 2
         right_fill = fill - left_fill
-        yield Segment(f"╭{inset}{tl}{'─' * left_fill}")
+        yield Segment(f"╭{inset}{'─' * left_fill}")
         if title_text:
             yield from title_text.render(console)
-        yield Segment(f"{'─' * right_fill}{tr}{inset}╮\n")
+        yield Segment(f"{'─' * right_fill}{inset}╮\n")
 
         inner_options = options.update_width(inner_width)
         lines_yielded = 1  # top border
@@ -153,8 +149,8 @@ class _BorderedTable:
             for _ in range(padding):
                 yield Segment(blank)
 
-        fill = max(0, width - len(bl) - len(br) - 2 * len(inset) - 2)
-        yield Segment(f"╰{inset}{bl}{'─' * fill}{br}{inset}╯\n")
+        fill = max(0, width - 2 - 2 * len(inset))
+        yield Segment(f"╰{inset}{'─' * fill}{inset}╯\n")
 
     def __rich_measure__(
         self, console: Console, options: ConsoleOptions
