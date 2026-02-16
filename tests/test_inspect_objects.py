@@ -77,7 +77,7 @@ def b_task(task_arg: float = 0.0) -> Task:
 def test_inspect_objects(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     spec = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         tasks=[
             a_task(),
             FlowTask(
@@ -98,7 +98,7 @@ def test_inspect_objects(mock_eval_set: MagicMock) -> None:
 def test_inspect_object_defaults(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     spec = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         defaults=FlowDefaults(
             agent=FlowAgent(args={"agent_arg": 123}),
             model=FlowModel(model_args={"model_arg": "value"}),
@@ -125,7 +125,7 @@ def test_inspect_object_defaults(mock_eval_set: MagicMock) -> None:
 def test_inspect_object_includes(mock_eval_set: MagicMock) -> None:
     model = get_model("mockllm/model")
     include = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         defaults=FlowDefaults(
             agent=FlowAgent(args={"agent_arg": 123}),
             model=FlowModel(model_args={"model_arg": "value"}),
@@ -135,7 +135,7 @@ def test_inspect_object_includes(mock_eval_set: MagicMock) -> None:
     )
     spec = FlowSpec(
         includes=[include],
-        log_dir="logs",
+        log_dir=init_test_logs(),
         tasks=[
             a_task(),
             FlowTask(
@@ -155,7 +155,7 @@ def test_inspect_object_includes(mock_eval_set: MagicMock) -> None:
 
 def test_inspect_object_with(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         tasks=[
             a_task(),
             *tasks_with(
@@ -189,7 +189,7 @@ def test_inspect_object_with(mock_eval_set: MagicMock) -> None:
 
 def test_inspect_object_matrix(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         tasks=tasks_matrix(
             task=[FlowTask(factory=a_task), FlowTask(factory=b_task)],
             model=["mockllm/model", get_model("mockllm/model2")],
@@ -270,7 +270,7 @@ def test_factory_instantiation() -> None:
 
 def test_duplicate_task_objects() -> None:
     spec = FlowSpec(
-        log_dir="logs",
+        log_dir=init_test_logs(),
         tasks=[a_task(), a_task()],
     )
     with (
