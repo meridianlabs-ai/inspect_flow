@@ -12,22 +12,12 @@ tasks:
     name: mockllm/mock-llm2
     model_args:
       mock_model_arg: 3
-- name: local_eval/src/local_eval/noop.py@noop
+- name: ../local_eval/src/local_eval/noop.py@noop
   model:
     name: mockllm/mock-llm1
     model_args:
       mock_model_arg: 3
-- name: local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm2
-    model_args:
-      mock_model_arg: 3
-- name: tests/config/local_eval/src/local_eval/noop.py@noop
-  model:
-    name: mockllm/mock-llm1
-    model_args:
-      mock_model_arg: 3
-- name: tests/config/local_eval/src/local_eval/noop.py@noop
+- name: ../local_eval/src/local_eval/noop.py@noop
   model:
     name: mockllm/mock-llm2
     model_args:

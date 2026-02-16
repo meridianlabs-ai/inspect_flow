@@ -1,11 +1,11 @@
 log_dir: logs/model_and_task
-options:
-  limit: 1
 dependencies:
   additional_dependencies:
   - git+https://github.com/UKGovernmentBEIS/inspect_evals@dac86bcfdc090f78ce38160cef5d5febf0fb3670
+options:
+  limit: 1
 tasks:
-- name: inspect_evals/mmlu_0_shot
+- name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o-mini
     model_args:
