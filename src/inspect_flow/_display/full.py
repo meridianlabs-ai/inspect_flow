@@ -95,59 +95,60 @@ class _BorderedTable:
         yield Segment(f"{'─' * right_fill}{inset}╮\n")
 
         inner_options = options.update_width(inner_width)
-        lines_yielded = 1  # top border
-        for line in console.render_lines(self._inner, inner_options, pad=True):
-            yield Segment("│ ")
-            yield from line
-            yield Segment(" │\n")
-            lines_yielded += 1
-
         separator = f"├{'─' * (width - 2)}┤\n"
         blank = f"│{' ' * (width - 2)}│\n"
-        yield Segment(separator)
-        lines_yielded += 1
+
+        def bordered(line: list[Segment]) -> list[Segment]:
+            return [Segment("│ "), *line, Segment(" │\n")]
+
+        # Pinned: actions table + separator (always visible)
+        pinned: list[list[Segment]] = []
+        for line in console.render_lines(self._inner, inner_options, pad=True):
+            pinned.append(bordered(line))
+        pinned.append([Segment(separator)])
+
+        # Scrollable: messages, footer, console output (last N shown)
+        scrollable: list[list[Segment]] = []
         for msgs in self._messages.values():
             if not msgs:
                 continue
-            else:
-                yield Segment(blank)
-                lines_yielded += 1
+            scrollable.append([Segment(blank)])
             for msg in msgs:
                 for line in console.render_lines(msg, inner_options, pad=True):
-                    yield Segment("│ ")
-                    yield from line
-                    yield Segment(" │\n")
-                    lines_yielded += 1
-
+                    scrollable.append(bordered(line))
         if self._footer is not None:
-            yield Segment(blank)
-            lines_yielded += 1
+            scrollable.append([Segment(blank)])
             for line in console.render_lines(self._footer, inner_options, pad=True):
-                yield Segment("│ ")
-                yield from line
-                yield Segment(" │\n")
-                lines_yielded += 1
+                scrollable.append(bordered(line))
 
-        if self._height is not None and self._console_output:
-            available = self._height - lines_yielded - 1  # -1 for bottom border
-            num_lines = max(min(available, len(self._console_output)), 5)
-            output_lines = self._console_output[-num_lines:]
-            yield Segment(blank)
-            lines_yielded += 1
-            for ol in output_lines:
-                text = Text.from_ansi(ol, style="dim", no_wrap=True, overflow="crop")
-                for line in console.render_lines(text, inner_options, pad=True):
-                    yield Segment("│ ")
-                    yield from line
-                    yield Segment(" │\n")
-                    lines_yielded += 1
-            remaining = self._height - lines_yielded - 1
-            for _ in range(remaining):
+        if self._height is not None:
+            max_content = self._height - 2  # top + bottom border
+            remaining = max_content - len(pinned)
+            if self._console_output:
+                available = max(remaining - len(scrollable) - 1, 0)
+                num_output = min(available, len(self._console_output))
+                if num_output > 0:
+                    scrollable.append([Segment(blank)])
+                    for ol in self._console_output[-num_output:]:
+                        text = Text.from_ansi(
+                            ol, style="dim", no_wrap=True, overflow="crop"
+                        )
+                        for line in console.render_lines(text, inner_options, pad=True):
+                            scrollable.append(bordered(line))
+            for cl in pinned:
+                yield from cl
+            visible = (
+                scrollable[-remaining:] if len(scrollable) > remaining else scrollable
+            )
+            for cl in visible:
+                yield from cl
+            for _ in range(remaining - len(visible)):
                 yield Segment(blank)
-        elif self._height is not None:
-            padding = self._height - lines_yielded - 1
-            for _ in range(padding):
-                yield Segment(blank)
+        else:
+            for cl in pinned:
+                yield from cl
+            for cl in scrollable:
+                yield from cl
 
         fill = max(0, width - 2 - 2 * len(inset))
         yield Segment(f"╰{inset}{'─' * fill}{inset}╯\n")
