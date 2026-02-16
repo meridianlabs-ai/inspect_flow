@@ -49,6 +49,9 @@ class Display(ABC):
     def set_footer(self, renderable: RenderableType | None) -> None: ...
 
     @abstractmethod
+    def get_title(self) -> list[str | Text] | None: ...
+
+    @abstractmethod
     def set_title(self, *objects: str | Text) -> None: ...
 
     @abstractmethod

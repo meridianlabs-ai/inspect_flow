@@ -125,6 +125,7 @@ def run_eval_set(
     if dry_run:
         return False, []
 
+    title = display().get_title()
     display().stop()
 
     start_time = time.time()
@@ -193,7 +194,7 @@ def run_eval_set(
 
     elapsed_time = time.time() - start_time
 
-    _print_result(resolved_spec, result, elapsed_time, task_log_info)
+    _print_result(resolved_spec, result, elapsed_time, task_log_info, title)
 
     if store:
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
@@ -216,6 +217,7 @@ def _print_result(
     result: tuple[bool, list[EvalLog]],
     elapsed_time: float,
     task_log_info: dict[str, TaskLogInfo],
+    title: list[str | Text] | None,
 ) -> None:
     success, logs = result
     num_success = len([log for log in logs if log.status == "success"])
@@ -243,8 +245,13 @@ def _print_result(
 
     task_log = create_task_log_display(task_log_info, completed=True)
 
+    if title:
+        spaced = [x for p in title for x in (" ", p)][1:]
+        title_text = Text.assemble("[", *spaced, "]")
+    else:
+        title_text = None
+
     flow_print(
-        "\n",
         Panel(
             Group(
                 Text.assemble(
@@ -253,6 +260,7 @@ def _print_result(
                 task_log,
                 Text.assemble("\nLog dir: ", path(spec.log_dir)),
             ),
+            title=title_text,
         ),
     )
 

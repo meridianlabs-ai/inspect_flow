@@ -261,6 +261,9 @@ class FullDisplay(Display):
             )
         )
 
+    def get_title(self) -> list[str | Text] | None:
+        return self._title
+
     def set_title(self, *objects: str | Text) -> None:
         self._title = list(objects) if objects else None
         if self._live:
