@@ -205,9 +205,6 @@ def run_eval_set(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"
             )
 
-    if result[0]:
-        _print_bundle_url(resolved_spec)
-
     return result
 
 
@@ -250,15 +247,21 @@ def _print_result(
     else:
         title_text = None
 
+    output = [
+        Text.assemble(
+            summary, "\n", format_prefix("info"), " Total Time: ", elapsed, "\n"
+        ),
+        task_log,
+        Text.assemble("\nLog dir: ", path(spec.log_dir)),
+    ]
+    if success:
+        bundle_url_output = _bundle_url_output(spec)
+        if bundle_url_output:
+            output.append(Text.assemble("\n", bundle_url_output))
+
     flow_print(
         Panel(
-            Group(
-                Text.assemble(
-                    summary, "\n", format_prefix("info"), " Total Time: ", elapsed, "\n"
-                ),
-                task_log,
-                Text.assemble("\nLog dir: ", path(spec.log_dir)),
-            ),
+            Group(*output),
             title=title_text,
         ),
     )
@@ -454,13 +457,17 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
         e.args = (modified_message, *e.args[1:])
 
 
-def _print_bundle_url(spec: FlowSpec) -> None:
-    if spec.options and spec.options.bundle_url_mappings and spec.options.bundle_dir:
+def _bundle_url_output(spec: FlowSpec) -> Text | None:
+    if spec.options and spec.options.bundle_dir:
         bundle_url = spec.options.bundle_dir
-        for local, url in spec.options.bundle_url_mappings.items():
-            bundle_url = bundle_url.replace(local, url)
+        if spec.options.bundle_url_mappings:
+            for local, url in spec.options.bundle_url_mappings.items():
+                bundle_url = bundle_url.replace(local, url)
         if bundle_url != spec.options.bundle_dir:
-            flow_print(f"Bundle URL: {bundle_url}")
+            return Text.assemble("Bundle URL: ", path(bundle_url))
+        else:
+            return Text.assemble("Bundle dir: ", path(bundle_url))
+    return None
 
 
 @click.group(invoke_without_command=True)

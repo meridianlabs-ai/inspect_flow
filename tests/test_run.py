@@ -851,13 +851,15 @@ def test_logs_allow_dirty(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["log_dir_allow_dirty"] is True
 
 
-def test_bundle_url_map(mock_eval_set: MagicMock, recording_console: Console) -> None:
-    path = Path.cwd().as_posix()
+def test_bundle_url_map(
+    mock_eval_set: MagicMock, recording_console: Console, tmp_path: Path
+) -> None:
+    log_dir = init_test_logs()
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=log_dir,
         options=FlowOptions(
-            bundle_dir=path + "logs/bundle_test",
-            bundle_url_mappings={path: "http://example.com/bundle"},
+            bundle_dir=str(tmp_path / "logs" / "bundle_test"),
+            bundle_url_mappings={tmp_path.as_posix(): "http://example.com/bundle"},
         ),
         tasks=[
             task_file + "@noop",
@@ -891,6 +893,7 @@ def test_bundle_url_map_no_change(
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
     assert "Bundle URL:" not in out
+    assert "Bundle dir:" in out
 
 
 def test_217_bundle_error_message(tmp_path: Path) -> None:
@@ -1172,7 +1175,7 @@ def test_log_copy(recording_console: Console) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "Found 1 existing log, copying to log directory" in out
+    assert "Copying 1 existing log to log dir" in out
 
 
 def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
@@ -1222,7 +1225,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "copying to log directory" in out
+    assert "Copying 1 existing log to log dir" in out
 
 
 def test_eval_set_error(mock_eval_set: MagicMock) -> None:
