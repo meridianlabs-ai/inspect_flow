@@ -19,7 +19,6 @@ from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
-from moto.server import ThreadedMotoServer
 from rich.console import Console
 
 
@@ -38,13 +37,41 @@ def isolate_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@pytest.fixture(scope="session")
-def moto_server() -> Generator[ThreadedMotoServer, None, None]:
-    """Start moto server once for entire test session."""
-    server = ThreadedMotoServer(port=19100)
-    server.start()
+class MotoServer:
+    """Moto S3 mock running in a separate process (avoids GIL deadlocks with Rust HTTP clients)."""
 
-    os.environ["AWS_ENDPOINT_URL"] = "http://127.0.0.1:19100"
+    def __init__(self) -> None:
+        import socket
+        import time
+        import urllib.request
+
+        with socket.socket() as sock:
+            sock.bind(("", 0))
+            port = sock.getsockname()[1]
+
+        self._proc = subprocess.Popen(
+            ["moto_server", "-p", str(port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        self.url = f"http://127.0.0.1:{port}"
+        for _ in range(50):
+            try:
+                urllib.request.urlopen(self.url, timeout=0.5)
+                break
+            except Exception:
+                time.sleep(0.1)
+
+    def stop(self) -> None:
+        self._proc.terminate()
+        self._proc.wait()
+
+
+@pytest.fixture(scope="session")
+def moto_server() -> Generator[MotoServer, None, None]:
+    server = MotoServer()
+
+    os.environ["AWS_ENDPOINT_URL"] = server.url
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -55,7 +82,7 @@ def moto_server() -> Generator[ThreadedMotoServer, None, None]:
 
 
 @pytest.fixture(scope="function")
-def mock_s3(moto_server: ThreadedMotoServer) -> Generator[BaseClient, None, None]:
+def mock_s3(moto_server: MotoServer) -> Generator[BaseClient, None, None]:
     """Create and cleanup bucket for each test."""
     s3_client = boto3.client("s3")
     s3_client.create_bucket(Bucket="test-bucket")

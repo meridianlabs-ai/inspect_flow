@@ -208,6 +208,14 @@ class DeltaLakeStore(FlowStoreInternal):
         if region:
             options["AWS_REGION"] = region
 
+        for env_key in (
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_SESSION_TOKEN",
+        ):
+            if value := os.environ.get(env_key):
+                options[env_key] = value
+
         # Support custom S3 endpoints (e.g., moto for testing, MinIO, LocalStack)
         if endpoint_url := os.environ.get("AWS_ENDPOINT_URL"):
             options["AWS_ENDPOINT_URL"] = endpoint_url

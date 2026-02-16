@@ -15,6 +15,7 @@ log1_path = dir1base + "/" + log1_name
 
 def test_store_import() -> None:
     store: FlowStore = store_get()
+    assert len(store.get_logs()) == 0
     store.import_log_path(dir1)
     assert len(store.get_logs()) == 2
     store.import_log_path(dir2)
@@ -77,6 +78,7 @@ def test_store_remove_escaping(mock_s3: BaseClient) -> None:
     mock_s3.upload_file(local_path, "test-bucket", "user's logs/" + log_name)
 
     store: FlowStore = store_get()
+    assert len(store.get_logs()) == 0
     store.import_log_path(dir)
     store.remove_log_prefix(dir)
     assert len(store.get_logs()) == 0
@@ -84,12 +86,9 @@ def test_store_remove_escaping(mock_s3: BaseClient) -> None:
 
 def test_local_log_remote_store(mock_s3: BaseClient) -> None:
     store: FlowStore = store_get(store="s3://test-bucket/test-store")
-    try:
-        store.import_log_path(dir1)
-    except ValueError as e:
-        assert "Local log directories cannot be added to remote stores." in str(e)
-        # 374 Ensure default store subdir is not in the error
-        assert "flow_store" not in str(e)
+    assert len(store.get_logs()) == 0
+    store.import_log_path(dir1)
+    assert len(store.get_logs()) == 2
 
 
 def test_refresh_removes(tmp_path: Path) -> None:
