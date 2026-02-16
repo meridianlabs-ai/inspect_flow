@@ -1,4 +1,5 @@
 import yaml
+from inspect_ai._util.file import file
 from rich.rule import Rule
 from rich.syntax import Syntax
 
@@ -22,3 +23,11 @@ def print_config_yaml(spec: FlowSpec, resolved: bool) -> None:
     yaml_syntax = Syntax(dump, "yaml", theme="monokai", background_color="default")
     title = "Resolved configuration as YAML" if resolved else "Configuration as YAML"
     flow_print("", Rule(title), yaml_syntax, Rule())
+
+
+def write_config_file(spec: FlowSpec) -> str:
+    filename = f"{spec.log_dir}/flow.yaml"
+    yaml = config_to_yaml(spec)
+    with file(filename, "w") as f:
+        f.write(yaml)
+    return filename

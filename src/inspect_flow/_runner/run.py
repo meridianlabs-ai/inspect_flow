@@ -17,7 +17,7 @@ from inspect_ai._eval.evalset import (
 )
 from inspect_ai._eval.task.task import resolve_epochs
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.file import basename, copy_file, file
+from inspect_ai._util.file import basename, copy_file
 from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.log._file import ReadEvalLogsProgress
 from inspect_ai.model import GenerateConfig, get_model
@@ -27,7 +27,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.text import Text
 
-from inspect_flow._config.write import config_to_yaml
+from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import (
     DisplayAction,
     DisplayType,
@@ -87,13 +87,6 @@ def _read_config(config_file: str) -> FlowSpec:
         return FlowSpec.model_validate(data, extra="forbid")
 
 
-def _write_config_file(spec: FlowSpec) -> None:
-    filename = f"{spec.log_dir}/flow.yaml"
-    yaml = config_to_yaml(spec)
-    with file(filename, "w") as f:
-        f.write(yaml)
-
-
 def _option_string(options: FlowOptions) -> str | None:
     if not options.model_fields_set:
         return None
@@ -118,7 +111,7 @@ def run_eval_set(
         raise ValueError("log_dir must be set before running the flow spec")
 
     if not dry_run:
-        _write_config_file(resolved_spec)
+        write_config_file(resolved_spec)
 
     task_log_info = _find_existing_logs(task_id_to_task, resolved_spec, store)
 
@@ -253,7 +246,7 @@ def _print_result(
 
     if title:
         spaced = [x for p in title for x in (" ", p)][1:]
-        title_text = Text.assemble("[", *spaced, "]")
+        title_text = Text.assemble("[", *spaced, "]", end="")
     else:
         title_text = None
 

@@ -15,6 +15,7 @@ from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
+from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
@@ -70,7 +71,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             action.update(info="venv created")
 
             python_path = Path(temp_dir) / ".venv" / "bin" / "python"
-            file = _write_flow_yaml(spec, temp_dir)
+            file = write_config_file(spec)
 
             action.update(
                 info="Created venv and started flow process", status="success"
@@ -88,7 +89,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
         env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
 
         process = subprocess.Popen(
-            [str(python_path), str(run_path), "--file", file.as_posix(), *args],
+            [str(python_path), str(run_path), "--file", file, *args],
             env=env,
             pass_fds=(child_ready_w, parent_ack_r),
         )
