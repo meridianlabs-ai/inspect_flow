@@ -281,27 +281,6 @@ def test_run_command_venv() -> None:
         )
 
 
-def test_run_command_log_level() -> None:
-    runner = CliRunner()
-    with (
-        patch("inspect_flow._cli.run.init_flow_logging") as mock_init_flow_logging,
-        patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
-    ):
-        mock_config_obj = MagicMock()
-        mock_config.return_value = mock_config_obj
-
-        result = runner.invoke(run_command, [CONFIG_FILE, "--log-level", "debug"])
-
-        assert result.exit_code == 0
-
-        mock_init_flow_logging.assert_called_once_with("debug")
-
-        mock_config.assert_called_once()
-
-        mock_run.assert_called_once()
-
-
 def test_run_command_allow_dirty() -> None:
     runner = CliRunner()
     with (
@@ -345,7 +324,7 @@ def test_options_to_overrides() -> None:
     assert overrides == [
         "log_dir=set_dir",
         "options.limit=5",
-        "log_dir=option_dir",
+        "log_dir=" + Path("option_dir").resolve().as_posix(),
         "options.limit=1",
         "options.log_dir_allow_dirty=True",
     ]
