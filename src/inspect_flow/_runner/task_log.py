@@ -176,6 +176,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
 
 def create_task_log_display(
     task_log_info: dict[str, TaskLogInfo],
+    completed=False,
 ) -> RenderableType:
     total = len(task_log_info)
     num_complete = sum(
@@ -184,34 +185,52 @@ def create_task_log_display(
         if info.task_samples is not None and info.log_samples >= info.task_samples
     )
     NUM = "bold cyan"
-    if num_complete > 0:
-        remaining = total - num_complete
-        header = Text.assemble(
-            "Running ",
-            (str(remaining), NUM),
-            f" {pluralize('task', remaining)} (",
-            (str(num_complete), NUM),
-            f" {pluralize('task', num_complete)} complete)",
-            style="bold",
-        )
+    if not completed:
+        if num_complete > 0:
+            remaining = total - num_complete
+            header = Text.assemble(
+                "Running ",
+                (str(remaining), NUM),
+                f" {pluralize('task', remaining)} (",
+                (str(num_complete), NUM),
+                f" {pluralize('task', num_complete)} complete)",
+                style="bold",
+            )
+        else:
+            header = Text.assemble(
+                "Running ",
+                (str(total), NUM),
+                f" {pluralize('task', total)}",
+                style="bold",
+            )
     else:
-        header = Text.assemble(
-            "Running ", (str(total), NUM), f" {pluralize('task', total)}", style="bold"
-        )
+        if num_complete < total:
+            header = Text.assemble(
+                "Completed ",
+                (str(num_complete), NUM),
+                f" of {total} {pluralize('task', total)}",
+                style="bold",
+            )
+        else:
+            header = Text.assemble(
+                "Completed ",
+                (str(total), NUM),
+                f" {pluralize('task', total)}",
+                style="bold",
+            )
 
     infos = list(task_log_info.values())
     name_quals = _unique_task_names(infos)
 
     have_logs = any(info.log_file for info in infos)
 
+    adj = "Completed" if completed else "Existing"
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
     table.add_column("Task", overflow="ellipsis", justify="left")
     table.add_column("")
     if have_logs:
-        table.add_column(
-            "Existing Log File", no_wrap=True, ratio=2, overflow="ellipsis"
-        )
-    table.add_column("Existing\nSamples", justify="right")
+        table.add_column(f"{adj} Log File", no_wrap=True, ratio=2, overflow="ellipsis")
+    table.add_column(f"{adj}\nSamples", justify="right")
     if not have_logs:
         table.add_row("", "", "")
     else:

@@ -22,6 +22,7 @@ from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.log._file import ReadEvalLogsProgress
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util._display import init_display_type
+from rich.console import Group
 from rich.panel import Panel
 from rich.rule import Rule
 from rich.text import Text
@@ -116,7 +117,7 @@ def run_eval_set(
     task_log_info = _find_existing_logs(task_id_to_task, resolved_spec, store)
 
     with RunAction("evalset") as action:
-        action.print(create_task_log_display(task_log_info))
+        action.print(create_task_log_display(task_log_info, completed=False))
         if option_str := _option_string(options):
             action.print("\nOptions:", option_str)
         action.print("\nLog dir:", path(resolved_spec.log_dir))
@@ -190,10 +191,9 @@ def run_eval_set(
         else:
             raise
 
-    flow_print(Rule("Eval Set Finished"))
     elapsed_time = time.time() - start_time
 
-    _print_result(resolved_spec, result, elapsed_time)
+    _print_result(resolved_spec, result, elapsed_time, task_log_info)
 
     if store:
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
@@ -212,7 +212,10 @@ def run_eval_set(
 
 
 def _print_result(
-    spec: FlowSpec, result: tuple[bool, list[EvalLog]], elapsed_time: float
+    spec: FlowSpec,
+    result: tuple[bool, list[EvalLog]],
+    elapsed_time: float,
+    task_log_info: dict[str, TaskLogInfo],
 ) -> None:
     success, logs = result
     num_success = len([log for log in logs if log.status == "success"])
@@ -223,24 +226,33 @@ def _print_result(
 
     if num_success < len(logs):
         summary = format_prefix("warning") + " Completed with errors"
-        tasks = f"Tasks: {num_success}/{len(logs)} successful, {len(logs) - num_success} failed"
     else:
         summary = format_prefix("success") + " All tasks completed"
-        tasks = f"Tasks: {len(logs)}/{len(logs)} successful"
     assert spec.log_dir
     elapsed = str(timedelta(seconds=int(elapsed_time)))
+
+    options = spec.options or FlowOptions()
+    for log in logs:
+        id = task_identifier(log, None)
+        info = task_log_info.get(id)
+        if not info:
+            logger.error(f"Log returned that does not match any task: {log.location}")
+        else:
+            info.log_samples = _num_log_samples(log, info, default_none(options.limit))
+            info.log_file = log.location
+
+    task_log = create_task_log_display(task_log_info, completed=True)
+
     flow_print(
         "\n",
         Panel(
-            Text.assemble(
-                summary,
-                "\n\nTotal Time: ",
-                elapsed,
-                "\n",
-                tasks,
-                "\nLog Directory: ",
-                path(spec.log_dir),
-            )
+            Group(
+                Text.assemble(
+                    summary, "\n", format_prefix("info"), " Total Time: ", elapsed, "\n"
+                ),
+                task_log,
+                Text.assemble("\nLog dir: ", path(spec.log_dir)),
+            ),
         ),
     )
 
