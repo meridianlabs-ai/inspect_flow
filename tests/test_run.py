@@ -41,10 +41,11 @@ task_file = task_dir + "/noop.py"
 
 
 def test_task_with_get_model(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[
                     FlowTask(
                         name=task_file + "@task_with_get_model",
@@ -87,11 +88,12 @@ def test_task_with_two_models() -> None:
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     system_message = "Test System Message"
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[
                     FlowTask(
                         name=task_file + "@noop",
@@ -117,10 +119,11 @@ def test_model_generate_config(mock_eval_set: MagicMock) -> None:
 
 
 def test_default_model_config(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[FlowTask(name=task_file + "@noop")],
             )
         ),
@@ -136,10 +139,11 @@ def test_default_model_config(mock_eval_set: MagicMock) -> None:
 
 
 def test_task_model(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[
                     FlowTask(
                         name=task_file + "@noop",
@@ -196,7 +200,7 @@ def test_matrix_args(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 tasks=tasks_matrix(
                     task=FlowTask(
                         name=task_file + "@task_with_params",
@@ -233,7 +237,7 @@ def test_matrix_model_roles(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 tasks=tasks_matrix(
                     task=FlowTask(
                         name=task_file + "@task_with_model_roles",
@@ -261,7 +265,7 @@ def test_matrix_solvers(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 tasks=tasks_matrix(
                     task=FlowTask(
                         name=task_file + "@noop",
@@ -300,7 +304,7 @@ def test_matrix_solvers(mock_eval_set: MagicMock) -> None:
 def test_sample_id(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=FlowSpec(
-            log_dir="logs/flow_test",
+            log_dir=init_test_logs(),
             tasks=[FlowTask(name=task_file + "@noop", sample_id=1)],
         ),
         base_dir=".",
@@ -319,7 +323,7 @@ def test_all_tasks_in_file(mock_eval_set: MagicMock) -> None:
     file = task_dir + "/three_tasks.py"
     run_eval_set(
         spec=FlowSpec(
-            log_dir="logs/flow_test",
+            log_dir=init_test_logs(),
             tasks=[file],
         ),
         base_dir=".",
@@ -345,7 +349,7 @@ def test_config_generate_config(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     config=GenerateConfig(
                         system_message=config_system_message,
@@ -393,7 +397,7 @@ def test_config_model_overrides(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     config=GenerateConfig(
                         system_message="Global Default",
@@ -442,7 +446,7 @@ def test_config_model_prefix_default_overrides(mock_eval_set: MagicMock) -> None
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     config=GenerateConfig(
                         system_message="Global Default",
@@ -490,7 +494,7 @@ def test_config_model_default_overrides(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     config=GenerateConfig(
                         system_message="Global Default",
@@ -538,7 +542,7 @@ def test_config_model_prefixes(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     model_prefix={
                         "mockllm/": FlowModel(
@@ -584,7 +588,7 @@ def test_task_defaults(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     task=FlowTask(model="mockllm/mock-llm"),
                     task_prefix={task_file: FlowTask(args={"subset": "original"})},
@@ -611,7 +615,7 @@ def test_task_defaults(mock_eval_set: MagicMock) -> None:
 
 def test_task_not_given(mock_eval_set: MagicMock) -> None:
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=init_test_logs(),
         tasks=[
             FlowTask(
                 name=task_file + "@task_with_params",
@@ -637,7 +641,7 @@ def test_task_not_given(mock_eval_set: MagicMock) -> None:
     mock_eval_set.reset_mock()
 
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=init_test_logs(),
         tasks=[
             FlowTask(
                 name=task_file + "@task_with_params",
@@ -665,7 +669,7 @@ def test_solver_defaults(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     solver=FlowSolver(args={"template": "Default"}),
                     solver_prefix={
@@ -696,7 +700,7 @@ def test_agent_defaults(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 defaults=FlowDefaults(
                     agent=FlowAgent(args={"description": "Default Description"}),
                     solver_prefix={
@@ -728,7 +732,7 @@ def test_dry_run(mock_eval_set: MagicMock) -> None:
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=init_test_logs(),
                 tasks=[
                     FlowTask(
                         name=task_file + "@task_with_get_model",
@@ -802,8 +806,9 @@ def test_task_with_two_solvers() -> None:
 def test_default_model_roles(mock_eval_set: MagicMock) -> None:
     default_model_roles = {"grader": "mockllm/default-grader"}
     task_model_roles = {"mark": "mockllm/mark"}
+    log_dir = init_test_logs()
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=log_dir,
         defaults=FlowDefaults(
             task=FlowTask(model_roles=default_model_roles),
         ),
@@ -828,8 +833,10 @@ def test_default_model_roles(mock_eval_set: MagicMock) -> None:
 
 
 def test_logs_allow_dirty(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
+
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=log_dir,
         tasks=[
             task_file + "@noop",
         ],
@@ -878,7 +885,7 @@ def test_bundle_url_map_no_change(
 ) -> None:
     path = Path.cwd().as_posix()
     config = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=init_test_logs(),
         options=FlowOptions(
             bundle_dir=path + "logs/bundle_test",
             bundle_url_mappings={"not_there": "http://example.com/bundle"},
@@ -965,7 +972,7 @@ def test_task_failure() -> None:
 
 def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
-        log_dir="logs/flow_test",
+        log_dir=init_test_logs(),
         options=FlowOptions(
             retry_attempts=7,
             retry_wait=0.5,
@@ -1056,10 +1063,11 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
 
 @pytest.mark.asyncio
 async def test_task_with_scorer(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[
                     FlowTask(
                         name=task_file + "@noop",
@@ -1095,10 +1103,11 @@ async def test_task_with_scorer(mock_eval_set: MagicMock) -> None:
 
 @pytest.mark.asyncio
 async def test_task_with_scorer_list(mock_eval_set: MagicMock) -> None:
+    log_dir = init_test_logs()
     run_eval_set(
         spec=(
             FlowSpec(
-                log_dir="logs/flow_test",
+                log_dir=log_dir,
                 tasks=[
                     FlowTask(
                         name=task_file + "@noop",

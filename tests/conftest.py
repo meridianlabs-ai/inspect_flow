@@ -213,7 +213,12 @@ def recording_console() -> Generator[Console, None, None]:
     Use `recording_console.export_text()` to get the captured output.
     """
     recording = Console(record=True, force_terminal=True)
-    with patch("inspect_flow._util.console.console", recording):
+    with (
+        patch("inspect_flow._util.console.console", recording),
+        patch("inspect_flow._display.plain.console", recording),
+        patch("inspect_flow._display.full.console", recording),
+        patch("inspect_flow._cli.store.console", recording),
+    ):
         yield recording
 
 
