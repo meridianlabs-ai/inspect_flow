@@ -506,7 +506,7 @@ def test_221_format_map_file() -> None:
     include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
     spec = load_spec(include_path)
     assert spec.options
-    assert spec.options.bundle_dir == "logs/bundle_flow/bundle"
+    assert spec.options.bundle_dir == "logs/bundle"
     validate_config(spec, "bundle_flow.yaml")
 
 
