@@ -13,7 +13,7 @@ from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
 
 DisplayType = Literal["full", "plain"]
-_display_type: DisplayType
+_display_type: DisplayType = "full"
 _display: Display | None = None
 
 

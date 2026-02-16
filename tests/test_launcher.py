@@ -4,18 +4,19 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai import Task
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import load_spec
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
-from inspect_flow._launcher.venv import _check_spec_for_venv
+from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
-from tests.conftest import MockVenvSubprocess
+from tests.conftest import MockVenvSubprocess, mock_call_arg
 
 CREATE_VENV_RUN_CALLS = 4
 
@@ -50,7 +51,7 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     # subprocess.Popen is called once to launch the Python process
     mock_venv_subprocess.popen.assert_called_once()
     args = mock_venv_subprocess.popen.call_args.args[0]
-    assert len(args) == 8
+    assert len(args) == 10
     assert str(args[0]).endswith("/.venv/bin/python")
     assert args[1] == str(
         (
@@ -63,6 +64,8 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert args[5] == Path.cwd().as_posix()
     assert args[6] == "--log-level"
     assert args[7] == DEFAULT_LOG_LEVEL
+    assert args[8] == "--display"
+    assert args[9] == "full"
 
 
 def test_env(
@@ -107,7 +110,7 @@ def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
     assert os.environ["myenv2"] == "value2"
 
 
-def test_s3(mock_venv_subprocess: MockVenvSubprocess) -> None:
+def test_s3(mock_s3: BaseClient, mock_venv_subprocess: MockVenvSubprocess) -> None:
     log_dir = "s3://my-bucket/flow-logs"
     with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
         launch(
@@ -119,7 +122,7 @@ def test_s3(mock_venv_subprocess: MockVenvSubprocess) -> None:
             base_dir=".",
         )
     mock_create_venv.assert_called_once()
-    assert mock_create_venv.mock_calls[0].args[0].log_dir == log_dir
+    assert mock_call_arg(_create_venv, mock_create_venv, "spec").log_dir == log_dir
     mock_venv_subprocess.popen.assert_called_once()
 
 
@@ -137,7 +140,7 @@ def test_config_relative_log_dir(mock_venv_subprocess: MockVenvSubprocess) -> No
     mock_create_venv.assert_called_once()
     assert spec.log_dir
     assert (
-        mock_create_venv.mock_calls[0].args[0].log_dir
+        mock_call_arg(_create_venv, mock_create_venv, "spec").log_dir
         == expected_log_dir.resolve().as_posix()
     )
     mock_venv_subprocess.popen.assert_called_once()
@@ -161,7 +164,7 @@ def test_relative_bundle_dir(mock_venv_subprocess: MockVenvSubprocess) -> None:
         )
 
     mock_create_venv.assert_called_once()
-    spec: FlowSpec = mock_create_venv.mock_calls[0].args[0]
+    spec = mock_call_arg(_create_venv, mock_create_venv, "spec")
     absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert spec.options
     assert spec.options.bundle_dir == absolute_path
@@ -187,7 +190,7 @@ def test_bundle_dir(mock_venv_subprocess: MockVenvSubprocess) -> None:
         )
 
     mock_create_venv.assert_called_once()
-    spec: FlowSpec = mock_create_venv.mock_calls[0].args[0]
+    spec = mock_call_arg(_create_venv, mock_create_venv, "spec")
     absolute_path = Path("tests/config/bundle_dir").resolve().as_posix()
     assert spec.options
     assert spec.options.bundle_dir == absolute_path
@@ -206,7 +209,7 @@ def test_259_dot_env(mock_venv_subprocess: MockVenvSubprocess) -> None:
     with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
         launch(spec=spec, base_dir="./tests/config/")
     mock_create_venv.assert_called_once()
-    launch_env = mock_create_venv.mock_calls[0].kwargs["env"]
+    launch_env = mock_call_arg(_create_venv, mock_create_venv, "env")
     assert launch_env["TEST_ENV_VAR"] == "test_value"
 
     # Now test with no_dotenv=True
@@ -214,7 +217,7 @@ def test_259_dot_env(mock_venv_subprocess: MockVenvSubprocess) -> None:
     with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
         launch(spec=spec, base_dir="./tests/config/", no_dotenv=True)
     mock_create_venv.assert_called_once()
-    launch_env = mock_create_venv.mock_calls[0].kwargs["env"]
+    launch_env = mock_call_arg(_create_venv, mock_create_venv, "env")
     assert "TEST_ENV_VAR" not in launch_env
 
 

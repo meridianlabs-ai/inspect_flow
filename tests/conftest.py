@@ -6,6 +6,7 @@ os.environ["COLUMNS"] = "500"
 os.environ["NO_COLOR"] = "1"
 
 import importlib.util
+import inspect
 import subprocess
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -20,6 +21,15 @@ from inspect_ai._util.logger import LogHandlerVar
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from rich.console import Console
+
+
+def mock_call_arg(
+    func: Callable[..., Any], mock: MagicMock, name: str, call_index: int = 0
+) -> Any:
+    """Get a mock call argument by parameter name, regardless of how it was passed."""
+    call = mock.call_args_list[call_index]
+    bound = inspect.signature(func).bind(*call.args, **call.kwargs)
+    return bound.arguments[name]
 
 
 @pytest.fixture(autouse=True)
