@@ -28,7 +28,13 @@ from rich.rule import Rule
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._display.display import display
+from inspect_flow._display.display import (
+    DisplayAction,
+    DisplayType,
+    create_display,
+    display,
+    set_display_type,
+)
 from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -494,9 +500,21 @@ def _print_bundle_url(spec: FlowSpec) -> None:
     default=False,
     help="Dry run.",
 )
+@click.option(
+    "--display",
+    "display_type",
+    type=click.Choice(["full", "plain"]),
+    default="plain",
+    help="Display type.",
+)
 @click.pass_context
 def flow_run(
-    ctx: click.Context, file: str, base_dir: str, log_level: str, dry_run: bool
+    ctx: click.Context,
+    file: str,
+    base_dir: str,
+    log_level: str,
+    dry_run: bool,
+    display_type: DisplayType,
 ) -> None:
     set_exception_hook()
 
@@ -507,8 +525,16 @@ def flow_run(
     init_flow_logging(log_level=log_level)
     signal_ready_and_wait()
 
+    set_display_type(display_type)
+    _venv_actions = {
+        "instantiate": DisplayAction(description="Instantiate tasks"),
+        "logs": DisplayAction(description="Check for existing logs"),
+        "evalset": DisplayAction(description="Run evalset"),
+    }
     cfg = _read_config(file)
-    run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    with create_display(dry_run=dry_run, actions=_venv_actions) as display:
+        display.set_title("Flow Spec:", path(file))
+        run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 
 if __name__ == "__main__":

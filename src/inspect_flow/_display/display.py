@@ -17,6 +17,10 @@ _display_type: DisplayType
 _display: Display | None = None
 
 
+def get_display_type() -> DisplayType:
+    return _display_type
+
+
 def set_display_type(display_type: DisplayType) -> None:
     global _display_type
     _display_type = display_type

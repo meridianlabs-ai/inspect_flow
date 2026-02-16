@@ -15,6 +15,7 @@ from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
+from inspect_flow._display.display import display, get_display_type
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
@@ -46,6 +47,8 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
                 base_dir,
                 "--log-level",
                 get_last_log_level(),
+                "--display",
+                get_display_type(),
             ] + run_args
 
             env = _get_env(base_dir, no_dotenv=no_dotenv)
@@ -69,44 +72,48 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             python_path = Path(temp_dir) / ".venv" / "bin" / "python"
             file = _write_flow_yaml(spec, temp_dir)
 
-            # Create pipes for bidirectional signaling with child process
-            child_ready_r, child_ready_w = os.pipe()
-            parent_ack_r, parent_ack_w = os.pipe()
-
-            # Pass fd numbers to child via environment variables
-            env[CHILD_READY_FD_ENV] = str(child_ready_w)
-            env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
-
-            process = subprocess.Popen(
-                [str(python_path), str(run_path), "--file", file.as_posix(), *args],
-                env=env,
-                pass_fds=(child_ready_w, parent_ack_r),
-            )
-
-            # Close the ends we don't use in parent
-            os.close(child_ready_w)
-            os.close(parent_ack_r)
-
-            # Wait for child to signal ready
-            bytes = os.read(child_ready_r, 1)
-            assert bytes == b"r", f"parent got bytes {bytes} instead of b'r'"
-            os.close(child_ready_r)
-
             action.update(
                 info="Created venv and started flow process", status="success"
             )
+
+        # Stop the parent display so the child inherits real terminal fds
+        display().stop()
+
+        # Create pipes for bidirectional signaling with child process
+        child_ready_r, child_ready_w = os.pipe()
+        parent_ack_r, parent_ack_w = os.pipe()
+
+        # Pass fd numbers to child via environment variables
+        env[CHILD_READY_FD_ENV] = str(child_ready_w)
+        env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
+
+        process = subprocess.Popen(
+            [str(python_path), str(run_path), "--file", file.as_posix(), *args],
+            env=env,
+            pass_fds=(child_ready_w, parent_ack_r),
+        )
+
+        # Close the ends we don't use in parent
+        os.close(child_ready_w)
+        os.close(parent_ack_r)
+
+        # Wait for child to signal ready
+        bytes = os.read(child_ready_r, 1)
+        assert bytes == b"r", f"parent got bytes {bytes} instead of b'r'"
+        os.close(child_ready_r)
 
         # Signal child to continue
         os.write(parent_ack_w, b"g")
         os.close(parent_ack_w)
 
-    # Wait for process to complete
-    process.wait()
-    if process.returncode != 0:
-        raise subprocess.CalledProcessError(
-            returncode=process.returncode,
-            cmd=process.args,
-        )
+        # Wait for process to complete (must stay inside TemporaryDirectory context
+        # so the venv remains on disk while the subprocess is running)
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(
+                returncode=process.returncode,
+                cmd=process.args,
+            )
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:
