@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from types import TracebackType
+from typing import Optional, Type
 
 from rich.console import RenderableType
 from rich.text import Text
@@ -14,6 +15,7 @@ from inspect_flow._util.console import Formats, console, flow_print, join
 
 class PlainDisplay(Display):
     def __init__(self, actions: dict[str, DisplayAction]) -> None:
+        self._started = False
         self._last_action_key: str | None = None
         self._actions = actions
 
@@ -48,7 +50,19 @@ class PlainDisplay(Display):
 
     def __enter__(self) -> Display:
         set_display(self)
+        self._started = True
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self.stop()
+
+    def stop(self) -> None:
+        if not self._started:
+            return
         set_display(None)
+        self._started = False

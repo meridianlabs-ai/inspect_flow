@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Literal
+from types import TracebackType
+from typing import Literal, Optional, Type
 
 from rich.console import RenderableType
 from rich.text import Text
@@ -54,7 +55,15 @@ class Display(ABC):
     def __enter__(self) -> Display: ...
 
     @abstractmethod
-    def __exit__(self, *args: Any) -> None: ...
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None: ...
+
+    @abstractmethod
+    def stop(self) -> None: ...
 
 
 def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:

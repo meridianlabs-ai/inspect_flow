@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import threading
 import traceback
 from time import sleep
-from typing import Any
+from types import TracebackType
+from typing import Any, Optional, Type
 
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.live import Live
@@ -174,6 +176,7 @@ class FullDisplay(Display):
         self._output_capture = _OutputCapture()
 
     def __enter__(self) -> Display:
+        assert not self._live
         set_display(self)
         self._output_capture.start()
         self._live = Live(
@@ -185,19 +188,35 @@ class FullDisplay(Display):
         self._live.__enter__()
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self._stop(exc_type, exc_val, exc_tb)
+
+    def _stop(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        if not self._live:
+            return
         if duration := os.environ.get("INSPECT_FLOW_DISPLAY_SLEEP"):
             sleep(float(duration))
-        if self._live:
-            self._live.__exit__(*args)
+        set_display(None)
+        self._live.__exit__(exc_type, exc_val, exc_tb)
+        self._live = None
+        console.print(self._make_display(fill_height=False))
         captured = self._output_capture.stop()
         if captured:
-            import sys
-
             sys.stdout.buffer.write(captured)
             sys.stdout.flush()
-        console.print(self._make_display(fill_height=False))
-        set_display(None)
+
+    def stop(self) -> None:
+        self._stop(None, None, None)
 
     def update_action(self, key: str, action: DisplayAction) -> None:
         existing = self._actions.get(key)

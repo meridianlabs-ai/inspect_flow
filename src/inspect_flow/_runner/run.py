@@ -27,6 +27,7 @@ from rich.rule import Rule
 from rich.text import Text
 
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
@@ -122,6 +123,8 @@ def run_eval_set(
 
     if dry_run:
         return False, []
+
+    display().stop()
 
     start_time = time.time()
     try:
