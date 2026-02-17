@@ -5,12 +5,14 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Optional, Type
 
-from rich.console import RenderableType
+from rich.console import Console, RenderableType
 from rich.text import Text
 
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._display.display import Display, set_display
 from inspect_flow._util.console import Formats
+
+console = Console(no_color=True, highlight=False)
 
 PLAIN_ICONS: dict[str, str] = {
     "pending": "[ ]",
@@ -28,14 +30,6 @@ PLAIN_FORMAT_PREFIX: dict[Formats, str] = {
 }
 
 
-def _to_str(obj: RenderableType) -> str:
-    if isinstance(obj, str):
-        return obj
-    if isinstance(obj, Text):
-        return obj.plain
-    return str(obj)
-
-
 class PlainDisplay(Display):
     def __init__(self) -> None:
         self._started = False
@@ -45,24 +39,23 @@ class PlainDisplay(Display):
     def update_action(self, key: str, action: DisplayAction) -> None:
         icon = PLAIN_ICONS.get(action.status or "pending", "[ ]")
         desc = action.description or key
-        parts = [f"{icon} {desc}"]
+        info_parts: list[RenderableType] = []
         if action.info is not None:
             infos = action.info if isinstance(action.info, list) else [action.info]
-            parts.extend(_to_str(i) for i in infos)
-        print(" ".join(parts))
+            info_parts = list(infos)
+        console.print(f"{icon} {desc}", *info_parts)
 
     def print(
         self, *objects: RenderableType, action_key: str, format: Formats = "default"
     ) -> None:
         if self._last_action_key is not None and self._last_action_key != action_key:
-            print()
+            console.print()
         self._last_action_key = action_key
         prefix = PLAIN_FORMAT_PREFIX.get(format, "")
-        text_parts = [_to_str(o) for o in objects]
         if prefix:
-            print(prefix, *text_parts)
+            console.print(prefix, *objects)
         else:
-            print(*text_parts)
+            console.print(*objects)
 
     def set_footer(self, renderable: RenderableType | None) -> None:
         pass
@@ -73,7 +66,7 @@ class PlainDisplay(Display):
     def set_title(self, *objects: str | Text) -> None:
         self._title = list(objects) if objects else None
         if objects:
-            print(" ".join(_to_str(o) for o in objects))
+            console.print(*objects)
 
     def __enter__(self) -> Display:
         set_display(self)
