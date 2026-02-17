@@ -1,5 +1,6 @@
 from typing import Any
 
+from rich.console import Group, RenderableType
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.text import Text
 
@@ -14,6 +15,7 @@ class PathProgressDisplay:
     def __init__(
         self, description: str, total: int, action: RunAction | None = None
     ) -> None:
+        self._has_action = action is not None
         self._recent_paths: list[str] = []
         self._progress = Progress(
             TextColumn("[progress.description]{task.description}"),
@@ -23,6 +25,8 @@ class PathProgressDisplay:
         self._task = self._progress.add_task(description, total=total)
         if action:
             action.update(info=self._progress)
+        else:
+            display().set_footer(self._progress)
 
     def __enter__(self) -> "PathProgressDisplay":
         return self
@@ -30,11 +34,16 @@ class PathProgressDisplay:
     def __exit__(self, *args: Any) -> None:
         display().set_footer(None)
 
-    def _make_footer(self) -> Text:
-        path_lines = [f"  {path_str(p)}" for p in self._recent_paths[-5:]]
-        return Text("\n".join(path_lines), style="dim")
+    def _paths_footer(self) -> Text:
+        return Text(
+            "\n".join(f"  {path_str(p)}" for p in self._recent_paths[-5:]),
+            style="dim",
+        )
 
     def advance(self, path: str) -> None:
         self._recent_paths.append(path)
         self._progress.advance(self._task)
-        display().set_footer(self._make_footer())
+        footer: RenderableType = self._paths_footer()
+        if not self._has_action:
+            footer = Group(self._progress, footer)
+        display().set_footer(footer)

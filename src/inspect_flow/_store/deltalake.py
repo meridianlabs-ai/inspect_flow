@@ -342,9 +342,14 @@ class DeltaLakeStore(FlowStoreInternal):
                 "Scanning for missing logs", len(logs_list)
             ) as display:
                 for log in logs_list:
-                    if not exists(log):
-                        logs_to_remove.add(log)
-                    display.advance(log)
+                    try:
+                        if exists(log):
+                            continue
+                    except Exception as e:
+                        logger.warning(f"Failed to check existence of log {log}: {e}")
+                    finally:
+                        display.advance(log)
+                    logs_to_remove.add(log)
 
         if not logs_to_remove:
             flow_print("No logs found to remove from store", format="warning")
@@ -423,7 +428,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 try:
                     eval_log = read_eval_log(log, header_only=True)
                 except Exception as e:
-                    logger.info(
+                    logger.warning(
                         f"Failed to read log {path_str(log)} referenced from the store. {e}"
                     )
                     continue

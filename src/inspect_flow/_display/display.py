@@ -12,7 +12,7 @@ from rich.text import Text
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
 
-DisplayType = Literal["full", "plain"]
+DisplayType = Literal["full", "rich", "plain"]
 _display_type: DisplayType = "full"
 _display: Display | None = None
 
@@ -29,9 +29,14 @@ def set_display_type(display_type: DisplayType) -> None:
 def display() -> Display:
     global _display
     if _display is None:
-        from inspect_flow._display.plain import PlainDisplay
+        if _display_type == "plain":
+            from inspect_flow._display.plain import PlainDisplay
 
-        _display = PlainDisplay(actions={})
+            _display = PlainDisplay(actions={})
+        else:
+            from inspect_flow._display.rich import RichDisplay
+
+            _display = RichDisplay()
     return _display
 
 
@@ -78,6 +83,10 @@ def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
         from inspect_flow._display.full import FullDisplay
 
         return FullDisplay(dry_run=dry_run, actions=actions)
+    elif _display_type == "rich":
+        from inspect_flow._display.rich import RichDisplay
+
+        return RichDisplay()
     else:
         from inspect_flow._display.plain import PlainDisplay
 
