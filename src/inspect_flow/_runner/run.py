@@ -57,6 +57,12 @@ from inspect_flow._util.subprocess_util import signal_ready_and_wait
 
 logger = getLogger(__name__)
 
+VENV_ACTIONS = {
+    "instantiate": DisplayAction(description="Instantiate tasks"),
+    "logs": DisplayAction(description="Check for existing logs"),
+    "evalset": DisplayAction(description="Run evalset"),
+}
+
 
 def _read_config(config_file: str) -> FlowSpec:
     with open(config_file, "r") as f:
@@ -504,14 +510,9 @@ def flow_run(
     signal_ready_and_wait()
 
     set_display_type(display_type)
-    _venv_actions = {
-        "instantiate": DisplayAction(description="Instantiate tasks"),
-        "logs": DisplayAction(description="Check for existing logs"),
-        "evalset": DisplayAction(description="Run evalset"),
-    }
     cfg = _read_config(file)
-    with create_display(dry_run=dry_run, actions=_venv_actions) as display:
-        display.set_title("Flow Spec:", path(file))
+    with create_display(dry_run=dry_run, actions=VENV_ACTIONS) as display:
+        display.set_title("VENV Flow Spec:", path(file))
         run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
 

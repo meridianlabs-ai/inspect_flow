@@ -109,10 +109,13 @@ class _BorderedTable:
 
         # Scrollable: messages, footer, console output (last N shown)
         scrollable: list[list[Segment]] = []
+        first_msg = True
         for msgs in self._messages.values():
             if not msgs:
                 continue
-            scrollable.append([Segment(blank)])
+            if not first_msg:
+                scrollable.append([Segment(blank)])
+            first_msg = False
             for msg in msgs:
                 for line in console.render_lines(msg, inner_options, pad=True):
                     scrollable.append(bordered(line))
@@ -212,7 +215,9 @@ class FullActionsDisplay(Display):
             sys.stdout.buffer.write(captured)
             sys.stdout.flush()
 
-    def stop(self) -> None:
+    def stop(self, remove_actions: list[str] | None = None) -> None:
+        for key in remove_actions or []:
+            self._actions.pop(key, None)
         self._stop(None, None, None)
 
     def update_action(self, key: str, action: DisplayAction) -> None:

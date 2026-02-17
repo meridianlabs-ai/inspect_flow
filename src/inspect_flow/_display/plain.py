@@ -81,7 +81,7 @@ class PlainDisplay(Display):
     ) -> None:
         self.stop()
 
-    def stop(self) -> None:
+    def stop(self, remove_actions: list[str] | None = None) -> None:
         if not self._started:
             return
         set_display(None)

@@ -13,15 +13,13 @@ from inspect_flow._cli.options import (
 from inspect_flow._config.load import int_load_spec
 from inspect_flow._display.display import DisplayAction, create_display
 from inspect_flow._launcher.launch import launch
+from inspect_flow._runner.run import VENV_ACTIONS
 from inspect_flow._util.console import path
 
 _run_actions = {
     "load": DisplayAction(description="Load config"),
     "env": DisplayAction(description="Set up environment"),
-    "instantiate": DisplayAction(description="Instantiate tasks"),
-    "logs": DisplayAction(description="Check for existing logs"),
-    "evalset": DisplayAction(description="Run evalset"),
-}
+} | VENV_ACTIONS
 
 
 @click.command("run", help="Run a spec")

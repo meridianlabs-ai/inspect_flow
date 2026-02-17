@@ -78,7 +78,7 @@ class FullDisplay(Display):
     ) -> None:
         self.stop()
 
-    def stop(self) -> None:
+    def stop(self, remove_actions: list[str] | None = None) -> None:
         self._stop_live()
         if not self._started:
             return

@@ -22,6 +22,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
+from inspect_flow._runner.run import VENV_ACTIONS
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
@@ -78,7 +79,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
             )
 
         # Stop the parent display so the child inherits real terminal fds
-        display().stop()
+        display().stop(remove_actions=list(VENV_ACTIONS.keys()))
 
         # Create pipes for bidirectional signaling with child process
         child_ready_r, child_ready_w = os.pipe()
