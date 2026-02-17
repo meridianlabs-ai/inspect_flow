@@ -130,7 +130,13 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
     return fields
 
 
-def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
+@dataclass
+class _TaskQualifiers:
+    names: list[tuple[str, Text]]
+    model_only: bool
+
+
+def _unique_task_names(infos: list[TaskLogInfo]) -> _TaskQualifiers:
     names = [info.task.name for info in infos]
     qualifiers: list[list[str]] = [[] for _ in infos]
 
@@ -138,6 +144,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
         if info.task.model:
             qualifiers[i].append(str(info.task.model))
 
+    model_only = True
     for field in _task_fields(infos):
         groups: dict[str, list[int]] = {}
         for i in range(len(infos)):
@@ -150,6 +157,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
             values = [field.extract(infos[i]) for i in group]
             if len(set(str(v) for v in values)) <= 1:
                 continue
+            model_only = False
             for i, val in zip(group, values, strict=True):
                 if val is not None:
                     qualifiers[i].append(field.format(val))
@@ -157,7 +165,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
     result: list[tuple[str, Text]] = []
     for i, name in enumerate(names):
         if qualifiers[i]:
-            qual = Text("(", style="dim")
+            qual = Text()
             for j, q in enumerate(qualifiers[i]):
                 if j > 0:
                     qual.append(", ", style="dim")
@@ -167,11 +175,13 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> list[tuple[str, Text]]:
                     qual.append(val, style="cyan")
                 else:
                     qual.append(key, style="cyan")
-            qual.append(")", style="dim")
             result.append((name, qual))
         else:
             result.append((name, Text("")))
-    return result
+    return _TaskQualifiers(
+        names=result,
+        model_only=model_only,
+    )
 
 
 def create_task_log_display(
@@ -220,32 +230,34 @@ def create_task_log_display(
             )
 
     infos = list(task_log_info.values())
-    name_quals = _unique_task_names(infos)
+    qualifiers = _unique_task_names(infos)
 
+    have_quals = any(qual for _, qual in qualifiers.names)
     have_logs = any(info.log_file for info in infos)
 
     adj = "Completed" if completed else "Existing"
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
     table.add_column("Task", overflow="ellipsis", justify="left")
-    table.add_column("")
+    if have_quals:
+        qual_header = "Model" if qualifiers.model_only else "Differentiator"
+        table.add_column(qual_header)
     if have_logs:
         table.add_column(f"{adj} Log File", no_wrap=True, ratio=2, overflow="ellipsis")
     table.add_column(f"{adj}\nSamples", justify="right")
-    if not have_logs:
-        table.add_row("", "", "")
-    else:
-        table.add_row("", "", "", "")
-    for info, (base_name, qual) in zip(infos, name_quals, strict=True):
+    # blank separator row
+    table.add_row(*[""] * len(table.columns))
+    for info, (base_name, qual) in zip(infos, qualifiers.names, strict=True):
         name = Text(base_name)
         samples = (
             f"{info.log_samples}/{info.task_samples}"
             if info.task_samples is not None
             else ""
         )
+        row: list[RenderableType] = [name]
+        if have_quals:
+            row.append(qual)
         if have_logs:
-            table.add_row(
-                name, qual, path(info.log_file) if info.log_file else "", samples
-            )
-        else:
-            table.add_row(name, qual, samples)
+            row.append(path(info.log_file) if info.log_file else "")
+        row.append(samples)
+        table.add_row(*row)
     return Group(header, table)
