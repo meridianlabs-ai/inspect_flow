@@ -126,6 +126,7 @@ def store_command() -> None:
 
 @store_command.command(
     "import",
+    help="Import logs into the store",
     cls=ArgumentsHelpCommand,
     arguments_help={
         "PATH...": "One or more paths to log files or directories [required]"
@@ -186,6 +187,7 @@ def store_import(
 
 @store_command.command(
     "remove",
+    help="Remove logs from the store",
     cls=ArgumentsHelpCommand,
     arguments_help={
         "PREFIX...": "One or more prefixes to match against log paths [optional]"
