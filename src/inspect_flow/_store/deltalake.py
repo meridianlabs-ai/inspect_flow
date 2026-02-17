@@ -190,12 +190,12 @@ class DeltaLakeStore(FlowStoreInternal):
         self.exists = False
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
-            logger.info("\nUsing store: %s", path(store_path))
+            logger.info("Using store: %s", path(store_path))
             if not quiet:
                 display().print("Using store:", path(store_path), action_key="logs")
             self.exists = True
         else:
-            logger.info("\nStore not found")
+            logger.info("Store not found")
             if create:
                 logger.info("Creating store: %s", path(store_path))
                 if not quiet:
@@ -428,7 +428,7 @@ class DeltaLakeStore(FlowStoreInternal):
                 try:
                     eval_log = read_eval_log(log, header_only=True)
                 except Exception as e:
-                    logger.warning(
+                    logger.info(
                         f"Failed to read log {path_str(log)} referenced from the store. {e}"
                     )
                     continue
@@ -498,7 +498,7 @@ class DeltaLakeStore(FlowStoreInternal):
                     log = _file_to_log(log_path)
                     logs_to_update.append((log_path, log.task_identifier))
                 except Exception as e:
-                    logger.warning(f"Failed to read log {path_str(log_path)}: {e}")
+                    logger.info(f"Failed to read log {path_str(log_path)}: {e}")
                 progress.advance(progress_task)
 
         if not logs_to_update:
