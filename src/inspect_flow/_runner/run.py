@@ -113,7 +113,9 @@ def run_eval_set(
     if not dry_run:
         write_config_file(resolved_spec)
 
-    task_log_info = _find_existing_logs(task_id_to_task, resolved_spec, store)
+    task_log_info = _find_existing_logs(
+        task_id_to_task, resolved_spec, store, dry_run=dry_run
+    )
 
     with RunAction("evalset") as action:
         action.print(create_task_log_display(task_log_info, completed=False))
