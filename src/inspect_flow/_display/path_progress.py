@@ -1,5 +1,6 @@
 from typing import Any
 
+from inspect_ai.log._file import ReadEvalLogsProgress
 from rich.console import Group, RenderableType
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.text import Text
@@ -7,6 +8,30 @@ from rich.text import Text
 from inspect_flow._display.display import display
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._util.path_util import path_str
+
+
+class ReadLogsProgress(ReadEvalLogsProgress):
+    """ReadEvalLogsProgress that displays a PathProgressDisplay."""
+
+    def __init__(self, action: RunAction | None = None) -> None:
+        self._action = action
+        self._display: PathProgressDisplay | None = None
+
+    def __enter__(self) -> "ReadLogsProgress":
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        if self._display:
+            self._display.__exit__(*args)
+            self._display = None
+
+    def before_reading_logs(self, total_files: int) -> None:
+        self._display = PathProgressDisplay("Reading logs", total_files, self._action)
+        self._display.__enter__()
+
+    def after_read_log(self, log_file: str) -> None:
+        if self._display:
+            self._display.advance(log_file)
 
 
 class PathProgressDisplay:

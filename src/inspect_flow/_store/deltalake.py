@@ -18,7 +18,7 @@ from semver import Version
 from typing_extensions import override
 
 from inspect_flow._display.display import display
-from inspect_flow._display.path_progress import PathProgressDisplay
+from inspect_flow._display.path_progress import PathProgressDisplay, ReadLogsProgress
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._util.console import (
     console,
@@ -140,7 +140,10 @@ def _eval_log_to_log(eval_log: EvalLog) -> Log:
 
 
 def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) -> None:
-    dir_logs = list_all_eval_logs(log_dir=log_dir, recursive=recursive)
+    with ReadLogsProgress() as progress:
+        dir_logs = list_all_eval_logs(
+            log_dir=log_dir, recursive=recursive, progress=progress
+        )
     if not dir_logs:
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     if verbose:
