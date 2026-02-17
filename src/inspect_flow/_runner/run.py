@@ -359,8 +359,7 @@ def _find_existing_logs(
                 action.update(
                     status="error",
                     info=[
-                        "log_dir contains unexpected log. Use --log-dir-allow-dirty to allow.",
-                        path(log.info.name),
+                        "log_dir contains unexpected log. Use --log-dir-allow-dirty to allow."
                     ],
                 )
                 raise PrerequisiteError(
