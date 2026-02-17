@@ -168,7 +168,7 @@ def store_import(
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if dry_run:
-        flow_print("\n[blue][DRY RUN][/blue] Preview mode - logs will be imported\n")
+        flow_print("\n[blue][DRY RUN][/blue] Preview mode - logs will not be removed\n")
 
     flow_store = init_store(create=True, **kwargs)
     if not flow_store:
@@ -229,6 +229,10 @@ def store_remove(
     verbose: bool,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
+    if dry_run:
+        flow_print(
+            "\n[blue][DRY RUN][/blue] Preview mode - logs will not be imported\n"
+        )
     if not prefix and not missing:
         raise click.UsageError("Either prefix or --missing must be specified.")
     if prefix and missing:
