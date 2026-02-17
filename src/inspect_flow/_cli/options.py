@@ -140,9 +140,12 @@ def config_options(f: F) -> F:
     return f
 
 
-class ConfigOptionArgs(TypedDict, total=False):
+class OutputOptionArgs(TypedDict, total=False):
     log_level: str
     display: DisplayType
+
+
+class ConfigOptionArgs(OutputOptionArgs, total=False):
     store: str | None
     log_dir: str | None
     log_dir_allow_dirty: bool | None
@@ -153,7 +156,7 @@ class ConfigOptionArgs(TypedDict, total=False):
     venv: bool | None
 
 
-def init_output(**kwargs: Unpack[ConfigOptionArgs]) -> None:
+def init_output(**kwargs: Unpack[OutputOptionArgs]) -> None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     display = kwargs.get("display", "full")

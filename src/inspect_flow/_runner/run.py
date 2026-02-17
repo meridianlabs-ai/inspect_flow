@@ -481,7 +481,7 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
 @click.option(
     "--display",
     "display_type",
-    type=click.Choice(["full", "plain"]),
+    type=click.Choice(["full", "rich", "plain"]),
     default="plain",
     help="Display type.",
 )

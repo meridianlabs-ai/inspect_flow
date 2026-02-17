@@ -5,9 +5,9 @@ import click
 from click import Context, HelpFormatter
 from rich.text import Text
 from rich.tree import Tree
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
-from inspect_flow._cli.options import output_options
+from inspect_flow._cli.options import OutputOptionArgs, init_output, output_options
 from inspect_flow._store.store import (
     FlowStore,
     delete_store,
@@ -16,8 +16,6 @@ from inspect_flow._store.store import (
     store_factory,
 )
 from inspect_flow._util.console import console, flow_print, path, quantity
-from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.logs import copy_all_logs
 
 
@@ -96,16 +94,14 @@ def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
     return decorator
 
 
-class StoreOptionArgs(TypedDict, total=False):
-    log_level: str
+class StoreOptionArgs(OutputOptionArgs, total=False):
     store: str | None
 
 
 def init_store(
     create: bool = False, quiet: bool = False, **kwargs: Unpack[StoreOptionArgs]
 ) -> FlowStore | None:
-    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
-    init_flow_logging(log_level)
+    init_output(**kwargs)
     store_location = kwargs.get("store") or "auto"
     flow_store = store_factory(store_location, base_dir=".", create=create, quiet=quiet)
     if not flow_store:
@@ -308,8 +304,7 @@ def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
     help="Skip confirmation prompt",
 )
 def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
-    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
-    init_flow_logging(log_level)
+    init_output(**kwargs)
     store_path = resolve_store_path(kwargs.get("store"))
     if not store_exists(store_path):
         flow_print("Store not found at", path(store_path), format="error")

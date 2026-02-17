@@ -32,11 +32,11 @@ def display() -> Display:
         if _display_type == "plain":
             from inspect_flow._display.plain import PlainDisplay
 
-            _display = PlainDisplay(actions={})
+            _display = PlainDisplay()
         else:
-            from inspect_flow._display.rich import RichDisplay
+            from inspect_flow._display.full import FullDisplay
 
-            _display = RichDisplay()
+            _display = FullDisplay()
     return _display
 
 
@@ -79,15 +79,11 @@ class Display(ABC):
 
 
 def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
-    if _display_type == "full":
-        from inspect_flow._display.full import FullDisplay
-
-        return FullDisplay(dry_run=dry_run, actions=actions)
-    elif _display_type == "rich":
-        from inspect_flow._display.rich import RichDisplay
-
-        return RichDisplay()
-    else:
+    if _display_type == "plain":
         from inspect_flow._display.plain import PlainDisplay
 
-        return PlainDisplay(actions=actions)
+        return PlainDisplay()
+    else:
+        from inspect_flow._display.full_actions import FullActionsDisplay
+
+        return FullActionsDisplay(dry_run=dry_run, actions=actions)

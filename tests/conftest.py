@@ -225,9 +225,8 @@ def recording_console() -> Generator[Console, None, None]:
     recording = Console(record=True, force_terminal=True)
     with (
         patch("inspect_flow._util.console.console", recording),
-        patch("inspect_flow._display.plain.console", recording),
-        patch("inspect_flow._display.rich.console", recording),
         patch("inspect_flow._display.full.console", recording),
+        patch("inspect_flow._display.full_actions.console", recording),
         patch("inspect_flow._cli.store.console", recording),
     ):
         yield recording
