@@ -84,10 +84,9 @@ def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
             envvar="INSPECT_FLOW_STORE_PATH",
         )(func)
         func = click.option(
-            "--recursive",
-            "-r",
-            is_flag=True,
-            default=False,
+            "--recursive/--no-recursive",
+            "-r/-R",
+            default=True,
             help="Search directories recursively for logs",
             envvar="INSPECT_FLOW_STORE_RECURSIVE",
         )(func)
@@ -174,8 +173,7 @@ def store_import(
     if not flow_store:
         return
     if copy_from:
-        if recursive:
-            raise click.UsageError("Cannot use --copy-from with --recursive")
+        recursive = False
         if len(path) != 1:
             raise click.UsageError(
                 "When using --copy-from, exactly one PATH must be specified"
@@ -196,10 +194,9 @@ def store_import(
 @store_options
 @click.argument("prefix", nargs=-1, required=False, envvar="INSPECT_FLOW_STORE_PREFIX")
 @click.option(
-    "--recursive",
-    "-r",
-    is_flag=True,
-    default=False,
+    "--recursive/--no-recursive",
+    "-r/-R",
+    default=True,
     help="Search directories recursively for logs",
     envvar="INSPECT_FLOW_STORE_RECURSIVE",
 )
