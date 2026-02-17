@@ -469,3 +469,16 @@ def test_store_list_format_tree() -> None:
     assert result.exit_code == 0
     assert "logs1" in result.output
     assert "gpqa-diamond" in result.output
+
+
+def test_run_display_passed_to_eval_set(mock_eval_set: MagicMock) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        run_command,
+        [CONFIG_FILE, "--display", "rich", "--log-dir-allow-dirty"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["display"] == "rich"

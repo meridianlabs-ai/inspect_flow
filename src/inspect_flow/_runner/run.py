@@ -31,6 +31,7 @@ from inspect_flow._display.display import (
     DisplayType,
     create_display,
     display,
+    get_display_type,
     set_display_type,
 )
 from inspect_flow._display.path_progress import ReadLogsProgress
@@ -76,8 +77,8 @@ def run_eval_set(
     # 470 - eval_resolve_tasks uses the display, which sets a global that causes it to be ignored when passed to eval_set
     # so we need to initialize the display type here first
     options = resolved_spec.options or FlowOptions()
-    if options.display:
-        init_display_type(options.display)
+    display_type = options.display or get_display_type()
+    init_display_type(display_type)
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = _get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
@@ -125,7 +126,7 @@ def run_eval_set(
             tags=sequence_to_list(default_none(options.tags)),
             metadata=default_none(options.metadata),
             trace=default_none(options.trace),
-            display=default_none(options.display),
+            display=default_none(display_type),
             approval=default_none(options.approval),
             score=default(options.score, True),
             log_level=default_none(options.log_level),
