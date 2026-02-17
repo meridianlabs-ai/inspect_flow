@@ -102,12 +102,12 @@ class StoreOptionArgs(TypedDict, total=False):
 
 
 def init_store(
-    create: bool = False, **kwargs: Unpack[StoreOptionArgs]
+    create: bool = False, quiet: bool = False, **kwargs: Unpack[StoreOptionArgs]
 ) -> FlowStore | None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
     store_location = kwargs.get("store") or "auto"
-    flow_store = store_factory(store_location, base_dir=".", create=create)
+    flow_store = store_factory(store_location, base_dir=".", create=create, quiet=quiet)
     if not flow_store:
         flow_print(
             "Error: Store not found at",
@@ -282,7 +282,7 @@ def _echo_logs_tree(log_files: list[str]) -> None:
 @store_command.command("info", help="Print store information")
 @store_options
 def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
-    flow_store = init_store(**kwargs)
+    flow_store = init_store(quiet=True, **kwargs)
     if not flow_store:
         return
     logs = flow_store.get_logs()

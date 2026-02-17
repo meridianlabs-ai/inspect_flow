@@ -179,7 +179,9 @@ class DeltaLakeStore(FlowStoreInternal):
     concurrent-safe storage with S3 compatibility.
     """
 
-    def __init__(self, store_path: str, create: bool = False) -> None:
+    def __init__(
+        self, store_path: str, create: bool = False, quiet: bool = False
+    ) -> None:
         self._root_path = store_path
         self._store_path = store_path + filesystem(store_path).sep + "flow_store"
 
@@ -189,13 +191,15 @@ class DeltaLakeStore(FlowStoreInternal):
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
             logger.info("\nUsing store: %s", path(store_path))
-            display().print("Using Store:", path(store_path), action_key="logs")
+            if not quiet:
+                display().print("Using store:", path(store_path), action_key="logs")
             self.exists = True
         else:
             logger.info("\nStore not found")
             if create:
                 logger.info("Creating store: %s", path(store_path))
-                display().print("Using Store:", path(store_path), action_key="logs")
+                if not quiet:
+                    display().print("Using store:", path(store_path), action_key="logs")
                 self.exists = True
 
     def _get_storage_options(self) -> dict[str, str] | None:
