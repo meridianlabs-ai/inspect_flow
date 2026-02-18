@@ -145,7 +145,7 @@ def resolve_store_path(store: str | None, base_dir: str = ".") -> str:
 
 def _flow_store_path(store_path: str) -> str:
     fs = filesystem(store_path)
-    return store_path + fs.sep + "flow_store"
+    return store_path.rstrip(fs.sep) + fs.sep + "flow_store"
 
 
 def store_exists(store_path: str) -> bool:
