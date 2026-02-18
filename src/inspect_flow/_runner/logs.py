@@ -15,6 +15,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import basename, copy_file
 from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.model import GenerateConfig, get_model
+from inspect_ai.scorer._reducer.registry import reducer_log_name
 
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
@@ -93,7 +94,7 @@ def _epochs_reducer_changed(epochs: Epochs | None, config: EvalConfig) -> bool:
     default_epoch_reducer = ["mean"]
     if epochs.reducer is None and config.epochs_reducer == default_epoch_reducer:
         return False
-    return [r.__name__ for r in (epochs.reducer or [])] != [
+    return [reducer_log_name(r) for r in (epochs.reducer or [])] != [
         r for r in (config.epochs_reducer or [])
     ]
 
@@ -103,7 +104,12 @@ def num_log_samples(
 ) -> int:
     if not header.results or header.invalidated:
         return 0
-    epochs = resolve_epochs(log_info.task.epochs)
+    task = log_info.task
+    epochs = resolve_epochs(
+        Epochs(task.epochs, reducer=task.epochs_reducer)
+        if task.epochs and task.epochs_reducer
+        else task.epochs
+    )
     if _epochs_reducer_changed(epochs, header.eval.config):
         return 0
     epoch_count = epochs.epochs if epochs else 1

@@ -7,7 +7,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Callable, List, Literal, Sequence
 
-import yaml
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
 from inspect_ai.model import Model
@@ -25,7 +24,6 @@ from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, Flow
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.path_util import absolute_path_relative_to
-from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.subprocess_util import (
     CHILD_READY_FD_ENV,
     PARENT_ACK_FD_ENV,
@@ -331,15 +329,3 @@ def _search_dependency_file(
             break
         current_dir = current_dir.parent
     return (found_file, found_path) if found_file and found_path else None
-
-
-def _write_flow_yaml(spec: FlowSpec, dir: str) -> Path:
-    flow_yaml_path = Path(dir) / "flow.yaml"
-    with open(flow_yaml_path, "w") as f:
-        yaml.dump(
-            model_dump(spec),
-            f,
-            default_flow_style=False,
-            sort_keys=False,
-        )
-    return flow_yaml_path
