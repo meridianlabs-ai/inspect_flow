@@ -12,7 +12,7 @@ from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
-CONFIG_FILE = "./tests/config/model_and_task_flow.py"
+CONFIG_FILE = "./tests/config/mock_flow.py"
 CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
