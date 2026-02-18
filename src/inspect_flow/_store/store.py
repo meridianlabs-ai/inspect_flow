@@ -61,7 +61,7 @@ class FlowStore(ABC):
         missing: bool = False,
         recursive: bool = False,
         dry_run: bool = False,
-        verbose: bool = False,
+        verbose: bool = True,
     ) -> None:
         """Remove logs matching the given prefixes.
 

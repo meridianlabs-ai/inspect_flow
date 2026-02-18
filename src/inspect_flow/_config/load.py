@@ -329,7 +329,7 @@ def _apply_auto_includes(
                         format="warning",
                     )
                 else:
-                    flow_print("Auto-include:", path(auto_file), format="info")
+                    flow_print("Auto-include:", path(auto_file))
                 if auto_spec:
                     spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:

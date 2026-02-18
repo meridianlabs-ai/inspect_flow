@@ -17,16 +17,16 @@ def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool) -> None:
     logs = list_eval_logs(src_dir, recursive=False)
     flow_print(
         Text.assemble(
-            f"\n{'Would copy' if dry_run else 'Copying'} logs from ",
+            "\nCopying logs from ",
             path(src_dir),
             " to ",
             path(dest_dir),
         )
     )
     if not logs:
-        flow_print("No logs found", format="info")
+        flow_print("No logs found", format="warning")
     for log_file in logs:
         destination = path_join(dest_dir, basename(log_file.name))
-        flow_print(path(log_file.name), format="info")
+        flow_print(path(log_file.name))
         if not dry_run:
             copy_file(log_file.name, destination)

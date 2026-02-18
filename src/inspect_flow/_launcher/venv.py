@@ -199,7 +199,7 @@ def _get_create_venv_with_base_dependencies(
     file_path: str | None = None
     dependency_file_info = _get_dependency_file(spec, base_dir=base_dir)
     if not dependency_file_info:
-        action.print("Dependency file: none", format="info")
+        action.print("Dependency file: none")
 
         def create_venv_func() -> None:
             return _uv_venv(spec, temp_dir, env, action)
@@ -207,7 +207,7 @@ def _get_create_venv_with_base_dependencies(
         return create_venv_func
 
     file_type, file_path = dependency_file_info
-    action.print("Dependency file:", path(file_path), format="info")
+    action.print("Dependency file:", path(file_path))
     if file_type == "requirements.txt":
 
         def create_venv_func() -> None:
@@ -220,7 +220,7 @@ def _get_create_venv_with_base_dependencies(
     project_dir = Path(file_path).parent
     if not spec.python_version:
         spec.python_version = resolve_python_version(file_path)
-    action.print(f"Python: {spec.python_version}", format="info")
+    action.print(f"Python: {spec.python_version}")
 
     uv_args = [
         "--no-dev",
@@ -261,7 +261,7 @@ def _uv_venv(
         spec.python_version
         or f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )
-    action.print(f"Python: {spec.python_version}", format="info")
+    action.print(f"Python: {spec.python_version}")
 
     run_with_logging(
         ["uv", "venv", "--python", spec.python_version],

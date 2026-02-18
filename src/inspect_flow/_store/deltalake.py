@@ -148,7 +148,7 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) 
         raise NoLogsError(f"No logs found in directory: {log_dir}")
     if verbose:
         for log in dir_logs:
-            flow_print(path(log.info.name), format="info")
+            flow_print(path(log.info.name))
     logs.extend(dir_logs)
 
 
@@ -286,7 +286,7 @@ class DeltaLakeStore(FlowStoreInternal):
     @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
         logs = [_eval_log_to_log(eval_log) for eval_log in eval_logs]
-        self._add_logs(logs)
+        self._add_logs(logs, dry_run=False)
 
     @override
     def import_log_path(
@@ -309,14 +309,14 @@ class DeltaLakeStore(FlowStoreInternal):
             info = fs.info(p)
             if info.type == "file":
                 if verbose:
-                    flow_print(path(p), format="info")
+                    flow_print(path(p))
                 logs.append(_file_to_log(p))
             else:
                 dir = to_uri(p)
                 _add_log_dir(
                     log_dir=dir, recursive=recursive, logs=logs, verbose=verbose
                 )
-        num_added = self._add_logs(logs)
+        num_added = self._add_logs(logs, dry_run=dry_run)
         flow_print(
             f"Imported {quantity(num_added, 'new log')} to store",
             format="success" if num_added > 0 else "warning",
@@ -329,7 +329,7 @@ class DeltaLakeStore(FlowStoreInternal):
         missing: bool = False,
         recursive: bool = False,
         dry_run: bool = False,
-        verbose: bool = False,
+        verbose: bool = True,
     ) -> None:
         if isinstance(prefix, str):
             prefix = [prefix]
@@ -359,7 +359,7 @@ class DeltaLakeStore(FlowStoreInternal):
         else:
             if verbose:
                 for log in sorted(logs_to_remove):
-                    flow_print(path(log), format="info")
+                    flow_print(path(log))
             if dry_run:
                 flow_print(
                     f"Removed {quantity(len(logs_to_remove), 'log')} from store",
@@ -382,7 +382,7 @@ class DeltaLakeStore(FlowStoreInternal):
         metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
         return metrics.get("num_deleted_rows", 0)
 
-    def _add_logs(self, logs: list[Log]) -> int:
+    def _add_logs(self, logs: list[Log], dry_run: bool) -> int:
         if not logs:
             return 0
         task_ids = {log.task_identifier for log in logs}
@@ -395,6 +395,8 @@ class DeltaLakeStore(FlowStoreInternal):
         ]
         if not new_logs:
             return 0
+        if dry_run:
+            return len(new_logs)
 
         new_data = pa.Table.from_pylist(
             [
