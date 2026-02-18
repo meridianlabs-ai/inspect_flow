@@ -8,9 +8,7 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 logger = getLogger(__name__)
 
 
-def launch(
-    spec: FlowSpec, base_dir: str, no_dotenv: bool = False, dry_run: bool = False
-) -> None:
+def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> None:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
@@ -27,6 +25,6 @@ def launch(
             }
 
     if spec.execution_type == "venv":
-        venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run, no_dotenv=no_dotenv)
+        venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
     else:
         inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)

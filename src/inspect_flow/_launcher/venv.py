@@ -8,10 +8,8 @@ from pathlib import Path
 from typing import Callable, List, Literal, Sequence
 
 import yaml
-from dotenv import dotenv_values, find_dotenv
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
-from inspect_ai._util.path import chdir_python
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
@@ -37,7 +35,7 @@ from inspect_flow._util.subprocess_util import (
 logger = getLogger(__name__)
 
 
-def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -> None:
+def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with RunAction("env", info="venv") as action:
             _check_spec_for_venv(spec)
@@ -53,7 +51,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool, no_dotenv: bool) -
                 get_display_type(),
             ] + run_args
 
-            env = _get_env(base_dir, no_dotenv=no_dotenv)
+            env = os.environ.copy()
             if spec.env:
                 env.update(**spec.env)
 
@@ -345,15 +343,3 @@ def _write_flow_yaml(spec: FlowSpec, dir: str) -> Path:
             sort_keys=False,
         )
     return flow_yaml_path
-
-
-def _get_env(base_dir: str, no_dotenv: bool) -> dict[str, str]:
-    env = os.environ.copy()
-    if no_dotenv:
-        return env
-    # Temporarily change to base_dir to find .env file
-    with chdir_python(base_dir):
-        # Already loaded environment variables should take precedence
-        dotenv = dotenv_values(find_dotenv(usecwd=True))
-        env = {k: v for k, v in dotenv.items() if v is not None} | env
-    return env

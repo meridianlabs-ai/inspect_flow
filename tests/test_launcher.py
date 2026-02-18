@@ -8,7 +8,7 @@ from botocore.client import BaseClient
 from inspect_ai import Task
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
-from inspect_flow._api.api import load_spec
+from inspect_flow._api.api import load_spec, run
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
@@ -206,16 +206,19 @@ def test_259_dot_env(mock_venv_subprocess: MockVenvSubprocess) -> None:
         ],
     )
 
+    # dotenv=True loads .env from base_dir into os.environ and the venv subprocess env
     with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
-        launch(spec=spec, base_dir="./tests/config/")
+        run(spec=spec, base_dir="./tests/config/", display="plain", dotenv=True)
     mock_create_venv.assert_called_once()
     launch_env = mock_call_arg(_create_venv, mock_create_venv, "env")
     assert launch_env["TEST_ENV_VAR"] == "test_value"
+    assert os.environ["TEST_ENV_VAR"] == "test_value"
 
-    # Now test with no_dotenv=True
+    # dotenv=False skips .env loading
+    del os.environ["TEST_ENV_VAR"]
     mock_venv_subprocess.popen.reset_mock()
     with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
-        launch(spec=spec, base_dir="./tests/config/", no_dotenv=True)
+        run(spec=spec, base_dir="./tests/config/", display="plain", dotenv=False)
     mock_create_venv.assert_called_once()
     launch_env = mock_call_arg(_create_venv, mock_create_venv, "env")
     assert "TEST_ENV_VAR" not in launch_env

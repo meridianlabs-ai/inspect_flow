@@ -715,7 +715,6 @@ def test_pip_error(recording_console: Console) -> None:
             spec=spec,
             base_dir=".",
             dry_run=False,
-            no_dotenv=False,
         )
 
     output = " ".join(recording_console.export_text().split())

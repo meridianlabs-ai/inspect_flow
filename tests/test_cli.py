@@ -17,7 +17,6 @@ CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
-    "no_dotenv": False,
     "dry_run": False,
 }
 
