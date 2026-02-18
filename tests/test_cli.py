@@ -329,6 +329,12 @@ def test_options_to_overrides() -> None:
     ]
 
 
+@pytest.mark.parametrize("store_value", ["auto", "none", "Auto", "NONE"])
+def test_options_to_overrides_store_keywords(store_value: str) -> None:
+    overrides = _options_to_overrides(store=store_value)
+    assert overrides == [f"store={store_value}"]
+
+
 def test_inspect_object_overrides() -> None:
     runner = CliRunner()
 
