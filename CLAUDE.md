@@ -22,12 +22,16 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 ## Key Modules
 
 - [_types](src/inspect_flow/_types) defines the types used in inspect flow configurations.
-- [_api](src/inspect_flow/_api) defines the public API for inspect flow.
-- [_cli](src/inspect_flow/_cli) defines the command line interface for inspect flow. The main command is `run`, defined in [run.py](src/inspect_flow/_cli/run.py).
+- [_api](src/inspect_flow/_api) defines the public API for inspect flow (`init`, `run`, `config`, `store_get`).
+- [_cli](src/inspect_flow/_cli) defines the command line interface for inspect flow. Commands: `run`, `config`, `store`.
 - [_config](src/inspect_flow/_config) is responsible for loading and validating the flow configuration. The main function is `load_config`, defined in [config.py](src/inspect_flow/_config/config.py).
 - [_launcher](src/inspect_flow/_launcher) is responsible for creating the virtual environment, installing package dependencies, and starting the flow runner process. The main function is `launch`, defined in [launch.py](src/inspect_flow/_launcher/launch.py).
-- [_runner](src/inspect_flow/_runner) is responsible for running the flow tasks either inproc or within the virtual environment. The main function is `flow_run`, defined in [run.py](src/inspect_flow/_runner/run.py).
+- [_runner](src/inspect_flow/_runner) is responsible for running the flow tasks either in-process or within the virtual environment. The main function is `run_eval_set`, defined in [run.py](src/inspect_flow/_runner/run.py).
+- [_store](src/inspect_flow/_store) provides a persistent Delta Lake store for tracking evaluation logs across runs, enabling reuse of completed evaluations.
+- [_display](src/inspect_flow/_display) provides a pluggable terminal display system for rendering flow progress, action status, and results.
 - [_util](src/inspect_flow/_util) defines utility functions and classes used throughout the inspect flow codebase.
+
+See [src/inspect_flow/README.md](src/inspect_flow/README.md) for detailed module internals.
 
 ## Build/Lint/Test Commands
 - Repo setup: `uv sync`
