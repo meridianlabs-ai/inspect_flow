@@ -55,7 +55,7 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert str(args[0]).endswith("/.venv/bin/python")
     assert args[1] == str(
         (
-            Path(__file__).parents[1] / "src" / "inspect_flow" / "_runner" / "run.py"
+            Path(__file__).parents[1] / "src" / "inspect_flow" / "_runner" / "cli.py"
         ).resolve()
     )
     assert args[2] == "--file"

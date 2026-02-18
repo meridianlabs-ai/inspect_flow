@@ -20,7 +20,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._runner.run import VENV_ACTIONS
+from inspect_flow._runner.cli import VENV_ACTIONS
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
@@ -39,7 +39,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with RunAction("env", info="venv") as action:
             _check_spec_for_venv(spec)
-            run_path = (Path(__file__).parents[1] / "_runner" / "run.py").absolute()
+            run_path = (Path(__file__).parents[1] / "_runner" / "cli.py").absolute()
             base_dir = absolute_file_path(base_dir)
             run_args = ["--dry-run"] if dry_run else []
             args = [
