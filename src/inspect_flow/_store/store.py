@@ -20,12 +20,14 @@ class FlowStore(ABC):
     @property
     @abstractmethod
     def store_path(self) -> str:
-        pass
+        """The path to the store directory."""
+        ...
 
     @property
     @abstractmethod
     def version(self) -> str:
-        pass
+        """The store version."""
+        ...
 
     @abstractmethod
     def import_log_path(
@@ -154,6 +156,11 @@ def store_exists(store_path: str) -> bool:
 
 
 def delete_store(store_path: str) -> None:
+    """Delete a flow store.
+
+    Args:
+        store_path: Path to the store directory.
+    """
     path = _flow_store_path(store_path)
     fs = filesystem(path)
     fs.rm(path, recursive=True)

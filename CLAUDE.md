@@ -42,6 +42,8 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 - **Imports**: Use isort order (enforced by ruff). Always place imports at the top of the file, not inside functions.
 - **Types**: Strict typing is required. All functions must have type annotations. Never use `# type: ignore` to suppress warnings—fix the type signature instead. Even if all current callers use a more restrictive type, the method signature defines the contract for future callers, so it must be correct.
 - **Naming**: Use snake_case for variables, functions, methods; PascalCase for classes
+- **Path handling**: Use `inspect_ai._util.file` utilities (`dirname`, `filesystem`, `basename`, etc.) instead of `pathlib.Path` for path operations — they support S3 and other remote filesystems. Use `filesystem(path).is_local()` to check if a path is local.
+- **Booleans**: Prefer positive boolean params (`dotenv=True`) over negative ones (`no_dotenv=False`).
 - **Docstrings**: Google-style docstrings required for public APIs. No docstrings for private/internal functions. Never write docstrings that describe implementation details—these duplicate the code and become stale when the code changes.
 - **Comments**: Prefer self-documenting code to comments. Use comments to explain why, not what, and only when complex. Do not add comments that merely restate what the code does.
 - **Error Handling**: Use appropriate exception types; include context in error messages. Avoid try/except blocks unless absolutely necessary—if you add one, include a test that exercises that code path.
@@ -50,3 +52,8 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 - **Pull Requests**: Keep PRs small and focused. Include a description of changes and rationale. Use conventional commit messages ("fix:" and "feat:").
 
 Respect existing code patterns when modifying files. Run linting before committing changes.
+
+## API Design Guidelines
+- **CLI/API parity**: All CLI commands and options should be accessible through the Python API (in `_api/api.py`), either directly or through returned objects like `FlowStore`.
+- **Docstrings**: All public API functions, classes, and properties must have Google-style docstrings with Args sections.
+- **Session-level config**: Initialization concerns (logging, display, dotenv) belong in a module-level `init()` function rather than being repeated as params on every API method.

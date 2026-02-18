@@ -14,7 +14,14 @@ logger = getLogger(__name__)
 
 
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None:
-    """Copy all log files from src_dir to dest_dir."""
+    """Copy all log files from src_dir to dest_dir, preserving directory structure.
+
+    Args:
+        src_dir: Source directory containing log files.
+        dest_dir: Destination directory to copy log files to.
+        dry_run: If True, preview what would be copied without making changes.
+        recursive: If True, search src_dir recursively for log files.
+    """
     logs = list_eval_logs(src_dir, recursive=recursive)
     flow_print(
         Text.assemble(
