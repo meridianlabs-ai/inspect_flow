@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import find_dotenv, load_dotenv
-from inspect_ai._util.file import dirname, filesystem
+from inspect_ai._util.file import filesystem
 from inspect_ai._util.path import chdir_python
 
 from inspect_flow._config.load import (
@@ -19,44 +19,53 @@ from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import is_loading_spec
 
+_initialized = False
 
-def _init_api(
-    log_level: str,
-    display: DisplayType,
-    dotenv: bool,
-    base_dir: str,
+
+def init(
+    log_level: str = DEFAULT_LOG_LEVEL,
+    display: DisplayType = "full",
+    dotenv_base_dir: str | None = ".",
 ) -> None:
+    """Initialize the inspect_flow API.
+
+    Args:
+        log_level: The Inspect Flow log level to use.
+        display: The display mode.
+        dotenv_base_dir: Directory (or file path) to search for .env files.
+            If a file path is given, its parent directory is used.
+            None to skip .env loading. Defaults to "." (current working directory).
+    """
+    global _initialized
+    _initialized = True
     init_flow_logging(log_level)
     set_display_type(display)
-    if dotenv:
-        dotenv_dir = base_dir if filesystem(base_dir).is_local() else "."
-        with chdir_python(dotenv_dir):
+    if dotenv_base_dir is not None:
+        if not filesystem(dotenv_base_dir).is_local():
+            dotenv_base_dir = "."
+        elif Path(dotenv_base_dir).is_file():
+            dotenv_base_dir = str(Path(dotenv_base_dir).parent)
+        with chdir_python(dotenv_base_dir):
             load_dotenv(find_dotenv(usecwd=True))
+
+
+def _ensure_init() -> None:
+    if not _initialized:
+        init()
 
 
 def load_spec(
     file: str,
     *,
-    log_level: str = DEFAULT_LOG_LEVEL,
-    display: DisplayType = "full",
-    dotenv: bool = True,
     args: dict[str, Any] | None = None,
 ) -> FlowSpec:
     """Load a spec from file.
 
     Args:
         file: The path to the spec file.
-        log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
-        display: The display mode.
-        dotenv: If True, load environment variables from a .env file.
         args: A dictionary of arguments to pass as kwargs to the function in the flow config.
     """
-    _init_api(
-        log_level=log_level,
-        display=display,
-        dotenv=dotenv,
-        base_dir=dirname(file) or ".",
-    )
+    _ensure_init()
     return int_load_spec(file=file, options=ConfigOptions(args=args or {}))
 
 
@@ -65,9 +74,6 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
-    log_level: str = DEFAULT_LOG_LEVEL,
-    display: DisplayType = "full",
-    dotenv: bool = True,
 ) -> None:
     """Run an inspect_flow evaluation.
 
@@ -75,9 +81,6 @@ def run(
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If True, do not run eval, but show a count of tasks that would be run.
-        log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
-        display: The display mode.
-        dotenv: If True, load environment variables from a .env file.
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -88,8 +91,8 @@ def run(
             "Return the FlowSpec object instead and let the CLI handle execution. "
             "Or execute the file directly using python."
         )
+    _ensure_init()
     base_dir = base_dir or Path().cwd().as_posix()
-    _init_api(log_level=log_level, display=display, dotenv=dotenv, base_dir=base_dir)
     spec = expand_spec(spec, base_dir=base_dir)
     launch(
         spec=spec,
@@ -101,45 +104,28 @@ def run(
 def config(
     spec: FlowSpec,
     base_dir: str | None = None,
-    *,
-    log_level: str = DEFAULT_LOG_LEVEL,
-    display: DisplayType = "full",
-    dotenv: bool = True,
 ) -> str:
     """Return the flow spec configuration.
 
     Args:
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
-        log_level: The Inspect Flow log level to use. Use spec.options.log_level to set the Inspect AI log level.
-        display: The display mode.
-        dotenv: If True, load environment variables from a .env file.
     """
+    _ensure_init()
     base_dir = base_dir or Path().cwd().as_posix()
-    _init_api(log_level=log_level, display=display, dotenv=dotenv, base_dir=base_dir)
     spec = expand_spec(spec, base_dir=base_dir)
     dump = config_to_yaml(spec)
     return dump
 
 
-def store_get(
-    store: str = "auto",
-    create: bool = True,
-    *,
-    log_level: str = DEFAULT_LOG_LEVEL,
-    display: DisplayType = "full",
-    dotenv: bool = True,
-) -> FlowStore:
+def store_get(store: str = "auto", create: bool = True) -> FlowStore:
     """Get a FlowStore instance.
 
     Args:
         store: The store location. Can be a path to the store directory or "auto" for the default store location.
         create: Whether to create the store if it does not exist.
-        log_level: The Inspect Flow log level to use.
-        display: The display mode.
-        dotenv: If True, load environment variables from a .env file.
     """
-    _init_api(log_level=log_level, display=display, dotenv=dotenv, base_dir=".")
+    _ensure_init()
     flow_store = store_factory(store, base_dir=".", create=create)
     if not flow_store:
         raise ValueError(f"Could not open store at {store}")
