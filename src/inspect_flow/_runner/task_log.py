@@ -186,7 +186,7 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> _TaskQualifiers:
 
 def create_task_log_display(
     task_log_info: dict[str, TaskLogInfo],
-    completed=False,
+    completed: bool = False,
 ) -> RenderableType:
     total = len(task_log_info)
     num_complete = sum(

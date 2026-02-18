@@ -172,7 +172,7 @@ def _print_result(
     success, logs = result
     num_success = len([log for log in logs if log.status == "success"])
     if success and num_success < len(logs):
-        logger.error("Some logs failured even though the eval set succeeded.")
+        logger.error("Some logs failed even though the eval set succeeded.")
     elif not success and num_success == len(logs):
         logger.error("All logs successful even though the eval set failed.")
 

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 import click
 from click import Context, HelpFormatter
@@ -24,12 +24,13 @@ class ArgumentsHelpCommand(click.Command):
 
     def __init__(
         self,
-        *args: object,
+        name: str | None,
+        *,
         arguments_help: dict[str, str] | None = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> None:
         self.arguments_help = arguments_help or {}
-        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        super().__init__(name, **kwargs)
 
     def format_help(self, ctx: Context, formatter: HelpFormatter) -> None:
         self.format_usage(ctx, formatter)
