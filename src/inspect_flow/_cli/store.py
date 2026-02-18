@@ -165,12 +165,13 @@ def store_import(
     if not flow_store:
         return
     if copy_from:
-        recursive = False
         if len(path) != 1:
             raise click.UsageError(
                 "When using --copy-from, exactly one PATH must be specified"
             )
-        copy_all_logs(src_dir=copy_from, dest_dir=path[0], dry_run=dry_run)
+        copy_all_logs(
+            src_dir=copy_from, dest_dir=path[0], dry_run=dry_run, recursive=recursive
+        )
     flow_store.import_log_path(
         list(path), recursive=recursive, dry_run=dry_run, verbose=True
     )
