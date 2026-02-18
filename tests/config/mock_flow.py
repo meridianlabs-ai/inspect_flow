@@ -5,7 +5,7 @@ my_config = FlowSpec(
     options=FlowOptions(limit=1),
     tasks=[
         FlowTask(
-            name="inspect_evals/gpqa_diamond",
+            name="local_eval/noop",
             model="mockllm/mock-llm",
         )
     ],
