@@ -204,7 +204,7 @@ class FullActionsDisplay(Display):
     ) -> None:
         if not self._live:
             return
-        if duration := os.environ.get("INSPECT_FLOW_DISPLAY_SLEEP"):
+        if duration := os.environ.get("INSPECT_FLOW_DISPLAY_SLEEP"):  # pragma: no cover
             sleep(float(duration))
         set_display(None)
         self._live.__exit__(exc_type, exc_val, exc_tb)
