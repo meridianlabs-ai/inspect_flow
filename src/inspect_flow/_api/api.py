@@ -49,9 +49,9 @@ def init(
             load_dotenv(find_dotenv(usecwd=True))
 
 
-def _ensure_init() -> None:
+def _ensure_init(dotenv_base_dir: str | None) -> None:
     if not _initialized:
-        init()
+        init(dotenv_base_dir=dotenv_base_dir)
 
 
 def load_spec(
@@ -65,7 +65,7 @@ def load_spec(
         file: The path to the spec file.
         args: A dictionary of arguments to pass as kwargs to the function in the flow config.
     """
-    _ensure_init()
+    _ensure_init(dotenv_base_dir=file)
     return int_load_spec(file=file, options=ConfigOptions(args=args or {}))
 
 
@@ -91,7 +91,7 @@ def run(
             "Return the FlowSpec object instead and let the CLI handle execution. "
             "Or execute the file directly using python."
         )
-    _ensure_init()
+    _ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir)
     launch(
@@ -111,7 +111,7 @@ def config(
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
     """
-    _ensure_init()
+    _ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir)
     dump = config_to_yaml(spec)
@@ -125,7 +125,7 @@ def store_get(store: str = "auto", create: bool = True) -> FlowStore:
         store: The store location. Can be a path to the store directory or "auto" for the default store location.
         create: Whether to create the store if it does not exist.
     """
-    _ensure_init()
+    _ensure_init(dotenv_base_dir=".")
     flow_store = store_factory(store, base_dir=".", create=create)
     if not flow_store:
         raise ValueError(f"Could not open store at {store}")
