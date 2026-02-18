@@ -9,10 +9,12 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSpec
 from inspect_ai.model import Model, get_model
+from inspect_flow._display.display import set_display, set_display_type
 from inspect_flow._runner.cli import _read_config, flow_run
 from inspect_flow._runner.logs import (
     _epochs_reducer_changed,
     _num_samples,
+    find_existing_logs,
     num_log_samples,
 )
 from inspect_flow._runner.resolve import resolve_spec
@@ -205,6 +207,37 @@ class TestNumLogSamples:
         assert num_log_samples(header, info, None) == 6
 
 
+class TestFindExistingLogs:
+    @patch("inspect_flow._runner.logs.list_all_eval_logs")
+    def test_unexpected_log_raises_prerequisite_error(
+        self, mock_list_logs: MagicMock, recording_console: Console
+    ) -> None:
+        unrecognized_log = MagicMock()
+        unrecognized_log.task_identifier = "unknown_task_id"
+        unrecognized_log.info.name = "/logs/unexpected.eval"
+        mock_list_logs.return_value = [unrecognized_log]
+
+        spec = FlowSpec(tasks=["t"], log_dir="./logs")
+        with pytest.raises(PrerequisiteError, match="not associated with a task"):
+            find_existing_logs(task_id_to_task={}, spec=spec, store=None)
+
+    @patch("inspect_flow._runner.logs.list_all_eval_logs")
+    def test_unexpected_log_allowed_when_dirty(
+        self, mock_list_logs: MagicMock, recording_console: Console
+    ) -> None:
+        unrecognized_log = MagicMock()
+        unrecognized_log.task_identifier = "unknown_task_id"
+        mock_list_logs.return_value = [unrecognized_log]
+
+        spec = FlowSpec(
+            tasks=["t"],
+            log_dir="./logs",
+            options=FlowOptions(log_dir_allow_dirty=True),
+        )
+        result = find_existing_logs(task_id_to_task={}, spec=spec, store=None)
+        assert result == {}
+
+
 # ── task_log.py ─────────────────────────────────────────────
 
 
@@ -377,6 +410,10 @@ class TestReadConfig:
 
 
 class TestFlowRunCli:
+    def teardown_method(self) -> None:
+        set_display(None)
+        set_display_type("full")
+
     @patch("inspect_flow._runner.cli.signal_ready_and_wait")
     @patch("inspect_flow._runner.cli.run_eval_set")
     def test_invokes_run_eval_set(

@@ -1187,6 +1187,31 @@ def test_log_copy(recording_console: Console) -> None:
     assert "Copying 1 existing log to log dir" in out
 
 
+def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) -> None:
+    log_dir1 = str(tmp_path / "logs1")
+    log_dir2 = str(tmp_path / "logs2")
+
+    task1 = FlowTask(name=task_file + "@noop", model="mockllm/model-a")
+    task2 = FlowTask(name=task_file + "@noop", model="mockllm/model-b")
+
+    # Run task1 in logdir1 (store indexes it automatically)
+    run_eval_set(spec=FlowSpec(log_dir=log_dir1, tasks=[task1]), base_dir=".")
+    # Run task2 in logdir2 (store indexes it automatically)
+    run_eval_set(spec=FlowSpec(log_dir=log_dir2, tasks=[task2]), base_dir=".")
+
+    recording_console.export_text()  # Clear previous output
+
+    # Run both tasks in logdir1 — task1 found locally, task2 copied from store
+    run_eval_set(
+        spec=FlowSpec(log_dir=log_dir1, tasks=[task1, task2]),
+        base_dir=".",
+    )
+
+    out = recording_console.export_text()
+    assert "Found 1 existing log in log directory" in out
+    assert "Copying 1 existing log" in out
+
+
 def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="info", log_handler_var=log_handler)
