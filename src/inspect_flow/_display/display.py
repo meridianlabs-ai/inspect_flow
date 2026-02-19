@@ -13,6 +13,13 @@ from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
 
 DisplayType = Literal["full", "rich", "plain"]
+"""Display mode for flow output.
+
+Options:
+    - "full": Full interactive display with progress bars and rich formatting
+    - "rich": Rich text formatting without interactive elements
+    - "plain": Plain text output
+"""
 _display_type: DisplayType = "full"
 _display: Display | None = None
 
