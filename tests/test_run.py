@@ -1262,6 +1262,35 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     assert "Copying 1 existing log to log dir" in out
 
 
+def test_log_level_from_flow(mock_eval_set: MagicMock) -> None:
+    init_flow_logging(log_level="info")
+    run_eval_set(
+        spec=FlowSpec(
+            log_dir=init_test_logs(),
+            tasks=[task_file + "@noop"],
+        ),
+        base_dir=".",
+    )
+
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["log_level"] == "info"
+
+
+def test_log_level_from_options(mock_eval_set: MagicMock) -> None:
+    init_flow_logging(log_level="info")
+    run_eval_set(
+        spec=FlowSpec(
+            log_dir=init_test_logs(),
+            options=FlowOptions(log_level="debug"),
+            tasks=[task_file + "@noop"],
+        ),
+        base_dir=".",
+    )
+
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["log_level"] == "debug"
+
+
 def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     log_dir = init_test_logs()
     spec = FlowSpec(

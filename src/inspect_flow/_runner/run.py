@@ -33,6 +33,7 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._util.console import flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
+from inspect_flow._util.logging import get_last_log_level
 from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.path_util import cwd_relative_path
 
@@ -54,6 +55,7 @@ def run_eval_set(
     options = resolved_spec.options or FlowOptions()
     display_type = options.display or get_display_type()
     init_display_type(display_type)
+    log_level = options.log_level or get_last_log_level()
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
@@ -104,7 +106,7 @@ def run_eval_set(
             display=default_none(display_type),
             approval=default_none(options.approval),
             score=default(options.score, True),
-            log_level=default_none(options.log_level),
+            log_level=default_none(log_level),
             log_level_transcript=default_none(options.log_level_transcript),
             log_format=default_none(options.log_format),
             limit=default_none(options.limit),
