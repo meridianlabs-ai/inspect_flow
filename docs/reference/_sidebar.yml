@@ -58,12 +58,24 @@ website:
       - section: inspect_flow.api
         href: reference/inspect_flow.api.qmd
         contents:
-        - text: config
-          href: reference/inspect_flow.api.qmd#config
-        - text: load_spec
-          href: reference/inspect_flow.api.qmd#load_spec
+        - text: init
+          href: reference/inspect_flow.api.qmd#init
         - text: run
           href: reference/inspect_flow.api.qmd#run
+        - text: load_spec
+          href: reference/inspect_flow.api.qmd#load_spec
+        - text: config
+          href: reference/inspect_flow.api.qmd#config
+        - text: store_get
+          href: reference/inspect_flow.api.qmd#store_get
+        - text: delete_store
+          href: reference/inspect_flow.api.qmd#delete_store
+        - text: copy_all_logs
+          href: reference/inspect_flow.api.qmd#copy_all_logs
+        - text: FlowStore
+          href: reference/inspect_flow.api.qmd#flowstore
+        - text: DisplayType
+          href: reference/inspect_flow.api.qmd#displaytype
     - section: Inspect CLI
       href: reference/flow_config.qmd
       contents:
@@ -71,3 +83,5 @@ website:
         href: reference/flow_config.qmd
       - text: flow run
         href: reference/flow_run.qmd
+      - text: flow store
+        href: reference/flow_store.qmd

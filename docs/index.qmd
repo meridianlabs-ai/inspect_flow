@@ -11,7 +11,7 @@ Inspect Flow is a workflow orchestration tool for [Inspect AI](https://inspect.a
 **Why Inspect Flow?** As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
 
 1.  [**Declarative Configuration**](flow_concepts.qmd): Define complex evaluations with tasks, models, and parameters in type-safe schemas
-2.  [**Repeatable & Shareable**](dependencies.qmd): Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
+2.  [**Global Log Reuse**](store.qmd): Flow Store tracks and reuses past evaluation logs, so you only run what's new or changed
 3.  [**Powerful Defaults**](defaults.qmd): Define defaults once and reuse them everywhere with automatic inheritance
 4.  [**Parameter Sweeping**](matrix.qmd): Matrix patterns for systematic exploration across tasks, models, and hyperparameters
 
@@ -155,13 +155,13 @@ For even more concise parameter sweeping, use `configs_matrix` to generate confi
 
 ### Run evaluations
 
-Before running evaluations, preview the resolved configuration with `--dry-run`:
+Before running evaluations, preview what would run with `--dry-run`:
 
 ``` bash
 flow run matrix.py --dry-run
 ```
 
-This imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
+This performs the full setup process—importing tasks from the registry, applying all defaults, expanding all matrix functions, and checking for existing logs—showing exactly what would run, but stops before actually running the evaluations.
 
 To run the config:
 
@@ -170,18 +170,6 @@ flow run matrix.py
 ```
 
 This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
-
-::: callout-tip
-### Virtual Environment Mode
-
-For reproducible evaluation runs, you can use virtual environment mode which automatically creates an isolated environment and installs dependencies:
-
-``` bash
-flow run matrix.py --venv
-```
-
-Or set `execution_type="venv"` in your `FlowSpec`. Virtual environment mode automatically installs packages based on your config (e.g., `model="openai/gpt-4"` installs `openai`) and dependency files, making it easy to share workflows with others. See [Execution Modes](run.qmd#execution-modes) to learn more.
-:::
 
 ![Log path printed in terminal](images/logs_terminal.png)
 
@@ -198,6 +186,7 @@ inspect view --log-dir logs
 See the following articles to learn more about using Flow:
 
 -   [Flow Concepts](flow_concepts.qmd): Flow type system, config structure and basics.
+-   [Flow Store](store.qmd): How Flow tracks and reuses evaluation logs across runs—automatically skipping redundant work.
 -   [Defaults](defaults.qmd): Define defaults once and reuse them everywhere with automatic inheritance.
 -   [Matrixing](matrix.qmd): Systematic parameter exploration with matrix and with functions.
 -   [Reference](reference/index.qmd): Detailed documentation on the Flow Python API and CLI commands.

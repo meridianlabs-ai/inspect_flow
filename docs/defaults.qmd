@@ -77,7 +77,10 @@ To avoid overriding a FlowTask field, omit it entirely rather than setting it to
 {{< include ../examples/merge_none_generate_config.py >}}
 ```
 
-**Validating the resolved config:** You can always review and validate the final resolved configuration by running `flow run config.py --dry-run` or `flow config config.py` which will print the resolved config in YAML format. Note that `--dry-run` performs the full setup process (including creating a virtual environment and installing dependencies in venv mode) but stops before running evaluations.
+**Validating the resolved config:** You can preview your configuration before running:
+
+- **`flow config config.py`** - View the expanded config as YAML (applies defaults, includes, overrides).
+- **`flow run config.py --dry-run`** - Perform the full setup process (instantiate tasks, check for existing logs) showing what would run, but stop before running evaluations.
 :::
 
 ### Constructor Arguments
@@ -210,6 +213,21 @@ Then all configs in subdirectories automatically inherit these defaults, which c
 When using inheritance to define shared defaults, you can enforce critical settings by preventing including configs from overriding them. See [Lock Configuration Fields](advanced.qmd#lock-configuration-fields) in the Advanced section to learn how to lock inherited or default values and prevent them from being overwritten.
 :::
 
+::: callout-tip
+### Team Collaboration
+
+The `_flow.py` inheritance pattern is especially useful for team collaboration. For example, you can configure a shared Flow Store location in `_flow.py` at your repository root:
+
+```python
+# _flow.py (at repository root)
+FlowSpec(
+    store="s3://my-team-bucket/flow-store"
+)
+```
+
+All team members working in the repository will automatically use the shared store, enabling log reuse across the team. See [Flow Store](store.qmd#team-collaboration) for more details.
+:::
+
 ## CLI Overrides {#cli-overrides}
 
 Override config values at runtime using the `--set` flag:
@@ -282,12 +300,15 @@ flow run config.py
 |---------------------------------------|----------------------------|----------------------------------------------------------|
 | `INSPECT_FLOW_LOG_DIR`                | `--log-dir`                | Override log directory                                   |
 | `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`  | `--log-dir-create-unique`  | Create new log directory with numeric suffix if exists   |
+| `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY`    | `--log-dir-allow-dirty`    | Allow log directory to contain logs not in the eval set  |
 | `INSPECT_FLOW_LOG_LEVEL`              | `--log-level`              | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level.   |
+| `INSPECT_FLOW_DISPLAY`                | `--display`                | Display mode: `full` (live progress, default), `plain` (simple text for CI), or `rich` (rich formatting without live updates) |
+| `INSPECT_FLOW_STORE`                  | `--store`                  | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
 | `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
 | `INSPECT_FLOW_VENV`                   | `--venv`                   | Create a virtual environment to run the Flow spec |
-| `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Preview resolved configuration without running evaluations. In venv mode, creates virtual environment and installs dependencies. |
+| `INSPECT_FLOW_DRY_RUN`                | `--dry-run`                | Perform full setup and show what would run without actually running evaluations |
 
 ::: callout-tip
 ### Override Priority
@@ -300,14 +321,14 @@ Setting defaults via the command line will override the defaults which in turn m
 
 **Settings with multiple override levels**:
 
-Priority order for `log-dir`, `log-dir-create-unique` and `limit`:
+Priority order for `log-dir`, `log-dir-create-unique`, `limit` and `store`:
 
 1.  `FlowSpec` defaults
 2.  Explicit setting on the `FlowSpec`
 3.  `INSPECT_FLOW_SET_` environment variables
 4.  CLI `--set` flags
-5.  `INSPECT_FLOW_LOG_DIR`, `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` and `INSPECT_FLOW_LIMIT` environment variables
-6.  Explicit `--log-dir`, `--log-dir-create-unique` and `--limit` CLI flags
+5.  `INSPECT_FLOW_LOG_DIR`, `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`, `INSPECT_FLOW_LIMIT` and `INSPECT_FLOW_STORE` environment variables
+6.  Explicit `--log-dir`, `--log-dir-create-unique`, `--limit` and `--store` CLI flags
 
 Priority order for all other settings:
 
@@ -319,10 +340,18 @@ Priority order for all other settings:
 
 ## Debugging
 
-To see the fully resolved configuration with all defaults, inheritance, and overrides applied:
+To debug your configuration with all defaults, inheritance, and overrides applied:
+
+**View the resolved config as YAML:**
+
+``` bash
+flow config config.py
+```
+
+**Preview what would run:**
 
 ``` bash
 flow run config.py --dry-run
 ```
 
-This performs the full setup process—applying all defaults, expanding matrix functions, and instantiating Python objects—and prints exactly what settings each task will use. In virtual environment mode, it also creates the environment and installs dependencies to ensure the configuration is fully validated before you run evaluations.
+The `flow config` command quickly displays the expanded configuration as YAML. The `--dry-run` flag performs the full setup process—instantiating tasks from the registry and checking for existing logs—showing exactly which tasks would run and which logs would be reused, but stops before actually running the evaluations.

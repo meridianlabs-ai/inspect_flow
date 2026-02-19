@@ -5,76 +5,6 @@ tbl-colwidths: [30,70]
 
 Once you've defined your Flow configuration, you can execute evaluations using the `flow run` command. Flow also provides tools for previewing configurations and controlling runtime behavior.
 
-## Execution Modes
-
-Flow supports two execution modes that determine how your evaluations run: **in-process (inproc)** and **virtual environment (venv)**. Understanding these modes helps you choose the right approach for your workflow.
-
-### In-Process Mode (Default)
-
-By default, Flow runs evaluations in your current Python process without creating an isolated environment.
-
-**Characteristics:**
-
-- Runs directly in your current Python environment
-- No automatic dependency installation—you manage packages yourself
-- Supports direct use of Inspect AI objects (`Task`, `Model`, `Solver`, `Agent`)
-- Faster startup (no environment creation overhead)
-- Best for development, iteration, and when you control the environment
-
-**Example:**
-
-``` {.python filename="inproc_mode.py"}
-{{< include ../examples/inproc_mode.py >}}
-```
-
-1. Direct Inspect AI Task object (supported in inproc mode)
-2. Registry reference works in both modes
-
-### Virtual Environment Mode
-
-Opt into virtual environment mode for isolated, reproducible evaluation runs.
-
-**Characteristics:**
-
-- Creates a fresh, isolated virtual environment for each run
-- Automatically installs dependencies from `pyproject.toml`, `uv.lock`, or `requirements.txt`
-- Auto-detects and installs packages based on config (e.g., `model="openai/gpt-4"` → installs `openai`)
-- Requires Flow types only—cannot use direct Inspect AI objects (`Task`, `Model`, etc.)
-- Best for reproducibility and sharing
-
-**Example:**
-
-``` {.python filename="venv_mode.py"}
-{{< include ../examples/venv_mode.py >}}
-```
-
-1. Enable virtual environment mode
-2. Optional: specify Python version
-
-Or use the CLI flag:
-
-``` bash
-flow run config.py --venv
-```
-
-### Choosing Between Modes
-
-| Consideration | In-Process (inproc) | Virtual Environment (venv) |
-|---------------|---------------------|----------------------------|
-| **Default** | Yes ✓ | No (opt-in) |
-| **Dependency installation** | Manual | Automatic |
-| **Startup speed** | Fast | Slower (creates venv) |
-| **Inspect AI objects** | Supported | Not supported |
-| **Reproducibility** | Requires manual setup | Built-in |
-| **Isolation** | Uses current environment | Fresh environment |
-| **Best for** | Development, iteration | Production, sharing, CI/CD |
-
-::: callout-tip
-### Dependency Management in In-Process Mode
-
-Even though in-process mode doesn't install dependencies automatically, Flow still generates a `flow-requirements.txt` file in your log directory that captures your current environment. This helps with reproducibility by documenting what packages were installed when you ran the evaluation.
-:::
-
 ## The `flow run` Command
 
 Execute your evaluation workflow:
@@ -83,16 +13,25 @@ Execute your evaluation workflow:
 flow run config.py
 ```
 
-**What happens when you run this (in-process mode, the default):**
+**What happens when you run this:**
 
 1.  Flow loads your configuration file
 2.  Resolves all defaults and matrix expansions
-3.  Executes evaluations via Inspect AI's `eval_set()` in the current Python process
-4.  Stores logs in `log_dir`
-5.  Generates `flow-requirements.txt` to document the current environment
+3.  Searches the Flow Store for existing logs to reuse
+4.  Executes evaluations via Inspect AI's `eval_set()` in the current Python process
+5.  Stores logs in `log_dir`
+6.  Adds logs to the Flow Store and generates `flow-requirements.txt`
 
-::: callout-note
-In virtual environment mode (`execution_type="venv"` or `--venv` flag), Flow additionally creates an isolated virtual environment, installs dependencies, and cleans up the temporary environment after completion.
+::: callout-tip
+### Virtual Environment Mode
+
+For reproducible evaluation runs, you can use [virtual environment mode](advanced.qmd#virtual-environment-mode) which automatically creates an isolated environment and installs dependencies:
+
+``` bash
+flow run matrix.py --venv
+```
+
+Or set `execution_type="venv"` in your `FlowSpec`. Virtual environment mode automatically installs packages based on your config (e.g., `model="openai/gpt-4"` installs `openai`) and dependency files, making it easy to share workflows with others. See [Execution Modes](advanced.qmd#execution-modes) to learn more.
 :::
 
 ### Common CLI Flags
@@ -103,14 +42,15 @@ In virtual environment mode (`execution_type="venv"` or `--venv` flag), Flow add
 flow run config.py --dry-run
 ```
 
-Shows the completely resolved configuration:
+Performs the full setup process and shows what would run:
 
-- Applies all defaults
-- Expands all matrix functions
-- Instantiates all Python objects
-- In venv mode: creates virtual environment and installs dependencies
+- Applies all defaults and expands all matrix functions
+- Instantiates tasks from the registry
+- Checks for existing logs (in log directory and Flow Store)
+- Shows which tasks would run and which logs would be reused
+- Stops before actually running evaluations
 
-This is invaluable for debugging what settings will actually be used in your evaluations.
+This is invaluable for debugging what will actually run in your evaluations.
 
 **Override log directory:**
 
@@ -138,13 +78,13 @@ Preview your configuration before running:
 flow config config.py
 ```
 
-Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment, install dependencies, or instantiate Python objects—it only parses and resolves the configuration file.
+Displays the expanded configuration as YAML (applies defaults, includes, and CLI overrides). Does not instantiate tasks or check for existing logs—it only loads and expands the configuration file.
 
 ::: callout-tip
 ### When to Use Each Command
 
--   **`flow config`** - Quick syntax check, verify overrides
--   **`flow run --dry-run`** - Debug defaults resolution, inspect final settings
+-   **`flow config`** - View expanded config as YAML, quick syntax check
+-   **`flow run --dry-run`** - Preview what would run, check which logs would be reused
 -   **`flow run`** - Execute evaluations
 :::
 
@@ -156,13 +96,15 @@ You can run Flow evaluations programmatically using the Python API:
 {{< include ../examples/python.py >}}
 ```
 
-The `inspect_flow.api` module provides three functions:
+The `inspect_flow.api` module provides programmatic access to Flow capabilities. Key functions include:
 
 - **`run()`** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
 - **`load_spec()`** - Load a Flow configuration from a Python file into a `FlowSpec` object
-- **`config()`** - Get the resolved configuration as YAML (equivalent to `flow config`)
+- **`config()`** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
+- **`init()`** - Initialize Flow session settings (logging, display, .env loading)
+- **`store_get()`** - Get a FlowStore instance for programmatic store access
 
-See the [API Reference](reference/inspect_flow.api.qmd) for detailed parameter documentation.
+See the [API Reference](reference/inspect_flow.api.qmd) for complete documentation.
 
 ## Results and Logs
 
@@ -192,6 +134,10 @@ logs/
     - In **inproc mode**: captures packages from your current environment
 -   The `.eval-set-id` file contains the eval set identifier
 -   The `eval-set.json` file contains eval set metadata
+
+::: callout-note
+Logs in this directory are automatically tracked by the [Flow Store](store.qmd), enabling log reuse across future runs.
+:::
 
 **Log formats:**
 

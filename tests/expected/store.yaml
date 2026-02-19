@@ -1,0 +1,5 @@
+log_dir: project-1
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model:
+    name: openai/gpt-4o
