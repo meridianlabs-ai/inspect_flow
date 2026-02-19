@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.3.0...v0.4.0) (2026-02-19)
+
+
+### Features
+
+* flow store to enable log reuse across directories ([#340](https://github.com/meridianlabs-ai/inspect_flow/issues/340)) ([bc5d993](https://github.com/meridianlabs-ai/inspect_flow/commit/bc5d9935c63cef984edcdc0f6ccc6a61ee6ea716))
+
+
+### Bug Fixes
+
+* add progress console output for loading tasks ([#476](https://github.com/meridianlabs-ai/inspect_flow/issues/476)) ([763023d](https://github.com/meridianlabs-ai/inspect_flow/commit/763023d6d0a3b0b644ee0e6096a592fbb8702a81))
+* avoid extra output on Ctrl+C ([#475](https://github.com/meridianlabs-ai/inspect_flow/issues/475)) ([638bdf6](https://github.com/meridianlabs-ai/inspect_flow/commit/638bdf6d8733e9509cfa39bff9488d580adaf5b6))
+* display_type set in options ([#473](https://github.com/meridianlabs-ai/inspect_flow/issues/473)) ([0fd9213](https://github.com/meridianlabs-ai/inspect_flow/commit/0fd92133e2f1e2f2615fc2eef3fa138e3c91be63))
+
 ## [0.3.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.2...v0.3.0) (2026-02-03)
 
 
