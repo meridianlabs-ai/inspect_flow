@@ -112,10 +112,8 @@ def _matrix_with_base(
     matrix: Mapping[str, Any],
     pydantic_type: type[BaseType],
 ) -> list[BaseType]:
-    is_string_base = isinstance(base, str)
-
     # Check for conflicts (except config which can be merged)
-    if not is_string_base:
+    if not isinstance(base, str):
         for key in matrix.keys():
             if key != "config":
                 base_value = getattr(base, key, None)
@@ -131,7 +129,7 @@ def _matrix_with_base(
     for matrix_values in product(*values):
         add_dict = dict(zip(matrix_keys, matrix_values, strict=True))
 
-        if is_string_base:
+        if isinstance(base, str):
             # For string base, create new object with name and values
             result.append(pydantic_type.model_validate({"name": base, **add_dict}))
         else:
@@ -150,7 +148,7 @@ def _matrix_with_base(
             validated_updates = _validate_updates(updates, pydantic_type)
 
             # Use model_copy to preserve non-serializable objects from base
-            result.append(base.model_copy(update=validated_updates))  # type: ignore[arg-type]
+            result.append(base.model_copy(update=validated_updates))
 
     return result
 

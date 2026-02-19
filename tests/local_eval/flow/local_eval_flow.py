@@ -3,6 +3,7 @@ from inspect_flow._types.flow_types import FlowAgent
 from local_eval import add, my_agent, noop2
 
 FlowSpec(
+    store=None,
     options=FlowOptions(limit=1),
     tasks=tasks_matrix(
         task=[

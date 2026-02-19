@@ -6,26 +6,82 @@ os.environ["COLUMNS"] = "500"
 os.environ["NO_COLOR"] = "1"
 
 import importlib.util
+import inspect
 import subprocess
 from collections.abc import Generator
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, TypeVar, cast
 from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
 from botocore.client import BaseClient
-from moto.server import ThreadedMotoServer
+from inspect_ai._util.logger import LogHandlerVar
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.logging import init_flow_logging
 from rich.console import Console
 
 
-@pytest.fixture(scope="session")
-def moto_server() -> Generator[ThreadedMotoServer, None, None]:
-    """Start moto server once for entire test session."""
-    server = ThreadedMotoServer(port=19100)
-    server.start()
+def mock_call_arg(
+    func: Callable[..., Any], mock: MagicMock, name: str, call_index: int = 0
+) -> Any:
+    """Get a mock call argument by parameter name, regardless of how it was passed."""
+    call = mock.call_args_list[call_index]
+    bound = inspect.signature(func).bind(*call.args, **call.kwargs)
+    return bound.arguments[name]
 
-    os.environ["AWS_ENDPOINT_URL"] = "http://127.0.0.1:19100"
+
+@pytest.fixture(autouse=True)
+def init_log_handler() -> None:
+    log_handler: LogHandlerVar = {"handler": None}
+    init_flow_logging(log_level=DEFAULT_LOG_LEVEL, log_handler_var=log_handler)
+
+
+@pytest.fixture(autouse=True)
+def isolate_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure tests never touch real user store."""
+    monkeypatch.setattr(
+        "inspect_flow._store.store._get_default_store_dir",
+        lambda: tmp_path / "test_store",
+    )
+
+
+class MotoServer:
+    """Moto S3 mock running in a separate process (avoids GIL deadlocks with Rust HTTP clients)."""
+
+    def __init__(self) -> None:
+        import socket
+        import time
+        import urllib.request
+
+        with socket.socket() as sock:
+            sock.bind(("", 0))
+            port = sock.getsockname()[1]
+
+        self._proc = subprocess.Popen(
+            ["moto_server", "-p", str(port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        self.url = f"http://127.0.0.1:{port}"
+        for _ in range(50):
+            try:
+                urllib.request.urlopen(self.url, timeout=0.5)
+                break
+            except Exception:
+                time.sleep(0.1)
+
+    def stop(self) -> None:
+        self._proc.terminate()
+        self._proc.wait()
+
+
+@pytest.fixture(scope="session")
+def moto_server() -> Generator[MotoServer, None, None]:
+    server = MotoServer()
+
+    os.environ["AWS_ENDPOINT_URL"] = server.url
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -36,7 +92,7 @@ def moto_server() -> Generator[ThreadedMotoServer, None, None]:
 
 
 @pytest.fixture(scope="function")
-def mock_s3(moto_server: ThreadedMotoServer) -> Generator[BaseClient, None, None]:
+def mock_s3(moto_server: MotoServer) -> Generator[BaseClient, None, None]:
     """Create and cleanup bucket for each test."""
     s3_client = boto3.client("s3")
     s3_client.create_bucket(Bucket="test-bucket")
@@ -167,7 +223,13 @@ def recording_console() -> Generator[Console, None, None]:
     Use `recording_console.export_text()` to get the captured output.
     """
     recording = Console(record=True, force_terminal=True)
-    with patch("inspect_flow._util.console.console", recording):
+    with (
+        patch("inspect_flow._util.console.console", recording),
+        patch("inspect_flow._display.full.console", recording),
+        patch("inspect_flow._display.full_actions.console", recording),
+        patch("inspect_flow._display.plain.console", recording),
+        patch("inspect_flow._cli.store.console", recording),
+    ):
         yield recording
 
 

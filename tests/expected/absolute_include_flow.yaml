@@ -2,6 +2,6 @@ log_dir: logs/model_and_task
 options:
   limit: 1
 tasks:
-- name: inspect_evals/mmlu_0_shot
+- name: inspect_evals/gpqa_diamond
   model:
     name: openai/gpt-4o-mini

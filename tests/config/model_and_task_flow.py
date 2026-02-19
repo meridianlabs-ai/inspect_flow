@@ -5,7 +5,7 @@ my_config = FlowSpec(
     options=FlowOptions(limit=1),
     tasks=[
         FlowTask(
-            name="inspect_evals/mmlu_0_shot",
+            name="inspect_evals/gpqa_diamond",
             model="openai/gpt-4o-mini",
         )
     ],

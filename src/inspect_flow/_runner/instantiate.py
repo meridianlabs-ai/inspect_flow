@@ -19,9 +19,10 @@ from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
 from inspect_ai.util import registry_create
 from pydantic import BaseModel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, TextColumn
 from typing_extensions import Literal
 
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.flow_types import (
     CreateArgs,
     FlowAgent,
@@ -35,7 +36,6 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
-from inspect_flow._util.console import console, print
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 
@@ -76,14 +76,12 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
     if not task_configs:
         return []
     results: list[InstantiatedTask] = []
-    print("\nInstantiating tasks")
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.percentage]{task.completed}/{task.total}"),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-        transient=True,
-    ) as progress:
+    with RunAction("instantiate") as action:
+        progress = Progress(
+            TextColumn("[progress.percentage]{task.completed}/{task.total}"),
+            TextColumn("[progress.description]{task.description}"),
+        )
+        action.update(info=progress)
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
         for task_config in task_configs:
             task_name = _get_task_name(task_config)
@@ -98,7 +96,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
                     )
                 )
             progress.advance(progress_task)
-    print(f"Instantiated {len(results)} tasks\n", format="success")
+        action.update(info=f"Instantiated {len(results)} tasks")
     return results
 
 

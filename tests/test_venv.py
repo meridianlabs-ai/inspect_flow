@@ -8,11 +8,14 @@ import pytest
 from botocore.client import BaseClient
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
 from inspect_flow._launcher.venv import _create_venv, venv_launch
 from rich.console import Console
+
+_test_action = RunAction("test")
 
 
 def test_no_dependencies() -> None:
@@ -27,17 +30,21 @@ def test_no_dependencies() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert len(args) == 5
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
             ]
+            assert "inspect-ai" in args[4]
 
 
 def test_dependencies() -> None:
@@ -60,12 +67,14 @@ def test_dependencies() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:5] == [
                 "uv",
                 "pip",
                 "install",
@@ -92,12 +101,14 @@ def test_relative_dependency() -> None:
             base_dir=base_dir,
             temp_dir=temp_dir,
             env=os.environ.copy(),
+            dry_run=False,
+            action=_test_action,
         )
 
         assert mock_run.call_count == 2
         args = mock_run.call_args.args[0]
         flow_path = str((Path(__file__).parents[1]).resolve())
-        assert args == [
+        assert args[:5] == [
             "uv",
             "pip",
             "install",
@@ -142,7 +153,7 @@ def test_auto_dependency() -> None:
             )
             # Add a string task to test that code path
             assert isinstance(spec.tasks, list)
-            spec.tasks.append("inspect_evals/task_name")
+            spec.tasks.append("inspect_evals1/task_name")
             # Add a string solver to test that code path
             assert isinstance(spec.tasks[0], FlowTask)
             spec.tasks[0].solver = "solver_package/solver_name"
@@ -152,19 +163,21 @@ def test_auto_dependency() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:14] == [
                 "uv",
                 "pip",
                 "install",
                 _get_pip_string_with_version("anthropic"),
                 _get_pip_string_with_version("google-genai"),
                 _get_pip_string_with_version("groq"),
-                "inspect_evals",
+                "inspect_evals1",
                 "inspect_evals2",
                 "inspect_evals3",
                 _get_pip_string_with_version("openai"),
@@ -198,12 +211,14 @@ def test_no_auto_dependency() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",
@@ -234,12 +249,14 @@ def test_no_file() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:7] == [
                 "uv",
                 "pip",
                 "install",
@@ -264,6 +281,8 @@ def test_python_version() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
@@ -298,6 +317,8 @@ def test_5_flow_requirements() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
         requirements_path = log_dir / "flow-requirements.txt"
@@ -325,6 +346,7 @@ def test_333_no_flow_requirements() -> None:
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
                 dry_run=True,
+                action=_test_action,
             )
 
         assert mock_run.call_count == 2
@@ -348,6 +370,8 @@ def test_241_dependency_file() -> None:
             base_dir=".",
             temp_dir=temp_dir,
             env=env,
+            dry_run=False,
+            action=_test_action,
         )
         requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
@@ -380,6 +404,8 @@ def test_241_no_uvlock() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=env,
+                dry_run=False,
+                action=_test_action,
             )
             requirements_path = Path("logs") / "flow-requirements.txt"
             assert requirements_path.exists()
@@ -407,6 +433,8 @@ def test_241_requirements_txt() -> None:
             base_dir=".",
             temp_dir=temp_dir,
             env=env,
+            dry_run=False,
+            action=_test_action,
         )
         requirements_path = Path("logs") / "flow-requirements.txt"
         assert requirements_path.exists()
@@ -432,6 +460,8 @@ def test_241_does_not_exist() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=env,
+                dry_run=False,
+                action=_test_action,
             )
 
 
@@ -452,6 +482,8 @@ def test_241_unsupported() -> None:
                 base_dir=".",
                 temp_dir=temp_dir,
                 env=env,
+                dry_run=False,
+                action=_test_action,
             )
 
 
@@ -475,6 +507,8 @@ def test_241_not_found() -> None:
                 base_dir="/",
                 temp_dir=temp_dir,
                 env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
             )
 
             assert mock_run.call_count == 2
@@ -488,7 +522,7 @@ def test_241_not_found() -> None:
 
             args = mock_run.mock_calls[1].args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert args == [
+            assert args[:4] == [
                 "uv",
                 "pip",
                 "install",
@@ -515,6 +549,8 @@ def test_325_uv_sync_args() -> None:
                     base_dir=".",
                     temp_dir=temp_dir,
                     env=os.environ.copy(),
+                    dry_run=False,
+                    action=_test_action,
                 )
 
                 assert mock_run.call_count == 2
@@ -547,6 +583,8 @@ def test_369_flow_requirements_s3(mock_s3: BaseClient) -> None:
             base_dir=".",
             temp_dir=temp_dir,
             env=env,
+            dry_run=False,
+            action=_test_action,
         )
 
         # Verify flow-requirements.txt was created in S3
@@ -677,7 +715,6 @@ def test_pip_error(recording_console: Console) -> None:
             spec=spec,
             base_dir=".",
             dry_run=False,
-            no_dotenv=False,
         )
 
     output = " ".join(recording_console.export_text().split())

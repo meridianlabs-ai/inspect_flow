@@ -55,14 +55,14 @@ website:
           contents:
             - text: Flow Concepts
               href: flow_concepts.qmd
-            - text: Dependencies
-              href: dependencies.qmd
             - text: Defaults
               href: defaults.qmd
             - text: Matrixing
               href: matrix.qmd
             - text: Running Flows
               href: run.qmd
+            - text: Store
+              href: store.qmd
             - text: Advanced
               href: advanced.qmd
 

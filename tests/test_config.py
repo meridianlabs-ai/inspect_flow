@@ -80,7 +80,7 @@ def test_config_model_and_task() -> None:
     config = FlowSpec(
         log_dir="logs/model_and_task",
         options=FlowOptions(limit=1),
-        tasks=[FlowTask(name="inspect_evals/mmlu_0_shot", model="openai/gpt-4o-mini")],
+        tasks=[FlowTask(name="inspect_evals/gpqa_diamond", model="openai/gpt-4o-mini")],
     )
     spec = apply_defaults(config)
     validate_config(spec, "model_and_task_flow.yaml")
@@ -506,7 +506,7 @@ def test_221_format_map_file() -> None:
     include_path = str(Path(__file__).parent / "config" / "bundle_flow.py")
     spec = load_spec(include_path)
     assert spec.options
-    assert spec.options.bundle_dir == "logs/bundle_flow/bundle"
+    assert spec.options.bundle_dir == "logs/bundle"
     validate_config(spec, "bundle_flow.yaml")
 
 

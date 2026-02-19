@@ -4,14 +4,15 @@ import click
 from dotenv import find_dotenv, load_dotenv
 
 from inspect_flow._cli.config import config_command
-from inspect_flow._util.console import print
+from inspect_flow._cli.store import store_command
+from inspect_flow._util.console import flow_print
 from inspect_flow._util.error import set_exception_hook
 
 from .. import __version__
 from .run import run_command
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings={"max_content_width": 120})
 @click.option(
     "--version",
     type=bool,
@@ -38,6 +39,7 @@ def flow(
 
 flow.add_command(run_command)
 flow.add_command(config_command)
+flow.add_command(store_command)
 
 
 def main() -> None:  # pragma: no cover
@@ -47,14 +49,14 @@ def main() -> None:  # pragma: no cover
         flow(auto_envvar_prefix="INSPECT_FLOW", standalone_mode=False)
     except click.ClickException as e:
         if isinstance(e, click.UsageError) and e.ctx:
-            print("")
-            print(e.ctx.get_usage())
+            flow_print("")
+            flow_print(e.ctx.get_usage())
             if e.ctx.command.get_help_option(e.ctx) is not None:
-                print(
+                flow_print(
                     f"Try '{e.ctx.command_path} {e.ctx.help_option_names[0]}' for help."
                 )
 
-        print("\n[red]Error:[/red]", e.format_message(), format="error")
+        flow_print("\n[red]Error:[/red]", e.format_message(), format="error")
         sys.exit(e.exit_code)
 
 

@@ -7,13 +7,19 @@ from typing_extensions import Unpack
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
+    init_output,
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
+from inspect_flow._display.display import DisplayAction, create_display
 from inspect_flow._launcher.launch import launch
-from inspect_flow._util.console import print
-from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._runner.cli import VENV_ACTIONS
+from inspect_flow._util.console import path
+
+_run_actions = {
+    "load": DisplayAction(description="Load config"),
+    "env": DisplayAction(description="Set up environment"),
+} | VENV_ACTIONS
 
 
 @click.command("run", help="Run a spec")
@@ -38,16 +44,14 @@ def run_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to run a spec."""
-    if dry_run:
-        print("\n[blue][DRY RUN][/blue] Preview mode - no tasks will be executed\n")
-    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
-    init_flow_logging(log_level)
+    init_output(**kwargs)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
-    spec = int_load_spec(config_file, options=config_options)
-    launch(
-        spec,
-        base_dir=str(Path(config_file).parent),
-        dry_run=dry_run,
-        no_dotenv=False,
-    )
+    with create_display(dry_run=dry_run, actions=_run_actions) as display:
+        display.set_title("Flow Spec:", path(config_file))
+        spec = int_load_spec(config_file, options=config_options)
+        launch(
+            spec,
+            base_dir=str(Path(config_file).parent),
+            dry_run=dry_run,
+        )

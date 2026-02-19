@@ -4,6 +4,12 @@ title: "inspect_flow.api"
 
 ## Python API
 
-### config
-### load_spec
+### init
 ### run
+### load_spec
+### config
+### store_get
+### delete_store
+### copy_all_logs
+### FlowStore
+### DisplayType

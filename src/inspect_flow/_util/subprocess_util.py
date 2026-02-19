@@ -5,7 +5,7 @@ import subprocess
 from logging import getLogger
 from typing import Any
 
-from inspect_flow._util.console import print
+from inspect_flow._util.console import flow_print
 
 logger = getLogger(__name__)
 
@@ -88,14 +88,14 @@ def run_with_logging(
 
     # Check return code after logging
     if check and result.returncode != 0:
-        print(
+        flow_print(
             f"Command {' '.join(args)} failed with exit code {result.returncode}",
             format="error",
         )
         if result.stderr:
-            print(result.stderr, format="error")
+            flow_print(result.stderr, format="error")
         else:
-            print(result.stdout, format="error")
+            flow_print(result.stdout, format="error")
         raise subprocess.CalledProcessError(
             result.returncode,
             result.args,

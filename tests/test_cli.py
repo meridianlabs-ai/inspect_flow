@@ -7,16 +7,16 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
+from inspect_flow._cli.store import store_command
 from inspect_flow._config.load import ConfigOptions
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
-CONFIG_FILE = "./tests/config/model_and_task_flow.py"
+CONFIG_FILE = "./tests/config/mock_flow.py"
 CONFIG_FILE_RESOLVED = Path(CONFIG_FILE).resolve().as_posix()
 CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
-    "no_dotenv": False,
     "dry_run": False,
 }
 
@@ -63,6 +63,8 @@ def test_run_command_overrides() -> None:
                 "defaults.solver.args.tool_calls=none",
                 "--log-dir",
                 "s3://my-bucket/flow-logs",
+                "--store",
+                "s3://my-bucket/flow-db",
             ],
             catch_exceptions=False,
         )
@@ -77,6 +79,7 @@ def test_run_command_overrides() -> None:
                 overrides=[
                     "dependencies.additional_dependencies=dep1",
                     "defaults.solver.args.tool_calls=none",
+                    "store=s3://my-bucket/flow-db",
                     "log_dir=s3://my-bucket/flow-logs",
                 ],
                 args={},
@@ -277,27 +280,6 @@ def test_run_command_venv() -> None:
         )
 
 
-def test_run_command_log_level() -> None:
-    runner = CliRunner()
-    with (
-        patch("inspect_flow._cli.run.init_flow_logging") as mock_init_flow_logging,
-        patch("inspect_flow._cli.run.launch") as mock_run,
-        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
-    ):
-        mock_config_obj = MagicMock()
-        mock_config.return_value = mock_config_obj
-
-        result = runner.invoke(run_command, [CONFIG_FILE, "--log-level", "debug"])
-
-        assert result.exit_code == 0
-
-        mock_init_flow_logging.assert_called_once_with("debug")
-
-        mock_config.assert_called_once()
-
-        mock_run.assert_called_once()
-
-
 def test_run_command_allow_dirty() -> None:
     runner = CliRunner()
     with (
@@ -341,10 +323,16 @@ def test_options_to_overrides() -> None:
     assert overrides == [
         "log_dir=set_dir",
         "options.limit=5",
-        "log_dir=option_dir",
+        "log_dir=" + Path("option_dir").resolve().as_posix(),
         "options.limit=1",
         "options.log_dir_allow_dirty=True",
     ]
+
+
+@pytest.mark.parametrize("store_value", ["auto", "none", "Auto", "NONE"])
+def test_options_to_overrides_store_keywords(store_value: str) -> None:
+    overrides = _options_to_overrides(store=store_value)
+    assert overrides == [f"store={store_value}"]
 
 
 def test_inspect_object_overrides() -> None:
@@ -379,3 +367,123 @@ def test_417_invalid_run() -> None:
     assert "run() cannot be called from within a flow spec file" in str(
         result.exception
     )
+
+
+def test_store_commands() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    assert result.exit_code == 0
+    result = runner.invoke(store_command, ["list", "--log-level", "error"])
+    assert result.exit_code == 0
+    lines = result.output.strip().split("\n")
+    assert (
+        lines[-2]
+        == log_dir
+        + "/2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    )
+    assert (
+        lines[-1]
+        == log_dir
+        + "/2026-01-09T18-27-59+00-00_gpqa-diamond_nbjF337MtumE8dao4wZ3vj.eval"
+    )
+
+
+def test_store_info() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "2 logs" in result.output
+    assert "1 log dir" in result.output
+    assert "0.2.0" in result.output
+
+
+def test_store_info_empty() -> None:
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Store not found" in result.output
+
+
+def test_store_delete() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["delete", "--log-level", "error"], input="y\n"
+    )
+    assert result.exit_code == 0
+    assert "Deleted store" in result.output
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "Store not found" in result.output
+
+
+def test_store_delete_yes_flag() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(store_command, ["delete", "--yes", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Deleted store" in result.output
+
+
+def test_store_delete_abort() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["delete", "--log-level", "error"], input="n\n"
+    )
+    assert result.exit_code != 0
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "2 logs" in result.output
+
+
+def test_store_delete_not_found() -> None:
+    runner = CliRunner()
+    result = runner.invoke(store_command, ["delete", "--log-level", "error"])
+    assert result.exit_code == 0
+    assert "Store not found" in result.output
+
+
+def test_store_list_format_flat() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["list", "--format", "flat", "--log-level", "error"]
+    )
+    assert result.exit_code == 0
+    lines = result.output.strip().split("\n")
+    assert (
+        lines[-2]
+        == log_dir
+        + "/2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
+    )
+
+
+def test_store_list_format_tree() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    result = runner.invoke(
+        store_command, ["list", "--format", "tree", "--log-level", "error"]
+    )
+    assert result.exit_code == 0
+    assert "logs1" in result.output
+    assert "gpqa-diamond" in result.output
+
+
+def test_run_display_passed_to_eval_set(mock_eval_set: MagicMock) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        run_command,
+        [CONFIG_FILE, "--display", "rich", "--log-dir-allow-dirty"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["display"] == "rich"

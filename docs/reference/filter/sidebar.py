@@ -32,7 +32,9 @@ website:
              - text: flow config
                href: reference/flow_config.qmd
              - text: flow run
-               href: reference/flow_run.qmd                
+               href: reference/flow_run.qmd
+             - text: flow store
+               href: reference/flow_store.qmd                
 """)
 contents_yaml = sidebar["website"]["sidebar"][0]["contents"][1]["contents"]
 

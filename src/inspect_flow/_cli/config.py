@@ -5,12 +5,11 @@ from typing_extensions import Unpack
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
+    init_output,
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
 from inspect_flow._config.write import print_config_yaml
-from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.logging import init_flow_logging
 
 
 @click.command("config", help="Output config")
@@ -20,8 +19,7 @@ def config_command(
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to output config."""
-    log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
-    init_flow_logging(log_level)
+    init_output(**kwargs)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
     fconfig = int_load_spec(config_file, options=config_options)

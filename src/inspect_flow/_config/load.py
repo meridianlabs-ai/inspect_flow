@@ -14,16 +14,18 @@ from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from inspect_flow._config.defaults import apply_defaults
+from inspect_flow._display.display import display
+from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
-from inspect_flow._util.console import path, print, quantity
+from inspect_flow._util.console import flow_print, path, quantity
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
 
-logger = getLogger(__file__)
+logger = getLogger(__name__)
 
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
@@ -41,20 +43,19 @@ class LoadState:
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
-    print(f"\nLoading config: {path(file)}")
+    with RunAction("load", info=path(file)) as action:
+        state = LoadState()
+        file = absolute_file_path(file)
+        spec = _load_spec_from_file(file, args=options.args, state=state)
+        if spec is None:
+            raise ValueError(f"No value returned from Python config file: {file}")
 
-    state = LoadState()
-    file = absolute_file_path(file)
-    spec = _load_spec_from_file(file, args=options.args, state=state)
-    if spec is None:
-        raise ValueError(f"No value returned from Python config file: {file}")
-
-    base_dir = Path(file).parent.as_posix()
-    spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
-    print(
-        f"Loaded {quantity(len(spec.tasks or []), 'task')}\n",
-        format="success",
-    )
+        base_dir = Path(file).parent.as_posix()
+        spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
+        action.update(
+            info=[f"Loaded {quantity(len(spec.tasks or []), 'task')}"],
+            status="success",
+        )
     return spec
 
 
@@ -105,7 +106,7 @@ def _expand_includes(
             spec = _apply_include(spec, include)
             continue
         include_path = absolute_path_relative_to(include, base_dir=base_dir)
-        print(f"Including: {path(include_path)}", format="info")
+        display().print("Including:", path(include_path), action_key="load")
         included_spec = _load_spec_from_file(include_path, args, state)
         if included_spec is not None:
             spec = _apply_include(spec, included_spec)
@@ -245,7 +246,7 @@ def _load_spec_from_file(
                     )
                 spec = FlowSpec.model_validate(data, extra="forbid")
     except ValidationError as e:
-        print(e, format="error")
+        flow_print(e, format="error")
         _print_filtered_traceback(e, config_file)
         raise FlowHandledError from e
 
@@ -322,12 +323,13 @@ def _apply_auto_includes(
                     auto_file, args=options.args, state=state
                 )
                 if (auto_include_count := auto_include_count + 1) > 1:
-                    print(
-                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}: {path(auto_file)}",
+                    flow_print(
+                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
+                        path(auto_file),
                         format="warning",
                     )
                 else:
-                    print(f"Auto-include: {path(auto_file)}", format="info")
+                    flow_print("Auto-include:", path(auto_file))
                 if auto_spec:
                     spec = _apply_include(spec, auto_spec)
         if parent_dir.parent == parent_dir:
@@ -420,4 +422,4 @@ def _print_filtered_traceback(e: ValidationError, config_file: str) -> None:
         frame for frame in stack_summary if frame.filename in config_file
     ]
     for item in traceback.format_list(filtered_frames):
-        print(item)
+        flow_print(item)

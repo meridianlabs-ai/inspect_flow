@@ -1,3 +1,5 @@
+import logging
+import subprocess
 from pathlib import Path
 
 from inspect_ai._util.file import file, filesystem
@@ -5,45 +7,53 @@ from inspect_ai._util.file import file, filesystem
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.subprocess_util import run_with_logging
 
+logger = logging.getLogger(__name__)
+
 
 def write_flow_requirements(
     spec: FlowSpec, cwd: str, env: dict[str, str], dry_run: bool
 ) -> None:
+    if dry_run or not spec.log_dir:
+        return
     # Freeze installed packages to flow-requirements.txt in log_dir
-    if not dry_run and spec.log_dir:
-        freeze_result = run_with_logging(
-            ["uv", "pip", "freeze"],
+    freeze_result = run_with_logging(
+        ["uv", "pip", "freeze"],
+        cwd=cwd,
+        env=env,
+        log_output=False,  # Don't log the full freeze output
+    )
+    deduplicated_output = _deduplicate_freeze_requirements(freeze_result.stdout)
+    requirements_in = Path(cwd) / "flow-requirements.in"
+    with open(requirements_in, "w") as f:
+        f.write(deduplicated_output)
+
+    try:
+        compile_result = run_with_logging(
+            [
+                "uv",
+                "pip",
+                "compile",
+                "--generate-hashes",
+                "--no-header",
+                "--no-annotate",
+                str(requirements_in),
+            ],
             cwd=cwd,
             env=env,
-            log_output=False,  # Don't log the full freeze output
+            log_output=False,
         )
-        deduplicated_output = _deduplicate_freeze_requirements(freeze_result.stdout)
-        requirements_in = Path(cwd) / "flow-requirements.in"
-        with open(requirements_in, "w") as f:
-            f.write(deduplicated_output)
-
-        try:
-            compile_result = run_with_logging(
-                [
-                    "uv",
-                    "pip",
-                    "compile",
-                    "--generate-hashes",
-                    "--no-header",
-                    "--no-annotate",
-                    str(requirements_in),
-                ],
-                cwd=cwd,
-                env=env,
-                log_output=False,
-            )
-        finally:
-            requirements_in.unlink()
-
         fs = filesystem(spec.log_dir)
         fs.mkdir(spec.log_dir, exist_ok=True)
         with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
             f.write(compile_result.stdout)
+    except subprocess.CalledProcessError as e:
+        detail = (e.stderr or e.output or "").strip()
+        msg = f"Failed to generate flow-requirements.txt: {e}"
+        if detail:
+            msg += f"\n{detail}"
+        logger.warning(msg)
+    finally:
+        requirements_in.unlink()
 
 
 def _deduplicate_freeze_requirements(freeze_output: str) -> str:
