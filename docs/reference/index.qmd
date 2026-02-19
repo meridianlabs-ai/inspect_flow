@@ -20,6 +20,7 @@ toc-depth: 4
 |------------------------------------|------------------------------------|
 | [flow config](flow_config.qmd) | Output spec as yaml. |
 | [flow run](flow_run.qmd) | Run a spec. |
+| [flow store](flow_store.qmd) | Manage the Flow Store. |
 
 : {.borderless}
 

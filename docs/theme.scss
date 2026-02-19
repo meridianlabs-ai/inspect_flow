@@ -144,3 +144,12 @@ img.navbar-logo {
 .welcome-bullets li {
     margin-bottom: 0.5em;
 }
+
+/* Diff syntax highlighting colors */
+.sourceCode .va {
+    color: #22863a; /* Green for additions (+) */
+}
+
+.sourceCode .st {
+    color: #b31d28; /* Red for deletions (-) */
+}
