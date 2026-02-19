@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./dependencies.html" rel="next">
+<link href="./defaults.html" rel="next">
 <link href="./index.qmd#basic-example" rel="prev">
 <link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
@@ -78,7 +78,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-72637b827d473abb408ec7315341daec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -112,13 +112,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta property="og:description" content="Workflow orchestration for Inspect AI">
 <meta property="og:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/first_config_progress_terminal.png">
 <meta property="og:site_name" content="Inspect Flow">
-<meta property="og:image:height" content="215">
-<meta property="og:image:width" content="2098">
+<meta property="og:image:height" content="666">
+<meta property="og:image:width" content="1778">
 <meta name="twitter:title" content="Inspect Flow">
 <meta name="twitter:description" content="Workflow orchestration for Inspect AI">
 <meta name="twitter:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/first_config_progress_terminal.png">
-<meta name="twitter:image-height" content="215">
-<meta name="twitter:image-width" content="2098">
+<meta name="twitter:image-height" content="666">
+<meta name="twitter:image-width" content="1778">
 <meta name="twitter:card" content="summary_large_image">
 </head>
 
@@ -227,12 +227,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Dependencies</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./defaults.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Defaults</span></a>
   </div>
@@ -247,6 +241,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./run.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Running Flows</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./store.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Store</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -343,9 +343,9 @@ Note
 <p>In <a href="./index.html#basic-example">Welcome - Basic Example</a>, we showed a simple <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>. Let’s break down what’s happening:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
-<pre><strong>config.py</strong></pre>
+<pre><strong>first_config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="first_config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
 <span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
 <button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-4" class="code-annotation-target"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
@@ -376,9 +376,9 @@ Note
 </dd>
 </dl>
 <p>To run the task, first ensure you have the necessary dependencies installed (<code>inspect-evals</code> and <code>openai</code> for this example), then run the following command in your shell.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run first_config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Alternatively, use the <code>--venv</code> flag to automatically install dependencies in an isolated virtual environment:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run first_config.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/first_config_progress_terminal.png" class="img-fluid figure-img"></p>
@@ -388,6 +388,7 @@ Note
 <p><strong>What happens when you run this (default in-process mode)?</strong></p>
 <ol type="1">
 <li>Flow loads the <code>gpqa_diamond</code> task from the <code>inspect_evals</code> registry</li>
+<li>Searches the Flow Store for existing logs to reuse (see <a href="./store.html">Flow Store</a>)</li>
 <li>Runs the evaluation with GPT-5 in the current Python process</li>
 <li>Stores results in <code>logs/</code></li>
 </ol>
@@ -476,6 +477,11 @@ Note
 <td><code>None</code></td>
 </tr>
 <tr class="even">
+<td><code>store</code></td>
+<td>Flow Store location for tracking and reusing logs across runs. Set to <code>None</code> to disable. See <a href="./store.html">Flow Store</a></td>
+<td><code>"auto"</code></td>
+</tr>
+<tr class="odd">
 <td><code>flow_metadata</code></td>
 <td>Metadata stored in the flow config (not passed to Inspect AI, see <a href="./advanced.html#flow_metadata-flow-only-metadata">flow_metadata</a>)</td>
 <td><code>None</code></td>
@@ -1112,8 +1118,8 @@ Note
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./dependencies.html" class="pagination-link" aria-label="Dependencies">
-        <span class="nav-page-text">Dependencies</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./defaults.html" class="pagination-link" aria-label="Defaults">
+        <span class="nav-page-text">Defaults</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

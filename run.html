@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./advanced.html" rel="next">
+<link href="./store.html" rel="next">
 <link href="./matrix.html" rel="prev">
 <link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
@@ -78,7 +78,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-72637b827d473abb408ec7315341daec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -227,12 +227,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Dependencies</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./defaults.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Defaults</span></a>
   </div>
@@ -247,6 +241,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./run.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Running Flows</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./store.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Store</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -267,13 +267,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#execution-modes" id="toc-execution-modes" class="nav-link active" data-scroll-target="#execution-modes">Execution Modes</a>
-  <ul class="collapse">
-  <li><a href="#in-process-mode-default" id="toc-in-process-mode-default" class="nav-link" data-scroll-target="#in-process-mode-default">In-Process Mode (Default)</a></li>
-  <li><a href="#virtual-environment-mode" id="toc-virtual-environment-mode" class="nav-link" data-scroll-target="#virtual-environment-mode">Virtual Environment Mode</a></li>
-  <li><a href="#choosing-between-modes" id="toc-choosing-between-modes" class="nav-link" data-scroll-target="#choosing-between-modes">Choosing Between Modes</a></li>
-  </ul></li>
-  <li><a href="#the-flow-run-command" id="toc-the-flow-run-command" class="nav-link" data-scroll-target="#the-flow-run-command">The <code>flow run</code> Command</a>
+  <li><a href="#the-flow-run-command" id="toc-the-flow-run-command" class="nav-link active" data-scroll-target="#the-flow-run-command">The <code>flow run</code> Command</a>
   <ul class="collapse">
   <li><a href="#common-cli-flags" id="toc-common-cli-flags" class="nav-link" data-scroll-target="#common-cli-flags">Common CLI Flags</a></li>
   </ul></li>
@@ -311,200 +305,47 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>Once you’ve defined your Flow configuration, you can execute evaluations using the <code>flow run</code> command. Flow also provides tools for previewing configurations and controlling runtime behavior.</p>
-<section id="execution-modes" class="level2">
-<h2 class="anchored" data-anchor-id="execution-modes">Execution Modes</h2>
-<p>Flow supports two execution modes that determine how your evaluations run: <strong>in-process (inproc)</strong> and <strong>virtual environment (venv)</strong>. Understanding these modes helps you choose the right approach for your workflow.</p>
-<section id="in-process-mode-default" class="level3">
-<h3 class="anchored" data-anchor-id="in-process-mode-default">In-Process Mode (Default)</h3>
-<p>By default, Flow runs evaluations in your current Python process without creating an isolated environment.</p>
-<p><strong>Characteristics:</strong></p>
-<ul>
-<li>Runs directly in your current Python environment</li>
-<li>No automatic dependency installation—you manage packages yourself</li>
-<li>Supports direct use of Inspect AI objects (<code>Task</code>, <code>Model</code>, <code>Solver</code>, <code>Agent</code>)</li>
-<li>Faster startup (no environment creation overhead)</li>
-<li>Best for development, iteration, and when you control the environment</li>
-</ul>
-<p><strong>Example:</strong></p>
-<div class="code-with-filename">
-<div class="code-with-filename-file">
-<pre><strong>inproc_mode.py</strong></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="inproc_mode.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai <span class="im">import</span> Task</span>
-<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.dataset <span class="im">import</span> example_dataset</span>
-<span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.solver <span class="im">import</span> generate</span>
-<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec</span>
-<span id="annotated-cell-1-5"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-1-6"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="annotated-cell-1-7"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-9" class="code-annotation-target"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>        Task(</span>
-<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>            dataset<span class="op">=</span>example_dataset(<span class="st">"security_guide"</span>),</span>
-<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>            solver<span class="op">=</span>generate(),</span>
-<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-13" class="code-annotation-target"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
-<dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="9" data-code-annotation="1">Direct Inspect AI Task object (supported in inproc mode)</span>
-</dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
-<dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="13" data-code-annotation="2">Registry reference works in both modes</span>
-</dd>
-</dl>
-</section>
-<section id="virtual-environment-mode" class="level3">
-<h3 class="anchored" data-anchor-id="virtual-environment-mode">Virtual Environment Mode</h3>
-<p>Opt into virtual environment mode for isolated, reproducible evaluation runs.</p>
-<p><strong>Characteristics:</strong></p>
-<ul>
-<li>Creates a fresh, isolated virtual environment for each run</li>
-<li>Automatically installs dependencies from <code>pyproject.toml</code>, <code>uv.lock</code>, or <code>requirements.txt</code></li>
-<li>Auto-detects and installs packages based on config (e.g., <code>model="openai/gpt-4"</code> → installs <code>openai</code>)</li>
-<li>Requires Flow types only—cannot use direct Inspect AI objects (<code>Task</code>, <code>Model</code>, etc.)</li>
-<li>Best for reproducibility and sharing</li>
-</ul>
-<p><strong>Example:</strong></p>
-<div class="code-with-filename">
-<div class="code-with-filename-file">
-<pre><strong>venv_mode.py</strong></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="venv_mode.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
-<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-5" class="code-annotation-target"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-6" class="code-annotation-target"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    python_version<span class="op">=</span><span class="st">"3.11"</span>,</span>
-<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4"</span>,</span>
-<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
-<dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="5" data-code-annotation="1">Enable virtual environment mode</span>
-</dd>
-<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
-<dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="6" data-code-annotation="2">Optional: specify Python version</span>
-</dd>
-</dl>
-<p>Or use the CLI flag:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="choosing-between-modes" class="level3">
-<h3 class="anchored" data-anchor-id="choosing-between-modes">Choosing Between Modes</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 18%">
-<col style="width: 41%">
-<col style="width: 41%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Consideration</th>
-<th>In-Process (inproc)</th>
-<th>Virtual Environment (venv)</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Default</strong></td>
-<td>Yes ✓</td>
-<td>No (opt-in)</td>
-</tr>
-<tr class="even">
-<td><strong>Dependency installation</strong></td>
-<td>Manual</td>
-<td>Automatic</td>
-</tr>
-<tr class="odd">
-<td><strong>Startup speed</strong></td>
-<td>Fast</td>
-<td>Slower (creates venv)</td>
-</tr>
-<tr class="even">
-<td><strong>Inspect AI objects</strong></td>
-<td>Supported</td>
-<td>Not supported</td>
-</tr>
-<tr class="odd">
-<td><strong>Reproducibility</strong></td>
-<td>Requires manual setup</td>
-<td>Built-in</td>
-</tr>
-<tr class="even">
-<td><strong>Isolation</strong></td>
-<td>Uses current environment</td>
-<td>Fresh environment</td>
-</tr>
-<tr class="odd">
-<td><strong>Best for</strong></td>
-<td>Development, iteration</td>
-<td>Production, sharing, CI/CD</td>
-</tr>
-</tbody>
-</table>
+<section id="the-flow-run-command" class="level2">
+<h2 class="anchored" data-anchor-id="the-flow-run-command">The <code>flow run</code> Command</h2>
+<p>Execute your evaluation workflow:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>What happens when you run this:</strong></p>
+<ol type="1">
+<li>Flow loads your configuration file</li>
+<li>Resolves all defaults and matrix expansions</li>
+<li>Searches the Flow Store for existing logs to reuse</li>
+<li>Executes evaluations via Inspect AI’s <code>eval_set()</code> in the current Python process</li>
+<li>Stores logs in <code>log_dir</code></li>
+<li>Adds logs to the Flow Store and generates <code>flow-requirements.txt</code></li>
+</ol>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Dependency Management in In-Process Mode
+<span class="screen-reader-only">Tip</span>Virtual Environment Mode
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Even though in-process mode doesn’t install dependencies automatically, Flow still generates a <code>flow-requirements.txt</code> file in your log directory that captures your current environment. This helps with reproducibility by documenting what packages were installed when you ran the evaluation.</p>
-</div>
-</div>
-</section>
-</section>
-<section id="the-flow-run-command" class="level2">
-<h2 class="anchored" data-anchor-id="the-flow-run-command">The <code>flow run</code> Command</h2>
-<p>Execute your evaluation workflow:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>What happens when you run this (in-process mode, the default):</strong></p>
-<ol type="1">
-<li>Flow loads your configuration file</li>
-<li>Resolves all defaults and matrix expansions</li>
-<li>Executes evaluations via Inspect AI’s <code>eval_set()</code> in the current Python process</li>
-<li>Stores logs in <code>log_dir</code></li>
-<li>Generates <code>flow-requirements.txt</code> to document the current environment</li>
-</ol>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>In virtual environment mode (<code>execution_type="venv"</code> or <code>--venv</code> flag), Flow additionally creates an isolated virtual environment, installs dependencies, and cleans up the temporary environment after completion.</p>
+<p>For reproducible evaluation runs, you can use <a href="./advanced.html#virtual-environment-mode">virtual environment mode</a> which automatically creates an isolated environment and installs dependencies:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run matrix.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or set <code>execution_type="venv"</code> in your <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>. Virtual environment mode automatically installs packages based on your config (e.g., <code>model="openai/gpt-4"</code> installs <code>openai</code>) and dependency files, making it easy to share workflows with others. See <a href="./advanced.html#execution-modes">Execution Modes</a> to learn more.</p>
 </div>
 </div>
 <section id="common-cli-flags" class="level3">
 <h3 class="anchored" data-anchor-id="common-cli-flags">Common CLI Flags</h3>
 <p><strong>Preview without running:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Shows the completely resolved configuration:</p>
+<p>Performs the full setup process and shows what would run:</p>
 <ul>
-<li>Applies all defaults</li>
-<li>Expands all matrix functions</li>
-<li>Instantiates all Python objects</li>
-<li>In venv mode: creates virtual environment and installs dependencies</li>
+<li>Applies all defaults and expands all matrix functions</li>
+<li>Instantiates tasks from the registry</li>
+<li>Checks for existing logs (in log directory and Flow Store)</li>
+<li>Shows which tasks would run and which logs would be reused</li>
+<li>Stops before actually running evaluations</li>
 </ul>
-<p>This is invaluable for debugging what settings will actually be used in your evaluations.</p>
+<p>This is invaluable for debugging what will actually run in your evaluations.</p>
 <p><strong>Override log directory:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--log-dir</span> ./experiments/baseline</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Changes where logs and results are stored.</p>
@@ -519,7 +360,7 @@ Note
 <h2 class="anchored" data-anchor-id="the-flow-config-command">The <code>flow config</code> Command</h2>
 <p>Preview your configuration before running:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Displays the parsed configuration as YAML with CLI overrides applied. Does not create a virtual environment, install dependencies, or instantiate Python objects—it only parses and resolves the configuration file.</p>
+<p>Displays the expanded configuration as YAML (applies defaults, includes, and CLI overrides). Does not instantiate tasks or check for existing logs—it only loads and expands the configuration file.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -531,8 +372,8 @@ Note
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li><strong><code>flow config</code></strong> - Quick syntax check, verify overrides</li>
-<li><strong><code>flow run --dry-run</code></strong> - Debug defaults resolution, inspect final settings</li>
+<li><strong><code>flow config</code></strong> - View expanded config as YAML, quick syntax check</li>
+<li><strong><code>flow run --dry-run</code></strong> - Preview what would run, check which logs would be reused</li>
 <li><strong><code>flow run</code></strong> - Execute evaluations</li>
 </ul>
 </div>
@@ -563,13 +404,15 @@ Note
 <span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>run(spec<span class="op">=</span>spec)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The <code>inspect_flow.api</code> module provides three functions:</p>
+<p>The <code>inspect_flow.api</code> module provides programmatic access to Flow capabilities. Key functions include:</p>
 <ul>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span></strong> - Execute a Flow spec with full environment setup (equivalent to <code>flow run</code>)</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#load_spec">load_spec()</a></span></strong> - Load a Flow configuration from a Python file into a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> object</li>
-<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#config">config()</a></span></strong> - Get the resolved configuration as YAML (equivalent to <code>flow config</code>)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#config">config()</a></span></strong> - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to <code>flow config</code>)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#init">init()</a></span></strong> - Initialize Flow session settings (logging, display, .env loading)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#store_get">store_get()</a></span></strong> - Get a FlowStore instance for programmatic store access</li>
 </ul>
-<p>See the <a href="./reference/inspect_flow.api.html">API Reference</a> for detailed parameter documentation.</p>
+<p>See the <a href="./reference/inspect_flow.api.html">API Reference</a> for complete documentation.</p>
 </section>
 <section id="results-and-logs" class="level2">
 <h2 class="anchored" data-anchor-id="results-and-logs">Results and Logs</h2>
@@ -598,6 +441,19 @@ Note
 <li>The <code>.eval-set-id</code> file contains the eval set identifier</li>
 <li>The <code>eval-set.json</code> file contains eval set metadata</li>
 </ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Logs in this directory are automatically tracked by the <a href="./store.html">Flow Store</a>, enabling log reuse across future runs.</p>
+</div>
+</div>
 <p><strong>Log formats:</strong></p>
 <ul>
 <li><code>.eval</code> - Binary Inspect AI log format (default, high-performance)</li>
@@ -1086,8 +942,8 @@ Note
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./advanced.html" class="pagination-link" aria-label="Advanced">
-        <span class="nav-page-text">Advanced</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./store.html" class="pagination-link" aria-label="Store">
+        <span class="nav-page-text">Store</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./run.html" rel="prev">
+<link href="./store.html" rel="prev">
 <link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-72637b827d473abb408ec7315341daec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -220,12 +220,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Dependencies</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./defaults.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Defaults</span></a>
   </div>
@@ -240,6 +234,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./run.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Running Flows</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./store.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Store</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -260,15 +260,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#metadata" id="toc-metadata" class="nav-link active" data-scroll-target="#metadata">Metadata</a>
+  <li><a href="#execution-modes" id="toc-execution-modes" class="nav-link active" data-scroll-target="#execution-modes">Execution Modes</a>
   <ul class="collapse">
-  <li><a href="#metadata-inspect-ai-metadata" id="toc-metadata-inspect-ai-metadata" class="nav-link" data-scroll-target="#metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</a></li>
-  <li><a href="#flow_metadata-flow-only-metadata" id="toc-flow_metadata-flow-only-metadata" class="nav-link" data-scroll-target="#flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</a></li>
+  <li><a href="#in-process-mode-default" id="toc-in-process-mode-default" class="nav-link" data-scroll-target="#in-process-mode-default">In-Process Mode (Default)</a></li>
+  <li><a href="#virtual-environment-mode" id="toc-virtual-environment-mode" class="nav-link" data-scroll-target="#virtual-environment-mode">Virtual Environment Mode</a></li>
+  <li><a href="#choosing-between-modes" id="toc-choosing-between-modes" class="nav-link" data-scroll-target="#choosing-between-modes">Choosing Between Modes</a></li>
+  </ul></li>
+  <li><a href="#dependencies" id="toc-dependencies" class="nav-link" data-scroll-target="#dependencies">Dependencies</a>
+  <ul class="collapse">
+  <li><a href="#automatic-dependency-discovery" id="toc-automatic-dependency-discovery" class="nav-link" data-scroll-target="#automatic-dependency-discovery">Automatic Dependency Discovery</a></li>
+  <li><a href="#explicit-dependencies" id="toc-explicit-dependencies" class="nav-link" data-scroll-target="#explicit-dependencies">Explicit Dependencies</a></li>
+  <li><a href="#python-version" id="toc-python-version" class="nav-link" data-scroll-target="#python-version">Python Version</a></li>
+  <li><a href="#checking-config" id="toc-checking-config" class="nav-link" data-scroll-target="#checking-config">Checking Config</a></li>
   </ul></li>
   <li><a href="#parameterized-jobs" id="toc-parameterized-jobs" class="nav-link" data-scroll-target="#parameterized-jobs">Parameterized Jobs</a>
   <ul class="collapse">
   <li><a href="#flow-args---arg" id="toc-flow-args---arg" class="nav-link" data-scroll-target="#flow-args---arg">Flow Args (<code>--arg</code>)</a></li>
   <li><a href="#template-substitution" id="toc-template-substitution" class="nav-link" data-scroll-target="#template-substitution">Template Substitution</a></li>
+  </ul></li>
+  <li><a href="#metadata" id="toc-metadata" class="nav-link" data-scroll-target="#metadata">Metadata</a>
+  <ul class="collapse">
+  <li><a href="#metadata-inspect-ai-metadata" id="toc-metadata-inspect-ai-metadata" class="nav-link" data-scroll-target="#metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</a></li>
+  <li><a href="#flow_metadata-flow-only-metadata" id="toc-flow_metadata-flow-only-metadata" class="nav-link" data-scroll-target="#flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</a></li>
   </ul></li>
   <li><a href="#viewer-bundling" id="toc-viewer-bundling" class="nav-link" data-scroll-target="#viewer-bundling">Viewer Bundling</a></li>
   <li><a href="#config-scripts" id="toc-config-scripts" class="nav-link" data-scroll-target="#config-scripts">Config Scripts</a>
@@ -302,80 +315,300 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="metadata" class="level2">
-<h2 class="anchored" data-anchor-id="metadata">Metadata</h2>
-<p>Flow supports two types of metadata with distinct purposes: <code>metadata</code> and <code>flow_metadata</code>.</p>
-<section id="metadata-inspect-ai-metadata" class="level3">
-<h3 class="anchored" data-anchor-id="metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</h3>
-<p>The <code>metadata</code> field in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI’s log viewer and analysis tools.</p>
+<section id="execution-modes" class="level2">
+<h2 class="anchored" data-anchor-id="execution-modes">Execution Modes</h2>
+<p>Flow supports two execution modes that determine how your evaluations run: <strong>in-process (inproc)</strong> and <strong>virtual environment (venv)</strong>. Understanding these modes helps you choose the right approach for your workflow.</p>
+<section id="in-process-mode-default" class="level3">
+<h3 class="anchored" data-anchor-id="in-process-mode-default">In-Process Mode (Default)</h3>
+<p>By default, Flow runs evaluations in your current Python process without creating an isolated environment.</p>
+<p><strong>Characteristics:</strong></p>
+<ul>
+<li>Runs directly in your current Python environment</li>
+<li>No automatic dependency installation—you manage packages yourself</li>
+<li>Supports direct use of Inspect AI objects (<code>Task</code>, <code>Model</code>, <code>Solver</code>, <code>Agent</code>)</li>
+<li>Faster startup (no environment creation overhead)</li>
+<li>Best for development, iteration, and when you control the environment</li>
+</ul>
 <p><strong>Example:</strong></p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
-<pre><strong>config.py</strong></pre>
+<pre><strong>inproc_mode.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        metadata<span class="op">=</span>{</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"experiment"</span>: <span class="st">"baseline_v1"</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"hypothesis"</span>: <span class="st">"Higher temperature improves creative tasks"</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"hardware"</span>: <span class="st">"A100-80GB"</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>            metadata<span class="op">=</span>{</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"task_variant"</span>: <span class="st">"chemistry_subset"</span>,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">"note"</span>: <span class="st">"Testing with reduced context"</span>,</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>            },</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="inproc_mode.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai <span class="im">import</span> Task</span>
+<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.dataset <span class="im">import</span> example_dataset</span>
+<span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.solver <span class="im">import</span> generate</span>
+<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec</span>
+<span id="annotated-cell-1-5"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-1-6"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="annotated-cell-1-7"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-9" class="code-annotation-target"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>        Task(</span>
+<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>            dataset<span class="op">=</span>example_dataset(<span class="st">"security_guide"</span>),</span>
+<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>            solver<span class="op">=</span>generate(),</span>
+<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-13" class="code-annotation-target"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The metadata from <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.</p>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="9" data-code-annotation="1">Direct Inspect AI Task object (supported in inproc mode)</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="13" data-code-annotation="2">Registry reference works in both modes</span>
+</dd>
+</dl>
 </section>
-<section id="flow_metadata-flow-only-metadata" class="level3">
-<h3 class="anchored" data-anchor-id="flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</h3>
-<p>The <code>flow_metadata</code> field is available on <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowscorer">FlowScorer</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span>, and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span>. This metadata is <strong>not passed to Inspect AI</strong>—it exists only in the Flow configuration and is useful for configuration-time logic and organization.</p>
-<p><strong>Use cases:</strong></p>
+<section id="virtual-environment-mode" class="level3">
+<h3 class="anchored" data-anchor-id="virtual-environment-mode">Virtual Environment Mode</h3>
+<p>Opt into virtual environment mode for isolated, reproducible evaluation runs.</p>
+<p><strong>Characteristics:</strong></p>
 <ul>
-<li>Filtering or selecting configurations based on properties</li>
-<li>Organizing complex configuration generation logic</li>
-<li>Documenting configuration decisions</li>
-<li>Annotating configs without polluting Inspect AI logs</li>
+<li>Creates a temporary virtual environment with <a href="https://github.com/astral-sh/uv"><code>uv</code></a> for each run</li>
+<li>Automatically installs dependencies from <code>pyproject.toml</code>, <code>uv.lock</code>, or <code>requirements.txt</code></li>
+<li>Auto-detects and installs packages based on config (e.g., <code>model="openai/gpt-4"</code> → installs <code>openai</code>)</li>
+<li>Cleans up the temporary environment after completion (logs persist in <code>log_dir</code>)</li>
+<li>Requires Flow types only—cannot use direct Inspect AI objects (<code>Task</code>, <code>Model</code>, etc.)</li>
+<li>Best for reproducibility and sharing</li>
 </ul>
-<p><strong>Example: Configuration-time filtering</strong></p>
+<p><strong>Example:</strong></p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>venv_mode.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="venv_mode.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-5" class="code-annotation-target"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-6" class="code-annotation-target"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    python_version<span class="op">=</span><span class="st">"3.11"</span>,</span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4"</span>,</span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="5" data-code-annotation="1">Enable virtual environment mode</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="6" data-code-annotation="2">Optional: specify Python version</span>
+</dd>
+</dl>
+<p>Or use the CLI flag:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="choosing-between-modes" class="level3">
+<h3 class="anchored" data-anchor-id="choosing-between-modes">Choosing Between Modes</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 41%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Consideration</th>
+<th>In-Process (inproc)</th>
+<th>Virtual Environment (venv)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Default</strong></td>
+<td>Yes ✓</td>
+<td>No (opt-in)</td>
+</tr>
+<tr class="even">
+<td><strong>Dependency installation</strong></td>
+<td>Manual</td>
+<td>Automatic</td>
+</tr>
+<tr class="odd">
+<td><strong>Startup speed</strong></td>
+<td>Fast</td>
+<td>Slower (creates venv)</td>
+</tr>
+<tr class="even">
+<td><strong>Inspect AI objects</strong></td>
+<td>Supported</td>
+<td>Not supported</td>
+</tr>
+<tr class="odd">
+<td><strong>Reproducibility</strong></td>
+<td>Requires manual setup</td>
+<td>Built-in</td>
+</tr>
+<tr class="even">
+<td><strong>Isolation</strong></td>
+<td>Uses current environment</td>
+<td>Fresh environment</td>
+</tr>
+<tr class="odd">
+<td><strong>Best for</strong></td>
+<td>Development, iteration</td>
+<td>Production, sharing, CI/CD</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="dependencies" class="level2">
+<h2 class="anchored" data-anchor-id="dependencies">Dependencies</h2>
+<p>This section details Flow’s dependency management system, which primarily applies to virtual environment mode.</p>
+<section id="automatic-dependency-discovery" class="level3">
+<h3 class="anchored" data-anchor-id="automatic-dependency-discovery">Automatic Dependency Discovery</h3>
+<p>In virtual environment mode, Flow automatically discovers and installs dependencies without requiring explicit configuration:</p>
+<ul>
+<li><strong>Dependency files</strong>: Searches upward from your config file directory for <code>pyproject.toml</code> or <code>requirements.txt</code>. Relative paths will be resolved relative to the config file (when using the CLI) or <code>base_dir</code> arg (when using the API)</li>
+<li><strong>Package inference</strong>: Detects packages from Flow type names in your config:
+<ul>
+<li>Models: <code>model="openai/gpt-4"</code> → installs <code>openai</code></li>
+<li>Tasks: <code>FlowTask(name="inspect_evals/mmlu")</code> → installs <code>inspect-evals</code></li>
+<li>Note: Package inference only works with Flow types (<span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, etc.), not direct Inspect AI objects</li>
+</ul></li>
+</ul>
+<p>This means most workflows require no dependency configuration at all!</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>In-Process Mode Dependencies
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In in-process mode (the default), these files are <strong>ignored</strong> for automatic installation. You’re responsible for installing dependencies yourself using your preferred package manager (<code>uv</code>, <code>pip</code>, <code>conda</code>, etc.). However, you can still use the same <code>pyproject.toml</code> or <code>requirements.txt</code> files to manage your dependencies manually.</p>
+<p>Flow still generates a <code>flow-requirements.txt</code> file in your log directory to document what packages were installed when you ran the evaluation, helping with reproducibility.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Config Inheritance
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Flow automatically includes any <code>_flow.py</code> files in the config directory or parent directories (see <a href="./defaults.html#inheritance">Inheritance</a>). When these files specify <code>dependencies</code> in venv mode, those dependencies are automatically installed. This works in both execution modes—the inheritance mechanism applies everywhere, but dependency installation only happens in venv mode.</p>
+</div>
+</div>
+</section>
+<section id="explicit-dependencies" class="level3">
+<h3 class="anchored" data-anchor-id="explicit-dependencies">Explicit Dependencies</h3>
+<p>While automatic dependency discovery works for most cases, you may need explicit dependencies when you require specific package versions for reproducibility e.g.&nbsp;<code>openai==2.8.0</code>, need to specify a non-standard dependency file location, or need to override the automatic detection behavior. Explicit dependencies give you full control over what gets installed in your workflow’s virtual environment.</p>
+<p>The <code>dependencies</code> field in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> accepts a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowdependencies">FlowDependencies</a></span> object:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowModel, FlowSpec, tasks_matrix</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define models with metadata about capabilities</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>models <span class="op">=</span> [</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    FlowModel(name<span class="op">=</span><span class="st">"openai/gpt-4o"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">128000</span>}),</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    FlowModel(name<span class="op">=</span><span class="st">"openai/gpt-4o-mini"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">128000</span>}),</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    FlowModel(</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"anthropic/claude-3-5-sonnet"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">200000</span>}</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to only long-context models</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>long_context_models <span class="op">=</span> [</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    m <span class="cf">for</span> m <span class="kw">in</span> models <span class="cf">if</span> (m.flow_metadata <span class="kw">or</span> {}).get(<span class="st">"context_window"</span>, <span class="dv">0</span>) <span class="op">&gt;=</span> <span class="dv">128000</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"long_context_task"</span>,</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>long_context_models,</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-4" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowDependencies, FlowSpec, FlowTask</span>
+<span id="annotated-cell-4-2"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-3"><a href="#annotated-cell-4-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="annotated-cell-4-4"><a href="#annotated-cell-4-4" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
+<span id="annotated-cell-4-5"><a href="#annotated-cell-4-5" aria-hidden="true" tabindex="-1"></a>    dependencies<span class="op">=</span>FlowDependencies(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-6" class="code-annotation-target"><a href="#annotated-cell-4-6" aria-hidden="true" tabindex="-1"></a>        dependency_file<span class="op">=</span><span class="st">"../foo/pyproject.toml"</span>,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="2">2</button><span id="annotated-cell-4-7" class="code-annotation-target"><a href="#annotated-cell-4-7" aria-hidden="true" tabindex="-1"></a>        additional_dependencies<span class="op">=</span>[<span class="st">"pandas==2.0.0"</span>],</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="3">3</button><span id="annotated-cell-4-8" class="code-annotation-target"><a href="#annotated-cell-4-8" aria-hidden="true" tabindex="-1"></a>        auto_detect_dependencies<span class="op">=</span><span class="va">True</span>,</span>
+<span id="annotated-cell-4-9"><a href="#annotated-cell-4-9" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-4-10"><a href="#annotated-cell-4-10" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-4-11"><a href="#annotated-cell-4-11" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-4-12"><a href="#annotated-cell-4-12" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-4-13"><a href="#annotated-cell-4-13" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-4-14"><a href="#annotated-cell-4-14" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<span id="annotated-cell-4-15"><a href="#annotated-cell-4-15" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-4-16"><a href="#annotated-cell-4-16" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-4-17"><a href="#annotated-cell-4-17" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="6" data-code-annotation="1">How to find dependency files: Defaults to <code>"auto"</code> which auto-detects a <code>requirements.txt</code> or a <code>pyproject.toml</code> file. May also be set to a path to a dependency file or <code>"no_file"</code> to not use a dependency file. When using <code>pyproject.toml</code>, if a <code>uv.lock</code> file exists in the same directory, it will be used automatically for reproducible installs.</span>
+</dd>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="7" data-code-annotation="2">Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.</span>
+</dd>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="8" data-code-annotation="3">Auto-install packages based on task and model names in the config (default: <code>True</code>). For example, <code>model="openai/gpt-4"</code> installs <code>openai</code>, and <code>name="inspect_evals/mmlu"</code> installs <code>inspect-evals</code>.</span>
+</dd>
+</dl>
+</section>
+<section id="python-version" class="level3">
+<h3 class="anchored" data-anchor-id="python-version">Python Version</h3>
+<p>Specify the Python version for your spec’s virtual environment when using venv mode:</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>config.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-5" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-5-1"><a href="#annotated-cell-5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<span id="annotated-cell-5-2"><a href="#annotated-cell-5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-5-3"><a href="#annotated-cell-5-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-5" data-target-annotation="1">1</button><span id="annotated-cell-5-4" class="code-annotation-target"><a href="#annotated-cell-5-4" aria-hidden="true" tabindex="-1"></a>    execution_type<span class="op">=</span><span class="st">"venv"</span>,</span>
+<span id="annotated-cell-5-5"><a href="#annotated-cell-5-5" aria-hidden="true" tabindex="-1"></a>    python_version<span class="op">=</span><span class="st">"3.11"</span>,</span>
+<span id="annotated-cell-5-6"><a href="#annotated-cell-5-6" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="annotated-cell-5-7"><a href="#annotated-cell-5-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-5-8"><a href="#annotated-cell-5-8" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-5-9"><a href="#annotated-cell-5-9" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-5-10"><a href="#annotated-cell-5-10" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-5"</span>,</span>
+<span id="annotated-cell-5-11"><a href="#annotated-cell-5-11" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="annotated-cell-5-12"><a href="#annotated-cell-5-12" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-5-13"><a href="#annotated-cell-5-13" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-5" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-5" data-code-lines="4" data-code-annotation="1">Required for python_version to take effect.</span>
+</dd>
+</dl>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <code>python_version</code> field only applies to virtual environment mode. In in-process mode, evaluations run using your current Python interpreter.</p>
+</div>
+</div>
+</section>
+<section id="checking-config" class="level3">
+<h3 class="anchored" data-anchor-id="checking-config">Checking Config</h3>
+<p>To verify which dependencies and Python version will be used:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span> <span class="at">--venv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Repeatability Best Practices
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For repeatable workflows, use <strong>virtual environment mode</strong> with the following practices:</p>
+<ul>
+<li><strong>Enable venv mode</strong>: Set <code>execution_type="venv"</code> in your <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> or use the <code>--venv</code> flag. This ensures isolated environments and automatic dependency installation.</li>
+<li><strong>Pin package versions</strong>: Use exact versions for PyPI packages (<code>"inspect-evals==0.3.15"</code>) and commit hashes for Git repositories (<code>"git+https://github.com/user/repo@commit_hash"</code>).</li>
+<li><strong>Specify Python version</strong>: Explicitly set <code>python_version</code> (e.g., <code>"3.11"</code>) to ensure consistent Python environments.</li>
+<li><strong>Use lockfiles</strong>: When using <code>pyproject.toml</code>, include a <code>uv.lock</code> file for fully reproducible dependency resolution (automatically detected if present).</li>
+</ul>
+<p>This combination ensures your evaluations can be reliably repeated and shared with others.</p>
+</div>
 </div>
 </section>
 </section>
@@ -420,6 +653,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For nested fields, use bracket notation: <code>{options[eval_set_id]}</code> or <code>{flow_metadata[key]}</code>. Substitutions are resolved recursively until no more remain.</p>
 </section>
 </section>
+<section id="metadata" class="level2">
+<h2 class="anchored" data-anchor-id="metadata">Metadata</h2>
+<p>Flow supports two types of metadata with distinct purposes: <code>metadata</code> and <code>flow_metadata</code>.</p>
+<section id="metadata-inspect-ai-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</h3>
+<p>The <code>metadata</code> field in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span> is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI’s log viewer and analysis tools.</p>
+<p><strong>Example:</strong></p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>config.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        metadata<span class="op">=</span>{</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"experiment"</span>: <span class="st">"baseline_v1"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"hypothesis"</span>: <span class="st">"Higher temperature improves creative tasks"</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"hardware"</span>: <span class="st">"A100-80GB"</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>            metadata<span class="op">=</span>{</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"task_variant"</span>: <span class="st">"chemistry_subset"</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">"note"</span>: <span class="st">"Testing with reduced context"</span>,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The metadata from <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.</p>
+</section>
+<section id="flow_metadata-flow-only-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</h3>
+<p>The <code>flow_metadata</code> field is available on <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowmodel">FlowModel</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowscorer">FlowScorer</a></span>, <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowsolver">FlowSolver</a></span>, and <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowagent">FlowAgent</a></span>. This metadata is <strong>not passed to Inspect AI</strong>—it exists only in the Flow configuration and is useful for configuration-time logic and organization.</p>
+<p><strong>Use cases:</strong></p>
+<ul>
+<li>Filtering or selecting configurations based on properties</li>
+<li>Organizing complex configuration generation logic</li>
+<li>Documenting configuration decisions</li>
+<li>Annotating configs without polluting Inspect AI logs</li>
+</ul>
+<p><strong>Example: Configuration-time filtering</strong></p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>config.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowModel, FlowSpec, tasks_matrix</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define models with metadata about capabilities</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>models <span class="op">=</span> [</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    FlowModel(name<span class="op">=</span><span class="st">"openai/gpt-4o"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">128000</span>}),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    FlowModel(name<span class="op">=</span><span class="st">"openai/gpt-4o-mini"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">128000</span>}),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    FlowModel(</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"anthropic/claude-3-5-sonnet"</span>, flow_metadata<span class="op">=</span>{<span class="st">"context_window"</span>: <span class="dv">200000</span>}</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to only long-context models</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>long_context_models <span class="op">=</span> [</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    m <span class="cf">for</span> m <span class="kw">in</span> models <span class="cf">if</span> (m.flow_metadata <span class="kw">or</span> {}).get(<span class="st">"context_window"</span>, <span class="dv">0</span>) <span class="op">&gt;=</span> <span class="dv">128000</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>tasks_matrix(</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        task<span class="op">=</span><span class="st">"long_context_task"</span>,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>long_context_models,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+</section>
 <section id="viewer-bundling" class="level2">
 <h2 class="anchored" data-anchor-id="viewer-bundling">Viewer Bundling</h2>
 <p>Viewer bundling works the same way as <a href="https://inspect.aisi.org.uk/eval-sets.html"><code>eval_set()</code></a> in Inspect AI and is configurable via <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span>. An additional feature allows you to print bundle URLs for users running evaluations.</p>
@@ -428,16 +738,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs/my_eval"</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        bundle_dir<span class="op">=</span><span class="st">"s3://my-bucket/bundles/my_eval"</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        bundle_url_mappings<span class="op">=</span>{<span class="st">"s3://my-bucket"</span>: <span class="st">"https://my-bucket.s3.amazonaws.com"</span>},</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs/my_eval"</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        bundle_dir<span class="op">=</span><span class="st">"s3://my-bucket/bundles/my_eval"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        bundle_url_mappings<span class="op">=</span>{<span class="st">"s3://my-bucket"</span>: <span class="st">"https://my-bucket.s3.amazonaws.com"</span>},</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"task"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>After running this prints: <code>Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval</code></p>
 <p>Use this when storing bundles on cloud storage like S3 or on servers with public HTTP access. Multiple mappings are applied in order.</p>
@@ -463,46 +773,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>_flow.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" data-filename="_flow.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> after_load</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check_repo(path: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    abs_path <span class="op">=</span> Path(path).resolve()</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    check_dir <span class="op">=</span> abs_path <span class="cf">if</span> abs_path.is_dir() <span class="cf">else</span> abs_path.parent</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> subprocess.run(</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        [<span class="st">"git"</span>, <span class="st">"status"</span>, <span class="st">"--porcelain"</span>],</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        cwd<span class="op">=</span>check_dir,</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        capture_output<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        text<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        check<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> result.stdout.strip():</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"The repository at </span><span class="sc">{</span>check_dir<span class="sc">}</span><span class="ss"> has uncommitted changes."</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="at">@after_load</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_no_dirty_repo(files: <span class="bu">list</span>[<span class="bu">str</span>]) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Check no config files are in a dirty git repo</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> path <span class="kw">in</span> files:</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        check_repo(path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-filename="_flow.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> after_load</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check_repo(path: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    abs_path <span class="op">=</span> Path(path).resolve()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    check_dir <span class="op">=</span> abs_path <span class="cf">if</span> abs_path.is_dir() <span class="cf">else</span> abs_path.parent</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> subprocess.run(</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        [<span class="st">"git"</span>, <span class="st">"status"</span>, <span class="st">"--porcelain"</span>],</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        cwd<span class="op">=</span>check_dir,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        capture_output<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> result.stdout.strip():</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"The repository at </span><span class="sc">{</span>check_dir<span class="sc">}</span><span class="ss"> has uncommitted changes."</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="at">@after_load</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_no_dirty_repo(files: <span class="bu">list</span>[<span class="bu">str</span>]) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Check no config files are in a dirty git repo</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> path <span class="kw">in</span> files:</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>        check_repo(path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Automatically inherits _flow.py</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Will fail if uncommitted changes exist in the repository</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Automatically inherits _flow.py</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Will fail if uncommitted changes exist in the repository</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="lock-configuration-fields" class="level3">
@@ -512,33 +822,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>_flow.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-filename="_flow.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, after_load</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>MAX_SAMPLES <span class="op">=</span> <span class="dv">16</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">@after_load</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_max_samples(spec: FlowSpec) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> spec.options <span class="kw">or</span> <span class="kw">not</span> spec.options.max_samples <span class="op">==</span> MAX_SAMPLES:</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Do not override max_samples!"</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(max_samples<span class="op">=</span>MAX_SAMPLES),</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11" data-filename="_flow.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, after_load</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>MAX_SAMPLES <span class="op">=</span> <span class="dv">16</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">@after_load</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_max_samples(spec: FlowSpec) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> spec.options <span class="kw">or</span> <span class="kw">not</span> spec.options.max_samples <span class="op">==</span> MAX_SAMPLES:</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Do not override max_samples!"</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(max_samples<span class="op">=</span>MAX_SAMPLES),</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Automatically inherits _flow.py</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(max_samples<span class="op">=</span><span class="dv">32</span>),  <span class="co"># Will raise ValueError!</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12" data-filename="config.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Automatically inherits _flow.py</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowOptions, FlowSpec, FlowTask</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span>FlowOptions(max_samples<span class="op">=</span><span class="dv">32</span>),  <span class="co"># Will raise ValueError!</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[FlowTask(name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>, model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>)],</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.</p>
 
@@ -990,8 +1300,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./run.html" class="pagination-link" aria-label="Running Flows">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Running Flows</span>
+      <a href="./store.html" class="pagination-link" aria-label="Store">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Store</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

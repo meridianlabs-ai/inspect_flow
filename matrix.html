@@ -78,7 +78,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-788bc0b29e91bf580540fd01d9d6612c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-72637b827d473abb408ec7315341daec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -221,12 +221,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Dependencies</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./defaults.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Defaults</span></a>
   </div>
@@ -241,6 +235,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./run.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Running Flows</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./store.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Store</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -749,6 +749,7 @@ Note
 </ul>
 <p>Results in 3 × 4 × 5 × 3 = <strong>180 evaluations</strong>.</p>
 <p>Always preview with <code>--dry-run</code> to check the number of evaluations before running expensive grids.</p>
+<p>The <a href="./store.html">Flow Store</a> helps by automatically reusing logs from previous runs, so re-running a large sweep only evaluates what’s new or changed.</p>
 </div>
 </div>
 </section>
