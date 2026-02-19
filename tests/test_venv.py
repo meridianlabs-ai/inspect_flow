@@ -44,7 +44,8 @@ def test_no_dependencies() -> None:
                 "install",
                 f"-e {flow_path}",
             ]
-            assert "inspect-ai" in args[4]
+            # Need to handle both pip and git formats for the inspect_ai dependency
+            assert "inspect-ai" in args[4] or "inspect_ai" in args[4]
 
 
 def test_dependencies() -> None:
