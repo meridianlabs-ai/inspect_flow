@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pyarrow as pa
+import pytest
 from deltalake import write_deltalake
 from inspect_ai._util.file import to_uri
 from inspect_flow._store.deltalake import (
@@ -9,6 +10,8 @@ from inspect_flow._store.deltalake import (
     TABLES,
     DeltaLakeStore,
     LogRecord,
+    TableDef,
+    _check_table_description,
     _create_table_description,
     _file_to_log,
     _task_id_col,
@@ -91,3 +94,60 @@ def test_missing_task_identifier(tmp_path: Path) -> None:
 
     logs = store.search_for_logs({log.task_identifier})
     assert logs == {log.task_identifier: to_uri(log1_path)}
+
+
+class TestCheckTableDescription:
+    """Tests for _check_table_description version validation."""
+
+    def test_newer_major_version_raises(self) -> None:
+        """A stored major version newer than code raises ValueError."""
+        table = TABLES[0]
+        newer = str(Version.parse(table.version).bump_major())
+        desc = json.dumps({"name": table.name, "version": newer})
+        with pytest.raises(ValueError, match="upgrade required"):
+            _check_table_description(table, desc)
+
+    def test_newer_minor_version_raises(self) -> None:
+        """A stored minor version newer than code raises ValueError."""
+        table = TABLES[0]
+        newer = str(Version.parse(table.version).bump_minor())
+        desc = json.dumps({"name": table.name, "version": newer})
+        with pytest.raises(ValueError, match="upgrade required"):
+            _check_table_description(table, desc)
+
+    def test_newer_patch_version_passes(self) -> None:
+        """A stored patch version newer than code is allowed (backward compatible)."""
+        table = TABLES[0]
+        newer = str(Version.parse(table.version).bump_patch())
+        desc = json.dumps({"name": table.name, "version": newer})
+        _check_table_description(table, desc)
+
+    def test_older_stored_version_passes(self) -> None:
+        """A stored version older than the code version is allowed."""
+        table = TABLES[0]
+        newer_code = str(Version.parse(table.version).bump_minor())
+        desc = json.dumps({"name": table.name, "version": table.version})
+        newer_table = TableDef(name=table.name, version=newer_code, schema=table.schema)
+        _check_table_description(newer_table, desc)
+
+    def test_name_mismatch_raises(self) -> None:
+        table = TABLES[0]
+        desc = json.dumps({"name": "wrong_name", "version": table.version})
+        with pytest.raises(ValueError, match="Table name mismatch"):
+            _check_table_description(table, desc)
+
+    def test_newer_major_on_open_raises(self, tmp_path: Path) -> None:
+        """Opening a store whose table has a newer major version raises."""
+        table_def = TABLES[0]
+        old_version = table_def.version
+
+        # Create store with bumped major version
+        table_def.version = str(Version.parse(old_version).bump_major())
+        try:
+            DeltaLakeStore(store_path=str(tmp_path), create=True, quiet=True)
+        finally:
+            table_def.version = old_version
+
+        # Opening with current (lower) code version should fail
+        with pytest.raises(ValueError, match="upgrade required"):
+            DeltaLakeStore(store_path=str(tmp_path), quiet=True)

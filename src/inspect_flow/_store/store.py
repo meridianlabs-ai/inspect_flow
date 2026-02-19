@@ -98,12 +98,13 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
     Returns:
         True if candidate should replace best, False otherwise.
     """
-    if not candidate.results or candidate.invalidated:
-        return False
     if best is None:
         return True
+    if not candidate.results or candidate.invalidated:
+        return False
+    if not best.results or best.invalidated:
+        return True
     # Compare completed samples
-    assert best.results
     if candidate.results.completed_samples > best.results.completed_samples:
         return True
     if candidate.results.completed_samples < best.results.completed_samples:
