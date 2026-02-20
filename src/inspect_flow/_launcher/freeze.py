@@ -36,6 +36,7 @@ def write_flow_requirements(
                 "--generate-hashes",
                 "--no-header",
                 "--no-annotate",
+                "--no-deps",
                 str(requirements_in),
             ],
             cwd=cwd,
