@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.0...v0.4.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* add docstring to DisplayType for quarto docs build ([#504](https://github.com/meridianlabs-ai/inspect_flow/issues/504)) ([dfdf661](https://github.com/meridianlabs-ai/inspect_flow/commit/dfdf661df75c2f3f4c42c9e9fe87c3be47f3939f))
+* compile with conflicting git urls ([#508](https://github.com/meridianlabs-ai/inspect_flow/issues/508)) ([b0f3324](https://github.com/meridianlabs-ai/inspect_flow/commit/b0f33243e02462d9d7b222d32cb7a4652b87ea34))
+* default to have eval_set use the flow log_level if not explicitly set in FlowOptions ([#507](https://github.com/meridianlabs-ai/inspect_flow/issues/507)) ([8bf12d5](https://github.com/meridianlabs-ai/inspect_flow/commit/8bf12d53a5de2775a7205add3b0d88168a376ad5))
+* tests to handle inspect_ai installed from git ([#506](https://github.com/meridianlabs-ai/inspect_flow/issues/506)) ([26b5925](https://github.com/meridianlabs-ai/inspect_flow/commit/26b59254f87c4d28f445235a72288c2978464cd6))
+
 ## [0.4.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.3.0...v0.4.0) (2026-02-19)
 
 
