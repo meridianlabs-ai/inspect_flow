@@ -9,7 +9,12 @@ import pyarrow as pa
 import pyarrow.compute as pc
 from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
-from inspect_ai._eval.evalset import Log, list_all_eval_logs, task_identifier
+from inspect_ai._eval.evalset import (
+    TASK_IDENTIFIER_VERSION,
+    Log,
+    list_all_eval_logs,
+    task_identifier,
+)
 from inspect_ai._util.file import exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, read_eval_log
 from inspect_ai.log._file import log_files_from_ls
@@ -40,9 +45,6 @@ def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
     metadata = kwargs.pop("metadata", {})
     metadata["pa_type"] = pa_type
     return field(metadata=metadata, **kwargs)
-
-
-TASK_IDENTIFIER_VERSION = 1  # TODO:ransom move to inspect_ai
 
 
 def _task_id_col() -> str:
