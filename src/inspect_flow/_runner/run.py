@@ -251,8 +251,13 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
         if spec.options.bundle_url_mappings:
             for local, url in spec.options.bundle_url_mappings.items():
                 bundle_url = bundle_url.replace(local, url)
+
+        print_url = bundle_url
+        if not print_url.endswith("/"):
+            print_url += "/"
+
         if bundle_url != spec.options.bundle_dir:
-            return Text.assemble("Bundle URL: ", path(bundle_url))
+            return Text.assemble("Bundle URL: ", path(print_url))
         else:
-            return Text.assemble("Bundle dir: ", path(bundle_url))
+            return Text.assemble("Bundle dir: ", path(print_url))
     return None

@@ -393,6 +393,18 @@ class TestBundleUrlOutput:
         result = _bundle_url_output(spec)
         assert result is not None
         assert "Bundle dir" in result.plain
+        assert result.plain.endswith("/local/bundles/")
+
+    def test_bundle_dir_with_slash_no_mappings(self) -> None:
+        spec = FlowSpec(
+            tasks=["t"],
+            log_dir="./logs",
+            options=FlowOptions(bundle_dir="/local/bundles/"),
+        )
+        result = _bundle_url_output(spec)
+        assert result is not None
+        assert "Bundle dir" in result.plain
+        assert result.plain.endswith("/local/bundles/")
 
 
 # ── cli.py ──────────────────────────────────────────────────
