@@ -1,0 +1,24 @@
+# Inspect Flow
+
+> Workflow orchestration for Inspect AI that enables you to run evaluations at scale with repeatability and maintainability. Provides declarative configuration, powerful defaults, and parameter sweeping for systematic AI evaluations.
+
+## Docs
+
+- [Welcome](https://meridianlabs-ai.github.io/inspect_flow/index.html.md): Introduction, getting started, and basic example
+- [Flow Concepts](https://meridianlabs-ai.github.io/inspect_flow/flow_concepts.html.md): Core concepts — FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies
+- [Defaults](https://meridianlabs-ai.github.io/inspect_flow/defaults.html.md): Defaults, inheritance, and overrides for configuration
+- [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html.md): Parameter sweeping with matrix functions for systematic exploration
+- [Running Flows](https://meridianlabs-ai.github.io/inspect_flow/run.html.md): How to run flows, execution modes, and CLI flags
+- [Store](https://meridianlabs-ai.github.io/inspect_flow/store.html.md): Persistent log store for reuse across runs
+- [Advanced](https://meridianlabs-ai.github.io/inspect_flow/advanced.html.md): Execution modes and virtual environments
+
+## Reference: Python API
+
+- [inspect_flow](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.html.md): Core types and functions
+- [inspect_flow.api](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.api.html.md): Public API — init, run, load_spec, config, store_get, delete_store, copy_all_logs
+
+## Reference: CLI
+
+- [flow config](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_config.html.md): Display resolved flow configuration
+- [flow run](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_run.html.md): Run flow evaluations
+- [flow store](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_store.html.md): Manage the flow log store
