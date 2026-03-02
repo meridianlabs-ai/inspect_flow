@@ -1,0 +1,4351 @@
+# Inspect Flow
+
+
+## Introduction
+
+Inspect Flow is a workflow orchestration tool for [Inspect
+AI](https://inspect.aisi.org.uk/) that enables you to run evaluations at
+scale with repeatability and maintainability.
+
+**Why Inspect Flow?** As evaluation workflows grow in complexity—running
+multiple tasks across different models with varying parameters—managing
+these experiments becomes challenging. Inspect Flow addresses this by
+providing:
+
+1.  [**Declarative Configuration**](flow_concepts.qmd): Define complex
+    evaluations with tasks, models, and parameters in type-safe schemas
+2.  [**Global Log Reuse**](store.qmd): Flow Store tracks and reuses past
+    evaluation logs, so you only run what’s new or changed
+3.  [**Powerful Defaults**](defaults.qmd): Define defaults once and
+    reuse them everywhere with automatic inheritance
+4.  [**Parameter Sweeping**](matrix.qmd): Matrix patterns for systematic
+    exploration across tasks, models, and hyperparameters
+
+Inspect Flow is designed for researchers and engineers running
+systematic AI evaluations who need to scale beyond ad-hoc scripts.
+
+## Getting Started
+
+> [!NOTE]
+>
+> ### Prerequisites
+>
+> Before using Inspect Flow, you should:
+>
+> - Have familiarity with [Inspect AI](https://inspect.aisi.org.uk/)
+> - Have an existing Inspect evaluation or use one from
+>   [inspect-evals](https://github.com/UKGovernmentBEIS/inspect_evals)
+
+### Installation
+
+Install the `inspect-flow` package from PyPI as follows:
+
+``` bash
+pip install inspect-flow
+```
+
+### Set up API keys
+
+You’ll need API keys for the model providers you want to use. Set the
+relevant provider API key in your `.env` file or export it in your
+shell:
+
+#### OpenAI
+
+``` bash
+export OPENAI_API_KEY=your-openai-api-key
+```
+
+#### Anthropic
+
+``` bash
+export ANTHROPIC_API_KEY=your-anthropic-api-key
+```
+
+#### Google
+
+``` bash
+export GOOGLE_API_KEY=your-google-api-key
+```
+
+#### Grok
+
+``` bash
+export GROK_API_KEY=your-grok-api-key
+```
+
+#### Mistral
+
+``` bash
+export MISTRAL_API_KEY=your-mistral-api-key
+```
+
+#### Hugging Face
+
+``` bash
+export HF_TOKEN=your-hf-token
+```
+
+### Optional: VS Code extension
+
+Optionally install the [Inspect AI VS Code
+Extension](https://inspect.aisi.org.uk/vscode.html) which includes
+features for viewing evaluation log files.
+
+## Basic Example
+
+Let’s walk through creating your first Flow configuration. We’ll use
+`FlowSpec` (the entrypoint class) and `FlowTask` to define evaluations.
+
+> [!TIP]
+>
+> ### Core Components Reference
+>
+> - `FlowSpec` — Pydantic class that encapsulates the declarative
+>   description of a Flow spec.
+> - `FlowTask` — Pydantic class abstraction on top of Inspect AI
+>   [Task](https://inspect.aisi.org.uk/tasks.html).
+> - `FlowModel` — Pydantic class abstraction on top of Inspect AI
+>   [Model](https://inspect.aisi.org.uk/models.html).
+> - `tasks_matrix()` — Helper function for parameter sweeping to
+>   generate a list of tasks with all parameter combinations.
+> - `models_matrix()` — Helper function for parameter sweeping to
+>   generate a list of models with all parameter combinations.
+> - `configs_matrix()` — Helper function for parameter sweeping to
+>   generate a list of GenerateConfig with all parameter combinations.
+
+`FlowSpec` is the main entrypoint for defining evaluation runs. At its
+core, it takes a list of tasks to run. Here’s a simple example that runs
+two evaluations:
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
+        FlowTask(
+            name="inspect_evals/mmlu_0_shot",
+            model="openai/gpt-4o",
+        ),
+    ],
+)
+```
+
+To run the evaluations, execute the following command. Make sure you
+have the necessary dependencies installed (like `inspect-evals` and
+`openai` for this example).
+
+``` bash
+flow run config.py
+```
+
+Both tasks will run with progress displayed in your terminal.
+
+![Progress bar in terminal](images/config_progress_terminal.png)
+
+### Python API
+
+You can run evaluations from Python instead of the command line by
+calling the `run()` function with a `FlowSpec`.
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+from inspect_flow.api import run
+
+spec = FlowSpec(
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
+        FlowTask(
+            name="inspect_evals/mmlu_0_shot",
+            model="openai/gpt-4o",
+        ),
+    ],
+)
+run(spec=spec)
+```
+
+## Matrix Functions
+
+Often you’ll want to evaluate multiple tasks across multiple models.
+Rather than manually defining every combination, use `tasks_matrix` to
+generate all task-model pairs:
+
+**matrix.py**
+
+``` python
+from inspect_flow import FlowSpec, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            "inspect_evals/gpqa_diamond",
+            "inspect_evals/mmlu_0_shot",
+        ],
+        model=[
+            "openai/gpt-5",
+            "openai/gpt-5-mini",
+        ],
+    ),
+)
+```
+
+To preview the expanded config before running it, you can run the
+following command in your shell to ensure the generated config is the
+one that you intend to run.
+
+``` bash
+flow config matrix.py
+```
+
+This command outputs the expanded configuration showing all 4 task-model
+combinations (2 tasks × 2 models).
+
+**matrix.yml**
+
+``` yml
+log_dir: logs
+tasks:
+- name: inspect_evals/gpqa_diamond
+  model: openai/gpt-5
+- name: inspect_evals/gpqa_diamond
+  model: openai/gpt-5-mini
+- name: inspect_evals/mmlu_0_shot
+  model: openai/gpt-5
+- name: inspect_evals/mmlu_0_shot
+  model: openai/gpt-5-mini
+```
+
+`tasks_matrix` and `models_matrix` are powerful functions that can
+operate on multiple levels of nested matrixes which enable sophisticated
+parameter sweeping. Let’s say you want to explore different reasoning
+efforts across models—you can achieve this with the `models_matrix`
+function.
+
+**models_matrix.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, models_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            "inspect_evals/gpqa_diamond",
+            "inspect_evals/mmlu_0_shot",
+        ],
+        model=models_matrix(
+            model=[
+                "openai/gpt-5",
+                "openai/gpt-5-mini",
+            ],
+            config=[
+                GenerateConfig(reasoning_effort="minimal"),
+                GenerateConfig(reasoning_effort="low"),
+                GenerateConfig(reasoning_effort="medium"),
+                GenerateConfig(reasoning_effort="high"),
+            ],
+        ),
+    ),
+)
+```
+
+For even more concise parameter sweeping, use `configs_matrix` to
+generate configuration variants. This produces the same 16 evaluations
+(2 tasks × 2 models × 4 reasoning levels) as above, but with less
+boilerplate:
+
+**configs_matrix.py**
+
+``` python
+from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            "inspect_evals/gpqa_diamond",
+            "inspect_evals/mmlu_0_shot",
+        ],
+        model=models_matrix(
+            model=[
+                "openai/gpt-5",
+                "openai/gpt-5-mini",
+            ],
+            config=configs_matrix(
+                reasoning_effort=["minimal", "low", "medium", "high"],
+            ),
+        ),
+    ),
+)
+```
+
+### Run evaluations
+
+Before running evaluations, preview what would run with `--dry-run`:
+
+``` bash
+flow run matrix.py --dry-run
+```
+
+This performs the full setup process—importing tasks from the registry,
+applying all defaults, expanding all matrix functions, and checking for
+existing logs—showing exactly what would run, but stops before actually
+running the evaluations.
+
+To run the config:
+
+``` bash
+flow run matrix.py
+```
+
+This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning
+levels). When complete, you’ll find a link to the logs at the bottom of
+the task results summary.
+
+![Log path printed in terminal](images/logs_terminal.png)
+
+To view logs interactively, run:
+
+``` bash
+inspect view --log-dir logs
+```
+
+![Eval logs rendered by Inspect View](images/inspect_view_eval.png)
+
+## Learning More
+
+See the following articles to learn more about using Flow:
+
+- [Flow Concepts](flow_concepts.qmd): Flow type system, config structure
+  and basics.
+- [Flow Store](store.qmd): How Flow tracks and reuses evaluation logs
+  across runs—automatically skipping redundant work.
+- [Defaults](defaults.qmd): Define defaults once and reuse them
+  everywhere with automatic inheritance.
+- [Matrixing](matrix.qmd): Systematic parameter exploration with matrix
+  and with functions.
+- [Reference](reference/index.qmd): Detailed documentation on the Flow
+  Python API and CLI commands.
+
+# Flow Concepts
+
+
+The primary interface for defining a workflow in Flow is a `FlowSpec`. A
+`FlowSpec` defines the log directory, tasks, models, and other options
+that make up the spec. When Inspect Flow processes the `FlowSpec`, it
+resolves the configuration into a list of evaluation tasks to be run.
+These tasks are provided to Inspect’s `eval_set()` function along with
+any additional configuration, and Inspect executes the tasks.
+
+Inspect Flow mirrors Inspect AI’s object model with corresponding Flow
+types:
+
+- **`FlowSpec`** — The top-level spec definition. Contains a list of
+  tasks and spec settings. Under the hood it translates to an Inspect AI
+  [Eval Set](https://inspect.aisi.org.uk/eval-sets.html).
+- **`FlowTask`** — Configuration for a single evaluation task. Maps to
+  Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
+- **`FlowModel`** — Model configuration including API settings and
+  generation settings. Maps to Inspect AI
+  [Model](https://inspect.aisi.org.uk/models.html).
+- **`FlowSolver`** and **`FlowAgent`** — Solver and agent chain
+  configuration. Map to Inspect AI
+  [Solver](https://inspect.aisi.org.uk/solvers.html) and
+  [Agent](https://inspect.aisi.org.uk/agents.html).
+- **`FlowScorer`** — Configuration for a Scorer. Maps to Inspect AI
+  [Scorer](https://inspect.aisi.org.uk/scorer.html).
+- **`FlowOptions`** — Runtime execution options. Maps to Inspect AI
+  [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set)
+  parameters.
+- **`FlowDefaults`** — System for setting default values across tasks,
+  models, solvers, and agents.
+- **`FlowDependencies`** — Configuration for evaluation dependencies
+  (used in virtual environment mode).
+
+## Config Files
+
+Flow configuration files are Python files where the last expression is
+either:
+
+- A `FlowSpec` object, or
+- A function that returns a `FlowSpec` object
+
+Since config files are standard Python code, you can use all Python
+features including variables, loops, comprehensions, imports, and
+comments. Flow configs are just Python!
+
+> [!NOTE]
+>
+> This last expression requirement only applies when loading configs
+> from files (via CLI or `load_spec()`). When using the Python API
+> directly with `run()`, you pass the `FlowSpec` object
+> programmatically—no file or last expression needed.
+
+## Basic Example
+
+In [Welcome - Basic Example](index.qmd#basic-example), we showed a
+simple `FlowSpec`. Let’s break down what’s happening:
+
+**first_config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-5",
+        ),
+    ],
+)
+```
+
+Line 4  
+Specify the directory for storing logs
+
+Line 5  
+List evaluation tasks to run
+
+Line 7  
+Specify task from registry by name
+
+Line 8  
+Specify model to evaluate by name
+
+To run the task, first ensure you have the necessary dependencies
+installed (`inspect-evals` and `openai` for this example), then run the
+following command in your shell.
+
+``` bash
+flow run first_config.py
+```
+
+Alternatively, use the `--venv` flag to automatically install
+dependencies in an isolated virtual environment:
+
+``` bash
+flow run first_config.py --venv
+```
+
+![Progress bar in terminal](images/first_config_progress_terminal.png)
+
+**What happens when you run this (default in-process mode)?**
+
+1.  Flow loads the `gpqa_diamond` task from the `inspect_evals` registry
+2.  Searches the Flow Store for existing logs to reuse (see [Flow
+    Store](store.qmd))
+3.  Runs the evaluation with GPT-5 in the current Python process
+4.  Stores results in `logs/`
+
+When using `--venv`, Flow additionally creates an isolated virtual
+environment, installs dependencies automatically, executes the
+evaluation in that environment, and cleans up the temporary environment
+after completion.
+
+## Jobs
+
+`FlowSpec` is the primary interface for defining Flow workflows. All
+Flow operations—including [parameter sweeps and matrix
+expansions](matrix.qmd)—ultimately produce a list of tasks that
+`FlowSpec` executes.
+
+**Required fields:**
+
+| Field | Description |
+|----|----|
+| `log_dir` | Output path for logging results. Supports S3 paths (e.g., `s3://bucket/path`) |
+
+**Optional fields:**
+
+| Field | Description | Default |
+|----|----|----|
+| `tasks` | List of tasks to run (`FlowTask` objects, Inspect AI `Task` objects, or strings) | `None` |
+| `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
+| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
+| `execution_type` | Execution environment: `"inproc"` runs tasks in the current Python process, `"venv"` runs tasks in an isolated virtual environment | `"inproc"` |
+| `python_version` | Python version for the isolated virtual environment when `execution_type="venv"` (e.g., `"3.11"`) | Same as current environment |
+| `dependencies` | `FlowDependencies` object configuring package installation in venv mode. Controls dependency file detection, additional packages, and auto-detection behavior. Ignored in inproc mode. | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names (venv mode only) |
+| `env` | Environment variables to set when running tasks | `None` |
+| `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
+| `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
+| `store` | Flow Store location for tracking and reusing logs across runs. Set to `None` to disable. See [Flow Store](store.qmd) | `"auto"` |
+| `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
+
+## Tasks
+
+`FlowTask` defines the configuration for a single evaluation. Each
+`FlowTask` maps to an Inspect AI
+[Task](https://inspect.aisi.org.uk/tasks.html) and accepts the same
+parameters—including the model to evaluate, solver chain, generation
+config, sandbox environment, and dataset filters.
+
+### Specification
+
+Flow supports multiple ways to specify tasks, from simple registry names
+to programmatic Task objects. Choose the approach that best fits your
+needs:
+
+- **Registry names and file paths**: Simple string-based references for
+  tasks from packages or local files
+- **Task factory functions**: Use `FlowTask(factory=...)` when you have
+  a Task object but want to override parameters like model or config
+- **Direct Task objects**: Pass Task objects directly to
+  `FlowSpec.tasks` when you don’t need Flow-level parameter overrides
+
+**Registry Name**
+
+``` python
+# Tasks from installed packages
+FlowTask(
+    name="inspect_evals/gpqa_diamond",
+    model="openai/gpt-5"
+)
+```
+
+**File Path**
+
+``` python
+# Auto-discovers `@task` decorated functions in the specified file and creates a task for each of them
+FlowTask(
+    name="./my_task.py",
+    model="openai/gpt-5"
+)
+```
+
+**File with Function**
+
+``` python
+# Explicitly selects a specific function from the file
+FlowTask(
+    name="./my_task.py@custom_eval",
+    model="openai/gpt-5"
+)
+```
+
+**Task Factory Function**
+
+``` python
+# Use a factory function that returns an Inspect AI Task
+from inspect_ai import Task, task
+from inspect_ai.dataset import example_dataset
+from inspect_ai.solver import generate
+from inspect_flow import FlowTask
+
+@task  # @task decorator makes the function available in the registry and ensures that tasks with different args are considered unique
+def my_task_factory():
+    return Task(dataset=example_dataset("security_guide"), solver=generate())
+
+FlowTask(
+    factory=my_task_factory,
+    model="openai/gpt-5",  # Override the model
+)
+```
+
+**Direct Task Object in FlowSpec**
+
+**direct_task_object.py**
+
+``` python
+# Pass Task objects directly to FlowSpec.tasks
+# Use this when you don't need to override task parameters
+from inspect_ai import Task, task
+from inspect_ai.dataset import example_dataset
+from inspect_ai.solver import generate
+from inspect_flow import FlowSpec
+
+
+@task  # Optional: use @task decorator to make function available in the registry
+def my_custom_task():
+    return Task(
+        dataset=example_dataset("security_guide"),
+        solver=generate(),
+    )
+
+
+FlowSpec(
+    log_dir="logs",
+    tasks=[
+        my_custom_task(),
+        "inspect_evals/gpqa_diamond",
+    ],
+)
+```
+
+### Configuration
+
+`FlowTask` accepts parameters that map to Inspect AI
+[Task](https://inspect.aisi.org.uk/tasks.html) fields. The examples
+below show commonly used fields; see the `FlowTask` reference
+documentation for the complete list of available parameters.
+
+``` python
+FlowTask(
+    name="inspect_evals/mmlu_0_shot",
+    model="openai/gpt-5",
+    epochs=3,
+    config=GenerateConfig(
+        temperature=0.7,
+        max_tokens=1000,
+    ),
+    solver="chain_of_thought",
+    args={"subject": "physics"},
+    sandbox="docker",
+    sample_id=[0, 1, 2],
+    extra_args=FlowExtraArgs(
+        solver={"max_attempts": 3}
+    ),
+)
+```
+
+Line 2  
+**Task name or factory** — Use `name` to specify a task by registry name
+(`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with
+function (`"./task.py@eval_fn"`). Alternatively, use `factory` to
+provide a callable that returns an Inspect AI `Task` object (see [Task
+Factory Function](#specification) example above). When using `factory`,
+you can still override task parameters like `model`, `solver`, or
+`config` via other `FlowTask` fields.
+
+Line 3  
+**Model** — Maps to Inspect AI `Task.model`. Optional model for this
+task. If not specified, uses the model from `INSPECT_EVAL_MODEL`
+environment variable. Can be a string (`"openai/gpt-5"`), a `FlowModel`
+object for advanced configuration, or an Inspect AI `Model` object.
+
+Line 4  
+**Epochs** — Maps to Inspect AI `Task.epochs`. Number of times to repeat
+evaluation over the dataset samples. Can be an integer (`epochs=3`) or a
+`FlowEpochs` object to specify custom reducer functions
+(`FlowEpochs(epochs=3, reducer="median")`). By default, scores are
+combined using the `"mean"` reducer across epochs.
+
+Lines 5-8  
+**Generation config** — Maps to Inspect AI `Task.config`
+(`GenerateConfig`). Model generation parameters like `temperature`,
+`max_tokens`, `top_p`, `reasoning_effort`, etc. These settings override
+config on `FlowSpec.config` but are overridden by settings on
+`FlowModel.config`.
+
+Line 9  
+**Solver chain** — Maps to Inspect AI `Task.solver`. The algorithm(s)
+for solving the task. Can be a string (`"chain_of_thought"`),
+`FlowSolver` object, `FlowAgent` object, Inspect AI `Solver` or `Agent`
+object, or a list of solvers for chaining. Defaults to `generate()` if
+not specified.
+
+Line 10  
+**Task arguments** — Maps to task function parameters. Dictionary of
+arguments passed to the task constructor or `@task` decorated function.
+Enables parameterization of tasks (e.g., selecting dataset subsets,
+configuring difficulty levels).
+
+Line 11  
+**Sandbox environment** — Maps to Inspect AI `Task.sandbox`. Can be a
+string (`"docker"`, `"local"`), a tuple with additional config, or a
+`SandboxEnvironmentType` object.
+
+Line 12  
+**Sample selection** — Evaluate specific samples from the dataset.
+Accepts a single ID (`sample_id=0`), list of IDs
+(`sample_id=[0, 1, 2]`), or list of string IDs.
+
+Lines 13-15  
+**Extra arguments** — Additional arguments to pass when creating Inspect
+AI objects (models, solvers, agents, scorers) for this specific task.
+Useful for per-task customization, such as providing different tools to
+an agent depending on the task. Values in `extra_args` override any args
+specified in the object’s own `args` field.
+
+## Models
+
+When specifying a task, you can provide the model for the task as a
+string with a model name, a `FlowModel`, or an Inspect AI `Model`
+object. When using the simple string, the default values for that model
+will be used. For example:
+
+``` python
+FlowTask(name="task", model="openai/gpt-5")
+```
+
+Using `FlowModel` allows you to specify additional parameters for the
+model (e.g. `GenerateConfig`). Use `FlowModel` when you need to set
+custom `GenerateConfig`, API endpoints, custom API keys for a specific
+model, or perform other custom configuration. For example:
+
+``` python
+FlowTask(
+    name="task",
+    model=FlowModel(
+        name="openai/gpt-5",
+        config=GenerateConfig(
+            reasoning_effort="medium",
+            max_connections=10,
+        ),
+        base_url="https://custom-endpoint.com",
+        api_key="${CUSTOM_API_KEY}",
+    )
+)
+```
+
+You can also pass an Inspect AI `Model` object directly when you need
+programmatic model configuration:
+
+``` python
+from inspect_ai.model import get_model
+
+# Create a Model instance with custom configuration
+custom_model = get_model(
+    "openai/gpt-5",
+    config=GenerateConfig(reasoning_effort="high"),
+    base_url="https://custom-endpoint.com"
+)
+
+FlowTask(
+    name="task",
+    model=custom_model
+)
+```
+
+### Model Roles
+
+For agent evaluations with multiple model roles, use `model_roles` to
+specify which model to use for each role. For example:
+
+``` python
+# For agent evaluations with multiple roles
+FlowTask(
+    name="multi_agent_task",
+    model_roles={
+        "assistant": "openai/gpt-5",
+        "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+
+# Defaults, Inheritance and Overrides
+
+
+Inspect Flow provides powerful mechanisms to avoid repetition and share
+configuration across evaluations. This page covers:
+
+- **FlowDefaults** - Setting default values within a spec that cascade
+  across tasks, models, solvers, and agents
+- **Config Inheritance** - Reusing and composing configurations across
+  multiple files
+- **CLI Overrides** - Overriding any config value at runtime
+
+## FlowDefaults
+
+`FlowDefaults` supports multiple levels of default configuration:
+
+**config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import (
+    FlowAgent,
+    FlowDefaults,
+    FlowModel,
+    FlowSolver,
+    FlowSpec,
+    FlowTask,
+)
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            max_connections=10,
+        ),
+        model=FlowModel(
+            model_args={"arg": "foo"},
+        ),
+        model_prefix={
+            "openai/": FlowModel(
+                config=GenerateConfig(
+                    max_connections=20
+                ),
+            ),
+        },
+        solver=FlowSolver(name="generate"),
+        solver_prefix={"chain_of_thought": FlowSolver(name="chain_of_thought")},
+        agent=FlowAgent(name="basic"),
+        agent_prefix={"inspect/": FlowAgent(name="inspect/basic")},
+        task=FlowTask(model="openai/gpt-4o"),
+        task_prefix={"inspect_evals/": FlowTask(model="openai/gpt-4o-mini")},
+    ),
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        )
+    ],
+)
+```
+
+Lines 13-15  
+Default model generation options. Will be overridden by settings on
+FlowTask and FlowModel.
+
+Lines 16-18  
+Field defaults for models.
+
+Lines 19-25  
+Model defaults for model name prefixes. Overrides `FlowDefaults.config`
+and `FlowDefaults.model`. If multiple prefixes match, **longest prefix
+wins**.
+
+Line 26  
+Field defaults for solvers.
+
+Line 27  
+Solver defaults for solver name prefixes. Overrides
+`FlowDefaults.solver`. If multiple prefixes match, **longest prefix
+wins**.
+
+Line 28  
+Field defaults for agents.
+
+Line 29  
+Agent defaults for agent name prefixes. Overrides `FlowDefaults.agent`.
+If multiple prefixes match, **longest prefix wins**.
+
+Line 30  
+Field defaults for tasks.
+
+Line 31  
+Task defaults for task name prefixes. Overrides `FlowDefaults.config`
+and `FlowDefaults.task`. If multiple prefixes match, **longest prefix
+wins**.
+
+### Merge Priority
+
+Defaults follow a hierarchy where **more specific settings override less
+specific ones**:
+
+**For GenerateConfig:**
+
+1.  Global config defaults (`defaults.config`)
+2.  Global model config defaults (`defaults.model.config`)
+3.  Model prefix config defaults (`defaults.model_prefix.config`)
+4.  Task-specific config (`task.config`)
+5.  Model-specific config (`model.config`) — **highest priority**
+
+**Example hierarchy in action:**
+
+**config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            temperature=0.0,
+            max_tokens=100,
+        ),
+        model_prefix={
+            "openai/": FlowModel(
+                config=GenerateConfig(temperature=0.5)
+            )
+        },
+    ),
+    tasks=[
+        FlowTask(
+            name="task",
+            config=GenerateConfig(temperature=0.7),
+            model=FlowModel(
+                name="openai/gpt-4o",
+                config=GenerateConfig(temperature=1.0),
+            ),
+        )
+    ],
+)
+```
+
+Lines 7-8  
+Global defaults: `temperature=0.0, max_tokens=100`
+
+Line 12  
+Prefix defaults override: `temperature=0.5` (for OpenAI models)
+
+Line 19  
+Task config overrides: `temperature=0.7`
+
+Line 22  
+**Model config wins**: `temperature=1.0, max_tokens=100`
+
+**Final result:** `temperature=1.0` (most specific), `max_tokens=100`
+(from global defaults)
+
+> [!NOTE]
+>
+> ### None Values and Merge Behavior
+>
+> **For fields in Flow types:** Most fields use a special “not given”
+> default, which means `None` is a meaningful value that **does
+> override**:
+>
+> **config.py**
+>
+> ``` python
+> from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
+>
+> FlowSpec(
+>     defaults=FlowDefaults(
+>         model=FlowModel(name="openai/gpt-4o"),
+>     ),
+>     tasks=[
+>         FlowTask(
+>             name="inspect_evals/gpqa_diamond",
+>             model=None,  # Explicitly set to None
+>         )
+>     ],
+> )
+> # Result: Task uses model=None (overrides the default "openai/gpt-4o")
+> ```
+>
+> To avoid overriding a FlowTask field, omit it entirely rather than
+> setting it to `None`.
+>
+> **For GenerateConfig and other Inspect types:** Setting a field to
+> `None` means “not specified” — it won’t override existing values from
+> defaults:
+>
+> **config.py**
+>
+> ``` python
+> from inspect_ai.model import GenerateConfig
+> from inspect_flow import FlowDefaults, FlowSpec, FlowTask
+>
+> FlowSpec(
+>     defaults=FlowDefaults(config=GenerateConfig(temperature=0.8, max_tokens=1000)),
+>     tasks=[
+>         FlowTask(
+>             name="inspect_evals/gpqa_diamond",
+>             model="openai/gpt-4o",
+>             config=GenerateConfig(temperature=0.5, max_tokens=None),
+>         )
+>     ],
+> )
+> # Result: Task runs with temperature=0.5, max_tokens=1000
+> # The max_tokens=None didn't override the default 1000
+> ```
+>
+> **Validating the resolved config:** You can preview your configuration
+> before running:
+>
+> - **`flow config config.py`** - View the expanded config as YAML
+>   (applies defaults, includes, overrides).
+> - **`flow run config.py --dry-run`** - Perform the full setup process
+>   (instantiate tasks, check for existing logs) showing what would run,
+>   but stop before running evaluations.
+
+### Constructor Arguments
+
+When passing arguments to Inspect AI object constructors (models,
+solvers, agents, scorers), `extra_args` on `FlowTask` provides the
+highest priority override:
+
+1.  Global defaults for the object type (e.g., `defaults.agent.args`)
+2.  Prefix defaults (e.g., `defaults.agent_prefix.args`)
+3.  Object-specific args (e.g., `FlowAgent.args`)
+4.  **Task `extra_args` wins** (e.g., `task.extra_args.agent`) —
+    **highest priority**
+
+This allows you to set default tool configurations globally while
+overriding them for specific tasks.
+
+**Example:**
+
+**config.py**
+
+``` python
+from inspect_ai.tool import bash, web_search
+from inspect_flow import (
+    FlowAgent,
+    FlowDefaults,
+    FlowExtraArgs,
+    FlowSpec,
+    FlowTask,
+)
+
+FlowSpec(
+    log_dir="logs",
+    defaults=FlowDefaults(
+        agent=FlowAgent(
+            name="react",
+            args={"tools": [web_search()]},
+        )
+    ),
+    tasks=[
+        FlowTask(name="task1"),
+        FlowTask(
+            name="task2",
+            extra_args=FlowExtraArgs(
+                agent={"tools": [bash()]}
+            ),
+        ),
+    ],
+)
+```
+
+Line 15  
+Default agent has `web_search` tool
+
+Line 19  
+`task1` inherits the default: uses `web_search`
+
+Line 23  
+`task2` overrides with `extra_args`: uses `bash` instead
+
+## Inheritance
+
+Inspect Flow supports configuration inheritance to share settings across
+multiple config files. This is particularly useful for defining global
+defaults at a repository level that apply to all evaluations.
+
+### Automatic Discovery
+
+Inspect Flow automatically discovers and includes files named `_flow.py`
+in parent directories. Starting from your config file’s location, it
+searches upward through the directory tree for `_flow.py` files and
+automatically merges them.
+
+This allows you to define shared defaults (model settings, dependencies,
+etc.) at a repository root that apply to all configs in subdirectories
+without explicit includes.
+
+> [!NOTE]
+>
+> When using `run()` from the Python API to run the `FlowSpec` directly
+> instead of the command line, the `base_dir` argument is used as the
+> starting point for searching upward through the directory tree, rather
+> than the config file’s location.
+
+### Includes
+
+Use the `includes` field to explicitly merge other configs into your
+spec. You can include either config file paths or `FlowSpec` objects:
+
+**File Path**
+
+``` python
+FlowSpec(
+    includes=["../foo/other_config.py"],
+    log_dir="logs",
+    tasks=["my_task"]
+)
+```
+
+**FlowSpec Object**
+
+``` python
+base_config = FlowSpec(
+    defaults=FlowDefaults(config=GenerateConfig(temperature=0.5))
+)
+
+FlowSpec(
+    includes=[base_config, "../foo/other_config.py"],
+    log_dir="logs",
+    tasks=["my_task"]
+)
+```
+
+#### Merge
+
+Included configs are merged recursively, with the current config’s
+values taking precedence over included values:
+
+- **Dictionaries**: Fields are merged deeply (recursive merge)
+- **Lists**: Items are concatenated with duplicates removed
+- **Scalars**: Current config values override included values
+
+#### Order
+
+Includes are processed sequentially in the order they appear. Each
+included file is loaded, its includes are recursively processed, and
+then merged into the current config without overwriting existing values.
+
+**Priority order** (highest to lowest):
+
+**config.py**
+
+``` python
+FlowSpec(
+    includes=["defaults.py", "shared.py", "path.py"],
+    ...
+)
+```
+
+1.  Main config file (`config.py`)
+2.  `defaults.py`
+3.  Files included by `defaults.py`
+4.  `shared.py`
+5.  Files included by `shared.py`
+6.  `path.py`
+7.  Files included by `path.py`
+
+#### Recursion
+
+Included files can themselves have `includes` fields, which are expanded
+recursively. This allows you to build hierarchies of configuration.
+
+#### Path Resolution
+
+When including files by path, relative paths will be resolved relative
+to the config file (when using the CLI) or `base_dir` arg (when using
+the API):
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    includes=[
+        "defaults.py",
+        "../shared.py",
+        "/absolute/path.py",
+    ],
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
+    ],
+)
+```
+
+When including `FlowSpec` objects directly, no path resolution is needed
+as the objects are already loaded.
+
+> [!NOTE]
+>
+> Automatic discovery does not look for `_flow.py` files in the parent
+> directories of explicitly included files.
+
+### Inheritance with FlowDefaults
+
+Config inheritance is especially powerful when combined with
+`FlowDefaults`. You can define global defaults in a `_flow.py` file at
+your repository root:
+
+**\_flow.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowSpec
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            max_connections=10,
+            temperature=0.0,
+        ),
+    ),
+)
+```
+
+Then all configs in subdirectories automatically inherit these defaults,
+which can be selectively overridden:
+
+**experiments/config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+            # Override just temperature
+            config=GenerateConfig(temperature=0.7),
+        ),
+    ],
+)
+# Inherits max_connections=10 from _flow.py
+# Overrides temperature=0.7 for this specific task
+```
+
+> [!TIP]
+>
+> ### Preventing Overrides
+>
+> When using inheritance to define shared defaults, you can enforce
+> critical settings by preventing including configs from overriding
+> them. See [Lock Configuration
+> Fields](advanced.qmd#lock-configuration-fields) in the Advanced
+> section to learn how to lock inherited or default values and prevent
+> them from being overwritten.
+
+> [!TIP]
+>
+> ### Team Collaboration
+>
+> The `_flow.py` inheritance pattern is especially useful for team
+> collaboration. For example, you can configure a shared Flow Store
+> location in `_flow.py` at your repository root:
+>
+> ``` python
+> # _flow.py (at repository root)
+> FlowSpec(
+>     store="s3://my-team-bucket/flow-store"
+> )
+> ```
+>
+> All team members working in the repository will automatically use the
+> shared store, enabling log reuse across the team. See [Flow
+> Store](store.qmd#team-collaboration) for more details.
+
+## CLI Overrides
+
+Override config values at runtime using the `--set` flag:
+
+#### Basic usage
+
+``` bash
+flow run config.py --set log_dir=./logs
+```
+
+#### Nested paths
+
+``` bash
+flow run config.py --set options.limit=10
+flow run config.py --set defaults.solver.args.tool_calls=none
+```
+
+#### JSON dicts
+
+``` bash
+flow run config.py --set 'options.metadata={"experiment": "baseline", "version": "v1"}'
+```
+
+#### Multiple overrides
+
+``` bash
+flow run config.py \
+  --set log_dir=./logs/experiment1 \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5
+```
+
+> [!NOTE]
+>
+> ### Override Behavior
+>
+> - **Strings**: Replace existing values
+> - **Dicts**: Replace existing values
+> - **Lists**:
+>   - String values append to existing list
+>   - Lists replace existing list
+>
+> **Examples:**
+>
+> ``` bash
+> # Appends to list
+> --set dependencies=new_package
+>
+> # Replaces list
+> --set 'dependencies=["pkg1", "pkg2"]'
+> ```
+
+## Env Vars
+
+Set config values via environment variables:
+
+``` bash
+export INSPECT_FLOW_LOG_DIR=./logs/custom
+export INSPECT_FLOW_LIMIT=50
+export INSPECT_FLOW_SET="options.metadata={\"key\": \"value\"}"
+export INSPECT_FLOW_ARG="task_min_priority=2"
+flow run config.py
+```
+
+**Supported environment variables:**
+
+| Variable | Equivalent Flag | Description |
+|----|----|----|
+| `INSPECT_FLOW_LOG_DIR` | `--log-dir` | Override log directory |
+| `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` | `--log-dir-create-unique` | Create new log directory with numeric suffix if exists |
+| `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY` | `--log-dir-allow-dirty` | Allow log directory to contain logs not in the eval set |
+| `INSPECT_FLOW_LOG_LEVEL` | `--log-level` | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level. |
+| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `full` (live progress, default), `plain` (simple text for CI), or `rich` (rich formatting without live updates) |
+| `INSPECT_FLOW_STORE` | `--store` | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
+| `INSPECT_FLOW_LIMIT` | `--limit` | Limit number of samples |
+| `INSPECT_FLOW_SET` | `--set` | Set config overrides (can be specified multiple times) |
+| `INSPECT_FLOW_ARG` | `--arg` | Args to pass to spec functions in the config file (can be multiple) |
+| `INSPECT_FLOW_VENV` | `--venv` | Create a virtual environment to run the Flow spec |
+| `INSPECT_FLOW_DRY_RUN` | `--dry-run` | Perform full setup and show what would run without actually running evaluations |
+
+> [!TIP]
+>
+> ### Override Priority
+>
+> Setting defaults via the command line will override the defaults which
+> in turn might be overridden by anything set explicitly.
+>
+> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`,
+> `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their
+> corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--set`)
+> are runtime settings for the `flow run` command and cannot be set in
+> `FlowSpec`.
+>
+> **Execution mode**: The `execution_type` field can be set in
+> `FlowSpec` (as `execution_type="venv"`) or overridden at runtime with
+> `INSPECT_FLOW_VENV` environment variable or `--venv` CLI flag.
+>
+> **Settings with multiple override levels**:
+>
+> Priority order for `log-dir`, `log-dir-create-unique`, `limit` and
+> `store`:
+>
+> 1.  `FlowSpec` defaults
+> 2.  Explicit setting on the `FlowSpec`
+> 3.  `INSPECT_FLOW_SET_` environment variables
+> 4.  CLI `--set` flags
+> 5.  `INSPECT_FLOW_LOG_DIR`, `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`,
+>     `INSPECT_FLOW_LIMIT` and `INSPECT_FLOW_STORE` environment
+>     variables
+> 6.  Explicit `--log-dir`, `--log-dir-create-unique`, `--limit` and
+>     `--store` CLI flags
+>
+> Priority order for all other settings:
+>
+> 1.  `FlowSpec` defaults
+> 2.  Explicit setting on the `FlowSpec`
+> 3.  `INSPECT_FLOW_SET_` environment variables
+> 4.  CLI `--set` flags
+
+## Debugging
+
+To debug your configuration with all defaults, inheritance, and
+overrides applied:
+
+**View the resolved config as YAML:**
+
+``` bash
+flow config config.py
+```
+
+**Preview what would run:**
+
+``` bash
+flow run config.py --dry-run
+```
+
+The `flow config` command quickly displays the expanded configuration as
+YAML. The `--dry-run` flag performs the full setup process—instantiating
+tasks from the registry and checking for existing logs—showing exactly
+which tasks would run and which logs would be reused, but stops before
+actually running the evaluations.
+
+# Matrixing
+
+
+Matrixing lets you systematically explore evaluation configurations by
+generating Cartesian products of parameters. Instead of manually writing
+every combination, Flow provides `*_matrix()` and `*_with()` functions
+to declaratively generate evaluation grids.
+
+> [!NOTE]
+>
+> `*_matrix()` and `*_with()` functions work with Flow types
+> (`FlowTask`, `FlowModel`, `FlowSolver`, `FlowAgent`) and strings (for
+> registry references). They cannot operate directly on Inspect AI
+> objects (`Task`, `Model`, `Solver`, `Agent`).
+
+## Matrix Functions
+
+Matrix functions generate all combinations of their parameters using
+Cartesian products.
+
+### tasks_matrix()
+
+Generate task configurations by combining tasks with models, configs,
+solvers, and arguments:
+
+**tasks_matrix.py**
+
+``` python
+from inspect_flow import FlowSpec, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=["inspect_evals/gpqa_diamond", "inspect_evals/mmlu_0_shot"],
+        model=["openai/gpt-4o", "anthropic/claude-3-5-sonnet"],
+    ),
+)
+```
+
+This creates **4 tasks** (2 tasks × 2 models).
+
+### models_matrix()
+
+Generate model configurations with different generation settings:
+
+**models_matrix.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, models_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            "inspect_evals/gpqa_diamond",
+            "inspect_evals/mmlu_0_shot",
+        ],
+        model=models_matrix(
+            model=[
+                "openai/gpt-5",
+                "openai/gpt-5-mini",
+            ],
+            config=[
+                GenerateConfig(reasoning_effort="minimal"),
+                GenerateConfig(reasoning_effort="low"),
+                GenerateConfig(reasoning_effort="medium"),
+                GenerateConfig(reasoning_effort="high"),
+            ],
+        ),
+    ),
+)
+```
+
+This creates **16 tasks** (2 task × 2 models × 4 resoning_effort).
+
+### configs_matrix()
+
+Generate generation config combinations by specifying individual
+parameters:
+
+**configs_matrix.py**
+
+``` python
+from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            "inspect_evals/gpqa_diamond",
+            "inspect_evals/mmlu_0_shot",
+        ],
+        model=models_matrix(
+            model=[
+                "openai/gpt-5",
+                "openai/gpt-5-mini",
+            ],
+            config=configs_matrix(
+                reasoning_effort=["minimal", "low", "medium", "high"],
+            ),
+        ),
+    ),
+)
+```
+
+This creates **16 tasks** (2 task × 2 models × 4 resoning_effort).
+
+### solvers_matrix()
+
+Generate solver configurations with different arguments:
+
+**solvers_matrix.py**
+
+``` python
+from inspect_flow import FlowSpec, solvers_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        solver=solvers_matrix(
+            solver="chain_of_thought",
+            args=[
+                {"max_iterations": 3},
+                {"max_iterations": 5},
+                {"max_iterations": 10},
+            ],
+        ),
+    ),
+)
+```
+
+This creates **3 tasks** (1 task × 3 solver configurations).
+
+### agents_matrix()
+
+Generate agent configurations with different arguments:
+
+**agents_matrix.py**
+
+``` python
+from inspect_ai.tool import bash, python, web_search
+from inspect_flow import FlowSpec, agents_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        solver=agents_matrix(
+            agent="react",
+            args=[
+                {"tools": [web_search()]},
+                {"tools": [bash(), python()]},
+                {"tools": [web_search(), bash(), python()]},
+            ],
+        ),
+    ),
+)
+```
+
+This creates **3 tasks** (1 task × 3 agent configurations).
+
+## With Functions (Apply to All)
+
+“With” functions apply the same setting to all items in a list, without
+creating a Cartesian product. Unlike matrix functions which multiply
+combinations, with functions keep the list size the same.
+
+**Key difference:**
+
+- **Matrix functions** create all combinations:
+  `models_matrix(model=[A, B], temperature=[0.5, 1.0])` → 4 tasks (A at
+  0.5, A at 1.0, B at 0.5, B at 1.0)
+- **With functions** apply to each item:
+  `models_with(model=[A, B], temperature=0.5)` → 2 tasks (A at 0.5, B at
+  0.5)
+
+### tasks_with()
+
+Apply common settings to multiple tasks:
+
+**tasks_with.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, tasks_with
+
+FlowSpec(
+    tasks=tasks_with(
+        task=["inspect_evals/gpqa_diamond", "inspect_evals/mmlu_0_shot"],
+        model="openai/gpt-4o",
+        config=GenerateConfig(temperature=0.7),
+    )
+)
+```
+
+Line 7  
+Apply the same model to both tasks
+
+Line 8  
+Apply the same generation config to both tasks
+
+This creates **2 tasks** (2 tasks, each with the same model and config).
+
+### models_with()
+
+Apply common settings to multiple models:
+
+**models_with.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, models_with, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        model=models_with(
+            model=["openai/gpt-4o", "anthropic/claude-3-5-sonnet-20241022"],
+            config=GenerateConfig(temperature=0.7),
+        ),
+    ),
+)
+```
+
+Line 10  
+Apply the same generation config to both models
+
+This creates **2 tasks** (1 task × 2 models, each with the same config).
+
+### configs_with()
+
+Apply common settings to multiple configs:
+
+**configs_with.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, configs_with, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        config=configs_with(
+            config=[
+                GenerateConfig(temperature=0.0),
+                GenerateConfig(temperature=0.5),
+                GenerateConfig(temperature=1.0),
+            ],
+            max_tokens=1000,
+        ),
+    ),
+)
+```
+
+Line 14  
+Apply the same max_tokens to all three temperature configs
+
+This creates **3 tasks** (1 task × 3 configs, each with the same
+max_tokens).
+
+### solvers_with()
+
+Apply common settings to multiple solvers:
+
+**solvers_with.py**
+
+``` python
+from inspect_flow import FlowSpec, solvers_with, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        solver=solvers_with(
+            solver=["chain_of_thought", "plan_solve", "self_critique"],
+            args={"max_steps": 5},
+        ),
+    ),
+)
+```
+
+This creates **3 tasks** (1 task × 3 solvers, each with the same
+max_attempts).
+
+### agents_with()
+
+Apply common settings to multiple agents:
+
+**agents_with.py**
+
+``` python
+from inspect_flow import FlowSpec, agents_with, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="my_task",
+        solver=agents_with(
+            agent=["system_message", "tool_agent", "web_agent"],
+            args={"system_message": "You are a helpful assistant."},
+        ),
+    ),
+)
+```
+
+This creates **3 tasks** (1 task × 3 agents, each with cache enabled).
+
+### Combining Matrix and With
+
+Mix parameter sweeps with common settings:
+
+**matrix_and_with.py**
+
+``` python
+from inspect_flow import (
+    FlowSpec,
+    configs_matrix,
+    tasks_matrix,
+    tasks_with,
+)
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_with(
+        task=tasks_matrix(
+            task=["task1", "task2"],
+            config=configs_matrix(
+                temperature=[0.0, 0.5, 1.0],
+            ),
+        ),
+        model="openai/gpt-4o",
+        sandbox="docker",
+    ),
+)
+```
+
+Lines 11-16  
+Create a matrix of 6 tasks (2 tasks × 3 temperature values)
+
+Line 17  
+Apply the same model to all 6 tasks from the matrix
+
+Line 18  
+Apply the same sandbox to all 6 tasks from the matrix
+
+## Nested Sweeps
+
+Matrix functions can be nested to create complex parameter grids. Use
+the unpacking operator `*` to expand inner matrix results:
+
+**Example: Tasks with nested model sweep**
+
+**nested_model_sweep.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, models_matrix, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=["inspect_evals/mmlu_0_shot", "inspect_evals/gpqa_diamond"],
+        model=[
+            "anthropic/claude-3-5-sonnet",
+            *models_matrix(
+                model=["openai/gpt-4o", "openai/gpt-4o-mini"],
+                config=[
+                    GenerateConfig(reasoning_effort="low"),
+                    GenerateConfig(reasoning_effort="high"),
+                ],
+            ),
+        ],
+    ),
+)
+```
+
+Line 8  
+Total of 5 models: 1 single model + 4 from the matrix (2 models × 2
+reasoning_effort values)
+
+Line 9  
+A single model configuration for Claude
+
+Line 10  
+Use the unpacking operator `*` to expand the nested model matrix into
+the list
+
+This creates **10 tasks** (2 tasks × 5 model configurations).
+
+**Example: Tasks with nested task sweep**
+
+**nested_task_sweep.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask, tasks_matrix
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task=[
+            FlowTask(name="task1", args={"subset": "test"}),
+            *tasks_matrix(
+                task="task2",
+                args=[
+                    {"language": "en"},
+                    {"language": "de"},
+                    {"language": "fr"},
+                ],
+            ),
+        ],
+        model=["model1", "model2"],
+    ),
+)
+```
+
+Line 7  
+A single task configuration with specific arguments
+
+Line 8  
+Use the unpacking operator `*` to expand the nested task matrix into the
+list
+
+Lines 9-16  
+Total of 4 tasks: 1 single task + 3 from the matrix (1 task × 3 language
+variants)
+
+This creates **8 tasks** (4 task variants × 2 models).
+
+> [!WARNING]
+>
+> ### Watch Out for Combinatorial Explosion
+>
+> Parameter sweeps grow multiplicatively. A sweep with:
+>
+> - 3 tasks
+> - 4 models
+> - 5 temperature values
+> - 3 solver configurations
+>
+> Results in 3 × 4 × 5 × 3 = **180 evaluations**.
+>
+> Always preview with `--dry-run` to check the number of evaluations
+> before running expensive grids.
+>
+> The [Flow Store](store.qmd) helps by automatically reusing logs from
+> previous runs, so re-running a large sweep only evaluates what’s new
+> or changed.
+
+## Matrix Merge
+
+When base objects already have values, matrix parameters are merged:
+
+``` python
+tasks_matrix(
+    task=FlowTask(
+        name="task",
+        config=GenerateConfig(temperature=0.5)
+    ),
+    config=[
+        GenerateConfig(max_tokens=1000),
+        GenerateConfig(max_tokens=2000),
+    ]
+)
+```
+
+Line 4  
+Base value of temperature=0.5
+
+Lines 7-8  
+Adds max_tokens, keeps temperature=0.5
+
+This creates 2 tasks: one with `temperature=0.5, max_tokens=1000` and
+another with `temperature=0.5, max_tokens=2000`.
+
+# Running Flows
+
+
+Once you’ve defined your Flow configuration, you can execute evaluations
+using the `flow run` command. Flow also provides tools for previewing
+configurations and controlling runtime behavior.
+
+## The `flow run` Command
+
+Execute your evaluation workflow:
+
+``` bash
+flow run config.py
+```
+
+**What happens when you run this:**
+
+1.  Flow loads your configuration file
+2.  Resolves all defaults and matrix expansions
+3.  Searches the Flow Store for existing logs to reuse
+4.  Executes evaluations via Inspect AI’s `eval_set()` in the current
+    Python process
+5.  Stores logs in `log_dir`
+6.  Adds logs to the Flow Store and generates `flow-requirements.txt`
+
+> [!TIP]
+>
+> ### Virtual Environment Mode
+>
+> For reproducible evaluation runs, you can use [virtual environment
+> mode](advanced.qmd#virtual-environment-mode) which automatically
+> creates an isolated environment and installs dependencies:
+>
+> ``` bash
+> flow run matrix.py --venv
+> ```
+>
+> Or set `execution_type="venv"` in your `FlowSpec`. Virtual environment
+> mode automatically installs packages based on your config (e.g.,
+> `model="openai/gpt-4"` installs `openai`) and dependency files, making
+> it easy to share workflows with others. See [Execution
+> Modes](advanced.qmd#execution-modes) to learn more.
+
+### Common CLI Flags
+
+**Preview without running:**
+
+``` bash
+flow run config.py --dry-run
+```
+
+Performs the full setup process and shows what would run:
+
+- Applies all defaults and expands all matrix functions
+- Instantiates tasks from the registry
+- Checks for existing logs (in log directory and Flow Store)
+- Shows which tasks would run and which logs would be reused
+- Stops before actually running evaluations
+
+This is invaluable for debugging what will actually run in your
+evaluations.
+
+**Override log directory:**
+
+``` bash
+flow run config.py --log-dir ./experiments/baseline
+```
+
+Changes where logs and results are stored.
+
+**Runtime overrides:**
+
+``` bash
+flow run config.py \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5
+```
+
+Override any configuration value at runtime. See [CLI
+Overrides](defaults.qmd#cli-overrides) for more details.
+
+## The `flow config` Command
+
+Preview your configuration before running:
+
+``` bash
+flow config config.py
+```
+
+Displays the expanded configuration as YAML (applies defaults, includes,
+and CLI overrides). Does not instantiate tasks or check for existing
+logs—it only loads and expands the configuration file.
+
+> [!TIP]
+>
+> ### When to Use Each Command
+>
+> - **`flow config`** - View expanded config as YAML, quick syntax check
+> - **`flow run --dry-run`** - Preview what would run, check which logs
+>   would be reused
+> - **`flow run`** - Execute evaluations
+
+## Running from Python
+
+You can run Flow evaluations programmatically using the Python API:
+
+**run.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+from inspect_flow.api import run
+
+spec = FlowSpec(
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
+        FlowTask(
+            name="inspect_evals/mmlu_0_shot",
+            model="openai/gpt-4o",
+        ),
+    ],
+)
+run(spec=spec)
+```
+
+The `inspect_flow.api` module provides programmatic access to Flow
+capabilities. Key functions include:
+
+- **`run()`** - Execute a Flow spec with full environment setup
+  (equivalent to `flow run`)
+- **`load_spec()`** - Load a Flow configuration from a Python file into
+  a `FlowSpec` object
+- **`config()`** - Get the expanded configuration as YAML (applies
+  defaults, includes, overrides - equivalent to `flow config`)
+- **`init()`** - Initialize Flow session settings (logging, display,
+  .env loading)
+- **`store_get()`** - Get a FlowStore instance for programmatic store
+  access
+
+See the [API Reference](reference/inspect_flow.api.qmd) for complete
+documentation.
+
+## Results and Logs
+
+### Logs Directory
+
+Evaluation results are stored in the `log_dir`:
+
+    logs/
+    ├── 2025-11-21T17-38-20+01-00_gpqa-diamond_KvJBGowidXSCLRhkKQbHYA.eval
+    ├── 2025-11-21T17-38-20+01-00_mmlu-0-shot_Vnu2A3M2wPet5yobLiCQmZ.eval
+    ├── .eval-set-id
+    ├── eval-set.json
+    ├── flow.yaml
+    ├── flow-requirements.txt
+    └── ...
+
+**Directory structure:**
+
+- Flow passes the `log_dir` directly to Inspect AI `eval_set()` for
+  evaluation log storage
+- Inspect AI handles the actual evaluation log file naming and storage
+- Log file naming conventions follow Inspect AI’s standards (see
+  [Inspect AI logging
+  docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
+- Flow automatically saves the resolved configuration as `flow.yaml` in
+  the log directory
+- Flow saves a snapshot of installed packages as
+  `flow-requirements.txt`:
+  - In **venv mode**: captures packages installed in the isolated
+    environment
+  - In **inproc mode**: captures packages from your current environment
+- The `.eval-set-id` file contains the eval set identifier
+- The `eval-set.json` file contains eval set metadata
+
+> [!NOTE]
+>
+> Logs in this directory are automatically tracked by the [Flow
+> Store](store.qmd), enabling log reuse across future runs.
+
+**Log formats:**
+
+- `.eval` - Binary Inspect AI log format (default, high-performance)
+- `.json` - JSON format (if `log_format="json"` in `FlowOptions`)
+
+### Viewing Results
+
+**Using [Inspect View](https://inspect.aisi.org.uk/log-viewer.html):**
+
+``` bash
+inspect view
+```
+
+Opens the Inspect AI viewer to explore evaluation logs interactively.
+[Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can
+automatically detect Flow config files in the log directory and render
+them in the UI, making it easier to review the spec for the evaluations.
+
+Click the Flow icon in the top right hand corner to view the Flow
+config.
+
+![Eval list rendered by Inspect View](images/inspect_view_list.png)
+
+The Flow config file is rendered in YAML format.
+
+![Flow config rendered by Inspect
+View](images/inspect_view_flow_config.png)
+
+### S3 Support
+
+Store logs directly to S3:
+
+``` python
+FlowSpec(
+    log_dir="s3://my-bucket/experiments/baseline",
+    tasks=[...]
+)
+```
+
+For more information on configuring an S3 bucket as a logs directory,
+refer to the Inspect AI
+[documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3).
+
+# Flow Store
+
+
+The Flow Store automatically skips redundant evaluations by tracking
+which logs you’ve already completed—across directories, projects, and
+even team members.
+
+The Flow Store is a **centralized registry of evaluation log file
+paths** that enables **global log reuse across Flow runs**.
+
+> [!NOTE]
+>
+> Unlike Inspect AI’s [Eval
+> Set](https://inspect.aisi.org.uk/eval-sets.html) which only reuses
+> logs from the same log directory, the Flow Store indexes logs from
+> multiple locations and makes them available for reuse across any Flow
+> run.
+
+## Basics
+
+The Flow Store is enabled by default and requires zero configuration. On
+your first run, the Flow Store is automatically created in the
+background. When you run an evaluation, Flow automatically:
+
+1.  **Searches the Flow Store** for logs matching your task (based on
+    task configuration)
+2.  **Selects the best log** (most completed samples, then most recent)
+3.  **Copies it to your log directory** for Inspect AI’s Eval Set to
+    reuse
+4.  **Resumes incomplete logs** by only running missing samples
+5.  **Adds the final log** back to the Flow Store after completion
+
+### Example
+
+Let’s walk through a concrete example showing how the Flow Store
+automatically tracks and reuses logs across multiple runs.
+
+**Run 1: Initial evaluation**
+
+Start with a simple configuration evaluating one model:
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="project-1",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        )
+    ],
+)
+```
+
+Lines 3-11  
+Evaluate gpt-4o on gpqa_diamond
+
+When you run `flow run config.py`, Flow:
+
+1.  Searches the Flow Store for existing logs (none found)
+2.  Runs the evaluation
+3.  Saves logs to `project-1/`
+4.  Adds to Flow Store:
+    `project-1/2026-01-31T15-55_gpqa-diamond_ABCeD.eval`
+
+**Run 2: Modified configuration**
+
+Now modify your config to use a new log directory and add a second
+model:
+
+**config.py**
+
+``` diff
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+-   log_dir="project-1",
++   log_dir="project-2",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
++       FlowTask(
++           name="inspect_evals/gpqa_diamond",
++           model="openai/gpt-5",
++        )
+    ]
+)
+```
+
+Lines 4-5  
+Change to a new log directory
+
+Lines 7-10  
+Same task from Run 1 (gpt-4o on gpqa_diamond)
+
+Lines 11-14  
+New task (gpt-5 on gpqa_diamond)
+
+When you run `flow run config.py` again, Flow:
+
+1.  Searches the Flow Store for existing logs matching your tasks
+2.  Finds Run 1’s gpt-4o log from `project-1/`
+3.  Copies it to `project-2/` for reuse
+4.  Skips re-evaluating gpt-4o (already complete)
+5.  Only evaluates the new gpt-5 task
+6.  Saves both logs to `project-2/`
+7.  Updates Flow Store with both log paths
+
+**Result:** The second run completes much faster by reusing the gpt-4o
+evaluation from Run 1.
+
+> [!NOTE]
+>
+> If Run 1 was interrupted with only 80/100 samples completed, Run 2
+> would automatically resume from where it left off and only evaluate
+> the remaining 20 samples for gpt-4o.
+
+## Backend
+
+The Flow Store is a lightweight registry that tracks **log file paths**,
+not the logs themselves. For each log, the Flow Store records:
+
+- **Log file path**: Absolute path to the log file
+- **Task identifier**: Hash of the task configuration (for matching)
+- **Timestamp**: When the log was added to the Flow Store
+
+The Flow Store uses [Delta Lake](https://delta.io/) as its storage
+backend, providing ACID transactions and efficient querying. The Flow
+Store supports both **local filesystems** and **S3 storage**. By
+default, the Flow Store is automatically created when you first run
+`flow run` or import logs with `flow store import`, and is located at:
+
+    ~/.local/share/inspect_flow  # Linux
+    ~/Library/Application Support/inspect_flow  # macOS
+    C:\Users\<username>\AppData\Local\inspect_flow  # Windows
+
+## Configuration
+
+### Setting store location
+
+By default, Flow uses the platform-specific store location shown in
+[Backend](#backend) to search for and track logs. You can configure
+which store to use for the `flow run` command with the following
+precedence:
+
+1.  **CLI flag or environment variable** (highest priority):
+
+``` bash
+# CLI flag
+flow run config.py --store /path/to/my-project-store
+
+# Or environment variable
+export INSPECT_FLOW_STORE=/path/to/my-project-store
+flow run config.py
+```
+
+2.  **FlowSpec parameter:**
+
+``` python
+FlowSpec(
+    store="./my-project-store",
+    tasks=[...]
+)
+```
+
+3.  **Default location** (lowest priority): Platform-specific default
+    from [Backend](#backend)
+
+This allows you to maintain multiple stores for different projects or
+purposes, and choose which one to use for each run. The CLI flag and
+environment variable are useful for temporarily overriding the store
+location without modifying your config file.
+
+### Disabling the store
+
+Disable the Flow Store entirely by setting the `store` parameter to
+`None`:
+
+``` python
+FlowSpec(
+    store=None,
+    tasks=[...]
+)
+```
+
+This prevents automatic log reuse and Flow Store operations.
+
+### Team collaboration
+
+**S3-based shared store:**
+
+Set up a shared store on S3 for team collaboration:
+
+``` python
+FlowSpec(
+    store="s3://my-team-bucket/flow-store",
+    tasks=[...]
+)
+```
+
+Team members with access to the S3 bucket can share and reuse logs.
+Delta Lake supports concurrent access, so multiple team members can
+safely use the same store simultaneously. See [Inspect AI’s S3
+documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3)
+for S3 authentication setup.
+
+> [!TIP]
+>
+> ### Recommended workflows
+>
+> **Master FlowSpec approach:** Create a `_flow.py` file at your
+> repository root with the team store location:
+>
+> ``` python
+> # _flow.py (at repository root)
+> FlowSpec(
+>     store="s3://my-team-bucket/flow-store"
+> )
+> ```
+>
+> Flow automatically discovers and inherits from `_flow.py` files in
+> parent directories, so all team members working in the repository will
+> automatically use the shared store—no explicit includes needed. See
+> [Automatic Discovery](defaults.qmd#inheritance) for details on how
+> `_flow.py` inheritance works.
+>
+> **Local-then-import approach:** Run evaluations locally first, then
+> import quality-assured logs to the shared store:
+>
+> ``` bash
+> # Run locally (with personal store)
+> flow run config.py
+>
+> # After QA, import to team store
+> flow store import s3://my-team-bucket/logs/ \
+>     --copy-from ./logs/ \
+>     --store s3://my-team-bucket/flow-store
+> ```
+>
+> This workflow lets you validate results before sharing them with the
+> team.
+
+## CLI Commands
+
+The Flow Store provides commands to manually manage logs in the Flow
+Store. All commands support the `--store` flag to specify which store to
+operate on.
+
+### The `flow store import` Command
+
+Add logs to the Flow Store from directories or files:
+
+``` bash
+flow store import logs/
+```
+
+**Import from multiple locations:**
+
+``` bash
+flow store import logs/ archived_logs/
+```
+
+**Import specific files:**
+
+``` bash
+flow store import logs/eval_001.json logs/eval_002.json
+```
+
+**Copy logs to S3 and import:**
+
+``` bash
+flow store import s3://my-bucket/logs/ --copy-from ./local-logs/
+```
+
+This copies all logs from `./local-logs/` to `s3://my-bucket/logs/`,
+then imports them into the Flow Store. Useful for centralizing logs
+across team members.
+
+**Control recursive search:**
+
+``` bash
+flow store import logs/ --no-recursive
+```
+
+By default, `flow store import` recursively searches subdirectories for
+log files. Use `--no-recursive` to only import logs directly in the
+specified directory.
+
+**Preview before importing:**
+
+``` bash
+flow store import logs/ --dry-run
+```
+
+**Environment variables:**
+
+- `INSPECT_FLOW_STORE` - Store location (same as `--store`)
+- `INSPECT_FLOW_STORE_PATH` - Log paths to import
+- `INSPECT_FLOW_STORE_RECURSIVE` - Enable recursive search
+  (`true`/`false`)
+- `INSPECT_FLOW_STORE_IMPORT_COPY_FROM` - Copy source directory (same as
+  `--copy-from`)
+- `INSPECT_FLOW_STORE_IMPORT_DRY_RUN` - Enable dry run mode
+  (`true`/`false`)
+
+### The `flow store remove` Command
+
+Remove logs from the Flow Store by path prefix:
+
+``` bash
+flow store remove logs/2024-01-15/
+```
+
+**Remove multiple prefixes:**
+
+``` bash
+flow store remove logs/experiment_1/ logs/experiment_2/
+```
+
+**Remove missing logs (that no longer exist on disk):**
+
+``` bash
+flow store remove --missing
+```
+
+**Control recursive search:**
+
+``` bash
+flow store remove logs/experiments/ --no-recursive
+```
+
+By default, `flow store remove` recursively searches subdirectories for
+matching logs. Use `--no-recursive` to only remove logs directly in the
+specified directory.
+
+**Preview before removing:**
+
+``` bash
+flow store remove logs/old/ --dry-run
+```
+
+**Environment variables:**
+
+- `INSPECT_FLOW_STORE` - Store location (same as `--store`)
+- `INSPECT_FLOW_STORE_PREFIX` - Log path prefixes to remove
+- `INSPECT_FLOW_STORE_RECURSIVE` - Enable recursive search
+  (`true`/`false`)
+- `INSPECT_FLOW_STORE_REMOVE_MISSING` - Remove missing logs
+  (`true`/`false`)
+- `INSPECT_FLOW_STORE_REMOVE_DRY_RUN` - Enable dry run mode
+  (`true`/`false`)
+
+### The `flow store list` Command
+
+View all logs in the Flow Store:
+
+``` bash
+flow store list
+```
+
+**Tree format:**
+
+``` bash
+flow store list --format tree
+```
+
+**Environment variables:**
+
+- `INSPECT_FLOW_STORE` - Store location (same as `--store`)
+- `INSPECT_FLOW_STORE_LIST_FORMAT` - Output format (`flat` or `tree`)
+
+### The `flow store info` Command
+
+View Flow Store statistics:
+
+``` bash
+flow store info
+```
+
+Shows the Flow Store location, number of logs, number of log
+directories, and Flow Store version.
+
+**Environment variables:**
+
+- `INSPECT_FLOW_STORE` - Store location (same as `--store`)
+
+### The `flow store delete` Command
+
+Delete the entire Flow Store:
+
+``` bash
+flow store delete
+```
+
+**Skip confirmation prompt:**
+
+``` bash
+flow store delete -y
+```
+
+**Environment variables:**
+
+- `INSPECT_FLOW_STORE` - Store location (same as `--store`)
+
+## Advanced
+
+### Matching logs
+
+The Flow Store matches logs using a **task identifier** computed by
+Inspect AI. This identifier is a hash of your task configuration
+including:
+
+- Task name, model, solver, scorer, and task arguments
+- Model configuration (temperature, top_p, max_tokens, seed, etc.)
+- Task limits (message_limit, token_limit, time_limit, working_limit)
+- Approval and sandbox settings
+
+Note that `limit`, `sample_shuffle`, retry parameters, and parallelism
+settings are NOT included—these are runtime parameters that don’t change
+what you’re evaluating.
+
+**Task definition determinism**: All task definition methods (FlowTask
+with name/factory, @task decorated functions, raw Task objects) work
+with the Flow Store as long as they’re deterministic. Tasks with dynamic
+inputs—like timestamps, random data, or external API calls—will generate
+different identifiers on each run, preventing log reuse.
+
+**Invalidated logs**: The Flow Store automatically skips logs marked as
+invalidated when selecting which log to reuse. If multiple matching logs
+exist, only non-invalidated logs with at least one completed sample are
+considered. Invalidated logs are only used if no other valid logs are
+available.
+
+**Missing or corrupted logs**: If a log file referenced in the Flow
+Store no longer exists or cannot be read, the Flow Store automatically
+skips it and continues searching for other matching logs. This graceful
+error handling ensures that deleted or moved log files don’t break your
+workflow.
+
+### Resuming incomplete samples
+
+Flow uses Inspect AI’s [Eval
+Set](https://inspect.aisi.org.uk/eval-sets.html#sec-sample-preservation)
+logic to resume incomplete logs. When the Flow Store finds a matching
+log, Flow copies it to your current log directory where Inspect’s
+eval_set automatically resumes from it.
+
+**Sample matching**: For resumption to work, Inspect must match samples
+from the old log to the current run using sample IDs. There are two
+approaches:
+
+1.  **Explicit IDs** (recommended): Include an `id` field in your
+    dataset. This allows both deterministic and non-deterministic
+    shuffling to work with resumption.
+
+2.  **Sequential IDs** (automatic): Rely on Inspect’s auto-assigned
+    sequential IDs. This works as long as your dataset order is stable.
+    Note that if Inspect detects `dataset.shuffle()` was called, it will
+    log a warning and skip sample reuse, running the full evaluation
+    instead.
+
+# Advanced
+
+
+## Execution Modes
+
+Flow supports two execution modes that determine how your evaluations
+run: **in-process (inproc)** and **virtual environment (venv)**.
+Understanding these modes helps you choose the right approach for your
+workflow.
+
+### In-Process Mode (Default)
+
+By default, Flow runs evaluations in your current Python process without
+creating an isolated environment.
+
+**Characteristics:**
+
+- Runs directly in your current Python environment
+- No automatic dependency installation—you manage packages yourself
+- Supports direct use of Inspect AI objects (`Task`, `Model`, `Solver`,
+  `Agent`)
+- Faster startup (no environment creation overhead)
+- Best for development, iteration, and when you control the environment
+
+**Example:**
+
+**inproc_mode.py**
+
+``` python
+from inspect_ai import Task
+from inspect_ai.dataset import example_dataset
+from inspect_ai.solver import generate
+from inspect_flow import FlowSpec
+
+FlowSpec(
+    log_dir="logs",
+    tasks=[
+        Task(
+            dataset=example_dataset("security_guide"),
+            solver=generate(),
+        ),
+        "inspect_evals/gpqa_diamond",
+    ],
+)
+```
+
+Line 9  
+Direct Inspect AI Task object (supported in inproc mode)
+
+Line 13  
+Registry reference works in both modes
+
+### Virtual Environment Mode
+
+Opt into virtual environment mode for isolated, reproducible evaluation
+runs.
+
+**Characteristics:**
+
+- Creates a temporary virtual environment with
+  [`uv`](https://github.com/astral-sh/uv) for each run
+- Automatically installs dependencies from `pyproject.toml`, `uv.lock`,
+  or `requirements.txt`
+- Auto-detects and installs packages based on config (e.g.,
+  `model="openai/gpt-4"` → installs `openai`)
+- Cleans up the temporary environment after completion (logs persist in
+  `log_dir`)
+- Requires Flow types only—cannot use direct Inspect AI objects (`Task`,
+  `Model`, etc.)
+- Best for reproducibility and sharing
+
+**Example:**
+
+**venv_mode.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    execution_type="venv",
+    python_version="3.11",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4",
+        ),
+    ],
+)
+```
+
+Line 5  
+Enable virtual environment mode
+
+Line 6  
+Optional: specify Python version
+
+Or use the CLI flag:
+
+``` bash
+flow run config.py --venv
+```
+
+### Choosing Between Modes
+
+| Consideration | In-Process (inproc) | Virtual Environment (venv) |
+|----|----|----|
+| **Default** | Yes ✓ | No (opt-in) |
+| **Dependency installation** | Manual | Automatic |
+| **Startup speed** | Fast | Slower (creates venv) |
+| **Inspect AI objects** | Supported | Not supported |
+| **Reproducibility** | Requires manual setup | Built-in |
+| **Isolation** | Uses current environment | Fresh environment |
+| **Best for** | Development, iteration | Production, sharing, CI/CD |
+
+## Dependencies
+
+This section details Flow’s dependency management system, which
+primarily applies to virtual environment mode.
+
+### Automatic Dependency Discovery
+
+In virtual environment mode, Flow automatically discovers and installs
+dependencies without requiring explicit configuration:
+
+- **Dependency files**: Searches upward from your config file directory
+  for `pyproject.toml` or `requirements.txt`. Relative paths will be
+  resolved relative to the config file (when using the CLI) or
+  `base_dir` arg (when using the API)
+- **Package inference**: Detects packages from Flow type names in your
+  config:
+  - Models: `model="openai/gpt-4"` → installs `openai`
+  - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs
+    `inspect-evals`
+  - Note: Package inference only works with Flow types (`FlowTask`,
+    `FlowModel`, etc.), not direct Inspect AI objects
+
+This means most workflows require no dependency configuration at all!
+
+> [!NOTE]
+>
+> ### In-Process Mode Dependencies
+>
+> In in-process mode (the default), these files are **ignored** for
+> automatic installation. You’re responsible for installing dependencies
+> yourself using your preferred package manager (`uv`, `pip`, `conda`,
+> etc.). However, you can still use the same `pyproject.toml` or
+> `requirements.txt` files to manage your dependencies manually.
+>
+> Flow still generates a `flow-requirements.txt` file in your log
+> directory to document what packages were installed when you ran the
+> evaluation, helping with reproducibility.
+
+> [!NOTE]
+>
+> ### Config Inheritance
+>
+> Flow automatically includes any `_flow.py` files in the config
+> directory or parent directories (see
+> [Inheritance](defaults.qmd#inheritance)). When these files specify
+> `dependencies` in venv mode, those dependencies are automatically
+> installed. This works in both execution modes—the inheritance
+> mechanism applies everywhere, but dependency installation only happens
+> in venv mode.
+
+### Explicit Dependencies
+
+While automatic dependency discovery works for most cases, you may need
+explicit dependencies when you require specific package versions for
+reproducibility e.g. `openai==2.8.0`, need to specify a non-standard
+dependency file location, or need to override the automatic detection
+behavior. Explicit dependencies give you full control over what gets
+installed in your workflow’s virtual environment.
+
+The `dependencies` field in `FlowSpec` accepts a `FlowDependencies`
+object:
+
+**config.py**
+
+``` python
+from inspect_flow import FlowDependencies, FlowSpec, FlowTask
+
+FlowSpec(
+    execution_type="venv",
+    dependencies=FlowDependencies(
+        dependency_file="../foo/pyproject.toml",
+        additional_dependencies=["pandas==2.0.0"],
+        auto_detect_dependencies=True,
+    ),
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-5",
+        ),
+    ],
+)
+```
+
+Line 6  
+How to find dependency files: Defaults to `"auto"` which auto-detects a
+`requirements.txt` or a `pyproject.toml` file. May also be set to a path
+to a dependency file or `"no_file"` to not use a dependency file. When
+using `pyproject.toml`, if a `uv.lock` file exists in the same
+directory, it will be used automatically for reproducible installs.
+
+Line 7  
+Extra packages beyond the dependency file. Accepts a string or list of
+strings. Supports: PyPI packages, Git repositories, local packages.
+
+Line 8  
+Auto-install packages based on task and model names in the config
+(default: `True`). For example, `model="openai/gpt-4"` installs
+`openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+
+### Python Version
+
+Specify the Python version for your spec’s virtual environment when
+using venv mode:
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    execution_type="venv",
+    python_version="3.11",
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-5",
+        ),
+    ],
+)
+```
+
+Line 4  
+Required for python_version to take effect.
+
+> [!NOTE]
+>
+> The `python_version` field only applies to virtual environment mode.
+> In in-process mode, evaluations run using your current Python
+> interpreter.
+
+### Checking Config
+
+To verify which dependencies and Python version will be used:
+
+``` bash
+flow run config.py --dry-run --venv
+```
+
+> [!TIP]
+>
+> ### Repeatability Best Practices
+>
+> For repeatable workflows, use **virtual environment mode** with the
+> following practices:
+>
+> - **Enable venv mode**: Set `execution_type="venv"` in your `FlowSpec`
+>   or use the `--venv` flag. This ensures isolated environments and
+>   automatic dependency installation.
+> - **Pin package versions**: Use exact versions for PyPI packages
+>   (`"inspect-evals==0.3.15"`) and commit hashes for Git repositories
+>   (`"git+https://github.com/user/repo@commit_hash"`).
+> - **Specify Python version**: Explicitly set `python_version` (e.g.,
+>   `"3.11"`) to ensure consistent Python environments.
+> - **Use lockfiles**: When using `pyproject.toml`, include a `uv.lock`
+>   file for fully reproducible dependency resolution (automatically
+>   detected if present).
+>
+> This combination ensures your evaluations can be reliably repeated and
+> shared with others.
+
+## Parameterized Jobs
+
+### Flow Args (`--arg`)
+
+Pass custom variables to Python config files using `--arg` or the
+`INSPECT_FLOW_ARG` environment variable. Use this for dynamic
+configuration that isn’t available via `--set`. To access the args the
+last statement in the config file should be a function that returns a
+`FlowSpec`. This function will be called with any provided args:
+
+``` bash
+flow run config.py --arg task_min_priority=2
+```
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+all_tasks = [
+    FlowTask(name="task_easy", flow_metadata={"priority": 1}),
+    FlowTask(name="task_medium", flow_metadata={"priority": 2}),
+    FlowTask(name="task_hard", flow_metadata={"priority": 3}),
+]
+
+
+def spec(task_min_priority: int = 1) -> FlowSpec:
+    return FlowSpec(
+        log_dir="logs",
+        tasks=[
+            t
+            for t in all_tasks
+            if (t.flow_metadata or {}).get("priority", 0) >= task_min_priority
+        ],
+    )
+```
+
+### Template Substitution
+
+Use `{field_name}` syntax to reference other `FlowSpec` configuration
+values. Substitutions are applied after the config is loaded:
+
+``` python
+FlowSpec(
+    log_dir="logs/my_eval",
+    options=FlowOptions(bundle_dir="{log_dir}/bundle"),
+    # Result: bundle_dir="logs/my_eval/bundle"
+)
+```
+
+For nested fields, use bracket notation: `{options[eval_set_id]}` or
+`{flow_metadata[key]}`. Substitutions are resolved recursively until no
+more remain.
+
+## Metadata
+
+Flow supports two types of metadata with distinct purposes: `metadata`
+and `flow_metadata`.
+
+### `metadata` (Inspect AI Metadata)
+
+The `metadata` field in `FlowOptions` and `FlowTask` is passed directly
+to Inspect AI and stored in evaluation logs. Use this for tracking
+experiment information that should be accessible in Inspect AI’s log
+viewer and analysis tools.
+
+**Example:**
+
+**config.py**
+
+``` python
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    options=FlowOptions(
+        metadata={
+            "experiment": "baseline_v1",
+            "hypothesis": "Higher temperature improves creative tasks",
+            "hardware": "A100-80GB",
+        }
+    ),
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+            metadata={
+                "task_variant": "chemistry_subset",
+                "note": "Testing with reduced context",
+            },
+        )
+    ],
+)
+```
+
+The metadata from `FlowOptions` is applied globally to all tasks in the
+evaluation run, while task-level metadata is specific to each task.
+These metadata dictionaries are merged in Inspect AI, with task-level
+metadata keys overriding the global options.
+
+### `flow_metadata` (Flow-Only Metadata)
+
+The `flow_metadata` field is available on `FlowSpec`, `FlowTask`,
+`FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata
+is **not passed to Inspect AI**—it exists only in the Flow configuration
+and is useful for configuration-time logic and organization.
+
+**Use cases:**
+
+- Filtering or selecting configurations based on properties
+- Organizing complex configuration generation logic
+- Documenting configuration decisions
+- Annotating configs without polluting Inspect AI logs
+
+**Example: Configuration-time filtering**
+
+**config.py**
+
+``` python
+from inspect_flow import FlowModel, FlowSpec, tasks_matrix
+
+# Define models with metadata about capabilities
+models = [
+    FlowModel(name="openai/gpt-4o", flow_metadata={"context_window": 128000}),
+    FlowModel(name="openai/gpt-4o-mini", flow_metadata={"context_window": 128000}),
+    FlowModel(
+        name="anthropic/claude-3-5-sonnet", flow_metadata={"context_window": 200000}
+    ),
+]
+
+# Filter to only long-context models
+long_context_models = [
+    m for m in models if (m.flow_metadata or {}).get("context_window", 0) >= 128000
+]
+
+FlowSpec(
+    log_dir="logs",
+    tasks=tasks_matrix(
+        task="long_context_task",
+        model=long_context_models,
+    ),
+)
+```
+
+## Viewer Bundling
+
+Viewer bundling works the same way as
+[`eval_set()`](https://inspect.aisi.org.uk/eval-sets.html) in Inspect AI
+and is configurable via `FlowOptions`. An additional feature allows you
+to print bundle URLs for users running evaluations.
+
+Convert local bundle paths to public URLs for sharing evaluation
+results. The `bundle_url_mappings` in `FlowOptions` applies string
+replacements to `bundle_dir` to generate a shareable URL that’s printed
+to stdout after the evaluation completes.
+
+**config.py**
+
+``` python
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs/my_eval",
+    options=FlowOptions(
+        bundle_dir="s3://my-bucket/bundles/my_eval",
+        bundle_url_mappings={"s3://my-bucket": "https://my-bucket.s3.amazonaws.com"},
+    ),
+    tasks=[FlowTask(name="task", model="openai/gpt-4o")],
+)
+```
+
+After running this prints:
+`Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval`
+
+Use this when storing bundles on cloud storage like S3 or on servers
+with public HTTP access. Multiple mappings are applied in order.
+
+Using Bundle URL maps makes sense along with the spec
+[inheritance](defaults.qmd#inheritance) feature so you can configure the
+same bundle mapping for all configs in a repository.
+
+## Config Scripts
+
+When loading a configuration file, Flow expects the last expression to
+either be a `FlowSpec` or a function that returns a `FlowSpec`. Other
+than this requirement, the configuration file may execute arbitrary
+code.
+
+### after_load
+
+Configuration scripts are executed while loading the spec. At the time
+that the script is running the spec is in an intermediate state
+(includes may not have been processed, overrides not applied, and
+template substitutions will not have run). To run code after the spec is
+fully loaded a script can decorate a function with `@after_load`.
+
+The decorated function may optionally implement the following arguments:
+
+- `spec` - the fully loaded `FlowSpec`
+- `files` - the list of configuration files that were loaded
+
+One example of functionality that can be implemented using this feature
+is validation code to enforce constraints. Instead of repeating this
+validation code in every Flow configuration file, the code could be
+placed in a `_flow.py` file that is auto included.
+
+### Prevent Runs with Uncommitted Changes
+
+Place a `_flow.py` file at your repository root to validate that all
+configs are in clean git repositories. This validation runs
+automatically for all configs in subdirectories.
+
+**\_flow.py**
+
+``` python
+import subprocess
+from pathlib import Path
+
+from inspect_flow import after_load
+
+
+def check_repo(path: str) -> None:
+    abs_path = Path(path).resolve()
+    check_dir = abs_path if abs_path.is_dir() else abs_path.parent
+
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=check_dir,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    if result.stdout.strip():
+        raise RuntimeError(f"The repository at {check_dir} has uncommitted changes.")
+
+
+@after_load
+def validate_no_dirty_repo(files: list[str]) -> None:
+    # Check no config files are in a dirty git repo
+    for path in files:
+        check_repo(path)
+```
+
+**config.py**
+
+``` python
+# Automatically inherits _flow.py
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    tasks=[FlowTask(name="inspect_evals/gpqa_diamond", model="openai/gpt-4o")],
+)
+# Will fail if uncommitted changes exist in the repository
+```
+
+### Lock Config Fields
+
+A `_flow.py` file can prevent configs from overriding critical settings:
+
+**\_flow.py**
+
+``` python
+from inspect_flow import FlowOptions, FlowSpec, after_load
+
+MAX_SAMPLES = 16
+
+
+@after_load
+def validate_max_samples(spec: FlowSpec) -> None:
+    if not spec.options or not spec.options.max_samples == MAX_SAMPLES:
+        raise ValueError("Do not override max_samples!")
+
+
+FlowSpec(
+    options=FlowOptions(max_samples=MAX_SAMPLES),
+)
+```
+
+**config.py**
+
+``` python
+# Automatically inherits _flow.py
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
+
+FlowSpec(
+    log_dir="logs",
+    options=FlowOptions(max_samples=32),  # Will raise ValueError!
+    tasks=[FlowTask(name="inspect_evals/gpqa_diamond", model="openai/gpt-4o")],
+)
+```
+
+This pattern is useful for enforcing organizational standards (resource
+limits, safety constraints, etc.) across all evaluation configs in a
+repository.
+
+# Reference
+
+
+#### Python API
+
+|                                          |                           |
+|------------------------------------------|---------------------------|
+| [inspect_flow](inspect_flow.qmd)         | Core types and functions. |
+| [inspect_flow.api](inspect_flow.api.qmd) | Output and run a spec.    |
+
+#### Flow CLI
+
+|                                |                        |
+|--------------------------------|------------------------|
+| [flow config](flow_config.qmd) | Output spec as yaml.   |
+| [flow run](flow_run.qmd)       | Run a spec.            |
+| [flow store](flow_store.qmd)   | Manage the Flow Store. |
+
+<style>
+.table td {
+    padding-bottom: 0 !important;
+}
+a {
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+</style>
+
+# inspect_flow
+
+
+## Types
+
+### FlowAgent
+
+Configuration for an Agent.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L179)
+
+``` python
+class FlowAgent(FlowBase)
+```
+
+#### Attributes
+
+`name` str \| None \| NotGiven  
+Name of the agent. Used to create the agent if the factory is not
+provided.
+
+`factory` Callable\[..., Agent\] \| None \| NotGiven  
+Factory function to create the agent instance.
+
+`args` CreateArgs \| None \| NotGiven  
+Additional args to pass to agent constructor.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the agent.
+
+`type` Literal\['agent'\] \| None  
+Type needed to differentiated solvers and agents in solver lists.
+
+### FlowDefaults
+
+Default field values for Inspect objects. Will be overriden by more
+specific settings.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L567)
+
+``` python
+class FlowDefaults(FlowBase)
+```
+
+#### Attributes
+
+`config` GenerateConfig \| None \| NotGiven  
+Default model generation options. Will be overriden by settings on the
+FlowModel and FlowTask.
+
+`agent` [FlowAgent](inspect_flow.qmd#flowagent) \| None \| NotGiven  
+Field defaults for agents.
+
+`agent_prefix` dict\[str, [FlowAgent](inspect_flow.qmd#flowagent)\] \| None \| NotGiven  
+Agent defaults for agent name prefixes. E.g. {‘inspect/’: FAgent(…)}
+
+`model` [FlowModel](inspect_flow.qmd#flowmodel) \| None \| NotGiven  
+Field defaults for models.
+
+`model_prefix` dict\[str, [FlowModel](inspect_flow.qmd#flowmodel)\] \| None \| NotGiven  
+Model defaults for model name prefixes. E.g. {‘openai/’: FModel(…)}
+
+`solver` [FlowSolver](inspect_flow.qmd#flowsolver) \| None \| NotGiven  
+Field defaults for solvers.
+
+`solver_prefix` dict\[str, [FlowSolver](inspect_flow.qmd#flowsolver)\] \| None \| NotGiven  
+Solver defaults for solver name prefixes. E.g. {‘inspect/’: FSolver(…)}
+
+`task` [FlowTask](inspect_flow.qmd#flowtask) \| None \| NotGiven  
+Field defaults for tasks.
+
+`task_prefix` dict\[str, [FlowTask](inspect_flow.qmd#flowtask)\] \| None \| NotGiven  
+Task defaults for task name prefixes. E.g. {‘inspect_evals/’: FTask(…)}
+
+### FlowDependencies
+
+Configuration for flow dependencies to install in the venv.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L612)
+
+``` python
+class FlowDependencies(FlowBase)
+```
+
+#### Attributes
+
+`dependency_file` Literal\['auto', 'no_file'\] \| str \| None \| NotGiven  
+Path to a dependency file (either requirements.txt or pyproject.toml) to
+use to create the virtual environment. If ‘auto’, will search the path
+starting from the same directory as the config file (when using the CLI)
+or base_dir arg (when using the API) looking for pyproject.toml or
+requirements.txt files. If ‘no_file’, no dependency file will be used.
+Defaults to ‘auto’.
+
+`additional_dependencies` str \| Sequence\[str\] \| None \| NotGiven  
+Dependencies to pip install. E.g. PyPI package specifiers or Git
+repository URLs.
+
+`auto_detect_dependencies` bool \| None \| NotGiven  
+If True, automatically detect and install dependencies from names of
+objects in the config (defaults to True). For example, if a model name
+starts with ‘openai/’, the ‘openai’ package will be installed. If a task
+name is ‘inspect_evals/mmlu’ then the ‘inspect-evals’ package will be
+installed.
+
+`uv_sync_args` str \| Sequence\[str\] \| None \| NotGiven  
+Additional arguments to pass to ‘uv sync’ when creating the virtual
+environment using a pyproject.toml file. May be a string (‘–dev –extra
+test’) or a list of strings (\[‘–dev’, ‘–extra’, ‘test’\]).
+
+### FlowEpochs
+
+Configuration for task epochs.
+
+Number of epochs to repeat samples over and optionally one or more
+reducers used to combine scores from samples across epochs. If not
+specified the “mean” score reducer is used.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L213)
+
+``` python
+class FlowEpochs(FlowBase)
+```
+
+#### Attributes
+
+`epochs` int  
+Number of epochs.
+
+`reducer` str \| Sequence\[str\] \| None \| NotGiven  
+One or more reducers used to combine scores from samples across epochs
+(defaults to “mean”)
+
+### FlowSpec
+
+Top-level flow specification.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L636)
+
+``` python
+class FlowSpec(FlowBase, arbitrary_types_allowed=True)
+```
+
+#### Attributes
+
+`includes` Sequence\[str \| [FlowSpec](inspect_flow.qmd#flowspec)\] \| None \| NotGiven  
+List of other flow specs to include. Relative paths will be resolved
+relative to the config file (when using the CLI) or base_dir arg (when
+using the API). In addition to this list of explicit files to include,
+any \_flow.py files in the same directory or any parent directory of the
+config file (when using the CLI) or base_dir arg (when using the API)
+will also be included automatically.
+
+`store` Literal\['auto'\] \| str \| None \| NotGiven  
+Path to directory to use for flow storage. ‘auto’ will use a default
+application location. None will disable storage. Relative paths will be
+resolved relative to the config file (when using the CLI) or base_dir
+arg (when using the API). If not given, ‘auto’ will be used.
+
+`log_dir` str \| None \| NotGiven  
+Output path for logging results (required to ensure that a unique
+storage scope is assigned). Must be set before running the flow spec.
+Relative paths will be resolved relative to the config file (when using
+the CLI) or base_dir arg (when using the API).
+
+`log_dir_create_unique` bool \| None \| NotGiven  
+If True, create a new log directory by appending an \_ and numeric
+suffix if the specified log_dir already exists. If the directory exists
+and has a \_numeric suffix, that suffix will be incremented. If False,
+use the existing log_dir (which must be empty or have
+log_dir_allow_dirty=True). Defaults to False.
+
+`execution_type` Literal\['inproc', 'venv'\] \| None \| NotGiven  
+Execution environment for running tasks (defaults to ‘inproc’).
+
+`python_version` str \| None \| NotGiven  
+Python version to use in the flow virtual environment (e.g. ‘3.11’)
+
+`dependencies` [FlowDependencies](inspect_flow.qmd#flowdependencies) \| None \| NotGiven  
+Dependencies to install in the venv. Defaults to auto-detecting
+dependencies from pyproject.toml, requirements.txt, and object names in
+the config.
+
+`options` [FlowOptions](inspect_flow.qmd#flowoptions) \| None \| NotGiven  
+Arguments for calls to eval_set.
+
+`env` dict\[str, str\] \| None \| NotGiven  
+Environment variables to set when running tasks.
+
+`defaults` [FlowDefaults](inspect_flow.qmd#flowdefaults) \| None \| NotGiven  
+Defaults values for Inspect objects.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the model.
+
+`tasks` Sequence\[str \| [FlowTask](inspect_flow.qmd#flowtask) \| Task\] \| None \| NotGiven  
+Tasks to run
+
+### FlowModel
+
+Configuration for a Model.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L78)
+
+``` python
+class FlowModel(FlowBase)
+```
+
+#### Attributes
+
+`name` str \| None \| NotGiven  
+Name of the model to use. If factory is not provided, this is used to
+create the model.
+
+`factory` Callable\[..., Model\] \| None \| NotGiven  
+Factory function to create the model instance.
+
+`role` str \| None \| NotGiven  
+Optional named role for model (e.g. for roles specified at the task or
+eval level). Provide a default as a fallback in the case where the role
+hasn’t been externally specified.
+
+`default` str \| None \| NotGiven  
+Optional. Fallback model in case the specified model or role is not
+found. Should be a fully qualified model name (e.g. openai/gpt-4o).
+
+`config` GenerateConfig \| None \| NotGiven  
+Configuration for model. Config values will be override settings on the
+FlowTask and FlowSpec.
+
+`base_url` str \| None \| NotGiven  
+Optional. Alternate base URL for model.
+
+`api_key` str \| None \| NotGiven  
+Optional. API key for model.
+
+`memoize` bool \| None \| NotGiven  
+Use/store a cached version of the model based on the parameters to
+get_model(). Defaults to True.
+
+`model_args` CreateArgs \| None \| NotGiven  
+Additional args to pass to model constructor.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the model.
+
+### FlowOptions
+
+Evaluation options.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L392)
+
+``` python
+class FlowOptions(FlowBase)
+```
+
+#### Attributes
+
+`retry_attempts` int \| None \| NotGiven  
+Maximum number of retry attempts before giving up (defaults to 10).
+
+`retry_wait` float \| None \| NotGiven  
+Time to wait between attempts, increased exponentially (defaults to 30,
+resulting in waits of 30, 60, 120, 240, etc.). Wait time per-retry will
+in no case be longer than 1 hour.
+
+`retry_connections` float \| None \| NotGiven  
+Reduce max_connections at this rate with each retry (defaults to 1.0,
+which results in no reduction).
+
+`retry_cleanup` bool \| None \| NotGiven  
+Cleanup failed log files after retries (defaults to True).
+
+`sandbox` SandboxEnvironmentType \| None \| NotGiven  
+Sandbox environment type (or optionally a str or tuple with a shorthand
+spec).
+
+`sandbox_cleanup` bool \| None \| NotGiven  
+Cleanup sandbox environments after task completes (defaults to True).
+
+`tags` Sequence\[str\] \| None \| NotGiven  
+Tags to associate with this evaluation run.
+
+`metadata` dict\[str, Any\] \| None \| NotGiven  
+Metadata to associate with this evaluation run.
+
+`trace` bool \| None \| NotGiven  
+Trace message interactions with evaluated model to terminal.
+
+`display` [DisplayType](inspect_flow.api.qmd#displaytype) \| None \| NotGiven  
+Task display type (defaults to ‘full’).
+
+`approval` str \| ApprovalPolicyConfig \| None \| NotGiven  
+Tool use approval policies. Either a path to an approval policy config
+file or a list of approval policies. Defaults to no approval policy.
+
+`score` bool \| None \| NotGiven  
+Score output (defaults to True).
+
+`log_level` str \| None \| NotGiven  
+Level for logging to the console: “debug”, “http”, “sandbox”, “info”,
+“warning”, “error”, “critical”, or “notset” (defaults to “warning”).
+
+`log_level_transcript` str \| None \| NotGiven  
+Level for logging to the log file (defaults to “info”).
+
+`log_format` Literal\['eval', 'json'\] \| None \| NotGiven  
+Format for writing log files (defaults to “eval”, the native
+high-performance format).
+
+`limit` int \| None \| NotGiven  
+Limit evaluated samples (defaults to all samples).
+
+`sample_shuffle` bool \| int \| None \| NotGiven  
+Shuffle order of samples (pass a seed to make the order deterministic).
+
+`fail_on_error` bool \| float \| None \| NotGiven  
+`True` to fail on first sample error(default); `False` to never fail on
+sample errors; Value between 0 and 1 to fail if a proportion of total
+samples fails. Value greater than 1 to fail eval if a count of samples
+fails.
+
+`continue_on_fail` bool \| None \| NotGiven  
+`True` to continue running and only fail at the end if the
+`fail_on_error` condition is met. `False` to fail eval immediately when
+the `fail_on_error` condition is met (default).
+
+`retry_on_error` int \| None \| NotGiven  
+Number of times to retry samples if they encounter errors (defaults to
+3).
+
+`debug_errors` bool \| None \| NotGiven  
+Raise task errors (rather than logging them) so they can be debugged
+(defaults to False).
+
+`max_samples` int \| None \| NotGiven  
+Maximum number of samples to run in parallel (default is
+max_connections).
+
+`max_tasks` int \| None \| NotGiven  
+Maximum number of tasks to run in parallel (defaults is 10).
+
+`max_subprocesses` int \| None \| NotGiven  
+Maximum number of subprocesses to run in parallel (default is
+os.cpu_count()).
+
+`max_sandboxes` int \| None \| NotGiven  
+Maximum number of sandboxes (per-provider) to run in parallel.
+
+`log_samples` bool \| None \| NotGiven  
+Log detailed samples and scores (defaults to True).
+
+`log_realtime` bool \| None \| NotGiven  
+Log events in realtime (enables live viewing of samples in inspect view)
+(defaults to True).
+
+`log_images` bool \| None \| NotGiven  
+Log base64 encoded version of images, even if specified as a filename or
+URL (defaults to False).
+
+`log_buffer` int \| None \| NotGiven  
+Number of samples to buffer before writing log file. If not specified,
+an appropriate default for the format and filesystem is chosen (10 for
+most all cases, 100 for JSON logs on remote filesystems).
+
+`log_shared` bool \| int \| None \| NotGiven  
+Sync sample events to log directory so that users on other systems can
+see log updates in realtime (defaults to no syncing). Specify `True` to
+sync every 10 seconds, otherwise an integer to sync every `n` seconds.
+
+`bundle_dir` str \| None \| NotGiven  
+If specified, the log viewer and logs generated by this eval set will be
+bundled into this directory. Relative paths will be resolved relative to
+the config file (when using the CLI) or base_dir arg (when using the
+API).
+
+`bundle_overwrite` bool \| None \| NotGiven  
+Whether to overwrite files in the bundle_dir. (defaults to False).
+
+`log_dir_allow_dirty` bool \| None \| NotGiven  
+If True, allow the log directory to contain unrelated logs. If False,
+ensure that the log directory only contains logs for tasks in this eval
+set (defaults to False).
+
+`eval_set_id` str \| None \| NotGiven  
+ID for the eval set. If not specified, a unique ID will be generated.
+
+`bundle_url_mappings` dict\[str, str\] \| None \| NotGiven  
+Replacements applied to bundle_dir to generate a URL. If provided and
+bundle_dir is set, the mapped URL will be written to stdout.
+
+### FlowScorer
+
+Configuration for a Scorer.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L131)
+
+``` python
+class FlowScorer(FlowBase)
+```
+
+#### Attributes
+
+`name` str \| None \| NotGiven  
+Name of the scorer. Used to create the scorer if the factory is not
+provided.
+
+`factory` Callable\[..., Scorer\] \| None \| NotGiven  
+Factory function to create the scorer instance.
+
+`args` CreateArgs \| None \| NotGiven  
+Additional args to pass to scorer constructor.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the scorer.
+
+### FlowSolver
+
+Configuration for a Solver.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L155)
+
+``` python
+class FlowSolver(FlowBase)
+```
+
+#### Attributes
+
+`name` str \| None \| NotGiven  
+Name of the solver. Used to create the solver if the factory is not
+provided.
+
+`factory` Callable\[..., Solver\] \| None \| NotGiven  
+Factory function to create the solver instance.
+
+`args` CreateArgs \| None \| NotGiven  
+Additional args to pass to solver constructor.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the solver.
+
+### FlowTask
+
+Configuration for an evaluation task.
+
+Tasks are the basis for defining and running evaluations.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/flow_types.py#L250)
+
+``` python
+class FlowTask(FlowBase, arbitrary_types_allowed=True)
+```
+
+#### Attributes
+
+`name` str \| None \| NotGiven  
+Task name. Any of registry name (“inspect_evals/mbpp”), file name
+(“./my_task.py”), or a file name and attr (“./<my_task.py@task>\_name”).
+Used to create the task if the factory is not provided.
+
+`factory` Callable\[..., Task\] \| None \| NotGiven  
+Factory function to create the task instance.
+
+`args` CreateArgs \| None \| NotGiven  
+Additional args to pass to task constructor
+
+`extra_args` FlowExtraArgs \| None \| NotGiven  
+Extra args to provide to creation of inspect objects for this task. Will
+override args provided in the ‘args’ field on the FlowModel, FlowSolver,
+FlowScorer, and FlowAgent.
+
+`solver` str \| [FlowSolver](inspect_flow.qmd#flowsolver) \| [FlowAgent](inspect_flow.qmd#flowagent) \| Solver \| Agent \| Sequence\[str \| [FlowSolver](inspect_flow.qmd#flowsolver) \| Solver\] \| None \| NotGiven  
+Solver or list of solvers. Defaults to generate(), a normal call to the
+model.
+
+`scorer` str \| [FlowScorer](inspect_flow.qmd#flowscorer) \| Scorer \| Sequence\[str \| [FlowScorer](inspect_flow.qmd#flowscorer) \| Scorer\] \| None \| NotGiven  
+Scorer or list of scorers used to evaluate model output.
+
+`model` str \| [FlowModel](inspect_flow.qmd#flowmodel) \| Model \| None \| NotGiven  
+Default model for task (Optional, defaults to eval model).
+
+`config` GenerateConfig \| NotGiven  
+Model generation config for default model (does not apply to model
+roles). Will override config settings on the FlowSpec. Will be
+overridden by settings on the FlowModel.
+
+`model_roles` ModelRolesConfig \| None \| NotGiven  
+Named roles for use in `get_model()`.
+
+`sandbox` SandboxEnvironmentType \| None \| NotGiven  
+Sandbox environment type (or optionally a str or tuple with a shorthand
+spec)
+
+`approval` str \| ApprovalPolicyConfig \| None \| NotGiven  
+Tool use approval policies. Either a path to an approval policy config
+file or an approval policy config. Defaults to no approval policy.
+
+`epochs` int \| [FlowEpochs](inspect_flow.qmd#flowepochs) \| None \| NotGiven  
+Epochs to repeat samples for and optional score reducer function(s) used
+to combine sample scores (defaults to “mean”)
+
+`fail_on_error` bool \| float \| None \| NotGiven  
+`True` to fail on first sample error (default); `False` to never fail on
+sample errors; Value between 0 and 1 to fail if a proportion of total
+samples fails. Value greater than 1 to fail eval if a count of samples
+fails.
+
+`continue_on_fail` bool \| None \| NotGiven  
+`True` to continue running and only fail at the end if the
+`fail_on_error` condition is met. `False` to fail eval immediately when
+the `fail_on_error` condition is met (default).
+
+`message_limit` int \| None \| NotGiven  
+Limit on total messages used for each sample.
+
+`token_limit` int \| None \| NotGiven  
+Limit on total tokens used for each sample.
+
+`time_limit` int \| None \| NotGiven  
+Limit on clock time (in seconds) for samples.
+
+`working_limit` int \| None \| NotGiven  
+Limit on working time (in seconds) for sample. Working time includes
+model generation, tool calls, etc. but does not include time spent
+waiting on retries or shared resources.
+
+`version` int \| str \| NotGiven  
+Version of task (to distinguish evolutions of the task spec or breaking
+changes to it)
+
+`metadata` dict\[str, Any\] \| None \| NotGiven  
+Additional metadata to associate with the task.
+
+`sample_id` str \| int \| Sequence\[str \| int\] \| None \| NotGiven  
+Evaluate specific sample(s) from the dataset.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the task.
+
+`model_name` str \| None \| NotGiven  
+Get the model name from the model field.
+
+Returns: The model name if set, otherwise None.
+
+## Decorators
+
+### after_load
+
+Decorator to mark a function to be called after a FlowSpec is loaded.
+
+The decorated function should have the signature (args are all optional
+and may be omitted): def after_flow_spec_loaded( spec: FlowSpec, files:
+list\[str\], ) -\> None:
+
+    spec: The loaded FlowSpec.
+    files: List of file paths that were loaded to create the FlowSpec.
+
+…
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/decorator.py#L9)
+
+``` python
+def after_load(func: F) -> F
+```
+
+`func` F  
+The function to decorate.
+
+## Functions
+
+### agents_matrix
+
+Create a list of agents from the product of lists of field values.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L245)
+
+``` python
+def agents_matrix(
+    *,
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
+    **kwargs: Unpack[FlowAgentMatrixDict],
+) -> list[FlowAgent]
+```
+
+`agent` str \| [FlowAgent](inspect_flow.qmd#flowagent) \| Sequence\[str \| [FlowAgent](inspect_flow.qmd#flowagent)\]  
+The agent or list of agents to matrix.
+
+`**kwargs` Unpack\[FlowAgentMatrixDict\]  
+The lists of field values to matrix.
+
+### agents_with
+
+Set fields on a list of agents.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L175)
+
+``` python
+def agents_with(
+    *,
+    agent: str | FlowAgent | Sequence[str | FlowAgent],
+    **kwargs: Unpack[FlowAgentDict],
+) -> list[FlowAgent]
+```
+
+`agent` str \| [FlowAgent](inspect_flow.qmd#flowagent) \| Sequence\[str \| [FlowAgent](inspect_flow.qmd#flowagent)\]  
+The agent or list of agents to set fields on.
+
+`**kwargs` Unpack\[FlowAgentDict\]  
+The fields to set on each agent.
+
+### configs_matrix
+
+Create a list of generate configs from the product of lists of field
+values.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L259)
+
+``` python
+def configs_matrix(
+    *,
+    config: GenerateConfig | Sequence[GenerateConfig] | None = None,
+    **kwargs: Unpack[GenerateConfigMatrixDict],
+) -> list[GenerateConfig]
+```
+
+`config` GenerateConfig \| Sequence\[GenerateConfig\] \| None  
+The config or list of configs to matrix.
+
+`**kwargs` Unpack\[GenerateConfigMatrixDict\]  
+The lists of field values to matrix.
+
+### configs_with
+
+Set fields on a list of generate configs.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L189)
+
+``` python
+def configs_with(
+    *,
+    config: GenerateConfig | Sequence[GenerateConfig],
+    **kwargs: Unpack[GenerateConfigDict],
+) -> list[GenerateConfig]
+```
+
+`config` GenerateConfig \| Sequence\[GenerateConfig\]  
+The config or list of configs to set fields on.
+
+`**kwargs` Unpack\[GenerateConfigDict\]  
+The fields to set on each config.
+
+### merge
+
+Merge two flow objects.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/merge.py#L52)
+
+``` python
+def merge(base: _T, add: _T) -> _T
+```
+
+`base` \_T  
+The base object.
+
+`add` \_T  
+The object to merge into the base. Values in this object will override
+those in the base.
+
+### models_matrix
+
+Create a list of models from the product of lists of field values.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L274)
+
+``` python
+def models_matrix(
+    *,
+    model: str | FlowModel | Sequence[str | FlowModel],
+    **kwargs: Unpack[FlowModelMatrixDict],
+) -> list[FlowModel]
+```
+
+`model` str \| [FlowModel](inspect_flow.qmd#flowmodel) \| Sequence\[str \| [FlowModel](inspect_flow.qmd#flowmodel)\]  
+The model or list of models to matrix.
+
+`**kwargs` Unpack\[FlowModelMatrixDict\]  
+The lists of field values to matrix.
+
+### models_with
+
+Set fields on a list of models.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L203)
+
+``` python
+def models_with(
+    *,
+    model: str | FlowModel | Sequence[str | FlowModel],
+    **kwargs: Unpack[FlowModelDict],
+) -> list[FlowModel]
+```
+
+`model` str \| [FlowModel](inspect_flow.qmd#flowmodel) \| Sequence\[str \| [FlowModel](inspect_flow.qmd#flowmodel)\]  
+The model or list of models to set fields on.
+
+`**kwargs` Unpack\[FlowModelDict\]  
+The fields to set on each model.
+
+### solvers_matrix
+
+Create a list of solvers from the product of lists of field values.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L288)
+
+``` python
+def solvers_matrix(
+    *,
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
+    **kwargs: Unpack[FlowSolverMatrixDict],
+) -> list[FlowSolver]
+```
+
+`solver` str \| [FlowSolver](inspect_flow.qmd#flowsolver) \| Sequence\[str \| [FlowSolver](inspect_flow.qmd#flowsolver)\]  
+The solver or list of solvers to matrix.
+
+`**kwargs` Unpack\[FlowSolverMatrixDict\]  
+The lists of field values to matrix.
+
+### solvers_with
+
+Set fields on a list of solvers.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L217)
+
+``` python
+def solvers_with(
+    *,
+    solver: str | FlowSolver | Sequence[str | FlowSolver],
+    **kwargs: Unpack[FlowSolverDict],
+) -> list[FlowSolver]
+```
+
+`solver` str \| [FlowSolver](inspect_flow.qmd#flowsolver) \| Sequence\[str \| [FlowSolver](inspect_flow.qmd#flowsolver)\]  
+The solver or list of solvers to set fields on.
+
+`**kwargs` Unpack\[FlowSolverDict\]  
+The fields to set on each solver.
+
+### tasks_matrix
+
+Create a list of tasks from the product of lists of field values.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L302)
+
+``` python
+def tasks_matrix(
+    *,
+    task: str | FlowTask | Sequence[str | FlowTask],
+    **kwargs: Unpack[FlowTaskMatrixDict],
+) -> list[FlowTask]
+```
+
+`task` str \| [FlowTask](inspect_flow.qmd#flowtask) \| Sequence\[str \| [FlowTask](inspect_flow.qmd#flowtask)\]  
+The task or list of tasks to matrix.
+
+`**kwargs` Unpack\[FlowTaskMatrixDict\]  
+The lists of field values to matrix.
+
+### tasks_with
+
+Set fields on a list of tasks.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_types/factories.py#L231)
+
+``` python
+def tasks_with(
+    *,
+    task: str | FlowTask | Sequence[str | FlowTask],
+    **kwargs: Unpack[FlowTaskDict],
+) -> list[FlowTask]
+```
+
+`task` str \| [FlowTask](inspect_flow.qmd#flowtask) \| Sequence\[str \| [FlowTask](inspect_flow.qmd#flowtask)\]  
+The task or list of tasks to set fields on.
+
+`**kwargs` Unpack\[FlowTaskDict\]  
+The fields to set on each task.
+
+# inspect_flow.api
+
+
+## Python API
+
+### init
+
+Initialize the inspect_flow API.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L25)
+
+``` python
+def init(
+    log_level: str = DEFAULT_LOG_LEVEL,
+    display: DisplayType = "full",
+    dotenv_base_dir: str | None = ".",
+) -> None
+```
+
+`log_level` str  
+The Inspect Flow log level to use.
+
+`display` [DisplayType](inspect_flow.api.qmd#displaytype)  
+The display mode.
+
+`dotenv_base_dir` str \| None  
+Directory (or file path) to search for .env files. If a file path is
+given, its parent directory is used. None to skip .env loading. Defaults
+to “.” (current working directory).
+
+### run
+
+Run an inspect_flow evaluation.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L72)
+
+``` python
+def run(
+    spec: FlowSpec,
+    base_dir: str | None = None,
+    *,
+    dry_run: bool = False,
+) -> None
+```
+
+`spec` [FlowSpec](inspect_flow.qmd#flowspec)  
+The flow spec configuration.
+
+`base_dir` str \| None  
+The base directory for resolving relative paths. Defaults to the current
+working directory.
+
+`dry_run` bool  
+If True, do not run eval, but show a count of tasks that would be run.
+
+### load_spec
+
+Load a spec from file.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L57)
+
+``` python
+def load_spec(
+    file: str,
+    *,
+    args: dict[str, Any] | None = None,
+) -> FlowSpec
+```
+
+`file` str  
+The path to the spec file.
+
+`args` dict\[str, Any\] \| None  
+A dictionary of arguments to pass as kwargs to the function in the flow
+config.
+
+### config
+
+Return the flow spec configuration.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L104)
+
+``` python
+def config(
+    spec: FlowSpec,
+    base_dir: str | None = None,
+) -> str
+```
+
+`spec` [FlowSpec](inspect_flow.qmd#flowspec)  
+The flow spec configuration.
+
+`base_dir` str \| None  
+The base directory for resolving relative paths. Defaults to the current
+working directory.
+
+### store_get
+
+Get a FlowStore instance.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L121)
+
+``` python
+def store_get(store: str = "auto", create: bool = True) -> FlowStore
+```
+
+`store` str  
+The store location. Can be a path to the store directory or “auto” for
+the default store location.
+
+`create` bool  
+Whether to create the store if it does not exist.
+
+### delete_store
+
+Delete a flow store.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L159)
+
+``` python
+def delete_store(store_path: str) -> None
+```
+
+`store_path` str  
+Path to the store directory.
+
+### copy_all_logs
+
+Copy all log files from src_dir to dest_dir, preserving directory
+structure.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_util/logs.py#L16)
+
+``` python
+def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
+```
+
+`src_dir` str  
+Source directory containing log files.
+
+`dest_dir` str  
+Destination directory to copy log files to.
+
+`dry_run` bool  
+If True, preview what would be copied without making changes.
+
+`recursive` bool  
+If True, search src_dir recursively for log files.
+
+### FlowStore
+
+Interface for flow store implementations.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L17)
+
+``` python
+class FlowStore(ABC)
+```
+
+#### Attributes
+
+`store_path` str  
+The path to the store directory.
+
+`version` str  
+The store version.
+
+#### Methods
+
+import_log_path  
+Import a log file(s) or directory(ies) into the store.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L32)
+
+``` python
+@abstractmethod
+def import_log_path(
+    self,
+    log_path: str | Sequence[str],
+    recursive: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> None
+```
+
+`log_path` str \| Sequence\[str\]  
+Path or paths to log files or directories containing log files.
+
+`recursive` bool  
+Whether to search directories recursively.
+
+`dry_run` bool  
+Preview what would be imported without making changes
+
+`verbose` bool  
+Print paths of files being added
+
+get_logs  
+Get all log file paths in the store.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L50)
+
+``` python
+@abstractmethod
+def get_logs(self) -> set[str]
+```
+
+remove_log_prefix  
+Remove logs matching the given prefixes.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L59)
+
+``` python
+@abstractmethod
+def remove_log_prefix(
+    self,
+    prefix: str | Sequence[str],
+    missing: bool = False,
+    recursive: bool = False,
+    dry_run: bool = False,
+    verbose: bool = True,
+) -> None
+```
+
+`prefix` str \| Sequence\[str\]  
+One or more prefixes to match against log paths.
+
+`missing` bool  
+Whether to remove log paths that are missing from the file system.
+
+`recursive` bool  
+Whether to remove log files recursively.
+
+`dry_run` bool  
+Preview what would be removed without making changes
+
+`verbose` bool  
+Print paths of files being removed
+
+### DisplayType
+
+Display mode for flow output.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_display/display.py#L15)
+
+``` python
+DisplayType = Literal["full", "rich", "plain"]
+```
+
+# flow config
+
+
+Output config
+
+#### Usage
+
+``` text
+flow config [OPTIONS] CONFIG_FILE
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
+| `--log-dir-create-unique` | boolean | If set, create a new log directory by appending an \_ and numeric suffix if the specified log_dir already exists. If the directory exists and has a \_numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). | `False` |
+| `--log-dir` | directory | Set the log directory. Will override the log_dir specified in the config. | None |
+| `--store` | directory | Path to the store directory. Will override the store specified in the config. ‘auto’ for default location. ‘none’ for no store. | None |
+| `--limit` | integer | Limit the number of samples to run. | None |
+| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
+| `--set`, `-s` | text | Set config overrides. Examples: `--set defaults.solver.args.tool_calls=none` `--set options.limit=10` `--set options.metadata={"key1": "val1", "key2": "val2"}` The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones. | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+# flow run
+
+
+Run a spec
+
+#### Usage
+
+``` text
+flow run [OPTIONS] CONFIG_FILE
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--dry-run` | boolean | Do not run spec, but show a count of tasks that would be run. | `False` |
+| `--log-dir-allow-dirty` | boolean | Do not fail if the log-dir contains files that are not part of the eval set. | `False` |
+| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
+| `--log-dir-create-unique` | boolean | If set, create a new log directory by appending an \_ and numeric suffix if the specified log_dir already exists. If the directory exists and has a \_numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). | `False` |
+| `--log-dir` | directory | Set the log directory. Will override the log_dir specified in the config. | None |
+| `--store` | directory | Path to the store directory. Will override the store specified in the config. ‘auto’ for default location. ‘none’ for no store. | None |
+| `--limit` | integer | Limit the number of samples to run. | None |
+| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
+| `--set`, `-s` | text | Set config overrides. Examples: `--set defaults.solver.args.tool_calls=none` `--set options.limit=10` `--set options.metadata={"key1": "val1", "key2": "val2"}` The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones. | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+# flow store
+
+
+Manage the flow store
+
+#### Usage
+
+``` text
+flow store [OPTIONS] COMMAND [ARGS]...
+```
+
+#### Subcommands
+
+|                              |                                            |
+|------------------------------|--------------------------------------------|
+| [import](#flow-store-import) | Import logs into the store                 |
+| [remove](#flow-store-remove) | Remove logs from the store                 |
+| [info](#flow-store-info)     | Print store information                    |
+| [delete](#flow-store-delete) | Delete the flow store                      |
+| [list](#flow-store-list)     | List logs and log directories in the store |
+
+## flow store import
+
+Import logs into the store
+
+#### Usage
+
+``` text
+flow store import [OPTIONS] PATH...
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--store`, `-s` | directory | Path to the store directory | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
+| `--copy-from` | directory | Copy logs from this directory to PATH before importing. | None |
+| `--dry-run` | boolean | Preview what would be imported without making changes | `False` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+## flow store remove
+
+Remove logs from the store
+
+#### Usage
+
+``` text
+flow store remove [OPTIONS] [PREFIX]...
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--store`, `-s` | directory | Path to the store directory | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
+| `--missing` | boolean | Remove logs that no longer exist on file system | `False` |
+| `--dry-run` | boolean | Preview what would be removed without making changes | `False` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+## flow store info
+
+Print store information
+
+#### Usage
+
+``` text
+flow store info [OPTIONS]
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--store`, `-s` | directory | Path to the store directory | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+## flow store delete
+
+Delete the flow store
+
+#### Usage
+
+``` text
+flow store delete [OPTIONS]
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--store`, `-s` | directory | Path to the store directory | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--yes`, `-y` | boolean | Skip confirmation prompt | `False` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+## flow store list
+
+List logs and log directories in the store
+
+#### Usage
+
+``` text
+flow store list [OPTIONS]
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--store`, `-s` | directory | Path to the store directory | None |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to ‘full’) | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to ‘warning’) | `warning` |
+| `--format` | choice (`flat` \| `tree`) | Output format: tree, flat | `flat` |
+| `--help` | boolean | Show this message and exit. | `False` |
+

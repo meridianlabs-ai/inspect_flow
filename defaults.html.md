@@ -1,0 +1,620 @@
+# Defaults, Inheritance and Overrides
+
+
+Inspect Flow provides powerful mechanisms to avoid repetition and share
+configuration across evaluations. This page covers:
+
+- **FlowDefaults** - Setting default values within a spec that cascade
+  across tasks, models, solvers, and agents
+- **Config Inheritance** - Reusing and composing configurations across
+  multiple files
+- **CLI Overrides** - Overriding any config value at runtime
+
+## FlowDefaults
+
+`FlowDefaults` supports multiple levels of default configuration:
+
+**config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import (
+    FlowAgent,
+    FlowDefaults,
+    FlowModel,
+    FlowSolver,
+    FlowSpec,
+    FlowTask,
+)
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            max_connections=10,
+        ),
+        model=FlowModel(
+            model_args={"arg": "foo"},
+        ),
+        model_prefix={
+            "openai/": FlowModel(
+                config=GenerateConfig(
+                    max_connections=20
+                ),
+            ),
+        },
+        solver=FlowSolver(name="generate"),
+        solver_prefix={"chain_of_thought": FlowSolver(name="chain_of_thought")},
+        agent=FlowAgent(name="basic"),
+        agent_prefix={"inspect/": FlowAgent(name="inspect/basic")},
+        task=FlowTask(model="openai/gpt-4o"),
+        task_prefix={"inspect_evals/": FlowTask(model="openai/gpt-4o-mini")},
+    ),
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        )
+    ],
+)
+```
+
+Lines 13-15  
+Default model generation options. Will be overridden by settings on
+FlowTask and FlowModel.
+
+Lines 16-18  
+Field defaults for models.
+
+Lines 19-25  
+Model defaults for model name prefixes. Overrides `FlowDefaults.config`
+and `FlowDefaults.model`. If multiple prefixes match, **longest prefix
+wins**.
+
+Line 26  
+Field defaults for solvers.
+
+Line 27  
+Solver defaults for solver name prefixes. Overrides
+`FlowDefaults.solver`. If multiple prefixes match, **longest prefix
+wins**.
+
+Line 28  
+Field defaults for agents.
+
+Line 29  
+Agent defaults for agent name prefixes. Overrides `FlowDefaults.agent`.
+If multiple prefixes match, **longest prefix wins**.
+
+Line 30  
+Field defaults for tasks.
+
+Line 31  
+Task defaults for task name prefixes. Overrides `FlowDefaults.config`
+and `FlowDefaults.task`. If multiple prefixes match, **longest prefix
+wins**.
+
+### Merge Priority
+
+Defaults follow a hierarchy where **more specific settings override less
+specific ones**:
+
+**For GenerateConfig:**
+
+1.  Global config defaults (`defaults.config`)
+2.  Global model config defaults (`defaults.model.config`)
+3.  Model prefix config defaults (`defaults.model_prefix.config`)
+4.  Task-specific config (`task.config`)
+5.  Model-specific config (`model.config`) — **highest priority**
+
+**Example hierarchy in action:**
+
+**config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            temperature=0.0,
+            max_tokens=100,
+        ),
+        model_prefix={
+            "openai/": FlowModel(
+                config=GenerateConfig(temperature=0.5)
+            )
+        },
+    ),
+    tasks=[
+        FlowTask(
+            name="task",
+            config=GenerateConfig(temperature=0.7),
+            model=FlowModel(
+                name="openai/gpt-4o",
+                config=GenerateConfig(temperature=1.0),
+            ),
+        )
+    ],
+)
+```
+
+Lines 7-8  
+Global defaults: `temperature=0.0, max_tokens=100`
+
+Line 12  
+Prefix defaults override: `temperature=0.5` (for OpenAI models)
+
+Line 19  
+Task config overrides: `temperature=0.7`
+
+Line 22  
+**Model config wins**: `temperature=1.0, max_tokens=100`
+
+**Final result:** `temperature=1.0` (most specific), `max_tokens=100`
+(from global defaults)
+
+> [!NOTE]
+>
+> ### None Values and Merge Behavior
+>
+> **For fields in Flow types:** Most fields use a special “not given”
+> default, which means `None` is a meaningful value that **does
+> override**:
+>
+> **config.py**
+>
+> ``` python
+> from inspect_flow import FlowDefaults, FlowModel, FlowSpec, FlowTask
+>
+> FlowSpec(
+>     defaults=FlowDefaults(
+>         model=FlowModel(name="openai/gpt-4o"),
+>     ),
+>     tasks=[
+>         FlowTask(
+>             name="inspect_evals/gpqa_diamond",
+>             model=None,  # Explicitly set to None
+>         )
+>     ],
+> )
+> # Result: Task uses model=None (overrides the default "openai/gpt-4o")
+> ```
+>
+> To avoid overriding a FlowTask field, omit it entirely rather than
+> setting it to `None`.
+>
+> **For GenerateConfig and other Inspect types:** Setting a field to
+> `None` means “not specified” — it won’t override existing values from
+> defaults:
+>
+> **config.py**
+>
+> ``` python
+> from inspect_ai.model import GenerateConfig
+> from inspect_flow import FlowDefaults, FlowSpec, FlowTask
+>
+> FlowSpec(
+>     defaults=FlowDefaults(config=GenerateConfig(temperature=0.8, max_tokens=1000)),
+>     tasks=[
+>         FlowTask(
+>             name="inspect_evals/gpqa_diamond",
+>             model="openai/gpt-4o",
+>             config=GenerateConfig(temperature=0.5, max_tokens=None),
+>         )
+>     ],
+> )
+> # Result: Task runs with temperature=0.5, max_tokens=1000
+> # The max_tokens=None didn't override the default 1000
+> ```
+>
+> **Validating the resolved config:** You can preview your configuration
+> before running:
+>
+> - **`flow config config.py`** - View the expanded config as YAML
+>   (applies defaults, includes, overrides).
+> - **`flow run config.py --dry-run`** - Perform the full setup process
+>   (instantiate tasks, check for existing logs) showing what would run,
+>   but stop before running evaluations.
+
+### Constructor Arguments
+
+When passing arguments to Inspect AI object constructors (models,
+solvers, agents, scorers), `extra_args` on `FlowTask` provides the
+highest priority override:
+
+1.  Global defaults for the object type (e.g., `defaults.agent.args`)
+2.  Prefix defaults (e.g., `defaults.agent_prefix.args`)
+3.  Object-specific args (e.g., `FlowAgent.args`)
+4.  **Task `extra_args` wins** (e.g., `task.extra_args.agent`) —
+    **highest priority**
+
+This allows you to set default tool configurations globally while
+overriding them for specific tasks.
+
+**Example:**
+
+**config.py**
+
+``` python
+from inspect_ai.tool import bash, web_search
+from inspect_flow import (
+    FlowAgent,
+    FlowDefaults,
+    FlowExtraArgs,
+    FlowSpec,
+    FlowTask,
+)
+
+FlowSpec(
+    log_dir="logs",
+    defaults=FlowDefaults(
+        agent=FlowAgent(
+            name="react",
+            args={"tools": [web_search()]},
+        )
+    ),
+    tasks=[
+        FlowTask(name="task1"),
+        FlowTask(
+            name="task2",
+            extra_args=FlowExtraArgs(
+                agent={"tools": [bash()]}
+            ),
+        ),
+    ],
+)
+```
+
+Line 15  
+Default agent has `web_search` tool
+
+Line 19  
+`task1` inherits the default: uses `web_search`
+
+Line 23  
+`task2` overrides with `extra_args`: uses `bash` instead
+
+## Inheritance
+
+Inspect Flow supports configuration inheritance to share settings across
+multiple config files. This is particularly useful for defining global
+defaults at a repository level that apply to all evaluations.
+
+### Automatic Discovery
+
+Inspect Flow automatically discovers and includes files named `_flow.py`
+in parent directories. Starting from your config file’s location, it
+searches upward through the directory tree for `_flow.py` files and
+automatically merges them.
+
+This allows you to define shared defaults (model settings, dependencies,
+etc.) at a repository root that apply to all configs in subdirectories
+without explicit includes.
+
+> [!NOTE]
+>
+> When using `run()` from the Python API to run the `FlowSpec` directly
+> instead of the command line, the `base_dir` argument is used as the
+> starting point for searching upward through the directory tree, rather
+> than the config file’s location.
+
+### Includes
+
+Use the `includes` field to explicitly merge other configs into your
+spec. You can include either config file paths or `FlowSpec` objects:
+
+**File Path**
+
+``` python
+FlowSpec(
+    includes=["../foo/other_config.py"],
+    log_dir="logs",
+    tasks=["my_task"]
+)
+```
+
+**FlowSpec Object**
+
+``` python
+base_config = FlowSpec(
+    defaults=FlowDefaults(config=GenerateConfig(temperature=0.5))
+)
+
+FlowSpec(
+    includes=[base_config, "../foo/other_config.py"],
+    log_dir="logs",
+    tasks=["my_task"]
+)
+```
+
+#### Merge
+
+Included configs are merged recursively, with the current config’s
+values taking precedence over included values:
+
+- **Dictionaries**: Fields are merged deeply (recursive merge)
+- **Lists**: Items are concatenated with duplicates removed
+- **Scalars**: Current config values override included values
+
+#### Order
+
+Includes are processed sequentially in the order they appear. Each
+included file is loaded, its includes are recursively processed, and
+then merged into the current config without overwriting existing values.
+
+**Priority order** (highest to lowest):
+
+**config.py**
+
+``` python
+FlowSpec(
+    includes=["defaults.py", "shared.py", "path.py"],
+    ...
+)
+```
+
+1.  Main config file (`config.py`)
+2.  `defaults.py`
+3.  Files included by `defaults.py`
+4.  `shared.py`
+5.  Files included by `shared.py`
+6.  `path.py`
+7.  Files included by `path.py`
+
+#### Recursion
+
+Included files can themselves have `includes` fields, which are expanded
+recursively. This allows you to build hierarchies of configuration.
+
+#### Path Resolution
+
+When including files by path, relative paths will be resolved relative
+to the config file (when using the CLI) or `base_dir` arg (when using
+the API):
+
+**config.py**
+
+``` python
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    includes=[
+        "defaults.py",
+        "../shared.py",
+        "/absolute/path.py",
+    ],
+    log_dir="logs",
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+        ),
+    ],
+)
+```
+
+When including `FlowSpec` objects directly, no path resolution is needed
+as the objects are already loaded.
+
+> [!NOTE]
+>
+> Automatic discovery does not look for `_flow.py` files in the parent
+> directories of explicitly included files.
+
+### Inheritance with FlowDefaults
+
+Config inheritance is especially powerful when combined with
+`FlowDefaults`. You can define global defaults in a `_flow.py` file at
+your repository root:
+
+**\_flow.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowDefaults, FlowSpec
+
+FlowSpec(
+    defaults=FlowDefaults(
+        config=GenerateConfig(
+            max_connections=10,
+            temperature=0.0,
+        ),
+    ),
+)
+```
+
+Then all configs in subdirectories automatically inherit these defaults,
+which can be selectively overridden:
+
+**experiments/config.py**
+
+``` python
+from inspect_ai.model import GenerateConfig
+from inspect_flow import FlowSpec, FlowTask
+
+FlowSpec(
+    tasks=[
+        FlowTask(
+            name="inspect_evals/gpqa_diamond",
+            model="openai/gpt-4o",
+            # Override just temperature
+            config=GenerateConfig(temperature=0.7),
+        ),
+    ],
+)
+# Inherits max_connections=10 from _flow.py
+# Overrides temperature=0.7 for this specific task
+```
+
+> [!TIP]
+>
+> ### Preventing Overrides
+>
+> When using inheritance to define shared defaults, you can enforce
+> critical settings by preventing including configs from overriding
+> them. See [Lock Configuration
+> Fields](advanced.qmd#lock-configuration-fields) in the Advanced
+> section to learn how to lock inherited or default values and prevent
+> them from being overwritten.
+
+> [!TIP]
+>
+> ### Team Collaboration
+>
+> The `_flow.py` inheritance pattern is especially useful for team
+> collaboration. For example, you can configure a shared Flow Store
+> location in `_flow.py` at your repository root:
+>
+> ``` python
+> # _flow.py (at repository root)
+> FlowSpec(
+>     store="s3://my-team-bucket/flow-store"
+> )
+> ```
+>
+> All team members working in the repository will automatically use the
+> shared store, enabling log reuse across the team. See [Flow
+> Store](store.qmd#team-collaboration) for more details.
+
+## CLI Overrides
+
+Override config values at runtime using the `--set` flag:
+
+#### Basic usage
+
+``` bash
+flow run config.py --set log_dir=./logs
+```
+
+#### Nested paths
+
+``` bash
+flow run config.py --set options.limit=10
+flow run config.py --set defaults.solver.args.tool_calls=none
+```
+
+#### JSON dicts
+
+``` bash
+flow run config.py --set 'options.metadata={"experiment": "baseline", "version": "v1"}'
+```
+
+#### Multiple overrides
+
+``` bash
+flow run config.py \
+  --set log_dir=./logs/experiment1 \
+  --set options.limit=100 \
+  --set defaults.config.temperature=0.5
+```
+
+> [!NOTE]
+>
+> ### Override Behavior
+>
+> - **Strings**: Replace existing values
+> - **Dicts**: Replace existing values
+> - **Lists**:
+>   - String values append to existing list
+>   - Lists replace existing list
+>
+> **Examples:**
+>
+> ``` bash
+> # Appends to list
+> --set dependencies=new_package
+>
+> # Replaces list
+> --set 'dependencies=["pkg1", "pkg2"]'
+> ```
+
+## Env Vars
+
+Set config values via environment variables:
+
+``` bash
+export INSPECT_FLOW_LOG_DIR=./logs/custom
+export INSPECT_FLOW_LIMIT=50
+export INSPECT_FLOW_SET="options.metadata={\"key\": \"value\"}"
+export INSPECT_FLOW_ARG="task_min_priority=2"
+flow run config.py
+```
+
+**Supported environment variables:**
+
+| Variable | Equivalent Flag | Description |
+|----|----|----|
+| `INSPECT_FLOW_LOG_DIR` | `--log-dir` | Override log directory |
+| `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` | `--log-dir-create-unique` | Create new log directory with numeric suffix if exists |
+| `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY` | `--log-dir-allow-dirty` | Allow log directory to contain logs not in the eval set |
+| `INSPECT_FLOW_LOG_LEVEL` | `--log-level` | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level. |
+| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `full` (live progress, default), `plain` (simple text for CI), or `rich` (rich formatting without live updates) |
+| `INSPECT_FLOW_STORE` | `--store` | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
+| `INSPECT_FLOW_LIMIT` | `--limit` | Limit number of samples |
+| `INSPECT_FLOW_SET` | `--set` | Set config overrides (can be specified multiple times) |
+| `INSPECT_FLOW_ARG` | `--arg` | Args to pass to spec functions in the config file (can be multiple) |
+| `INSPECT_FLOW_VENV` | `--venv` | Create a virtual environment to run the Flow spec |
+| `INSPECT_FLOW_DRY_RUN` | `--dry-run` | Perform full setup and show what would run without actually running evaluations |
+
+> [!TIP]
+>
+> ### Override Priority
+>
+> Setting defaults via the command line will override the defaults which
+> in turn might be overridden by anything set explicitly.
+>
+> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`,
+> `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their
+> corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--set`)
+> are runtime settings for the `flow run` command and cannot be set in
+> `FlowSpec`.
+>
+> **Execution mode**: The `execution_type` field can be set in
+> `FlowSpec` (as `execution_type="venv"`) or overridden at runtime with
+> `INSPECT_FLOW_VENV` environment variable or `--venv` CLI flag.
+>
+> **Settings with multiple override levels**:
+>
+> Priority order for `log-dir`, `log-dir-create-unique`, `limit` and
+> `store`:
+>
+> 1.  `FlowSpec` defaults
+> 2.  Explicit setting on the `FlowSpec`
+> 3.  `INSPECT_FLOW_SET_` environment variables
+> 4.  CLI `--set` flags
+> 5.  `INSPECT_FLOW_LOG_DIR`, `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`,
+>     `INSPECT_FLOW_LIMIT` and `INSPECT_FLOW_STORE` environment
+>     variables
+> 6.  Explicit `--log-dir`, `--log-dir-create-unique`, `--limit` and
+>     `--store` CLI flags
+>
+> Priority order for all other settings:
+>
+> 1.  `FlowSpec` defaults
+> 2.  Explicit setting on the `FlowSpec`
+> 3.  `INSPECT_FLOW_SET_` environment variables
+> 4.  CLI `--set` flags
+
+## Debugging
+
+To debug your configuration with all defaults, inheritance, and
+overrides applied:
+
+**View the resolved config as YAML:**
+
+``` bash
+flow config config.py
+```
+
+**Preview what would run:**
+
+``` bash
+flow run config.py --dry-run
+```
+
+The `flow config` command quickly displays the expanded configuration as
+YAML. The `--dry-run` flag performs the full setup process—instantiating
+tasks from the registry and checking for existing logs—showing exactly
+which tasks would run and which logs would be reused, but stops before
+actually running the evaluations.
