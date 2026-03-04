@@ -38,6 +38,7 @@ dev = [
     "anthropic",
     "datamodel-code-generator",
     "deepdiff",
+    "griffe",
     "flask",
     "flask-cors",
     "local-eval",

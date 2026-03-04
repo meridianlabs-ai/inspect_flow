@@ -150,7 +150,7 @@ FlowSpec(
     tasks=tasks_matrix(
         task=[
             "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmmu_0_shot",
+            "inspect_evals/mmlu_0_shot",
         ],
         model=models_matrix(
             model=[
@@ -178,7 +178,7 @@ FlowSpec(
     tasks=tasks_matrix(
         task=[
             "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmmu_0_shot",
+            "inspect_evals/mmlu_0_shot",
         ],
         model=models_matrix(
             model=[

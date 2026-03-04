@@ -26,7 +26,7 @@ def output_options(f: F) -> F:
         ),
         default=DEFAULT_LOG_LEVEL,
         envvar="INSPECT_FLOW_LOG_LEVEL",
-        help="Set the log level (defaults to 'warning')",
+        help="Set the log level (defaults to `'warning'`).",
     )(f)
     f = click.option(
         "--display",
@@ -36,7 +36,7 @@ def output_options(f: F) -> F:
         ),
         default="full",
         envvar="INSPECT_FLOW_DISPLAY",
-        help="Set the display mode (defaults to 'full')",
+        help="Set the display mode (defaults to `'full'`).",
     )(f)
     return f
 
@@ -107,7 +107,7 @@ def config_options(f: F) -> F:
             resolve_path=False,
         ),
         default=None,
-        help="Path to the store directory. Will override the store specified in the config. 'auto' for default location. 'none' for no store.",
+        help="Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store.",
         envvar="INSPECT_FLOW_STORE",
     )(f)
     f = click.option(
@@ -120,14 +120,14 @@ def config_options(f: F) -> F:
             resolve_path=False,
         ),
         default=None,
-        help="Set the log directory. Will override the log_dir specified in the config.",
+        help="Set the log directory. Will override the `log_dir` specified in the config.",
         envvar="INSPECT_FLOW_LOG_DIR",
     )(f)
     f = click.option(
         "--log-dir-create-unique",
         type=bool,
         is_flag=True,
-        help="If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True).",
+        help="If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
     f = click.option(

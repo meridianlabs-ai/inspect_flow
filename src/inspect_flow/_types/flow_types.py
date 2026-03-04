@@ -95,12 +95,12 @@ class FlowModel(FlowBase):
 
     default: str | None | NotGiven = Field(
         default=not_given,
-        description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o).",
+        description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).",
     )
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Configuration for model. Config values will be override settings on the FlowTask and FlowSpec.",
+        description="Configuration for model. Config values will be override settings on the `FlowTask` and `FlowSpec`.",
     )
 
     base_url: str | None | NotGiven = Field(
@@ -115,7 +115,7 @@ class FlowModel(FlowBase):
 
     memoize: bool | None | NotGiven = Field(
         default=not_given,
-        description="Use/store a cached version of the model based on the parameters to get_model(). Defaults to True.",
+        description="Use/store a cached version of the model based on the parameters to `get_model()`. Defaults to `True`.",
     )
 
     model_args: CreateArgs | None | NotGiven = Field(
@@ -222,7 +222,7 @@ class FlowEpochs(FlowBase):
 
     reducer: str | Sequence[str] | None | NotGiven = Field(
         default=not_given,
-        description='One or more reducers used to combine scores from samples across epochs (defaults to "mean")',
+        description='One or more reducers used to combine scores from samples across epochs (defaults to `"mean"`)',
     )
 
 
@@ -255,7 +255,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     name: str | None | NotGiven = Field(
         default=not_given,
-        description='Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Used to create the task if the factory is not provided.',
+        description='Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided.',
     )
 
     factory: Callable[..., Task] | None | NotGiven = Field(
@@ -270,7 +270,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     extra_args: FlowExtraArgs | None | NotGiven = Field(
         default=not_given,
-        description="Extra args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent.",
+        description="Extra args to provide to creation of inspect objects for this task. Will override args provided in the `args` field on the `FlowModel`, `FlowSolver`, `FlowScorer`, and `FlowAgent`.",
     )
 
     solver: (
@@ -284,7 +284,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         | NotGiven
     ) = Field(
         default=not_given,
-        description="Solver or list of solvers. Defaults to generate(), a normal call to the model.",
+        description="Solver or list of solvers. Defaults to `generate()`, a normal call to the model.",
     )
 
     scorer: (
@@ -306,7 +306,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     config: GenerateConfig | NotGiven = Field(
         default=not_given,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel.",
+        description="Model generation config for default model (does not apply to model roles). Will override config settings on the `FlowSpec`. Will be overridden by settings on the `FlowModel`.",
     )
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
@@ -326,7 +326,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     epochs: int | FlowEpochs | None | NotGiven = Field(
         default=not_given,
-        description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")',
+        description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)',
     )
 
     fail_on_error: bool | float | None | NotGiven = Field(
@@ -404,12 +404,12 @@ class FlowOptions(FlowBase):
 
     retry_connections: float | None | NotGiven = Field(
         default=not_given,
-        description="Reduce max_connections at this rate with each retry (defaults to 1.0, which results in no reduction).",
+        description="Reduce `max_connections` at this rate with each retry (defaults to 1.0, which results in no reduction).",
     )
 
     retry_cleanup: bool | None | NotGiven = Field(
         default=not_given,
-        description="Cleanup failed log files after retries (defaults to True).",
+        description="Cleanup failed log files after retries (defaults to `True`).",
     )
 
     sandbox: SandboxEnvironmentType | None | NotGiven = Field(
@@ -419,7 +419,7 @@ class FlowOptions(FlowBase):
 
     sandbox_cleanup: bool | None | NotGiven = Field(
         default=not_given,
-        description="Cleanup sandbox environments after task completes (defaults to True).",
+        description="Cleanup sandbox environments after task completes (defaults to `True`).",
     )
 
     tags: Sequence[str] | None | NotGiven = Field(
@@ -436,7 +436,7 @@ class FlowOptions(FlowBase):
     )
 
     display: DisplayType | None | NotGiven = Field(
-        default=not_given, description="Task display type (defaults to 'full')."
+        default=not_given, description="Task display type (defaults to `'full'`)."
     )
 
     approval: str | ApprovalPolicyConfig | None | NotGiven = Field(
@@ -445,22 +445,22 @@ class FlowOptions(FlowBase):
     )
 
     score: bool | None | NotGiven = Field(
-        default=not_given, description="Score output (defaults to True)."
+        default=not_given, description="Score output (defaults to `True`)."
     )
 
     log_level: str | None | NotGiven = Field(
         default=not_given,
-        description='Level for logging to the console: "debug", "http", "sandbox", "info", "warning", "error", "critical", or "notset" (defaults to "warning").',
+        description='Level for logging to the console: `"debug"`, `"http"`, `"sandbox"`, `"info"`, `"warning"`, `"error"`, `"critical"`, or `"notset"` (defaults to `"warning"`).',
     )
 
     log_level_transcript: str | None | NotGiven = Field(
         default=not_given,
-        description='Level for logging to the log file (defaults to "info").',
+        description='Level for logging to the log file (defaults to `"info"`).',
     )
 
     log_format: Literal["eval", "json"] | None | NotGiven = Field(
         default=not_given,
-        description='Format for writing log files (defaults to "eval", the native high-performance format).',
+        description='Format for writing log files (defaults to `"eval"`, the native high-performance format).',
     )
 
     limit: int | None | NotGiven = Field(
@@ -490,12 +490,12 @@ class FlowOptions(FlowBase):
 
     debug_errors: bool | None | NotGiven = Field(
         default=not_given,
-        description="Raise task errors (rather than logging them) so they can be debugged (defaults to False).",
+        description="Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).",
     )
 
     max_samples: int | None | NotGiven = Field(
         default=not_given,
-        description="Maximum number of samples to run in parallel (default is max_connections).",
+        description="Maximum number of samples to run in parallel (default is `max_connections`).",
     )
 
     max_tasks: int | None | NotGiven = Field(
@@ -505,7 +505,7 @@ class FlowOptions(FlowBase):
 
     max_subprocesses: int | None | NotGiven = Field(
         default=not_given,
-        description="Maximum number of subprocesses to run in parallel (default is os.cpu_count()).",
+        description="Maximum number of subprocesses to run in parallel (default is `os.cpu_count()`).",
     )
 
     max_sandboxes: int | None | NotGiven = Field(
@@ -515,17 +515,17 @@ class FlowOptions(FlowBase):
 
     log_samples: bool | None | NotGiven = Field(
         default=not_given,
-        description="Log detailed samples and scores (defaults to True).",
+        description="Log detailed samples and scores (defaults to `True`).",
     )
 
     log_realtime: bool | None | NotGiven = Field(
         default=not_given,
-        description="Log events in realtime (enables live viewing of samples in inspect view) (defaults to True).",
+        description="Log events in realtime (enables live viewing of samples in inspect view) (defaults to `True`).",
     )
 
     log_images: bool | None | NotGiven = Field(
         default=not_given,
-        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to False).",
+        description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to `False`).",
     )
 
     log_buffer: int | None | NotGiven = Field(
@@ -540,17 +540,17 @@ class FlowOptions(FlowBase):
 
     bundle_dir: str | None | NotGiven = Field(
         default=not_given,
-        description="If specified, the log viewer and logs generated by this eval set will be bundled into this directory. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
+        description="If specified, the log viewer and logs generated by this eval set will be bundled into this directory. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API).",
     )
 
     bundle_overwrite: bool | None | NotGiven = Field(
         default=not_given,
-        description="Whether to overwrite files in the bundle_dir. (defaults to False).",
+        description="Whether to overwrite files in the `bundle_dir` (defaults to `False`).",
     )
 
     log_dir_allow_dirty: bool | None | NotGiven = Field(
         default=not_given,
-        description="If True, allow the log directory to contain unrelated logs. If False, ensure that the log directory only contains logs for tasks in this eval set (defaults to False).",
+        description="If `True`, allow the log directory to contain unrelated logs. If `False`, ensure that the log directory only contains logs for tasks in this eval set (defaults to `False`).",
     )
 
     eval_set_id: str | None | NotGiven = Field(
@@ -560,7 +560,7 @@ class FlowOptions(FlowBase):
 
     bundle_url_mappings: dict[str, str] | None | NotGiven = Field(
         default=not_given,
-        description="Replacements applied to bundle_dir to generate a URL. If provided and bundle_dir is set, the mapped URL will be written to stdout.",
+        description="Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_dir` is set, the mapped URL will be written to stdout.",
     )
 
 
@@ -569,7 +569,7 @@ class FlowDefaults(FlowBase):
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Default model generation options. Will be overriden by settings on the FlowModel and FlowTask.",
+        description="Default model generation options. Will be overriden by settings on the `FlowModel` and `FlowTask`.",
     )
 
     agent: FlowAgent | None | NotGiven = Field(
@@ -578,7 +578,7 @@ class FlowDefaults(FlowBase):
 
     agent_prefix: dict[str, FlowAgent] | None | NotGiven = Field(
         default=not_given,
-        description="Agent defaults for agent name prefixes. E.g. {'inspect/': FAgent(...)}",
+        description="Agent defaults for agent name prefixes. E.g. `{'inspect/': FAgent(...)}`",
     )
 
     model: FlowModel | None | NotGiven = Field(
@@ -587,7 +587,7 @@ class FlowDefaults(FlowBase):
 
     model_prefix: dict[str, FlowModel] | None | NotGiven = Field(
         default=not_given,
-        description="Model defaults for model name prefixes. E.g. {'openai/': FModel(...)}",
+        description="Model defaults for model name prefixes. E.g. `{'openai/': FModel(...)}`",
     )
 
     solver: FlowSolver | None | NotGiven = Field(
@@ -596,7 +596,7 @@ class FlowDefaults(FlowBase):
 
     solver_prefix: dict[str, FlowSolver] | None | NotGiven = Field(
         default=not_given,
-        description="Solver defaults for solver name prefixes. E.g. {'inspect/': FSolver(...)}",
+        description="Solver defaults for solver name prefixes. E.g. `{'inspect/': FSolver(...)}`",
     )
 
     task: FlowTask | None | NotGiven = Field(
@@ -605,7 +605,7 @@ class FlowDefaults(FlowBase):
 
     task_prefix: dict[str, FlowTask] | None | NotGiven = Field(
         default=not_given,
-        description="Task defaults for task name prefixes. E.g. {'inspect_evals/': FTask(...)}",
+        description="Task defaults for task name prefixes. E.g. `{'inspect_evals/': FTask(...)}`",
     )
 
 
@@ -614,7 +614,7 @@ class FlowDependencies(FlowBase):
 
     dependency_file: Literal["auto", "no_file"] | str | None | NotGiven = Field(
         default=not_given,
-        description="Path to a dependency file (either requirements.txt or pyproject.toml) to use to create the virtual environment. If 'auto', will search the path starting from the same directory as the config file (when using the CLI) or base_dir arg (when using the API) looking for pyproject.toml or requirements.txt files. If 'no_file', no dependency file will be used. Defaults to 'auto'.",
+        description="Path to a dependency file (either `requirements.txt` or `pyproject.toml`) to use to create the virtual environment. If `'auto'`, will search the path starting from the same directory as the config file (when using the CLI) or `base_dir` arg (when using the API) looking for `pyproject.toml` or `requirements.txt` files. If `'no_file'`, no dependency file will be used. Defaults to `'auto'`.",
     )
 
     additional_dependencies: str | Sequence[str] | None | NotGiven = Field(
@@ -624,12 +624,12 @@ class FlowDependencies(FlowBase):
 
     auto_detect_dependencies: bool | None | NotGiven = Field(
         default=not_given,
-        description="If True, automatically detect and install dependencies from names of objects in the config (defaults to True). For example, if a model name starts with 'openai/', the 'openai' package will be installed. If a task name is 'inspect_evals/mmlu' then the 'inspect-evals' package will be installed.",
+        description="If `True`, automatically detect and install dependencies from names of objects in the config (defaults to `True`). For example, if a model name starts with `'openai/'`, the `'openai'` package will be installed. If a task name is `'inspect_evals/mmlu'` then the `'inspect-evals'` package will be installed.",
     )
 
     uv_sync_args: str | Sequence[str] | None | NotGiven = Field(
         default=not_given,
-        description="Additional arguments to pass to 'uv sync' when creating the virtual environment using a pyproject.toml file. May be a string ('--dev --extra test') or a list of strings (['--dev', '--extra', 'test']).",
+        description="Additional arguments to pass to `uv sync` when creating the virtual environment using a `pyproject.toml` file. May be a string (`'--dev --extra test'`) or a list of strings (`['--dev', '--extra', 'test']`).",
     )
 
 
@@ -638,41 +638,41 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
 
     includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
         default=not_given,
-        description="List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). In addition to this list of explicit files to include, any _flow.py files in the same directory or any parent directory of the config file (when using the CLI) or base_dir arg (when using the API) will also be included automatically.",
+        description="List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). In addition to this list of explicit files to include, any `_flow.py` files in the same directory or any parent directory of the config file (when using the CLI) or `base_dir` arg (when using the API) will also be included automatically.",
     )
 
     store: Literal["auto"] | str | None | NotGiven = Field(
         default=not_given,
-        description="Path to directory to use for flow storage. 'auto' will use a default application location. None will disable storage. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API). If not given, 'auto' will be used.",
+        description="Path to directory to use for flow storage. `'auto'` will use a default application location. `None` will disable storage. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). If not given, `'auto'` will be used.",
     )
 
     log_dir: str | None | NotGiven = Field(
         default=not_given,
-        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or base_dir arg (when using the API).",
+        description="Output path for logging results (required to ensure that a unique storage scope is assigned). Must be set before running the flow spec. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API).",
     )
 
     log_dir_create_unique: bool | None | NotGiven = Field(
         default=not_given,
-        description="If True, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If False, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True). Defaults to False.",
+        description="If `True`, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If `False`, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). Defaults to `False`.",
     )
 
     execution_type: Literal["inproc", "venv"] | None | NotGiven = Field(
         default=not_given,
-        description="Execution environment for running tasks (defaults to 'inproc').",
+        description="Execution environment for running tasks (defaults to `'inproc'`).",
     )
 
     python_version: str | None | NotGiven = Field(
         default=not_given,
-        description="Python version to use in the flow virtual environment (e.g. '3.11')",
+        description="Python version to use in the flow virtual environment (e.g. `'3.11'`).",
     )
 
     dependencies: FlowDependencies | None | NotGiven = Field(
         default=not_given,
-        description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from pyproject.toml, requirements.txt, and object names in the config.",
+        description="Dependencies to install in the venv. Defaults to auto-detecting dependencies from `pyproject.toml`, `requirements.txt`, and object names in the config.",
     )
 
     options: FlowOptions | None | NotGiven = Field(
-        default=not_given, description="Arguments for calls to eval_set."
+        default=not_given, description="Arguments for calls to `eval_set()`."
     )
 
     env: dict[str, str] | None | NotGiven = Field(

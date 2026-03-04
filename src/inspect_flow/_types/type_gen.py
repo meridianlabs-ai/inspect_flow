@@ -6,6 +6,7 @@ from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
+import griffe
 from datamodel_code_generator import (
     InputFileType,
     LiteralType,
@@ -129,6 +130,16 @@ MATRIX_CLASS_FIELDS = {
 Schema: TypeAlias = dict[str, Any]
 
 
+def _get_generate_config_descriptions() -> dict[str, str]:
+    mod = griffe.load("inspect_ai.model", docstring_parser="google")
+    gen_config = mod["GenerateConfig"]
+    return {
+        name: member.docstring.value
+        for name, member in gen_config.members.items()
+        if hasattr(member, "docstring") and member.docstring
+    }
+
+
 def _field_type_to_list(field_schema: Schema) -> None:
     field_type: Schema
     if "type" in field_schema:
@@ -227,6 +238,16 @@ def _update_refs(type_def: Schema) -> None:
         _update_field_refs(field_value, None)
 
 
+def _add_generate_config_descriptions(defs: Schema) -> None:
+    gen_config = defs.get("GenerateConfig")
+    if not gen_config:
+        return
+    properties: Schema = gen_config.get("properties", {})
+    for field_name, description in _get_generate_config_descriptions().items():
+        if field_name in properties:
+            properties[field_name]["description"] = description
+
+
 def _create_dict_types(schema: Schema, initial_defs: Schema) -> None:
     defs: Schema = schema["$defs"]
     for title, type_def in initial_defs.items():
@@ -255,6 +276,7 @@ def _generate_dict_code() -> GeneratedCode:
     _root_type_as_def(schema)
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]
+    _add_generate_config_descriptions(initial_defs)
     schema["$defs"] = {}
     _create_dict_types(schema, initial_defs)
 

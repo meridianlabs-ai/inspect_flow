@@ -32,9 +32,9 @@ def init(
     Args:
         log_level: The Inspect Flow log level to use.
         display: The display mode.
-        dotenv_base_dir: Directory (or file path) to search for .env files.
+        dotenv_base_dir: Directory (or file path) to search for `.env` files.
             If a file path is given, its parent directory is used.
-            None to skip .env loading. Defaults to "." (current working directory).
+            `None` to skip `.env` loading. Defaults to `"."` (current working directory).
     """
     global _initialized
     _initialized = True
@@ -80,7 +80,7 @@ def run(
     Args:
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
-        dry_run: If True, do not run eval, but show a count of tasks that would be run.
+        dry_run: If `True`, do not run eval, but show a count of tasks that would be run.
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -122,7 +122,7 @@ def store_get(store: str = "auto", create: bool = True) -> FlowStore:
     """Get a FlowStore instance.
 
     Args:
-        store: The store location. Can be a path to the store directory or "auto" for the default store location.
+        store: The store location. Can be a path to the store directory or `"auto"` for the default store location.
         create: Whether to create the store if it does not exist.
     """
     _ensure_init(dotenv_base_dir=".")

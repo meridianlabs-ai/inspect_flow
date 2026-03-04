@@ -62,15 +62,15 @@ class FlowModelDict(TypedDict, closed=True):
     role: NotRequired[str | NotGiven | None]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
     default: NotRequired[str | NotGiven | None]
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. openai/gpt-4o)."""
+    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`)."""
     config: NotRequired[GenerateConfig | NotGiven | None]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
+    """Configuration for model. Config values will be override settings on the `FlowTask` and `FlowSpec`."""
     base_url: NotRequired[str | NotGiven | None]
     """Optional. Alternate base URL for model."""
     api_key: NotRequired[str | NotGiven | None]
     """Optional. API key for model."""
     memoize: NotRequired[bool | NotGiven | None]
-    """Use/store a cached version of the model based on the parameters to get_model(). Defaults to True."""
+    """Use/store a cached version of the model based on the parameters to `get_model()`. Defaults to `True`."""
     model_args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to model constructor."""
     flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
@@ -81,7 +81,7 @@ class FlowModelMatrixDict(TypedDict, closed=True):
     """Configuration for a Model."""
 
     config: NotRequired[Sequence[GenerateConfig | NotGiven | None] | None]
-    """Configuration for model. Config values will be override settings on the FlowTask and FlowSpec."""
+    """Configuration for model. Config values will be override settings on the `FlowTask` and `FlowSpec`."""
 
 
 class FlowSolverDict(TypedDict, closed=True):
@@ -112,13 +112,13 @@ class FlowTaskDict(TypedDict, closed=True):
     """
 
     name: NotRequired[str | NotGiven | None]
-    """Task name. Any of registry name ("inspect_evals/mbpp"), file name ("./my_task.py"), or a file name and attr ("./my_task.py@task_name"). Used to create the task if the factory is not provided."""
+    """Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided."""
     factory: NotRequired[NotGiven | None]
     """Factory function to create the task instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
     extra_args: NotRequired[FlowExtraArgs | NotGiven | None]
-    """Extra args to provide to creation of inspect objects for this task. Will override args provided in the 'args' field on the FlowModel, FlowSolver, FlowScorer, and FlowAgent."""
+    """Extra args to provide to creation of inspect objects for this task. Will override args provided in the `args` field on the `FlowModel`, `FlowSolver`, `FlowScorer`, and `FlowAgent`."""
     solver: NotRequired[
         str
         | FlowSolver
@@ -129,7 +129,7 @@ class FlowTaskDict(TypedDict, closed=True):
         | NotGiven
         | None
     ]
-    """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
+    """Solver or list of solvers. Defaults to `generate()`, a normal call to the model."""
     scorer: NotRequired[
         str
         | FlowScorer
@@ -142,7 +142,7 @@ class FlowTaskDict(TypedDict, closed=True):
     model: NotRequired[str | FlowModel | Model | NotGiven | None]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[GenerateConfig | NotGiven]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the `FlowSpec`. Will be overridden by settings on the `FlowModel`."""
     model_roles: NotRequired[Mapping[str, FlowModel | str | Model] | NotGiven | None]
     """Named roles for use in `get_model()`."""
     sandbox: NotRequired[
@@ -152,7 +152,7 @@ class FlowTaskDict(TypedDict, closed=True):
     approval: NotRequired[str | ApprovalPolicyConfig | NotGiven | None]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
     epochs: NotRequired[int | FlowEpochs | NotGiven | None]
-    """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to "mean")"""
+    """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)"""
     fail_on_error: NotRequired[bool | float | NotGiven | None]
     """`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
     continue_on_fail: NotRequired[bool | NotGiven | None]
@@ -197,11 +197,11 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
         ]
         | None
     ]
-    """Solver or list of solvers. Defaults to generate(), a normal call to the model."""
+    """Solver or list of solvers. Defaults to `generate()`, a normal call to the model."""
     model: NotRequired[Sequence[str | FlowModel | Model | NotGiven | None] | None]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[Sequence[GenerateConfig | NotGiven] | None]
-    """Model generation config for default model (does not apply to model roles). Will override config settings on the FlowSpec. Will be overridden by settings on the FlowModel."""
+    """Model generation config for default model (does not apply to model roles). Will override config settings on the `FlowSpec`. Will be overridden by settings on the `FlowModel`."""
     model_roles: NotRequired[
         Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None
     ]
@@ -212,75 +212,132 @@ class GenerateConfigDict(TypedDict):
     """Model generation options."""
 
     max_retries: NotRequired[int | None]
+    """Maximum number of times to retry request (defaults to unlimited)."""
     timeout: NotRequired[int | None]
+    """Timeout (in seconds) for an entire request (including retries)."""
     attempt_timeout: NotRequired[int | None]
+    """Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries)."""
     max_connections: NotRequired[int | None]
+    """Maximum number of concurrent connections to Model API (default is model specific)."""
     system_message: NotRequired[str | None]
+    """Override the default system message."""
     max_tokens: NotRequired[int | None]
+    """The maximum number of tokens that can be generated in the completion (default is model specific)."""
     top_p: NotRequired[float | None]
+    """An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass."""
     temperature: NotRequired[float | None]
+    """What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic."""
     stop_seqs: NotRequired[Sequence[str] | None]
+    """Sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence."""
     best_of: NotRequired[int | None]
+    """Generates best_of completions server-side and returns the 'best' (the one with the highest log probability per token). vLLM only."""
     frequency_penalty: NotRequired[float | None]
+    """Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
     presence_penalty: NotRequired[float | None]
+    """Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
     logit_bias: NotRequired[Mapping[str, float] | None]
+    """Map token Ids to an associated bias value from -100 to 100 (e.g. "42=10,43=-10"). OpenAI, Grok, Grok, and vLLM only."""
     seed: NotRequired[int | None]
+    """Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only."""
     top_k: NotRequired[int | None]
+    """Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only."""
     num_choices: NotRequired[int | None]
+    """How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only."""
     logprobs: NotRequired[bool | None]
+    """Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Huggingface, llama-cpp-python, vLLM, and SGLang only."""
     top_logprobs: NotRequired[int | None]
+    """Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only."""
     parallel_tool_calls: NotRequired[bool | None]
+    """Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only."""
     internal_tools: NotRequired[bool | None]
+    """Whether to automatically map tools to model internal implementations (e.g. 'computer' for anthropic)."""
     max_tool_output: NotRequired[int | None]
+    """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Literal["auto"] | bool | None]
+    """Whether to cache the prompt prefix. Defaults to "auto", which will enable caching for requests with tools. Anthropic only."""
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
+    """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
     effort: NotRequired[Literal["low", "medium", "high", "max"] | None]
+    """Control how many tokens are used for a response, trading off between response thoroughness and token efficiency. Anthropic Claude Opus 4.5 and 4.6 only (`max` only supported on 4.6)."""
     reasoning_effort: NotRequired[
         Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None
     ]
+    """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_tokens: NotRequired[int | None]
+    """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
         Literal["none", "concise", "detailed", "auto"] | None
     ]
+    """Provide summary of reasoning steps (OpenAI reasoning models only). Use 'auto' to access the most detailed summarizer available for the current model (defaults to 'auto' if your organization is verified by OpenAI)."""
     reasoning_history: NotRequired[Literal["none", "all", "last", "auto"] | None]
+    """Include reasoning in chat message history sent to generate."""
     response_schema: NotRequired[ResponseSchema | None]
+    """Request a response format as JSONSchema (output should still be validated). OpenAI, Google, Mistral, vLLM, and SGLang only."""
     extra_headers: NotRequired[Mapping[str, str] | None]
+    """Extra headers to be sent with requests. Not supported for AzureAI, Bedrock, and Grok."""
     extra_body: NotRequired[Mapping[str, Any] | None]
+    """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
     cache: NotRequired[bool | CachePolicy | None]
+    """Policy for caching of model generate output."""
     batch: NotRequired[bool | int | BatchConfig | None]
+    """Use batching API when available. True to enable batching with default configuration, False to disable batching, a number to enable batching of the specified batch size, or a BatchConfig object specifying the batching configuration."""
 
 
 class GenerateConfigMatrixDict(TypedDict):
     """Model generation options."""
 
     system_message: NotRequired[Sequence[str | None] | None]
+    """Override the default system message."""
     max_tokens: NotRequired[Sequence[int | None] | None]
+    """The maximum number of tokens that can be generated in the completion (default is model specific)."""
     top_p: NotRequired[Sequence[float | None] | None]
+    """An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass."""
     temperature: NotRequired[Sequence[float | None] | None]
+    """What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic."""
     stop_seqs: NotRequired[Sequence[Sequence[str] | None] | None]
+    """Sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence."""
     best_of: NotRequired[Sequence[int | None] | None]
+    """Generates best_of completions server-side and returns the 'best' (the one with the highest log probability per token). vLLM only."""
     frequency_penalty: NotRequired[Sequence[float | None] | None]
+    """Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
     presence_penalty: NotRequired[Sequence[float | None] | None]
+    """Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
     logit_bias: NotRequired[Sequence[Mapping[str, float] | None] | None]
+    """Map token Ids to an associated bias value from -100 to 100 (e.g. "42=10,43=-10"). OpenAI, Grok, Grok, and vLLM only."""
     seed: NotRequired[Sequence[int | None] | None]
+    """Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only."""
     top_k: NotRequired[Sequence[int | None] | None]
+    """Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only."""
     num_choices: NotRequired[Sequence[int | None] | None]
+    """How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only."""
     logprobs: NotRequired[Sequence[bool | None] | None]
+    """Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Huggingface, llama-cpp-python, vLLM, and SGLang only."""
     top_logprobs: NotRequired[Sequence[int | None] | None]
+    """Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only."""
     parallel_tool_calls: NotRequired[Sequence[bool | None] | None]
+    """Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only."""
     internal_tools: NotRequired[Sequence[bool | None] | None]
+    """Whether to automatically map tools to model internal implementations (e.g. 'computer' for anthropic)."""
     max_tool_output: NotRequired[Sequence[int | None] | None]
+    """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
+    """Whether to cache the prompt prefix. Defaults to "auto", which will enable caching for requests with tools. Anthropic only."""
     reasoning_effort: NotRequired[
         Sequence[Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None]
         | None
     ]
+    """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_tokens: NotRequired[Sequence[int | None] | None]
+    """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
         Sequence[Literal["none", "concise", "detailed", "auto"] | None] | None
     ]
+    """Provide summary of reasoning steps (OpenAI reasoning models only). Use 'auto' to access the most detailed summarizer available for the current model (defaults to 'auto' if your organization is verified by OpenAI)."""
     reasoning_history: NotRequired[
         Sequence[Literal["none", "all", "last", "auto"] | None] | None
     ]
+    """Include reasoning in chat message history sent to generate."""
     response_schema: NotRequired[Sequence[ResponseSchema | None] | None]
+    """Request a response format as JSONSchema (output should still be validated). OpenAI, Google, Mistral, vLLM, and SGLang only."""
     extra_body: NotRequired[Sequence[Mapping[str, Any] | None] | None]
+    """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""

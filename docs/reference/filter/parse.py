@@ -290,7 +290,7 @@ def read_docstring_sections(docstrings: list[DocstringSection]) -> DocstringCont
     raises: dict[str, str] = {}
     for doc_section in docstrings[1:]:
         if isinstance(doc_section, DocstringSectionParameters):
-            for p in docstrings[1].value:
+            for p in doc_section.value:
                 desc = p.description.strip()
                 parameter_descriptions[p.name] = desc
         elif isinstance(doc_section, DocstringSectionExamples):
@@ -326,11 +326,36 @@ def read_source(
         read_lines(object.filepath, object.lineno, object.docstring.lineno - 1)
     )
 
-    # read docstrings
-    docstrings = object.docstring.parse("google")
+    # if Unpack was expanded by griffe, reconstruct the declaration
+    if isinstance(object, Function) and "Unpack[" in declaration:
+        declaration = reconstruct_declaration(object)
+
+    # use pre-parsed docstrings (preserves UnpackTypedDictExtension expansion)
+    docstrings = object.docstring.parsed
 
     # return
     return source, declaration, docstrings
+
+
+def reconstruct_declaration(function: Function) -> str:
+    """Reconstruct a function declaration with Unpack[TypedDict] kwargs expanded."""
+    parts = [f"def {function.name}("]
+    has_keyword_only_separator = False
+    for p in function.parameters:
+        if p.name == "self" or p.name == "cls":
+            parts.append(f"    {p.name},")
+            continue
+        if p.kind == ParameterKind.keyword_only and not has_keyword_only_separator:
+            parts.append("    *,")
+            has_keyword_only_separator = True
+        ann = str(p.annotation.modernize()) if isinstance(p.annotation, Expr) else str(p.annotation)
+        if p.required:
+            parts.append(f"    {p.name}: {ann},")
+        else:
+            parts.append(f"    {p.name}: {ann} = ...,")
+    ret = str(function.annotation.modernize()) if isinstance(function.annotation, Expr) else str(function.annotation)
+    parts.append(f") -> {ret}")
+    return "\n".join(parts)
 
 
 def read_declaration(object: Object | Alias) -> str:

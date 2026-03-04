@@ -34,7 +34,7 @@ _run_actions = {
     "--log-dir-allow-dirty",
     type=bool,
     is_flag=True,
-    help="Do not fail if the log-dir contains files that are not part of the eval set.",
+    help="Do not fail if the `log-dir` contains files that are not part of the eval set.",
     envvar="INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY",
 )
 @config_options
