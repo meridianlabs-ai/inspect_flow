@@ -1,6 +1,5 @@
 import inspect
 import json
-import re
 import traceback
 from logging import getLogger
 from pathlib import Path
@@ -24,6 +23,7 @@ from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.pydantic_util import model_dump
+from inspect_flow._util.util import now
 
 logger = getLogger(__name__)
 
@@ -192,25 +192,14 @@ def _resolve_log_dir(spec: FlowSpec, base_dir: str) -> str:
 
 
 def _log_dir_create_unique(log_dir: str) -> str:
-    if not exists(log_dir):
-        return log_dir
-
     log_dir = log_dir.rstrip(filesystem(log_dir).sep)
-    # Check if log_dir ends with _<number>
-    match = re.match(r"^(.+)_(\d+)$", log_dir)
-    if match:
-        base_log_dir = match.group(1)
-        suffix = int(match.group(2)) + 1  # Start from next suffix
-    else:
-        base_log_dir = log_dir
-        suffix = 1
-
-    # Find the next available directory
-    current_dir = f"{base_log_dir}_{suffix}"
-    while exists(current_dir):
-        suffix += 1
-        current_dir = f"{base_log_dir}_{suffix}"
-    return current_dir
+    timestamp = now().strftime("%Y-%m-%dT%H-%M-%S")
+    unique_dir = f"{log_dir}{filesystem(log_dir).sep}{timestamp}"
+    if exists(unique_dir):
+        raise ValueError(
+            f"Log directory already exists: {unique_dir}. Wait a second and try again."
+        )
+    return unique_dir
 
 
 def _load_spec_from_file(

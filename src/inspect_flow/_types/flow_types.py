@@ -653,7 +653,7 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
 
     log_dir_create_unique: bool | None | NotGiven = Field(
         default=not_given,
-        description="If `True`, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If `False`, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). Defaults to `False`.",
+        description="If `True`, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If `False`, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). Defaults to `False`.",
     )
 
     execution_type: Literal["inproc", "venv"] | None | NotGiven = Field(

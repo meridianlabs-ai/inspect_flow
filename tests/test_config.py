@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -601,38 +602,31 @@ def test_154_cache_policy() -> None:
 
 
 def test_log_dir_create_unique() -> None:
-    with patch("inspect_flow._config.load.exists") as mock_exists:
-        mock_exists.return_value = False
-        assert _log_dir_create_unique("log_dir") == "log_dir"
-        assert mock_exists.call_count == 1
-    with patch("inspect_flow._config.load.exists") as mock_exists:
-        mock_exists.side_effect = [True, True, False]
-        assert _log_dir_create_unique("log_dir") == "log_dir_2"
-        assert mock_exists.call_count == 3
-    with patch("inspect_flow._config.load.exists") as mock_exists:
-        mock_exists.side_effect = [True, True, False]
-        assert _log_dir_create_unique("log_dir_12") == "log_dir_14"
-        assert mock_exists.call_count == 3
-    with patch("inspect_flow._config.load.exists") as mock_exists:
-        mock_exists.side_effect = [True, True, False]
-        assert _log_dir_create_unique("log_dir_12/") == "log_dir_14"
-        assert mock_exists.call_count == 3
+    with patch("inspect_flow._config.load.now") as mock_now:
+        mock_now.return_value = datetime(2025, 12, 9, 17, 36, 43, tzinfo=timezone.utc)
+        assert _log_dir_create_unique("log_dir") == "log_dir/2025-12-09T17-36-43"
+        assert _log_dir_create_unique("log_dir/") == "log_dir/2025-12-09T17-36-43"
+    with (
+        patch("inspect_flow._config.load.now") as mock_now,
+        patch("inspect_flow._config.load.exists") as mock_exists,
+    ):
+        mock_now.return_value = datetime(2025, 12, 9, 17, 36, 43, tzinfo=timezone.utc)
+        mock_exists.return_value = True
+        with pytest.raises(ValueError, match="already exists"):
+            _log_dir_create_unique("log_dir")
 
 
 def test_apply_substitutions_log_dir_create_unique() -> None:
     log_dir = "/etc/logs/flow"
-    with (
-        patch("inspect_flow._config.load.exists") as mock_exists,
-    ):
-        mock_exists.side_effect = [True, True, False]
+    with patch("inspect_flow._config.load.now") as mock_now:
+        mock_now.return_value = datetime(2025, 12, 9, 17, 36, 43, tzinfo=timezone.utc)
         spec = FlowSpec(
             log_dir=log_dir,
             log_dir_create_unique=True,
             tasks=["task_name"],
         )
         spec2 = _apply_substitutions(spec, base_dir=Path.cwd().resolve().as_posix())
-        assert spec2.log_dir == f"{log_dir}_2"
-    assert mock_exists.call_count == 3
+        assert spec2.log_dir == f"{log_dir}/2025-12-09T17-36-43"
 
 
 def test_load_invalid() -> None:
