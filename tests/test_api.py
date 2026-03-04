@@ -1,10 +1,12 @@
 import os
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from inspect_flow._api import api as api_module
 from inspect_flow._types.flow_types import FlowSpec, FlowTask, not_given
+from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow.api import config, init, load_spec, run, store_get
 
 from tests.test_helpers.config_helpers import validate_config
@@ -73,3 +75,36 @@ def test_init_s3_dotenv_falls_back_to_cwd() -> None:
 def test_store_get_raises_when_no_store(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Could not open store"):
         store_get(store=str(tmp_path / "nonexistent"), create=False)
+
+
+def test_resume(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs")
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store="none",
+        tasks=["local_eval/noop"],
+    )
+
+    with (
+        patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
+        patch("subprocess.run") as mock_subprocess,
+    ):
+        mock_subprocess.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=""
+        )
+
+        # First run saves log_dir
+        run(spec=spec, base_dir="./tests/config/")
+        first_log_dir = mock_run_eval_set.call_args.args[0].log_dir
+
+        # Second run with resume reuses the same log_dir
+        resume_spec = FlowSpec(
+            log_dir="should_be_overridden",
+            store="none",
+            tasks=["local_eval/noop"],
+        )
+        run(spec=resume_spec, base_dir="./tests/config/", resume=True)
+        resumed_log_dir = mock_run_eval_set.call_args.args[0].log_dir
+
+    assert resumed_log_dir == first_log_dir
+    assert read_data(LAST_LOG_DIR_KEY) == first_log_dir

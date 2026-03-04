@@ -18,6 +18,7 @@ from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
 from inspect_flow._util.console import flow_print, path, quantity
+from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
@@ -34,6 +35,7 @@ AUTO_INCLUDE_FILENAME = "_flow.py"
 class ConfigOptions:
     overrides: list[str] = field(factory=list)
     args: dict[str, Any] = field(factory=dict)
+    resume: bool = False
 
 
 @dataclass
@@ -67,6 +69,14 @@ def expand_spec(
 ) -> FlowSpec:
     options = options or ConfigOptions()
     state = state or LoadState()
+    if options.resume:
+        last_log_dir = read_data(LAST_LOG_DIR_KEY)
+        if not last_log_dir:
+            raise FileNotFoundError(
+                "No previous log directory found. Run a flow first before using resume."
+            )
+        spec.log_dir = last_log_dir
+        spec.log_dir_create_unique = False
     spec = _expand_includes(
         spec,
         state,

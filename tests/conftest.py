@@ -39,11 +39,12 @@ def init_log_handler() -> None:
 
 
 @pytest.fixture(autouse=True)
-def isolate_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure tests never touch real user store."""
+def isolate_user_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure tests never touch real user data (store and flow data file)."""
+    user_data = tmp_path / "user_data"
     monkeypatch.setattr(
-        "inspect_flow._store.store._get_default_store_dir",
-        lambda: tmp_path / "test_store",
+        "platformdirs.user_data_dir",
+        lambda *args, **kwargs: str(user_data),
     )
 
 
