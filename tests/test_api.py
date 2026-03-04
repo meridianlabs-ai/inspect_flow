@@ -108,3 +108,38 @@ def test_resume(tmp_path: Path) -> None:
 
     assert resumed_log_dir == first_log_dir
     assert read_data(LAST_LOG_DIR_KEY) == first_log_dir
+
+
+def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs")
+    spec = FlowSpec(
+        log_dir=log_dir,
+        log_dir_create_unique=True,
+        store="none",
+        tasks=["local_eval/noop"],
+    )
+
+    with (
+        patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
+        patch("subprocess.run") as mock_subprocess,
+    ):
+        mock_subprocess.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=""
+        )
+
+        # First run with log_dir_create_unique creates a timestamped subdir
+        run(spec=spec, base_dir="./tests/config/")
+        first_log_dir = mock_run_eval_set.call_args.args[0].log_dir
+
+        # Second run with resume should reuse the exact same log_dir,
+        # even when log_dir_create_unique is set on the spec
+        resume_spec = FlowSpec(
+            log_dir="should_be_overridden",
+            log_dir_create_unique=True,
+            store="none",
+            tasks=["local_eval/noop"],
+        )
+        run(spec=resume_spec, base_dir="./tests/config/", resume=True)
+        resumed_log_dir = mock_run_eval_set.call_args.args[0].log_dir
+
+    assert resumed_log_dir == first_log_dir

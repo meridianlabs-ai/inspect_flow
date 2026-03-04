@@ -69,6 +69,13 @@ def expand_spec(
 ) -> FlowSpec:
     options = options or ConfigOptions()
     state = state or LoadState()
+    spec = _expand_includes(
+        spec,
+        state,
+        base_dir=base_dir,
+    )
+    spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
+    spec = _apply_overrides(spec, options.overrides)
     if options.resume:
         last_log_dir = read_data(LAST_LOG_DIR_KEY)
         if not last_log_dir:
@@ -77,13 +84,6 @@ def expand_spec(
             )
         spec.log_dir = last_log_dir
         spec.log_dir_create_unique = False
-    spec = _expand_includes(
-        spec,
-        state,
-        base_dir=base_dir,
-    )
-    spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
-    spec = _apply_overrides(spec, options.overrides)
     spec = _apply_substitutions(spec, base_dir=base_dir)
     spec = apply_defaults(spec)
     _after_flow_spec_loaded(spec, state)
