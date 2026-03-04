@@ -97,7 +97,7 @@ def test_default_model(
     )
     run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir)
-    assert "does not match any task" not in recording_console.export_text()
+    assert "ERROR" not in recording_console.export_text()
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:
