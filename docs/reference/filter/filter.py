@@ -1,10 +1,9 @@
 import subprocess
 from typing import cast
 
-from griffe import Extensions, Module
-from griffe._internal.extensions.unpack_typeddict import UnpackTypedDictExtension
+from griffe import Extensions, Module, UnpackTypedDictExtension
 import griffe
-import panflute as pf  # type: ignore
+import panflute as pf
 
 from parse import DocParseOptions, parse_docs
 from render import render_docs
