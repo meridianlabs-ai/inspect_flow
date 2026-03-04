@@ -629,6 +629,17 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
         assert spec2.log_dir == f"{log_dir}/2025-12-09T17-36-43"
 
 
+def test_datetime_substitution() -> None:
+    with patch("inspect_flow._config.load.now") as mock_now:
+        mock_now.return_value = datetime(2025, 12, 9, 17, 36, 43, tzinfo=timezone.utc)
+        spec = FlowSpec(
+            log_dir="logs_{DATETIME}",
+            tasks=["task_name"],
+        )
+        spec2 = _apply_substitutions(spec, base_dir=Path.cwd().resolve().as_posix())
+        assert spec2.log_dir == "logs_2025-12-09T17-36-43"
+
+
 def test_load_invalid() -> None:
     invalid_config_path = str(Path(config_dir) / "invalid_flow.py")
     with pytest.raises(FlowHandledError) as e:

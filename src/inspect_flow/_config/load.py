@@ -121,6 +121,8 @@ class _SpecFormatMapMapping:
         self.spec = spec
 
     def __getitem__(self, key: str, /) -> Any:
+        if key == "DATETIME":
+            return now().strftime("%Y-%m-%dT%H-%M-%S")
         if value := getattr(self.spec, key, None):
             # Convert Pydantic objects to dicts for nested access like {defaults[model][name]}
             if isinstance(value, BaseModel):
