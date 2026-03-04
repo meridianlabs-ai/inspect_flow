@@ -31,7 +31,6 @@ from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
-from pytest import CaptureFixture
 from rich.console import Console
 
 from .test_helpers.log_helpers import init_test_logs, init_test_store, verify_test_logs
@@ -85,6 +84,20 @@ def test_task_with_two_models() -> None:
     run_eval_set(spec=(spec), base_dir=".")
 
     verify_test_logs(spec, log_dir)
+
+
+def test_default_model(
+    monkeypatch: pytest.MonkeyPatch, recording_console: Console
+) -> None:
+    monkeypatch.setenv("INSPECT_EVAL_MODEL", "mockllm/mock-llm")
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=[FlowTask(name=task_file + "@noop")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    verify_test_logs(spec, log_dir)
+    assert "does not match any task" not in recording_console.export_text()
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:
@@ -1212,9 +1225,11 @@ def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) ->
     assert "Copying 1 existing log" in out
 
 
-def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
+def test_store_log_gone(recording_console: Console) -> None:
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level="info", log_handler_var=log_handler)
+    if log_handler["handler"]:
+        log_handler["handler"].console = recording_console
 
     log_dir = init_test_logs()
     store_dir = init_test_store()
@@ -1229,10 +1244,10 @@ def test_store_log_gone(capsys: CaptureFixture[str]) -> None:
     verify_test_logs(spec, log_dir)
 
     log_dir = init_test_logs()
-    capsys.readouterr()  # Clear previous output
+    recording_console.export_text()  # Clear previous output
 
     run_eval_set(spec=spec, base_dir=".")
-    out = capsys.readouterr().out
+    out = recording_console.export_text()
     assert "Failed to read log" in out
 
 

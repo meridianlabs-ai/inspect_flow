@@ -223,14 +223,29 @@ def recording_console() -> Generator[Console, None, None]:
     Use `recording_console.export_text()` to get the captured output.
     """
     recording = Console(record=True, force_terminal=True)
-    with (
-        patch("inspect_flow._util.console.console", recording),
-        patch("inspect_flow._display.full.console", recording),
-        patch("inspect_flow._display.full_actions.console", recording),
-        patch("inspect_flow._display.plain.console", recording),
-        patch("inspect_flow._cli.store.console", recording),
-    ):
-        yield recording
+    # Replace console on all logging handlers so logger.error() etc. are captured
+    import logging
+
+    from rich.logging import RichHandler
+
+    rich_handlers = [
+        h for h in logging.getLogger().handlers if isinstance(h, RichHandler)
+    ]
+    original_consoles = [(h, h.console) for h in rich_handlers]
+    for h in rich_handlers:
+        h.console = recording
+    try:
+        with (
+            patch("inspect_flow._util.console.console", recording),
+            patch("inspect_flow._display.full.console", recording),
+            patch("inspect_flow._display.full_actions.console", recording),
+            patch("inspect_flow._display.plain.console", recording),
+            patch("inspect_flow._cli.store.console", recording),
+        ):
+            yield recording
+    finally:
+        for h, original in original_consoles:
+            h.console = original
 
 
 @dataclass
