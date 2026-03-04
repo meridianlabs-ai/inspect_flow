@@ -290,7 +290,7 @@ def read_docstring_sections(docstrings: list[DocstringSection]) -> DocstringCont
     raises: dict[str, str] = {}
     for doc_section in docstrings[1:]:
         if isinstance(doc_section, DocstringSectionParameters):
-            for p in docstrings[1].value:
+            for p in doc_section.value:
                 desc = p.description.strip()
                 parameter_descriptions[p.name] = desc
         elif isinstance(doc_section, DocstringSectionExamples):
