@@ -227,3 +227,5 @@ logs/
 
 # MacOS
 .DS_Store
+
+/.luarc.json
