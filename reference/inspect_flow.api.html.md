@@ -7,7 +7,7 @@
 
 Initialize the inspect_flow API.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L25)
 
 ``` python
 def init(
@@ -24,15 +24,15 @@ The Inspect Flow log level to use.
 The display mode.
 
 `dotenv_base_dir` str \| None  
-Directory (or file path) to search for .env files. If a file path is
-given, its parent directory is used. None to skip .env loading. Defaults
-to “.” (current working directory).
+Directory (or file path) to search for `.env` files. If a file path is
+given, its parent directory is used. `None` to skip `.env` loading.
+Defaults to `"."` (current working directory).
 
 ### run
 
 Run an inspect_flow evaluation.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L72)
 
 ``` python
 def run(
@@ -51,13 +51,13 @@ The base directory for resolving relative paths. Defaults to the current
 working directory.
 
 `dry_run` bool  
-If True, do not run eval, but show a count of tasks that would be run.
+If `True`, do not run eval, but show a count of tasks that would be run.
 
 ### load_spec
 
 Load a spec from file.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L57)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L57)
 
 ``` python
 def load_spec(
@@ -78,7 +78,7 @@ config.
 
 Return the flow spec configuration.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L104)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L104)
 
 ``` python
 def config(
@@ -98,14 +98,14 @@ working directory.
 
 Get a FlowStore instance.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_api/api.py#L121)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L121)
 
 ``` python
 def store_get(store: str = "auto", create: bool = True) -> FlowStore
 ```
 
 `store` str  
-The store location. Can be a path to the store directory or “auto” for
+The store location. Can be a path to the store directory or `"auto"` for
 the default store location.
 
 `create` bool  
@@ -115,7 +115,7 @@ Whether to create the store if it does not exist.
 
 Delete a flow store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L159)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L159)
 
 ``` python
 def delete_store(store_path: str) -> None
@@ -129,7 +129,7 @@ Path to the store directory.
 Copy all log files from src_dir to dest_dir, preserving directory
 structure.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_util/logs.py#L16)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_util/logs.py#L16)
 
 ``` python
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
@@ -151,7 +151,7 @@ If True, search src_dir recursively for log files.
 
 Interface for flow store implementations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L17)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L17)
 
 ``` python
 class FlowStore(ABC)
@@ -170,7 +170,7 @@ The store version.
 import_log_path  
 Import a log file(s) or directory(ies) into the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L32)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L32)
 
 ``` python
 @abstractmethod
@@ -198,7 +198,7 @@ Print paths of files being added
 get_logs  
 Get all log file paths in the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L50)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L50)
 
 ``` python
 @abstractmethod
@@ -208,7 +208,7 @@ def get_logs(self) -> set[str]
 remove_log_prefix  
 Remove logs matching the given prefixes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_store/store.py#L59)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L59)
 
 ``` python
 @abstractmethod
@@ -241,7 +241,7 @@ Print paths of files being removed
 
 Display mode for flow output.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/959cf28d40855ec6024b7413113fa23dff29d079/src/inspect_flow/_display/display.py#L15)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_display/display.py#L15)
 
 ``` python
 DisplayType = Literal["full", "rich", "plain"]
