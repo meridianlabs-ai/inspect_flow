@@ -13,7 +13,7 @@ from inspect_ai._util.registry import (
 )
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
-from inspect_ai.model._model import init_active_model
+from inspect_ai.model._model import init_active_model, resolve_models
 from inspect_ai.scorer import Scorer
 from inspect_ai.scorer._scorer import ScorerSpec
 from inspect_ai.solver import Solver
@@ -221,7 +221,11 @@ def _instantiate_task(
     ):
         raise ValueError("config must be resolved before calling instantiate_task")
 
-    model = _create_model(flow_task, flow_task.model) if flow_task.model else NOT_GIVEN
+    model = (
+        _create_model(flow_task, flow_task.model)
+        if flow_task.model
+        else resolve_models(NOT_GIVEN)[0]
+    )
     scorer = _create_scorer(flow_task, flow_task.scorer)
     solver = (
         _create_solver(flow_task, flow_task.solver) if flow_task.solver else NOT_GIVEN

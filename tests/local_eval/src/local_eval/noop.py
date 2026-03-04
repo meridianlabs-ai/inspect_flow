@@ -1,8 +1,10 @@
 from typing import Literal
 
+import anyio
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 from inspect_ai.model import Model, get_model
+from inspect_ai.solver import Generate, TaskState, solver
 
 
 @task
@@ -47,3 +49,19 @@ def task_with_model_roles() -> Task:
     _model1 = get_model(role="mark")
     _model2 = get_model(role="conartist")
     return Task()
+
+
+@solver
+def sleep_for_solver(seconds: int):
+    async def solve(state: TaskState, generate: Generate):
+        await anyio.sleep(seconds)
+        return state
+
+    return solve
+
+
+@task
+def sleep_for_task(seconds: int = 10):
+    return Task(
+        solver=[sleep_for_solver(seconds=seconds)],
+    )
