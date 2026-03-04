@@ -6,6 +6,7 @@ from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
+import griffe
 from datamodel_code_generator import (
     InputFileType,
     LiteralType,
@@ -128,43 +129,15 @@ MATRIX_CLASS_FIELDS = {
 
 Schema: TypeAlias = dict[str, Any]
 
-# Descriptions for GenerateConfig fields (from inspect-ai docs).
-# These are injected into the JSON schema so datamodel-codegen generates docstrings.
-GENERATE_CONFIG_DESCRIPTIONS: dict[str, str] = {
-    "max_retries": "Maximum number of times to retry request.",
-    "timeout": "Request timeout in seconds.",
-    "attempt_timeout": "Timeout in seconds for each attempt (if exceeded, will abandon attempt and retry according to `max_retries`).",
-    "max_connections": "Maximum number of concurrent connections.",
-    "system_message": "Override the default system message.",
-    "max_tokens": "Maximum number of tokens that can be generated in the completion (default is model specific).",
-    "top_p": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass.",
-    "temperature": "Sampling temperature between 0 and 2. Higher values like 0.8 make the output more random, lower values like 0.2 make it more focused and deterministic.",
-    "stop_seqs": "Sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.",
-    "best_of": "Generates `best_of` completions server-side and returns the highest log probability per token. OpenAI only.",
-    "frequency_penalty": "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.",
-    "presence_penalty": "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.",
-    "logit_bias": "Map token IDs to bias values from -100 to 100. OpenAI and Grok only.",
-    "seed": "Random seed for reproducibility.",
-    "top_k": "Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, and vLLM only.",
-    "num_choices": "How many chat completion choices to generate for each input message.",
-    "logprobs": "Return log probabilities of output tokens.",
-    "top_logprobs": "Number of most likely tokens (0-20) to return at each token position, each with an associated log probability.",
-    "parallel_tool_calls": "Whether to enable calling multiple functions during tool use. OpenAI and Groq only.",
-    "internal_tools": "Whether to automatically map tools to model internal implementations.",
-    "max_tool_output": "Maximum size of tool output in bytes. Defaults to 16 * 1024.",
-    "cache_prompt": "Cache prompt prefix. Anthropic only.",
-    "verbosity": "Constrains the verbosity of the model's response.",
-    "effort": "Control how many tokens are used for a response, trading off between thoroughness and token efficiency.",
-    "reasoning_effort": "Constrains effort on reasoning. Defaults vary by provider and model.",
-    "reasoning_tokens": "Maximum number of tokens to use for reasoning. Anthropic Claude models only.",
-    "reasoning_summary": "Summarize reasoning in the response.",
-    "reasoning_history": "Include reasoning in chat message history.",
-    "response_schema": "JSON schema for desired response format.",
-    "extra_headers": "Extra HTTP headers to include in requests.",
-    "extra_body": "Extra fields to include in the request body.",
-    "cache": "Cache policy for responses.",
-    "batch": "Batch configuration for requests.",
-}
+
+def _get_generate_config_descriptions() -> dict[str, str]:
+    mod = griffe.load("inspect_ai.model", docstring_parser="google")
+    gen_config = mod["GenerateConfig"]
+    return {
+        name: member.docstring.value
+        for name, member in gen_config.members.items()
+        if hasattr(member, "docstring") and member.docstring
+    }
 
 
 def _field_type_to_list(field_schema: Schema) -> None:
@@ -270,7 +243,7 @@ def _add_generate_config_descriptions(defs: Schema) -> None:
     if not gen_config:
         return
     properties: Schema = gen_config.get("properties", {})
-    for field_name, description in GENERATE_CONFIG_DESCRIPTIONS.items():
+    for field_name, description in _get_generate_config_descriptions().items():
         if field_name in properties:
             properties[field_name]["description"] = description
 
