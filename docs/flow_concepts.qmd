@@ -84,7 +84,7 @@ When using `--venv`, Flow additionally creates an isolated virtual environment, 
 |------------------|--------------------------------|----------------------|
 | `tasks` | List of tasks to run (`FlowTask` objects, Inspect AI `Task` objects, or strings) | `None` |
 | `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
-| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
+| `log_dir_create_unique` | If `True`, create a unique subdirectory under `log_dir` using the current datetime (e.g. `2025-12-09T17-36-43`). If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
 | `execution_type` | Execution environment: `"inproc"` runs tasks in the current Python process, `"venv"` runs tasks in an isolated virtual environment | `"inproc"` |
 | `python_version` | Python version for the isolated virtual environment when `execution_type="venv"` (e.g., `"3.11"`) | Same as current environment |
 | `dependencies` | `FlowDependencies` object configuring package installation in venv mode. Controls dependency file detection, additional packages, and auto-detection behavior. Ignored in inproc mode. | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names (venv mode only) |
