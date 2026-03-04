@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-02 18:28 +0000
+            created at 2026-03-04 19:45 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -110,7 +110,7 @@
     <p class="run run2"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">        <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="nam">DEFAULT_LOG_LEVEL</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_LOG_LEVEL"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the log level (defaults to 'warning')"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the log level (defaults to `'warning'`)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">        <span class="str">"--display"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -120,7 +120,7 @@
     <p class="run run2"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">        <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="str">"full"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_DISPLAY"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the display mode (defaults to 'full')"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the display mode (defaults to `'full'`)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">    <span class="key">return</span> <span class="nam">f</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -191,7 +191,7 @@
     <p class="run run2"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t">            <span class="nam">resolve_path</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t">        <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t110" href="#t110">110</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Path to the store directory. Will override the store specified in the config. 'auto' for default location. 'none' for no store."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t110" href="#t110">110</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_STORE"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t112" href="#t112">112</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -204,14 +204,14 @@
     <p class="run run2"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">            <span class="nam">resolve_path</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t121" href="#t121">121</a></span><span class="t">        <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t122" href="#t122">122</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the log directory. Will override the log_dir specified in the config."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Set the log directory. Will override the `log_dir` specified in the config."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t124" href="#t124">124</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_LOG_DIR"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="str">"--log-dir-create-unique"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">        <span class="nam">type</span><span class="op">=</span><span class="nam">bool</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">        <span class="nam">is_flag</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"If set, create a new log directory by appending an _ and numeric suffix if the specified log_dir already exists. If the directory exists and has a _numeric suffix, that suffix will be incremented. If not set, use the existing log_dir (which must be empty or have log_dir_allow_dirty=True)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -286,7 +286,7 @@
             <a class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-02 18:28 +0000
+            created at 2026-03-04 19:45 +0000
         </p>
     </div>
 </footer>
