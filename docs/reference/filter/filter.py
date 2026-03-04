@@ -1,7 +1,8 @@
 import subprocess
 from typing import cast
 
-from griffe import Module
+from griffe import Extensions, Module
+from griffe._internal.extensions.unpack_typeddict import UnpackTypedDictExtension
 import griffe
 import panflute as pf  # type: ignore
 
@@ -12,7 +13,14 @@ from commands import make_command_docs
 
 def main():
     # create options
-    module = cast(Module, griffe.load("inspect_flow"))
+    module = cast(
+        Module,
+        griffe.load(
+            "inspect_flow",
+            extensions=Extensions(UnpackTypedDictExtension()),
+            docstring_parser="google",
+        ),
+    )
     sha = (
         subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
         .stdout.decode()
