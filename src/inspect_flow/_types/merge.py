@@ -50,11 +50,25 @@ def merge_recursive(
 
 
 def merge(base: _T, add: _T) -> _T:
-    """Merge two flow objects.
+    """Merge two flow objects, with `add` values overriding `base` values.
+
+    Only explicitly set fields in `add` override `base` — unset fields
+    (defaulting to `NotGiven`) are ignored. Nested fields like `config`
+    and `flow_metadata` are merged recursively rather than replaced.
+
+    Example:
+        ```python
+        base = FlowModel(name="openai/gpt-4o", config=GenerateConfig(temperature=0.3))
+        override = FlowModel(config=GenerateConfig(top_p=0.8))
+        result = merge(base, override)
+        # result.name == "openai/gpt-4o"
+        # result.config.temperature == 0.3
+        # result.config.top_p == 0.8
+        ```
 
     Args:
-        base: The base object.
-        add: The object to merge into the base. Values in this object
-            will override those in the base.
+        base: The base object providing default values.
+        add: The object to merge into the base. Only explicitly set fields
+            override those in `base`.
     """
     return type(base).model_validate(merge_recursive(base, add), extra="forbid")
