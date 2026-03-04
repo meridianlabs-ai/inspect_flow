@@ -74,6 +74,7 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
+    resume: bool = False,
 ) -> None:
     """Run an inspect_flow evaluation.
 
@@ -81,6 +82,7 @@ def run(
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If `True`, do not run eval, but show a count of tasks that would be run.
+        resume: If `True`, reuse the log directory from the previous run.
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -93,7 +95,7 @@ def run(
         )
     _ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
-    spec = expand_spec(spec, base_dir=base_dir)
+    spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions(resume=resume))
     launch(
         spec=spec,
         base_dir=base_dir,

@@ -131,6 +131,13 @@ def config_options(f: F) -> F:
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
     f = click.option(
+        "--resume",
+        type=bool,
+        is_flag=True,
+        help="Resume from the previous run by reusing its log directory.",
+        envvar="INSPECT_FLOW_RESUME",
+    )(f)
+    f = click.option(
         "--venv",
         type=bool,
         is_flag=True,
@@ -150,6 +157,7 @@ class ConfigOptionArgs(OutputOptionArgs, total=False):
     log_dir: str | None
     log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
+    resume: bool | None
     limit: int | None
     set: list[str] | None
     arg: list[str] | None
@@ -189,7 +197,11 @@ def _options_to_args(**kwargs: Unpack[ConfigOptionArgs]) -> dict[str, Any]:
 
 
 def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
+    resume = bool(kwargs.get("resume"))
+    if resume and kwargs.get("log_dir"):
+        raise click.UsageError("--resume and --log-dir are mutually exclusive.")
     return ConfigOptions(
         overrides=_options_to_overrides(**kwargs),
         args=_options_to_args(**kwargs),
+        resume=resume,
     )

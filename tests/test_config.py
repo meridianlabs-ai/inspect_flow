@@ -30,6 +30,7 @@ from inspect_flow._config.load import (
     int_load_spec,
 )
 from inspect_flow._types.flow_types import FlowDependencies, not_given
+from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
@@ -726,3 +727,21 @@ def test_465_flow_file_should_not_include_itself(recording_console: Console) -> 
     out_normalized = "".join(out.split())
     # The _flow.py file should NOT be auto-included when loaded directly
     assert "Auto-include" not in out_normalized
+
+
+def test_resume_ignores_log_dir_create_unique_override(tmp_path: Path) -> None:
+    saved_log_dir = str(tmp_path / "logs" / "2025-01-01T00-00-00")
+    write_data(LAST_LOG_DIR_KEY, saved_log_dir)
+
+    spec = FlowSpec(
+        log_dir="should_be_overridden",
+        store="none",
+        tasks=["local_eval/noop"],
+    )
+    options = ConfigOptions(
+        resume=True,
+        overrides=["log_dir_create_unique=True"],
+    )
+    spec = expand_spec(spec, base_dir="./tests/config/", options=options)
+
+    assert spec.log_dir == saved_log_dir

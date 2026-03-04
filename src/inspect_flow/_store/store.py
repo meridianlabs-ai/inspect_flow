@@ -3,12 +3,11 @@ from logging import getLogger
 from pathlib import Path
 from typing import Sequence
 
-import platformdirs
 from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import FlowSpec, NotGiven
-from inspect_flow._util.constants import PKG_NAME
+from inspect_flow._util.data import user_data_dir
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -114,7 +113,7 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
 
 
 def _get_default_store_dir() -> Path:
-    return Path(platformdirs.user_data_dir(PKG_NAME))
+    return user_data_dir()
 
 
 def store_factory(

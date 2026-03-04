@@ -35,13 +35,13 @@ def test_store_defaults() -> None:
     store = store_factory(spec, base_dir=".", create=True)
     assert store
     assert isinstance(store, DeltaLakeStore)
-    assert store._store_path.endswith("test_store/flow_store")
+    assert store._store_path.endswith("user_data/flow_store")
 
     spec = FlowSpec(store="auto")
     store = store_factory(spec, base_dir=".")
     assert store
     assert isinstance(store, DeltaLakeStore)
-    assert store._store_path.endswith("test_store/flow_store")
+    assert store._store_path.endswith("user_data/flow_store")
 
     spec = FlowSpec(store=None)
     store = store_factory(spec, base_dir=".")

@@ -3,6 +3,7 @@ from logging import getLogger
 from inspect_flow._launcher.inproc import inproc_launch
 from inspect_flow._launcher.venv import venv_launch
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -12,6 +13,8 @@ def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> None:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
+
+    write_data(LAST_LOG_DIR_KEY, spec.log_dir)
 
     if spec.options and spec.options.bundle_dir:
         # Ensure bundle_dir and bundle_url_mappings are absolute paths
