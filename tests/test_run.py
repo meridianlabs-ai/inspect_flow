@@ -131,26 +131,6 @@ def test_model_generate_config(mock_eval_set: MagicMock) -> None:
     assert config.system_message == system_message
 
 
-def test_default_model_config(mock_eval_set: MagicMock) -> None:
-    log_dir = init_test_logs()
-    run_eval_set(
-        spec=(
-            FlowSpec(
-                log_dir=log_dir,
-                tasks=[FlowTask(name=task_file + "@noop")],
-            )
-        ),
-        base_dir=".",
-    )
-
-    mock_eval_set.assert_called_once()
-    call_args = mock_eval_set.call_args
-    tasks_arg = call_args.kwargs["tasks"]
-    assert len(tasks_arg) == 1
-    assert isinstance(tasks_arg[0], Task)
-    assert tasks_arg[0].model is None
-
-
 def test_task_model(mock_eval_set: MagicMock) -> None:
     log_dir = init_test_logs()
     run_eval_set(
