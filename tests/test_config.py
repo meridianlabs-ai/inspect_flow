@@ -605,8 +605,8 @@ def test_154_cache_policy() -> None:
 def test_log_dir_create_unique() -> None:
     with patch("inspect_flow._config.load.now") as mock_now:
         mock_now.return_value = datetime(2025, 12, 9, 17, 36, 43, tzinfo=timezone.utc)
-        assert _log_dir_create_unique("log_dir") == "log_dir/2025-12-09T17-36-43"
-        assert _log_dir_create_unique("log_dir/") == "log_dir/2025-12-09T17-36-43"
+        assert _log_dir_create_unique("log_dir") == "log_dir/2025-12-09T17-36-43Z"
+        assert _log_dir_create_unique("log_dir/") == "log_dir/2025-12-09T17-36-43Z"
     with (
         patch("inspect_flow._config.load.now") as mock_now,
         patch("inspect_flow._config.load.exists") as mock_exists,
@@ -627,7 +627,7 @@ def test_apply_substitutions_log_dir_create_unique() -> None:
             tasks=["task_name"],
         )
         spec2 = _apply_substitutions(spec, base_dir=Path.cwd().resolve().as_posix())
-        assert spec2.log_dir == f"{log_dir}/2025-12-09T17-36-43"
+        assert spec2.log_dir == f"{log_dir}/2025-12-09T17-36-43Z"
 
 
 def test_datetime_substitution() -> None:
@@ -638,7 +638,7 @@ def test_datetime_substitution() -> None:
             tasks=["task_name"],
         )
         spec2 = _apply_substitutions(spec, base_dir=Path.cwd().resolve().as_posix())
-        assert spec2.log_dir == "logs_2025-12-09T17-36-43"
+        assert spec2.log_dir == "logs_2025-12-09T17-36-43Z"
 
 
 def test_load_invalid() -> None:

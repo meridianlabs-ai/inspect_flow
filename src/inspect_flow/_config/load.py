@@ -132,7 +132,7 @@ class _SpecFormatMapMapping:
 
     def __getitem__(self, key: str, /) -> Any:
         if key == "DATETIME":
-            return now().strftime("%Y-%m-%dT%H-%M-%S")
+            return now().strftime("%Y-%m-%dT%H-%M-%SZ")
         if value := getattr(self.spec, key, None):
             # Convert Pydantic objects to dicts for nested access like {defaults[model][name]}
             if isinstance(value, BaseModel):
@@ -205,7 +205,7 @@ def _resolve_log_dir(spec: FlowSpec, base_dir: str) -> str:
 
 def _log_dir_create_unique(log_dir: str) -> str:
     log_dir = log_dir.rstrip(filesystem(log_dir).sep)
-    timestamp = now().strftime("%Y-%m-%dT%H-%M-%S")
+    timestamp = now().strftime("%Y-%m-%dT%H-%M-%SZ")
     unique_dir = f"{log_dir}{filesystem(log_dir).sep}{timestamp}"
     if exists(unique_dir):
         raise ValueError(
