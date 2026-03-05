@@ -127,14 +127,14 @@ def config_options(f: F) -> F:
         "--log-dir-create-unique",
         type=bool,
         is_flag=True,
-        help="If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
+        help="If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
     f = click.option(
         "--resume",
         type=bool,
         is_flag=True,
-        help="Resume from the previous run by reusing its log directory.",
+        help="Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`.",
         envvar="INSPECT_FLOW_RESUME",
     )(f)
     f = click.option(

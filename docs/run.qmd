@@ -52,6 +52,14 @@ Performs the full setup process and shows what would run:
 
 This is invaluable for debugging what will actually run in your evaluations.
 
+**Resume a previous run:**
+
+``` bash
+flow run config.py --resume
+```
+
+Reuses the log directory from the most recent run. Use this to pick up where you left off after an interruption, or to add new evaluations to an existing log directory after updating your config. Mutually exclusive with `--log-dir`.
+
 **Override log directory:**
 
 ``` bash
@@ -59,6 +67,14 @@ flow run config.py --log-dir ./experiments/baseline
 ```
 
 Changes where logs and results are stored.
+
+**Create a unique log directory:**
+
+``` bash
+flow run config.py --log-dir ./experiments/baseline --log-dir-create-unique
+```
+
+Creates a subdirectory within the specified `log_dir` using the current timestamp (e.g., `./experiments/baseline/2026-03-04T16-56-25/`). Useful for keeping separate log directories across repeated runs without overwriting previous results.
 
 **Runtime overrides:**
 
