@@ -181,6 +181,16 @@ FlowSpec(
 
 For nested fields, use bracket notation: `{options[eval_set_id]}` or `{flow_metadata[key]}`. Substitutions are resolved recursively until no more remain.
 
+#### Built-in Substitutions
+
+In addition to `FlowSpec` field names, the following built-in substitution keys are available:
+
+| Key | Description | Example Output |
+|-----|-------------|----------------|
+| `{DATETIME}` | Current timestamp | `2026-03-04T16-56-25` |
+
+Built-in keys use uppercase names to distinguish them from `FlowSpec` field names (which are lowercase). For example, `{DATETIME}` is a built-in key while `{log_dir}` references the `log_dir` field.
+
 ## Metadata
 
 Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
