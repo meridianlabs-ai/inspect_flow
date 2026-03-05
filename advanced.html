@@ -651,6 +651,32 @@ Note
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Result: bundle_dir="logs/my_eval/bundle"</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For nested fields, use bracket notation: <code>{options[eval_set_id]}</code> or <code>{flow_metadata[key]}</code>. Substitutions are resolved recursively until no more remain.</p>
+<section id="built-in-substitutions" class="level4">
+<h4 class="anchored" data-anchor-id="built-in-substitutions">Built-in Substitutions</h4>
+<p>In addition to <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> field names, the following built-in substitution keys are available:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 41%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Key</th>
+<th>Description</th>
+<th>Example Output</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>{DATETIME}</code></td>
+<td>Current timestamp</td>
+<td><code>2026-03-04T16-56-25</code></td>
+</tr>
+</tbody>
+</table>
+<p>Built-in keys use uppercase names to distinguish them from <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> field names (which are lowercase). For example, <code>{DATETIME}</code> is a built-in key while <code>{log_dir}</code> references the <code>log_dir</code> field.</p>
+</section>
 </section>
 </section>
 <section id="metadata" class="level2">

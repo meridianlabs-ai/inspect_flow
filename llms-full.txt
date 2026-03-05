@@ -478,7 +478,7 @@ expansions](matrix.qmd)—ultimately produce a list of tasks that
 |----|----|----|
 | `tasks` | List of tasks to run (`FlowTask` objects, Inspect AI `Task` objects, or strings) | `None` |
 | `includes` | List of other flow configs to include (paths as strings). Relative paths resolved relative to config file (CLI) or `base_dir` arg (API). Additionally, any `_flow.py` files in the same directory or parent directories are automatically included | `None` |
-| `log_dir_create_unique` | If `True`, append numeric suffix to `log_dir` if it exists. If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
+| `log_dir_create_unique` | If `True`, create a unique subdirectory under `log_dir` using the current datetime (e.g. `2025-12-09T17-36-43`). If `False`, use existing directory (must only contain logs from tasks in the spec or have `options.log_dir_allow_dirty=True`) | `False` |
 | `execution_type` | Execution environment: `"inproc"` runs tasks in the current Python process, `"venv"` runs tasks in an isolated virtual environment | `"inproc"` |
 | `python_version` | Python version for the isolated virtual environment when `execution_type="venv"` (e.g., `"3.11"`) | Same as current environment |
 | `dependencies` | `FlowDependencies` object configuring package installation in venv mode. Controls dependency file detection, additional packages, and auto-detection behavior. Ignored in inproc mode. | Auto-detect from `pyproject.toml` or `requirements.txt`, and config object names (venv mode only) |
@@ -1900,6 +1900,17 @@ Performs the full setup process and shows what would run:
 This is invaluable for debugging what will actually run in your
 evaluations.
 
+**Resume a previous run:**
+
+``` bash
+flow run config.py --resume
+```
+
+Reuses the log directory from the most recent run. Use this to pick up
+where you left off after an interruption, or to add new evaluations to
+an existing log directory after updating your config. Mutually exclusive
+with `--log-dir`.
+
 **Override log directory:**
 
 ``` bash
@@ -1907,6 +1918,17 @@ flow run config.py --log-dir ./experiments/baseline
 ```
 
 Changes where logs and results are stored.
+
+**Create a unique log directory:**
+
+``` bash
+flow run config.py --log-dir ./experiments/baseline --log-dir-create-unique
+```
+
+Creates a subdirectory within the specified `log_dir` using the current
+timestamp (e.g., `./experiments/baseline/2026-03-04T16-56-25/`). Useful
+for keeping separate log directories across repeated runs without
+overwriting previous results.
 
 **Runtime overrides:**
 
@@ -2861,6 +2883,19 @@ For nested fields, use bracket notation: `{options[eval_set_id]}` or
 `{flow_metadata[key]}`. Substitutions are resolved recursively until no
 more remain.
 
+#### Built-in Substitutions
+
+In addition to `FlowSpec` field names, the following built-in
+substitution keys are available:
+
+| Key          | Description       | Example Output        |
+|--------------|-------------------|-----------------------|
+| `{DATETIME}` | Current timestamp | `2026-03-04T16-56-25` |
+
+Built-in keys use uppercase names to distinguish them from `FlowSpec`
+field names (which are lowercase). For example, `{DATETIME}` is a
+built-in key while `{log_dir}` references the `log_dir` field.
+
 ## Metadata
 
 Flow supports two types of metadata with distinct purposes: `metadata`
@@ -3143,7 +3178,7 @@ a:hover {
 
 Configuration for an Agent.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L179)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L179)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -3172,7 +3207,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Default field values for Inspect objects. Will be overriden by more
 specific settings.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L567)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L567)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -3214,7 +3249,7 @@ Task defaults for task name prefixes. E.g.
 
 Configuration for flow dependencies to install in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L612)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L612)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -3255,7 +3290,7 @@ Number of epochs to repeat samples over and optionally one or more
 reducers used to combine scores from samples across epochs. If not
 specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L213)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L213)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -3274,7 +3309,7 @@ One or more reducers used to combine scores from samples across epochs
 
 Top-level flow specification.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L636)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L636)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -3304,10 +3339,9 @@ Relative paths will be resolved relative to the config file (when using
 the CLI) or `base_dir` arg (when using the API).
 
 `log_dir_create_unique` bool \| None \| NotGiven  
-If `True`, create a new log directory by appending an `_` and numeric
-suffix if the specified `log_dir` already exists. If the directory
-exists and has a `_numeric suffix`, that suffix will be incremented. If
-`False`, use the existing `log_dir` (which must be empty or have
+If `True`, create a unique log directory by appending a datetime
+subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`.
+If `False`, use the existing `log_dir` (which must be empty or have
 `log_dir_allow_dirty=True`). Defaults to `False`.
 
 `execution_type` Literal\['inproc', 'venv'\] \| None \| NotGiven  
@@ -3340,7 +3374,7 @@ Tasks to run
 
 Configuration for a Model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L78)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L78)
 
 ``` python
 class FlowModel(FlowBase)
@@ -3388,7 +3422,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Evaluation options.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L392)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L392)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -3534,7 +3568,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and
 
 Configuration for a Scorer.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L131)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L131)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -3559,7 +3593,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a Solver.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L155)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L155)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -3586,7 +3620,7 @@ Configuration for an evaluation task.
 
 Tasks are the basis for defining and running evaluations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/flow_types.py#L250)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L250)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -3704,7 +3738,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded `FlowSpec`.
 - `files`: List of file paths that were loaded to create the `FlowSpec`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -3719,7 +3753,7 @@ The function to decorate.
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -3739,7 +3773,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -3777,7 +3811,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Create a list of generate configs from the product of lists of field
 values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -3918,7 +3952,7 @@ OpenAI, vLLM, and SGLang only.
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -4110,7 +4144,7 @@ Only explicitly set fields in `add` override `base` — unset fields
 (defaulting to `NotGiven`) are ignored. Nested fields like `config` and
 `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -4127,7 +4161,7 @@ those in `base`.
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -4148,7 +4182,7 @@ Configuration for model. Config values will be override settings on the
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -4210,7 +4244,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -4230,7 +4264,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -4263,7 +4297,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -4302,7 +4336,7 @@ Named roles for use in `get_model()`.
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(
@@ -4430,7 +4464,7 @@ Optional. Metadata stored in the flow config. Not passed to the task.
 
 Initialize the inspect_flow API.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L25)
 
 ``` python
 def init(
@@ -4455,7 +4489,7 @@ Defaults to `"."` (current working directory).
 
 Run an inspect_flow evaluation.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L72)
 
 ``` python
 def run(
@@ -4463,6 +4497,7 @@ def run(
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
+    resume: bool = False,
 ) -> None
 ```
 
@@ -4476,11 +4511,14 @@ working directory.
 `dry_run` bool  
 If `True`, do not run eval, but show a count of tasks that would be run.
 
+`resume` bool  
+If `True`, reuse the log directory from the previous run.
+
 ### load_spec
 
 Load a spec from file.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L57)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L57)
 
 ``` python
 def load_spec(
@@ -4501,7 +4539,7 @@ config.
 
 Return the flow spec configuration.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L104)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L106)
 
 ``` python
 def config(
@@ -4521,7 +4559,7 @@ working directory.
 
 Get a FlowStore instance.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L121)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L123)
 
 ``` python
 def store_get(store: str = "auto", create: bool = True) -> FlowStore
@@ -4538,7 +4576,7 @@ Whether to create the store if it does not exist.
 
 Delete a flow store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L159)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L158)
 
 ``` python
 def delete_store(store_path: str) -> None
@@ -4552,7 +4590,7 @@ Path to the store directory.
 Copy all log files from src_dir to dest_dir, preserving directory
 structure.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_util/logs.py#L16)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_util/logs.py#L16)
 
 ``` python
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
@@ -4574,7 +4612,7 @@ If True, search src_dir recursively for log files.
 
 Interface for flow store implementations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L17)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L16)
 
 ``` python
 class FlowStore(ABC)
@@ -4593,7 +4631,7 @@ The store version.
 import_log_path  
 Import a log file(s) or directory(ies) into the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L32)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L31)
 
 ``` python
 @abstractmethod
@@ -4621,7 +4659,7 @@ Print paths of files being added
 get_logs  
 Get all log file paths in the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L50)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L49)
 
 ``` python
 @abstractmethod
@@ -4631,7 +4669,7 @@ def get_logs(self) -> set[str]
 remove_log_prefix  
 Remove logs matching the given prefixes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L59)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L58)
 
 ``` python
 @abstractmethod
@@ -4664,7 +4702,7 @@ Print paths of files being removed
 
 Display mode for flow output.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_display/display.py#L15)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_display/display.py#L15)
 
 ``` python
 DisplayType = Literal["full", "rich", "plain"]
@@ -4686,7 +4724,8 @@ flow config [OPTIONS] CONFIG_FILE
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
-| `--log-dir-create-unique` | boolean | If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
+| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `False` |
+| `--log-dir-create-unique` | boolean | If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--store` | directory | Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store. | None |
 | `--limit` | integer | Limit the number of samples to run. | None |
@@ -4714,7 +4753,8 @@ flow run [OPTIONS] CONFIG_FILE
 | `--dry-run` | boolean | Do not run spec, but show a count of tasks that would be run. | `False` |
 | `--log-dir-allow-dirty` | boolean | Do not fail if the `log-dir` contains files that are not part of the eval set. | `False` |
 | `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
-| `--log-dir-create-unique` | boolean | If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
+| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `False` |
+| `--log-dir-create-unique` | boolean | If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--store` | directory | Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store. | None |
 | `--limit` | integer | Limit the number of samples to run. | None |

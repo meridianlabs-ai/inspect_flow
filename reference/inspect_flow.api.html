@@ -482,7 +482,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="init">init</h3>
 <p>Initialize the inspect_flow API.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L25">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L25">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> init(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">=</span> DEFAULT_LOG_LEVEL,</span>
@@ -508,14 +508,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run">run</h3>
 <p>Run an inspect_flow evaluation.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L72">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L72">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    resume: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
 <dd>
@@ -529,13 +530,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>If <code>True</code>, do not run eval, but show a count of tasks that would be run.</p>
 </dd>
+<dt><code class="ref-definition">resume</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
+<dd>
+<p>If <code>True</code>, reuse the log directory from the previous run.</p>
+</dd>
 </dl>
 </section>
 <section id="load_spec" class="level3">
 <h3 class="anchored" data-anchor-id="load_spec">load_spec</h3>
 <p>Load a spec from file.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L57">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L57">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_spec(</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span>: <span class="bu">str</span>,</span>
@@ -557,7 +562,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="config">config</h3>
 <p>Return the flow spec configuration.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L104">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L106">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
@@ -578,7 +583,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="store_get">store_get</h3>
 <p>Get a FlowStore instance.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_api/api.py#L121">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_api/api.py#L123">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> store_get(store: <span class="bu">str</span> <span class="op">=</span> <span class="st">"auto"</span>, create: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> FlowStore</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -596,7 +601,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="delete_store">delete_store</h3>
 <p>Delete a flow store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L159">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L158">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> delete_store(store_path: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -610,7 +615,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="copy_all_logs">copy_all_logs</h3>
 <p>Copy all log files from src_dir to dest_dir, preserving directory structure.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_util/logs.py#L16">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_util/logs.py#L16">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> copy_all_logs(src_dir: <span class="bu">str</span>, dest_dir: <span class="bu">str</span>, dry_run: <span class="bu">bool</span>, recursive: <span class="bu">bool</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -636,7 +641,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowstore">FlowStore</h3>
 <p>Interface for flow store implementations.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L17">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L16">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowStore(ABC)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -659,7 +664,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Import a log file(s) or directory(ies) into the store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L32">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L31">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> import_log_path(</span>
@@ -692,7 +697,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Get all log file paths in the store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L50">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L49">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_logs(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">set</span>[<span class="bu">str</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -704,7 +709,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Remove logs matching the given prefixes.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_store/store.py#L59">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_store/store.py#L58">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> remove_log_prefix(</span>
@@ -745,7 +750,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="displaytype">DisplayType</h3>
 <p>Display mode for flow output.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e/src/inspect_flow/_display/display.py#L15">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_display/display.py#L15">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>DisplayType <span class="op">=</span> Literal[<span class="st">"full"</span>, <span class="st">"rich"</span>, <span class="st">"plain"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 

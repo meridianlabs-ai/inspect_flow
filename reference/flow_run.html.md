@@ -16,7 +16,8 @@ flow run [OPTIONS] CONFIG_FILE
 | `--dry-run` | boolean | Do not run spec, but show a count of tasks that would be run. | `False` |
 | `--log-dir-allow-dirty` | boolean | Do not fail if the `log-dir` contains files that are not part of the eval set. | `False` |
 | `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
-| `--log-dir-create-unique` | boolean | If set, create a new log directory by appending an `_` and numeric suffix if the specified `log_dir` already exists. If the directory exists and has a `_numeric suffix`, that suffix will be incremented. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
+| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `False` |
+| `--log-dir-create-unique` | boolean | If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | `False` |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--store` | directory | Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store. | None |
 | `--limit` | integer | Limit the number of samples to run. | None |

@@ -443,7 +443,7 @@ Note
 </tr>
 <tr class="odd">
 <td><code>log_dir_create_unique</code></td>
-<td>If <code>True</code>, append numeric suffix to <code>log_dir</code> if it exists. If <code>False</code>, use existing directory (must only contain logs from tasks in the spec or have <code>options.log_dir_allow_dirty=True</code>)</td>
+<td>If <code>True</code>, create a unique subdirectory under <code>log_dir</code> using the current datetime (e.g.&nbsp;<code>2025-12-09T17-36-43</code>). If <code>False</code>, use existing directory (must only contain logs from tasks in the spec or have <code>options.log_dir_allow_dirty=True</code>)</td>
 <td><code>False</code></td>
 </tr>
 <tr class="even">
