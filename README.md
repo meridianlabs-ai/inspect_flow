@@ -1,4 +1,4 @@
-<img src="docs/images/icon-dark.svg" alt="Inspect Flow" width="50" height="50">
+<img src="https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/icon-dark.svg" alt="Inspect Flow" width="50" height="50">
 
 # Inspect Flow
 
@@ -64,7 +64,7 @@ flow run config.py
 
 This will run both tasks and display progress in your terminal.
 
-![Progress bar in terminal](docs/images/config_progress_terminal.png)
+![Progress bar in terminal](https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/config_progress_terminal.png)
 
 ### Python API
 
@@ -211,7 +211,7 @@ flow run matrix.py
 
 This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
 
-![Log path printed in terminal](docs/images/logs_terminal.png)
+![Log path printed in terminal](https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/logs_terminal.png)
 
 To view logs interactively, run:
 
@@ -219,7 +219,7 @@ To view logs interactively, run:
 inspect view --log-dir logs
 ```
 
-![Eval logs rendered by Inspect View](docs/images/inspect_view_eval.png)
+![Eval logs rendered by Inspect View](https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/inspect_view_eval.png)
 
 ## Learning More
 
