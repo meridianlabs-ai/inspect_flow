@@ -65,8 +65,3 @@ def sleep_for_task(seconds: int = 10):
     return Task(
         solver=[sleep_for_solver(seconds=seconds)],
     )
-
-
-@task
-def instantiate_error_task() -> Task:
-    raise ValueError("Instantiation Failed")
