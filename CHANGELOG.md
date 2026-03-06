@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.5.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.1...v0.5.0) (2026-03-06)
+
+
+### Features
+
+* add --resume flag to reuse previous log dir ([#532](https://github.com/meridianlabs-ai/inspect_flow/issues/532)) ([a2d9ea9](https://github.com/meridianlabs-ai/inspect_flow/commit/a2d9ea92c81a75acd227cbe1f95b44822058e539))
+
+
+### Bug Fixes
+
+* --log-dir-create-unique creates subdir with the current timestamp ([#526](https://github.com/meridianlabs-ai/inspect_flow/issues/526)) ([392e34e](https://github.com/meridianlabs-ai/inspect_flow/commit/392e34e5d69df4f7d47f618cf2806d3a2a43cd85))
+* add DATETIME substitution ([#527](https://github.com/meridianlabs-ai/inspect_flow/issues/527)) ([2ad8104](https://github.com/meridianlabs-ai/inspect_flow/commit/2ad81040b70e14dfdba4dbeecea06d4c232b1ce6))
+* add task name as context to display on instantiation errors ([#536](https://github.com/meridianlabs-ai/inspect_flow/issues/536)) ([ad14540](https://github.com/meridianlabs-ai/inspect_flow/commit/ad14540772867780b107bbdf01ace6e18ad9c515))
+* ensure bundle url ends with a / ([#515](https://github.com/meridianlabs-ai/inspect_flow/issues/515)) ([f04a04a](https://github.com/meridianlabs-ai/inspect_flow/commit/f04a04a3d4219de24f34cfebdc6f1a43810a396c))
+* s3 store paths with trailing slash ([#535](https://github.com/meridianlabs-ai/inspect_flow/issues/535)) ([8c6568a](https://github.com/meridianlabs-ai/inspect_flow/commit/8c6568a245e585579e2d2b1568fb7d85497a94b1))
+* support reading default model from env var ([#524](https://github.com/meridianlabs-ai/inspect_flow/issues/524)) ([e4eafe9](https://github.com/meridianlabs-ai/inspect_flow/commit/e4eafe959af1f19a924238643a9ded02650c67dc))
+* upgrade packages and import TASK_IDENTIFIER_VERSION from inspect ([#513](https://github.com/meridianlabs-ai/inspect_flow/issues/513)) ([5a2f846](https://github.com/meridianlabs-ai/inspect_flow/commit/5a2f8464fd82b366d7b2f7816c9688fe3003788e))
+* use absolute URLs for README images so they render on PyPI ([#530](https://github.com/meridianlabs-ai/inspect_flow/issues/530)) ([f6f8f35](https://github.com/meridianlabs-ai/inspect_flow/commit/f6f8f35347f3daa47df31db274c7b1fb4ec8e9ac))
+
+
+### Documentation
+
+* add llms.txt and llms-full.txt generation ([#517](https://github.com/meridianlabs-ai/inspect_flow/issues/517)) ([959cf28](https://github.com/meridianlabs-ai/inspect_flow/commit/959cf28d40855ec6024b7413113fa23dff29d079))
+* improve API reference docs ([#523](https://github.com/meridianlabs-ai/inspect_flow/issues/523)) ([f1fc94f](https://github.com/meridianlabs-ai/inspect_flow/commit/f1fc94f4d4fa3e8277fefc7c017e104a0acb6e0e))
+* update docs for --resume, {DATETIME}, and --log-dir-create-unique ([#529](https://github.com/meridianlabs-ai/inspect_flow/issues/529)) ([f32fa5c](https://github.com/meridianlabs-ai/inspect_flow/commit/f32fa5c6540892f2286a893db1b457479185fabf))
+
 ## [0.4.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.0...v0.4.1) (2026-02-20)
 
 
