@@ -95,7 +95,18 @@ class InspectAwareJsonSchema(GenerateJsonSchema):
 
 
 MATRIX_CLASS_FIELDS = {
-    "FlowTask": ["args", "solver", "model", "config", "model_roles"],
+    "FlowTask": [
+        "args",
+        "solver",
+        "model",
+        "config",
+        "model_roles",
+        "message_limit",
+        "token_limit",
+        "time_limit",
+        "working_limit",
+        "cost_limit",
+    ],
     "FlowModel": ["config"],
     "FlowSolver": ["args"],
     "FlowAgent": ["args"],

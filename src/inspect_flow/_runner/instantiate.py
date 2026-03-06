@@ -280,6 +280,8 @@ def _instantiate_task(
             token_limit=ng(flow_task.token_limit),
             time_limit=ng(flow_task.time_limit),
             working_limit=ng(flow_task.working_limit),
+            cost_limit=ng(flow_task.cost_limit),
+            early_stopping=ng(flow_task.early_stopping),
             # name= should be set when loaded
             version=ng(flow_task.version),
             metadata=ng(flow_task.metadata),

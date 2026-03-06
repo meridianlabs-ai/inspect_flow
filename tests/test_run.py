@@ -994,6 +994,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             continue_on_fail=True,
             retry_on_error=5,
             debug_errors=True,
+            model_cost_config="mock_cost_config",
             max_samples=20,
             max_tasks=15,
             max_subprocesses=400,
@@ -1001,6 +1002,8 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             log_samples=False,
             log_realtime=False,
             log_images=True,
+            log_model_api=True,
+            log_refusals=True,
             log_buffer=2048,
             log_shared=15,
             bundle_dir="logs/bundle_test",
@@ -1039,6 +1042,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["continue_on_fail"] == spec.options.continue_on_fail
     assert call_args.kwargs["retry_on_error"] == spec.options.retry_on_error
     assert call_args.kwargs["debug_errors"] == spec.options.debug_errors
+    assert call_args.kwargs["model_cost_config"] == spec.options.model_cost_config
     assert call_args.kwargs["max_samples"] == spec.options.max_samples
     assert call_args.kwargs["max_tasks"] == spec.options.max_tasks
     assert call_args.kwargs["max_subprocesses"] == spec.options.max_subprocesses
@@ -1046,6 +1050,8 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["log_samples"] == spec.options.log_samples
     assert call_args.kwargs["log_realtime"] == spec.options.log_realtime
     assert call_args.kwargs["log_images"] == spec.options.log_images
+    assert call_args.kwargs["log_model_api"] == spec.options.log_model_api
+    assert call_args.kwargs["log_refusals"] == spec.options.log_refusals
     assert call_args.kwargs["log_buffer"] == spec.options.log_buffer
     assert call_args.kwargs["log_shared"] == spec.options.log_shared
     assert call_args.kwargs["bundle_dir"] == spec.options.bundle_dir
