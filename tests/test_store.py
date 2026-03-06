@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
+from botocore.client import BaseClient
 from inspect_ai._eval.evalset import task_identifier
 from inspect_ai.log import list_eval_logs, read_eval_log, write_eval_log
 from inspect_ai.log._file import EvalLogInfo
@@ -46,6 +47,14 @@ def test_store_defaults() -> None:
     spec = FlowSpec(store=None)
     store = store_factory(spec, base_dir=".")
     assert store is None
+
+
+def test_533_store_s3_path_trailing_slash(mock_s3: BaseClient) -> None:
+    spec = FlowSpec(store="s3://bucket/store/")
+    store = store_factory(spec, base_dir=".", create=True)
+    assert store
+    assert isinstance(store, DeltaLakeStore)
+    assert store._store_path == "s3://bucket/store/flow_store"
 
 
 def _log_info(name: str) -> EvalLogInfo:

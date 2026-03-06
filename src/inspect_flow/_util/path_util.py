@@ -3,14 +3,30 @@ from pathlib import Path
 from inspect_ai._util.file import absolute_file_path, filesystem
 
 
+def strip_trailing_sep(path: str) -> str:
+    """Remove trailing separators from a path, preserving the root.
+
+    Matches pathlib behavior: exactly ``//`` is preserved per POSIX,
+    any other all-separator path collapses to a single separator.
+    """
+    fs = filesystem(path)
+    stripped = path.rstrip(fs.sep)
+    if stripped:
+        return stripped
+    # All separators — preserve exactly "//" per POSIX, otherwise collapse
+    if path == fs.sep * 2:
+        return path
+    return fs.sep
+
+
 def absolute_path_relative_to(path: str, base_dir: str) -> str:
     absolute_path = absolute_file_path(path)
     if absolute_path == path:
         # Already an absolute path
-        return absolute_path
+        return strip_trailing_sep(absolute_path)
 
     base_relative_path = Path(base_dir) / path
-    return absolute_file_path(str(base_relative_path))
+    return strip_trailing_sep(absolute_file_path(str(base_relative_path)))
 
 
 def cwd_relative_path(path: str) -> str:
