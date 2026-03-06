@@ -206,6 +206,14 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
         Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None
     ]
     """Named roles for use in `get_model()`."""
+    message_limit: NotRequired[Sequence[int | NotGiven | None] | None]
+    """Limit on total messages used for each sample."""
+    token_limit: NotRequired[Sequence[int | NotGiven | None] | None]
+    """Limit on total tokens used for each sample."""
+    time_limit: NotRequired[Sequence[int | NotGiven | None] | None]
+    """Limit on clock time (in seconds) for samples."""
+    working_limit: NotRequired[Sequence[int | NotGiven | None] | None]
+    """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
 
 
 class GenerateConfigDict(TypedDict):

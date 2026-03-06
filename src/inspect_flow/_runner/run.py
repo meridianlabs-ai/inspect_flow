@@ -121,6 +121,8 @@ def run_eval_set(
             # token_limit= FlowTask
             # time_limit= FlowTask
             # working_limit= FlowTask
+            # cost_limit= FlowTask
+            model_cost_config=default_none(options.model_cost_config),
             max_samples=default_none(options.max_samples),
             max_tasks=default(options.max_tasks, 10),
             max_subprocesses=default_none(options.max_subprocesses),
@@ -128,12 +130,15 @@ def run_eval_set(
             log_samples=default_none(options.log_samples),
             log_realtime=default_none(options.log_realtime),
             log_images=default_none(options.log_images),
+            log_model_api=default_none(options.log_model_api),
+            log_refusals=default_none(options.log_refusals),
             log_buffer=default_none(options.log_buffer),
             log_shared=default_none(options.log_shared),
             bundle_dir=default_none(options.bundle_dir),
             bundle_overwrite=default(options.bundle_overwrite, False),
             log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
             eval_set_id=default_none(options.eval_set_id),
+            embed_viewer=default_none(options.embed_viewer),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
     except BaseException as e:
