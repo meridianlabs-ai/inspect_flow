@@ -41,7 +41,7 @@
 | src/inspect\_flow/\_runner/run.py                  |      134 |        5 |       54 |        4 |     95.21% |159-160, 177, 179, 193, 228->227 |
 | src/inspect\_flow/\_runner/task\_log.py            |      120 |        0 |       48 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_store/deltalake.py             |      314 |       16 |      108 |       15 |     92.65% |67-69, 89->exit, 133, 150, 170->169, 176->169, 217->220, 229->235, 232->235, 309-310, 314, 352-354, 360, 362->365, 379, 507-508, 512 |
+| src/inspect\_flow/\_store/deltalake.py             |      314 |       13 |      108 |       14 |     93.60% |89->exit, 133, 150, 170->169, 176->169, 229->235, 232->235, 309-310, 314, 352-354, 360, 362->365, 379, 507-508, 512 |
 | src/inspect\_flow/\_store/store.py                 |       55 |        1 |       18 |        1 |     97.26% |87, 143->145 |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        7 |        0 |        0 |        0 |    100.00% |           |
@@ -59,13 +59,13 @@
 | src/inspect\_flow/\_util/logs.py                   |       24 |        2 |        8 |        3 |     84.38% |35, 41, 45->38 |
 | src/inspect\_flow/\_util/module\_util.py           |       57 |        0 |       22 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/path\_util.py             |       26 |        1 |       10 |        1 |     94.44% |        19 |
+| src/inspect\_flow/\_util/path\_util.py             |       34 |        1 |       14 |        1 |     95.83% |        35 |
 | src/inspect\_flow/\_util/pydantic\_util.py         |       19 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       40 |       14 |       16 |        1 |     69.64% | 26-41, 98 |
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        5 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **3421** |  **106** | **1022** |   **60** | **95.63%** |           |
+| **TOTAL**                                          | **3429** |  **103** | **1026** |   **59** | **95.74%** |           |
 
 
 ## Setup coverage badge
