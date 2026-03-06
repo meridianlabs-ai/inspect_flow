@@ -85,16 +85,17 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
         for task_config in task_configs:
             task_name = _get_task_name(task_config)
-            progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
-            for task in _instantiate_task(spec, task_config, base_dir=base_dir):
-                results.append(
-                    InstantiatedTask(
-                        flow_task=task_config
-                        if isinstance(task_config, FlowTask)
-                        else None,
-                        task=task,
+            with action.error_context(task_name):
+                progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
+                for task in _instantiate_task(spec, task_config, base_dir=base_dir):
+                    results.append(
+                        InstantiatedTask(
+                            flow_task=task_config
+                            if isinstance(task_config, FlowTask)
+                            else None,
+                            task=task,
+                        )
                     )
-                )
             progress.advance(progress_task)
         action.update(info=f"Instantiated {len(results)} tasks")
     return results

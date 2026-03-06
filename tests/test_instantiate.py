@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from botocore.client import BaseClient
+from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.model import Model, get_model
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -17,6 +18,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
 )
 from inspect_flow._util.pydantic_util import model_dump
+from rich.console import Console
 
 from tests.local_eval.src.local_eval.tools import add
 
@@ -274,3 +276,18 @@ def test_instantiate_s3(mock_s3: BaseClient) -> None:
     tasks = instantiate_tasks(spec=spec, base_dir="s3://test-bucket/configs/")
     assert len(tasks) == 1
     assert tasks[0].task.name == "noop"
+
+
+@task
+def instantiate_error_task() -> Task:
+    raise ValueError("Instantiation Error")
+
+
+def test_534_instantiate_error(recording_console: Console) -> None:
+    spec = FlowSpec(tasks=[FlowTask(name="instantiate_error_task")])
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(spec=spec, base_dir=".")
+    assert "Instantiation Error" in str(e.value)
+    out = recording_console.export_text()
+    assert "Instantiation Error" in out
+    assert "instantiate_error_task" in out
