@@ -760,4 +760,4 @@ def test_matrix_task_limits() -> None:
             cost_limit=[0.01, 0.02],
         ),
     )
-    validate_config(config, "two_models_one_task_flow.yaml")
+    validate_config(config, "test_matrix_task_limits.yaml")
