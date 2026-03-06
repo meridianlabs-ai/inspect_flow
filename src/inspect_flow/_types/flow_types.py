@@ -18,14 +18,15 @@ import rich.repr
 from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.model import GenerateConfig, Model
+from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
     DisplayType,
+    EarlyStopping,
     SandboxEnvironmentType,
 )
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, SkipValidation, model_validator
 from typing_extensions import Self, override
 
 from inspect_flow._util.pydantic_util import model_dump
@@ -356,6 +357,16 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources.",
     )
 
+    cost_limit: float | None | NotGiven = Field(
+        default=not_given,
+        description="Limit on total cost (in dollars) for each sample. Requires model cost data via model_cost_config.",
+    )
+
+    early_stopping: SkipValidation[EarlyStopping] | None | NotGiven = Field(
+        default=not_given,
+        description="Early stopping callbacks.",
+    )
+
     version: int | str | NotGiven = Field(
         default=not_given,
         description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
@@ -493,6 +504,11 @@ class FlowOptions(FlowBase):
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).",
     )
 
+    model_cost_config: str | dict[str, ModelCost] | None | NotGiven = Field(
+        default=not_given,
+        description="YAML or JSON file with model prices for cost tracking.",
+    )
+
     max_samples: int | None | NotGiven = Field(
         default=not_given,
         description="Maximum number of samples to run in parallel (default is `max_connections`).",
@@ -526,6 +542,16 @@ class FlowOptions(FlowBase):
     log_images: bool | None | NotGiven = Field(
         default=not_given,
         description="Log base64 encoded version of images, even if specified as a filename or URL (defaults to `False`).",
+    )
+
+    log_model_api: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Log raw model api requests and responses. Note that error requests/responses are always logged.",
+    )
+
+    log_refusals: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Log warnings for model refusals.",
     )
 
     log_buffer: int | None | NotGiven = Field(

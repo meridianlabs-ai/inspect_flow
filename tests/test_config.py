@@ -755,7 +755,7 @@ def test_matrix_task_limits() -> None:
             task=FlowTask(name="inspect_evals/mmlu_0_shot", model="mockllm/mock-llm"),
             message_limit=[1, 2],
             token_limit=[10, 20],
-            time_limit=[0.1, 0.2],
+            time_limit=[1, 2],
             working_limit=[1, 2],
             cost_limit=[0.01, 0.02],
         ),

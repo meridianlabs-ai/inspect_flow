@@ -165,6 +165,10 @@ class FlowTaskDict(TypedDict, closed=True):
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[int | NotGiven | None]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
+    cost_limit: NotRequired[float | NotGiven | None]
+    """Limit on total cost (in dollars) for each sample. Requires model cost data via model_cost_config."""
+    early_stopping: NotRequired[NotGiven | None]
+    """Early stopping callbacks."""
     version: NotRequired[int | str | NotGiven]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
     metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
@@ -214,6 +218,8 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[Sequence[int | NotGiven | None] | None]
     """Limit on working time (in seconds) for sample. Working time includes model generation, tool calls, etc. but does not include time spent waiting on retries or shared resources."""
+    cost_limit: NotRequired[Sequence[float | NotGiven | None] | None]
+    """Limit on total cost (in dollars) for each sample. Requires model cost data via model_cost_config."""
 
 
 class GenerateConfigDict(TypedDict):
