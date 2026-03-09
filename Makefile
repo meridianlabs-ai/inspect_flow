@@ -20,3 +20,9 @@ hooks:
 docs:
 	uv sync --extra doc
 	uv run quarto render docs
+
+.PHONY: docs-publish
+docs-publish:
+	uv sync --extra doc
+	git worktree prune
+	cd docs && PRE_COMMIT_ALLOW_NO_CONFIG=1 uv run quarto publish gh-pages --no-prompt
