@@ -78,14 +78,23 @@ class MotoServer:
         self._proc.wait()
 
 
+def _set_moto_env(endpoint_url: str) -> None:
+    """Set AWS env vars to route requests to the moto server.
+
+    Called at session start and before each test, because Inspect AI's init_dotenv()
+    overwrites env vars with .env values when running in VSCode (override=True).
+    """
+    os.environ["AWS_ENDPOINT_URL"] = endpoint_url
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = ""
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
 @pytest.fixture(scope="session")
 def moto_server() -> Generator[MotoServer, None, None]:
     server = MotoServer()
-
-    os.environ["AWS_ENDPOINT_URL"] = server.url
-    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+    _set_moto_env(server.url)
 
     yield server
 
@@ -95,6 +104,7 @@ def moto_server() -> Generator[MotoServer, None, None]:
 @pytest.fixture(scope="function")
 def mock_s3(moto_server: MotoServer) -> Generator[BaseClient, None, None]:
     """Create and cleanup bucket for each test."""
+    _set_moto_env(moto_server.url)
     s3_client = boto3.client("s3")
     s3_client.create_bucket(Bucket="test-bucket")
 
