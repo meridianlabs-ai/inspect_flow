@@ -7,7 +7,7 @@
 
 Configuration for an Agent.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L179)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L180)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -36,7 +36,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Default field values for Inspect objects. Will be overriden by more
 specific settings.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L567)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L593)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -78,7 +78,7 @@ Task defaults for task name prefixes. E.g.
 
 Configuration for flow dependencies to install in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L612)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L638)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -119,7 +119,7 @@ Number of epochs to repeat samples over and optionally one or more
 reducers used to combine scores from samples across epochs. If not
 specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L213)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L214)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -138,7 +138,7 @@ One or more reducers used to combine scores from samples across epochs
 
 Top-level flow specification.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L636)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L662)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -203,7 +203,7 @@ Tasks to run
 
 Configuration for a Model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L78)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L79)
 
 ``` python
 class FlowModel(FlowBase)
@@ -251,7 +251,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Evaluation options.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L392)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L403)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -337,6 +337,9 @@ Number of times to retry samples if they encounter errors (defaults to
 Raise task errors (rather than logging them) so they can be debugged
 (defaults to `False`).
 
+`model_cost_config` str \| dict\[str, ModelCost\] \| None \| NotGiven  
+YAML or JSON file with model prices for cost tracking.
+
 `max_samples` int \| None \| NotGiven  
 Maximum number of samples to run in parallel (default is
 `max_connections`).
@@ -361,6 +364,13 @@ Log events in realtime (enables live viewing of samples in inspect view)
 `log_images` bool \| None \| NotGiven  
 Log base64 encoded version of images, even if specified as a filename or
 URL (defaults to `False`).
+
+`log_model_api` bool \| None \| NotGiven  
+Log raw model api requests and responses. Note that error
+requests/responses are always logged.
+
+`log_refusals` bool \| None \| NotGiven  
+Log warnings for model refusals.
 
 `log_buffer` int \| None \| NotGiven  
 Number of samples to buffer before writing log file. If not specified,
@@ -397,7 +407,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and
 
 Configuration for a Scorer.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L131)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L132)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -422,7 +432,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a Solver.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L155)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L156)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -449,7 +459,7 @@ Configuration for an evaluation task.
 
 Tasks are the basis for defining and running evaluations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/flow_types.py#L250)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/flow_types.py#L251)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -529,6 +539,13 @@ Limit on working time (in seconds) for sample. Working time includes
 model generation, tool calls, etc. but does not include time spent
 waiting on retries or shared resources.
 
+`cost_limit` float \| None \| NotGiven  
+Limit on total cost (in dollars) for each sample. Requires model cost
+data via model_cost_config.
+
+`early_stopping` SkipValidation\[EarlyStopping\] \| None \| NotGiven  
+Early stopping callbacks.
+
 `version` int \| str \| NotGiven  
 Version of task (to distinguish evolutions of the task spec or breaking
 changes to it)
@@ -567,7 +584,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded `FlowSpec`.
 - `files`: List of file paths that were loaded to create the `FlowSpec`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -582,7 +599,7 @@ The function to decorate.
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -602,7 +619,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -640,7 +657,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Create a list of generate configs from the product of lists of field
 values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -781,7 +798,7 @@ OpenAI, vLLM, and SGLang only.
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -973,7 +990,7 @@ Only explicitly set fields in `add` override `base` — unset fields
 (defaulting to `NotGiven`) are ignored. Nested fields like `config` and
 `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -990,7 +1007,7 @@ those in `base`.
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -1011,7 +1028,7 @@ Configuration for model. Config values will be override settings on the
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -1073,7 +1090,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -1093,7 +1110,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -1126,7 +1143,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -1137,6 +1154,11 @@ def tasks_matrix(
     model: Sequence[str | FlowModel | Model | NotGiven | None] | None = ...,
     config: Sequence[GenerateConfig | NotGiven] | None = ...,
     model_roles: Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None = ...,
+    message_limit: Sequence[int | NotGiven | None] | None = ...,
+    token_limit: Sequence[int | NotGiven | None] | None = ...,
+    time_limit: Sequence[int | NotGiven | None] | None = ...,
+    working_limit: Sequence[int | NotGiven | None] | None = ...,
+    cost_limit: Sequence[float | NotGiven | None] | None = ...,
 ) -> list[FlowTask]
 ```
 
@@ -1161,11 +1183,29 @@ overridden by settings on the `FlowModel`.
 `model_roles` Sequence\[Mapping\[str, [FlowModel](inspect_flow.qmd#flowmodel) \| str \| Model\] \| NotGiven \| None\] \| None  
 Named roles for use in `get_model()`.
 
+`message_limit` Sequence\[int \| NotGiven \| None\] \| None  
+Limit on total messages used for each sample.
+
+`token_limit` Sequence\[int \| NotGiven \| None\] \| None  
+Limit on total tokens used for each sample.
+
+`time_limit` Sequence\[int \| NotGiven \| None\] \| None  
+Limit on clock time (in seconds) for samples.
+
+`working_limit` Sequence\[int \| NotGiven \| None\] \| None  
+Limit on working time (in seconds) for sample. Working time includes
+model generation, tool calls, etc. but does not include time spent
+waiting on retries or shared resources.
+
+`cost_limit` Sequence\[float \| NotGiven \| None\] \| None  
+Limit on total cost (in dollars) for each sample. Requires model cost
+data via model_cost_config.
+
 ### tasks_with
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/f32fa5c6540892f2286a893db1b457479185fabf/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/7a2ffc024aab656a1aba425d9a9fdf173d064440/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(
@@ -1189,6 +1229,8 @@ def tasks_with(
     token_limit: int | NotGiven | None = ...,
     time_limit: int | NotGiven | None = ...,
     working_limit: int | NotGiven | None = ...,
+    cost_limit: float | NotGiven | None = ...,
+    early_stopping: NotGiven | None = ...,
     version: int | str | NotGiven = ...,
     metadata: Mapping[str, Any] | NotGiven | None = ...,
     sample_id: str | int | Sequence[str | int] | NotGiven | None = ...,
@@ -1270,6 +1312,13 @@ Limit on clock time (in seconds) for samples.
 Limit on working time (in seconds) for sample. Working time includes
 model generation, tool calls, etc. but does not include time spent
 waiting on retries or shared resources.
+
+`cost_limit` float \| NotGiven \| None  
+Limit on total cost (in dollars) for each sample. Requires model cost
+data via model_cost_config.
+
+`early_stopping` NotGiven \| None  
+Early stopping callbacks.
 
 `version` int \| str \| NotGiven  
 Version of task (to distinguish evolutions of the task spec or breaking
