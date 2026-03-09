@@ -25,8 +25,12 @@ Flow configuration files are Python files where the last expression is either:
 
 Since config files are standard Python code, you can use all Python features including variables, loops, comprehensions, imports, and comments. Flow configs are just Python!
 
+When using a function, its parameters become CLI arguments via `--arg`, letting you design a custom CLI interface for your config. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/flow_args.py) for usage.
+
+Flow also supports YAML config files (`.yaml`/`.yml`) for purely declarative specs. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/first_config.yml) for usage.
+
 ::: {.callout-note appearance="default"}
-This last expression requirement only applies when loading configs from files (via CLI or `load_spec()`). When using the Python API directly with `run()`, you pass the `FlowSpec` object programmatically—no file or last expression needed.
+The last expression requirement only applies when loading Python configs from files (via CLI or `load_spec()`). When using the Python API directly with `run()`, you pass the `FlowSpec` object programmatically—no file or last expression needed.
 :::
 
 ## Basic Example

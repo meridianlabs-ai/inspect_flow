@@ -23,6 +23,8 @@ Generate task configurations by combining tasks with models, configs, solvers, a
 
 This creates **4 tasks** (2 tasks × 2 models).
 
+In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
+
 ### models_matrix()
 
 Generate model configurations with different generation settings:

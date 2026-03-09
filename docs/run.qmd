@@ -13,6 +13,12 @@ Execute your evaluation workflow:
 flow run config.py
 ```
 
+You can also run from a YAML config file (see [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/first_config.yml) for the YAML format):
+
+``` bash
+flow run config.yaml
+```
+
 **What happens when you run this:**
 
 1.  Flow loads your configuration file

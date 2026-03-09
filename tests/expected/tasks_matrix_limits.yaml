@@ -1,0 +1,22 @@
+log_dir: logs
+tasks:
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o
+  message_limit: 50
+  cost_limit: 0.01
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o
+  message_limit: 50
+  cost_limit: 0.05
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o
+  message_limit: 100
+  cost_limit: 0.01
+- name: inspect_evals/mmlu_0_shot
+  model:
+    name: openai/gpt-4o
+  message_limit: 100
+  cost_limit: 0.05
