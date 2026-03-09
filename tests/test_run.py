@@ -1010,6 +1010,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             bundle_overwrite=True,
             log_dir_allow_dirty=True,
             eval_set_id="test_eval_set_001",
+            embed_viewer=True,
         ),
         tasks=[
             task_file + "@noop",
@@ -1058,6 +1059,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["bundle_overwrite"] == spec.options.bundle_overwrite
     assert call_args.kwargs["log_dir_allow_dirty"] == spec.options.log_dir_allow_dirty
     assert call_args.kwargs["eval_set_id"] == spec.options.eval_set_id
+    assert call_args.kwargs["embed_viewer"] == spec.options.embed_viewer
 
 
 @pytest.mark.asyncio

@@ -138,6 +138,7 @@ def run_eval_set(
             bundle_overwrite=default(options.bundle_overwrite, False),
             log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
             eval_set_id=default_none(options.eval_set_id),
+            embed_viewer=default(options.embed_viewer, False),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
     except BaseException as e:

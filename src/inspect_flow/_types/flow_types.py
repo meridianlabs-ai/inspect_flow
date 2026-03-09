@@ -584,6 +584,11 @@ class FlowOptions(FlowBase):
         description="ID for the eval set. If not specified, a unique ID will be generated.",
     )
 
+    embed_viewer: bool | None | NotGiven = Field(
+        default=not_given,
+        description="If True, embed a log viewer into the log directory.",
+    )
+
     bundle_url_mappings: dict[str, str] | None | NotGiven = Field(
         default=not_given,
         description="Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_dir` is set, the mapped URL will be written to stdout.",
