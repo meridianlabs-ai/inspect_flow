@@ -251,7 +251,10 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
 
 
 def _bundle_url_output(spec: FlowSpec) -> Text | None:
-    if spec.options and spec.options.bundle_dir:
+    if not spec.options:
+        return
+
+    if spec.options.bundle_dir:
         bundle_url = spec.options.bundle_dir
         if spec.options.bundle_url_mappings:
             for local, url in spec.options.bundle_url_mappings.items():
@@ -265,4 +268,18 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
             return Text.assemble("Bundle URL: ", path(print_url))
         else:
             return Text.assemble("Bundle dir: ", path(print_url))
+
+    if spec.options.embed_viewer and spec.log_dir:
+        bundle_url = spec.options.bundle_dir
+        embed_viewer_url = spec.log_dir + "/viewer"
+        if spec.options.bundle_url_mappings:
+            for local, url in spec.options.bundle_url_mappings.items():
+                embed_viewer_url = embed_viewer_url.replace(local, url)
+
+        print_url = embed_viewer_url
+        if not print_url.endswith("/"):
+            print_url += "/"
+
+        return Text.assemble("Viewer: ", path(print_url))
+
     return None
