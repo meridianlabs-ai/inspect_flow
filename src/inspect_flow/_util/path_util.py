@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from inspect_ai._util.file import absolute_file_path, filesystem
+from inspect_ai._util.file import absolute_file_path, filesystem, strip_trailing_sep
 
 
 def absolute_path_relative_to(path: str, base_dir: str) -> str:
@@ -35,5 +35,6 @@ def path_str(path: str) -> str:
 
 def path_join(path: str, *paths: str) -> str:
     """Join multiple paths into a single path string."""
+    path = strip_trailing_sep(path)
     sep = filesystem(path).sep
     return sep.join([path, *paths])

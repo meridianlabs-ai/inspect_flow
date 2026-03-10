@@ -356,3 +356,22 @@ def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) ->
     results = store.search_for_logs({task_id})
     full_log = str(list_eval_logs(log_dir2)[0].name)
     assert results[task_id] == full_log
+
+
+def test_copy_all_logs_s3_to_s3(mock_s3: BaseClient) -> None:
+    src_dir = "s3://test-bucket/src-logs"
+    dest_dir = "s3://test-bucket/dest-logs/"
+
+    _run_task(src_dir)
+    src_logs = list_eval_logs(src_dir)
+    assert len(src_logs) == 1
+
+    copy_all_logs(src_dir=src_dir, dest_dir=dest_dir, dry_run=False, recursive=True)
+
+    dest_logs = list_eval_logs(dest_dir)
+    assert len(dest_logs) == 1
+
+    src_log = read_eval_log(src_logs[0].name)
+    dest_log = read_eval_log(dest_logs[0].name)
+    assert src_log.status == dest_log.status
+    assert src_log.eval.task == dest_log.eval.task
