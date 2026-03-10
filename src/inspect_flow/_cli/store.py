@@ -134,7 +134,6 @@ def store_command() -> None:
 @click.option(
     "--copy-from",
     type=click.Path(
-        exists=True,
         file_okay=False,
         dir_okay=True,
         writable=True,

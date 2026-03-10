@@ -34,7 +34,7 @@ def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -
     if not logs:
         flow_print("No logs found", format="warning")
     sep = filesystem(src_dir).sep
-    prefix = absolute_file_path(src_dir).rstrip(sep) + sep
+    _, prefix = split_protocol(absolute_file_path(src_dir).rstrip(sep) + sep)
     for log_file in logs:
         _, log_path = split_protocol(log_file.name)
         if not log_path.startswith(prefix):
