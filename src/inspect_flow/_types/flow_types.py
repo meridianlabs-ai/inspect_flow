@@ -18,6 +18,7 @@ import rich.repr
 from inspect_ai import Task
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
+from inspect_ai.log import EvalLog
 from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
@@ -32,6 +33,7 @@ from typing_extensions import Self, override
 from inspect_flow._util.pydantic_util import model_dump
 
 CreateArgs: TypeAlias = Mapping[str, Any]
+LogFilter: TypeAlias = Callable[[EvalLog], bool]
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
 
 
@@ -664,6 +666,20 @@ class FlowDependencies(FlowBase):
     )
 
 
+class FlowStoreConfig(FlowBase):
+    """Store configuration with optional log filter."""
+
+    path: Literal["auto"] | str | None = Field(
+        default="auto",
+        description="Path to directory to use for flow storage. `'auto'` will use a default application location. `None` will disable storage.",
+    )
+
+    filter: SkipValidation[LogFilter] | str | None = Field(
+        default=None,
+        description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, or `None`.",
+    )
+
+
 class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     """Top-level flow specification."""
 
@@ -672,9 +688,9 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
         description="List of other flow specs to include. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). In addition to this list of explicit files to include, any `_flow.py` files in the same directory or any parent directory of the config file (when using the CLI) or `base_dir` arg (when using the API) will also be included automatically.",
     )
 
-    store: Literal["auto"] | str | None | NotGiven = Field(
+    store: Literal["auto"] | str | FlowStoreConfig | None | NotGiven = Field(
         default=not_given,
-        description="Path to directory to use for flow storage. `'auto'` will use a default application location. `None` will disable storage. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). If not given, `'auto'` will be used.",
+        description="Path to directory to use for flow storage, or a `FlowStoreConfig` with path and filter options. `'auto'` will use a default application location. `None` will disable storage. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). If not given, `'auto'` will be used.",
     )
 
     log_dir: str | None | NotGiven = Field(

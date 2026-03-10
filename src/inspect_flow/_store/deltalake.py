@@ -25,6 +25,7 @@ from typing_extensions import override
 from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay, ReadLogsProgress
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
+from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import (
     console,
     flow_print,
@@ -185,8 +186,13 @@ class DeltaLakeStore(FlowStoreInternal):
     """
 
     def __init__(
-        self, store_path: str, create: bool = False, quiet: bool = False
+        self,
+        store_path: str,
+        create: bool = False,
+        quiet: bool = False,
+        log_filter: LogFilter | None = None,
     ) -> None:
+        self._log_filter = log_filter
         self._root_path = store_path
         self._store_path = store_path + filesystem(store_path).sep + "flow_store"
 
@@ -206,6 +212,25 @@ class DeltaLakeStore(FlowStoreInternal):
                 if not quiet:
                     display().print("Using store:", path(store_path), action_key="logs")
                 self.exists = True
+
+    def _filter_logs(self, logs: set[str], filter: LogFilter | None) -> set[str]:
+        if filter and self._log_filter:
+            raise ValueError(
+                "Cannot specify both a per-call filter and a store-level filter."
+            )
+        filter = filter or self._log_filter
+        if not filter:
+            return logs
+        result = set()
+        for log in logs:
+            try:
+                eval_log = read_eval_log(log, header_only=True)
+            except Exception as e:
+                logger.info(f"Failed to read log {path_str(log)} for filtering. {e}")
+                continue
+            if filter(eval_log):
+                result.add(log)
+        return result
 
     def _get_storage_options(self) -> dict[str, str] | None:
         if not self._fs.is_s3():
@@ -332,6 +357,7 @@ class DeltaLakeStore(FlowStoreInternal):
         recursive: bool = False,
         dry_run: bool = False,
         verbose: bool = True,
+        filter: LogFilter | None = None,
     ) -> None:
         if isinstance(prefix, str):
             prefix = [prefix]
@@ -355,6 +381,8 @@ class DeltaLakeStore(FlowStoreInternal):
                     finally:
                         display.advance(log)
                     logs_to_remove.add(log)
+
+        logs_to_remove = self._filter_logs(logs_to_remove, filter)
 
         if not logs_to_remove:
             flow_print("No logs found to remove from store", format="warning")
@@ -440,6 +468,8 @@ class DeltaLakeStore(FlowStoreInternal):
                     )
                     continue
                 if is_better_log(eval_log, best_eval_log):
+                    if self._log_filter and not self._log_filter(eval_log):
+                        continue
                     best_log = log
                     best_eval_log = eval_log
             if best_log:
@@ -447,10 +477,11 @@ class DeltaLakeStore(FlowStoreInternal):
         return results
 
     @override
-    def get_logs(self) -> set[str]:
+    def get_logs(self, filter: LogFilter | None = None) -> set[str]:
         dt = self._open_table(LOGS)
         table = dt.to_pyarrow_table()
-        return {path for path in table["log_path"].to_pylist() if path is not None}
+        logs = {path for path in table["log_path"].to_pylist() if path is not None}
+        return self._filter_logs(logs, filter)
 
     def _get_logs(self, task_ids: set[str]) -> dict[str, set[str]]:
         self._set_task_identifiers()

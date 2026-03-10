@@ -29,8 +29,11 @@ from inspect_flow._types.flow_types import (
     FlowScorer,
     FlowSolver,
     FlowSpec,
+    FlowStoreConfig,
     FlowTask,
+    LogFilter,
 )
+from inspect_flow._types.log_filter import log_filter
 from inspect_flow._types.merge import (
     merge,
 )
@@ -43,7 +46,10 @@ __all__ = [
     "FlowEpochs",
     "FlowExtraArgs",
     "FlowSpec",
+    "FlowStoreConfig",
     "FlowModel",
+    "LogFilter",
+    "log_filter",
     "FlowOptions",
     "FlowScorer",
     "FlowSolver",
