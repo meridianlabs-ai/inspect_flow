@@ -920,6 +920,28 @@ def test_217_bundle_error_message(tmp_path: Path) -> None:
     assert "'bundle_overwrite'" in str(e.value.__cause__.message)
 
 
+def test_545_bundle_url_map_embed_viewer(
+    mock_eval_set: MagicMock, recording_console: Console
+) -> None:
+    log_dir = init_test_logs()
+    config = FlowSpec(
+        log_dir=log_dir,
+        options=FlowOptions(
+            bundle_url_mappings={log_dir: "http://example.com/view"},
+            embed_viewer=True,
+        ),
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    run_eval_set(spec=(config), base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    out = recording_console.export_text()
+    assert "Viewer: http://example.com/view/viewer/" in out
+
+
 def test_prerequisite_error() -> None:
     log_dir = init_test_logs()
 
