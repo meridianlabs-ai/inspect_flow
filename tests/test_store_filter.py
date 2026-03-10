@@ -209,7 +209,7 @@ def test_remove_log_prefix_with_filter(
 
     # Remove only error logs
     error_filter = lambda log: log.status == "error"  # noqa: E731
-    store.remove_log_prefix([str(tmp_path)], filter=error_filter)
+    store.remove_log_prefix([str(tmp_path)], recursive=True, filter=error_filter)
     assert len(store.get_logs()) == 1
 
     # The remaining log should be the successful one
