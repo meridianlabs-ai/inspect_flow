@@ -283,7 +283,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#metadata-inspect-ai-metadata" id="toc-metadata-inspect-ai-metadata" class="nav-link" data-scroll-target="#metadata-inspect-ai-metadata"><code>metadata</code> (Inspect AI Metadata)</a></li>
   <li><a href="#flow_metadata-flow-only-metadata" id="toc-flow_metadata-flow-only-metadata" class="nav-link" data-scroll-target="#flow_metadata-flow-only-metadata"><code>flow_metadata</code> (Flow-Only Metadata)</a></li>
   </ul></li>
-  <li><a href="#viewer-bundling" id="toc-viewer-bundling" class="nav-link" data-scroll-target="#viewer-bundling">Viewer Bundling</a></li>
+  <li><a href="#viewer-bundling" id="toc-viewer-bundling" class="nav-link" data-scroll-target="#viewer-bundling">Viewer Bundling</a>
+  <ul class="collapse">
+  <li><a href="#bundle-url-mappings" id="toc-bundle-url-mappings" class="nav-link" data-scroll-target="#bundle-url-mappings">Bundle URL Mappings</a></li>
+  </ul></li>
   <li><a href="#config-scripts" id="toc-config-scripts" class="nav-link" data-scroll-target="#config-scripts">Config Scripts</a>
   <ul class="collapse">
   <li><a href="#after_load" id="toc-after_load" class="nav-link" data-scroll-target="#after_load">after_load</a></li>
@@ -758,7 +761,14 @@ Note
 </section>
 <section id="viewer-bundling" class="level2">
 <h2 class="anchored" data-anchor-id="viewer-bundling">Viewer Bundling</h2>
-<p>Viewer bundling works the same way as <a href="https://inspect.aisi.org.uk/eval-sets.html"><code>eval_set()</code></a> in Inspect AI and is configurable via <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span>. An additional feature allows you to print bundle URLs for users running evaluations.</p>
+<p>Flow provides two ways to make evaluation results browsable without running <code>inspect view</code>, both configurable via <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span>:</p>
+<ul>
+<li><strong><code>embed_viewer</code></strong> — Embeds a viewer into the log directory by creating a <code>viewer/</code> subdirectory with viewer assets that reference logs in the parent directory. No log files are copied.</li>
+<li><strong><code>bundle_dir</code></strong> — Creates a self-contained package in a separate directory with the viewer and copies of all log files. The bundle can be moved or deployed independently of the log directory.</li>
+</ul>
+<p>Both options work with static hosting (S3, web servers) and can be used together. The key difference is that <code>embed_viewer</code> keeps everything in the log directory, while <code>bundle_dir</code> produces a standalone copy that can be deployed separately.</p>
+<section id="bundle-url-mappings" class="level3">
+<h3 class="anchored" data-anchor-id="bundle-url-mappings">Bundle URL Mappings</h3>
 <p>Convert local bundle paths to public URLs for sharing evaluation results. The <code>bundle_url_mappings</code> in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> applies string replacements to <code>bundle_dir</code> to generate a shareable URL that’s printed to stdout after the evaluation completes.</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
@@ -778,6 +788,7 @@ Note
 <p>After running this prints: <code>Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval</code></p>
 <p>Use this when storing bundles on cloud storage like S3 or on servers with public HTTP access. Multiple mappings are applied in order.</p>
 <p>Using Bundle URL maps makes sense along with the spec <a href="./defaults.html#inheritance">inheritance</a> feature so you can configure the same bundle mapping for all configs in a repository.</p>
+</section>
 </section>
 <section id="config-scripts" class="level2">
 <h2 class="anchored" data-anchor-id="config-scripts">Config Scripts</h2>

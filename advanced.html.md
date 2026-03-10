@@ -434,10 +434,22 @@ FlowSpec(
 
 ## Viewer Bundling
 
-Viewer bundling works the same way as
-[`eval_set()`](https://inspect.aisi.org.uk/eval-sets.html) in Inspect AI
-and is configurable via `FlowOptions`. An additional feature allows you
-to print bundle URLs for users running evaluations.
+Flow provides two ways to make evaluation results browsable without
+running `inspect view`, both configurable via `FlowOptions`:
+
+- **`embed_viewer`** — Embeds a viewer into the log directory by
+  creating a `viewer/` subdirectory with viewer assets that reference
+  logs in the parent directory. No log files are copied.
+- **`bundle_dir`** — Creates a self-contained package in a separate
+  directory with the viewer and copies of all log files. The bundle can
+  be moved or deployed independently of the log directory.
+
+Both options work with static hosting (S3, web servers) and can be used
+together. The key difference is that `embed_viewer` keeps everything in
+the log directory, while `bundle_dir` produces a standalone copy that
+can be deployed separately.
+
+### Bundle URL Mappings
 
 Convert local bundle paths to public URLs for sharing evaluation
 results. The `bundle_url_mappings` in `FlowOptions` applies string
