@@ -16,7 +16,12 @@ from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._display.display import display
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
+from inspect_flow._types.flow_types import (
+    FlowSpec,
+    FlowStoreConfig,
+    NotGiven,
+    not_given,
+)
 from inspect_flow._util.console import flow_print, path, quantity
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow._util.error import FlowHandledError
@@ -36,6 +41,7 @@ class ConfigOptions:
     overrides: list[str] = field(factory=list)
     args: dict[str, Any] = field(factory=dict)
     resume: bool = False
+    store_filter: str | None = None
 
 
 @dataclass
@@ -76,6 +82,14 @@ def expand_spec(
     )
     spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
     spec = _apply_overrides(spec, options.overrides)
+    if options.store_filter:
+        if isinstance(spec.store, FlowStoreConfig):
+            spec.store.filter = options.store_filter
+        else:
+            spec.store = FlowStoreConfig(
+                path=spec.store if isinstance(spec.store, str) else "auto",
+                filter=options.store_filter,
+            )
     if options.resume:
         last_log_dir = read_data(LAST_LOG_DIR_KEY)
         if not last_log_dir:

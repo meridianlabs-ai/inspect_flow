@@ -111,6 +111,13 @@ def config_options(f: F) -> F:
         envvar="INSPECT_FLOW_STORE",
     )(f)
     f = click.option(
+        "--store-filter",
+        type=str,
+        default=None,
+        help="Name of a registered log filter to apply when searching the store for existing logs. Overrides the filter in the spec's store config.",
+        envvar="INSPECT_FLOW_STORE_FILTER",
+    )(f)
+    f = click.option(
         "--log-dir",
         type=click.Path(
             file_okay=False,
@@ -154,6 +161,7 @@ class OutputOptionArgs(TypedDict, total=False):
 
 class ConfigOptionArgs(OutputOptionArgs, total=False):
     store: str | None
+    store_filter: str | None
     log_dir: str | None
     log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
@@ -204,4 +212,5 @@ def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
         overrides=_options_to_overrides(**kwargs),
         args=_options_to_args(**kwargs),
         resume=resume,
+        store_filter=kwargs.get("store_filter"),
     )
