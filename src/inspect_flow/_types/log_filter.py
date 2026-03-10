@@ -20,9 +20,11 @@ def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
         func: A function that takes an EvalLog and returns True to include.
     """
     name = registry_name(func, func.__name__)
+    # model_construct bypasses Pydantic validation of RegistryType literal,
+    # since "log_filter" is not in inspect_ai's RegistryType enum.
     registry_add(
         func,
-        RegistryInfo(type=LOG_FILTER_TYPE, name=name),  # type: ignore[arg-type]
+        RegistryInfo.model_construct(type=LOG_FILTER_TYPE, name=name),
     )
     return func
 
