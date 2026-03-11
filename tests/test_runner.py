@@ -368,8 +368,7 @@ class TestBundleUrlOutput:
         result = _bundle_url_output(spec)
         assert result is not None
         text = result.plain
-        assert "Bundle URL" in text
-        assert "https://example.com/bundles" in text
+        assert "Bundle: https://example.com/bundles" in text
 
     def test_bundle_dir_no_matching_mapping(self) -> None:
         spec = FlowSpec(
@@ -382,7 +381,7 @@ class TestBundleUrlOutput:
         )
         result = _bundle_url_output(spec)
         assert result is not None
-        assert "Bundle dir" in result.plain
+        assert "Bundle:" in result.plain
 
     def test_bundle_dir_no_mappings(self) -> None:
         spec = FlowSpec(
@@ -392,7 +391,7 @@ class TestBundleUrlOutput:
         )
         result = _bundle_url_output(spec)
         assert result is not None
-        assert "Bundle dir" in result.plain
+        assert "Bundle: " in result.plain
         assert result.plain.endswith("/local/bundles/")
 
     def test_bundle_dir_with_slash_no_mappings(self) -> None:
@@ -403,7 +402,7 @@ class TestBundleUrlOutput:
         )
         result = _bundle_url_output(spec)
         assert result is not None
-        assert "Bundle dir" in result.plain
+        assert "Bundle: " in result.plain
         assert result.plain.endswith("/local/bundles/")
 
 
