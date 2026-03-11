@@ -7,7 +7,6 @@ from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 
 import yaml
 from attr import dataclass, field
-from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file, filesystem
 from pydantic import BaseModel
 from pydantic_core import ValidationError
@@ -30,6 +29,7 @@ from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.path_util import (
     AUTO_INCLUDE_FILENAME,
     absolute_path_relative_to,
+    find_auto_includes,
 )
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.util import now
@@ -322,35 +322,22 @@ def _merge_include_objects(spec: _T, included: _T) -> _T:
 def _apply_auto_includes(
     spec: FlowSpec, base_dir: str, options: ConfigOptions, state: LoadState
 ) -> FlowSpec:
-    absolute_path = absolute_file_path(base_dir)
-    protocol, _ = split_protocol(absolute_path)
-
-    parent_dir = Path(base_dir)
     auto_include_count = 0
-    while True:
-        auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
-        if protocol:
-            auto_file = f"{protocol}://{auto_file}"
-        if exists(auto_file):
-            # Skip if this file was already loaded (e.g., when loading _flow.py directly)
-            absolute_auto_file = absolute_file_path(auto_file)
-            if absolute_auto_file not in state.files_to_specs:
-                auto_spec = _load_spec_from_file(
-                    auto_file, args=options.args, state=state
-                )
-                if (auto_include_count := auto_include_count + 1) > 1:
-                    flow_print(
-                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
-                        path(auto_file),
-                        format="warning",
-                    )
-                else:
-                    flow_print("Auto-include:", path(auto_file))
-                if auto_spec:
-                    spec = _apply_include(spec, auto_spec)
-        if parent_dir.parent == parent_dir:
-            break
-        parent_dir = parent_dir.parent
+    for auto_file in find_auto_includes(base_dir):
+        # Skip if this file was already loaded (e.g., when loading _flow.py directly)
+        if auto_file in state.files_to_specs:
+            continue
+        auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
+        if (auto_include_count := auto_include_count + 1) > 1:
+            flow_print(
+                f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
+                path(auto_file),
+                format="warning",
+            )
+        else:
+            flow_print("Auto-include:", path(auto_file))
+        if auto_spec:
+            spec = _apply_include(spec, auto_spec)
     return spec
 
 

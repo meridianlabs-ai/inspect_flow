@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from fsspec.core import split_protocol
 from inspect_ai._util.file import (
     absolute_file_path,
     exists,
@@ -42,10 +43,13 @@ def path_str(path: str) -> str:
 
 def find_auto_includes(base_dir: str) -> list[str]:
     """Find _flow.py files in base_dir and all parent directories."""
+    protocol, _ = split_protocol(absolute_file_path(base_dir))
     results: list[str] = []
     parent_dir = Path(base_dir)
     while True:
         auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
+        if protocol:
+            auto_file = f"{protocol}://{auto_file}"
         if exists(auto_file):
             results.append(absolute_file_path(auto_file))
         if parent_dir.parent == parent_dir:
