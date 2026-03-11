@@ -75,7 +75,8 @@ def run_eval_set(
         action.print(create_task_log_display(task_log_info, completed=False))
         if option_str := _option_string(options):
             action.print("\nOptions:", option_str)
-        action.print("\nLog dir:", path(resolved_spec.log_dir))
+        action.print("")
+        action.print("Log dir:", path(resolved_spec.log_dir), copyable=True)
 
     if dry_run:
         return False, []
@@ -213,19 +214,18 @@ def _print_result(
             summary, "\n", format_prefix("info"), " Total Time: ", elapsed, "\n"
         ),
         task_log,
-        Text.assemble("\nLog dir: ", path(spec.log_dir)),
     ]
-    if success:
-        bundle_url_output = _bundle_url_output(spec)
-        if bundle_url_output:
-            output.append(Text.assemble("\n", bundle_url_output))
-
     flow_print(
         Panel(
             Group(*output),
             title=title_text,
         ),
     )
+    flow_print("Log dir:", path(spec.log_dir), soft_wrap=True, crop=False)
+    if success:
+        bundle_url_output = _bundle_url_output(spec)
+        if bundle_url_output:
+            flow_print(bundle_url_output, soft_wrap=True, crop=False)
 
     if num_success < len(logs):
         flow_print("\nFailed Tasks:")

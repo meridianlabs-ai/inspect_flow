@@ -30,7 +30,11 @@ class FullDisplay(Display):
         console.print(line, *info_renderables(action.info))
 
     def print(
-        self, *objects: RenderableType, action_key: str, format: Formats = "default"
+        self,
+        *objects: RenderableType,
+        action_key: str,
+        format: Formats = "default",
+        copyable: bool = False,
     ) -> None:
         if self._last_action_key is not None and self._last_action_key != action_key:
             console.print()

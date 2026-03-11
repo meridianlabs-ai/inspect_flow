@@ -54,5 +54,10 @@ class RunAction:
         self.action.update(DisplayAction(**kwargs))
         display().update_action(self.key, self.action)
 
-    def print(self, *objects: RenderableType, format: Formats = "default") -> None:
-        display().print(*objects, action_key=self.key, format=format)
+    def print(
+        self,
+        *objects: RenderableType,
+        format: Formats = "default",
+        copyable: bool = False,
+    ) -> None:
+        display().print(*objects, action_key=self.key, format=format, copyable=copyable)

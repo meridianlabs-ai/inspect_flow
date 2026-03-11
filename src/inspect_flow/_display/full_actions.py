@@ -50,6 +50,18 @@ class _SafeRenderable:
                 pass
 
 
+class _Copyable:
+    """Marker for messages that should render without borders when they would wrap."""
+
+    def __init__(self, renderable: RenderableType) -> None:
+        self.renderable = renderable
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield from console.render(self.renderable, options)
+
+
 class _BorderedTable:
     """Table wrapped in a box border. Shows [DRY RUN] in each corner when enabled."""
 
@@ -117,7 +129,13 @@ class _BorderedTable:
                 scrollable.append([Segment(blank)])
             first_msg = False
             for msg in msgs:
-                for line in console.render_lines(msg, inner_options, pad=True):
+                if isinstance(msg, _Copyable):
+                    if self._height is None:
+                        continue  # Final render: printed after the box
+                    renderable = msg.renderable
+                else:
+                    renderable = msg
+                for line in console.render_lines(renderable, inner_options, pad=True):
                     scrollable.append(bordered(line))
         if self._footer is not None:
             scrollable.append([Segment(blank)])
@@ -210,6 +228,11 @@ class FullActionsDisplay(Display):
         self._live.__exit__(exc_type, exc_val, exc_tb)
         self._live = None
         console.print(self._make_display(fill_height=False))
+        for msgs in self._messages.values():
+            for msg in msgs:
+                if isinstance(msg, _Copyable):
+                    console.print(msg.renderable, soft_wrap=True, crop=False)
+                    (console.file or sys.stdout).write("\n")
         captured = self._output_capture.stop()
         if captured:
             sys.stdout.buffer.write(captured)
@@ -281,6 +304,7 @@ class FullActionsDisplay(Display):
         *objects: RenderableType,
         action_key: str,
         format: Formats = "default",
+        copyable: bool = False,
     ) -> None:
         if format != "default":
             prefix = format_prefix(format)
@@ -288,6 +312,8 @@ class FullActionsDisplay(Display):
         else:
             parts = list(objects)
         renderable = join(parts)
+        if copyable:
+            renderable = _Copyable(renderable)
         self._messages.setdefault(action_key, []).append(renderable)
         if self._live:
             self._live.update(self._make_display())
