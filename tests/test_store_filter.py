@@ -61,6 +61,14 @@ def test_resolve_log_filter_unknown_raises() -> None:
         resolve_log_filter("nonexistent_filter")
 
 
+def test_resolve_log_filter_file_at_name() -> None:
+    resolved = resolve_log_filter(
+        "tests/local_eval/src/local_eval/my_filters.py@only_success"
+    )
+    assert resolved is not None
+    assert callable(resolved)
+
+
 # -- FlowStoreConfig tests --
 
 
