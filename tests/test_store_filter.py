@@ -107,6 +107,22 @@ def test_store_config_with_filter(tmp_path: Path) -> None:
     assert store._log_filter is success_only
 
 
+def test_store_config_relative_file_at_name_resolves_against_base_dir(
+    tmp_path: Path,
+) -> None:
+    """A relative file.py@name filter in a config should resolve against base_dir."""
+    store_dir = str(tmp_path / "store")
+    config = FlowStoreConfig(
+        path=store_dir, filter="src/local_eval/my_filters.py@only_success"
+    )
+    spec = FlowSpec(store=config)
+    # base_dir is the local_eval project root, but cwd is the repo root
+    store = store_factory(spec, base_dir="tests/local_eval", create=True)
+    assert store is not None
+    assert isinstance(store, DeltaLakeStore)
+    assert store._log_filter is not None
+
+
 def test_store_config_with_string_filter(tmp_path: Path) -> None:
     store_dir = str(tmp_path / "store")
     config = FlowStoreConfig(path=store_dir, filter="success_only")

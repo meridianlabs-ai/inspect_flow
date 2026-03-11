@@ -143,7 +143,7 @@ def store_factory(
 
     log_filter: LogFilter | None = None
     if isinstance(store, FlowStoreConfig):
-        log_filter = resolve_log_filter(store.filter)
+        log_filter = resolve_log_filter(store.filter, base_dir=base_dir)
         store = store.path
 
     if store is None or store.lower() == "none":

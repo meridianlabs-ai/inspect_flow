@@ -12,7 +12,7 @@ from inspect_ai._util.registry import (
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import LogFilter
-from inspect_flow._util.path_util import find_auto_includes
+from inspect_flow._util.path_util import absolute_path_relative_to, find_auto_includes
 
 LOG_FILTER_TYPE = "log_filter"
 
@@ -33,19 +33,22 @@ def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
     return func
 
 
-def resolve_log_filter(filter: LogFilter | str | None) -> LogFilter | None:
+def resolve_log_filter(
+    filter: LogFilter | str | None, base_dir: str | None = None
+) -> LogFilter | None:
     """Resolve a log filter from a callable, registered name, or None.
 
-    Accepts:
-        - None or a callable: returned as-is
-        - "name": looked up in the registry
-        - "file.py@name": loads the file (executing @log_filter decorators),
-          then looks up the name in the registry
+    Args:
+        filter: A callable, registered name, "file.py@name" string, or None.
+        base_dir: Base directory for resolving relative file paths in
+            "file.py@name" syntax. Defaults to the current working directory.
     """
     if filter is None or callable(filter):
         return filter
     if "@" in filter:
         file_path, name = filter.rsplit("@", 1)
+        if base_dir:
+            file_path = absolute_path_relative_to(file_path, base_dir)
         load_module(Path(file_path))
         filter = name
     resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
