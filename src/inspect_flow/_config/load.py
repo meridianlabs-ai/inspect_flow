@@ -88,7 +88,7 @@ def expand_spec(
             spec.store.filter = options.store_filter
         else:
             spec.store = FlowStoreConfig(
-                path=spec.store if isinstance(spec.store, str) else "auto",
+                path=spec.store if not isinstance(spec.store, NotGiven) else "auto",
                 filter=options.store_filter,
             )
     if options.resume:

@@ -6,6 +6,7 @@ from inspect_ai._eval.evalset import task_identifier
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log, write_eval_log
 from inspect_flow import FlowOptions, FlowSpec, FlowStoreConfig, FlowTask, log_filter
 from inspect_flow._cli.store import store_command
+from inspect_flow._config.load import ConfigOptions, expand_spec
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._store.deltalake import DeltaLakeStore
 from inspect_flow._store.store import store_factory
@@ -307,3 +308,13 @@ def test_store_field_accepts_config() -> None:
     assert isinstance(spec.store, FlowStoreConfig)
     assert spec.store.path == "./my-store"
     assert spec.store.filter == "success_only"
+
+
+def test_store_filter_option_does_not_override_store_none() -> None:
+    """--store-filter should not re-enable a store that was explicitly disabled."""
+    spec = FlowSpec(store=None)
+    options = ConfigOptions(store_filter="success_only")
+    expanded = expand_spec(spec, base_dir=".", options=options)
+    assert isinstance(expanded.store, FlowStoreConfig)
+    assert expanded.store.path is None
+    assert store_factory(expanded, base_dir=".") is None
