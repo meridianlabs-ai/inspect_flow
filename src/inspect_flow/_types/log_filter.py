@@ -5,6 +5,7 @@ from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import (
     RegistryInfo,
     registry_add,
+    registry_find,
     registry_lookup,
     registry_name,
 )
@@ -47,6 +48,23 @@ def resolve_log_filter(filter: LogFilter | str | None) -> LogFilter | None:
         load_module(Path(file_path))
         filter = name
     resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
+    if resolved is None:
+        # Bare names may be registered with a package namespace prefix
+        # (e.g., "only_success" registered as "local_eval/only_success").
+        # registry_find also calls ensure_entry_points() if nothing matches.
+        matches = registry_find(
+            lambda info: (
+                info.type == LOG_FILTER_TYPE and info.name.endswith(f"/{filter}")
+            )
+        )
+        if len(matches) == 1:
+            resolved = matches[0]
+        elif len(matches) > 1:
+            names = [registry_name(m, "") for m in matches]
+            raise ValueError(
+                f"Multiple log filters match '{filter}': {names}. "
+                "Use a fully qualified name."
+            )
     if resolved is None:
         raise ValueError(f"Log filter '{filter}' not found in registry.")
     return resolved  # type: ignore[return-value]
