@@ -2,6 +2,7 @@ import json
 import os
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
+from functools import partial
 from logging import getLogger
 from typing import Any, Sequence
 
@@ -15,8 +16,9 @@ from inspect_ai._eval.evalset import (
     list_all_eval_logs,
     task_identifier,
 )
+from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai._util.file import exists, filesystem, to_uri
-from inspect_ai.log import EvalLog, read_eval_log
+from inspect_ai.log import EvalLog, read_eval_log, read_eval_log_async
 from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
@@ -221,16 +223,20 @@ class DeltaLakeStore(FlowStoreInternal):
         filter = filter or self._log_filter
         if not filter:
             return logs
-        result = set()
-        for log in logs:
+
+        async def _read(log: str) -> tuple[str, EvalLog | None]:
             try:
-                eval_log = read_eval_log(log, header_only=True)
+                return log, await read_eval_log_async(log, header_only=True)
             except Exception as e:
                 logger.info(f"Failed to read log {path_str(log)} for filtering. {e}")
-                continue
-            if filter(eval_log):
-                result.add(log)
-        return result
+                return log, None
+
+        results = run_coroutine(tg_collect([partial(_read, log) for log in logs]))
+        return {
+            log
+            for log, eval_log in results
+            if eval_log is not None and filter(eval_log)
+        }
 
     def _get_storage_options(self) -> dict[str, str] | None:
         if not self._fs.is_s3():
