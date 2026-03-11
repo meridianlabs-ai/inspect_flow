@@ -85,8 +85,16 @@ Registration is optional, users can always pass an inline callable via the Pytho
 
 ##### Registry Implementation
 
-The log_filter registry should be implemented using the registry support in inspect_ai.
-For now we will not add log_filter to the RegistryType list and will instead ignore type warning for this type.
+The log_filter registry is implemented using inspect_ai's registry system. Since `"log_filter"` is not in inspect_ai's `RegistryType` enum, `RegistryInfo.model_construct()` is used to bypass Pydantic validation when registering.
+
+##### Filter Resolution
+
+`resolve_log_filter` accepts a callable, a string, or `None`. String filters are resolved through these steps, in order:
+
+1. **`file.py@name` syntax**: If the string contains `@`, the file is loaded (executing any `@log_filter` decorators), then the name is looked up in the registry.
+2. **Direct registry lookup**: The name is checked in the registry as-is.
+3. **`_flow.py` autoloading**: All `_flow.py` files from the current working directory and parent directories are loaded (same traversal as `_apply_auto_includes`), then the name is looked up again.
+4. **Entry point discovery with bare-name matching**: `registry_find` searches for filters where the name ends with `/<filter>` (e.g., `"only_success"` matches `"my_package/only_success"`). This also triggers `ensure_entry_points()` to load filters from installed packages. If multiple filters match, an error is raised asking for a fully qualified name.
 
 #### 4. `store_factory` Changes
 
@@ -111,20 +119,20 @@ class FlowStoreInternal(FlowStore):
 
 #### 6. Where the Filter Applies
 
-- **`flow run`**: `store_factory` extracts the filter from `FlowStoreConfig` and stores it in the `DeltaLakeStore`. `search_for_logs` applies `self._filter` to each candidate log after reading its header but **before** the `is_better_log` comparison — filtered-out logs are never considered as candidates.
+- **`flow run`**: `store_factory` extracts the filter from `FlowStoreConfig` and stores it in the `DeltaLakeStore`. `search_for_logs` applies `self._filter` **after** the `is_better_log` comparison — the filter only runs on logs that would otherwise be selected, avoiding unnecessary reads.
 - **`store.get_logs(filter=...)`**: The per-call filter is applied at query time by reading each log header. Returns only paths whose headers pass the filter.
 
 #### 7. CLI changes
 
 | Command | New Option | Accepts | Notes |
 |---|---|---|---|
-| `flow run` | `--store-filter` | Registered filter name | Overrides spec's `store.filter` |
-| `flow store list` | `--filter` | Registered filter name | Show only matching logs |
-| `flow store list` | `--exclude` | Registered filter name | Show only non-matching logs |
-| `flow store remove` | `--filter` | Registered filter name | Remove only matching logs |
-| `flow store remove` | `--exclude` | Registered filter name | Remove only non-matching logs |
+| `flow run` | `--store-filter` | Filter name | Overrides spec's `store.filter` |
+| `flow store list` | `--filter` | Filter name | Show only matching logs |
+| `flow store list` | `--exclude` | Filter name | Show only non-matching logs |
+| `flow store remove` | `--filter` | Filter name | Remove only matching logs |
+| `flow store remove` | `--exclude` | Filter name | Remove only non-matching logs |
 
-`--filter` and `--exclude` are mutually exclusive. Both accept a registered filter name. `--filter` includes logs that pass; `--exclude` includes logs that fail (inverts the filter).
+`--filter` and `--exclude` are mutually exclusive. Both accept a filter name string, resolved through the same steps as `resolve_log_filter` (see Filter Resolution above): a bare registered name (`approved_only`), a `file.py@name` reference (`my_filters.py@approved_only`), a name defined in a `_flow.py` file, or a name from an installed package's entry point. `--filter` includes logs that pass; `--exclude` includes logs that fail (inverts the filter).
 
 `--store-filter` cannot use the string override system (`_options_to_overrides`) because setting `store.filter=<name>` would fail when `spec.store` is a plain string like `"auto"`. Instead, follow the `--resume` precedent: add `store_filter: str | None` to `ConfigOptions`, and apply it after spec loading by converting `spec.store` to a `FlowStoreConfig` if needed.
 

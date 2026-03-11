@@ -114,7 +114,7 @@ def config_options(f: F) -> F:
         "--store-filter",
         type=str,
         default=None,
-        help="Name of a registered log filter to apply when searching the store for existing logs. Overrides the filter in the spec's store config.",
+        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(

@@ -103,7 +103,7 @@ def filter_options(f: F) -> F:
         "filter_name",
         type=str,
         default=None,
-        help="Registered log filter name. Include only logs that pass the filter.",
+        help="Log filter. Include only logs that pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
@@ -111,7 +111,7 @@ def filter_options(f: F) -> F:
         "exclude_name",
         type=str,
         default=None,
-        help="Registered log filter name. Include only logs that do NOT pass the filter.",
+        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
         envvar="INSPECT_FLOW_STORE_EXCLUDE",
     )(f)
     return f
