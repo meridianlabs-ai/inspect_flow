@@ -7,7 +7,6 @@ from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 
 import yaml
 from attr import dataclass, field
-from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, exists, file, filesystem
 from pydantic import BaseModel
 from pydantic_core import ValidationError
@@ -16,19 +15,26 @@ from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._display.display import display
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
-from inspect_flow._types.flow_types import FlowSpec, NotGiven, not_given
+from inspect_flow._types.flow_types import (
+    FlowSpec,
+    FlowStoreConfig,
+    NotGiven,
+    not_given,
+)
 from inspect_flow._util.console import flow_print, path, quantity
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
-from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.path_util import (
+    AUTO_INCLUDE_FILENAME,
+    absolute_path_relative_to,
+    find_auto_includes,
+)
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.util import now
 
 logger = getLogger(__name__)
-
-AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
 @dataclass
@@ -36,6 +42,7 @@ class ConfigOptions:
     overrides: list[str] = field(factory=list)
     args: dict[str, Any] = field(factory=dict)
     resume: bool = False
+    store_filter: str | None = None
 
 
 @dataclass
@@ -76,6 +83,14 @@ def expand_spec(
     )
     spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
     spec = _apply_overrides(spec, options.overrides)
+    if options.store_filter:
+        if isinstance(spec.store, FlowStoreConfig):
+            spec.store.filter = options.store_filter
+        else:
+            spec.store = FlowStoreConfig(
+                path=spec.store if not isinstance(spec.store, NotGiven) else "auto",
+                filter=options.store_filter,
+            )
     if options.resume:
         last_log_dir = read_data(LAST_LOG_DIR_KEY)
         if not last_log_dir:
@@ -307,35 +322,22 @@ def _merge_include_objects(spec: _T, included: _T) -> _T:
 def _apply_auto_includes(
     spec: FlowSpec, base_dir: str, options: ConfigOptions, state: LoadState
 ) -> FlowSpec:
-    absolute_path = absolute_file_path(base_dir)
-    protocol, _ = split_protocol(absolute_path)
-
-    parent_dir = Path(base_dir)
     auto_include_count = 0
-    while True:
-        auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
-        if protocol:
-            auto_file = f"{protocol}://{auto_file}"
-        if exists(auto_file):
-            # Skip if this file was already loaded (e.g., when loading _flow.py directly)
-            absolute_auto_file = absolute_file_path(auto_file)
-            if absolute_auto_file not in state.files_to_specs:
-                auto_spec = _load_spec_from_file(
-                    auto_file, args=options.args, state=state
-                )
-                if (auto_include_count := auto_include_count + 1) > 1:
-                    flow_print(
-                        f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
-                        path(auto_file),
-                        format="warning",
-                    )
-                else:
-                    flow_print("Auto-include:", path(auto_file))
-                if auto_spec:
-                    spec = _apply_include(spec, auto_spec)
-        if parent_dir.parent == parent_dir:
-            break
-        parent_dir = parent_dir.parent
+    for auto_file in find_auto_includes(base_dir):
+        # Skip if this file was already loaded (e.g., when loading _flow.py directly)
+        if auto_file in state.files_to_specs:
+            continue
+        auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
+        if (auto_include_count := auto_include_count + 1) > 1:
+            flow_print(
+                f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
+                path(auto_file),
+                format="warning",
+            )
+        else:
+            flow_print("Auto-include:", path(auto_file))
+        if auto_spec:
+            spec = _apply_include(spec, auto_spec)
     return spec
 
 

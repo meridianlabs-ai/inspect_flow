@@ -6,7 +6,13 @@ from typing import Sequence
 from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
-from inspect_flow._types.flow_types import FlowSpec, NotGiven
+from inspect_flow._types.flow_types import (
+    FlowSpec,
+    FlowStoreConfig,
+    LogFilter,
+    NotGiven,
+)
+from inspect_flow._types.log_filter import resolve_log_filter
 from inspect_flow._util.data import user_data_dir
 from inspect_flow._util.path_util import absolute_path_relative_to
 
@@ -47,11 +53,16 @@ class FlowStore(ABC):
         pass
 
     @abstractmethod
-    def get_logs(self) -> set[str]:
+    def get_logs(self, filter: LogFilter | None = None) -> set[str]:
         """Get all log file paths in the store.
 
+        Args:
+            filter: Optional filter to apply to log headers. Only logs passing
+                the filter are included. It is an error to specify both a
+                per-call filter and a store-level filter.
+
         Returns:
-            List of all log file paths in the store.
+            Set of log file paths in the store.
         """
         pass
 
@@ -63,6 +74,7 @@ class FlowStore(ABC):
         recursive: bool = False,
         dry_run: bool = False,
         verbose: bool = True,
+        filter: LogFilter | None = None,
     ) -> None:
         """Remove logs matching the given prefixes.
 
@@ -72,6 +84,9 @@ class FlowStore(ABC):
             recursive: Whether to remove log files recursively.
             dry_run: Preview what would be removed without making changes
             verbose: Print paths of files being removed
+            filter: Optional filter to narrow which matched logs are removed.
+                Each candidate log's header is read and only those passing
+                the filter are removed.
         """
         pass
 
@@ -125,7 +140,13 @@ def store_factory(
     store = spec_or_store if isinstance(spec_or_store, str) else spec_or_store.store
     if isinstance(store, NotGiven):
         store = "auto"
-    elif store is None or store.lower() == "none":
+
+    log_filter: LogFilter | None = None
+    if isinstance(store, FlowStoreConfig):
+        log_filter = resolve_log_filter(store.filter, base_dir=base_dir)
+        store = store.path
+
+    if store is None or store.lower() == "none":
         return None
     if store.lower() == "auto":
         store = str(_get_default_store_dir())
@@ -134,8 +155,10 @@ def store_factory(
     from inspect_flow._store.deltalake import DeltaLakeStore
 
     store_path = absolute_path_relative_to(store, base_dir=base_dir)
-    store = DeltaLakeStore(store_path, create=create, quiet=quiet)
-    return store if store.exists else None
+    dl_store = DeltaLakeStore(
+        store_path, create=create, quiet=quiet, log_filter=log_filter
+    )
+    return dl_store if dl_store.exists else None
 
 
 def resolve_store_path(store: str | None, base_dir: str = ".") -> str:

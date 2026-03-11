@@ -15,6 +15,8 @@ from inspect_flow._store.store import (
     store_exists,
     store_factory,
 )
+from inspect_flow._types.flow_types import LogFilter
+from inspect_flow._types.log_filter import resolve_log_filter
 from inspect_flow._util.console import console, flow_print, path, quantity
 from inspect_flow._util.logs import copy_all_logs
 
@@ -93,6 +95,40 @@ def log_paths_arguments(*, required: bool = True) -> Callable[[F], F]:
         return func
 
     return decorator
+
+
+def filter_options(f: F) -> F:
+    f = click.option(
+        "--filter",
+        "filter_name",
+        type=str,
+        default=None,
+        help="Log filter. Include only logs that pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        envvar="INSPECT_FLOW_STORE_FILTER",
+    )(f)
+    f = click.option(
+        "--exclude",
+        "exclude_name",
+        type=str,
+        default=None,
+        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        envvar="INSPECT_FLOW_STORE_EXCLUDE",
+    )(f)
+    return f
+
+
+def _resolve_cli_filter(
+    filter_name: str | None, exclude_name: str | None
+) -> LogFilter | None:
+    if filter_name and exclude_name:
+        raise click.UsageError("--filter and --exclude are mutually exclusive.")
+    if filter_name:
+        return resolve_log_filter(filter_name)
+    if exclude_name:
+        resolved = resolve_log_filter(exclude_name)
+        assert resolved is not None
+        return lambda log: not resolved(log)
+    return None
 
 
 class StoreOptionArgs(OutputOptionArgs, total=False):
@@ -186,6 +222,7 @@ def store_import(
     },
 )
 @store_options
+@filter_options
 @click.argument("prefix", nargs=-1, required=False, envvar="INSPECT_FLOW_STORE_PREFIX")
 @click.option(
     "--recursive/--no-recursive",
@@ -212,6 +249,8 @@ def store_remove(
     recursive: bool,
     missing: bool,
     dry_run: bool,
+    filter_name: str | None,
+    exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     if dry_run:
@@ -220,6 +259,7 @@ def store_remove(
         raise click.UsageError("Either prefix or --missing must be specified.")
     if prefix and missing:
         raise click.UsageError("Cannot specify both prefix and --missing.")
+    log_filter = _resolve_cli_filter(filter_name, exclude_name)
     flow_store = init_store(**kwargs)
     if flow_store:
         flow_store.remove_log_prefix(
@@ -228,14 +268,19 @@ def store_remove(
             recursive=recursive,
             dry_run=dry_run,
             verbose=True,
+            filter=log_filter,
         )
 
 
 ListFormat = Literal["flat", "tree"]
 
 
-def _echo_logs(flow_store: FlowStore, format: ListFormat = "flat") -> None:
-    log_files = flow_store.get_logs()
+def _echo_logs(
+    flow_store: FlowStore,
+    format: ListFormat = "flat",
+    filter: LogFilter | None = None,
+) -> None:
+    log_files = flow_store.get_logs(filter=filter)
     if not log_files:
         flow_print("\nNo logs in store")
         return
@@ -307,6 +352,7 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
 
 @store_command.command("list", help="List logs and log directories in the store")
 @store_options
+@filter_options
 @click.option(
     "--format",
     "format",
@@ -315,8 +361,14 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     help="Output format: tree, flat",
     envvar="INSPECT_FLOW_STORE_LIST_FORMAT",
 )
-def store_list(format: str, **kwargs: Unpack[StoreOptionArgs]) -> None:
+def store_list(
+    format: str,
+    filter_name: str | None,
+    exclude_name: str | None,
+    **kwargs: Unpack[StoreOptionArgs],
+) -> None:
     assert format in ("flat", "tree")
+    log_filter = _resolve_cli_filter(filter_name, exclude_name)
     flow_store = init_store(**kwargs)
     if flow_store:
-        _echo_logs(flow_store, format=format)
+        _echo_logs(flow_store, format=format, filter=log_filter)
