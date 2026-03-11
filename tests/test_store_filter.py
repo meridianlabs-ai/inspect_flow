@@ -69,6 +69,14 @@ def test_resolve_log_filter_file_at_name() -> None:
     assert callable(resolved)
 
 
+def test_resolve_log_filter_from_flow_py(monkeypatch: pytest.MonkeyPatch) -> None:
+    """resolve_log_filter loads _flow.py from cwd to discover @log_filter decorators."""
+    monkeypatch.chdir("tests/config/auto/sub")
+    resolved = resolve_log_filter("auto_flow_filter")
+    assert resolved is not None
+    assert callable(resolved)
+
+
 # -- FlowStoreConfig tests --
 
 

@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from inspect_ai._util.file import absolute_file_path, filesystem, strip_trailing_sep
+from inspect_ai._util.file import (
+    absolute_file_path,
+    exists,
+    filesystem,
+    strip_trailing_sep,
+)
+
+AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
 def absolute_path_relative_to(path: str, base_dir: str) -> str:
@@ -31,6 +38,20 @@ def path_str(path: str) -> str:
     if len(cwd) > 1 and path.startswith(cwd):
         path = path[len(cwd) + 1 :]
     return path
+
+
+def find_auto_includes(base_dir: str) -> list[str]:
+    """Find _flow.py files in base_dir and all parent directories."""
+    results: list[str] = []
+    parent_dir = Path(base_dir)
+    while True:
+        auto_file = str(parent_dir / AUTO_INCLUDE_FILENAME)
+        if exists(auto_file):
+            results.append(absolute_file_path(auto_file))
+        if parent_dir.parent == parent_dir:
+            break
+        parent_dir = parent_dir.parent
+    return results
 
 
 def path_join(path: str, *paths: str) -> str:

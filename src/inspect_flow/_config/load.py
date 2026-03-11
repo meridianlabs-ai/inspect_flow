@@ -27,13 +27,14 @@ from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.module_util import execute_file_and_get_last_result
-from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.path_util import (
+    AUTO_INCLUDE_FILENAME,
+    absolute_path_relative_to,
+)
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow._util.util import now
 
 logger = getLogger(__name__)
-
-AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
 @dataclass

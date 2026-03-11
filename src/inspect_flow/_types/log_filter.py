@@ -12,6 +12,7 @@ from inspect_ai._util.registry import (
 from inspect_ai.log import EvalLog
 
 from inspect_flow._types.flow_types import LogFilter
+from inspect_flow._util.path_util import find_auto_includes
 
 LOG_FILTER_TYPE = "log_filter"
 
@@ -48,6 +49,12 @@ def resolve_log_filter(filter: LogFilter | str | None) -> LogFilter | None:
         load_module(Path(file_path))
         filter = name
     resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
+    if resolved is None:
+        # Load _flow.py files from cwd and parent dirs, which may register
+        # @log_filter decorators.
+        for flow_file in find_auto_includes(str(Path.cwd())):
+            load_module(Path(flow_file))
+        resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
     if resolved is None:
         # Bare names may be registered with a package namespace prefix
         # (e.g., "only_success" registered as "local_eval/only_success").
