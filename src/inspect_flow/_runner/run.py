@@ -254,6 +254,8 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
     if not spec.options:
         return
 
+    result = []
+
     if spec.options.bundle_dir:
         bundle_url = spec.options.bundle_dir
         if spec.options.bundle_url_mappings:
@@ -264,10 +266,8 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
         if not print_url.endswith("/"):
             print_url += "/"
 
-        if bundle_url != spec.options.bundle_dir:
-            return Text.assemble("Bundle URL: ", path(print_url))
-        else:
-            return Text.assemble("Bundle dir: ", path(print_url))
+        result.append("Bundle: ")
+        result.append(path(print_url))
 
     if spec.options.embed_viewer and spec.log_dir:
         bundle_url = spec.options.bundle_dir
@@ -279,7 +279,9 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
         print_url = embed_viewer_url
         if not print_url.endswith("/"):
             print_url += "/"
+        if result:
+            result.append("\n")
+        result.append("Viewer: ")
+        result.append(path(print_url))
 
-        return Text.assemble("Viewer: ", path(print_url))
-
-    return None
+    return Text.assemble(*result) if result else None

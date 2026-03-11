@@ -870,7 +870,7 @@ def test_bundle_url_map(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Bundle URL: http://example.com/bundle" in out
+    assert "Bundle: http://example.com/bundle" in out
 
 
 def test_bundle_url_map_no_change(
@@ -892,8 +892,7 @@ def test_bundle_url_map_no_change(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Bundle URL:" not in out
-    assert "Bundle dir:" in out
+    assert "Bundle:" in out
 
 
 def test_217_bundle_error_message(tmp_path: Path) -> None:
@@ -940,6 +939,35 @@ def test_545_bundle_url_map_embed_viewer(
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
     assert "Viewer: http://example.com/view/viewer/" in out
+
+
+def test_bundle_url_and_embed_viewer(
+    mock_eval_set: MagicMock, recording_console: Console, tmp_path: Path
+) -> None:
+    log_dir = init_test_logs()
+    bundle_dir = str(tmp_path / "logs" / "bundle_test")
+
+    config = FlowSpec(
+        log_dir=log_dir,
+        options=FlowOptions(
+            bundle_dir=bundle_dir,
+            bundle_url_mappings={
+                tmp_path.as_posix(): "http://example.com/bundle",
+                log_dir: "http://example.com/view",
+            },
+            embed_viewer=True,
+        ),
+        tasks=[
+            task_file + "@noop",
+        ],
+    )
+
+    run_eval_set(spec=(config), base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    out = recording_console.export_text()
+    assert "Viewer: http://example.com/view/viewer/" in out
+    assert "Bundle: http://example.com/bundle" in out
 
 
 def test_prerequisite_error() -> None:
