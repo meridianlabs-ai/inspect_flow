@@ -58,7 +58,11 @@ class Display(ABC):
 
     @abstractmethod
     def print(
-        self, *objects: RenderableType, action_key: str, format: Formats = "default"
+        self,
+        *objects: RenderableType,
+        action_key: str,
+        format: Formats = "default",
+        copyable: bool = False,
     ) -> None: ...
 
     @abstractmethod
