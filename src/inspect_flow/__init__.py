@@ -37,6 +37,7 @@ from inspect_flow._types.log_filter import log_filter
 from inspect_flow._types.merge import (
     merge,
 )
+from inspect_flow._types.step import step
 
 __all__ = [
     "__version__",
@@ -50,6 +51,7 @@ __all__ = [
     "FlowModel",
     "LogFilter",
     "log_filter",
+    "step",
     "FlowOptions",
     "FlowScorer",
     "FlowSolver",
