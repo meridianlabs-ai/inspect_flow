@@ -5,7 +5,7 @@ try:
 except ImportError:  # pragma: no cover
     __version__ = "unknown"
 
-from inspect_flow._api.api import run_step
+from inspect_flow._steps.execute import run_step
 from inspect_flow._types.decorator import after_load
 from inspect_flow._types.factories import (
     agents_matrix,

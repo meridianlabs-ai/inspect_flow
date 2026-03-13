@@ -12,7 +12,7 @@ from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 from inspect_ai.log import EvalLog
 
-from inspect_flow._api.api import run_step
+from inspect_flow._steps.execute import run_step
 from inspect_flow._types.step import STEP_TYPE
 from inspect_flow._util.path_util import find_auto_includes
 

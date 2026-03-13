@@ -3,6 +3,7 @@ import subprocess
 
 from inspect_ai.log import EvalLog, ProvenanceData, TagsEdit, edit_eval_log
 
+from inspect_flow._steps.context import mark_dirty
 from inspect_flow._types.step import step
 
 
@@ -50,4 +51,6 @@ def tag(
     """
     provenance = ProvenanceData(author=author or _default_author(), reason=reason)
     edits = [TagsEdit(tags_add=add or [], tags_remove=remove or [])]
-    return [edit_eval_log(log, edits, provenance) for log in logs]
+    result = [edit_eval_log(log, edits, provenance) for log in logs]
+    mark_dirty(result)
+    return result
