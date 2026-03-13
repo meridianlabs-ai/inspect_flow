@@ -128,7 +128,7 @@ def _is_list_of_str(annotation: object) -> bool:
     if origin is list and args == (str,):
         return True
     # Handle list[str] | None
-    if origin is types.UnionType:
+    if isinstance(annotation, types.UnionType):
         return any(_is_list_of_str(a) for a in args)
     return False
 
