@@ -4,13 +4,14 @@ import inspect
 import types
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import click
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log, write_eval_log
+from inspect_ai.log import EvalLog
 
+from inspect_flow._api.api import run_step
 from inspect_flow._types.step import STEP_TYPE
 from inspect_flow._util.path_util import find_auto_includes
 
@@ -103,14 +104,8 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
 
 
 def _make_callback(func: StepFunc) -> Callable[..., None]:
-    def callback(path: tuple[str, ...], **kwargs: object) -> None:
-        log_paths = [
-            info.name for p in path for info in list_eval_logs(p, recursive=True)
-        ]
-        logs = [read_eval_log(p, header_only=True) for p in log_paths]
-        result = func(logs, **kwargs)
-        for log in result:
-            write_eval_log(log, log.location)
+    def callback(path: tuple[str, ...], **kwargs: Any) -> None:
+        run_step(func, list(path), **kwargs)
 
     return callback
 
