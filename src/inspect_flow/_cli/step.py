@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import click
+import griffe
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 from inspect_ai.log import EvalLog
@@ -41,10 +42,30 @@ class StepGroup(click.Group):
         return None
 
 
+def _parse_arg_help(doc: str) -> dict[str, str]:
+    import logging
+
+    griffe_logger = logging.getLogger("griffe")
+    prev_level = griffe_logger.level
+    griffe_logger.setLevel(logging.ERROR)
+    try:
+        parsed = griffe.Docstring(doc, parser="google")
+        result: dict[str, str] = {}
+        for section in parsed.parsed:
+            if isinstance(section, griffe.DocstringSectionParameters):
+                for param in section.value:
+                    result[param.name] = param.description
+    finally:
+        griffe_logger.setLevel(prev_level)
+    return result
+
+
 def _step_to_command(name: str, func: StepFunc) -> click.Command:
     """Convert a @step function into a click.Command."""
     sig = inspect.signature(func)
     params: list[click.Parameter] = []
+    doc = inspect.getdoc(func) or ""
+    arg_help = _parse_arg_help(doc)
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg
     step_params = list(sig.parameters.values())[1:]
@@ -53,6 +74,7 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
         annotation = (
             param.annotation if param.annotation != inspect.Parameter.empty else str
         )
+        help_text = arg_help.get(param.name)
 
         has_default = param.default is not inspect.Parameter.empty
         default = param.default if has_default else None
@@ -64,6 +86,7 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
                     [option_name],
                     is_flag=True,
                     default=default if has_default else False,
+                    help=help_text,
                 )
             )
         elif _is_list_of_str(annotation):
@@ -74,6 +97,7 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
                     type=str,
                     default=default or (),
                     required=required,
+                    help=help_text,
                 )
             )
         else:
@@ -83,6 +107,7 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
                     type=_annotation_to_click_type(annotation),
                     default=default,
                     required=required,
+                    help=help_text,
                 )
             )
 
@@ -92,7 +117,6 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
         click.Argument(["path"], nargs=-1, required=True, type=click.Path()),
     )
 
-    doc = inspect.getdoc(func) or ""
     help_text = doc.split("\n\n")[0] if doc else ""
 
     return click.Command(
