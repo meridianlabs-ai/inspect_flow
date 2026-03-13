@@ -1,18 +1,20 @@
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Concatenate, ParamSpec
 
 from inspect_ai._util.registry import (
     RegistryInfo,
     registry_add,
     registry_name,
 )
+from inspect_ai.log import EvalLog
 
 STEP_TYPE = "step"
 
-F = TypeVar("F", bound=Callable[..., None])
+P = ParamSpec("P")
+StepFunction = Callable[Concatenate[list[EvalLog], P], list[EvalLog]]
 
 
-def step(func: F) -> F:
+def step(func: StepFunction[P]) -> StepFunction[P]:
     """Decorator to register a step function.
 
     Args:

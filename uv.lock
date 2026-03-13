@@ -1106,7 +1106,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -1520,8 +1520,7 @@ wheels = [
 
 [[package]]
 name = "inspect-ai"
-version = "0.3.189"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../inspect_ai" }
 dependencies = [
     { name = "aioboto3" },
     { name = "aiohttp" },
@@ -1563,10 +1562,113 @@ dependencies = [
     { name = "zipp" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/82/a48cd551892641b949772e1299ff187f7a6fd2fa024e4c7b82d4ec40f9de/inspect_ai-0.3.189.tar.gz", hash = "sha256:79458b2e9a7e6ebe2cd8b4268eae70efcfe5c2b571c623b2a5e007956f647645", size = 43922528, upload-time = "2026-03-07T16:27:45.467Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/1a/51f09c8c8c4b2988d73b09f6b60f121c54183cf830595fbe11ec82b59159/inspect_ai-0.3.189-py3-none-any.whl", hash = "sha256:4689eff2c629adf0735b5e74c48e829c67790b2452667c54232bf08a69b44528", size = 34999165, upload-time = "2026-03-07T16:27:29.293Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "adlfs", marker = "extra == 'dev'", specifier = ">=2025.8.0" },
+    { name = "aioboto3", specifier = ">=13.0.0" },
+    { name = "aiohttp", specifier = ">=3.9.0" },
+    { name = "anthropic", marker = "extra == 'dev'", specifier = ">=0.80.0" },
+    { name = "anyio", specifier = ">=4.8.0" },
+    { name = "azure-ai-inference", marker = "extra == 'dev'" },
+    { name = "azure-identity", marker = "extra == 'dev'" },
+    { name = "beautifulsoup4", specifier = ">=4.10.0" },
+    { name = "boto3" },
+    { name = "build", marker = "extra == 'dist'" },
+    { name = "click", specifier = ">=8.1.3,!=8.2.0,<8.2.2" },
+    { name = "click", marker = "extra == 'doc'", specifier = ">=8.2.0" },
+    { name = "debugpy" },
+    { name = "docstring-parser", specifier = ">=0.16" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11'", specifier = ">=1.0.2" },
+    { name = "fastapi", marker = "extra == 'dev'" },
+    { name = "fsspec", specifier = ">=2023.1.0,<=2025.9.0" },
+    { name = "google-genai", marker = "extra == 'dev'", specifier = ">=1.56.0" },
+    { name = "griffe", marker = "extra == 'dev'", specifier = "<=1.14.0" },
+    { name = "griffe", marker = "extra == 'doc'", specifier = "<=1.14.0" },
+    { name = "groq", marker = "extra == 'dev'", specifier = ">=0.28.0" },
+    { name = "httpx" },
+    { name = "huggingface-hub", marker = "extra == 'dev'", specifier = ">=1.0.0" },
+    { name = "ijson", specifier = ">=3.2.0" },
+    { name = "inspect-scout", marker = "extra == 'dev'" },
+    { name = "ipython", marker = "extra == 'dev'" },
+    { name = "jsonlines", specifier = ">=3.0.0" },
+    { name = "jsonpatch", specifier = ">=1.32" },
+    { name = "jsonpath-ng", specifier = ">=1.8.0" },
+    { name = "jsonpath-ng", marker = "extra == 'dev'" },
+    { name = "jsonref", specifier = ">=1.1.0" },
+    { name = "jsonschema", specifier = ">3.1.1" },
+    { name = "jupyter", marker = "extra == 'doc'" },
+    { name = "markdown", marker = "extra == 'dev'" },
+    { name = "markdown", marker = "extra == 'doc'" },
+    { name = "mcp", marker = "extra == 'dev'", specifier = ">=1.10.0" },
+    { name = "mcp-server-fetch", marker = "extra == 'dev-mcp-tests'" },
+    { name = "mcp-server-git", marker = "extra == 'dev-mcp-tests'" },
+    { name = "mistralai", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "mmh3", specifier = ">3.1.0" },
+    { name = "moto", extras = ["server"], marker = "extra == 'dev'" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.0" },
+    { name = "nbclient", marker = "extra == 'doc'" },
+    { name = "nbformat", marker = "extra == 'dev'" },
+    { name = "nest-asyncio2", specifier = ">=1.7.2" },
+    { name = "numpy" },
+    { name = "openai", marker = "extra == 'dev'", specifier = ">=2.26.0" },
+    { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "pandas-stubs", marker = "extra == 'dev'" },
+    { name = "panflute", marker = "extra == 'dev'" },
+    { name = "panflute", marker = "extra == 'doc'" },
+    { name = "pip", marker = "extra == 'dev'" },
+    { name = "platformdirs", specifier = ">=2.3.0" },
+    { name = "pre-commit", marker = "extra == 'dev'" },
+    { name = "psutil" },
+    { name = "pyarrow", marker = "extra == 'dev'", specifier = ">=10.0.1" },
+    { name = "pyarrow-stubs", marker = "extra == 'dev'" },
+    { name = "pydantic", specifier = ">=2.11.4" },
+    { name = "pylint", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "pytest-dotenv", marker = "extra == 'dev'" },
+    { name = "pytest-mock", marker = "extra == 'dev'" },
+    { name = "pytest-watcher", marker = "extra == 'dev'" },
+    { name = "pytest-xdist", marker = "extra == 'dev'" },
+    { name = "python-dotenv", specifier = ">=0.16.0" },
+    { name = "pyyaml" },
+    { name = "quarto-cli", marker = "extra == 'doc'", specifier = "==1.7.32" },
+    { name = "rich", specifier = ">=13.3.3,!=14.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.9.6" },
+    { name = "s3fs", specifier = ">=2023" },
+    { name = "semver", specifier = ">=3.0.0" },
+    { name = "shortuuid" },
+    { name = "sniffio" },
+    { name = "tenacity" },
+    { name = "textual", specifier = ">=2.1.0" },
+    { name = "textual-dev", marker = "extra == 'dev'", specifier = ">=0.86.2" },
+    { name = "tiktoken", specifier = ">=0.12.0" },
+    { name = "together", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "trio", marker = "extra == 'dev'" },
+    { name = "twine", marker = "extra == 'dist'" },
+    { name = "types-aioboto3", marker = "extra == 'dev'" },
+    { name = "types-beautifulsoup4", marker = "extra == 'dev'" },
+    { name = "types-boto3", marker = "extra == 'dev'" },
+    { name = "types-botocore", marker = "extra == 'dev'" },
+    { name = "types-grpcio", marker = "extra == 'dev'" },
+    { name = "types-jsonpatch", marker = "extra == 'dev'" },
+    { name = "types-jsonschema", marker = "extra == 'dev'" },
+    { name = "types-markdown", marker = "extra == 'dev'" },
+    { name = "types-protobuf", marker = "extra == 'dev'" },
+    { name = "types-psutil", marker = "extra == 'dev'" },
+    { name = "types-python-dateutil", marker = "extra == 'dev'" },
+    { name = "types-pyyaml", marker = "extra == 'dev'" },
+    { name = "types-regex", marker = "extra == 'dev'" },
+    { name = "typing-extensions", specifier = ">=4.9.0" },
+    { name = "universal-pathlib", specifier = ">=0.2.6" },
+    { name = "uvicorn", marker = "extra == 'dev'" },
+    { name = "xai-sdk", marker = "extra == 'dev'", specifier = ">=1.7.0" },
+    { name = "zipfile-zstd", marker = "python_full_version < '3.14'", specifier = ">=0.0.4" },
+    { name = "zipfile-zstd", marker = "python_full_version < '3.14' and extra == 'dev'", specifier = ">=0.0.4" },
+    { name = "zipp", specifier = ">=3.19.1" },
+    { name = "zstandard", specifier = ">=0.20.0" },
 ]
+provides-extras = ["dev", "dev-mcp-tests", "doc", "dist"]
 
 [[package]]
 name = "inspect-flow"
@@ -1622,7 +1724,7 @@ requires-dist = [
     { name = "click", marker = "extra == 'doc'" },
     { name = "deltalake", specifier = ">=0.18.0" },
     { name = "griffe", marker = "extra == 'doc'" },
-    { name = "inspect-ai", specifier = ">=0.3.189" },
+    { name = "inspect-ai", editable = "../inspect_ai" },
     { name = "jupyter", marker = "extra == 'doc'" },
     { name = "markdown", marker = "extra == 'doc'" },
     { name = "packaging", specifier = ">=21.0" },
@@ -4964,7 +5066,7 @@ name = "zipfile-zstd"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zstandard" },
+    { name = "zstandard", marker = "python_full_version < '3.14'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f7/2a/2e0941bc0058d10ab37d8c578b94a19f611f6ae54f124140f2fb451f0932/zipfile-zstd-0.0.4.tar.gz", hash = "sha256:c1498e15b7922a3d1af0ea55df8b11b2af4e8f7e0e80e414e25d66899f7def89", size = 4603, upload-time = "2021-12-08T07:38:16.245Z" }
 wheels = [
