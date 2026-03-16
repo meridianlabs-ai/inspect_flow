@@ -13,7 +13,7 @@ license = { text = "MIT License" }
 dependencies = [
     "click>=8.2.1",
     "deltalake>=0.18.0",
-    "inspect-ai>=0.3.189",
+    "inspect-ai>=0.3.196",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
     "pydantic>=2.11.2",
