@@ -29,6 +29,13 @@ def test_list_log_empty_store(recording_console: Console) -> None:
     assert "No logs in store" in captured
 
 
+def test_list_log_path() -> None:
+    runner = CliRunner()
+    result = runner.invoke(list_command, ["log", LOG_DIR], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "gpqa-diamond" in result.output
+
+
 def test_list_log_no_store(recording_console: Console) -> None:
     runner = CliRunner()
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
