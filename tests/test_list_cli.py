@@ -15,8 +15,7 @@ def test_list_log(recording_console: Console) -> None:
     _import_logs(runner)
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
-    captured = recording_console.export_text()
-    assert "gpqa-diamond" in captured
+    assert "gpqa_diamond" in result.output
 
 
 def test_list_log_empty_store(recording_console: Console) -> None:
@@ -33,7 +32,7 @@ def test_list_log_path() -> None:
     runner = CliRunner()
     result = runner.invoke(list_command, ["log", LOG_DIR], catch_exceptions=False)
     assert result.exit_code == 0
-    assert "gpqa-diamond" in result.output
+    assert "gpqa_diamond" in result.output
 
 
 def test_list_log_no_store(recording_console: Console) -> None:
