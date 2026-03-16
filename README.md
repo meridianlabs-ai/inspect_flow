@@ -21,7 +21,7 @@
 | src/inspect\_flow/\_display/action.py              |       25 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_display/display.py             |       33 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_display/full.py                |       56 |        0 |       12 |        1 |     98.53% |  69->exit |
-| src/inspect\_flow/\_display/full\_actions.py       |      248 |        6 |       84 |        7 |     96.08% |49-50, 62, 135, 148->159, 151->159, 238-239, 294->exit, 299->exit, 375->377 |
+| src/inspect\_flow/\_display/full\_actions.py       |      248 |        8 |       84 |        7 |     95.48% |49-50, 62, 135, 148->159, 151->159, 238-239, 294->exit, 299->exit, 356-357, 375->377 |
 | src/inspect\_flow/\_display/path\_progress.py      |       46 |        0 |        8 |        1 |     98.15% |  33->exit |
 | src/inspect\_flow/\_display/plain.py               |       51 |        0 |       10 |        1 |     98.36% |  72->exit |
 | src/inspect\_flow/\_display/run\_action.py         |       39 |        0 |        4 |        0 |    100.00% |           |
@@ -66,7 +66,7 @@
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        5 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **3588** |  **111** | **1082** |   **65** | **95.63%** |           |
+| **TOTAL**                                          | **3588** |  **113** | **1082** |   **65** | **95.59%** |           |
 
 
 ## Setup coverage badge
