@@ -25,8 +25,9 @@ from inspect_flow._runner.run import (
 )
 from inspect_flow._runner.task_log import (
     TaskLogInfo,
-    _unique_task_names,
     create_task_log_display,
+    task_log_to_task_info,
+    unique_task_names,
 )
 from inspect_flow._types.flow_types import FlowOptions, FlowSpec, not_given
 from rich.console import Console
@@ -244,7 +245,7 @@ class TestFindExistingLogs:
 class TestUniqueTaskNames:
     def test_single_task_no_qualifiers(self) -> None:
         infos = [TaskLogInfo(task=_make_task("alpha"))]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert result.names[0][0] == "alpha"
         assert result.names[0][1].plain == ""
 
@@ -252,7 +253,7 @@ class TestUniqueTaskNames:
         t1 = _make_task("t", model=get_model("mockllm/model-a"))
         t2 = _make_task("t", model=get_model("mockllm/model-b"))
         infos = [TaskLogInfo(task=t1), TaskLogInfo(task=t2)]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert "mockllm/model-a" in result.names[0][1].plain
         assert "mockllm/model-b" in result.names[1][1].plain
         assert result.model_only is True
@@ -265,7 +266,7 @@ class TestUniqueTaskNames:
             TaskLogInfo(task=t1, flow_task=MagicMock(args={"temp": "high"})),
             TaskLogInfo(task=t2, flow_task=MagicMock(args={"temp": "low"})),
         ]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert result.model_only is False
         assert "high" in result.names[0][1].plain
         assert "low" in result.names[1][1].plain
