@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.6.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.5.0...v0.6.0) (2026-03-16)
+
+
+### Features
+
+* store filtering ([#552](https://github.com/meridianlabs-ai/inspect_flow/issues/552)) ([e197b1c](https://github.com/meridianlabs-ai/inspect_flow/commit/e197b1cf5262d16849ce77ea555f6ad4df6318f1))
+
+
+### Bug Fixes
+
+* --copy-from support for s3: paths ([#551](https://github.com/meridianlabs-ai/inspect_flow/issues/551)) ([e1fe49a](https://github.com/meridianlabs-ai/inspect_flow/commit/e1fe49a3f5a84fa4da5ba4161e74f946c557aee8))
+* add embed_viewer location to output ([#550](https://github.com/meridianlabs-ai/inspect_flow/issues/550)) ([7a87b43](https://github.com/meridianlabs-ai/inspect_flow/commit/7a87b435bba41661c7bfb22d4503bb0fda49636a))
+* add support for embed_viewer option ([#544](https://github.com/meridianlabs-ai/inspect_flow/issues/544)) ([d310ef5](https://github.com/meridianlabs-ai/inspect_flow/commit/d310ef50fb7ab508d326a8786d48e7b7dce5b810))
+* improve output when both bundle and embed_viewer are set ([#553](https://github.com/meridianlabs-ai/inspect_flow/issues/553)) ([2b285a9](https://github.com/meridianlabs-ai/inspect_flow/commit/2b285a9ae69c1ded1936973925a939c16d65fa0c))
+* print paths using console wrapping so they are copyable ([#554](https://github.com/meridianlabs-ai/inspect_flow/issues/554)) ([2ea750d](https://github.com/meridianlabs-ai/inspect_flow/commit/2ea750deb3e439331c488cc655238d8d3071c463))
+* re-set moto env vars before each S3 test ([#543](https://github.com/meridianlabs-ai/inspect_flow/issues/543)) ([216fdeb](https://github.com/meridianlabs-ai/inspect_flow/commit/216fdeb585d6bd6c9a97950129471e3c3be11b33))
+* Update dependencies (includes embed_viewer fix) ([#561](https://github.com/meridianlabs-ai/inspect_flow/issues/561)) ([27d4a4b](https://github.com/meridianlabs-ai/inspect_flow/commit/27d4a4b48dbf4532144db1fbd6281c559244d896))
+* update inspect and support new fields and limit matrixing ([#538](https://github.com/meridianlabs-ai/inspect_flow/issues/538)) ([553e6c1](https://github.com/meridianlabs-ai/inspect_flow/commit/553e6c1941d631fcd98ff09a21d393626a7002e5))
+* upgrade inspect-ai and fix absolute path issue ([#542](https://github.com/meridianlabs-ai/inspect_flow/issues/542)) ([a47cbd3](https://github.com/meridianlabs-ai/inspect_flow/commit/a47cbd3b31cc256da1b50d5f343ad5edb5d992de))
+
+
+### Documentation
+
+* add documentation for matrix limits, function configs, and YAML support ([#540](https://github.com/meridianlabs-ai/inspect_flow/issues/540)) ([7a2ffc0](https://github.com/meridianlabs-ai/inspect_flow/commit/7a2ffc024aab656a1aba425d9a9fdf173d064440))
+* document embed_viewer option in viewer bundling section ([#546](https://github.com/meridianlabs-ai/inspect_flow/issues/546)) ([dd53edd](https://github.com/meridianlabs-ai/inspect_flow/commit/dd53eddbc8060d289f7c754c8b1460eff53870a9))
+
 ## [0.5.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.1...v0.5.0) (2026-03-06)
 
 
