@@ -6,8 +6,9 @@ from collections.abc import Collection
 import click
 from inspect_ai.log import list_eval_logs
 from rich.console import Console
+from typing_extensions import Unpack
 
-from inspect_flow._cli.store import init_store
+from inspect_flow._cli.store import StoreOptionArgs, init_store, store_options
 from inspect_flow._util.console import flow_print, path
 
 _TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T")
@@ -48,8 +49,9 @@ def _pager_echo(log_files: Collection[str]) -> None:
 
 
 @list_command.command("log", help="List logs")
+@store_options
 @click.argument("path", required=False, default=None)
-def list_log(path: str | None) -> None:
+def list_log(path: str | None, **kwargs: Unpack[StoreOptionArgs]) -> None:
     if path is not None:
         log_infos = list_eval_logs(log_dir=path, recursive=True)
         if not log_infos:
@@ -57,7 +59,7 @@ def list_log(path: str | None) -> None:
             return
         _pager_echo([info.name for info in log_infos])
     else:
-        flow_store = init_store(quiet=True)
+        flow_store = init_store(quiet=True, **kwargs)
         if not flow_store:
             return
         log_files = flow_store.get_logs()
