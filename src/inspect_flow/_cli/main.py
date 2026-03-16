@@ -4,6 +4,7 @@ import click
 from dotenv import find_dotenv, load_dotenv
 
 from inspect_flow._cli.config import config_command
+from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._util.console import flow_print
 from inspect_flow._util.error import set_exception_hook
@@ -39,6 +40,7 @@ def flow(
 
 flow.add_command(run_command)
 flow.add_command(config_command)
+flow.add_command(list_command)
 flow.add_command(store_command)
 
 
