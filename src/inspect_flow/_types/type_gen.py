@@ -37,7 +37,7 @@ ADDITIONAL_IMPORTS = [
     "from typing_extensions import TypedDict\n",
     "from inspect_ai import Task\n",
     "from inspect_ai.agent import Agent\n",
-    "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, Model, ResponseSchema\n",
+    "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ImageOutput, Model, ResponseSchema\n",
     "from inspect_ai.scorer import Scorer\n",
     "from inspect_ai.solver import Solver\n",
     "from inspect_ai.util import SandboxEnvironmentSpec\n",

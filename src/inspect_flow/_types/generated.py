@@ -11,6 +11,7 @@ from inspect_ai.model import (
     BatchConfig,
     CachePolicy,
     GenerateConfig,
+    ImageOutput,
     Model,
     ResponseSchema,
 )
@@ -291,6 +292,8 @@ class GenerateConfigDict(TypedDict):
     """Extra headers to be sent with requests. Not supported for AzureAI, Bedrock, and Grok."""
     extra_body: NotRequired[Mapping[str, Any] | None]
     """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
+    modalities: NotRequired[Sequence[Literal["image"] | ImageOutput] | None]
+    """Additional output modalities to enable beyond text (e.g. ["image"]). OpenAI and Google only."""
     cache: NotRequired[bool | CachePolicy | None]
     """Policy for caching of model generate output."""
     batch: NotRequired[bool | int | BatchConfig | None]
