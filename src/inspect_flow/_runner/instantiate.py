@@ -104,13 +104,14 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
 def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     if isinstance(model, Model):
         return model
-    if model.factory:
+    if model.factory and callable(model.factory):
         return model.factory(**(model.model_args or {}))
-    if not model.name:
+    name = model.factory or model.name
+    if not name:
         raise ValueError(f"Model name is required. Model: {model}")
 
     return get_model(
-        model=model.name,
+        model=name,
         role=default_none(model.role),
         default=default_none(model.default),
         config=model.config or GenerateConfig(),
@@ -135,12 +136,13 @@ def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer | Scorer) -> 
         return scorer
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
-    if scorer.factory:
+    if scorer.factory and callable(scorer.factory):
         return scorer.factory(**(scorer.args or {}))
-    if not scorer.name:
+    name = scorer.factory or scorer.name
+    if not name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
-        ScorerSpec(scorer=scorer.name),
+        ScorerSpec(scorer=name),
         task_path=None,
         **_kwargs("scorer", scorer.args, task),
     )
@@ -171,24 +173,26 @@ def _create_single_solver(task: FlowTask, solver: str | FlowSolver | Solver) -> 
         return solver
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
-    if solver.factory:
+    if solver.factory and callable(solver.factory):
         return solver.factory(**(solver.args or {}))
-    if not solver.name:
+    name = solver.factory or solver.name
+    if not name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
     return registry_create(
-        type="solver", name=solver.name, **_kwargs("solver", solver.args, task)
+        type="solver", name=name, **_kwargs("solver", solver.args, task)
     )
 
 
 def _create_agent(task: FlowTask, agent: FlowAgent) -> Agent:
-    if agent.factory:
+    if agent.factory and callable(agent.factory):
         return agent.factory(**(agent.args or {}))
-    if not agent.name:
+    name = agent.factory or agent.name
+    if not name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
     return registry_create(
-        type="agent", name=agent.name, **_kwargs("agent", agent.args, task)
+        type="agent", name=name, **_kwargs("agent", agent.args, task)
     )
 
 
@@ -240,6 +244,9 @@ def _instantiate_task(
         init_active_model(model, model.config)
     tasks = _create_task(flow_task, base_dir=base_dir)
 
+    # Try to preserve the task name provided in the flow_task, but if a file with multiple tasks is provided need to use the default names to ensure there are not duplicates.
+    task_name = flow_task.name if len(tasks) == 1 else NOT_GIVEN
+
     for task in tasks:
         if is_set(flow_task.sample_id):
             task.dataset = slice_dataset(
@@ -282,7 +289,7 @@ def _instantiate_task(
             working_limit=ng(flow_task.working_limit),
             cost_limit=ng(flow_task.cost_limit),
             early_stopping=ng(flow_task.early_stopping),
-            # name= should be set when loaded
+            name=ng(task_name),
             version=ng(flow_task.version),
             metadata=ng(flow_task.metadata),
         )
@@ -292,18 +299,19 @@ def _instantiate_task(
 def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
     task_args = registry_kwargs(**(task.args or {}))
     # Use factory if provided
-    if task.factory:
+    if task.factory and callable(task.factory):
         return [task.factory(**task_args)]
 
-    if not task.name:
+    name = task.factory or task.name
+    if not name:
         raise ValueError(f"Task name is required. Task: {task}")
 
     # Try to create by finding task functions in files
     if filesystem(base_dir).is_local():
         with chdir_python(base_dir):
-            tasks = load_tasks(task_specs=[task.name], task_args=task_args)
+            tasks = load_tasks(task_specs=[name], task_args=task_args)
     else:
-        tasks = load_tasks(task_specs=[task.name], task_args=task_args)
+        tasks = load_tasks(task_specs=[name], task_args=task_args)
     if not tasks:
-        raise LookupError(f"No tasks found for name: {task.name}")
+        raise LookupError(f"No tasks found for name: {name}")
     return tasks

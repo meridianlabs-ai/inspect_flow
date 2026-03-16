@@ -63,15 +63,6 @@ class FlowBase(BaseModel, extra="forbid"):
     def __str__(self) -> str:
         return str(model_dump(self))
 
-    @model_validator(mode="before")
-    @classmethod
-    def factory_string_to_name(cls, data: Any) -> Any:
-        """If factory is a string, move it to name and clear factory."""
-        if isinstance(data, dict) and isinstance(data.get("factory"), str):
-            data["name"] = data["factory"]
-            del data["factory"]
-        return data
-
     def __rich_repr__(self) -> rich.repr.Result:
         for field in self.model_fields_set:
             if (value := getattr(self, field)) is not not_given:
@@ -86,7 +77,7 @@ class FlowModel(FlowBase):
         description="Name of the model to use. If factory is not provided, this is used to create the model.",
     )
 
-    factory: Callable[..., Model] | None | NotGiven = Field(
+    factory: Callable[..., Model] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the model instance.",
     )
@@ -139,7 +130,7 @@ class FlowScorer(FlowBase):
         description="Name of the scorer. Used to create the scorer if the factory is not provided.",
     )
 
-    factory: Callable[..., Scorer] | None | NotGiven = Field(
+    factory: Callable[..., Scorer] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the scorer instance.",
     )
@@ -163,7 +154,7 @@ class FlowSolver(FlowBase):
         description="Name of the solver. Used to create the solver if the factory is not provided.",
     )
 
-    factory: Callable[..., Solver] | None | NotGiven = Field(
+    factory: Callable[..., Solver] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the solver instance.",
     )
@@ -187,7 +178,7 @@ class FlowAgent(FlowBase):
         description="Name of the agent. Used to create the agent if the factory is not provided.",
     )
 
-    factory: Callable[..., Agent] | None | NotGiven = Field(
+    factory: Callable[..., Agent] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the agent instance.",
     )
@@ -261,7 +252,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description='Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided.',
     )
 
-    factory: Callable[..., Task] | None | NotGiven = Field(
+    factory: Callable[..., Task] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the task instance.",
     )

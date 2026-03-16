@@ -29,7 +29,10 @@ def _task_name(task: FlowTask) -> str | None:
     if task.name:
         return task.name
     if task.factory:
-        return callable_name(task.factory)
+        if callable(task.factory):
+            return callable_name(task.factory)
+        else:
+            return task.factory
     return None
 
 
