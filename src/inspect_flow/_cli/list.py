@@ -11,6 +11,7 @@ import click
 from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log_async
 from rich.console import Console
+from rich.table import Table
 from rich.text import Text
 from typing_extensions import Unpack
 
@@ -158,33 +159,24 @@ def _compute_entries(
 def _format_entries(entries: list[LogEntry]) -> str:
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True)
-    task_width = max((len(e.task) for e in entries), default=0)
-    qual_width = max((e.qualifier.cell_len for e in entries), default=0)
-    status_width = max((len(e.status) for e in entries), default=0)
-    samples_width = max((len(e.samples) for e in entries), default=0)
-    duration_width = max((len(e.duration) for e in entries), default=0)
+    table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 1))
+    table.add_column("task")
+    table.add_column("qualifier")
+    table.add_column("status")
+    table.add_column("samples", justify="right")
+    table.add_column("duration", justify="right")
+    table.add_column("path", no_wrap=True)
     for entry in entries:
-        line = Text()
-        line.append(entry.task.ljust(task_width))
-        if qual_width > 0:
-            line.append("  ")
-            line.append_text(entry.qualifier)
-            padding = qual_width - entry.qualifier.cell_len
-            if padding > 0:
-                line.append(" " * padding)
-        if status_width > 0:
-            line.append("  ")
-            style = _STATUS_STYLES.get(entry.status, "")
-            line.append(entry.status.ljust(status_width), style=style)
-        if samples_width > 0:
-            line.append("  ")
-            line.append(entry.samples.rjust(samples_width))
-        if duration_width > 0:
-            line.append("  ")
-            line.append(entry.duration.rjust(duration_width))
-        line.append("  ")
-        line.append_text(path(entry.log_path))
-        console.print(line)
+        style = _STATUS_STYLES.get(entry.status, "")
+        table.add_row(
+            entry.task,
+            entry.qualifier,
+            Text(entry.status, style=style),
+            entry.samples,
+            entry.duration,
+            path(entry.log_path),
+        )
+    console.print(table)
     return buf.getvalue()
 
 
@@ -192,9 +184,10 @@ def _format_entries(entries: list[LogEntry]) -> str:
 
 
 def _process_groups(dir_groups: list[list[str]]) -> list[LogEntry]:
+    all_paths = [p for group in dir_groups for p in group]
+    headers = _read_headers(all_paths)
     entries: list[LogEntry] = []
     for group in dir_groups:
-        headers = _read_headers(group)
         entries.extend(_compute_entries(group, headers))
     return entries
 
@@ -216,16 +209,20 @@ def _paged_output(dir_groups: list[list[str]], page_size: int) -> None:
     proc = subprocess.Popen(pager.split(), stdin=subprocess.PIPE, env=env)
     assert proc.stdin
     try:
-        batch: list[LogEntry] = []
+        pending: list[list[str]] = []
+        pending_count = 0
         for group in dir_groups:
-            headers = _read_headers(group)
-            batch.extend(_compute_entries(group, headers))
-            if len(batch) >= page_size:
-                proc.stdin.write(_format_entries(batch).encode())
+            pending.append(group)
+            pending_count += len(group)
+            if pending_count >= page_size:
+                entries = _process_groups(pending)
+                proc.stdin.write(_format_entries(entries).encode())
                 proc.stdin.flush()
-                batch = []
-        if batch:
-            proc.stdin.write(_format_entries(batch).encode())
+                pending = []
+                pending_count = 0
+        if pending:
+            entries = _process_groups(pending)
+            proc.stdin.write(_format_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
         pass
