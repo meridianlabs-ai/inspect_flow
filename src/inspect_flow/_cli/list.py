@@ -2,7 +2,7 @@ import io
 import os
 import re
 import subprocess
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -11,6 +11,7 @@ import click
 from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log_async
 from rich.console import Console
+from rich.progress import Progress
 from rich.table import Table
 from rich.text import Text
 from typing_extensions import Unpack
@@ -64,15 +65,28 @@ def _group_by_dir(log_paths: Collection[str]) -> list[list[str]]:
 # -- Header reading and qualifier computation ---------------------------------
 
 
-async def _read_header(log_path: str) -> tuple[str, EvalLog | None]:
+async def _read_header(
+    log_path: str, on_read: Callable[[], None] | None = None
+) -> tuple[str, EvalLog | None]:
     try:
-        return log_path, await read_eval_log_async(log_path, header_only=True)
+        result = log_path, await read_eval_log_async(log_path, header_only=True)
     except Exception:
-        return log_path, None
+        result = log_path, None
+    if on_read:
+        on_read()
+    return result
 
 
-def _read_headers(log_paths: list[str]) -> dict[str, EvalLog]:
-    results = run_coroutine(tg_collect([partial(_read_header, p) for p in log_paths]))
+def _read_headers(
+    log_paths: list[str], progress: Progress | None = None
+) -> dict[str, EvalLog]:
+    on_read: Callable[[], None] | None = None
+    if progress is not None:
+        task_id = progress.add_task("Reading logs…", total=len(log_paths))
+        on_read = partial(progress.advance, task_id)
+    results = run_coroutine(
+        tg_collect([partial(_read_header, p, on_read) for p in log_paths])
+    )
     return {p: h for p, h in results if h is not None}
 
 
@@ -183,9 +197,15 @@ def _format_entries(entries: list[LogEntry]) -> str:
 # -- Paging -------------------------------------------------------------------
 
 
-def _process_groups(dir_groups: list[list[str]]) -> list[LogEntry]:
+def _process_groups(
+    dir_groups: list[list[str]], show_progress: bool = False
+) -> list[LogEntry]:
     all_paths = [p for group in dir_groups for p in group]
-    headers = _read_headers(all_paths)
+    if show_progress:
+        with Progress(transient=True) as progress:
+            headers = _read_headers(all_paths, progress=progress)
+    else:
+        headers = _read_headers(all_paths)
     entries: list[LogEntry] = []
     for group in dir_groups:
         entries.extend(_compute_entries(group, headers))
@@ -197,7 +217,8 @@ def _echo_logs(log_paths: Collection[str]) -> None:
     total = sum(len(g) for g in dir_groups)
     page_size = Console().size.height - 1
     if total <= page_size:
-        click.echo(_format_entries(_process_groups(dir_groups)), nl=False)
+        entries = _process_groups(dir_groups, show_progress=True)
+        click.echo(_format_entries(entries), nl=False)
     else:
         _paged_output(dir_groups, page_size)
 
@@ -211,17 +232,19 @@ def _paged_output(dir_groups: list[list[str]], page_size: int) -> None:
     try:
         pending: list[list[str]] = []
         pending_count = 0
+        first = True
         for group in dir_groups:
             pending.append(group)
             pending_count += len(group)
             if pending_count >= page_size:
-                entries = _process_groups(pending)
+                entries = _process_groups(pending, show_progress=first)
+                first = False
                 proc.stdin.write(_format_entries(entries).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
         if pending:
-            entries = _process_groups(pending)
+            entries = _process_groups(pending, show_progress=first)
             proc.stdin.write(_format_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
