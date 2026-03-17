@@ -91,11 +91,28 @@ def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
     )
 
 
+_STATUS_STYLES: dict[str, str] = {
+    "success": "green",
+    "cancelled": "yellow",
+    "error": "red",
+    "started": "cyan",
+}
+
+
+def _samples_str(header: EvalLog) -> str:
+    if header.results:
+        return f"{header.results.completed_samples}/{header.results.total_samples}"
+    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
+    return f"0/{total}" if total else ""
+
+
 @dataclass
 class LogEntry:
     log_path: str
     task: str
     qualifier: Text
+    status: str
+    samples: str
 
 
 def _compute_entries(
@@ -107,13 +124,13 @@ def _compute_entries(
     qualifiers = unique_task_names(task_infos)
 
     entries = [
-        LogEntry(p, name, qual)
+        LogEntry(p, name, qual, headers[p].status, _samples_str(headers[p]))
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
     valid_set = set(valid)
     for p in log_paths:
         if p not in valid_set:
-            entries.append(LogEntry(p, "", Text()))
+            entries.append(LogEntry(p, "", Text(), "", ""))
     return entries
 
 
@@ -125,6 +142,8 @@ def _format_entries(entries: list[LogEntry]) -> str:
     console = Console(file=buf, force_terminal=True)
     task_width = max((len(e.task) for e in entries), default=0)
     qual_width = max((e.qualifier.cell_len for e in entries), default=0)
+    status_width = max((len(e.status) for e in entries), default=0)
+    samples_width = max((len(e.samples) for e in entries), default=0)
     for entry in entries:
         line = Text()
         line.append(entry.task.ljust(task_width))
@@ -134,6 +153,13 @@ def _format_entries(entries: list[LogEntry]) -> str:
             padding = qual_width - entry.qualifier.cell_len
             if padding > 0:
                 line.append(" " * padding)
+        if status_width > 0:
+            line.append("  ")
+            style = _STATUS_STYLES.get(entry.status, "")
+            line.append(entry.status.ljust(status_width), style=style)
+        if samples_width > 0:
+            line.append("  ")
+            line.append(entry.samples.rjust(samples_width))
         line.append("  ")
         line.append_text(path(entry.log_path))
         console.print(line)
