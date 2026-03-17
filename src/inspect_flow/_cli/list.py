@@ -203,6 +203,72 @@ def _render(renderable: Table | Tree) -> str:
     return buf.getvalue()
 
 
+_RIGHT_ALIGN = frozenset({3, 4})  # samples, duration
+_COL_PAD = 2
+
+
+def _render_entries(entries: list[LogEntry]) -> str:
+    if not entries:
+        return ""
+
+    rows: list[list[Text]] = []
+    for entry in entries:
+        rows.append(
+            [
+                Text(entry.task),
+                entry.qualifier,
+                Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
+                Text(entry.samples),
+                Text(entry.duration),
+                path(entry.log_path),
+            ]
+        )
+
+    n_cols = len(rows[0])
+    widths = [max(row[i].cell_len for row in rows) for i in range(n_cols)]
+    visible = [i for i in range(n_cols) if widths[i] > 0]
+
+    # Greedily pack columns into lines that fit terminal width.
+    term_width = Console().size.width
+    breaks: list[list[int]] = []
+    line: list[int] = []
+    line_w = 0
+    for i in visible:
+        w = widths[i] + (_COL_PAD if line else 0)
+        if line and line_w + w > term_width:
+            breaks.append(line)
+            line = [i]
+            line_w = widths[i]
+        else:
+            line.append(i)
+            line_w += w
+    if line:
+        breaks.append(line)
+
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=2**15)
+    for cells in rows:
+        for bi, cols in enumerate(breaks):
+            text = Text()
+            if bi > 0:
+                text.append("  ")
+            for j, ci in enumerate(cols):
+                if j > 0:
+                    text.append(" " * _COL_PAD)
+                cell = cells[ci]
+                pad = widths[ci] - cell.cell_len
+                if ci in _RIGHT_ALIGN:
+                    if pad > 0:
+                        text.append(" " * pad)
+                    text.append_text(cell)
+                else:
+                    text.append_text(cell)
+                    if j < len(cols) - 1 and pad > 0:
+                        text.append(" " * pad)
+            console.print(text)
+    return buf.getvalue()
+
+
 def _common_prefix(dirs: list[str]) -> str:
     if len(dirs) <= 1:
         return dirs[0] if dirs else ""
@@ -304,7 +370,7 @@ def _echo_logs(
         entries = _process_groups(dir_groups, progress=progress)
         if progress:
             progress.stop()
-        click.echo(_render(_entries_table(entries)), nl=False)
+        click.echo(_render_entries(entries), nl=False)
     else:
         _paged_output(dir_groups, page_size, progress=progress)
 
@@ -332,7 +398,7 @@ def _paged_output(
                     progress.stop()
                     progress = None
                 first = False
-                proc.stdin.write(_render(_entries_table(entries)).encode())
+                proc.stdin.write(_render_entries(entries).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
@@ -340,7 +406,7 @@ def _paged_output(
             entries = _process_groups(pending, progress=progress if first else None)
             if first and progress:
                 progress.stop()
-            proc.stdin.write(_render(_entries_table(entries)).encode())
+            proc.stdin.write(_render_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
         pass
