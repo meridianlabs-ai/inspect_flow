@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.progress import Progress
 from rich.table import Table
 from rich.text import Text
+from rich.tree import Tree
 from typing_extensions import Unpack
 
 from inspect_flow._cli.store import StoreOptionArgs, init_store, store_options
@@ -172,9 +173,7 @@ def _compute_entries(
 # -- Formatting ---------------------------------------------------------------
 
 
-def _format_entries(entries: list[LogEntry]) -> str:
-    buf = io.StringIO()
-    console = Console(file=buf, force_terminal=True)
+def _entries_table(entries: list[LogEntry], filename_only: bool = False) -> Table:
     table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 1))
     table.add_column("task")
     table.add_column("qualifier")
@@ -184,16 +183,96 @@ def _format_entries(entries: list[LogEntry]) -> str:
     table.add_column("path", no_wrap=True)
     for entry in entries:
         style = _STATUS_STYLES.get(entry.status, "")
+        log_path = (
+            entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
+        )
         table.add_row(
             entry.task,
             entry.qualifier,
             Text(entry.status, style=style),
             entry.samples,
             entry.duration,
-            path(entry.log_path),
+            path(log_path),
         )
-    console.print(table)
+    return table
+
+
+def _render(renderable: Table | Tree) -> str:
+    buf = io.StringIO()
+    Console(file=buf, force_terminal=True, width=2**15).print(renderable)
     return buf.getvalue()
+
+
+def _common_prefix(dirs: list[str]) -> str:
+    if len(dirs) <= 1:
+        return dirs[0] if dirs else ""
+    split = [d.split("/") for d in dirs]
+    prefix: list[str] = []
+    for parts in zip(*split, strict=False):
+        if len(set(parts)) == 1:
+            prefix.append(parts[0])
+        else:
+            break
+    return "/".join(prefix)
+
+
+def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
+    dirs = [d for d, _ in dir_entries]
+    prefix = _common_prefix(dirs)
+    tree = Tree(prefix or ".")
+    nodes: dict[str, Tree] = {}
+
+    for dir_path, entries in dir_entries:
+        rel = dir_path[len(prefix) :].lstrip("/") if prefix else dir_path
+        parts = [p for p in rel.split("/") if p]
+        current: Tree = tree
+        built = ""
+        for part in parts:
+            built = f"{built}/{part}" if built else part
+            if built not in nodes:
+                nodes[built] = current.add(part)
+            current = nodes[built]
+        current.add(_entries_table(entries, filename_only=True))
+
+    return _render(tree)
+
+
+def _page_string(content: str) -> None:
+    env = os.environ.copy()
+    env["LESS"] = env.get("LESS", "") + " -RX"
+    pager = env.get("PAGER", "less")
+    proc = subprocess.Popen(pager.split(), stdin=subprocess.PIPE, env=env)
+    assert proc.stdin
+    try:
+        proc.stdin.write(content.encode())
+    except BrokenPipeError:
+        pass
+    finally:
+        try:
+            proc.stdin.close()
+        except BrokenPipeError:
+            pass
+        proc.wait()
+
+
+def _echo_tree(dir_groups: list[list[str]], progress: Progress | None = None) -> None:
+    all_paths = [p for group in dir_groups for p in group]
+    headers = _read_headers(all_paths, progress=progress)
+    if progress:
+        progress.stop()
+
+    dir_entries: list[tuple[str, list[LogEntry]]] = []
+    for group in dir_groups:
+        entries = _compute_entries(group, headers)
+        dir_path = group[0].rsplit("/", 1)[0] if "/" in group[0] else ""
+        dir_entries.append((dir_path, entries))
+
+    output = _format_tree(dir_entries)
+    page_size = Console().size.height - 1
+    if output.count("\n") <= page_size:
+        click.echo(output, nl=False)
+    else:
+        _page_string(output)
 
 
 # -- Paging -------------------------------------------------------------------
@@ -210,15 +289,22 @@ def _process_groups(
     return entries
 
 
-def _echo_logs(log_paths: Collection[str], progress: Progress | None = None) -> None:
+def _echo_logs(
+    log_paths: Collection[str],
+    progress: Progress | None = None,
+    output_format: str = "table",
+) -> None:
     dir_groups = _group_by_dir(log_paths)
+    if output_format == "tree":
+        _echo_tree(dir_groups, progress)
+        return
     total = sum(len(g) for g in dir_groups)
     page_size = Console().size.height - 1
     if total <= page_size:
         entries = _process_groups(dir_groups, progress=progress)
         if progress:
             progress.stop()
-        click.echo(_format_entries(entries), nl=False)
+        click.echo(_render(_entries_table(entries)), nl=False)
     else:
         _paged_output(dir_groups, page_size, progress=progress)
 
@@ -246,7 +332,7 @@ def _paged_output(
                     progress.stop()
                     progress = None
                 first = False
-                proc.stdin.write(_format_entries(entries).encode())
+                proc.stdin.write(_render(_entries_table(entries)).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
@@ -254,7 +340,7 @@ def _paged_output(
             entries = _process_groups(pending, progress=progress if first else None)
             if first and progress:
                 progress.stop()
-            proc.stdin.write(_format_entries(entries).encode())
+            proc.stdin.write(_render(_entries_table(entries)).encode())
             proc.stdin.flush()
     except BrokenPipeError:
         pass
@@ -277,8 +363,17 @@ def list_command() -> None:
 
 @list_command.command("log", help="List logs")
 @store_options
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "tree"]),
+    default="table",
+    help="Output format",
+)
 @click.argument("path", required=False, default=None)
-def list_log(path: str | None, **kwargs: Unpack[StoreOptionArgs]) -> None:
+def list_log(
+    path: str | None, output_format: str, **kwargs: Unpack[StoreOptionArgs]
+) -> None:
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
@@ -288,7 +383,11 @@ def list_log(path: str | None, **kwargs: Unpack[StoreOptionArgs]) -> None:
             progress.stop()
             flow_print("No logs found in", path)
             return
-        _echo_logs([info.name for info in log_infos], progress=progress)
+        _echo_logs(
+            [info.name for info in log_infos],
+            progress=progress,
+            output_format=output_format,
+        )
     else:
         flow_store = init_store(quiet=True, **kwargs)
         if not flow_store:
@@ -299,4 +398,4 @@ def list_log(path: str | None, **kwargs: Unpack[StoreOptionArgs]) -> None:
             progress.stop()
             flow_print("No logs in store")
             return
-        _echo_logs(log_files, progress=progress)
+        _echo_logs(log_files, progress=progress, output_format=output_format)
