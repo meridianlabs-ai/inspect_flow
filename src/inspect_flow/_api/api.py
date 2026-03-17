@@ -143,7 +143,7 @@ def list_logs(
     elif isinstance(store, FlowStore):
         paths = store.get_logs()
     else:
-        flow_store = store_factory(store, base_dir=".", create=False)
+        flow_store = store_factory(store, base_dir=".", create=False, quiet=True)
         paths = flow_store.get_logs() if flow_store else set()
     return _sort_logs(paths)
 

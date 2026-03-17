@@ -27,6 +27,14 @@ from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.logs import group_logs_by_dir
 
+
+@dataclass
+class ListOptions:
+    output_format: str = "table"
+    log_filter: LogFilter | None = None
+    max_count: int | None = None
+
+
 # -- Header reading and qualifier computation ---------------------------------
 
 
@@ -44,8 +52,8 @@ async def _read_header(
 
 def _read_headers(
     log_paths: list[str],
+    options: ListOptions,
     progress: Progress | None = None,
-    log_filter: LogFilter | None = None,
 ) -> dict[str, EvalLog]:
     on_read: Callable[[], None] | None = None
     if progress is not None:
@@ -57,8 +65,8 @@ def _read_headers(
         tg_collect([partial(_read_header, p, on_read) for p in log_paths])
     )
     headers = {p: h for p, h in results if h is not None}
-    if log_filter:
-        headers = {p: h for p, h in headers.items() if log_filter(h)}
+    if options.log_filter:
+        headers = {p: h for p, h in headers.items() if options.log_filter(h)}
     return headers
 
 
@@ -296,21 +304,27 @@ def _page_string(content: str) -> None:
 
 def _echo_tree(
     dir_groups: list[list[str]],
+    options: ListOptions,
     progress: Progress | None = None,
-    log_filter: LogFilter | None = None,
 ) -> None:
     all_paths = [p for group in dir_groups for p in group]
-    headers = _read_headers(all_paths, progress=progress, log_filter=log_filter)
+    headers = _read_headers(all_paths, options, progress=progress)
     if progress:
         progress.stop()
 
     dir_entries: list[tuple[str, list[LogEntry]]] = []
+    count = 0
     for group in dir_groups:
         entries = _compute_entries(group, headers)
         if not entries:
             continue
+        if options.max_count is not None:
+            entries = entries[: options.max_count - count]
+        count += len(entries)
         dir_path = group[0].rsplit("/", 1)[0] if "/" in group[0] else ""
         dir_entries.append((dir_path, entries))
+        if options.max_count is not None and count >= options.max_count:
+            break
 
     output = _format_tree(dir_entries)
     page_size = Console().size.height - 1
@@ -325,11 +339,11 @@ def _echo_tree(
 
 def _process_groups(
     dir_groups: list[list[str]],
+    options: ListOptions,
     progress: Progress | None = None,
-    log_filter: LogFilter | None = None,
 ) -> list[LogEntry]:
     all_paths = [p for group in dir_groups for p in group]
-    headers = _read_headers(all_paths, progress=progress, log_filter=log_filter)
+    headers = _read_headers(all_paths, options, progress=progress)
     entries: list[LogEntry] = []
     for group in dir_groups:
         entries.extend(_compute_entries(group, headers))
@@ -338,30 +352,31 @@ def _process_groups(
 
 def _echo_logs(
     log_paths: Collection[str],
+    options: ListOptions,
     progress: Progress | None = None,
-    output_format: str = "table",
-    log_filter: LogFilter | None = None,
 ) -> None:
     dir_groups = group_logs_by_dir(log_paths)
-    if output_format == "tree":
-        _echo_tree(dir_groups, progress, log_filter=log_filter)
+    if options.output_format == "tree":
+        _echo_tree(dir_groups, options, progress=progress)
         return
-    total = sum(len(g) for g in dir_groups)
+    total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
     page_size = Console().size.height - 1
     if total <= page_size:
-        entries = _process_groups(dir_groups, progress=progress, log_filter=log_filter)
+        entries = _process_groups(dir_groups, options, progress=progress)
+        if options.max_count is not None:
+            entries = entries[: options.max_count]
         if progress:
             progress.stop()
         click.echo(_render_entries(entries), nl=False)
     else:
-        _paged_output(dir_groups, page_size, progress=progress, log_filter=log_filter)
+        _paged_output(dir_groups, page_size, options, progress=progress)
 
 
 def _paged_output(
     dir_groups: list[list[str]],
     page_size: int,
+    options: ListOptions,
     progress: Progress | None = None,
-    log_filter: LogFilter | None = None,
 ) -> None:
     env = os.environ.copy()
     env["LESS"] = env.get("LESS", "") + " -RX"
@@ -372,29 +387,35 @@ def _paged_output(
         pending: list[list[str]] = []
         pending_count = 0
         first = True
+        emitted = 0
         for group in dir_groups:
             pending.append(group)
             pending_count += len(group)
             if pending_count >= page_size:
                 entries = _process_groups(
-                    pending,
-                    progress=progress if first else None,
-                    log_filter=log_filter,
+                    pending, options, progress=progress if first else None
                 )
                 if first and progress:
                     progress.stop()
                     progress = None
                 first = False
+                if options.max_count is not None:
+                    entries = entries[: options.max_count - emitted]
+                emitted += len(entries)
                 proc.stdin.write(_render_entries(entries).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
+                if options.max_count is not None and emitted >= options.max_count:
+                    break
         if pending:
             entries = _process_groups(
-                pending, progress=progress if first else None, log_filter=log_filter
+                pending, options, progress=progress if first else None
             )
             if first and progress:
                 progress.stop()
+            if options.max_count is not None:
+                entries = entries[: options.max_count - emitted]
             proc.stdin.write(_render_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
@@ -416,7 +437,20 @@ def list_command() -> None:
     pass
 
 
-@list_command.command("log", help="List logs")
+class _MaxCountCommand(click.Command):
+    """Rewrites bare -<number> args to --max-count=<number>."""
+
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        rewritten: list[str] = []
+        for arg in args:
+            if len(arg) > 1 and arg[0] == "-" and arg[1:].isdigit():
+                rewritten.append(f"--max-count={arg[1:]}")
+            else:
+                rewritten.append(arg)
+        return super().parse_args(ctx, rewritten)
+
+
+@list_command.command("log", cls=_MaxCountCommand, help="List logs")
 @store_options
 @filter_options
 @click.option(
@@ -426,15 +460,28 @@ def list_command() -> None:
     default="table",
     help="Output format",
 )
+@click.option(
+    "-n",
+    "--max-count",
+    "max_count",
+    type=int,
+    default=None,
+    help="Limit output to <number> logs. Also accepts -<number> (e.g. -5).",
+)
 @click.argument("path", required=False, default=None)
 def list_log(
     path: str | None,
     output_format: str,
+    max_count: int | None,
     filter_name: str | None,
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
-    log_filter = _resolve_cli_filter(filter_name, exclude_name)
+    options = ListOptions(
+        output_format=output_format,
+        log_filter=_resolve_cli_filter(filter_name, exclude_name),
+        max_count=max_count,
+    )
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
@@ -443,6 +490,4 @@ def list_log(
         progress.stop()
         flow_print("No logs found")
         return
-    _echo_logs(
-        log_paths, progress=progress, output_format=output_format, log_filter=log_filter
-    )
+    _echo_logs(log_paths, options, progress=progress)
