@@ -12,7 +12,6 @@ from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log_async
 from rich.console import Console
 from rich.progress import Progress
-from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
@@ -173,69 +172,35 @@ def _compute_entries(
 # -- Formatting ---------------------------------------------------------------
 
 
-def _entries_table(entries: list[LogEntry], filename_only: bool = False) -> Table:
-    table = Table(box=None, show_header=False, pad_edge=False, padding=(0, 1))
-    table.add_column("task")
-    table.add_column("qualifier")
-    table.add_column("status")
-    table.add_column("samples", justify="right")
-    table.add_column("duration", justify="right")
-    table.add_column("path", no_wrap=True)
-    for entry in entries:
-        style = _STATUS_STYLES.get(entry.status, "")
-        log_path = (
-            entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
-        )
-        table.add_row(
-            entry.task,
-            entry.qualifier,
-            Text(entry.status, style=style),
-            entry.samples,
-            entry.duration,
-            path(log_path),
-        )
-    return table
-
-
-def _render(renderable: Table | Tree) -> str:
-    buf = io.StringIO()
-    Console(file=buf, force_terminal=True, width=2**15).print(renderable)
-    return buf.getvalue()
-
-
 _RIGHT_ALIGN = frozenset({3, 4})  # samples, duration
 _COL_PAD = 2
+_TREE_GUIDE_WIDTH = 4
 
 
-def _render_entries(entries: list[LogEntry]) -> str:
-    if not entries:
-        return ""
+def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
+    log_path = entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
+    return [
+        Text(entry.task),
+        entry.qualifier,
+        Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
+        Text(entry.samples),
+        Text(entry.duration),
+        path(log_path),
+    ]
 
-    rows: list[list[Text]] = []
-    for entry in entries:
-        rows.append(
-            [
-                Text(entry.task),
-                entry.qualifier,
-                Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
-                Text(entry.samples),
-                Text(entry.duration),
-                path(entry.log_path),
-            ]
-        )
 
-    n_cols = len(rows[0])
-    widths = [max(row[i].cell_len for row in rows) for i in range(n_cols)]
-    visible = [i for i in range(n_cols) if widths[i] > 0]
+def _col_widths(rows: list[list[Text]]) -> list[int]:
+    return [max(row[i].cell_len for row in rows) for i in range(len(rows[0]))]
 
-    # Greedily pack columns into lines that fit terminal width.
-    term_width = Console().size.width
+
+def _break_columns(widths: list[int], available: int) -> list[list[int]]:
+    visible = [i for i in range(len(widths)) if widths[i] > 0]
     breaks: list[list[int]] = []
     line: list[int] = []
     line_w = 0
     for i in visible:
         w = widths[i] + (_COL_PAD if line else 0)
-        if line and line_w + w > term_width:
+        if line and line_w + w > available:
             breaks.append(line)
             line = [i]
             line_w = widths[i]
@@ -244,28 +209,46 @@ def _render_entries(entries: list[LogEntry]) -> str:
             line_w += w
     if line:
         breaks.append(line)
+    return breaks
 
+
+def _format_row(cells: list[Text], widths: list[int], breaks: list[list[int]]) -> Text:
+    result = Text()
+    for bi, cols in enumerate(breaks):
+        if bi > 0:
+            result.append("\n  ")
+        for j, ci in enumerate(cols):
+            if j > 0:
+                result.append(" " * _COL_PAD)
+            cell = cells[ci]
+            pad = widths[ci] - cell.cell_len
+            if ci in _RIGHT_ALIGN:
+                if pad > 0:
+                    result.append(" " * pad)
+                result.append_text(cell)
+            else:
+                result.append_text(cell)
+                if j < len(cols) - 1 and pad > 0:
+                    result.append(" " * pad)
+    return result
+
+
+def _render_entries(entries: list[LogEntry]) -> str:
+    if not entries:
+        return ""
+    rows = [_make_cells(e) for e in entries]
+    widths = _col_widths(rows)
+    breaks = _break_columns(widths, Console().size.width)
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=2**15)
     for cells in rows:
-        for bi, cols in enumerate(breaks):
-            text = Text()
-            if bi > 0:
-                text.append("  ")
-            for j, ci in enumerate(cols):
-                if j > 0:
-                    text.append(" " * _COL_PAD)
-                cell = cells[ci]
-                pad = widths[ci] - cell.cell_len
-                if ci in _RIGHT_ALIGN:
-                    if pad > 0:
-                        text.append(" " * pad)
-                    text.append_text(cell)
-                else:
-                    text.append_text(cell)
-                    if j < len(cols) - 1 and pad > 0:
-                        text.append(" " * pad)
-            console.print(text)
+        console.print(_format_row(cells, widths, breaks))
+    return buf.getvalue()
+
+
+def _render_tree(renderable: Tree) -> str:
+    buf = io.StringIO()
+    Console(file=buf, force_terminal=True, width=2**15).print(renderable)
     return buf.getvalue()
 
 
@@ -283,11 +266,34 @@ def _common_prefix(dirs: list[str]) -> str:
 
 
 def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
+    all_cells = [
+        _make_cells(e, filename_only=True)
+        for _, entries in dir_entries
+        for e in entries
+    ]
+    widths = _col_widths(all_cells) if all_cells else []
+
     dirs = [d for d, _ in dir_entries]
     prefix = _common_prefix(dirs)
+    max_depth = max(
+        (
+            len(
+                [
+                    p
+                    for p in (d[len(prefix) :].lstrip("/") if prefix else d).split("/")
+                    if p
+                ]
+            )
+            for d in dirs
+        ),
+        default=0,
+    )
+    tree_indent = _TREE_GUIDE_WIDTH * (max_depth + 1)
+    breaks = _break_columns(widths, Console().size.width - tree_indent)
+
     tree = Tree(prefix or ".")
     nodes: dict[str, Tree] = {}
-
+    idx = 0
     for dir_path, entries in dir_entries:
         rel = dir_path[len(prefix) :].lstrip("/") if prefix else dir_path
         parts = [p for p in rel.split("/") if p]
@@ -298,9 +304,11 @@ def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
             if built not in nodes:
                 nodes[built] = current.add(part)
             current = nodes[built]
-        current.add(_entries_table(entries, filename_only=True))
+        for _ in entries:
+            current.add(_format_row(all_cells[idx], widths, breaks))
+            idx += 1
 
-    return _render(tree)
+    return _render_tree(tree)
 
 
 def _page_string(content: str) -> None:
