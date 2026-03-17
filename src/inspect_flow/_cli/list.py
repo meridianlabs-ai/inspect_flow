@@ -1,6 +1,5 @@
 import io
 import os
-import re
 import subprocess
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
@@ -9,58 +8,18 @@ from functools import partial
 
 import click
 from inspect_ai._util._async import run_coroutine, tg_collect
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log_async
+from inspect_ai.log import EvalLog, read_eval_log_async
 from rich.console import Console
 from rich.progress import Progress
 from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
-from inspect_flow._cli.store import StoreOptionArgs, init_store, store_options
+from inspect_flow._api.api import list_logs
+from inspect_flow._cli.store import StoreOptionArgs, store_options
 from inspect_flow._runner.task_log import TaskInfo, unique_task_names
 from inspect_flow._util.console import flow_print, path
-
-_TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T")
-
-
-# -- Sorting and grouping ----------------------------------------------------
-
-
-def _sort_logs(logs: Collection[str]) -> list[str]:
-    with_ts: list[str] = []
-    without_ts: list[str] = []
-    for log in logs:
-        basename = log.rsplit("/", 1)[-1]
-        if _TIMESTAMP_RE.match(basename):
-            with_ts.append(log)
-        else:
-            without_ts.append(log)
-    with_ts.sort(key=lambda p: p.rsplit("/", 1)[-1], reverse=True)
-    without_ts.sort(key=lambda p: p.rsplit("/", 1)[-1])
-    return with_ts + without_ts
-
-
-def _group_by_dir(log_paths: Collection[str]) -> list[list[str]]:
-    """Group logs by directory, sorted by most recent file descending."""
-    groups: dict[str, list[str]] = {}
-    for log_path in log_paths:
-        dir_path = log_path.rsplit("/", 1)[0] if "/" in log_path else ""
-        groups.setdefault(dir_path, []).append(log_path)
-
-    sorted_groups = [_sort_logs(paths) for paths in groups.values()]
-
-    ts_groups: list[list[str]] = []
-    non_ts_groups: list[list[str]] = []
-    for group in sorted_groups:
-        if _TIMESTAMP_RE.match(group[0].rsplit("/", 1)[-1]):
-            ts_groups.append(group)
-        else:
-            non_ts_groups.append(group)
-
-    ts_groups.sort(key=lambda g: g[0].rsplit("/", 1)[-1], reverse=True)
-    non_ts_groups.sort(key=lambda g: g[0].rsplit("/", 1)[-1])
-    return ts_groups + non_ts_groups
-
+from inspect_flow._util.logs import group_logs_by_dir
 
 # -- Header reading and qualifier computation ---------------------------------
 
@@ -365,7 +324,7 @@ def _echo_logs(
     progress: Progress | None = None,
     output_format: str = "table",
 ) -> None:
-    dir_groups = _group_by_dir(log_paths)
+    dir_groups = group_logs_by_dir(log_paths)
     if output_format == "tree":
         _echo_tree(dir_groups, progress)
         return
@@ -448,25 +407,9 @@ def list_log(
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
-    if path is not None:
-        log_infos = list_eval_logs(log_dir=path, recursive=True)
-        if not log_infos:
-            progress.stop()
-            flow_print("No logs found in", path)
-            return
-        _echo_logs(
-            [info.name for info in log_infos],
-            progress=progress,
-            output_format=output_format,
-        )
-    else:
-        flow_store = init_store(quiet=True, **kwargs)
-        if not flow_store:
-            progress.stop()
-            return
-        log_files = flow_store.get_logs()
-        if not log_files:
-            progress.stop()
-            flow_print("No logs in store")
-            return
-        _echo_logs(log_files, progress=progress, output_format=output_format)
+    log_paths = list_logs(log_dir=path, store=kwargs.get("store") or "auto")
+    if not log_paths:
+        progress.stop()
+        flow_print("No logs found")
+        return
+    _echo_logs(log_paths, progress=progress, output_format=output_format)

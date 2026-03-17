@@ -4,6 +4,7 @@ from typing import Any
 from dotenv import find_dotenv, load_dotenv
 from inspect_ai._util.file import filesystem
 from inspect_ai._util.path import chdir_python
+from inspect_ai.log import list_eval_logs
 
 from inspect_flow._config.load import (
     ConfigOptions,
@@ -17,6 +18,7 @@ from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.logs import sort_logs as _sort_logs
 from inspect_flow._util.module_util import is_loading_spec
 
 _initialized = False
@@ -118,6 +120,32 @@ def config(
     spec = expand_spec(spec, base_dir=base_dir)
     dump = config_to_yaml(spec)
     return dump
+
+
+def list_logs(
+    log_dir: str | None = None,
+    store: str | FlowStore = "auto",
+) -> list[str]:
+    """List log paths grouped by directory, directories ordered by most recent log file.
+
+    Within each directory, logs are sorted by filename timestamp descending.
+    Logs without a timestamp prefix sort at the end.
+
+    Args:
+        log_dir: Directory to list logs from recursively.
+            If provided, the store is not used.
+        store: The store to read logs from. Can be a `FlowStore` instance,
+            a path, or `"auto"` for the default. Only used when `log_dir` is `None`.
+    """
+    _ensure_init(dotenv_base_dir=".")
+    if log_dir is not None:
+        paths = {info.name for info in list_eval_logs(log_dir=log_dir, recursive=True)}
+    elif isinstance(store, FlowStore):
+        paths = store.get_logs()
+    else:
+        flow_store = store_factory(store, base_dir=".", create=False)
+        paths = flow_store.get_logs() if flow_store else set()
+    return _sort_logs(paths)
 
 
 def store_get(store: str = "auto", create: bool = True) -> FlowStore:

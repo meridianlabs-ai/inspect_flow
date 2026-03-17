@@ -25,7 +25,7 @@ def test_list_log_empty_store(recording_console: Console) -> None:
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
     captured = recording_console.export_text()
-    assert "No logs in store" in captured
+    assert "No logs found" in captured
 
 
 def test_list_log_path() -> None:
@@ -40,4 +40,4 @@ def test_list_log_no_store(recording_console: Console) -> None:
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
     captured = recording_console.export_text()
-    assert "Store not found" in captured
+    assert "No logs found" in captured
