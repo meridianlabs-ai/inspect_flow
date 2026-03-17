@@ -82,6 +82,8 @@ def _read_headers(
 ) -> dict[str, EvalLog]:
     on_read: Callable[[], None] | None = None
     if progress is not None:
+        for task in progress.tasks:
+            progress.remove_task(task.id)
         task_id = progress.add_task("Reading logs…", total=len(log_paths))
         on_read = partial(progress.advance, task_id)
     results = run_coroutine(
@@ -198,32 +200,34 @@ def _format_entries(entries: list[LogEntry]) -> str:
 
 
 def _process_groups(
-    dir_groups: list[list[str]], show_progress: bool = False
+    dir_groups: list[list[str]], progress: Progress | None = None
 ) -> list[LogEntry]:
     all_paths = [p for group in dir_groups for p in group]
-    if show_progress:
-        with Progress(transient=True) as progress:
-            headers = _read_headers(all_paths, progress=progress)
-    else:
-        headers = _read_headers(all_paths)
+    headers = _read_headers(all_paths, progress=progress)
     entries: list[LogEntry] = []
     for group in dir_groups:
         entries.extend(_compute_entries(group, headers))
     return entries
 
 
-def _echo_logs(log_paths: Collection[str]) -> None:
+def _echo_logs(log_paths: Collection[str], progress: Progress | None = None) -> None:
     dir_groups = _group_by_dir(log_paths)
     total = sum(len(g) for g in dir_groups)
     page_size = Console().size.height - 1
     if total <= page_size:
-        entries = _process_groups(dir_groups, show_progress=True)
+        entries = _process_groups(dir_groups, progress=progress)
+        if progress:
+            progress.stop()
         click.echo(_format_entries(entries), nl=False)
     else:
-        _paged_output(dir_groups, page_size)
+        _paged_output(dir_groups, page_size, progress=progress)
 
 
-def _paged_output(dir_groups: list[list[str]], page_size: int) -> None:
+def _paged_output(
+    dir_groups: list[list[str]],
+    page_size: int,
+    progress: Progress | None = None,
+) -> None:
     env = os.environ.copy()
     env["LESS"] = env.get("LESS", "") + " -RX"
     pager = env.get("PAGER", "less")
@@ -237,14 +241,19 @@ def _paged_output(dir_groups: list[list[str]], page_size: int) -> None:
             pending.append(group)
             pending_count += len(group)
             if pending_count >= page_size:
-                entries = _process_groups(pending, show_progress=first)
+                entries = _process_groups(pending, progress=progress if first else None)
+                if first and progress:
+                    progress.stop()
+                    progress = None
                 first = False
                 proc.stdin.write(_format_entries(entries).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
         if pending:
-            entries = _process_groups(pending, show_progress=first)
+            entries = _process_groups(pending, progress=progress if first else None)
+            if first and progress:
+                progress.stop()
             proc.stdin.write(_format_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
@@ -270,18 +279,24 @@ def list_command() -> None:
 @store_options
 @click.argument("path", required=False, default=None)
 def list_log(path: str | None, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    progress = Progress(transient=True)
+    progress.add_task("Listing logs…", total=None)
+    progress.start()
     if path is not None:
         log_infos = list_eval_logs(log_dir=path, recursive=True)
         if not log_infos:
+            progress.stop()
             flow_print("No logs found in", path)
             return
-        _echo_logs([info.name for info in log_infos])
+        _echo_logs([info.name for info in log_infos], progress=progress)
     else:
         flow_store = init_store(quiet=True, **kwargs)
         if not flow_store:
+            progress.stop()
             return
         log_files = flow_store.get_logs()
         if not log_files:
+            progress.stop()
             flow_print("No logs in store")
             return
-        _echo_logs(log_files)
+        _echo_logs(log_files, progress=progress)
