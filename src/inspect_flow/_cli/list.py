@@ -151,7 +151,7 @@ def _compute_entries(
     task_infos = [_eval_log_to_task_info(headers[p]) for p in valid]
     qualifiers = unique_task_names(task_infos)
 
-    entries = [
+    return [
         LogEntry(
             p,
             name,
@@ -162,11 +162,6 @@ def _compute_entries(
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
-    valid_set = set(valid)
-    for p in log_paths:
-        if p not in valid_set:
-            entries.append(LogEntry(p, "", Text(), "", "", ""))
-    return entries
 
 
 # -- Formatting ---------------------------------------------------------------
@@ -338,6 +333,8 @@ def _echo_tree(dir_groups: list[list[str]], progress: Progress | None = None) ->
     dir_entries: list[tuple[str, list[LogEntry]]] = []
     for group in dir_groups:
         entries = _compute_entries(group, headers)
+        if not entries:
+            continue
         dir_path = group[0].rsplit("/", 1)[0] if "/" in group[0] else ""
         dir_entries.append((dir_path, entries))
 
