@@ -4,6 +4,7 @@ import re
 import subprocess
 from collections.abc import Collection
 from dataclasses import dataclass
+from datetime import datetime
 from functools import partial
 
 import click
@@ -99,6 +100,15 @@ _STATUS_STYLES: dict[str, str] = {
 }
 
 
+def _duration_str(header: EvalLog) -> str:
+    started = header.stats.started_at
+    completed = header.stats.completed_at
+    if not started or not completed:
+        return ""
+    delta = datetime.fromisoformat(completed) - datetime.fromisoformat(started)
+    return str(delta).split(".")[0]
+
+
 def _samples_str(header: EvalLog) -> str:
     if header.results:
         return f"{header.results.completed_samples}/{header.results.total_samples}"
@@ -113,6 +123,7 @@ class LogEntry:
     qualifier: Text
     status: str
     samples: str
+    duration: str
 
 
 def _compute_entries(
@@ -124,13 +135,20 @@ def _compute_entries(
     qualifiers = unique_task_names(task_infos)
 
     entries = [
-        LogEntry(p, name, qual, headers[p].status, _samples_str(headers[p]))
+        LogEntry(
+            p,
+            name,
+            qual,
+            headers[p].status,
+            _samples_str(headers[p]),
+            _duration_str(headers[p]),
+        )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
     valid_set = set(valid)
     for p in log_paths:
         if p not in valid_set:
-            entries.append(LogEntry(p, "", Text(), "", ""))
+            entries.append(LogEntry(p, "", Text(), "", "", ""))
     return entries
 
 
@@ -144,6 +162,7 @@ def _format_entries(entries: list[LogEntry]) -> str:
     qual_width = max((e.qualifier.cell_len for e in entries), default=0)
     status_width = max((len(e.status) for e in entries), default=0)
     samples_width = max((len(e.samples) for e in entries), default=0)
+    duration_width = max((len(e.duration) for e in entries), default=0)
     for entry in entries:
         line = Text()
         line.append(entry.task.ljust(task_width))
@@ -160,6 +179,9 @@ def _format_entries(entries: list[LogEntry]) -> str:
         if samples_width > 0:
             line.append("  ")
             line.append(entry.samples.rjust(samples_width))
+        if duration_width > 0:
+            line.append("  ")
+            line.append(entry.duration.rjust(duration_width))
         line.append("  ")
         line.append_text(path(entry.log_path))
         console.print(line)
