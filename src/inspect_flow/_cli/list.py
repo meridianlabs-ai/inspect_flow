@@ -16,8 +16,14 @@ from rich.tree import Tree
 from typing_extensions import Unpack
 
 from inspect_flow._api.api import list_logs
-from inspect_flow._cli.store import StoreOptionArgs, store_options
+from inspect_flow._cli.store import (
+    StoreOptionArgs,
+    _resolve_cli_filter,
+    filter_options,
+    store_options,
+)
 from inspect_flow._runner.task_log import TaskInfo, unique_task_names
+from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.logs import group_logs_by_dir
 
@@ -37,7 +43,9 @@ async def _read_header(
 
 
 def _read_headers(
-    log_paths: list[str], progress: Progress | None = None
+    log_paths: list[str],
+    progress: Progress | None = None,
+    log_filter: LogFilter | None = None,
 ) -> dict[str, EvalLog]:
     on_read: Callable[[], None] | None = None
     if progress is not None:
@@ -48,7 +56,10 @@ def _read_headers(
     results = run_coroutine(
         tg_collect([partial(_read_header, p, on_read) for p in log_paths])
     )
-    return {p: h for p, h in results if h is not None}
+    headers = {p: h for p, h in results if h is not None}
+    if log_filter:
+        headers = {p: h for p, h in headers.items() if log_filter(h)}
+    return headers
 
 
 def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
@@ -283,9 +294,13 @@ def _page_string(content: str) -> None:
         proc.wait()
 
 
-def _echo_tree(dir_groups: list[list[str]], progress: Progress | None = None) -> None:
+def _echo_tree(
+    dir_groups: list[list[str]],
+    progress: Progress | None = None,
+    log_filter: LogFilter | None = None,
+) -> None:
     all_paths = [p for group in dir_groups for p in group]
-    headers = _read_headers(all_paths, progress=progress)
+    headers = _read_headers(all_paths, progress=progress, log_filter=log_filter)
     if progress:
         progress.stop()
 
@@ -309,10 +324,12 @@ def _echo_tree(dir_groups: list[list[str]], progress: Progress | None = None) ->
 
 
 def _process_groups(
-    dir_groups: list[list[str]], progress: Progress | None = None
+    dir_groups: list[list[str]],
+    progress: Progress | None = None,
+    log_filter: LogFilter | None = None,
 ) -> list[LogEntry]:
     all_paths = [p for group in dir_groups for p in group]
-    headers = _read_headers(all_paths, progress=progress)
+    headers = _read_headers(all_paths, progress=progress, log_filter=log_filter)
     entries: list[LogEntry] = []
     for group in dir_groups:
         entries.extend(_compute_entries(group, headers))
@@ -323,26 +340,28 @@ def _echo_logs(
     log_paths: Collection[str],
     progress: Progress | None = None,
     output_format: str = "table",
+    log_filter: LogFilter | None = None,
 ) -> None:
     dir_groups = group_logs_by_dir(log_paths)
     if output_format == "tree":
-        _echo_tree(dir_groups, progress)
+        _echo_tree(dir_groups, progress, log_filter=log_filter)
         return
     total = sum(len(g) for g in dir_groups)
     page_size = Console().size.height - 1
     if total <= page_size:
-        entries = _process_groups(dir_groups, progress=progress)
+        entries = _process_groups(dir_groups, progress=progress, log_filter=log_filter)
         if progress:
             progress.stop()
         click.echo(_render_entries(entries), nl=False)
     else:
-        _paged_output(dir_groups, page_size, progress=progress)
+        _paged_output(dir_groups, page_size, progress=progress, log_filter=log_filter)
 
 
 def _paged_output(
     dir_groups: list[list[str]],
     page_size: int,
     progress: Progress | None = None,
+    log_filter: LogFilter | None = None,
 ) -> None:
     env = os.environ.copy()
     env["LESS"] = env.get("LESS", "") + " -RX"
@@ -357,7 +376,11 @@ def _paged_output(
             pending.append(group)
             pending_count += len(group)
             if pending_count >= page_size:
-                entries = _process_groups(pending, progress=progress if first else None)
+                entries = _process_groups(
+                    pending,
+                    progress=progress if first else None,
+                    log_filter=log_filter,
+                )
                 if first and progress:
                     progress.stop()
                     progress = None
@@ -367,7 +390,9 @@ def _paged_output(
                 pending = []
                 pending_count = 0
         if pending:
-            entries = _process_groups(pending, progress=progress if first else None)
+            entries = _process_groups(
+                pending, progress=progress if first else None, log_filter=log_filter
+            )
             if first and progress:
                 progress.stop()
             proc.stdin.write(_render_entries(entries).encode())
@@ -393,6 +418,7 @@ def list_command() -> None:
 
 @list_command.command("log", help="List logs")
 @store_options
+@filter_options
 @click.option(
     "--format",
     "output_format",
@@ -402,8 +428,13 @@ def list_command() -> None:
 )
 @click.argument("path", required=False, default=None)
 def list_log(
-    path: str | None, output_format: str, **kwargs: Unpack[StoreOptionArgs]
+    path: str | None,
+    output_format: str,
+    filter_name: str | None,
+    exclude_name: str | None,
+    **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
+    log_filter = _resolve_cli_filter(filter_name, exclude_name)
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
@@ -412,4 +443,6 @@ def list_log(
         progress.stop()
         flow_print("No logs found")
         return
-    _echo_logs(log_paths, progress=progress, output_format=output_format)
+    _echo_logs(
+        log_paths, progress=progress, output_format=output_format, log_filter=log_filter
+    )
