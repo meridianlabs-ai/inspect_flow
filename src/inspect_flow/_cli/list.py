@@ -469,6 +469,13 @@ class _MaxCountCommand(click.Command):
     help="Limit output to <number> logs. Also accepts -<number> (e.g. -5).",
 )
 @click.option(
+    "--status",
+    "statuses",
+    multiple=True,
+    type=click.Choice(["success", "error", "cancelled", "started"]),
+    help="Only show logs with this status. May be repeated.",
+)
+@click.option(
     "--since",
     "--after",
     "since",
@@ -489,15 +496,29 @@ def list_log(
     path: str | None,
     output_format: str,
     max_count: int | None,
+    statuses: tuple[str, ...],
     since: str | None,
     until: str | None,
     filter_name: str | None,
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
+    log_filter = _resolve_cli_filter(filter_name, exclude_name)
+    if statuses:
+        status_set = set(statuses)
+
+        def _status_filter(log: EvalLog) -> bool:
+            return log.status in status_set
+
+        prev_filter = log_filter
+
+        def _combined_filter(log: EvalLog) -> bool:
+            return (prev_filter(log) if prev_filter else True) and _status_filter(log)
+
+        log_filter = _combined_filter
     options = ListOptions(
         output_format=output_format,
-        log_filter=_resolve_cli_filter(filter_name, exclude_name),
+        log_filter=log_filter,
         max_count=max_count,
     )
     progress = Progress(transient=True)

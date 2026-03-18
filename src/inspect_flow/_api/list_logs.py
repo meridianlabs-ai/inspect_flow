@@ -1,12 +1,11 @@
 from datetime import datetime, timezone
-from functools import partial
 
 import dateparser
-from inspect_ai._util._async import run_coroutine, tg_collect
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log_async
+from inspect_ai.log import list_eval_logs
 
 from inspect_flow._api.api import ensure_init
 from inspect_flow._store.store import FlowStore, store_factory
+from inspect_flow._util.logs import log_filename_ts
 from inspect_flow._util.logs import sort_logs as _sort_logs
 
 
@@ -21,13 +20,6 @@ def _parse_date_arg(value: str | datetime) -> datetime:
     return result
 
 
-async def _read_log_header(path: str) -> tuple[str, EvalLog | None]:
-    try:
-        return path, await read_eval_log_async(path, header_only=True)
-    except Exception:
-        return path, None
-
-
 def _filter_logs_by_date(
     paths: list[str],
     since: str | datetime | None,
@@ -35,18 +27,12 @@ def _filter_logs_by_date(
 ) -> list[str]:
     since_dt = _parse_date_arg(since) if since is not None else None
     until_dt = _parse_date_arg(until) if until is not None else None
-    results = run_coroutine(tg_collect([partial(_read_log_header, p) for p in paths]))
     filtered: list[str] = []
-    for p, header in results:
-        if header is None:
-            continue
-        ts_str = header.stats.completed_at or header.stats.started_at
-        if not ts_str:
+    for p in paths:
+        ts = log_filename_ts(p)
+        if ts is None:
             filtered.append(p)
             continue
-        ts = datetime.fromisoformat(ts_str)
-        if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
         if since_dt is not None and ts < since_dt:
             continue
         if until_dt is not None and ts > until_dt:

@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Collection
+from datetime import datetime, timezone
 from logging import getLogger
 
 from fsspec.core import split_protocol
@@ -12,9 +13,21 @@ from rich.text import Text
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.path_util import path_join
 
-_TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T")
+_TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}[:\-]\d{2}[:\-]\d{2}")
 
 logger = getLogger(__name__)
+
+
+def log_filename_ts(path: str) -> datetime | None:
+    """Extract the timestamp from a log filename, or None if absent."""
+    m = _TIMESTAMP_RE.search(path.rsplit("/", 1)[-1])
+    if not m:
+        return None
+    # Filenames use dashes as time separators (HH-MM-SS); normalise to colons.
+    ts_str = m.group(0)
+    date_part, time_part = ts_str.split("T", 1)
+    normalised = f"{date_part}T{time_part.replace('-', ':')}"
+    return datetime.fromisoformat(normalised).replace(tzinfo=timezone.utc)
 
 
 def sort_logs(log_paths: Collection[str]) -> list[str]:
