@@ -2,7 +2,6 @@ import fnmatch
 import io
 import os
 import subprocess
-import sys
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from datetime import datetime
@@ -332,7 +331,7 @@ def _echo_tree(
         flow_print("No logs found")
         return
     output = _format_tree(dir_entries)
-    if sys.stdout.isatty() and output.count("\n") > Console().size.height - 1:
+    if os.isatty(1) and output.count("\n") > Console().size.height - 1:
         _page_string(output)
     else:
         click.echo(output, nl=False)
@@ -365,7 +364,7 @@ def _echo_logs(
         return
     page_size = Console().size.height - 1
     total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
-    if sys.stdout.isatty() and total > page_size:
+    if os.isatty(1) and total > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
         entries = _process_groups(dir_groups, options, progress=progress)
