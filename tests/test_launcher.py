@@ -65,7 +65,7 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert args[6] == "--log-level"
     assert args[7] == DEFAULT_LOG_LEVEL
     assert args[8] == "--display"
-    assert args[9] == "full"
+    assert args[9] == "rich"
 
 
 def test_env(
