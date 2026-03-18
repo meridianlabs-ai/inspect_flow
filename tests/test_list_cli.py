@@ -1,7 +1,10 @@
+from unittest.mock import PropertyMock, patch
+
+import pytest
 from click.testing import CliRunner
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
-from rich.console import Console
+from rich.console import Console, ConsoleDimensions
 
 LOG_DIR = "tests/test_logs/logs1"
 
@@ -38,6 +41,47 @@ def test_list_log_path() -> None:
 def test_list_log_no_store(recording_console: Console) -> None:
     runner = CliRunner()
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
+
+
+def test_list_log_no_matches(recording_console: Console) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        list_command,
+        ["log", LOG_DIR, "--task", "does-not-exist"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
+
+
+def test_list_log_paged_no_matches(
+    monkeypatch: pytest.MonkeyPatch, recording_console: Console
+) -> None:
+    monkeypatch.setenv("PAGER", "cat")
+    small = ConsoleDimensions(width=80, height=1)
+    with patch.object(Console, "size", new_callable=PropertyMock, return_value=small):
+        runner = CliRunner()
+        result = runner.invoke(
+            list_command,
+            ["log", LOG_DIR, "--task", "does-not-exist"],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
+
+
+def test_list_log_tree_no_matches(recording_console: Console) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        list_command,
+        ["log", LOG_DIR, "--task", "does-not-exist", "--format", "tree"],
+        catch_exceptions=False,
+    )
     assert result.exit_code == 0
     captured = recording_console.export_text()
     assert "No logs found" in captured

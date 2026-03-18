@@ -327,6 +327,9 @@ def _echo_tree(
         if options.max_count is not None and count >= options.max_count:
             break
 
+    if not dir_entries:
+        flow_print("No logs found")
+        return
     output = _format_tree(dir_entries)
     page_size = Console().size.height - 1
     if output.count("\n") <= page_size:
@@ -368,6 +371,9 @@ def _echo_logs(
             entries = entries[: options.max_count]
         if progress:
             progress.stop()
+        if not entries:
+            flow_print("No logs found")
+            return
         click.echo(_render_entries(entries), nl=False)
     else:
         _paged_output(dir_groups, page_size, options, progress=progress)
@@ -384,11 +390,11 @@ def _paged_output(
     pager = env.get("PAGER", "less")
     proc = subprocess.Popen(pager.split(), stdin=subprocess.PIPE, env=env)
     assert proc.stdin
+    emitted = 0
     try:
         pending: list[list[str]] = []
         pending_count = 0
         first = True
-        emitted = 0
         for group in dir_groups:
             pending.append(group)
             pending_count += len(group)
@@ -417,6 +423,7 @@ def _paged_output(
                 progress.stop()
             if options.max_count is not None:
                 entries = entries[: options.max_count - emitted]
+            emitted += len(entries)
             proc.stdin.write(_render_entries(entries).encode())
             proc.stdin.flush()
     except BrokenPipeError:
@@ -427,6 +434,8 @@ def _paged_output(
         except BrokenPipeError:
             pass
         proc.wait()
+    if emitted == 0:
+        flow_print("No logs found")
 
 
 # -- CLI commands -------------------------------------------------------------
