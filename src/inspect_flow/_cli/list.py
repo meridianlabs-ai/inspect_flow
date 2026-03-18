@@ -1,3 +1,4 @@
+import fnmatch
 import io
 import os
 import subprocess
@@ -469,6 +470,13 @@ class _MaxCountCommand(click.Command):
     help="Limit output to <number> logs. Also accepts -<number> (e.g. -5).",
 )
 @click.option(
+    "--task",
+    "tasks",
+    multiple=True,
+    metavar="PATTERN",
+    help="Only show logs whose task name matches PATTERN (glob). May be repeated.",
+)
+@click.option(
     "--status",
     "statuses",
     multiple=True,
@@ -496,6 +504,7 @@ def list_log(
     path: str | None,
     output_format: str,
     max_count: int | None,
+    tasks: tuple[str, ...],
     statuses: tuple[str, ...],
     since: str | None,
     until: str | None,
@@ -504,6 +513,18 @@ def list_log(
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     log_filter = _resolve_cli_filter(filter_name, exclude_name)
+    if tasks:
+        task_patterns = tasks
+
+        def _task_filter(log: EvalLog) -> bool:
+            return any(fnmatch.fnmatch(log.eval.task, p) for p in task_patterns)
+
+        prev_filter = log_filter
+
+        def _with_task(log: EvalLog) -> bool:
+            return (prev_filter(log) if prev_filter else True) and _task_filter(log)
+
+        log_filter = _with_task
     if statuses:
         status_set = set(statuses)
 
