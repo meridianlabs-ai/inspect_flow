@@ -15,7 +15,7 @@ from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
-from inspect_flow._api.api import list_logs
+from inspect_flow._api.list_logs import list_logs
 from inspect_flow._cli.store import (
     StoreOptionArgs,
     _resolve_cli_filter,
