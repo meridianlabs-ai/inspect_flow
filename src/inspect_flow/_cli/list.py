@@ -468,11 +468,29 @@ class _MaxCountCommand(click.Command):
     default=None,
     help="Limit output to <number> logs. Also accepts -<number> (e.g. -5).",
 )
+@click.option(
+    "--since",
+    "--after",
+    "since",
+    default=None,
+    metavar="DATE",
+    help="Only show logs completed at or after DATE (e.g. '2 weeks ago', '2024-01-15').",
+)
+@click.option(
+    "--until",
+    "--before",
+    "until",
+    default=None,
+    metavar="DATE",
+    help="Only show logs completed at or before DATE (e.g. 'yesterday', '2024-06-01').",
+)
 @click.argument("path", required=False, default=None)
 def list_log(
     path: str | None,
     output_format: str,
     max_count: int | None,
+    since: str | None,
+    until: str | None,
     filter_name: str | None,
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
@@ -485,7 +503,9 @@ def list_log(
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
-    log_paths = list_logs(log_dir=path, store=kwargs.get("store") or "auto")
+    log_paths = list_logs(
+        log_dir=path, store=kwargs.get("store") or "auto", since=since, until=until
+    )
     if not log_paths:
         progress.stop()
         flow_print("No logs found")
