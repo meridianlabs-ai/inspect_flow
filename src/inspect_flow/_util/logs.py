@@ -1,5 +1,8 @@
 """Utilities for working with Inspect logs"""
 
+import re
+from collections.abc import Collection
+from datetime import datetime, timezone
 from logging import getLogger
 
 from fsspec.core import split_protocol
@@ -10,7 +13,70 @@ from rich.text import Text
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.path_util import path_join
 
+_TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}[:\-]\d{2}[:\-]\d{2}")
+
 logger = getLogger(__name__)
+
+
+def log_filename_ts(path: str) -> datetime | None:
+    """Extract the timestamp from a log filename, or None if absent."""
+    m = _TIMESTAMP_RE.search(path.rsplit("/", 1)[-1])
+    if not m:
+        return None
+    # Filenames use dashes as time separators (HH-MM-SS); normalise to colons.
+    ts_str = m.group(0)
+    date_part, time_part = ts_str.split("T", 1)
+    normalised = f"{date_part}T{time_part.replace('-', ':')}"
+    return datetime.fromisoformat(normalised).replace(tzinfo=timezone.utc)
+
+
+def sort_logs(log_paths: Collection[str]) -> list[str]:
+    """Sort logs grouped by directory, directories ordered by most recent log file.
+
+    Within each directory, logs are sorted by filename timestamp descending.
+    Logs without a timestamp prefix sort at the end.
+    """
+    return [p for group in group_logs_by_dir(log_paths) for p in group]
+
+
+def group_logs_by_dir(log_paths: Collection[str]) -> list[list[str]]:
+    """Group logs by directory, directories ordered by most recent log file.
+
+    Within each directory, logs are sorted by filename timestamp descending.
+    Logs without a timestamp prefix sort at the end.
+    """
+    groups: dict[str, list[str]] = {}
+    for log_path in log_paths:
+        dir_path = log_path.rsplit("/", 1)[0] if "/" in log_path else ""
+        groups.setdefault(dir_path, []).append(log_path)
+
+    sorted_groups = [_sort_within_dir(paths) for paths in groups.values()]
+
+    ts_groups: list[list[str]] = []
+    non_ts_groups: list[list[str]] = []
+    for group in sorted_groups:
+        if _TIMESTAMP_RE.match(group[0].rsplit("/", 1)[-1]):
+            ts_groups.append(group)
+        else:
+            non_ts_groups.append(group)
+
+    ts_groups.sort(key=lambda g: g[0].rsplit("/", 1)[-1], reverse=True)
+    non_ts_groups.sort(key=lambda g: g[0].rsplit("/", 1)[-1])
+    return ts_groups + non_ts_groups
+
+
+def _sort_within_dir(logs: Collection[str]) -> list[str]:
+    with_ts: list[str] = []
+    without_ts: list[str] = []
+    for log in logs:
+        basename = log.rsplit("/", 1)[-1]
+        if _TIMESTAMP_RE.match(basename):
+            with_ts.append(log)
+        else:
+            without_ts.append(log)
+    with_ts.sort(key=lambda p: p.rsplit("/", 1)[-1], reverse=True)
+    without_ts.sort(key=lambda p: p.rsplit("/", 1)[-1])
+    return with_ts + without_ts
 
 
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None:
