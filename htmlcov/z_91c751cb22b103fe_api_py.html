@@ -64,10 +64,10 @@
         <p class="text">
             <a id="prevFileLink" class="nav" href="z_4ab2801449a4724c___init___py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a id="nextFileLink" class="nav" href="z_f7b9dffddcf189ef___init___py.html">&#xbb; next</a>
+            <a id="nextFileLink" class="nav" href="z_91c751cb22b103fe_list_logs_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-17 13:21 +0000
+            created at 2026-03-18 20:04 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -133,7 +133,7 @@
     <p class="run"><span class="n"><a id="t49" href="#t49">49</a></span><span class="t">            <span class="nam">load_dotenv</span><span class="op">(</span><span class="nam">find_dotenv</span><span class="op">(</span><span class="nam">usecwd</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t50" href="#t50">50</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t51" href="#t51">51</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t"><span class="key">def</span> <span class="nam">_ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t"><span class="key">def</span> <span class="nam">ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">_initialized</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">        <span class="nam">init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">dotenv_base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -149,7 +149,7 @@
     <p class="pln"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t"><span class="str">        file: The path to the spec file.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t"><span class="str">        args: A dictionary of arguments to pass as kwargs to the function in the flow config.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="nam">_ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">file</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">    <span class="nam">ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">file</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t69" href="#t69">69</a></span><span class="t">    <span class="key">return</span> <span class="nam">int_load_spec</span><span class="op">(</span><span class="nam">file</span><span class="op">=</span><span class="nam">file</span><span class="op">,</span> <span class="nam">options</span><span class="op">=</span><span class="nam">ConfigOptions</span><span class="op">(</span><span class="nam">args</span><span class="op">=</span><span class="nam">args</span> <span class="key">or</span> <span class="op">{</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t70" href="#t70">70</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -177,7 +177,7 @@
     <p class="run run2"><span class="n"><a id="t93" href="#t93">93</a></span><span class="t">            <span class="str">"Return the FlowSpec object instead and let the CLI handle execution. "</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t94" href="#t94">94</a></span><span class="t">            <span class="str">"Or execute the file directly using python."</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t95" href="#t95">95</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t96" href="#t96">96</a></span><span class="t">    <span class="nam">_ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t96" href="#t96">96</a></span><span class="t">    <span class="nam">ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t97" href="#t97">97</a></span><span class="t">    <span class="nam">base_dir</span> <span class="op">=</span> <span class="nam">base_dir</span> <span class="key">or</span> <span class="nam">Path</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">cwd</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">as_posix</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t98" href="#t98">98</a></span><span class="t">    <span class="nam">spec</span> <span class="op">=</span> <span class="nam">expand_spec</span><span class="op">(</span><span class="nam">spec</span><span class="op">,</span> <span class="nam">base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">,</span> <span class="nam">options</span><span class="op">=</span><span class="nam">ConfigOptions</span><span class="op">(</span><span class="nam">resume</span><span class="op">=</span><span class="nam">resume</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">    <span class="nam">launch</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -197,7 +197,7 @@
     <p class="pln"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t"><span class="str">        spec: The flow spec configuration.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t"><span class="str">        base_dir: The base directory for resolving relative paths. Defaults to the current working directory.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">    <span class="nam">_ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">    <span class="nam">ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">    <span class="nam">base_dir</span> <span class="op">=</span> <span class="nam">base_dir</span> <span class="key">or</span> <span class="nam">Path</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">cwd</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">as_posix</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">    <span class="nam">spec</span> <span class="op">=</span> <span class="nam">expand_spec</span><span class="op">(</span><span class="nam">spec</span><span class="op">,</span> <span class="nam">base_dir</span><span class="op">=</span><span class="nam">base_dir</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">    <span class="nam">dump</span> <span class="op">=</span> <span class="nam">config_to_yaml</span><span class="op">(</span><span class="nam">spec</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -211,7 +211,7 @@
     <p class="pln"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t"><span class="str">        store: The store location. Can be a path to the store directory or `"auto"` for the default store location.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t"><span class="str">        create: Whether to create the store if it does not exist.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="nam">_ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="str">"."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="nam">ensure_init</span><span class="op">(</span><span class="nam">dotenv_base_dir</span><span class="op">=</span><span class="str">"."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">    <span class="nam">flow_store</span> <span class="op">=</span> <span class="nam">store_factory</span><span class="op">(</span><span class="nam">store</span><span class="op">,</span> <span class="nam">base_dir</span><span class="op">=</span><span class="str">"."</span><span class="op">,</span> <span class="nam">create</span><span class="op">=</span><span class="nam">create</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">flow_store</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t">        <span class="key">raise</span> <span class="nam">ValueError</span><span class="op">(</span><span class="fst">f"</span><span class="fst">Could not open store at </span><span class="op">{</span><span class="nam">store</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -222,10 +222,10 @@
         <p>
             <a class="nav" href="z_4ab2801449a4724c___init___py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a class="nav" href="z_f7b9dffddcf189ef___init___py.html">&#xbb; next</a>
+            <a class="nav" href="z_91c751cb22b103fe_list_logs_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-17 13:21 +0000
+            created at 2026-03-18 20:04 +0000
         </p>
     </div>
 </footer>
