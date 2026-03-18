@@ -432,6 +432,16 @@ def _paged_output(
 # -- CLI commands -------------------------------------------------------------
 
 
+def _chain(base: LogFilter | None, new: LogFilter) -> LogFilter:
+    if base is None:
+        return new
+
+    def combined(log: EvalLog) -> bool:
+        return base(log) and new(log)
+
+    return combined
+
+
 @click.group("list")
 def list_command() -> None:
     """CLI command to list flow entities."""
@@ -477,6 +487,13 @@ class _MaxCountCommand(click.Command):
     help="Only show logs whose task name matches PATTERN (glob). May be repeated.",
 )
 @click.option(
+    "--model",
+    "models",
+    multiple=True,
+    metavar="PATTERN",
+    help="Only show logs whose model matches PATTERN (glob). May be repeated.",
+)
+@click.option(
     "--status",
     "statuses",
     multiple=True,
@@ -505,6 +522,7 @@ def list_log(
     output_format: str,
     max_count: int | None,
     tasks: tuple[str, ...],
+    models: tuple[str, ...],
     statuses: tuple[str, ...],
     since: str | None,
     until: str | None,
@@ -515,28 +533,19 @@ def list_log(
     log_filter = _resolve_cli_filter(filter_name, exclude_name)
     if tasks:
         task_patterns = tasks
-
-        def _task_filter(log: EvalLog) -> bool:
-            return any(fnmatch.fnmatch(log.eval.task, p) for p in task_patterns)
-
-        prev_filter = log_filter
-
-        def _with_task(log: EvalLog) -> bool:
-            return (prev_filter(log) if prev_filter else True) and _task_filter(log)
-
-        log_filter = _with_task
+        log_filter = _chain(
+            log_filter,
+            lambda log: any(fnmatch.fnmatch(log.eval.task, p) for p in task_patterns),
+        )
+    if models:
+        model_patterns = models
+        log_filter = _chain(
+            log_filter,
+            lambda log: any(fnmatch.fnmatch(log.eval.model, p) for p in model_patterns),
+        )
     if statuses:
         status_set = set(statuses)
-
-        def _status_filter(log: EvalLog) -> bool:
-            return log.status in status_set
-
-        prev_filter = log_filter
-
-        def _combined_filter(log: EvalLog) -> bool:
-            return (prev_filter(log) if prev_filter else True) and _status_filter(log)
-
-        log_filter = _combined_filter
+        log_filter = _chain(log_filter, lambda log: log.status in status_set)
     options = ListOptions(
         output_format=output_format,
         log_filter=log_filter,
