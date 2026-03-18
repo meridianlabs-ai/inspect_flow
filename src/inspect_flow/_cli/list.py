@@ -2,6 +2,7 @@ import fnmatch
 import io
 import os
 import subprocess
+import sys
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from datetime import datetime
@@ -331,11 +332,10 @@ def _echo_tree(
         flow_print("No logs found")
         return
     output = _format_tree(dir_entries)
-    page_size = Console().size.height - 1
-    if output.count("\n") <= page_size:
-        click.echo(output, nl=False)
-    else:
+    if sys.stdout.isatty() and output.count("\n") > Console().size.height - 1:
         _page_string(output)
+    else:
+        click.echo(output, nl=False)
 
 
 # -- Paging -------------------------------------------------------------------
@@ -363,9 +363,11 @@ def _echo_logs(
     if options.output_format == "tree":
         _echo_tree(dir_groups, options, progress=progress)
         return
-    total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
     page_size = Console().size.height - 1
-    if total <= page_size:
+    total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
+    if sys.stdout.isatty() and total > page_size:
+        _paged_output(dir_groups, page_size, options, progress=progress)
+    else:
         entries = _process_groups(dir_groups, options, progress=progress)
         if options.max_count is not None:
             entries = entries[: options.max_count]
@@ -375,8 +377,6 @@ def _echo_logs(
             flow_print("No logs found")
             return
         click.echo(_render_entries(entries), nl=False)
-    else:
-        _paged_output(dir_groups, page_size, options, progress=progress)
 
 
 def _paged_output(
