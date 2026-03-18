@@ -5,8 +5,7 @@ from inspect_ai.log import list_eval_logs
 
 from inspect_flow._api.api import ensure_init
 from inspect_flow._store.store import FlowStore, store_factory
-from inspect_flow._util.logs import log_filename_ts
-from inspect_flow._util.logs import sort_logs as _sort_logs
+from inspect_flow._util.logs import log_filename_ts, sort_logs
 
 
 def _parse_date_arg(value: str | datetime) -> datetime:
@@ -70,7 +69,7 @@ def list_logs(
     else:
         flow_store = store_factory(store, base_dir=".", create=False, quiet=True)
         paths = flow_store.get_logs() if flow_store else set()
-    sorted_paths = _sort_logs(paths)
+    sorted_paths = sort_logs(paths)
     if since is None and until is None:
         return sorted_paths
     return _filter_logs_by_date(sorted_paths, since, until)
