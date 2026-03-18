@@ -440,7 +440,7 @@ class FlowOptions(FlowBase):
     )
 
     display: DisplayType | None | NotGiven = Field(
-        default=not_given, description="Task display type (defaults to `'full'`)."
+        default=not_given, description="Task display type (defaults to `'rich'`)."
     )
 
     approval: str | ApprovalPolicyConfig | None | NotGiven = Field(

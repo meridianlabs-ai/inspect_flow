@@ -20,7 +20,7 @@ Options:
     - "rich": Rich text formatting without interactive elements
     - "plain": Plain text output
 """
-_display_type: DisplayType = "full"
+_display_type: DisplayType = "rich"
 _display: Display | None = None
 
 

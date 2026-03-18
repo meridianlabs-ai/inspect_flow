@@ -34,9 +34,9 @@ def output_options(f: F) -> F:
             ["full", "rich", "plain"],
             case_sensitive=False,
         ),
-        default="full",
+        default="rich",
         envvar="INSPECT_FLOW_DISPLAY",
-        help="Set the display mode (defaults to `'full'`).",
+        help="Set the display mode (defaults to `'rich'`).",
     )(f)
     return f
 
@@ -175,7 +175,7 @@ class ConfigOptionArgs(OutputOptionArgs, total=False):
 def init_output(**kwargs: Unpack[OutputOptionArgs]) -> None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
-    display = kwargs.get("display", "full")
+    display = kwargs.get("display", "rich")
     set_display_type(display)
 
 

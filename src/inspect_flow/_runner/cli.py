@@ -64,7 +64,7 @@ def _read_config(config_file: str) -> FlowSpec:
     "--display",
     "display_type",
     type=click.Choice(["full", "rich", "plain"]),
-    default="plain",
+    default="rich",
     help="Display type.",
 )
 @click.pass_context
