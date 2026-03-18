@@ -1,3 +1,4 @@
+import logging
 import shutil
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ import yaml
 from botocore.client import BaseClient
 from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.logger import LogHandlerVar
+from inspect_ai._util.logger import LogHandler, LogHandlerVar, _logHandler
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
@@ -98,6 +99,36 @@ def test_default_model(
     run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir)
     assert "ERROR" not in recording_console.export_text()
+
+
+def test_spec_log_level_applied_to_eval_set(recording_console: Console) -> None:
+    # Get the handler set up by the autouse init_log_handler fixture. Putting it in
+    # _logHandler simulates CLI usage, where a second init_logger call (from eval_set)
+    # is a no-op because the handler is already set.
+    root_rich_handlers = [
+        h for h in logging.getLogger().handlers if isinstance(h, LogHandler)
+    ]
+    assert root_rich_handlers, "init_log_handler autouse fixture must set up a handler"
+    flow_handler = root_rich_handlers[0]
+
+    saved = _logHandler["handler"]
+    _logHandler["handler"] = flow_handler
+    try:
+        log_dir = init_test_logs()
+        spec = FlowSpec(
+            log_dir=log_dir,
+            tasks=[
+                FlowTask(
+                    name=task_file + "@debug_logging_task",
+                    model=FlowModel(name="mockllm/model"),
+                )
+            ],
+            options=FlowOptions(log_level="debug"),
+        )
+        run_eval_set(spec=spec, base_dir=".")
+        assert "flow-spec-log-level-debug-marker" in recording_console.export_text()
+    finally:
+        _logHandler["handler"] = saved
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:

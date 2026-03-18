@@ -1,7 +1,8 @@
-from logging import Logger, LoggerAdapter
+from logging import Logger, LoggerAdapter, getLevelName, getLogger
 from typing import Any, MutableMapping
 
-from inspect_ai._util.logger import LogHandlerVar, init_logger
+from inspect_ai._util.constants import TRACE
+from inspect_ai._util.logger import LogHandlerVar, _logHandler, init_logger
 
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL, PKG_NAME
 
@@ -24,6 +25,18 @@ def init_flow_logging(
 
 def get_last_log_level() -> str:
     return _last_log_level
+
+
+def update_log_level(log_level: str) -> None:
+    handler = _logHandler["handler"]
+    if handler is not None:
+        level = getLevelName(log_level.upper())
+        capture_level = min(TRACE, level)
+        handler.display_level = level
+        handler.setLevel(capture_level)
+        getLogger().setLevel(level)
+        for pkg in (PKG_NAME, "inspect_ai"):
+            getLogger(pkg).setLevel(capture_level)
 
 
 class PrefixLogger(LoggerAdapter):
