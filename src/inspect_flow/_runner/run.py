@@ -33,7 +33,7 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._util.console import flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
-from inspect_flow._util.logging import get_last_log_level
+from inspect_flow._util.logging import get_last_log_level, update_log_level
 from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.path_util import cwd_relative_path
 
@@ -83,6 +83,8 @@ def run_eval_set(
 
     title = display().get_title()
     display().stop()
+
+    update_log_level(log_level)
 
     start_time = time.time()
     try:

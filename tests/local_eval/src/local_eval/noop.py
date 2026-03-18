@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Literal
 
 import anyio
@@ -64,4 +65,23 @@ def sleep_for_solver(seconds: int):
 def sleep_for_task(seconds: int = 10):
     return Task(
         solver=[sleep_for_solver(seconds=seconds)],
+    )
+
+
+@solver
+def _log_at_debug():
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        getLogger("inspect_ai.test_debug_logging").debug(
+            "flow-spec-log-level-debug-marker"
+        )
+        return state
+
+    return solve
+
+
+@task
+def debug_logging_task() -> Task:
+    return Task(
+        dataset=[Sample(id=1, input="test")],
+        solver=[_log_at_debug()],
     )
