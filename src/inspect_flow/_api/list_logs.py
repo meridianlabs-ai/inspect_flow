@@ -56,10 +56,10 @@ def list_logs(
             If provided, the store is not used.
         store: The store to read logs from. Can be a `FlowStore` instance,
             a path, or `"auto"` for the default. Only used when `log_dir` is `None`.
-        since: Only include logs completed at or after this date. Accepts a
-            `datetime` or a date string (e.g. `"2 weeks ago"`, `"2024-01-15"`).
-        until: Only include logs completed at or before this date. Accepts a
-            `datetime` or a date string (e.g. `"yesterday"`, `"2024-06-01"`).
+        since: Only include logs whose filename timestamp is at or after this date.
+            Accepts a `datetime` or a date string (e.g. `"2 weeks ago"`, `"2024-01-15"`).
+        until: Only include logs whose filename timestamp is at or before this date.
+            Accepts a `datetime` or a date string (e.g. `"yesterday"`, `"2024-06-01"`).
     """
     ensure_init(dotenv_base_dir=".")
     if log_dir is not None:
