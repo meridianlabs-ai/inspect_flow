@@ -27,6 +27,7 @@ from inspect_flow._runner.task_log import TaskInfo, unique_task_names
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.logs import group_logs_by_dir
+from inspect_flow._util.path_util import path_str
 
 
 @dataclass
@@ -569,4 +570,5 @@ def list_log(
         progress.stop()
         flow_print("No logs found")
         return
+    log_paths = [path_str(p) for p in log_paths]
     _echo_logs(log_paths, options, progress=progress)
