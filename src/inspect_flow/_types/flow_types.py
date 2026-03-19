@@ -7,11 +7,13 @@ import inspect
 from typing import (
     Any,
     Callable,
+    Generic,
     Literal,
     Mapping,
     ParamSpec,
     Sequence,
     TypeAlias,
+    TypeVar,
 )
 
 import rich.repr
@@ -77,7 +79,7 @@ class FlowModel(FlowBase):
         description="Name of the model to use. If factory is not provided, this is used to create the model.",
     )
 
-    factory: Callable[..., Model] | str | None | NotGiven = Field(
+    factory: FlowFactory[Model] | Callable[..., Model] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the model instance.",
     )
@@ -130,9 +132,11 @@ class FlowScorer(FlowBase):
         description="Name of the scorer. Used to create the scorer if the factory is not provided.",
     )
 
-    factory: Callable[..., Scorer] | str | None | NotGiven = Field(
-        default=not_given,
-        description="Factory function to create the scorer instance.",
+    factory: FlowFactory[Scorer] | Callable[..., Scorer] | str | None | NotGiven = (
+        Field(
+            default=not_given,
+            description="Factory function to create the scorer instance.",
+        )
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -154,9 +158,11 @@ class FlowSolver(FlowBase):
         description="Name of the solver. Used to create the solver if the factory is not provided.",
     )
 
-    factory: Callable[..., Solver] | str | None | NotGiven = Field(
-        default=not_given,
-        description="Factory function to create the solver instance.",
+    factory: FlowFactory[Solver] | Callable[..., Solver] | str | None | NotGiven = (
+        Field(
+            default=not_given,
+            description="Factory function to create the solver instance.",
+        )
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -178,7 +184,7 @@ class FlowAgent(FlowBase):
         description="Name of the agent. Used to create the agent if the factory is not provided.",
     )
 
-    factory: Callable[..., Agent] | str | None | NotGiven = Field(
+    factory: FlowFactory[Agent] | Callable[..., Agent] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the agent instance.",
     )
@@ -242,6 +248,48 @@ class FlowExtraArgs(FlowBase):
 
 
 P = ParamSpec("P")
+R = TypeVar("R", bound=Task | Agent | Solver | Scorer | Model)
+
+
+class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
+    factory: Callable[..., R]
+    args: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _validate(cls, value: Any, handler: Any) -> Any:
+        # Use the base class (not cls) since Pydantic creates concrete subclasses for
+        # each generic specialization (e.g. FlowFactory[Agent]), and an unspecialized
+        # FlowFactory instance would fail isinstance(value, cls) for those subclasses.
+        if isinstance(value, FlowFactory):
+            return value
+        # Reject dicts that don't look like FlowFactory field data so that Pydantic's
+        # union validation can fall through to the next candidate (e.g. NotGiven).
+        if not isinstance(value, dict) or "factory" not in value:
+            raise ValueError("Expected a FlowFactory instance or dict with 'factory'")
+        return handler(value)
+
+    def __init__(
+        self,
+        factory: Callable[P, R],
+        *pos_args: P.args,
+        **kw_args: P.kwargs,
+    ) -> None:
+        if not pos_args and set(kw_args.keys()) <= {"args"}:
+            # Pydantic calls __init__ with field data during validation. Set fields
+            # directly to break the cycle — calling super().__init__() would recurse.
+            object.__setattr__(
+                self, "__dict__", {"factory": factory, "args": kw_args.get("args", {})}
+            )
+            object.__setattr__(self, "__pydantic_fields_set__", {"factory", "args"})
+            object.__setattr__(self, "__pydantic_extra__", None)
+        else:
+            sig = inspect.signature(factory)
+            bound = sig.bind(*pos_args, **kw_args)
+            super().__init__(factory=factory, args=dict(bound.arguments))
+
+    def instantiate(self) -> R:
+        return self.factory(**self.args)
 
 
 class FlowTask(FlowBase, arbitrary_types_allowed=True):
@@ -255,7 +303,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description='Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided.',
     )
 
-    factory: Callable[..., Task] | str | None | NotGiven = Field(
+    factory: FlowFactory[Task] | Callable[..., Task] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the task instance.",
     )
@@ -381,27 +429,6 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
-
-    @classmethod
-    def from_factory(
-        cls,
-        factory: Callable[P, Task],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> "FlowTask":
-        """Create a FlowTask from a factory function with type-checked args.
-
-        Args:
-            factory: Task factory function (e.g. a @task-decorated function).
-            *args: Positional arguments forwarded to the factory.
-            **kwargs: Keyword arguments forwarded to the factory.
-
-        Returns:
-            A FlowTask with factory and args set.
-        """
-        sig = inspect.signature(factory)
-        bound = sig.bind(*args, **kwargs)
-        return cls(factory=factory, args=bound.arguments)
 
     @property
     def model_name(self) -> str | None | NotGiven:

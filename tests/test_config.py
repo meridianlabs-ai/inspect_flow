@@ -1,17 +1,11 @@
-import inspect
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping, ParamSpec, TypedDict, TypeVar
 from unittest.mock import patch
 
 import pytest
 from botocore.client import BaseClient
-from inspect_ai import Task
 from inspect_ai._util.logger import LogHandlerVar
-from inspect_ai.agent import Agent
-from inspect_ai.model import CachePolicy, GenerateConfig, Model
-from inspect_ai.scorer import Scorer
-from inspect_ai.solver import Solver
+from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_flow import (
     FlowAgent,
     FlowModel,
@@ -35,7 +29,7 @@ from inspect_flow._config.load import (
     expand_spec,
     int_load_spec,
 )
-from inspect_flow._types.flow_types import FlowDependencies, not_given
+from inspect_flow._types.flow_types import FlowDependencies, FlowFactory, not_given
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
@@ -770,44 +764,16 @@ def test_matrix_task_limits() -> None:
     validate_config(config, "test_matrix_task_limits.yaml")
 
 
-P = ParamSpec("P")
-R = TypeVar("R", bound=Task | Agent | Solver | Scorer | Model)
-
-
-class _FactoryKwargs(TypedDict):
-    factory: Callable[..., Any]
-    args: Mapping[str, Any]
-
-
-def factory_args(
-    factory: Callable[P, R],
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> _FactoryKwargs:
-    """Return kwargs for any Flow type with a factory field, with type-checked args.
-
-    Spread into a Flow type to construct with factory and type-safe args:
-        FlowTask(**factory_args(my_task, subset="arc"), name="...", epochs=3)
-        FlowAgent(**factory_args(my_agent, tools=[add()]))
-
-    Args:
-        factory: Factory function (e.g. a @task or @agent decorated function).
-        *args: Positional arguments forwarded to the factory.
-        **kwargs: Keyword arguments forwarded to the factory.
-    """
-    sig = inspect.signature(factory)
-    bound = sig.bind(*args, **kwargs)
-    return _FactoryKwargs(factory=factory, args=bound.arguments)
-
-
 def test_from_factory() -> None:
     config = FlowSpec(
         log_dir="example_logs",
         options=FlowOptions(limit=1),
         tasks=[
             FlowTask(
-                **factory_args(task_with_params, "contrast", use_system_prompt=True),
-                solver=FlowAgent(**factory_args(my_agent, tools=[add()])),
+                factory=FlowFactory(
+                    task_with_params, "contrast", use_system_prompt=True
+                ),
+                solver=FlowAgent(factory=FlowFactory(my_agent, tools=[add()])),
             )
         ],
     )
