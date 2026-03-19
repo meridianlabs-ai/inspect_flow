@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Sequence, TypeAlias, TypeVar
+from typing import Any, Callable, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.loader import load_tasks, scorer_from_spec
@@ -27,6 +27,7 @@ from inspect_flow._types.flow_types import (
     CreateArgs,
     FlowAgent,
     FlowEpochs,
+    FlowFactory,
     FlowModel,
     FlowScorer,
     FlowSolver,
@@ -43,6 +44,20 @@ ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 
 _T = TypeVar("_T", bound=BaseModel)
+_FR = TypeVar("_FR", bound=Task | Agent | Solver | Scorer | Model)
+
+
+def _call_factory(
+    factory: FlowFactory[_FR] | Callable[..., _FR] | str | None | NotGiven,
+    args: CreateArgs | None | NotGiven,
+) -> _FR | None:
+    if isinstance(factory, FlowFactory):
+        if not isinstance(args, NotGiven):
+            raise ValueError("args should not be provided when using FlowFactory")
+        return factory.instantiate()
+    if callable(factory):
+        return factory(**(args or {}))
+    return None
 
 
 def _kwargs(
@@ -104,9 +119,9 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
 def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     if isinstance(model, Model):
         return model
-    if model.factory and callable(model.factory):
-        return model.factory(**(model.model_args or {}))
-    name = model.factory or model.name
+    if (r := _call_factory(model.factory, model.model_args)) is not None:
+        return r
+    name = model.factory if isinstance(model.factory, str) else model.name
     if not name:
         raise ValueError(f"Model name is required. Model: {model}")
 
@@ -136,9 +151,9 @@ def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer | Scorer) -> 
         return scorer
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
-    if scorer.factory and callable(scorer.factory):
-        return scorer.factory(**(scorer.args or {}))
-    name = scorer.factory or scorer.name
+    if (r := _call_factory(scorer.factory, scorer.args)) is not None:
+        return r
+    name = scorer.factory if isinstance(scorer.factory, str) else scorer.name
     if not name:
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
@@ -173,9 +188,9 @@ def _create_single_solver(task: FlowTask, solver: str | FlowSolver | Solver) -> 
         return solver
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
-    if solver.factory and callable(solver.factory):
-        return solver.factory(**(solver.args or {}))
-    name = solver.factory or solver.name
+    if (r := _call_factory(solver.factory, solver.args)) is not None:
+        return r
+    name = solver.factory if isinstance(solver.factory, str) else solver.name
     if not name:
         raise ValueError(f"Solver name is required. Solver: {solver}")
 
@@ -185,9 +200,9 @@ def _create_single_solver(task: FlowTask, solver: str | FlowSolver | Solver) -> 
 
 
 def _create_agent(task: FlowTask, agent: FlowAgent) -> Agent:
-    if agent.factory and callable(agent.factory):
-        return agent.factory(**(agent.args or {}))
-    name = agent.factory or agent.name
+    if (r := _call_factory(agent.factory, agent.args)) is not None:
+        return r
+    name = agent.factory if isinstance(agent.factory, str) else agent.name
     if not name:
         raise ValueError(f"Agent name is required. Agent: {agent}")
 
@@ -297,15 +312,14 @@ def _instantiate_task(
 
 
 def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
-    task_args = registry_kwargs(**(task.args or {}))
-    # Use factory if provided
-    if task.factory and callable(task.factory):
-        return [task.factory(**task_args)]
+    if (r := _call_factory(task.factory, task.args)) is not None:
+        return [r]
 
-    name = task.factory or task.name
+    name = task.factory if isinstance(task.factory, str) else task.name
     if not name:
         raise ValueError(f"Task name is required. Task: {task}")
 
+    task_args = registry_kwargs(**(task.args or {}))
     # Try to create by finding task functions in files
     if filesystem(base_dir).is_local():
         with chdir_python(base_dir):

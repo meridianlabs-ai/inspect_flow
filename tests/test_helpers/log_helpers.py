@@ -4,7 +4,7 @@ from pathlib import Path
 from inspect_ai import Task
 from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow import FlowSpec, FlowTask
-from inspect_flow._types.flow_types import NotGiven
+from inspect_flow._types.flow_types import FlowFactory, NotGiven
 from inspect_flow._util.pydantic_util import callable_name
 
 
@@ -29,6 +29,8 @@ def _task_name(task: FlowTask) -> str | None:
     if task.name:
         return task.name
     if task.factory:
+        if isinstance(task.factory, FlowFactory):
+            return callable_name(task.factory.factory)
         if callable(task.factory):
             return callable_name(task.factory)
         else:
