@@ -1,15 +1,15 @@
 # Type definitions for flow config files.
-
 # Important: All default values should be None. This supports merging of partial configs as None values are not merged.
 # But a different default value would override more specific settings.
-
 from __future__ import annotations
 
+import inspect
 from typing import (
     Any,
     Callable,
     Literal,
     Mapping,
+    ParamSpec,
     Sequence,
     TypeAlias,
 )
@@ -241,6 +241,9 @@ class FlowExtraArgs(FlowBase):
     )
 
 
+P = ParamSpec("P")
+
+
 class FlowTask(FlowBase, arbitrary_types_allowed=True):
     """Configuration for an evaluation task.
 
@@ -378,6 +381,27 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         default=not_given,
         description="Optional. Metadata stored in the flow config. Not passed to the task.",
     )
+
+    @classmethod
+    def from_factory(
+        cls,
+        factory: Callable[P, Task],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> "FlowTask":
+        """Create a FlowTask from a factory function with type-checked args.
+
+        Args:
+            factory: Task factory function (e.g. a @task-decorated function).
+            *args: Positional arguments forwarded to the factory.
+            **kwargs: Keyword arguments forwarded to the factory.
+
+        Returns:
+            A FlowTask with factory and args set.
+        """
+        sig = inspect.signature(factory)
+        bound = sig.bind(*args, **kwargs)
+        return cls(factory=factory, args=bound.arguments)
 
     @property
     def model_name(self) -> str | None | NotGiven:

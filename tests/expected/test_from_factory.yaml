@@ -1,0 +1,16 @@
+log_dir: example_logs
+options:
+  limit: 1
+tasks:
+- factory: task_with_params
+  args:
+    subset: contrast
+    use_system_prompt: true
+  solver:
+    factory: my_agent
+    args:
+      tools:
+      - type: tool
+        name: add
+        params: {}
+    type: agent
