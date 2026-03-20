@@ -184,14 +184,13 @@ def find_existing_logs(
 
         log_files = store.search_for_logs(set(task_id_to_task.keys()))
         if log_files:
+            store_msg = f"Found {quantity(len(log_files), 'existing log')} in store. Copying to log directory"
             if num_found:
                 action.update(
-                    info=f"Found {quantity(num_found, 'existing log')} in log directory. Copying {quantity(len(log_files), 'existing log')}, to log directory"
+                    info=f"Found {quantity(num_found, 'existing log')} in log directory. {store_msg}"
                 )
             else:
-                action.update(
-                    info=f"Copying {quantity(len(log_files), 'existing log')} to log dir"
-                )
+                action.update(info=store_msg)
             num_found += len(log_files)
             for task_id, log_file in log_files.items():
                 log_info = result[task_id]

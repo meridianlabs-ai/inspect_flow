@@ -43,6 +43,8 @@ class ConfigOptions:
     args: dict[str, Any] = field(factory=dict)
     resume: bool = False
     store_filter: str | None = None
+    store_read: bool | None = None
+    store_write: bool | None = None
 
 
 @dataclass
@@ -83,14 +85,21 @@ def expand_spec(
     )
     spec = _apply_auto_includes(spec, base_dir=base_dir, options=options, state=state)
     spec = _apply_overrides(spec, options.overrides)
-    if options.store_filter:
-        if isinstance(spec.store, FlowStoreConfig):
-            spec.store.filter = options.store_filter
-        else:
+    if (
+        options.store_filter
+        or options.store_read is not None
+        or options.store_write is not None
+    ):
+        if not isinstance(spec.store, FlowStoreConfig):
             spec.store = FlowStoreConfig(
                 path=spec.store if not isinstance(spec.store, NotGiven) else "auto",
-                filter=options.store_filter,
             )
+        if options.store_filter:
+            spec.store.filter = options.store_filter
+        if options.store_read is not None:
+            spec.store.read = options.store_read
+        if options.store_write is not None:
+            spec.store.write = options.store_write
     if options.resume:
         last_log_dir = read_data(LAST_LOG_DIR_KEY)
         if not last_log_dir:
