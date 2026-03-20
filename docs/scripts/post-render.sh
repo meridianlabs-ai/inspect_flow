@@ -16,6 +16,7 @@ files=(
     "reference/inspect_flow"
     "reference/inspect_flow.api"
     "reference/flow_config"
+    "reference/flow_list"
     "reference/flow_run"
     "reference/flow_store"
 )

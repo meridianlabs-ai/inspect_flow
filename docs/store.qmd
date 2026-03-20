@@ -186,6 +186,61 @@ flow store import s3://my-team-bucket/logs/ \
 This workflow lets you validate results before sharing them with the team.
 :::
 
+## Filtering
+
+You can filter which logs are eligible for reuse by providing a log filter. A log filter is a function that receives an `EvalLog` (loaded in header-only mode) and returns `True` to include the log or `False` to exclude it.
+
+### Defining a filter
+
+Use the `@log_filter` decorator to register a filter function by name:
+
+```python
+from inspect_ai.log import EvalLog
+from inspect_flow import log_filter
+
+@log_filter
+def production_ready(log: EvalLog) -> bool:
+    return log.status == "success" and "reviewed" in (log.eval.tags or [])
+```
+
+### Using a filter with `flow run`
+
+**In your FlowSpec** — use `FlowStoreConfig` to attach a filter to the store:
+
+```python
+from inspect_flow import FlowSpec, FlowStoreConfig
+
+FlowSpec(
+    store=FlowStoreConfig(
+        path="auto",
+        filter=production_ready,  # callable or registered name
+    ),
+    tasks=[...]
+)
+```
+
+**From the CLI** — use `--store-filter` with a registered filter name:
+
+```bash
+flow run config.py --store-filter production_ready
+```
+
+The CLI flag overrides any filter set in the spec's `FlowStoreConfig`.
+
+### Using filters with store commands
+
+The `flow store list`, `flow store remove`, and `flow list log` commands support `--filter` and `--exclude` options:
+
+```bash
+# Only show logs that pass the filter
+flow store list --filter production_ready
+
+# Only show logs that do NOT pass the filter
+flow store list --exclude production_ready
+```
+
+`--filter` and `--exclude` are mutually exclusive.
+
 ## CLI Commands
 
 The Flow Store provides commands to manually manage logs in the Flow Store. All commands support the `--store` flag to specify which store to operate on.
@@ -281,6 +336,8 @@ flow store remove logs/old/ --dry-run
 - `INSPECT_FLOW_STORE_RECURSIVE` - Enable recursive search (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_MISSING` - Remove missing logs (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_DRY_RUN` - Enable dry run mode (`true`/`false`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only remove logs that pass (`--filter`)
+- `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only remove logs that do NOT pass (`--exclude`)
 
 ### The `flow store list` Command
 
@@ -300,6 +357,12 @@ flow store list --format tree
 
 - `INSPECT_FLOW_STORE` - Store location (same as `--store`)
 - `INSPECT_FLOW_STORE_LIST_FORMAT` - Output format (`flat` or `tree`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only show logs that pass (`--filter`)
+- `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only show logs that do NOT pass (`--exclude`)
+
+::: {.callout-tip}
+For richer log listing with filtering by task, model, status, and date range, see the [`flow list log`](reference/flow_list.qmd) command.
+:::
 
 ### The `flow store info` Command
 
@@ -351,6 +414,8 @@ Note that `limit`, `sample_shuffle`, retry parameters, and parallelism settings 
 **Invalidated logs**: The Flow Store automatically skips logs marked as invalidated when selecting which log to reuse. If multiple matching logs exist, only non-invalidated logs with at least one completed sample are considered. Invalidated logs are only used if no other valid logs are available.
 
 **Missing or corrupted logs**: If a log file referenced in the Flow Store no longer exists or cannot be read, the Flow Store automatically skips it and continues searching for other matching logs. This graceful error handling ensures that deleted or moved log files don't break your workflow.
+
+**Log filters**: Beyond task identifier matching, you can further control which logs are eligible for reuse using log filters. For example, you can restrict reuse to only successful evaluations or logs with specific tags. See [Filtering](#filtering) for details.
 
 ### Resuming incomplete samples
 

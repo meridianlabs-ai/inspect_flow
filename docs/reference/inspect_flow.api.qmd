@@ -8,6 +8,7 @@ title: "inspect_flow.api"
 ### run
 ### load_spec
 ### config
+### list_logs
 ### store_get
 ### delete_store
 ### copy_all_logs

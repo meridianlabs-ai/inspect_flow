@@ -103,7 +103,7 @@ def filter_options(f: F) -> F:
         "filter_name",
         type=str,
         default=None,
-        help="Log filter. Include only logs that pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        help="Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`.",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
@@ -111,7 +111,7 @@ def filter_options(f: F) -> F:
         "exclude_name",
         type=str,
         default=None,
-        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`.",
         envvar="INSPECT_FLOW_STORE_EXCLUDE",
     )(f)
     return f
@@ -176,7 +176,7 @@ def store_command() -> None:
         readable=True,
         resolve_path=False,
     ),
-    help="Copy logs from this directory to PATH before importing.",
+    help="Copy logs from this directory to PATH before importing. Supports both local and S3 paths.",
     envvar="INSPECT_FLOW_STORE_IMPORT_COPY_FROM",
 )
 @click.option(
