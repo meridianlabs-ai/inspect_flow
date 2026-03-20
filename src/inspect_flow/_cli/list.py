@@ -470,7 +470,11 @@ class _MaxCountCommand(click.Command):
         return super().parse_args(ctx, rewritten)
 
 
-@list_command.command("log", cls=_MaxCountCommand, help="List logs")
+@list_command.command(
+    "log",
+    cls=_MaxCountCommand,
+    help="List logs, sorted by timestamp extracted from log file name.",
+)
 @store_options
 @filter_options
 @click.option(
@@ -486,7 +490,7 @@ class _MaxCountCommand(click.Command):
     "max_count",
     type=int,
     default=None,
-    help="Limit output to <number> logs. Also accepts -<number> (e.g. -5).",
+    help="Limit output to N logs. Also accepts -N (e.g. -5).",
 )
 @click.option(
     "--task",
@@ -515,7 +519,7 @@ class _MaxCountCommand(click.Command):
     "since",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or after DATE (e.g. '2 weeks ago', '2024-01-15').",
+    help="Only show logs whose filename timestamp is at or after DATE (e.g. `'2 weeks ago'`, `'2024-01-15'`).",
 )
 @click.option(
     "--until",
@@ -523,7 +527,7 @@ class _MaxCountCommand(click.Command):
     "until",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or before DATE (e.g. 'yesterday', '2024-06-01').",
+    help="Only show logs whose filename timestamp is at or before DATE (e.g. `'yesterday'`, `'2024-06-01'`).",
 )
 @click.argument("path", required=False, default=None)
 def list_log(

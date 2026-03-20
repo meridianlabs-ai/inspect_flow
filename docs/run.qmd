@@ -124,6 +124,7 @@ The `inspect_flow.api` module provides programmatic access to Flow capabilities.
 - **`load_spec()`** - Load a Flow configuration from a Python file into a `FlowSpec` object
 - **`config()`** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
 - **`init()`** - Initialize Flow session settings (logging, display, .env loading)
+- **`list_logs()`** - List log files from a directory or the Flow Store (equivalent to `flow list log`)
 - **`store_get()`** - Get a FlowStore instance for programmatic store access
 
 See the [API Reference](reference/inspect_flow.api.qmd) for complete documentation.

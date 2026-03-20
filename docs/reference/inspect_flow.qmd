@@ -8,16 +8,23 @@ title: inspect_flow
 ### FlowDefaults
 ### FlowDependencies
 ### FlowEpochs
-### FlowSpec
+### FlowFactory
 ### FlowModel
 ### FlowOptions
 ### FlowScorer
 ### FlowSolver
+### FlowSpec
+### FlowStoreConfig
 ### FlowTask
+
+## Type Aliases
+
+### LogFilter
 
 ## Decorators
 
 ### after_load
+### log_filter
 
 ## Functions
 
