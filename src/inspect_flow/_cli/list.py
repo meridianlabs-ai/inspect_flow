@@ -6,9 +6,12 @@ from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from logging import getLogger
 
 import click
+import yaml
 from inspect_ai._util._async import run_coroutine, tg_collect
+from inspect_ai._util.file import exists, file
 from inspect_ai.log import EvalLog, read_eval_log_async
 from rich.console import Console
 from rich.progress import Progress
@@ -24,10 +27,12 @@ from inspect_flow._cli.store import (
     store_options,
 )
 from inspect_flow._runner.task_log import TaskInfo, unique_task_names
-from inspect_flow._types.flow_types import LogFilter
+from inspect_flow._types.flow_types import FlowSpec, LogFilter
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.logs import group_logs_by_dir
-from inspect_flow._util.path_util import path_str
+from inspect_flow._util.path_util import apply_bundle_url_mappings, path_str
+
+logger = getLogger(__name__)
 
 
 @dataclass
@@ -35,6 +40,41 @@ class ListOptions:
     output_format: str = "table"
     log_filter: LogFilter | None = None
     max_count: int | None = None
+
+
+def _find_flow_yaml(dir_path: str) -> FlowSpec | None:
+    """Load flow.yaml from dir_path if it exists."""
+    flow_yaml_path = f"{dir_path}/flow.yaml"
+    try:
+        if not exists(flow_yaml_path):
+            return None
+        with file(flow_yaml_path, "r") as f:
+            return FlowSpec.model_validate(yaml.safe_load(f.read()))
+    except Exception:
+        logger.warning(f"Failed to read {flow_yaml_path}", exc_info=True)
+        return None
+
+
+def _viewer_url(log_path: str, spec: FlowSpec) -> str | None:
+    """Compute a viewer URL for a log file given the flow spec."""
+    if not spec.options or not spec.options.bundle_url_mappings or not spec.log_dir:
+        return None
+    mappings = spec.options.bundle_url_mappings
+    filename = log_path.rsplit("/", 1)[-1]
+
+    def _make_url(dir_path: str) -> str | None:
+        mapped = apply_bundle_url_mappings(dir_path, mappings)
+        if mapped == dir_path:
+            return None
+        return f"{mapped.rstrip('/')}/#/logs/{filename}"
+
+    if spec.options.embed_viewer:
+        return _make_url(spec.log_dir)
+
+    if spec.options.bundle_dir:
+        return _make_url(spec.options.bundle_dir)
+
+    return None
 
 
 # -- Header reading and qualifier computation ---------------------------------
@@ -121,6 +161,7 @@ class LogEntry:
     status: str
     samples: str
     duration: str
+    viewer_url: str | None = None
 
 
 def _compute_entries(
@@ -131,6 +172,9 @@ def _compute_entries(
     task_infos = [_eval_log_to_task_info(headers[p]) for p in valid]
     qualifiers = unique_task_names(task_infos)
 
+    group_dir = valid[0].rsplit("/", 1)[0] if valid else ""
+    spec = _find_flow_yaml(group_dir) if group_dir else None
+
     return [
         LogEntry(
             p,
@@ -139,6 +183,7 @@ def _compute_entries(
             headers[p].status,
             _samples_str(headers[p]),
             _duration_str(headers[p]),
+            _viewer_url(p, spec) if spec else None,
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
@@ -161,6 +206,7 @@ def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
         Text(entry.samples),
         Text(entry.duration),
         path(log_path),
+        Text(entry.viewer_url or ""),
     ]
 
 
@@ -189,9 +235,13 @@ def _break_columns(widths: list[int], available: int) -> list[list[int]]:
 
 def _format_row(cells: list[Text], widths: list[int], breaks: list[list[int]]) -> Text:
     result = Text()
-    for bi, cols in enumerate(breaks):
-        if bi > 0:
+    first = True
+    for cols in breaks:
+        if all(cells[ci].cell_len == 0 for ci in cols):
+            continue
+        if not first:
             result.append("\n  ")
+        first = False
         for j, ci in enumerate(cols):
             if j > 0:
                 result.append(" " * _COL_PAD)
