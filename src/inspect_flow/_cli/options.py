@@ -118,6 +118,18 @@ def config_options(f: F) -> F:
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
+        "--store-read/--no-store-read",
+        default=None,
+        help="Read existing logs from the store (default: --no-store-read).",
+        envvar="INSPECT_FLOW_STORE_READ",
+    )(f)
+    f = click.option(
+        "--store-write/--no-store-write",
+        default=None,
+        help="Write completed logs to the store (default: --store-write).",
+        envvar="INSPECT_FLOW_STORE_WRITE",
+    )(f)
+    f = click.option(
         "--log-dir",
         type=click.Path(
             file_okay=False,
@@ -162,6 +174,8 @@ class OutputOptionArgs(TypedDict, total=False):
 class ConfigOptionArgs(OutputOptionArgs, total=False):
     store: str | None
     store_filter: str | None
+    store_read: bool | None
+    store_write: bool | None
     log_dir: str | None
     log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
@@ -213,4 +227,6 @@ def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
         args=_options_to_args(**kwargs),
         resume=resume,
         store_filter=kwargs.get("store_filter"),
+        store_read=kwargs.get("store_read"),
+        store_write=kwargs.get("store_write"),
     )

@@ -721,6 +721,16 @@ class FlowStoreConfig(FlowBase):
         description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, or `None`.",
     )
 
+    read: bool = Field(
+        default=False,
+        description="Whether to match existing logs from the store. Default is `False`.",
+    )
+
+    write: bool = Field(
+        default=True,
+        description="Whether to index completed logs in the store. Default is `True`.",
+    )
+
 
 class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     """Top-level flow specification."""

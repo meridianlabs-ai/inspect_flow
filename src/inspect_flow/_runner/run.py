@@ -29,6 +29,7 @@ from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
+    FlowStoreConfig,
 )
 from inspect_flow._util.console import flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
@@ -60,6 +61,11 @@ def run_eval_set(
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
+    store_config = (
+        resolved_spec.store
+        if isinstance(resolved_spec.store, FlowStoreConfig)
+        else None
+    )
 
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
@@ -68,7 +74,10 @@ def run_eval_set(
         write_config_file(resolved_spec)
 
     task_log_info = find_existing_logs(
-        task_id_to_task, resolved_spec, store, dry_run=dry_run
+        task_id_to_task,
+        resolved_spec,
+        store if (store_config is not None and store_config.read) else None,
+        dry_run=dry_run,
     )
 
     with RunAction("evalset") as action:
@@ -159,7 +168,7 @@ def run_eval_set(
 
     _print_result(resolved_spec, result, elapsed_time, task_log_info, title)
 
-    if store:
+    if store and (store_config is None or store_config.write):
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         # TODO:ransomr better monitoring of the log directory
         try:

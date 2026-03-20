@@ -22,6 +22,7 @@ from inspect_flow import (
     FlowOptions,
     FlowSolver,
     FlowSpec,
+    FlowStoreConfig,
     FlowTask,
     models_matrix,
     solvers_matrix,
@@ -1248,7 +1249,7 @@ def test_log_copy(recording_console: Console) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1266,7 +1267,32 @@ def test_log_copy(recording_console: Console) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "Copying 1 existing log to log dir" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
+
+
+def test_log_copy_store_read_off_by_default(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs1")
+    store_dir = init_test_store()
+
+    # Run a real eval to index the log in the store
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+
+    # Second run with a new log_dir and store read off (default)
+    log_dir2 = str(tmp_path / "logs2")
+    spec.log_dir = log_dir2
+    spec.store = FlowStoreConfig(path=store_dir)  # read=False by default
+
+    with patch("inspect_flow._runner.run.eval_set") as mock:
+        mock.return_value = (True, [])
+        run_eval_set(spec=spec, base_dir=".")
+
+    # No logs should have been copied from the store
+    assert not list(Path(log_dir2).glob("*.eval"))
 
 
 def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) -> None:
@@ -1285,13 +1311,15 @@ def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) ->
 
     # Run both tasks in logdir1 — task1 found locally, task2 copied from store
     run_eval_set(
-        spec=FlowSpec(log_dir=log_dir1, tasks=[task1, task2]),
+        spec=FlowSpec(
+            log_dir=log_dir1, store=FlowStoreConfig(read=True), tasks=[task1, task2]
+        ),
         base_dir=".",
     )
 
     out = recording_console.export_text()
     assert "Found 1 existing log in log directory" in out
-    assert "Copying 1 existing log" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
 
 
 def test_store_log_gone(recording_console: Console) -> None:
@@ -1305,7 +1333,7 @@ def test_store_log_gone(recording_console: Console) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1326,7 +1354,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1343,7 +1371,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "Copying 1 existing log to log dir" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
 
 
 def test_log_level_from_flow(mock_eval_set: MagicMock) -> None:
