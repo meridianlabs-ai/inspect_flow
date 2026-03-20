@@ -235,7 +235,7 @@ Both options work with static hosting (S3, web servers) and can be used together
 
 ### Bundle URL Mappings
 
-Convert local bundle paths to public URLs for sharing evaluation results. The `bundle_url_mappings` in `FlowOptions` applies string replacements to `bundle_dir` to generate a shareable URL that's printed to stdout after the evaluation completes.
+Convert local paths to public URLs for sharing evaluation results. The `bundle_url_mappings` in `FlowOptions` applies string replacements to `bundle_dir` and `embed_viewer` paths to generate a shareable URL that's printed to stdout after the evaluation completes.
 
 ``` {.python filename="config.py"}
 {{< include ../examples/bundle_url_map.py >}}

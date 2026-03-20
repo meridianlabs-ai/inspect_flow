@@ -36,6 +36,7 @@ from inspect_flow._util.pydantic_util import model_dump
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
+"""A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it."""
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
 
 
@@ -252,6 +253,18 @@ R = TypeVar("R", bound=Task | Agent | Solver | Scorer | Model)
 
 
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
+    """Type-checked factory wrapper for creating Inspect AI objects.
+
+    Wraps a factory callable with its arguments, binding them at construction time
+    so that type errors are caught immediately rather than at evaluation time.
+    Works with `FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, and `FlowModel`.
+
+    Args:
+        factory: Factory function (e.g. a `@task`-decorated function).
+        *args: Positional arguments forwarded to the factory.
+        **kwargs: Keyword arguments forwarded to the factory.
+    """
+
     factory: Callable[..., R]
     args: dict[str, Any] = Field(default_factory=dict)
 

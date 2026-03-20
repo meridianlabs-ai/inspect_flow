@@ -106,8 +106,8 @@ When using `--venv`, Flow additionally creates an isolated virtual environment, 
 
 Flow supports multiple ways to specify tasks, from simple registry names to programmatic Task objects. Choose the approach that best fits your needs:
 
-- **Registry names and file paths**: Simple string-based references for tasks from packages or local files
-- **Task factory functions**: Use `FlowTask(factory=...)` when you have a Task object but want to override parameters like model or config
+- **Registry names and file paths**: Use `name` to reference tasks from packages or local files
+- **Task factory functions**: Use `factory` to provide a callable, `FlowFactory`, or string reference that creates the task. If both `name` and `factory` are set, `name` is used as the display name in logs.
 - **Direct Task objects**: Pass Task objects directly to `FlowSpec.tasks` when you don't need Flow-level parameter overrides
 
 **Registry Name**
@@ -154,10 +154,26 @@ def my_task_factory():
     return Task(dataset=example_dataset("security_guide"), solver=generate())
 
 FlowTask(
+    name="optional_name",  # Optional: override the task name
     factory=my_task_factory,
     model="openai/gpt-5",  # Override the model
 )
 ```
+
+**Type-Checked Factory Arguments**
+
+Use `FlowFactory` to get IDE type checking on factory arguments. This works with all Flow types (`FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, `FlowModel`):
+
+``` python
+from inspect_flow import FlowTask, FlowFactory
+
+FlowTask(
+    factory=FlowFactory(my_task_factory, "subset", use_system_prompt=True),
+    model="openai/gpt-5",
+)
+```
+
+`FlowFactory` binds arguments to the factory function's signature at construction time, so type errors are caught immediately rather than at evaluation time.
 
 **Direct Task Object in FlowSpec**
 
@@ -188,7 +204,7 @@ FlowTask(
 )
 ```
 
-1.  **Task name or factory** — Use `name` to specify a task by registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`). Alternatively, use `factory` to provide a callable that returns an Inspect AI `Task` object (see [Task Factory Function](#specification) example above). When using `factory`, you can still override task parameters like `model`, `solver`, or `config` via other `FlowTask` fields.
+1.  **Task name or factory** — Use `name` to specify a task by registry name (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with function (`"./task.py@eval_fn"`). Alternatively, use `factory` to provide a callable or a string reference that returns an Inspect AI `Task` object (see [Task Factory Function](#specification) example above). If both `name` and `factory` are provided, `factory` is used to create the task and `name` sets the task name in logs. When using `factory`, you can still override task parameters like `model`, `solver`, or `config` via other `FlowTask` fields.
 
 2.  **Model** — Maps to Inspect AI `Task.model`. Optional model for this task. If not specified, uses the model from `INSPECT_EVAL_MODEL` environment variable. Can be a string (`"openai/gpt-5"`), a `FlowModel` object for advanced configuration, or an Inspect AI `Model` object.
 
