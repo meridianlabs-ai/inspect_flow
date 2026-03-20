@@ -20,5 +20,6 @@
 ## Reference: CLI
 
 - [flow config](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_config.html.md): Display resolved flow configuration
+- [flow list](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_list.html.md): List logs with filtering and sorting
 - [flow run](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_run.html.md): Run flow evaluations
 - [flow store](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_store.html.md): Manage the flow log store
