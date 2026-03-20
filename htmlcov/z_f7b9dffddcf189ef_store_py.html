@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_acbd9aa337f8ca9c_defaults_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-19 19:44 +0000
+            created at 2026-03-20 14:25 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -187,7 +187,7 @@
     <p class="run run2"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">        <span class="str">"filter_name"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t104" href="#t104">104</a></span><span class="t">        <span class="nam">type</span><span class="op">=</span><span class="nam">str</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter. Include only logs that pass. Accepts a registered name, file.py@name, or a name defined in _flow.py."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_STORE_FILTER"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -195,7 +195,7 @@
     <p class="run run2"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t">        <span class="str">"exclude_name"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t112" href="#t112">112</a></span><span class="t">        <span class="nam">type</span><span class="op">=</span><span class="nam">str</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter. Include only logs that do NOT pass. Accepts a registered name, file.py@name, or a name defined in _flow.py."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_STORE_EXCLUDE"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">    <span class="key">return</span> <span class="nam">f</span>&nbsp;</span><span class="r"></span></p>
@@ -260,7 +260,7 @@
     <p class="run run2"><span class="n"><a id="t176" href="#t176">176</a></span><span class="t">        <span class="nam">readable</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t177" href="#t177">177</a></span><span class="t">        <span class="nam">resolve_path</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t178" href="#t178">178</a></span><span class="t">    <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t179" href="#t179">179</a></span><span class="t">    <span class="nam">help</span><span class="op">=</span><span class="str">"Copy logs from this directory to PATH before importing."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t179" href="#t179">179</a></span><span class="t">    <span class="nam">help</span><span class="op">=</span><span class="str">"Copy logs from this directory to PATH before importing. Supports both local and S3 paths."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t180" href="#t180">180</a></span><span class="t">    <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_STORE_IMPORT_COPY_FROM"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t181" href="#t181">181</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t182" href="#t182">182</a></span><span class="t"><span class="op">@</span><span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -465,7 +465,7 @@
             <a class="nav" href="z_acbd9aa337f8ca9c_defaults_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-19 19:44 +0000
+            created at 2026-03-20 14:25 +0000
         </p>
     </div>
 </footer>
