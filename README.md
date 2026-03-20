@@ -10,7 +10,7 @@
 | src/inspect\_flow/\_api/list\_logs.py              |       40 |       22 |       18 |        2 |     37.93% |12-19, 27-40, 68, 75 |
 | src/inspect\_flow/\_cli/\_\_init\_\_.py            |        5 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/config.py                  |       14 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/list.py                    |      325 |      128 |      108 |       19 |     57.27% |48-49, 50->52, 61->66, 104, 112-113, 179-181, 185->187, 194, 202, 213, 225-227, 231-240, 244-286, 290-304, 314->317, 323-329, 334-338, 369, 373, 374->376, 388-438, 448-451, 467, 554-555, 560-561 |
+| src/inspect\_flow/\_cli/list.py                    |      361 |      135 |      120 |       23 |     59.25% |53-55, 61, 68, 77, 88-89, 90->92, 101->106, 144, 152-153, 225-227, 231->233, 241, 243, 252, 263, 275-277, 281-290, 294-336, 340-354, 364->367, 373-379, 384-388, 419, 423, 424->426, 438-488, 498-501, 517, 604-605, 610-611 |
 | src/inspect\_flow/\_cli/main.py                    |       25 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/options.py                 |       64 |        0 |       16 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/run.py                     |       23 |        0 |        0 |        0 |    100.00% |           |
@@ -40,7 +40,7 @@
 | src/inspect\_flow/\_runner/instantiate.py          |      167 |        4 |       80 |        3 |     96.36% |55-57, 92, 258->260 |
 | src/inspect\_flow/\_runner/logs.py                 |      117 |        1 |       52 |        4 |     97.04% |42, 169->167, 172->167, 200->195 |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |      153 |        5 |       64 |        5 |     95.39% |176-177, 194, 196, 210, 244->243, 291->293 |
+| src/inspect\_flow/\_runner/run.py                  |      144 |        5 |       56 |        5 |     95.00% |176-177, 194, 196, 210, 244->243, 283->285 |
 | src/inspect\_flow/\_runner/task\_log.py            |      136 |        0 |       48 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/deltalake.py             |      336 |       16 |      114 |       14 |     93.33% |92->exit, 136, 153, 173->172, 179->172, 230-232, 260->266, 263->266, 340-341, 345, 384-386, 394, 396->399, 413, 544-545, 549 |
@@ -62,13 +62,13 @@
 | src/inspect\_flow/\_util/logs.py                   |       64 |       11 |       20 |        5 |     78.57% |23-30, 61, 76, 101, 107, 111->104 |
 | src/inspect\_flow/\_util/module\_util.py           |       57 |        0 |       22 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/path\_util.py             |       43 |        1 |       16 |        1 |     96.61% |        27 |
+| src/inspect\_flow/\_util/path\_util.py             |       55 |        1 |       24 |        1 |     97.47% |        29 |
 | src/inspect\_flow/\_util/pydantic\_util.py         |       19 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       40 |       14 |       16 |        1 |     69.64% | 26-41, 98 |
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        6 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **4071** |  **280** | **1240** |   **94** | **91.41%** |           |
+| **TOTAL**                                          | **4110** |  **287** | **1252** |   **98** | **91.29%** |           |
 
 
 ## Setup coverage badge
