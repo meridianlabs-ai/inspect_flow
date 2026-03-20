@@ -36,7 +36,7 @@ from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import get_last_log_level, update_log_level
 from inspect_flow._util.not_given import default, default_none
-from inspect_flow._util.path_util import cwd_relative_path
+from inspect_flow._util.path_util import apply_bundle_url_mappings, cwd_relative_path
 
 logger = getLogger(__name__)
 
@@ -268,26 +268,18 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
     result = []
 
     if spec.options.bundle_dir:
-        bundle_url = spec.options.bundle_dir
-        if spec.options.bundle_url_mappings:
-            for local, url in spec.options.bundle_url_mappings.items():
-                bundle_url = bundle_url.replace(local, url)
-
-        print_url = bundle_url
+        print_url = apply_bundle_url_mappings(
+            spec.options.bundle_dir, spec.options.bundle_url_mappings
+        )
         if not print_url.endswith("/"):
             print_url += "/"
-
         result.append("Bundle: ")
         result.append(path(print_url))
 
     if spec.options.embed_viewer and spec.log_dir:
-        bundle_url = spec.options.bundle_dir
-        embed_viewer_url = spec.log_dir + "/viewer"
-        if spec.options.bundle_url_mappings:
-            for local, url in spec.options.bundle_url_mappings.items():
-                embed_viewer_url = embed_viewer_url.replace(local, url)
-
-        print_url = embed_viewer_url
+        print_url = apply_bundle_url_mappings(
+            spec.log_dir + "/viewer", spec.options.bundle_url_mappings
+        )
         if not print_url.endswith("/"):
             print_url += "/"
         if result:

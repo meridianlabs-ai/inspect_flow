@@ -8,6 +8,8 @@ from inspect_ai._util.file import (
     strip_trailing_sep,
 )
 
+from inspect_flow._types.flow_types import NotGiven
+
 AUTO_INCLUDE_FILENAME = "_flow.py"
 
 
@@ -63,3 +65,30 @@ def path_join(path: str, *paths: str) -> str:
     path = strip_trailing_sep(path)
     sep = filesystem(path).sep
     return sep.join([path, *paths])
+
+
+def apply_bundle_url_mappings(
+    s: str, mappings: dict[str, str] | None | NotGiven
+) -> str:
+    """Apply bundle_url_mappings substitutions to a string.
+
+    Treats each mapping as a path prefix replacement. Trailing slashes on keys
+    and values are normalized to avoid double slashes in the result.
+
+    Args:
+        s: The string to transform.
+        mappings: The bundle_url_mappings to apply. No-op if falsy.
+
+    Returns:
+        The string with all mappings applied.
+    """
+    if not mappings:
+        return s
+    for local, url in mappings.items():
+        local = local.rstrip("/")
+        url = url.rstrip("/")
+        if s.startswith(local + "/"):
+            s = url + s[len(local) :]
+        elif s == local:
+            s = url
+    return s

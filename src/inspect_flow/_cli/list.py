@@ -30,7 +30,7 @@ from inspect_flow._runner.task_log import TaskInfo, unique_task_names
 from inspect_flow._types.flow_types import FlowSpec, LogFilter
 from inspect_flow._util.console import flow_print, path
 from inspect_flow._util.logs import group_logs_by_dir
-from inspect_flow._util.path_util import path_str
+from inspect_flow._util.path_util import apply_bundle_url_mappings, path_str
 
 logger = getLogger(__name__)
 
@@ -62,13 +62,8 @@ def _viewer_url(log_path: str, spec: FlowSpec) -> str | None:
     mappings = spec.options.bundle_url_mappings
     filename = log_path.rsplit("/", 1)[-1]
 
-    def _apply(s: str) -> str:
-        for local, url in mappings.items():
-            s = s.replace(local, url)
-        return s
-
     def _make_url(dir_path: str) -> str | None:
-        mapped = _apply(dir_path)
+        mapped = apply_bundle_url_mappings(dir_path, mappings)
         if mapped == dir_path:
             return None
         return f"{mapped.rstrip('/')}/#/logs/{filename}"
