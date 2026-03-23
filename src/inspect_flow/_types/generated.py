@@ -172,6 +172,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Early stopping callbacks."""
     version: NotRequired[int | str | NotGiven]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
+    tags: NotRequired[Sequence[str] | NotGiven | None]
+    """Tags to associate with the task."""
     metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional metadata to associate with the task."""
     sample_id: NotRequired[str | int | Sequence[str | int] | NotGiven | None]
