@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-23 16:03 +0000
+            created at 2026-03-23 17:23 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -197,8 +197,8 @@
     <p class="run"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">        <span class="str">"--store-filter"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">        <span class="nam">type</span><span class="op">=</span><span class="nam">str</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="nam">default</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="nam">multiple</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">"Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass)."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">        <span class="nam">envvar</span><span class="op">=</span><span class="str">"INSPECT_FLOW_STORE_FILTER"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">    <span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">    <span class="nam">f</span> <span class="op">=</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -257,7 +257,7 @@
     <p class="pln"><span class="n"><a id="t173" href="#t173">173</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t174" href="#t174">174</a></span><span class="t"><span class="key">class</span> <span class="nam">ConfigOptionArgs</span><span class="op">(</span><span class="nam">OutputOptionArgs</span><span class="op">,</span> <span class="nam">total</span><span class="op">=</span><span class="key">False</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t175" href="#t175">175</a></span><span class="t">    <span class="nam">store</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t176" href="#t176">176</a></span><span class="t">    <span class="nam">store_filter</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t176" href="#t176">176</a></span><span class="t">    <span class="nam">store_filter</span><span class="op">:</span> <span class="nam">tuple</span><span class="op">[</span><span class="nam">str</span><span class="op">,</span> <span class="op">...</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t177" href="#t177">177</a></span><span class="t">    <span class="nam">store_read</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">|</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t178" href="#t178">178</a></span><span class="t">    <span class="nam">store_write</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">|</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t179" href="#t179">179</a></span><span class="t">    <span class="nam">log_dir</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
@@ -310,7 +310,7 @@
     <p class="run run2"><span class="n"><a id="t226" href="#t226">226</a></span><span class="t">        <span class="nam">overrides</span><span class="op">=</span><span class="nam">_options_to_overrides</span><span class="op">(</span><span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t227" href="#t227">227</a></span><span class="t">        <span class="nam">args</span><span class="op">=</span><span class="nam">_options_to_args</span><span class="op">(</span><span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t228" href="#t228">228</a></span><span class="t">        <span class="nam">resume</span><span class="op">=</span><span class="nam">resume</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t229" href="#t229">229</a></span><span class="t">        <span class="nam">store_filter</span><span class="op">=</span><span class="nam">kwargs</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"store_filter"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t229" href="#t229">229</a></span><span class="t">        <span class="nam">store_filter</span><span class="op">=</span><span class="nam">kwargs</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"store_filter"</span><span class="op">)</span> <span class="key">or</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t230" href="#t230">230</a></span><span class="t">        <span class="nam">store_read</span><span class="op">=</span><span class="nam">kwargs</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"store_read"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t231" href="#t231">231</a></span><span class="t">        <span class="nam">store_write</span><span class="op">=</span><span class="nam">kwargs</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"store_write"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t232" href="#t232">232</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -323,7 +323,7 @@
             <a class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-23 16:03 +0000
+            created at 2026-03-23 17:23 +0000
         </p>
     </div>
 </footer>
