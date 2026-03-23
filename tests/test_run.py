@@ -970,7 +970,7 @@ def test_545_bundle_url_map_embed_viewer(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Viewer: http://example.com/view/viewer/" in out
+    assert "Viewer: http://example.com/view/" in out
 
 
 def test_bundle_url_and_embed_viewer(
@@ -998,7 +998,7 @@ def test_bundle_url_and_embed_viewer(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Viewer: http://example.com/view/viewer/" in out
+    assert "Viewer: http://example.com/view/" in out
     assert "Bundle: http://example.com/bundle" in out
 
 

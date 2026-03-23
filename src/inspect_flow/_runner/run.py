@@ -86,6 +86,12 @@ def run_eval_set(
             action.print("\nOptions:", option_str)
         action.print("")
         action.print("Log dir:", path(resolved_spec.log_dir), copyable=True)
+        if options.embed_viewer:
+            print_url = apply_bundle_url_mappings(
+                resolved_spec.log_dir, options.bundle_url_mappings
+            )
+            print_url = _ensure_trailing_slash(print_url)
+            action.print("Viewer:", path(print_url), copyable=True)
 
     if dry_run:
         return False, []
@@ -261,6 +267,12 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
         e.args = (modified_message, *e.args[1:])
 
 
+def _ensure_trailing_slash(url: str) -> str:
+    if not url.endswith("/"):
+        return url + "/"
+    return url
+
+
 def _bundle_url_output(spec: FlowSpec) -> Text | None:
     if not spec.options:
         return
@@ -271,17 +283,15 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
         print_url = apply_bundle_url_mappings(
             spec.options.bundle_dir, spec.options.bundle_url_mappings
         )
-        if not print_url.endswith("/"):
-            print_url += "/"
+        print_url = _ensure_trailing_slash(print_url)
         result.append("Bundle: ")
         result.append(path(print_url))
 
     if spec.options.embed_viewer and spec.log_dir:
         print_url = apply_bundle_url_mappings(
-            spec.log_dir + "/viewer", spec.options.bundle_url_mappings
+            spec.log_dir, spec.options.bundle_url_mappings
         )
-        if not print_url.endswith("/"):
-            print_url += "/"
+        print_url = _ensure_trailing_slash(print_url)
         if result:
             result.append("\n")
         result.append("Viewer: ")
