@@ -282,6 +282,12 @@ def _instantiate_task(
         def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
             return NOT_GIVEN if isinstance(value, NotGiven) else value
 
+        tags = (
+            list(flow_task.tags)
+            if isinstance(flow_task.tags, Sequence)
+            else flow_task.tags
+        )
+
         task_with(
             task,
             # dataset= Not Supported
@@ -307,6 +313,7 @@ def _instantiate_task(
             name=ng(task_name),
             version=ng(flow_task.version),
             metadata=ng(flow_task.metadata),
+            tags=ng(tags),
         )
     return tasks
 

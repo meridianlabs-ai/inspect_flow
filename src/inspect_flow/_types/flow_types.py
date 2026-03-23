@@ -429,6 +429,10 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
     )
 
+    tags: Sequence[str] | None | NotGiven = Field(
+        default=not_given, description="Tags to associate with the task."
+    )
+
     metadata: dict[str, Any] | None | NotGiven = Field(
         default=not_given, description="Additional metadata to associate with the task."
     )
