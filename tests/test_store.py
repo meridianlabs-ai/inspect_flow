@@ -196,7 +196,7 @@ def test_search_prefers_more_completed_samples(tmp_path: Path) -> None:
 
     # Import both into a store and verify search picks the better one
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     results = store.search_for_logs({task_id})
@@ -218,7 +218,7 @@ def test_search_skips_log_without_results(tmp_path: Path) -> None:
     write_eval_log(full, log1)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     task_id = task_identifier(read_eval_log(log2, header_only=True), None)
@@ -240,7 +240,7 @@ def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
     write_eval_log(no_results, log2)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     task_id = task_identifier(read_eval_log(log1, header_only=True), None)
@@ -263,7 +263,7 @@ def test_search_skips_invalidated_log(tmp_path: Path) -> None:
     write_eval_log(full, log_full)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir_full, log_dir_partial])
 
     task_id = task_identifier(read_eval_log(log_full, header_only=True), None)
@@ -282,7 +282,7 @@ def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:
     write_eval_log(full, log_path)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path(log_dir)
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
@@ -315,7 +315,7 @@ def test_search_prefers_more_recent_when_equal_samples(tmp_path: Path) -> None:
     task_id = task_identifier(header1, None)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     results = store.search_for_logs({task_id})
@@ -346,7 +346,7 @@ def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) ->
     run_eval_set(spec=spec2, base_dir=".")
 
     # Both logs should be in the store
-    store = DeltaLakeStore(store_path=store_dir, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir)
     assert len(store.get_logs()) == 2
 
     header = read_eval_log(list_eval_logs(log_dir2)[0].name, header_only=True)

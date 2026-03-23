@@ -147,9 +147,7 @@ def test_search_for_logs_filter_excludes(tmp_path: Path) -> None:
     write_eval_log(log, log_path)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(
-        store_path=store_dir, create=True, quiet=True, log_filter=success_only
-    )
+    store = DeltaLakeStore(store_path=store_dir, create=True, log_filter=success_only)
     store.import_log_path(log_dir)
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
@@ -163,9 +161,7 @@ def test_search_for_logs_filter_includes(tmp_path: Path) -> None:
     log_path = _run_task(log_dir)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(
-        store_path=store_dir, create=True, quiet=True, log_filter=success_only
-    )
+    store = DeltaLakeStore(store_path=store_dir, create=True, log_filter=success_only)
     store.import_log_path(log_dir)
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
@@ -179,7 +175,7 @@ def test_search_for_logs_no_filter(tmp_path: Path) -> None:
     log_path = _run_task(log_dir)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path(log_dir)
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
@@ -195,7 +191,7 @@ def test_get_logs_with_filter(tmp_path: Path) -> None:
     log_path = _run_task(log_dir)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path(log_dir)
 
     # success_only should include
@@ -211,9 +207,7 @@ def test_get_logs_with_filter(tmp_path: Path) -> None:
 
 def test_get_logs_filter_conflict_raises(tmp_path: Path) -> None:
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(
-        store_path=store_dir, create=True, quiet=True, log_filter=success_only
-    )
+    store = DeltaLakeStore(store_path=store_dir, create=True, log_filter=success_only)
     with pytest.raises(ValueError, match="per-call filter"):
         store.get_logs(filter=has_tag_golden)
 
@@ -236,7 +230,7 @@ def test_remove_log_prefix_with_filter(
     write_eval_log(log, log2)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
     assert len(store.get_logs()) == 2
 

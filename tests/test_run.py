@@ -1295,6 +1295,80 @@ def test_log_copy_store_read_off_by_default(tmp_path: Path) -> None:
     assert not list(Path(log_dir2).glob("*.eval"))
 
 
+def test_store_write_off_no_using_store_message(recording_console: Console) -> None:
+    log_dir = init_test_logs()
+    store_dir = init_test_store()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=FlowStoreConfig(path=store_dir, write=False),  # read=False by default
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+
+    assert "Using store" not in recording_console.export_text()
+
+
+def test_store_none_write_explicit_warns(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None, write=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_write has no effect" in recording_console.export_text()
+
+
+def test_store_none_write_default_no_warn(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_write has no effect" not in recording_console.export_text()
+
+
+def test_store_none_read_warns(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None, read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_read has no effect" in recording_console.export_text()
+
+
+def test_using_store_write_only(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store()),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (write only):" in recording_console.export_text()
+
+
+def test_using_store_read_write(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store(), read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (read-write):" in recording_console.export_text()
+
+
+def test_using_store_read_only(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store(), read=True, write=False),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (read only):" in recording_console.export_text()
+
+
 def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) -> None:
     log_dir1 = str(tmp_path / "logs1")
     log_dir2 = str(tmp_path / "logs2")
