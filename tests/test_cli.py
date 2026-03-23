@@ -524,3 +524,38 @@ def test_run_command_resume_and_log_dir_mutually_exclusive() -> None:
     )
     assert result.exit_code != 0
     assert "--resume and --log-dir are mutually exclusive" in result.output
+
+
+def test_run_command_multiple_store_filters() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command,
+            [
+                CONFIG_FILE,
+                "--store-filter",
+                "tests/local_eval/src/local_eval/my_filters.py@only_success",
+                "--store-filter",
+                "tests/local_eval/src/local_eval/my_filters.py@only_anthropic",
+            ],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                store_filter=(
+                    "tests/local_eval/src/local_eval/my_filters.py@only_success",
+                    "tests/local_eval/src/local_eval/my_filters.py@only_anthropic",
+                ),
+                overrides=[],
+                args={},
+            ),
+        )

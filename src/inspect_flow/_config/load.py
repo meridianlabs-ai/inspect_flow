@@ -42,7 +42,7 @@ class ConfigOptions:
     overrides: list[str] = field(factory=list)
     args: dict[str, Any] = field(factory=dict)
     resume: bool = False
-    store_filter: str | None = None
+    store_filter: tuple[str, ...] | str | None = None
     store_read: bool | None = None
     store_write: bool | None = None
 
