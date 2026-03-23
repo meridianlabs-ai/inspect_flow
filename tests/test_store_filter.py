@@ -205,6 +205,30 @@ def test_get_logs_with_filter(tmp_path: Path) -> None:
     assert len(store.get_logs(filter=success_only)) == 0
 
 
+def test_get_logs_with_multiple_filters(tmp_path: Path) -> None:
+    log_dir1 = str(tmp_path / "logs1")
+    log_dir2 = str(tmp_path / "logs2")
+    _run_task(log_dir1)
+    log2_path = _run_task(log_dir2)
+
+    # log2: error status with golden tag
+    log2 = read_eval_log(log2_path)
+    log2.status = "error"
+    log2.eval.tags = ["golden"]
+    write_eval_log(log2, log2_path)
+
+    store_dir = str(tmp_path / "store")
+    store = DeltaLakeStore(store_path=store_dir, create=True)
+    store.import_log_path([log_dir1, log_dir2])
+
+    # each filter alone matches one log
+    assert len(store.get_logs(filter=success_only)) == 1
+    assert len(store.get_logs(filter=has_tag_golden)) == 1
+    # both filters together (AND) match zero logs
+    combined = resolve_log_filter([success_only, has_tag_golden])
+    assert len(store.get_logs(filter=combined)) == 0
+
+
 def test_get_logs_filter_conflict_raises(tmp_path: Path) -> None:
     store_dir = str(tmp_path / "store")
     store = DeltaLakeStore(store_path=store_dir, create=True, log_filter=success_only)
