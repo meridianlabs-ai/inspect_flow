@@ -113,8 +113,8 @@ def config_options(f: F) -> F:
     f = click.option(
         "--store-filter",
         type=str,
-        default=None,
-        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`.",
+        multiple=True,
+        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass).",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
@@ -173,7 +173,7 @@ class OutputOptionArgs(TypedDict, total=False):
 
 class ConfigOptionArgs(OutputOptionArgs, total=False):
     store: str | None
-    store_filter: str | None
+    store_filter: tuple[str, ...]
     store_read: bool | None
     store_write: bool | None
     log_dir: str | None
@@ -226,7 +226,7 @@ def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
         overrides=_options_to_overrides(**kwargs),
         args=_options_to_args(**kwargs),
         resume=resume,
-        store_filter=kwargs.get("store_filter"),
+        store_filter=kwargs.get("store_filter") or None,
         store_read=kwargs.get("store_read"),
         store_write=kwargs.get("store_write"),
     )
