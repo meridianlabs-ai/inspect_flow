@@ -66,7 +66,7 @@ flow run first_config.py --venv
 **What happens when you run this (default in-process mode)?**
 
 1.  Flow loads the `gpqa_diamond` task from the `inspect_evals` registry
-2.  Searches the Flow Store for existing logs to reuse (see [Flow Store](store.qmd))
+2.  Checks for existing logs to reuse in the log directory (and the [Flow Store](store.qmd) if `--store-read` is enabled)
 3.  Runs the evaluation with GPT-5 in the current Python process
 4.  Stores results in `logs/`
 
@@ -95,7 +95,7 @@ When using `--venv`, Flow additionally creates an isolated virtual environment, 
 | `env` | Environment variables to set when running tasks | `None` |
 | `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
 | `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
-| `store` | Flow Store location for tracking and reusing logs across runs. Set to `None` to disable. See [Flow Store](store.qmd) | `"auto"` |
+| `store` | Flow Store configuration for indexing and reusing logs across runs. Accepts a path string, `FlowStoreConfig`, or `None` to disable. `"auto"` uses the platform-specific [default location](store.qmd#backend). See [Flow Store](store.qmd) | `"auto"` |
 | `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
 
 ## Tasks
