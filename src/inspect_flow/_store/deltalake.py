@@ -17,7 +17,7 @@ from inspect_ai._eval.evalset import (
     task_identifier,
 )
 from inspect_ai._util._async import run_coroutine, tg_collect
-from inspect_ai._util.file import exists, filesystem, to_uri
+from inspect_ai._util.file import absolute_file_path, exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, read_eval_log, read_eval_log_async
 from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -329,6 +329,7 @@ class DeltaLakeStore(FlowStoreInternal):
         flow_print("\nImporting logs to store")
         logs: list[Log] = []
         for p in log_path:
+            p = absolute_file_path(p)
             fs = filesystem(p)
             if not fs.exists(p):
                 flow_print("Error: Path", path(p), "does not exist", format="error")
