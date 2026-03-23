@@ -589,7 +589,7 @@ def list_log(
     statuses: tuple[str, ...],
     since: str | None,
     until: str | None,
-    filter_name: str | None,
+    filter_name: tuple[str, ...],
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
