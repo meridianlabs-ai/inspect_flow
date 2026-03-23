@@ -174,3 +174,23 @@ def test_store_delete_not_found(recording_console: Console) -> None:
     assert result.exit_code == 0
     captured = recording_console.export_text()
     assert "Store not found" in captured
+
+
+def test_store_import_path_with_dotdot_is_normalized() -> None:
+    # Importing with a path containing ".." should store normalized (absolute) paths,
+    # not paths with ".." in them.
+    from inspect_flow._store.store import store_factory
+
+    runner = CliRunner()
+    path_with_dotdot = "tests/test_logs/logs2/../logs1"
+    result = runner.invoke(
+        store_command, ["import", path_with_dotdot], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+
+    store = store_factory("auto", base_dir=".")
+    assert store is not None
+    logs = store.get_logs()
+    assert logs, "Expected logs to be imported"
+    dotdot_logs = [log for log in logs if ".." in log]
+    assert not dotdot_logs, f"Some log paths contain '..': {dotdot_logs}"
