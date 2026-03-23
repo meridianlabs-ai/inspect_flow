@@ -729,9 +729,14 @@ class FlowStoreConfig(FlowBase):
         description="Path to directory to use for flow storage. `'auto'` will use a default application location. `None` will disable storage.",
     )
 
-    filter: SkipValidation[LogFilter] | str | None = Field(
+    filter: (
+        SkipValidation[LogFilter]
+        | str
+        | Sequence[SkipValidation[LogFilter] | str]
+        | None
+    ) = Field(
         default=None,
-        description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, or `None`.",
+        description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, a sequence of filters (all must pass), or `None`.",
     )
 
     read: bool = Field(
