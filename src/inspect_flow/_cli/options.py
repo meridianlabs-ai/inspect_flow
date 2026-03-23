@@ -114,19 +114,19 @@ def config_options(f: F) -> F:
         "--store-filter",
         type=str,
         default=None,
-        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`.",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
         "--store-read/--no-store-read",
         default=None,
-        help="Read existing logs from the store (default: --no-store-read).",
+        help="Read existing logs from the store (default: `--no-store-read`).",
         envvar="INSPECT_FLOW_STORE_READ",
     )(f)
     f = click.option(
         "--store-write/--no-store-write",
         default=None,
-        help="Write completed logs to the store (default: --store-write).",
+        help="Write completed logs to the store (default: `--store-write`).",
         envvar="INSPECT_FLOW_STORE_WRITE",
     )(f)
     f = click.option(
