@@ -28,6 +28,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
 )
 from inspect_flow._util.console import quantity
+from inspect_flow._util.logs import num_valid_samples
 from inspect_flow._util.not_given import default_none
 from inspect_flow._util.path_util import path_join, path_str
 from inspect_flow._util.pydantic_util import model_dump
@@ -102,7 +103,8 @@ def _epochs_reducer_changed(epochs: Epochs | None, config: EvalConfig) -> bool:
 def num_log_samples(
     header: EvalLog, log_info: TaskLogInfo, limit: int | tuple[int, int] | None
 ) -> int:
-    if not header.results or header.invalidated:
+    log_samples = num_valid_samples(header)
+    if log_samples == 0:
         return 0
     task = log_info.task
     epochs = resolve_epochs(
@@ -115,11 +117,11 @@ def num_log_samples(
     epoch_count = epochs.epochs if epochs else 1
     log_epoch_count = header.eval.config.epochs or 1
     if log_epoch_count <= epoch_count:
-        return header.results.completed_samples
+        return log_samples
     else:
         # Log has more epochs than the current task - unclear how many samples can be reused.
         # Assume that samples are evenly distributed across epochs.
-        return int(header.results.completed_samples * epoch_count / log_epoch_count)
+        return int(log_samples * epoch_count / log_epoch_count)
 
 
 def find_existing_logs(

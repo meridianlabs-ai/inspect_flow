@@ -7,7 +7,7 @@ from logging import getLogger
 
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, copy_file, filesystem
-from inspect_ai.log import list_eval_logs
+from inspect_ai.log import EvalLog, list_eval_logs
 from rich.text import Text
 
 from inspect_flow._util.console import flow_print, path
@@ -110,3 +110,9 @@ def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -
         flow_print(path(log_file.name))
         if not dry_run:
             copy_file(log_file.name, destination)
+
+
+def num_valid_samples(header: EvalLog) -> int:
+    if not header.results or header.invalidated:
+        return 0
+    return header.results.completed_samples
