@@ -37,7 +37,7 @@
 | src/inspect\_flow/\_launcher/venv.py               |      162 |        0 |       58 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/cli.py                  |       33 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/instantiate.py          |      167 |        4 |       80 |        3 |     96.36% |55-57, 92, 258->260 |
+| src/inspect\_flow/\_runner/instantiate.py          |      168 |        4 |       80 |        3 |     96.37% |55-57, 92, 258->260 |
 | src/inspect\_flow/\_runner/logs.py                 |      117 |        1 |       52 |        4 |     97.04% |42, 169->167, 172->167, 200->195 |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/run.py                  |      155 |        5 |       62 |        4 |     95.85% |188-189, 206, 208, 222, 256->255 |
@@ -48,8 +48,8 @@
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        7 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/factories.py             |       83 |        0 |       32 |        0 |    100.00% |           |
-| src/inspect\_flow/\_types/flow\_types.py           |      199 |        7 |       14 |        1 |     94.37% |70-72, 294-298, 305 |
-| src/inspect\_flow/\_types/generated.py             |      249 |        0 |        0 |        0 |    100.00% |           |
+| src/inspect\_flow/\_types/flow\_types.py           |      200 |        7 |       14 |        1 |     94.39% |70-72, 294-298, 305 |
+| src/inspect\_flow/\_types/generated.py             |      251 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/log\_filter.py           |       43 |        6 |       24 |        5 |     83.58% |55, 58, 72, 84, 86-87 |
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |        0 |        0 |    100.00% |           |
@@ -68,7 +68,7 @@
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        6 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **4139** |  **289** | **1268** |   **99** | **91.31%** |           |
+| **TOTAL**                                          | **4143** |  **289** | **1268** |   **99** | **91.31%** |           |
 
 
 ## Setup coverage badge
