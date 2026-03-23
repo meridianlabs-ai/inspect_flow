@@ -246,7 +246,7 @@ This workflow lets you validate results before sharing them with the team.
 
 ## Filtering
 
-You can filter which logs are eligible for reuse by providing a log filter. A log filter is a function that receives an `EvalLog` (loaded in header-only mode) and returns `True` to include the log or `False` to exclude it.
+You can filter which logs are eligible for reuse by providing one or more log filters. A log filter is a function that receives an `EvalLog` (loaded in header-only mode) and returns `True` to include the log or `False` to exclude it. When multiple filters are provided, all must pass for a log to be included.
 
 ### Defining a filter
 
@@ -271,16 +271,17 @@ from inspect_flow import FlowSpec, FlowStoreConfig
 FlowSpec(
     store=FlowStoreConfig(
         path="auto",
-        filter=production_ready,  # callable or registered name
+        filter=production_ready,  # callable, registered name, or list
     ),
     tasks=[...]
 )
 ```
 
-**From the CLI** — use `--store-filter` with a registered filter name:
+**From the CLI** — use `--store-filter` with a registered filter name. Use it multiple times to require all filters to pass:
 
 ```bash
 flow run config.py --store-filter production_ready
+flow run config.py --store-filter production_ready --store-filter only_success
 ```
 
 The CLI flag overrides any filter set in the spec's `FlowStoreConfig`.
@@ -292,6 +293,9 @@ The `flow store list`, `flow store remove`, and `flow list log` commands support
 ```bash
 # Only show logs that pass the filter
 flow store list --filter production_ready
+
+# Multiple filters (all must pass)
+flow store list --filter production_ready --filter only_success
 
 # Only show logs that do NOT pass the filter
 flow store list --exclude production_ready
@@ -394,7 +398,7 @@ flow store remove logs/old/ --dry-run
 - `INSPECT_FLOW_STORE_RECURSIVE` - Enable recursive search (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_MISSING` - Remove missing logs (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_DRY_RUN` - Enable dry run mode (`true`/`false`)
-- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only remove logs that pass (`--filter`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only remove logs that pass (`--filter`). Space-separate multiple names (all must pass)
 - `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only remove logs that do NOT pass (`--exclude`)
 
 ### The `flow store list` Command
@@ -415,7 +419,7 @@ flow store list --format tree
 
 - `INSPECT_FLOW_STORE` - Store location (same as `--store`)
 - `INSPECT_FLOW_STORE_LIST_FORMAT` - Output format (`flat` or `tree`)
-- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only show logs that pass (`--filter`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only show logs that pass (`--filter`). Space-separate multiple names (all must pass)
 - `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only show logs that do NOT pass (`--exclude`)
 
 ::: {.callout-tip}
