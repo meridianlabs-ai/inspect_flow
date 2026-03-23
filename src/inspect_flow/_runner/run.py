@@ -67,6 +67,12 @@ def run_eval_set(
         else None
     )
 
+    if store is None and store_config is not None:
+        if store_config.read:
+            flow_print("store_read has no effect: store is disabled", format="warning")
+        if store_config.write and "write" in store_config.model_fields_set:
+            flow_print("store_write has no effect: store is disabled", format="warning")
+
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
 

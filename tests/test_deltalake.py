@@ -144,10 +144,10 @@ class TestCheckTableDescription:
         # Create store with bumped major version
         table_def.version = str(Version.parse(old_version).bump_major())
         try:
-            DeltaLakeStore(store_path=str(tmp_path), create=True, quiet=True)
+            DeltaLakeStore(store_path=str(tmp_path), create=True)
         finally:
             table_def.version = old_version
 
         # Opening with current (lower) code version should fail
         with pytest.raises(ValueError, match="upgrade required"):
-            DeltaLakeStore(store_path=str(tmp_path), quiet=True)
+            DeltaLakeStore(store_path=str(tmp_path))

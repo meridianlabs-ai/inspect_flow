@@ -24,7 +24,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
-from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay, ReadLogsProgress
 from inspect_flow._store.store import FlowStoreInternal, is_better_log
 from inspect_flow._types.flow_types import LogFilter
@@ -191,7 +190,6 @@ class DeltaLakeStore(FlowStoreInternal):
         self,
         store_path: str,
         create: bool = False,
-        quiet: bool = False,
         log_filter: LogFilter | None = None,
     ) -> None:
         self._log_filter = log_filter
@@ -204,15 +202,11 @@ class DeltaLakeStore(FlowStoreInternal):
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
             logger.info("Using store: %s", path(store_path))
-            if not quiet:
-                display().print("Using store:", path(store_path), action_key="logs")
             self.exists = True
         else:
             logger.info("Store not found")
             if create:
                 logger.info("Creating store: %s", path(store_path))
-                if not quiet:
-                    display().print("Using store:", path(store_path), action_key="logs")
                 self.exists = True
 
     def _filter_logs(self, logs: set[str], filter: LogFilter | None) -> set[str]:
