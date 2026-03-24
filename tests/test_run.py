@@ -2,12 +2,13 @@ import logging
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
 from botocore.client import BaseClient
-from inspect_ai import Task
+from inspect_ai import Task, eval_set
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.logger import LogHandler, LogHandlerVar, _logHandler
 from inspect_ai.agent import Agent
@@ -30,6 +31,7 @@ from inspect_flow import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
+from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
@@ -1493,18 +1495,25 @@ def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     assert "Test error from eval_set" in str(e.value.__cause__)
 
 
-def test_eval_set_keyboard_interrupt(
-    mock_eval_set: MagicMock, recording_console: Console
-) -> None:
+def test_store_write_on_keyboard_interrupt() -> None:
     log_dir = init_test_logs()
+    store_dir = init_test_store()
+
     spec = FlowSpec(
         log_dir=log_dir,
-        tasks=tasks_matrix(task=[task_file + "@noop"], model=["mockllm/model1"]),
+        store=FlowStoreConfig(path=store_dir),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
-    mock_eval_set.side_effect = KeyboardInterrupt()
 
-    with pytest.raises(KeyboardInterrupt):
+    def eval_set_then_interrupt(*args: Any, **kwargs: Any) -> None:
+        eval_set(*args, **kwargs)
+        raise KeyboardInterrupt()
+
+    with patch(
+        "inspect_flow._runner.run.eval_set", side_effect=eval_set_then_interrupt
+    ):
         run_eval_set(spec=spec, base_dir=".")
 
-    out = recording_console.export_text()
-    assert "Eval Set Failed with Exception" in out
+    store = store_factory(store_dir, base_dir=".")
+    assert store is not None
+    assert len(store.get_logs()) == 1
