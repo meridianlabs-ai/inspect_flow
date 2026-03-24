@@ -29,6 +29,11 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> dict[str, TaskLogInfo]:
 
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before checking the flow spec")
+    log_dir = resolved_spec.log_dir
+
+    # Always allow dirty for check — unexpected logs are reported, not an error
+    check_options = options.model_copy(update={"log_dir_allow_dirty": True})
+    resolved_spec = resolved_spec.model_copy(update={"options": check_options})
 
     task_log_info = find_existing_logs(
         task_id_to_task,
@@ -38,5 +43,5 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> dict[str, TaskLogInfo]:
     )
 
     flow_print(create_task_log_display(task_log_info, completed=True))
-    flow_print("Log dir:", path(resolved_spec.log_dir), soft_wrap=True, crop=False)
+    flow_print("Log dir:", path(log_dir), soft_wrap=True, crop=False)
     return task_log_info
