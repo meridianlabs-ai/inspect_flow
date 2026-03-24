@@ -311,7 +311,7 @@ flow run config.py
 | `INSPECT_FLOW_STORE`                  | `--store`                  | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
 | `INSPECT_FLOW_STORE_READ`             | `--store-read`             | Match existing logs from the store (default: off) |
 | `INSPECT_FLOW_STORE_WRITE`            | `--store-write`            | Index completed logs in the store (default: on) |
-| `INSPECT_FLOW_STORE_FILTER`           | `--store-filter`           | Registered log filter name to apply when matching logs from the store |
+| `INSPECT_FLOW_STORE_FILTER`           | `--store-filter`           | Registered log filter name to apply when matching logs from the store. Space-separate multiple names (all must pass) |
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
 | `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
