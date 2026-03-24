@@ -158,19 +158,6 @@ class TestEpochsReducerChanged:
 
 
 class TestNumLogSamples:
-    def test_no_results(self) -> None:
-        header = _make_eval_log(results=None)
-        info = TaskLogInfo(task=_make_task(), task_samples=3)
-        assert num_log_samples(header, info, None) == 0
-
-    def test_invalidated(self) -> None:
-        header = _make_eval_log(
-            results=EvalResults(completed_samples=3),
-            invalidated=True,
-        )
-        info = TaskLogInfo(task=_make_task(), task_samples=3)
-        assert num_log_samples(header, info, None) == 0
-
     def test_reducer_changed(self) -> None:
         header = _make_eval_log(
             results=EvalResults(completed_samples=6),

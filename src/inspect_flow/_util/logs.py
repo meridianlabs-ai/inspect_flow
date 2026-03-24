@@ -123,7 +123,7 @@ def num_valid_samples(header: EvalLog) -> int:
     if header.invalidated:
         return sum(
             1
-            for s in read_eval_log_samples(header.location)
+            for s in read_eval_log_samples(header.location, all_samples_required=False)
             if s.invalidation is None and s.error is None
         )
     else:
