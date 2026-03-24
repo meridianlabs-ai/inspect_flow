@@ -29,7 +29,10 @@ from inspect_flow._cli.store import (
 from inspect_flow._runner.task_log import TaskInfo, unique_task_names
 from inspect_flow._types.flow_types import FlowSpec, LogFilter
 from inspect_flow._util.console import flow_print, path
-from inspect_flow._util.logs import group_logs_by_dir, num_valid_samples
+from inspect_flow._util.logs import (
+    group_logs_by_dir,
+    num_valid_samples_async,
+)
 from inspect_flow._util.path_util import apply_bundle_url_mappings, path_str
 
 logger = getLogger(__name__)
@@ -80,23 +83,32 @@ def _viewer_url(log_path: str, spec: FlowSpec) -> str | None:
 # -- Header reading and qualifier computation ---------------------------------
 
 
+@dataclass
+class _HeaderResult:
+    log_path: str
+    header: EvalLog
+    num_valid_samples: int
+
+
 async def _read_header(
     log_path: str, on_read: Callable[[], None] | None = None
-) -> tuple[str, EvalLog | None]:
+) -> _HeaderResult | None:
     try:
-        result = log_path, await read_eval_log_async(log_path, header_only=True)
+        header = await read_eval_log_async(log_path, header_only=True)
+        valid_samples = await num_valid_samples_async(header)
+        return _HeaderResult(log_path, header, valid_samples)
     except Exception:
-        result = log_path, None
-    if on_read:
-        on_read()
-    return result
+        return None
+    finally:
+        if on_read:
+            on_read()
 
 
 def _read_headers(
     log_paths: list[str],
     options: ListOptions,
     progress: Progress | None = None,
-) -> dict[str, EvalLog]:
+) -> dict[str, _HeaderResult]:
     on_read: Callable[[], None] | None = None
     if progress is not None:
         for task in progress.tasks:
@@ -106,9 +118,9 @@ def _read_headers(
     results = run_coroutine(
         tg_collect([partial(_read_header, p, on_read) for p in log_paths])
     )
-    headers = {p: h for p, h in results if h is not None}
+    headers = {r.log_path: r for r in results if r is not None}
     if options.log_filter:
-        headers = {p: h for p, h in headers.items() if options.log_filter(h)}
+        headers = {p: h for p, h in headers.items() if options.log_filter(h.header)}
     return headers
 
 
@@ -137,7 +149,8 @@ _STATUS_STYLES: dict[str, str] = {
 }
 
 
-def _duration_str(header: EvalLog) -> str:
+def _duration_str(header_result: _HeaderResult) -> str:
+    header = header_result.header
     started = header.stats.started_at
     completed = header.stats.completed_at
     if not started or not completed:
@@ -146,8 +159,9 @@ def _duration_str(header: EvalLog) -> str:
     return str(delta).split(".")[0]
 
 
-def _samples_str(header: EvalLog) -> str:
-    valid_samples = num_valid_samples(header)
+def _samples_str(header_result: _HeaderResult) -> str:
+    valid_samples = header_result.num_valid_samples
+    header = header_result.header
     if header.results:
         return f"{valid_samples}/{header.results.total_samples}"
     total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
@@ -166,11 +180,11 @@ class LogEntry:
 
 
 def _compute_entries(
-    log_paths: list[str], headers: dict[str, EvalLog]
+    log_paths: list[str], headers: dict[str, _HeaderResult]
 ) -> list[LogEntry]:
     """Compute task name and qualifier for a set of logs in the same directory."""
     valid = [p for p in log_paths if p in headers]
-    task_infos = [_eval_log_to_task_info(headers[p]) for p in valid]
+    task_infos = [_eval_log_to_task_info(headers[p].header) for p in valid]
     qualifiers = unique_task_names(task_infos)
 
     group_dir = valid[0].rsplit("/", 1)[0] if valid else ""
@@ -181,7 +195,7 @@ def _compute_entries(
             p,
             name,
             qual,
-            headers[p].status,
+            headers[p].header.status,
             _samples_str(headers[p]),
             _duration_str(headers[p]),
             _viewer_url(p, spec) if spec else None,
