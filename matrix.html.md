@@ -452,9 +452,9 @@ This creates **8 tasks** (4 task variants × 2 models).
 > Always preview with `--dry-run` to check the number of evaluations
 > before running expensive grids.
 >
-> The [Flow Store](store.qmd) helps by automatically reusing logs from
-> previous runs, so re-running a large sweep only evaluates what’s new
-> or changed.
+> The [Flow Store](store.qmd) indexes logs from every run. With
+> `--store-read` enabled, re-running a large sweep only evaluates what’s
+> new or changed.
 
 ## Matrix Merge
 

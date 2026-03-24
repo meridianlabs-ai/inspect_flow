@@ -25,11 +25,13 @@ flow run config.yaml
 
 1.  Flow loads your configuration file
 2.  Resolves all defaults and matrix expansions
-3.  Searches the Flow Store for existing logs to reuse
+3.  Checks for existing logs in the log directory (and the [Flow
+    Store](store.qmd) if `--store-read` is enabled)
 4.  Executes evaluations via Inspect AI’s `eval_set()` in the current
     Python process
 5.  Stores logs in `log_dir`
-6.  Adds logs to the Flow Store and generates `flow-requirements.txt`
+6.  Indexes logs in the [Flow Store](store.qmd) and generates
+    `flow-requirements.txt`
 
 > [!TIP]
 >
@@ -61,7 +63,8 @@ Performs the full setup process and shows what would run:
 
 - Applies all defaults and expands all matrix functions
 - Instantiates tasks from the registry
-- Checks for existing logs (in log directory and Flow Store)
+- Checks for existing logs in the log directory (and the Flow Store if
+  `--store-read` is enabled)
 - Shows which tasks would run and which logs would be reused
 - Stops before actually running evaluations
 
@@ -167,6 +170,8 @@ capabilities. Key functions include:
   defaults, includes, overrides - equivalent to `flow config`)
 - **`init()`** - Initialize Flow session settings (logging, display,
   .env loading)
+- **`list_logs()`** - List log files from a directory or the Flow Store
+  (equivalent to `flow list log`)
 - **`store_get()`** - Get a FlowStore instance for programmatic store
   access
 
@@ -208,8 +213,8 @@ Evaluation results are stored in the `log_dir`:
 
 > [!NOTE]
 >
-> Logs in this directory are automatically tracked by the [Flow
-> Store](store.qmd), enabling log reuse across future runs.
+> Logs in this directory are indexed in the [Flow Store](store.qmd),
+> enabling log reuse across future runs when `--store-read` is enabled.
 
 **Log formats:**
 

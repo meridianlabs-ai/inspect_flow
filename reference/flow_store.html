@@ -189,8 +189,8 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowspec" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowSpec</span></a>
+  <a href="../reference/inspect_flow.html#flowfactory" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowFactory</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -219,14 +219,38 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#flowspec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowSpec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#flowstoreconfig" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowStoreConfig</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowtask" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FlowTask</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#logfilter" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">LogFilter</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#after_load" class="sidebar-item-text sidebar-link">
  <span class="menu-text">after_load</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#log_filter" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">log_filter</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -332,6 +356,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#list_logs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">list_logs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#store_get" class="sidebar-item-text sidebar-link">
  <span class="menu-text">store_get</span></a>
   </div>
@@ -377,6 +407,12 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">flow config</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/flow_list.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">flow list</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -505,8 +541,8 @@ ul.task-list li input[type="checkbox"] {
 <tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
 <tr class="odd">
 <td><code>--log-level</code></td>
@@ -523,7 +559,7 @@ ul.task-list li input[type="checkbox"] {
 <tr class="odd">
 <td><code>--copy-from</code></td>
 <td>directory</td>
-<td>Copy logs from this directory to PATH before importing.</td>
+<td>Copy logs from this directory to PATH before importing. Supports both local and S3 paths.</td>
 <td>None</td>
 </tr>
 <tr class="even">
@@ -576,14 +612,26 @@ ul.task-list li input[type="checkbox"] {
 <tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
 <tr class="odd">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
+</tr>
+<tr class="even">
+<td><code>--exclude</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that do NOT pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--filter</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
+<td>None</td>
 </tr>
 <tr class="even">
 <td><code>--recursive</code>, <code>-r</code> / <code>--no-recursive</code>, <code>-R</code></td>
@@ -647,8 +695,8 @@ ul.task-list li input[type="checkbox"] {
 <tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
 <tr class="odd">
 <td><code>--log-level</code></td>
@@ -700,8 +748,8 @@ ul.task-list li input[type="checkbox"] {
 <tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
 <tr class="odd">
 <td><code>--log-level</code></td>
@@ -759,14 +807,26 @@ ul.task-list li input[type="checkbox"] {
 <tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
 <tr class="odd">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
+</tr>
+<tr class="even">
+<td><code>--exclude</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that do NOT pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--filter</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
+<td>None</td>
 </tr>
 <tr class="even">
 <td><code>--format</code></td>

@@ -451,10 +451,10 @@ can be deployed separately.
 
 ### Bundle URL Mappings
 
-Convert local bundle paths to public URLs for sharing evaluation
-results. The `bundle_url_mappings` in `FlowOptions` applies string
-replacements to `bundle_dir` to generate a shareable URL that’s printed
-to stdout after the evaluation completes.
+Convert local paths to public URLs for sharing evaluation results. The
+`bundle_url_mappings` in `FlowOptions` applies string replacements to
+`bundle_dir` and `embed_viewer` paths to generate a shareable URL that’s
+printed to stdout after the evaluation completes.
 
 **config.py**
 

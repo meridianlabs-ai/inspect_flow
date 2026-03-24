@@ -7,7 +7,7 @@
 
 Configuration for an Agent.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L180)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L180)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -19,7 +19,7 @@ class FlowAgent(FlowBase)
 Name of the agent. Used to create the agent if the factory is not
 provided.
 
-`factory` Callable\[..., Agent\] \| None \| NotGiven  
+`factory` [FlowFactory](inspect_flow.qmd#flowfactory)\[Agent\] \| Callable\[..., Agent\] \| str \| None \| NotGiven  
 Factory function to create the agent instance.
 
 `args` CreateArgs \| None \| NotGiven  
@@ -36,7 +36,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Default field values for Inspect objects. Will be overriden by more
 specific settings.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L598)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L659)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -78,7 +78,7 @@ Task defaults for task name prefixes. E.g.
 
 Configuration for flow dependencies to install in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L643)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L704)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -119,7 +119,7 @@ Number of epochs to repeat samples over and optionally one or more
 reducers used to combine scores from samples across epochs. If not
 specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L214)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L214)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -134,76 +134,26 @@ Number of epochs.
 One or more reducers used to combine scores from samples across epochs
 (defaults to `"mean"`)
 
-### FlowSpec
+### FlowFactory
 
-Top-level flow specification.
+Type-checked factory wrapper for creating Inspect AI objects.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L667)
+Wraps a factory callable with its arguments, binding them at
+construction time so that type errors are caught immediately rather than
+at evaluation time. Works with `FlowTask`, `FlowAgent`, `FlowSolver`,
+`FlowScorer`, and `FlowModel`.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L255)
 
 ``` python
-class FlowSpec(FlowBase, arbitrary_types_allowed=True)
+class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
 ```
-
-#### Attributes
-
-`includes` Sequence\[str \| [FlowSpec](inspect_flow.qmd#flowspec)\] \| None \| NotGiven  
-List of other flow specs to include. Relative paths will be resolved
-relative to the config file (when using the CLI) or `base_dir` arg (when
-using the API). In addition to this list of explicit files to include,
-any `_flow.py` files in the same directory or any parent directory of
-the config file (when using the CLI) or `base_dir` arg (when using the
-API) will also be included automatically.
-
-`store` Literal\['auto'\] \| str \| None \| NotGiven  
-Path to directory to use for flow storage. `'auto'` will use a default
-application location. `None` will disable storage. Relative paths will
-be resolved relative to the config file (when using the CLI) or
-`base_dir` arg (when using the API). If not given, `'auto'` will be
-used.
-
-`log_dir` str \| None \| NotGiven  
-Output path for logging results (required to ensure that a unique
-storage scope is assigned). Must be set before running the flow spec.
-Relative paths will be resolved relative to the config file (when using
-the CLI) or `base_dir` arg (when using the API).
-
-`log_dir_create_unique` bool \| None \| NotGiven  
-If `True`, create a unique log directory by appending a datetime
-subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`.
-If `False`, use the existing `log_dir` (which must be empty or have
-`log_dir_allow_dirty=True`). Defaults to `False`.
-
-`execution_type` Literal\['inproc', 'venv'\] \| None \| NotGiven  
-Execution environment for running tasks (defaults to `'inproc'`).
-
-`python_version` str \| None \| NotGiven  
-Python version to use in the flow virtual environment (e.g. `'3.11'`).
-
-`dependencies` [FlowDependencies](inspect_flow.qmd#flowdependencies) \| None \| NotGiven  
-Dependencies to install in the venv. Defaults to auto-detecting
-dependencies from `pyproject.toml`, `requirements.txt`, and object names
-in the config.
-
-`options` [FlowOptions](inspect_flow.qmd#flowoptions) \| None \| NotGiven  
-Arguments for calls to `eval_set()`.
-
-`env` dict\[str, str\] \| None \| NotGiven  
-Environment variables to set when running tasks.
-
-`defaults` [FlowDefaults](inspect_flow.qmd#flowdefaults) \| None \| NotGiven  
-Defaults values for Inspect objects.
-
-`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
-Optional. Metadata stored in the flow config. Not passed to the model.
-
-`tasks` Sequence\[str \| [FlowTask](inspect_flow.qmd#flowtask) \| Task\] \| None \| NotGiven  
-Tasks to run
 
 ### FlowModel
 
 Configuration for a Model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L79)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L75)
 
 ``` python
 class FlowModel(FlowBase)
@@ -215,7 +165,7 @@ class FlowModel(FlowBase)
 Name of the model to use. If factory is not provided, this is used to
 create the model.
 
-`factory` Callable\[..., Model\] \| None \| NotGiven  
+`factory` [FlowFactory](inspect_flow.qmd#flowfactory)\[Model\] \| Callable\[..., Model\] \| str \| None \| NotGiven  
 Factory function to create the model instance.
 
 `role` str \| None \| NotGiven  
@@ -251,7 +201,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Evaluation options.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L403)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L464)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -291,7 +241,7 @@ Metadata to associate with this evaluation run.
 Trace message interactions with evaluated model to terminal.
 
 `display` [DisplayType](inspect_flow.api.qmd#displaytype) \| None \| NotGiven  
-Task display type (defaults to `'full'`).
+Task display type (defaults to `'rich'`).
 
 `approval` str \| ApprovalPolicyConfig \| None \| NotGiven  
 Tool use approval policies. Either a path to an approval policy config
@@ -410,7 +360,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and
 
 Configuration for a Scorer.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L132)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L128)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -422,7 +372,7 @@ class FlowScorer(FlowBase)
 Name of the scorer. Used to create the scorer if the factory is not
 provided.
 
-`factory` Callable\[..., Scorer\] \| None \| NotGiven  
+`factory` [FlowFactory](inspect_flow.qmd#flowfactory)\[Scorer\] \| Callable\[..., Scorer\] \| str \| None \| NotGiven  
 Factory function to create the scorer instance.
 
 `args` CreateArgs \| None \| NotGiven  
@@ -435,7 +385,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a Solver.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L156)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L154)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -447,7 +397,7 @@ class FlowSolver(FlowBase)
 Name of the solver. Used to create the solver if the factory is not
 provided.
 
-`factory` Callable\[..., Solver\] \| None \| NotGiven  
+`factory` [FlowFactory](inspect_flow.qmd#flowfactory)\[Solver\] \| Callable\[..., Solver\] \| str \| None \| NotGiven  
 Factory function to create the solver instance.
 
 `args` CreateArgs \| None \| NotGiven  
@@ -456,13 +406,105 @@ Additional args to pass to solver constructor.
 `flow_metadata` dict\[str, Any\] \| None \| NotGiven  
 Optional. Metadata stored in the flow config. Not passed to the solver.
 
+### FlowSpec
+
+Top-level flow specification.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L757)
+
+``` python
+class FlowSpec(FlowBase, arbitrary_types_allowed=True)
+```
+
+#### Attributes
+
+`includes` Sequence\[str \| [FlowSpec](inspect_flow.qmd#flowspec)\] \| None \| NotGiven  
+List of other flow specs to include. Relative paths will be resolved
+relative to the config file (when using the CLI) or `base_dir` arg (when
+using the API). In addition to this list of explicit files to include,
+any `_flow.py` files in the same directory or any parent directory of
+the config file (when using the CLI) or `base_dir` arg (when using the
+API) will also be included automatically.
+
+`store` Literal\['auto'\] \| str \| [FlowStoreConfig](inspect_flow.qmd#flowstoreconfig) \| None \| NotGiven  
+Path to directory to use for flow storage, or a `FlowStoreConfig` with
+path and filter options. `'auto'` will use a default application
+location. `None` will disable storage. Relative paths will be resolved
+relative to the config file (when using the CLI) or `base_dir` arg (when
+using the API). If not given, `'auto'` will be used.
+
+`log_dir` str \| None \| NotGiven  
+Output path for logging results (required to ensure that a unique
+storage scope is assigned). Must be set before running the flow spec.
+Relative paths will be resolved relative to the config file (when using
+the CLI) or `base_dir` arg (when using the API).
+
+`log_dir_create_unique` bool \| None \| NotGiven  
+If `True`, create a unique log directory by appending a datetime
+subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`.
+If `False`, use the existing `log_dir` (which must be empty or have
+`log_dir_allow_dirty=True`). Defaults to `False`.
+
+`execution_type` Literal\['inproc', 'venv'\] \| None \| NotGiven  
+Execution environment for running tasks (defaults to `'inproc'`).
+
+`python_version` str \| None \| NotGiven  
+Python version to use in the flow virtual environment (e.g. `'3.11'`).
+
+`dependencies` [FlowDependencies](inspect_flow.qmd#flowdependencies) \| None \| NotGiven  
+Dependencies to install in the venv. Defaults to auto-detecting
+dependencies from `pyproject.toml`, `requirements.txt`, and object names
+in the config.
+
+`options` [FlowOptions](inspect_flow.qmd#flowoptions) \| None \| NotGiven  
+Arguments for calls to `eval_set()`.
+
+`env` dict\[str, str\] \| None \| NotGiven  
+Environment variables to set when running tasks.
+
+`defaults` [FlowDefaults](inspect_flow.qmd#flowdefaults) \| None \| NotGiven  
+Defaults values for Inspect objects.
+
+`flow_metadata` dict\[str, Any\] \| None \| NotGiven  
+Optional. Metadata stored in the flow config. Not passed to the model.
+
+`tasks` Sequence\[str \| [FlowTask](inspect_flow.qmd#flowtask) \| Task\] \| None \| NotGiven  
+Tasks to run
+
+### FlowStoreConfig
+
+Store configuration with optional log filter.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L728)
+
+``` python
+class FlowStoreConfig(FlowBase)
+```
+
+#### Attributes
+
+`path` Literal\['auto'\] \| str \| None  
+Path to directory to use for flow storage. `'auto'` will use a default
+application location. `None` will disable storage.
+
+`filter` SkipValidation\[[LogFilter](inspect_flow.qmd#logfilter)\] \| str \| Sequence\[SkipValidation\[[LogFilter](inspect_flow.qmd#logfilter)\] \| str\] \| None  
+Log filter to apply when searching for existing logs. Can be a callable,
+a registered filter name, a sequence of filters (all must pass), or
+`None`.
+
+`read` bool  
+Whether to match existing logs from the store. Default is `False`.
+
+`write` bool  
+Whether to index completed logs in the store. Default is `True`.
+
 ### FlowTask
 
 Configuration for an evaluation task.
 
 Tasks are the basis for defining and running evaluations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/flow_types.py#L251)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L308)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -476,7 +518,7 @@ Task name. Any of registry name (`"inspect_evals/mbpp"`), file name
 (`"./my_task.py@task_name"`). Used to create the task if the factory is
 not provided.
 
-`factory` Callable\[..., Task\] \| None \| NotGiven  
+`factory` [FlowFactory](inspect_flow.qmd#flowfactory)\[Task\] \| Callable\[..., Task\] \| str \| None \| NotGiven  
 Factory function to create the task instance.
 
 `args` CreateArgs \| None \| NotGiven  
@@ -553,6 +595,9 @@ Early stopping callbacks.
 Version of task (to distinguish evolutions of the task spec or breaking
 changes to it)
 
+`tags` Sequence\[str\] \| None \| NotGiven  
+Tags to associate with the task.
+
 `metadata` dict\[str, Any\] \| None \| NotGiven  
 Additional metadata to associate with the task.
 
@@ -566,6 +611,19 @@ Optional. Metadata stored in the flow config. Not passed to the task.
 Get the model name from the model field.
 
 Returns: The model name if set, otherwise None.
+
+## Type Aliases
+
+### LogFilter
+
+A function that receives an `EvalLog` (header-only) and returns `True`
+to include the log or `False` to exclude it.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/flow_types.py#L38)
+
+``` python
+LogFilter: TypeAlias = Callable[[EvalLog], bool]
+```
 
 ## Decorators
 
@@ -587,7 +645,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded `FlowSpec`.
 - `files`: List of file paths that were loaded to create the `FlowSpec`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -596,13 +654,26 @@ def after_load(func: F) -> F
 `func` F  
 The function to decorate.
 
+### log_filter
+
+Decorator to register a log filter function.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/log_filter.py#L20)
+
+``` python
+def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]
+```
+
+`func` Callable\[\[EvalLog\], bool\]  
+A function that takes an EvalLog and returns True to include.
+
 ## Functions
 
 ### agents_matrix
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -622,14 +693,14 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
     *,
     agent: str | FlowAgent | Sequence[str | FlowAgent],
     name: str | NotGiven | None = ...,
-    factory: NotGiven | None = ...,
+    factory: str | NotGiven | None = ...,
     args: Mapping[str, Any] | NotGiven | None = ...,
     flow_metadata: Mapping[str, Any] | NotGiven | None = ...,
     type: Literal['agent'] | None = ...,
@@ -643,7 +714,7 @@ The agent or list of agents to set fields on.
 Name of the agent. Used to create the agent if the factory is not
 provided.
 
-`factory` NotGiven \| None  
+`factory` str \| NotGiven \| None  
 Factory function to create the agent instance.
 
 `args` Mapping\[str, Any\] \| NotGiven \| None  
@@ -660,7 +731,7 @@ Type needed to differentiated solvers and agents in solver lists.
 Create a list of generate configs from the product of lists of field
 values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -801,7 +872,7 @@ OpenAI, vLLM, and SGLang only.
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -838,6 +909,7 @@ def configs_with(
     response_schema: ResponseSchema | None = ...,
     extra_headers: Mapping[str, str] | None = ...,
     extra_body: Mapping[str, Any] | None = ...,
+    modalities: Sequence[Literal['image'] | ImageOutput] | None = ...,
     cache: bool | CachePolicy | None = ...,
     batch: bool | int | BatchConfig | None = ...,
 ) -> list[GenerateConfig]
@@ -976,6 +1048,10 @@ Bedrock, and Grok.
 Extra body to be sent with requests to OpenAI compatible servers.
 OpenAI, vLLM, and SGLang only.
 
+`modalities` Sequence\[Literal\['image'\] \| ImageOutput\] \| None  
+Additional output modalities to enable beyond text (e.g. \[“image”\]).
+OpenAI and Google only.
+
 `cache` bool \| CachePolicy \| None  
 Policy for caching of model generate output.
 
@@ -993,7 +1069,7 @@ Only explicitly set fields in `add` override `base` — unset fields
 (defaulting to `NotGiven`) are ignored. Nested fields like `config` and
 `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -1010,7 +1086,7 @@ those in `base`.
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -1031,14 +1107,14 @@ Configuration for model. Config values will be override settings on the
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
     *,
     model: str | FlowModel | Sequence[str | FlowModel],
     name: str | NotGiven | None = ...,
-    factory: NotGiven | None = ...,
+    factory: str | NotGiven | None = ...,
     role: str | NotGiven | None = ...,
     default: str | NotGiven | None = ...,
     config: GenerateConfig | NotGiven | None = ...,
@@ -1057,7 +1133,7 @@ The model or list of models to set fields on.
 Name of the model to use. If factory is not provided, this is used to
 create the model.
 
-`factory` NotGiven \| None  
+`factory` str \| NotGiven \| None  
 Factory function to create the model instance.
 
 `role` str \| NotGiven \| None  
@@ -1093,7 +1169,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -1113,14 +1189,14 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
     *,
     solver: str | FlowSolver | Sequence[str | FlowSolver],
     name: str | NotGiven | None = ...,
-    factory: NotGiven | None = ...,
+    factory: str | NotGiven | None = ...,
     args: Mapping[str, Any] | NotGiven | None = ...,
     flow_metadata: Mapping[str, Any] | NotGiven | None = ...,
 ) -> list[FlowSolver]
@@ -1133,7 +1209,7 @@ The solver or list of solvers to set fields on.
 Name of the solver. Used to create the solver if the factory is not
 provided.
 
-`factory` NotGiven \| None  
+`factory` str \| NotGiven \| None  
 Factory function to create the solver instance.
 
 `args` Mapping\[str, Any\] \| NotGiven \| None  
@@ -1146,7 +1222,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -1208,14 +1284,14 @@ data via model_cost_config.
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(
     *,
     task: str | FlowTask | Sequence[str | FlowTask],
     name: str | NotGiven | None = ...,
-    factory: NotGiven | None = ...,
+    factory: str | NotGiven | None = ...,
     args: Mapping[str, Any] | NotGiven | None = ...,
     extra_args: FlowExtraArgs | NotGiven | None = ...,
     solver: str | FlowSolver | FlowAgent | Solver | Agent | Sequence[str | FlowSolver | Solver] | NotGiven | None = ...,
@@ -1235,6 +1311,7 @@ def tasks_with(
     cost_limit: float | NotGiven | None = ...,
     early_stopping: NotGiven | None = ...,
     version: int | str | NotGiven = ...,
+    tags: Sequence[str] | NotGiven | None = ...,
     metadata: Mapping[str, Any] | NotGiven | None = ...,
     sample_id: str | int | Sequence[str | int] | NotGiven | None = ...,
     flow_metadata: Mapping[str, Any] | NotGiven | None = ...,
@@ -1250,7 +1327,7 @@ Task name. Any of registry name (`"inspect_evals/mbpp"`), file name
 (`"./my_task.py@task_name"`). Used to create the task if the factory is
 not provided.
 
-`factory` NotGiven \| None  
+`factory` str \| NotGiven \| None  
 Factory function to create the task instance.
 
 `args` Mapping\[str, Any\] \| NotGiven \| None  
@@ -1326,6 +1403,9 @@ Early stopping callbacks.
 `version` int \| str \| NotGiven  
 Version of task (to distinguish evolutions of the task spec or breaking
 changes to it)
+
+`tags` Sequence\[str\] \| NotGiven \| None  
+Tags to associate with the task.
 
 `metadata` Mapping\[str, Any\] \| NotGiven \| None  
 Additional metadata to associate with the task.

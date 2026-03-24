@@ -14,8 +14,9 @@ providing:
 
 1.  [**Declarative Configuration**](flow_concepts.qmd): Define complex
     evaluations with tasks, models, and parameters in type-safe schemas
-2.  [**Global Log Reuse**](store.qmd): Flow Store tracks and reuses past
-    evaluation logs, so you only run what’s new or changed
+2.  [**Global Log Reuse**](store.qmd): Flow Store indexes evaluation
+    logs and enables cross-directory reuse, so you only run what’s new
+    or changed
 3.  [**Powerful Defaults**](defaults.qmd): Define defaults once and
     reuse them everywhere with automatic inheritance
 4.  [**Parameter Sweeping**](matrix.qmd): Matrix patterns for systematic
@@ -333,8 +334,8 @@ See the following articles to learn more about using Flow:
 
 - [Flow Concepts](flow_concepts.qmd): Flow type system, config structure
   and basics.
-- [Flow Store](store.qmd): How Flow tracks and reuses evaluation logs
-  across runs—automatically skipping redundant work.
+- [Flow Store](store.qmd): How Flow indexes evaluation logs and enables
+  cross-directory reuse across runs.
 - [Defaults](defaults.qmd): Define defaults once and reuse them
   everywhere with automatic inheritance.
 - [Matrixing](matrix.qmd): Systematic parameter exploration with matrix

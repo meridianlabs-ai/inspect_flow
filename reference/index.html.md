@@ -13,6 +13,7 @@
 |                                |                        |
 |--------------------------------|------------------------|
 | [flow config](flow_config.qmd) | Output spec as yaml.   |
+| [flow list](flow_list.qmd)     | List logs.             |
 | [flow run](flow_run.qmd)       | Run a spec.            |
 | [flow store](flow_store.qmd)   | Manage the Flow Store. |
 

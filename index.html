@@ -319,7 +319,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>Why Inspect Flow?</strong> As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:</p>
 <ol type="1">
 <li><a href="./flow_concepts.html"><strong>Declarative Configuration</strong></a>: Define complex evaluations with tasks, models, and parameters in type-safe schemas</li>
-<li><a href="./store.html"><strong>Global Log Reuse</strong></a>: Flow Store tracks and reuses past evaluation logs, so you only run what’s new or changed</li>
+<li><a href="./store.html"><strong>Global Log Reuse</strong></a>: Flow Store indexes evaluation logs and enables cross-directory reuse, so you only run what’s new or changed</li>
 <li><a href="./defaults.html"><strong>Powerful Defaults</strong></a>: Define defaults once and reuse them everywhere with automatic inheritance</li>
 <li><a href="./matrix.html"><strong>Parameter Sweeping</strong></a>: Matrix patterns for systematic exploration across tasks, models, and hyperparameters</li>
 </ol>
@@ -590,7 +590,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>See the following articles to learn more about using Flow:</p>
 <ul>
 <li><a href="./flow_concepts.html">Flow Concepts</a>: Flow type system, config structure and basics.</li>
-<li><a href="./store.html">Flow Store</a>: How Flow tracks and reuses evaluation logs across runs—automatically skipping redundant work.</li>
+<li><a href="./store.html">Flow Store</a>: How Flow indexes evaluation logs and enables cross-directory reuse across runs.</li>
 <li><a href="./defaults.html">Defaults</a>: Define defaults once and reuse them everywhere with automatic inheritance.</li>
 <li><a href="./matrix.html">Matrixing</a>: Systematic parameter exploration with matrix and with functions.</li>
 <li><a href="./reference/index.html">Reference</a>: Detailed documentation on the Flow Python API and CLI commands.</li>

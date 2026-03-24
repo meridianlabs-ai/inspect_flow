@@ -115,8 +115,8 @@ flow run first_config.py --venv
 **What happens when you run this (default in-process mode)?**
 
 1.  Flow loads the `gpqa_diamond` task from the `inspect_evals` registry
-2.  Searches the Flow Store for existing logs to reuse (see [Flow
-    Store](store.qmd))
+2.  Checks for existing logs to reuse in the log directory (and the
+    [Flow Store](store.qmd) if `--store-read` is enabled)
 3.  Runs the evaluation with GPT-5 in the current Python process
 4.  Stores results in `logs/`
 
@@ -151,7 +151,7 @@ expansions](matrix.qmd)—ultimately produce a list of tasks that
 | `env` | Environment variables to set when running tasks | `None` |
 | `options` | Runtime options passed to `eval_set` (see `FlowOptions` reference) | `None` |
 | `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](defaults.qmd) and `FlowDefaults` reference) | `None` |
-| `store` | Flow Store location for tracking and reusing logs across runs. Set to `None` to disable. See [Flow Store](store.qmd) | `"auto"` |
+| `store` | Flow Store configuration for indexing and reusing logs across runs. Accepts a path string, `FlowStoreConfig`, or `None` to disable. `"auto"` uses the platform-specific [default location](store.qmd#backend). See [Flow Store](store.qmd) | `"auto"` |
 | `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](advanced.qmd#flow_metadata-flow-only-metadata)) | `None` |
 
 ## Tasks
@@ -168,10 +168,12 @@ Flow supports multiple ways to specify tasks, from simple registry names
 to programmatic Task objects. Choose the approach that best fits your
 needs:
 
-- **Registry names and file paths**: Simple string-based references for
-  tasks from packages or local files
-- **Task factory functions**: Use `FlowTask(factory=...)` when you have
-  a Task object but want to override parameters like model or config
+- **Registry names and file paths**: Use `name` to reference tasks from
+  packages or local files
+- **Task factory functions**: Use `factory` to provide a callable,
+  `FlowFactory`, or string reference that creates the task. If both
+  `name` and `factory` are set, `name` is used as the display name in
+  logs.
 - **Direct Task objects**: Pass Task objects directly to
   `FlowSpec.tasks` when you don’t need Flow-level parameter overrides
 
@@ -219,10 +221,30 @@ def my_task_factory():
     return Task(dataset=example_dataset("security_guide"), solver=generate())
 
 FlowTask(
+    name="optional_name",  # Optional: override the task name
     factory=my_task_factory,
     model="openai/gpt-5",  # Override the model
 )
 ```
+
+**Type-Checked Factory Arguments**
+
+Use `FlowFactory` to get IDE type checking on factory arguments. This
+works with all Flow types (`FlowTask`, `FlowAgent`, `FlowSolver`,
+`FlowScorer`, `FlowModel`):
+
+``` python
+from inspect_flow import FlowTask, FlowFactory
+
+FlowTask(
+    factory=FlowFactory(my_task_factory, "subset", use_system_prompt=True),
+    model="openai/gpt-5",
+)
+```
+
+`FlowFactory` binds arguments to the factory function’s signature at
+construction time, so type errors are caught immediately rather than at
+evaluation time.
 
 **Direct Task Object in FlowSpec**
 
@@ -274,6 +296,7 @@ FlowTask(
     args={"subject": "physics"},
     sandbox="docker",
     sample_id=[0, 1, 2],
+    tags=["safety-testing"],
     extra_args=FlowExtraArgs(
         solver={"max_attempts": 3}
     ),
@@ -284,10 +307,12 @@ Line 2
 **Task name or factory** — Use `name` to specify a task by registry name
 (`"inspect_evals/mmlu"`), file path (`"./task.py"`), or file with
 function (`"./task.py@eval_fn"`). Alternatively, use `factory` to
-provide a callable that returns an Inspect AI `Task` object (see [Task
-Factory Function](#specification) example above). When using `factory`,
-you can still override task parameters like `model`, `solver`, or
-`config` via other `FlowTask` fields.
+provide a callable or a string reference that returns an Inspect AI
+`Task` object (see [Task Factory Function](#specification) example
+above). If both `name` and `factory` are provided, `factory` is used to
+create the task and `name` sets the task name in logs. When using
+`factory`, you can still override task parameters like `model`,
+`solver`, or `config` via other `FlowTask` fields.
 
 Line 3  
 **Model** — Maps to Inspect AI `Task.model`. Optional model for this
@@ -332,7 +357,12 @@ Line 12
 Accepts a single ID (`sample_id=0`), list of IDs
 (`sample_id=[0, 1, 2]`), or list of string IDs.
 
-Lines 13-15  
+Line 13  
+**Tags** — Maps to Inspect AI `Task.tags`. A list of string tags to
+associate with the task, useful for categorizing and filtering
+evaluations.
+
+Lines 14-16  
 **Extra arguments** — Additional arguments to pass when creating Inspect
 AI objects (models, solvers, agents, scorers) for this specific task.
 Useful for per-task customization, such as providing different tools to

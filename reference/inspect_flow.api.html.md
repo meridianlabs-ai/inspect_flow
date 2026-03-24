@@ -7,7 +7,7 @@
 
 Initialize the inspect_flow API.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_api/api.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/api.py#L25)
 
 ``` python
 def init(
@@ -32,7 +32,7 @@ Defaults to `"."` (current working directory).
 
 Run an inspect_flow evaluation.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_api/api.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/api.py#L72)
 
 ``` python
 def run(
@@ -61,7 +61,7 @@ If `True`, reuse the log directory from the previous run.
 
 Load a spec from file.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_api/api.py#L57)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/api.py#L57)
 
 ``` python
 def load_spec(
@@ -82,7 +82,7 @@ config.
 
 Return the flow spec configuration.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_api/api.py#L106)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/api.py#L106)
 
 ``` python
 def config(
@@ -98,11 +98,48 @@ The flow spec configuration.
 The base directory for resolving relative paths. Defaults to the current
 working directory.
 
+### list_logs
+
+List log paths grouped by directory, directories ordered by most recent
+log file.
+
+Within each directory, logs are sorted by filename timestamp descending.
+Logs without a timestamp prefix sort at the end.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/list_logs.py#L43)
+
+``` python
+def list_logs(
+    log_dir: str | None = None,
+    store: str | FlowStore = "auto",
+    since: str | datetime | None = None,
+    until: str | datetime | None = None,
+) -> list[str]
+```
+
+`log_dir` str \| None  
+Directory to list logs from recursively. If provided, the store is not
+used.
+
+`store` str \| [FlowStore](inspect_flow.api.qmd#flowstore)  
+The store to read logs from. Can be a `FlowStore` instance, a path, or
+`"auto"` for the default. Only used when `log_dir` is `None`.
+
+`since` str \| datetime \| None  
+Only include logs whose filename timestamp is at or after this date.
+Accepts a `datetime` or a date string (e.g. `"2 weeks ago"`,
+`"2024-01-15"`).
+
+`until` str \| datetime \| None  
+Only include logs whose filename timestamp is at or before this date.
+Accepts a `datetime` or a date string (e.g. `"yesterday"`,
+`"2024-06-01"`).
+
 ### store_get
 
 Get a FlowStore instance.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_api/api.py#L123)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_api/api.py#L123)
 
 ``` python
 def store_get(store: str = "auto", create: bool = True) -> FlowStore
@@ -119,7 +156,7 @@ Whether to create the store if it does not exist.
 
 Delete a flow store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_store/store.py#L158)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_store/store.py#L200)
 
 ``` python
 def delete_store(store_path: str) -> None
@@ -133,7 +170,7 @@ Path to the store directory.
 Copy all log files from src_dir to dest_dir, preserving directory
 structure.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_util/logs.py#L16)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_util/logs.py#L87)
 
 ``` python
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
@@ -155,7 +192,7 @@ If True, search src_dir recursively for log files.
 
 Interface for flow store implementations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_store/store.py#L16)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_store/store.py#L25)
 
 ``` python
 class FlowStore(ABC)
@@ -174,7 +211,7 @@ The store version.
 import_log_path  
 Import a log file(s) or directory(ies) into the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_store/store.py#L31)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_store/store.py#L40)
 
 ``` python
 @abstractmethod
@@ -202,17 +239,22 @@ Print paths of files being added
 get_logs  
 Get all log file paths in the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_store/store.py#L49)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_store/store.py#L58)
 
 ``` python
 @abstractmethod
-def get_logs(self) -> set[str]
+def get_logs(self, filter: LogFilter | None = None) -> set[str]
 ```
+
+`filter` [LogFilter](inspect_flow.qmd#logfilter) \| None  
+Optional filter to apply to log headers. Only logs passing the filter
+are included. It is an error to specify both a per-call filter and a
+store-level filter.
 
 remove_log_prefix  
 Remove logs matching the given prefixes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_store/store.py#L58)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_store/store.py#L72)
 
 ``` python
 @abstractmethod
@@ -223,6 +265,7 @@ def remove_log_prefix(
     recursive: bool = False,
     dry_run: bool = False,
     verbose: bool = True,
+    filter: LogFilter | None = None,
 ) -> None
 ```
 
@@ -241,11 +284,15 @@ Preview what would be removed without making changes
 `verbose` bool  
 Print paths of files being removed
 
+`filter` [LogFilter](inspect_flow.qmd#logfilter) \| None  
+Optional filter to narrow which matched logs are removed. Each candidate
+log’s header is read and only those passing the filter are removed.
+
 ### DisplayType
 
 Display mode for flow output.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/dd53eddbc8060d289f7c754c8b1460eff53870a9/src/inspect_flow/_display/display.py#L15)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c/src/inspect_flow/_display/display.py#L15)
 
 ``` python
 DisplayType = Literal["full", "rich", "plain"]

@@ -31,7 +31,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
 <link href="../reference/flow_store.html" rel="next">
-<link href="../reference/flow_config.html" rel="prev">
+<link href="../reference/flow_list.html" rel="prev">
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -190,8 +190,8 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.html#flowspec" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowSpec</span></a>
+  <a href="../reference/inspect_flow.html#flowfactory" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowFactory</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -220,14 +220,38 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#flowspec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowSpec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#flowstoreconfig" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowStoreConfig</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowtask" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FlowTask</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#logfilter" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">LogFilter</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#after_load" class="sidebar-item-text sidebar-link">
  <span class="menu-text">after_load</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#log_filter" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">log_filter</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -333,6 +357,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#list_logs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">list_logs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#store_get" class="sidebar-item-text sidebar-link">
  <span class="menu-text">store_get</span></a>
   </div>
@@ -378,6 +408,12 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">flow config</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/flow_list.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">flow list</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -486,42 +522,60 @@ ul.task-list li input[type="checkbox"] {
 <td>None</td>
 </tr>
 <tr class="odd">
+<td><code>--store-write</code> / <code>--no-store-write</code></td>
+<td>boolean</td>
+<td>Write completed logs to the store (default: <code>--store-write</code>).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--store-read</code> / <code>--no-store-read</code></td>
+<td>boolean</td>
+<td>Read existing logs from the store (default: <code>--no-store-read</code>).</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--store-filter</code></td>
+<td>text</td>
+<td>Log filter to apply when searching the store for existing logs. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
+<td>None</td>
+</tr>
+<tr class="even">
 <td><code>--store</code></td>
 <td>directory</td>
 <td>Path to the store directory. Will override the store specified in the config. <code>'auto'</code> for default location. <code>'none'</code> for no store.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--limit</code></td>
 <td>integer</td>
 <td>Limit the number of samples to run.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--arg</code>, <code>-A</code></td>
 <td>text</td>
 <td>Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: <code>--arg task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--set</code>, <code>-s</code></td>
 <td>text</td>
 <td>Set config overrides. Examples: <code>--set defaults.solver.args.tool_calls=none</code> <code>--set options.limit=10</code> <code>--set options.metadata={"key1": "val1", "key2": "val2"}</code> The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--display</code></td>
 <td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
-<td>Set the display mode (defaults to <code>'full'</code>).</td>
-<td><code>full</code></td>
+<td>Set the display mode (defaults to <code>'rich'</code>).</td>
+<td><code>rich</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -975,8 +1029,8 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../reference/flow_config.html" class="pagination-link" aria-label="Inspect CLI">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Inspect CLI</span>
+      <a href="../reference/flow_list.html" class="pagination-link" aria-label="flow list">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">flow list</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

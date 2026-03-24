@@ -261,16 +261,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basics" id="toc-basics" class="nav-link active" data-scroll-target="#basics">Basics</a>
+  <li><a href="#how-it-works" id="toc-how-it-works" class="nav-link active" data-scroll-target="#how-it-works">How It Works</a>
   <ul class="collapse">
-  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#log-indexing" id="toc-log-indexing" class="nav-link" data-scroll-target="#log-indexing">Log Indexing</a></li>
+  <li><a href="#log-matching" id="toc-log-matching" class="nav-link" data-scroll-target="#log-matching">Log Matching</a></li>
   </ul></li>
   <li><a href="#backend" id="toc-backend" class="nav-link" data-scroll-target="#backend">Backend</a></li>
   <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration">Configuration</a>
   <ul class="collapse">
+  <li><a href="#read-and-write-control" id="toc-read-and-write-control" class="nav-link" data-scroll-target="#read-and-write-control">Read and write control</a></li>
   <li><a href="#setting-store-location" id="toc-setting-store-location" class="nav-link" data-scroll-target="#setting-store-location">Setting store location</a></li>
   <li><a href="#disabling-the-store" id="toc-disabling-the-store" class="nav-link" data-scroll-target="#disabling-the-store">Disabling the store</a></li>
   <li><a href="#team-collaboration" id="toc-team-collaboration" class="nav-link" data-scroll-target="#team-collaboration">Team collaboration</a></li>
+  </ul></li>
+  <li><a href="#filtering" id="toc-filtering" class="nav-link" data-scroll-target="#filtering">Filtering</a>
+  <ul class="collapse">
+  <li><a href="#defining-a-filter" id="toc-defining-a-filter" class="nav-link" data-scroll-target="#defining-a-filter">Defining a filter</a></li>
+  <li><a href="#using-a-filter-with-flow-run" id="toc-using-a-filter-with-flow-run" class="nav-link" data-scroll-target="#using-a-filter-with-flow-run">Using a filter with <code>flow run</code></a></li>
+  <li><a href="#using-filters-with-store-commands" id="toc-using-filters-with-store-commands" class="nav-link" data-scroll-target="#using-filters-with-store-commands">Using filters with store commands</a></li>
   </ul></li>
   <li><a href="#cli-commands" id="toc-cli-commands" class="nav-link" data-scroll-target="#cli-commands">CLI Commands</a>
   <ul class="collapse">
@@ -310,8 +318,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The Flow Store automatically skips redundant evaluations by tracking which logs you’ve already completed—across directories, projects, and even team members.</p>
-<p>The Flow Store is a <strong>centralized registry of evaluation log file paths</strong> that enables <strong>global log reuse across Flow runs</strong>.</p>
+<p>The Flow Store is a <strong>centralized registry of evaluation log file paths</strong> that tracks your completed evaluations and enables <strong>log reuse across directories, projects, and team members</strong>.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -325,96 +332,118 @@ Note
 <p>Unlike Inspect AI’s <a href="https://inspect.aisi.org.uk/eval-sets.html">Eval Set</a> which only reuses logs from the same log directory, the Flow Store indexes logs from multiple locations and makes them available for reuse across any Flow run.</p>
 </div>
 </div>
-<section id="basics" class="level2">
-<h2 class="anchored" data-anchor-id="basics">Basics</h2>
-<p>The Flow Store is enabled by default and requires zero configuration. On your first run, the Flow Store is automatically created in the background. When you run an evaluation, Flow automatically:</p>
+<section id="how-it-works" class="level2">
+<h2 class="anchored" data-anchor-id="how-it-works">How It Works</h2>
+<p>The Flow Store has two independent capabilities: <strong>log indexing</strong> (writing to the store) and <strong>log matching</strong> (reading from the store). By default, indexing is on and matching is off — you opt into matching when you want cross-directory log reuse.</p>
+<section id="log-indexing" class="level3">
+<h3 class="anchored" data-anchor-id="log-indexing">Log Indexing</h3>
+<p>Log indexing is <strong>on by default</strong> and requires zero configuration. After each <code>flow run</code>, Flow automatically adds your completed logs to the Flow Store. This builds up a registry of all your evaluations over time, ready for reuse when you need it.</p>
+<p>On your first run, the Flow Store is automatically created in the background at the <a href="#backend">default location</a>.</p>
+</section>
+<section id="log-matching" class="level3">
+<h3 class="anchored" data-anchor-id="log-matching">Log Matching</h3>
+<p>Log matching is <strong>off by default</strong>. Enable it with <code>--store-read</code> to reuse logs from across directories and projects:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store-read</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When log matching is enabled, Flow:</p>
 <ol type="1">
 <li><strong>Searches the Flow Store</strong> for logs matching your task (based on task configuration)</li>
 <li><strong>Selects the best log</strong> (most completed samples, then most recent)</li>
 <li><strong>Copies it to your log directory</strong> for Inspect AI’s Eval Set to reuse</li>
 <li><strong>Resumes incomplete logs</strong> by only running missing samples</li>
-<li><strong>Adds the final log</strong> back to the Flow Store after completion</li>
 </ol>
-<section id="example" class="level3">
-<h3 class="anchored" data-anchor-id="example">Example</h3>
-<p>Let’s walk through a concrete example showing how the Flow Store automatically tracks and reuses logs across multiple runs.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Even without <code>--store-read</code>, Inspect AI’s Eval Set still reuses logs already present in your <code>log_dir</code>. Store matching adds cross-directory reuse on top of that.</p>
+</div>
+</div>
+<section id="example" class="level4">
+<h4 class="anchored" data-anchor-id="example">Example</h4>
+<p>Let’s walk through a concrete example showing how the Flow Store tracks and reuses logs across runs.</p>
 <p><strong>Run 1: Initial evaluation</strong></p>
 <p>Start with a simple configuration evaluating one model:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-1" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
-<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a></span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-3" class="code-annotation-target"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"project-1"</span>,</span>
-<span id="annotated-cell-1-5"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="annotated-cell-1-6"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="annotated-cell-1-7"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
-<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="config.py"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-3" class="code-annotation-target"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"project-1"</span>,</span>
+<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-lines="3,4,5,6,7,8,9,10,11" data-code-annotation="1">Evaluate gpt-4o on gpqa_diamond</span>
+<span data-code-cell="annotated-cell-2" data-code-lines="3,4,5,6,7,8,9,10,11" data-code-annotation="1">Evaluate gpt-4o on gpqa_diamond</span>
 </dd>
 </dl>
 <p>When you run <code>flow run config.py</code>, Flow:</p>
 <ol type="1">
-<li>Searches the Flow Store for existing logs (none found)</li>
 <li>Runs the evaluation</li>
 <li>Saves logs to <code>project-1/</code></li>
-<li>Adds to Flow Store: <code>project-1/2026-01-31T15-55_gpqa-diamond_ABCeD.eval</code></li>
+<li>Indexes the log in the Flow Store: <code>project-1/2026-01-31T15-55_gpqa-diamond_ABCeD.eval</code></li>
 </ol>
-<p><strong>Run 2: Modified configuration</strong></p>
+<p><strong>Run 2: Cross-directory reuse</strong></p>
 <p>Now modify your config to use a new log directory and add a second model:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-2" data-filename="config.py"><pre class="sourceCode diff code-annotation-code code-with-copy code-annotated"><code class="sourceCode diff"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a>from inspect_flow import FlowSpec, FlowTask</span>
-<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-4" class="code-annotation-target"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a><span class="st">-   log_dir="project-1",</span></span>
-<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a><span class="va">+   log_dir="project-2",</span></span>
-<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    tasks=[</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-7" class="code-annotation-target"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>            name="inspect_evals/gpqa_diamond",</span>
-<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>            model="openai/gpt-4o",</span>
-<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="3">3</button><span id="annotated-cell-2-11" class="code-annotation-target"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a><span class="va">+       FlowTask(</span></span>
-<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a><span class="va">+           name="inspect_evals/gpqa_diamond",</span></span>
-<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a><span class="va">+           model="openai/gpt-5",</span></span>
-<span id="annotated-cell-2-14"><a href="#annotated-cell-2-14" aria-hidden="true" tabindex="-1"></a><span class="va">+        )</span></span>
-<span id="annotated-cell-2-15"><a href="#annotated-cell-2-15" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="annotated-cell-2-16"><a href="#annotated-cell-2-16" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-3" data-filename="config.py"><pre class="sourceCode diff code-annotation-code code-with-copy code-annotated"><code class="sourceCode diff"><span id="annotated-cell-3-1"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>from inspect_flow import FlowSpec, FlowTask</span>
+<span id="annotated-cell-3-2"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-3-3"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-4" class="code-annotation-target"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a><span class="st">-   log_dir="project-1",</span></span>
+<span id="annotated-cell-3-5"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a><span class="va">+   log_dir="project-2",</span></span>
+<span id="annotated-cell-3-6"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>    tasks=[</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-7" class="code-annotation-target"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="annotated-cell-3-8"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>            name="inspect_evals/gpqa_diamond",</span>
+<span id="annotated-cell-3-9"><a href="#annotated-cell-3-9" aria-hidden="true" tabindex="-1"></a>            model="openai/gpt-4o",</span>
+<span id="annotated-cell-3-10"><a href="#annotated-cell-3-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-11" class="code-annotation-target"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a><span class="va">+       FlowTask(</span></span>
+<span id="annotated-cell-3-12"><a href="#annotated-cell-3-12" aria-hidden="true" tabindex="-1"></a><span class="va">+           name="inspect_evals/gpqa_diamond",</span></span>
+<span id="annotated-cell-3-13"><a href="#annotated-cell-3-13" aria-hidden="true" tabindex="-1"></a><span class="va">+           model="openai/gpt-5",</span></span>
+<span id="annotated-cell-3-14"><a href="#annotated-cell-3-14" aria-hidden="true" tabindex="-1"></a><span class="va">+        )</span></span>
+<span id="annotated-cell-3-15"><a href="#annotated-cell-3-15" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="annotated-cell-3-16"><a href="#annotated-cell-3-16" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="4,5" data-code-annotation="1">Change to a new log directory</span>
+<span data-code-cell="annotated-cell-3" data-code-lines="4,5" data-code-annotation="1">Change to a new log directory</span>
 </dd>
-<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="7,8,9,10" data-code-annotation="2">Same task from Run 1 (gpt-4o on gpqa_diamond)</span>
+<span data-code-cell="annotated-cell-3" data-code-lines="7,8,9,10" data-code-annotation="2">Same task from Run 1 (gpt-4o on gpqa_diamond)</span>
 </dd>
-<dt data-target-cell="annotated-cell-2" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="11,12,13,14" data-code-annotation="3">New task (gpt-5 on gpqa_diamond)</span>
+<span data-code-cell="annotated-cell-3" data-code-lines="11,12,13,14" data-code-annotation="3">New task (gpt-5 on gpqa_diamond)</span>
 </dd>
 </dl>
-<p>When you run <code>flow run config.py</code> again, Flow:</p>
+<p>Since you’re using a new log directory with no existing logs, enable store matching to reuse Run 1’s results:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store-read</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Flow:</p>
 <ol type="1">
-<li>Searches the Flow Store for existing logs matching your tasks</li>
-<li>Finds Run 1’s gpt-4o log from <code>project-1/</code></li>
+<li>Searches the Flow Store and finds Run 1’s gpt-4o log from <code>project-1/</code></li>
 <li>Copies it to <code>project-2/</code> for reuse</li>
 <li>Skips re-evaluating gpt-4o (already complete)</li>
 <li>Only evaluates the new gpt-5 task</li>
 <li>Saves both logs to <code>project-2/</code></li>
-<li>Updates Flow Store with both log paths</li>
+<li>Indexes both log paths in the Flow Store</li>
 </ol>
 <p><strong>Result:</strong> The second run completes much faster by reusing the gpt-4o evaluation from Run 1.</p>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -427,9 +456,10 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>If Run 1 was interrupted with only 80/100 samples completed, Run 2 would automatically resume from where it left off and only evaluate the remaining 20 samples for gpt-4o.</p>
+<p>If Run 1 was interrupted with only 80/100 samples completed, Run 2 would copy the partial log and automatically resume from where it left off, only evaluating the remaining 20 samples for gpt-4o.</p>
 </div>
 </div>
+</section>
 </section>
 </section>
 <section id="backend" class="level2">
@@ -447,25 +477,85 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 </section>
 <section id="configuration" class="level2">
 <h2 class="anchored" data-anchor-id="configuration">Configuration</h2>
+<section id="read-and-write-control" class="level3">
+<h3 class="anchored" data-anchor-id="read-and-write-control">Read and write control</h3>
+<p>Log indexing (write) and log matching (read) are controlled independently via CLI flags or <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowstoreconfig">FlowStoreConfig</a></span>:</p>
+<p><strong>CLI flags:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">--store-read</span> / <span class="at">--no-store-read</span>    <span class="co"># Match logs from the store (default: --no-store-read)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">--store-write</span> / <span class="at">--no-store-write</span>  <span class="co"># Index completed logs in the store (default: --store-write)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>FlowSpec:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowStoreConfig</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span>FlowStoreConfig(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        read<span class="op">=</span><span class="va">True</span>,   <span class="co"># match logs from the store (default: False)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        write<span class="op">=</span><span class="va">True</span>,  <span class="co"># index completed logs (default: True)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>CLI flags override <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowstoreconfig">FlowStoreConfig</a></span> values. Here’s how the flags combine:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 60%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Store read</th>
+<th>Store write</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>flow run spec.py</code></td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td><code>flow run spec.py --store-read</code></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
+<td><code>flow run spec.py --no-store-write</code></td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td><code>flow run spec.py --store-read --no-store-write</code></td>
+<td>yes</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td><code>flow run spec.py --store none</code></td>
+<td>no</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p><code>--store none</code> disables the store entirely — no store instance is created, and neither reading nor writing occurs.</p>
+</section>
 <section id="setting-store-location" class="level3">
 <h3 class="anchored" data-anchor-id="setting-store-location">Setting store location</h3>
-<p>By default, Flow uses the platform-specific store location shown in <a href="#backend">Backend</a> to search for and track logs. You can configure which store to use for the <code>flow run</code> command with the following precedence:</p>
+<p>By default, Flow uses the platform-specific store location shown in <a href="#backend">Backend</a> to index and match logs. You can configure which store to use for the <code>flow run</code> command with the following precedence:</p>
 <ol type="1">
 <li><strong>CLI flag or environment variable</strong> (highest priority):</li>
 </ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CLI flag</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store</span> /path/to/my-project-store</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or environment variable</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">INSPECT_FLOW_STORE</span><span class="op">=</span>/path/to/my-project-store</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CLI flag</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store</span> /path/to/my-project-store</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or environment variable</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">INSPECT_FLOW_STORE</span><span class="op">=</span>/path/to/my-project-store</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ol start="2" type="1">
 <li><strong>FlowSpec parameter:</strong></li>
 </ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="st">"./my-project-store"</span>,</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="st">"./my-project-store"</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ol start="3" type="1">
 <li><strong>Default location</strong> (lowest priority): Platform-specific default from <a href="#backend">Backend</a></li>
 </ol>
@@ -474,21 +564,25 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <section id="disabling-the-store" class="level3">
 <h3 class="anchored" data-anchor-id="disabling-the-store">Disabling the store</h3>
 <p>Disable the Flow Store entirely by setting the <code>store</code> parameter to <code>None</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This prevents automatic log reuse and Flow Store operations.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This prevents all Flow Store operations — no logs are indexed or matched.</p>
+<p>To disable only matching or only indexing while keeping the other, use the <code>read</code> and <code>write</code> flags instead (see <a href="#read-and-write-control">Read and write control</a>).</p>
 </section>
 <section id="team-collaboration" class="level3">
 <h3 class="anchored" data-anchor-id="team-collaboration">Team collaboration</h3>
 <p><strong>S3-based shared store:</strong></p>
 <p>Set up a shared store on S3 for team collaboration:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="st">"s3://my-team-bucket/flow-store"</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Team members with access to the S3 bucket can share and reuse logs. Delta Lake supports concurrent access, so multiple team members can safely use the same store simultaneously. See <a href="https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3">Inspect AI’s S3 documentation</a> for S3 authentication setup.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span>FlowStoreConfig(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        path<span class="op">=</span><span class="st">"s3://my-team-bucket/flow-store"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        read<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>With <code>read=True</code>, team members reuse each other’s logs automatically. Delta Lake supports concurrent access, so multiple team members can safely use the same store simultaneously. See <a href="https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3">Inspect AI’s S3 documentation</a> for S3 authentication setup.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -499,23 +593,63 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Master FlowSpec approach:</strong> Create a <code>_flow.py</code> file at your repository root with the team store location:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># _flow.py (at repository root)</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="st">"s3://my-team-bucket/flow-store"</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Flow automatically discovers and inherits from <code>_flow.py</code> files in parent directories, so all team members working in the repository will automatically use the shared store—no explicit includes needed. See <a href="./defaults.html#inheritance">Automatic Discovery</a> for details on how <code>_flow.py</code> inheritance works.</p>
+<p><strong>Master FlowSpec approach:</strong> Create a <code>_flow.py</code> file at your repository root with the team store location and <code>read=True</code>:</p>
+<p>Flow automatically discovers and inherits from <code>_flow.py</code> files in parent directories, so all team members working in the repository will inherit the shared store configuration — including <code>read=True</code> for log matching. No explicit includes needed. See <a href="./defaults.html#inheritance">Automatic Discovery</a> for details on how <code>_flow.py</code> inheritance works.</p>
 <p><strong>Local-then-import approach:</strong> Run evaluations locally first, then import quality-assured logs to the shared store:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run locally (with personal store)</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># After QA, import to team store</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import s3://my-team-bucket/logs/ <span class="dt">\</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--copy-from</span> ./logs/ <span class="dt">\</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--store</span> s3://my-team-bucket/flow-store</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run locally (with personal store)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># After QA, import to team store</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import s3://my-team-bucket/logs/ <span class="dt">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--copy-from</span> ./logs/ <span class="dt">\</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--store</span> s3://my-team-bucket/flow-store</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This workflow lets you validate results before sharing them with the team.</p>
 </div>
 </div>
+</section>
+</section>
+<section id="filtering" class="level2">
+<h2 class="anchored" data-anchor-id="filtering">Filtering</h2>
+<p>You can filter which logs are eligible for reuse by providing one or more log filters. A log filter is a function that receives an <code>EvalLog</code> (loaded in header-only mode) and returns <code>True</code> to include the log or <code>False</code> to exclude it. When multiple filters are provided, all must pass for a log to be included.</p>
+<section id="defining-a-filter" class="level3">
+<h3 class="anchored" data-anchor-id="defining-a-filter">Defining a filter</h3>
+<p>Use the <code>@log_filter</code> decorator to register a filter function by name:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> log_filter</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> production_ready(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> log.status <span class="op">==</span> <span class="st">"success"</span> <span class="kw">and</span> <span class="st">"reviewed"</span> <span class="kw">in</span> (log.<span class="bu">eval</span>.tags <span class="kw">or</span> [])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="using-a-filter-with-flow-run" class="level3">
+<h3 class="anchored" data-anchor-id="using-a-filter-with-flow-run">Using a filter with <code>flow run</code></h3>
+<p><strong>In your FlowSpec</strong> — use <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowstoreconfig">FlowStoreConfig</a></span> to attach a filter to the store:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowStoreConfig</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span>FlowStoreConfig(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        path<span class="op">=</span><span class="st">"auto"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">filter</span><span class="op">=</span>production_ready,  <span class="co"># callable, registered name, or list</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>From the CLI</strong> — use <code>--store-filter</code> with a registered filter name. Use it multiple times to require all filters to pass:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store-filter</span> production_ready</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--store-filter</span> production_ready <span class="at">--store-filter</span> only_success</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The CLI flag overrides any filter set in the spec’s <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowstoreconfig">FlowStoreConfig</a></span>.</p>
+</section>
+<section id="using-filters-with-store-commands" class="level3">
+<h3 class="anchored" data-anchor-id="using-filters-with-store-commands">Using filters with store commands</h3>
+<p>The <code>flow store list</code>, <code>flow store remove</code>, and <code>flow list log</code> commands support <code>--filter</code> and <code>--exclude</code> options:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Only show logs that pass the filter</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list <span class="at">--filter</span> production_ready</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple filters (all must pass)</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list <span class="at">--filter</span> production_ready <span class="at">--filter</span> only_success</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Only show logs that do NOT pass the filter</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list <span class="at">--exclude</span> production_ready</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>--filter</code> and <code>--exclude</code> are mutually exclusive.</p>
 </section>
 </section>
 <section id="cli-commands" class="level2">
@@ -524,19 +658,19 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <section id="the-flow-store-import-command" class="level3">
 <h3 class="anchored" data-anchor-id="the-flow-store-import-command">The <code>flow store import</code> Command</h3>
 <p>Add logs to the Flow Store from directories or files:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Import from multiple locations:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ archived_logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ archived_logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Import specific files:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/eval_001.json logs/eval_002.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/eval_001.json logs/eval_002.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Copy logs to S3 and import:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import s3://my-bucket/logs/ <span class="at">--copy-from</span> ./local-logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import s3://my-bucket/logs/ <span class="at">--copy-from</span> ./local-logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This copies all logs from <code>./local-logs/</code> to <code>s3://my-bucket/logs/</code>, then imports them into the Flow Store. Useful for centralizing logs across team members.</p>
 <p><strong>Control recursive search:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ <span class="at">--no-recursive</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ <span class="at">--no-recursive</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>By default, <code>flow store import</code> recursively searches subdirectories for log files. Use <code>--no-recursive</code> to only import logs directly in the specified directory.</p>
 <p><strong>Preview before importing:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store import logs/ <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Environment variables:</strong></p>
 <ul>
 <li><code>INSPECT_FLOW_STORE</code> - Store location (same as <code>--store</code>)</li>
@@ -549,16 +683,16 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <section id="the-flow-store-remove-command" class="level3">
 <h3 class="anchored" data-anchor-id="the-flow-store-remove-command">The <code>flow store remove</code> Command</h3>
 <p>Remove logs from the Flow Store by path prefix:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/2024-01-15/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/2024-01-15/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Remove multiple prefixes:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/experiment_1/ logs/experiment_2/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/experiment_1/ logs/experiment_2/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Remove missing logs (that no longer exist on disk):</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove <span class="at">--missing</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove <span class="at">--missing</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Control recursive search:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/experiments/ <span class="at">--no-recursive</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/experiments/ <span class="at">--no-recursive</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>By default, <code>flow store remove</code> recursively searches subdirectories for matching logs. Use <code>--no-recursive</code> to only remove logs directly in the specified directory.</p>
 <p><strong>Preview before removing:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/old/ <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store remove logs/old/ <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Environment variables:</strong></p>
 <ul>
 <li><code>INSPECT_FLOW_STORE</code> - Store location (same as <code>--store</code>)</li>
@@ -566,24 +700,41 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <li><code>INSPECT_FLOW_STORE_RECURSIVE</code> - Enable recursive search (<code>true</code>/<code>false</code>)</li>
 <li><code>INSPECT_FLOW_STORE_REMOVE_MISSING</code> - Remove missing logs (<code>true</code>/<code>false</code>)</li>
 <li><code>INSPECT_FLOW_STORE_REMOVE_DRY_RUN</code> - Enable dry run mode (<code>true</code>/<code>false</code>)</li>
+<li><code>INSPECT_FLOW_STORE_FILTER</code> - Registered filter name; only remove logs that pass (<code>--filter</code>). Space-separate multiple names (all must pass)</li>
+<li><code>INSPECT_FLOW_STORE_EXCLUDE</code> - Registered filter name; only remove logs that do NOT pass (<code>--exclude</code>)</li>
 </ul>
 </section>
 <section id="the-flow-store-list-command" class="level3">
 <h3 class="anchored" data-anchor-id="the-flow-store-list-command">The <code>flow store list</code> Command</h3>
 <p>View all logs in the Flow Store:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Tree format:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list <span class="at">--format</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store list <span class="at">--format</span> tree</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Environment variables:</strong></p>
 <ul>
 <li><code>INSPECT_FLOW_STORE</code> - Store location (same as <code>--store</code>)</li>
 <li><code>INSPECT_FLOW_STORE_LIST_FORMAT</code> - Output format (<code>flat</code> or <code>tree</code>)</li>
+<li><code>INSPECT_FLOW_STORE_FILTER</code> - Registered filter name; only show logs that pass (<code>--filter</code>). Space-separate multiple names (all must pass)</li>
+<li><code>INSPECT_FLOW_STORE_EXCLUDE</code> - Registered filter name; only show logs that do NOT pass (<code>--exclude</code>)</li>
 </ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For richer log listing with filtering by task, model, status, and date range, see the <a href="./reference/flow_list.html"><code>flow list log</code></a> command.</p>
+</div>
+</div>
 </section>
 <section id="the-flow-store-info-command" class="level3">
 <h3 class="anchored" data-anchor-id="the-flow-store-info-command">The <code>flow store info</code> Command</h3>
 <p>View Flow Store statistics:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store info</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store info</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Shows the Flow Store location, number of logs, number of log directories, and Flow Store version.</p>
 <p><strong>Environment variables:</strong></p>
 <ul>
@@ -593,9 +744,9 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <section id="the-flow-store-delete-command" class="level3">
 <h3 class="anchored" data-anchor-id="the-flow-store-delete-command">The <code>flow store delete</code> Command</h3>
 <p>Delete the entire Flow Store:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store delete</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store delete</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Skip confirmation prompt:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store delete <span class="at">-y</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> store delete <span class="at">-y</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Environment variables:</strong></p>
 <ul>
 <li><code>INSPECT_FLOW_STORE</code> - Store location (same as <code>--store</code>)</li>
@@ -606,7 +757,7 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <h2 class="anchored" data-anchor-id="advanced">Advanced</h2>
 <section id="matching-logs" class="level3">
 <h3 class="anchored" data-anchor-id="matching-logs">Matching logs</h3>
-<p>The Flow Store matches logs using a <strong>task identifier</strong> computed by Inspect AI. This identifier is a hash of your task configuration including:</p>
+<p>When <a href="#log-matching">log matching</a> is enabled, the Flow Store matches logs using a <strong>task identifier</strong> computed by Inspect AI. This identifier is a hash of your task configuration including:</p>
 <ul>
 <li>Task name, model, solver, scorer, and task arguments</li>
 <li>Model configuration (temperature, top_p, max_tokens, seed, etc.)</li>
@@ -617,10 +768,11 @@ C:\Users\&lt;username&gt;\AppData\Local\inspect_flow  # Windows</code></pre>
 <p><strong>Task definition determinism</strong>: All task definition methods (FlowTask with name/factory, <span class="citation" data-cites="task">@task</span> decorated functions, raw Task objects) work with the Flow Store as long as they’re deterministic. Tasks with dynamic inputs—like timestamps, random data, or external API calls—will generate different identifiers on each run, preventing log reuse.</p>
 <p><strong>Invalidated logs</strong>: The Flow Store automatically skips logs marked as invalidated when selecting which log to reuse. If multiple matching logs exist, only non-invalidated logs with at least one completed sample are considered. Invalidated logs are only used if no other valid logs are available.</p>
 <p><strong>Missing or corrupted logs</strong>: If a log file referenced in the Flow Store no longer exists or cannot be read, the Flow Store automatically skips it and continues searching for other matching logs. This graceful error handling ensures that deleted or moved log files don’t break your workflow.</p>
+<p><strong>Log filters</strong>: Beyond task identifier matching, you can further control which logs are eligible for reuse using log filters. For example, you can restrict reuse to only successful evaluations or logs with specific tags. See <a href="#filtering">Filtering</a> for details.</p>
 </section>
 <section id="resuming-incomplete-samples" class="level3">
 <h3 class="anchored" data-anchor-id="resuming-incomplete-samples">Resuming incomplete samples</h3>
-<p>Flow uses Inspect AI’s <a href="https://inspect.aisi.org.uk/eval-sets.html#sec-sample-preservation">Eval Set</a> logic to resume incomplete logs. When the Flow Store finds a matching log, Flow copies it to your current log directory where Inspect’s eval_set automatically resumes from it.</p>
+<p>Flow uses Inspect AI’s <a href="https://inspect.aisi.org.uk/eval-sets.html#sec-sample-preservation">Eval Set</a> logic to resume incomplete logs. When log matching is enabled and the Flow Store finds a matching log, Flow copies it to your current log directory where Inspect’s eval_set automatically resumes from it. Logs already present in your <code>log_dir</code> are always resumed regardless of store settings.</p>
 <p><strong>Sample matching</strong>: For resumption to work, Inspect must match samples from the old log to the current run using sample IDs. There are two approaches:</p>
 <ol type="1">
 <li><p><strong>Explicit IDs</strong> (recommended): Include an <code>id</code> field in your dataset. This allows both deterministic and non-deterministic shuffling to work with resumption.</p></li>

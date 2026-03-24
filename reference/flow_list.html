@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>flow config – Inspect Flow</title>
+<title>flow list – Inspect Flow</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,8 +30,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../reference/flow_list.html" rel="next">
-<link href="../reference/inspect_flow.api.qmd#displaytype" rel="prev">
+<link href="../reference/flow_run.html" rel="next">
+<link href="../reference/flow_config.html" rel="prev">
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -128,7 +128,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_config.html">Inspect CLI</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_config.html">Inspect CLI</a></li><li class="breadcrumb-item"><a href="../reference/flow_list.html">flow list</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -397,7 +397,7 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link active">
+            <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Inspect CLI</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -406,13 +406,13 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link active">
+  <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">flow config</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_list.html" class="sidebar-item-text sidebar-link">
+  <a href="../reference/flow_list.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">flow list</span></a>
   </div>
 </li>
@@ -435,15 +435,21 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#flow-list-log" id="toc-flow-list-log" class="nav-link active" data-scroll-target="#flow-list-log">flow list log</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_config.html">Inspect CLI</a></li><li class="breadcrumb-item"><a href="../reference/flow_list.html">flow list</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">flow config</h1>
+<h1 class="title">flow list</h1>
 </div>
 
 
@@ -462,10 +468,32 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<p>Output config</p>
+<p>CLI command to list flow entities.</p>
 <section id="usage" class="level4">
 <h4 class="anchored" data-anchor-id="usage">Usage</h4>
-<pre class="text"><code>flow config [OPTIONS] CONFIG_FILE</code></pre>
+<pre class="text"><code>flow list [OPTIONS] COMMAND [ARGS]...</code></pre>
+</section>
+<section id="subcommands" class="level4">
+<h4 class="anchored" data-anchor-id="subcommands">Subcommands</h4>
+<table class="table-borderless caption-top table">
+<colgroup>
+<col style="width: 35%">
+<col style="width: 65%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td><a href="#flow-list-log">log</a></td>
+<td>List logs, sorted by timestamp extracted from log file name.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="flow-list-log" class="level2" data-toc-label="log">
+<h2 data-toc-label="log" class="anchored" data-anchor-id="flow-list-log">flow list log</h2>
+<p>List logs, sorted by timestamp extracted from log file name.</p>
+<section id="usage-1" class="level4">
+<h4 class="anchored" data-anchor-id="usage-1">Usage</h4>
+<pre class="text"><code>flow list log [OPTIONS] [PATH]</code></pre>
 </section>
 <section id="options" class="level4">
 <h4 class="anchored" data-anchor-id="options">Options</h4>
@@ -486,69 +514,9 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>--venv</code></td>
-<td>boolean</td>
-<td>If set run the flow in a virtual environment in a temporary directory.</td>
-<td><code>False</code></td>
-</tr>
-<tr class="even">
-<td><code>--resume</code></td>
-<td>boolean</td>
-<td>Resume from the previous run by reusing its log directory. Mutually exclusive with <code>--log-dir</code>.</td>
-<td><code>False</code></td>
-</tr>
-<tr class="odd">
-<td><code>--log-dir-create-unique</code></td>
-<td>boolean</td>
-<td>If set, create a unique log directory by appending a datetime subdirectory (e.g.&nbsp;<code>2025-12-09T17-36-43</code>) under the specified <code>log_dir</code>. If not set, use the existing <code>log_dir</code> (which must be empty or have <code>log_dir_allow_dirty=True</code>).</td>
-<td><code>False</code></td>
-</tr>
-<tr class="even">
-<td><code>--log-dir</code></td>
+<td><code>--store</code>, <code>-s</code></td>
 <td>directory</td>
-<td>Set the log directory. Will override the <code>log_dir</code> specified in the config.</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--store-write</code> / <code>--no-store-write</code></td>
-<td>boolean</td>
-<td>Write completed logs to the store (default: <code>--store-write</code>).</td>
-<td>None</td>
-</tr>
-<tr class="even">
-<td><code>--store-read</code> / <code>--no-store-read</code></td>
-<td>boolean</td>
-<td>Read existing logs from the store (default: <code>--no-store-read</code>).</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--store-filter</code></td>
-<td>text</td>
-<td>Log filter to apply when searching the store for existing logs. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
-<td>None</td>
-</tr>
-<tr class="even">
-<td><code>--store</code></td>
-<td>directory</td>
-<td>Path to the store directory. Will override the store specified in the config. <code>'auto'</code> for default location. <code>'none'</code> for no store.</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--limit</code></td>
-<td>integer</td>
-<td>Limit the number of samples to run.</td>
-<td>None</td>
-</tr>
-<tr class="even">
-<td><code>--arg</code>, <code>-A</code></td>
-<td>text</td>
-<td>Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: <code>--arg task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--set</code>, <code>-s</code></td>
-<td>text</td>
-<td>Set config overrides. Examples: <code>--set defaults.solver.args.tool_calls=none</code> <code>--set options.limit=10</code> <code>--set options.metadata={"key1": "val1", "key2": "val2"}</code> The specified value may be a string or json parsable list or dict. If string is provided then it will be appended to existing list values. If json list or dict is provided then it will replace existing values. If the same key is provided multiple times, later values will override earlier ones.</td>
+<td>Path to the store directory</td>
 <td>None</td>
 </tr>
 <tr class="even">
@@ -564,6 +532,60 @@ ul.task-list li input[type="checkbox"] {
 <td><code>warning</code></td>
 </tr>
 <tr class="even">
+<td><code>--exclude</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that do NOT pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--filter</code></td>
+<td>text</td>
+<td>Log filter. Include only logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--format</code></td>
+<td>choice (<code>table</code> | <code>tree</code>)</td>
+<td>Output format</td>
+<td><code>table</code></td>
+</tr>
+<tr class="odd">
+<td><code>-n</code>, <code>--max-count</code></td>
+<td>integer</td>
+<td>Limit output to N logs. Also accepts -N (e.g.&nbsp;-5).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--task</code></td>
+<td>text</td>
+<td>Only show logs whose task name matches PATTERN (glob). May be repeated.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--model</code></td>
+<td>text</td>
+<td>Only show logs whose model matches PATTERN (glob). May be repeated.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--status</code></td>
+<td>choice (<code>success</code> | <code>error</code> | <code>cancelled</code> | <code>started</code>)</td>
+<td>Only show logs with this status. May be repeated.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--since</code>, <code>--after</code></td>
+<td>text</td>
+<td>Only show logs whose filename timestamp is at or after DATE (e.g.&nbsp;<code>'2 weeks ago'</code>, <code>'2024-01-15'</code>).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--until</code>, <code>--before</code></td>
+<td>text</td>
+<td>Only show logs whose filename timestamp is at or before DATE (e.g.&nbsp;<code>'yesterday'</code>, <code>'2024-06-01'</code>).</td>
+<td>None</td>
+</tr>
+<tr class="odd">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -571,6 +593,7 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 </tbody>
 </table>
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -1017,13 +1040,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../reference/inspect_flow.api.html#displaytype" class="pagination-link" aria-label="DisplayType">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">DisplayType</span>
+      <a href="../reference/flow_config.html" class="pagination-link" aria-label="Inspect CLI">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Inspect CLI</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../reference/flow_list.html" class="pagination-link" aria-label="flow list">
-        <span class="nav-page-text">flow list</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../reference/flow_run.html" class="pagination-link" aria-label="flow run">
+        <span class="nav-page-text">flow run</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -1057,7 +1080,7 @@ ul.task-list li input[type="checkbox"] {
 </a>
   </li>  
 </ul>
-    <div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div>
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       <ul class="footer-items list-unstyled">
     <li class="nav-item compact">

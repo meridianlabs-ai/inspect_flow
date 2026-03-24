@@ -315,10 +315,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol type="1">
 <li>Flow loads your configuration file</li>
 <li>Resolves all defaults and matrix expansions</li>
-<li>Searches the Flow Store for existing logs to reuse</li>
+<li>Checks for existing logs in the log directory (and the <a href="./store.html">Flow Store</a> if <code>--store-read</code> is enabled)</li>
 <li>Executes evaluations via Inspect AI’s <code>eval_set()</code> in the current Python process</li>
 <li>Stores logs in <code>log_dir</code></li>
-<li>Adds logs to the Flow Store and generates <code>flow-requirements.txt</code></li>
+<li>Indexes logs in the <a href="./store.html">Flow Store</a> and generates <code>flow-requirements.txt</code></li>
 </ol>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -343,7 +343,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li>Applies all defaults and expands all matrix functions</li>
 <li>Instantiates tasks from the registry</li>
-<li>Checks for existing logs (in log directory and Flow Store)</li>
+<li>Checks for existing logs in the log directory (and the Flow Store if <code>--store-read</code> is enabled)</li>
 <li>Shows which tasks would run and which logs would be reused</li>
 <li>Stops before actually running evaluations</li>
 </ul>
@@ -418,6 +418,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#load_spec">load_spec()</a></span></strong> - Load a Flow configuration from a Python file into a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> object</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#config">config()</a></span></strong> - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to <code>flow config</code>)</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#init">init()</a></span></strong> - Initialize Flow session settings (logging, display, .env loading)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#list_logs">list_logs()</a></span></strong> - List log files from a directory or the Flow Store (equivalent to <code>flow list log</code>)</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#store_get">store_get()</a></span></strong> - Get a FlowStore instance for programmatic store access</li>
 </ul>
 <p>See the <a href="./reference/inspect_flow.api.html">API Reference</a> for complete documentation.</p>
@@ -459,7 +460,7 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Logs in this directory are automatically tracked by the <a href="./store.html">Flow Store</a>, enabling log reuse across future runs.</p>
+<p>Logs in this directory are indexed in the <a href="./store.html">Flow Store</a>, enabling log reuse across future runs when <code>--store-read</code> is enabled.</p>
 </div>
 </div>
 <p><strong>Log formats:</strong></p>

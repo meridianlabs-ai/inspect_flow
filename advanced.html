@@ -769,7 +769,7 @@ Note
 <p>Both options work with static hosting (S3, web servers) and can be used together. The key difference is that <code>embed_viewer</code> keeps everything in the log directory, while <code>bundle_dir</code> produces a standalone copy that can be deployed separately.</p>
 <section id="bundle-url-mappings" class="level3">
 <h3 class="anchored" data-anchor-id="bundle-url-mappings">Bundle URL Mappings</h3>
-<p>Convert local bundle paths to public URLs for sharing evaluation results. The <code>bundle_url_mappings</code> in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> applies string replacements to <code>bundle_dir</code> to generate a shareable URL that’s printed to stdout after the evaluation completes.</p>
+<p>Convert local paths to public URLs for sharing evaluation results. The <code>bundle_url_mappings</code> in <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowoptions">FlowOptions</a></span> applies string replacements to <code>bundle_dir</code> and <code>embed_viewer</code> paths to generate a shareable URL that’s printed to stdout after the evaluation completes.</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>config.py</strong></pre>

@@ -753,10 +753,15 @@ Note
 <div class="callout-body-container callout-body">
 <p>The <code>_flow.py</code> inheritance pattern is especially useful for team collaboration. For example, you can configure a shared Flow Store location in <code>_flow.py</code> at your repository root:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># _flow.py (at repository root)</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span><span class="st">"s3://my-team-bucket/flow-store"</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>All team members working in the repository will automatically use the shared store, enabling log reuse across the team. See <a href="./store.html#team-collaboration">Flow Store</a> for more details.</p>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowStoreConfig</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    store<span class="op">=</span>FlowStoreConfig(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        path<span class="op">=</span><span class="st">"s3://my-team-bucket/flow-store"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        read<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>All team members working in the repository will automatically inherit the shared store configuration — including <code>read=True</code> for log matching. See <a href="./store.html#team-collaboration">Flow Store</a> for more details.</p>
 </div>
 </div>
 </section>
@@ -859,7 +864,7 @@ Note
 <tr class="odd">
 <td><code>INSPECT_FLOW_DISPLAY</code></td>
 <td><code>--display</code></td>
-<td>Display mode: <code>full</code> (live progress, default), <code>plain</code> (simple text for CI), or <code>rich</code> (rich formatting without live updates)</td>
+<td>Display mode: <code>rich</code> (rich formatting without live updates, default), <code>full</code> (live progress), or <code>plain</code> (simple text for CI)</td>
 </tr>
 <tr class="even">
 <td><code>INSPECT_FLOW_STORE</code></td>
@@ -867,26 +872,41 @@ Note
 <td>Path to Flow Store directory. Use <code>auto</code> for default location, <code>none</code> to disable</td>
 </tr>
 <tr class="odd">
+<td><code>INSPECT_FLOW_STORE_READ</code></td>
+<td><code>--store-read</code></td>
+<td>Match existing logs from the store (default: off)</td>
+</tr>
+<tr class="even">
+<td><code>INSPECT_FLOW_STORE_WRITE</code></td>
+<td><code>--store-write</code></td>
+<td>Index completed logs in the store (default: on)</td>
+</tr>
+<tr class="odd">
+<td><code>INSPECT_FLOW_STORE_FILTER</code></td>
+<td><code>--store-filter</code></td>
+<td>Registered log filter name to apply when matching logs from the store. Space-separate multiple names (all must pass)</td>
+</tr>
+<tr class="even">
 <td><code>INSPECT_FLOW_LIMIT</code></td>
 <td><code>--limit</code></td>
 <td>Limit number of samples</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>INSPECT_FLOW_SET</code></td>
 <td><code>--set</code></td>
 <td>Set config overrides (can be specified multiple times)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>INSPECT_FLOW_ARG</code></td>
 <td><code>--arg</code></td>
 <td>Args to pass to spec functions in the config file (can be multiple)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>INSPECT_FLOW_VENV</code></td>
 <td><code>--venv</code></td>
 <td>Create a virtual environment to run the Flow spec</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>INSPECT_FLOW_DRY_RUN</code></td>
 <td><code>--dry-run</code></td>
 <td>Perform full setup and show what would run without actually running evaluations</td>
@@ -933,7 +953,7 @@ Note
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Preview what would run:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The <code>flow config</code> command quickly displays the expanded configuration as YAML. The <code>--dry-run</code> flag performs the full setup process—instantiating tasks from the registry and checking for existing logs—showing exactly which tasks would run and which logs would be reused, but stops before actually running the evaluations.</p>
+<p>The <code>flow config</code> command quickly displays the expanded configuration as YAML. The <code>--dry-run</code> flag performs the full setup process—instantiating tasks from the registry and checking for existing logs in the log directory (and the Flow Store if <code>--store-read</code> is enabled)—showing exactly which tasks would run and which logs would be reused, but stops before actually running the evaluations.</p>
 
 
 </section>
