@@ -10,7 +10,7 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSpec
 from inspect_ai.model import Model, get_model
 from inspect_flow._display.display import set_display, set_display_type
-from inspect_flow._runner.cli import _read_config, flow_run
+from inspect_flow._runner.cli import _read_config, runner
 from inspect_flow._runner.logs import (
     _epochs_reducer_changed,
     _num_samples,
@@ -426,8 +426,8 @@ class TestFlowRunCli:
         config_file = tmp_path / "flow.yaml"  # type: ignore[operator]
         config_file.write_text(yaml.dump(config_data))
 
-        runner = CliRunner()
-        result = runner.invoke(flow_run, ["--file", str(config_file)])
+        cli_runner = CliRunner()
+        result = cli_runner.invoke(runner, ["run", "--file", str(config_file)])
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
         mock_signal.assert_called_once()
