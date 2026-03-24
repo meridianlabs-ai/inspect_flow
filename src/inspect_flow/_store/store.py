@@ -16,6 +16,7 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._types.log_filter import resolve_log_filter
 from inspect_flow._util.console import path
 from inspect_flow._util.data import user_data_dir
+from inspect_flow._util.logs import num_valid_samples
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -116,15 +117,12 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
     """
     if best is None:
         return True
-    if not candidate.results or candidate.invalidated:
+    candidate_samples = num_valid_samples(candidate)
+    best_samples = num_valid_samples(best)
+    if best_samples > candidate_samples:
         return False
-    if not best.results or best.invalidated:
+    if candidate_samples > best_samples:
         return True
-    # Compare completed samples
-    if candidate.results.completed_samples > best.results.completed_samples:
-        return True
-    if candidate.results.completed_samples < best.results.completed_samples:
-        return False
     # If completed samples are equal, take the more recently completed one
     return candidate.stats.completed_at > best.stats.completed_at
 

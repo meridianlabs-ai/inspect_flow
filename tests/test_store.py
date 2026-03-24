@@ -4,7 +4,13 @@ from unittest.mock import MagicMock, call, patch
 
 from botocore.client import BaseClient
 from inspect_ai._eval.evalset import task_identifier
-from inspect_ai.log import list_eval_logs, read_eval_log, write_eval_log
+from inspect_ai.log import (
+    ProvenanceData,
+    invalidate_samples,
+    list_eval_logs,
+    read_eval_log,
+    write_eval_log,
+)
 from inspect_ai.log._file import EvalLogInfo
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
@@ -139,26 +145,27 @@ def test_is_better_log_all_paths(tmp_path: Path) -> None:
     partial = read_eval_log(partial_path, header_only=True)
     full = read_eval_log(full_path, header_only=True)
 
+    # Create a log with 1 of 2 samples invalidated (1 valid sample remaining)
+    invalidated_path = str(tmp_path / "invalidated.eval")
+    full_log = read_eval_log(full_path)
+    first_uuid = (full_log.samples or [])[0].uuid
+    assert first_uuid is not None
+    full_log = invalidate_samples(
+        full_log,
+        sample_uuids=[first_uuid],
+        provenance=ProvenanceData(author="test"),
+    )
+    write_eval_log(full_log, location=invalidated_path)
+    invalidated = read_eval_log(invalidated_path, header_only=True)
+
     # best is None → always True
     assert is_better_log(partial, None) is True
 
-    # candidate has no results → False
-    no_results = full.model_copy()
-    no_results.results = None
-    assert is_better_log(no_results, partial) is False
+    # candidate has invalidated samples (1 valid) vs full (2 valid) → False
+    assert is_better_log(invalidated, full) is False
 
-    # candidate invalidated → False
-    invalidated = full.model_copy()
-    invalidated.invalidated = True
-    assert is_better_log(invalidated, partial) is False
-
-    # best has no results → True
-    assert is_better_log(partial, no_results) is True
-
-    # best invalidated → True
-    best_inv = partial.model_copy()
-    best_inv.invalidated = True
-    assert is_better_log(full, best_inv) is True
+    # best has invalidated samples (1 valid), full candidate (2 valid) → True
+    assert is_better_log(full, invalidated) is True
 
     # more completed samples → True
     assert is_better_log(full, partial) is True
@@ -204,8 +211,7 @@ def test_search_prefers_more_completed_samples(tmp_path: Path) -> None:
     assert results[task_id] == log2
 
 
-def test_search_skips_log_without_results(tmp_path: Path) -> None:
-    """A log without results loses to a valid log with fewer samples."""
+def test_search_finds_log_without_results(tmp_path: Path) -> None:
     log_dir1 = str(tmp_path / "logs1")
     log_dir2 = str(tmp_path / "logs2")
 
@@ -223,7 +229,7 @@ def test_search_skips_log_without_results(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log2, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log2
+    assert results[task_id] == log1
 
 
 def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
@@ -248,13 +254,12 @@ def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
     assert results[task_id] == log1
 
 
-def test_search_skips_invalidated_log(tmp_path: Path) -> None:
-    """An invalidated log with more samples loses to a valid log with fewer samples."""
+def test_search_finds_invalidated_log(tmp_path: Path) -> None:
     log_dir_full = str(tmp_path / "logs_full")
     log_dir_partial = str(tmp_path / "logs_partial")
 
     log_full = _run_task(log_dir_full)
-    log_partial = _run_task(log_dir_partial, limit=1)
+    _run_task(log_dir_partial, limit=1)
 
     # Invalidate the full log
     full = read_eval_log(log_full)
@@ -268,8 +273,7 @@ def test_search_skips_invalidated_log(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log_full, header_only=True), None)
     results = store.search_for_logs({task_id})
-    # The partial (1 sample) log wins because the full one is invalidated
-    assert results[task_id] == log_partial
+    assert results[task_id] == log_full
 
 
 def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:

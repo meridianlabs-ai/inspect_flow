@@ -29,7 +29,7 @@ from inspect_flow._cli.store import (
 from inspect_flow._runner.task_log import TaskInfo, unique_task_names
 from inspect_flow._types.flow_types import FlowSpec, LogFilter
 from inspect_flow._util.console import flow_print, path
-from inspect_flow._util.logs import group_logs_by_dir
+from inspect_flow._util.logs import group_logs_by_dir, num_valid_samples
 from inspect_flow._util.path_util import apply_bundle_url_mappings, path_str
 
 logger = getLogger(__name__)
@@ -147,10 +147,11 @@ def _duration_str(header: EvalLog) -> str:
 
 
 def _samples_str(header: EvalLog) -> str:
+    valid_samples = num_valid_samples(header)
     if header.results:
-        return f"{header.results.completed_samples}/{header.results.total_samples}"
+        return f"{valid_samples}/{header.results.total_samples}"
     total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
-    return f"0/{total}" if total else ""
+    return f"{valid_samples}/{total}" if total else ""
 
 
 @dataclass
