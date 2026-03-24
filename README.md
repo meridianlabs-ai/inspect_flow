@@ -43,7 +43,7 @@
 | src/inspect\_flow/\_runner/run.py                  |      155 |        5 |       62 |        4 |     95.85% |188-189, 206, 208, 222, 256->255 |
 | src/inspect\_flow/\_runner/task\_log.py            |      136 |        0 |       48 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_store/deltalake.py             |      332 |       16 |      110 |       15 |     92.99% |91->exit, 135, 152, 172->171, 178->171, 224-226, 254->260, 257->260, 335-336, 340, 379-381, 389, 391->394, 408, 471->463, 539-540, 544 |
+| src/inspect\_flow/\_store/deltalake.py             |      332 |       16 |      110 |       14 |     93.21% |91->exit, 135, 152, 172->171, 178->171, 224-226, 254->260, 257->260, 335-336, 340, 379-381, 389, 391->394, 408, 539-540, 544 |
 | src/inspect\_flow/\_store/store.py                 |       75 |        1 |       24 |        1 |     97.98% |105, 185->187 |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        7 |        0 |        0 |        0 |    100.00% |           |
@@ -68,7 +68,7 @@
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        6 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **4156** |  **288** | **1268** |   **99** | **91.35%** |           |
+| **TOTAL**                                          | **4156** |  **288** | **1268** |   **98** | **91.37%** |           |
 
 
 ## Setup coverage badge
