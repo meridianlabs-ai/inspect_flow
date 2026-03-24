@@ -4,6 +4,7 @@ import pytest
 from inspect_ai.log import (
     EvalConfig,
     EvalDataset,
+    EvalError,
     EvalLog,
     EvalResults,
     EvalSample,
@@ -14,6 +15,7 @@ from inspect_ai.log import (
     write_eval_log,
 )
 from inspect_flow._util.logs import num_valid_samples
+from rich.console import Console
 
 
 @pytest.fixture
@@ -47,6 +49,57 @@ def test_num_valid_samples_with_cleared_results(eval_log: str) -> None:
 
     header = read_eval_log(eval_log, header_only=True)
     assert num_valid_samples(header) == 3
+
+
+def test_num_valid_samples_excludes_errored_samples(tmp_path: Path) -> None:
+    log_path = str(tmp_path / "errored.eval")
+    samples = [
+        EvalSample(id=1, epoch=1, input="hello", target="world", uuid="uuid-1"),
+        EvalSample(
+            id=2,
+            epoch=1,
+            input="hello",
+            target="world",
+            uuid="uuid-2",
+            error=EvalError(message="boom", traceback="", traceback_ansi=""),
+        ),
+    ]
+    log = EvalLog(
+        status="success",
+        eval=EvalSpec(
+            created="2024-01-01T00:00:00+00:00",
+            task="test_task",
+            dataset=EvalDataset(),
+            model="mockllm/model",
+            config=EvalConfig(),
+        ),
+        results=EvalResults(total_samples=2, completed_samples=1),
+        samples=samples,
+    )
+    write_eval_log(log, location=log_path)
+
+    loaded = read_eval_log(log_path)
+    loaded.results = None
+    write_eval_log(loaded, location=log_path)
+
+    header = read_eval_log(log_path, header_only=True)
+    assert num_valid_samples(header) == 1
+
+
+def test_num_valid_samples_returns_zero_on_read_error(
+    eval_log: str, recording_console: Console
+) -> None:
+    loaded = read_eval_log(eval_log)
+    loaded = invalidate_samples(
+        loaded, sample_uuids=["uuid-1"], provenance=ProvenanceData(author="test")
+    )
+    write_eval_log(loaded, location=eval_log)
+
+    header = read_eval_log(eval_log, header_only=True)
+    Path(eval_log).unlink()
+
+    assert num_valid_samples(header) == 0
+    assert "Failed to read samples" in recording_console.export_text()
 
 
 def test_num_valid_samples_with_invalidated_samples(eval_log: str) -> None:

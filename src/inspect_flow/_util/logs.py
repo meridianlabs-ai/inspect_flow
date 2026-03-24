@@ -120,13 +120,21 @@ def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -
 def num_valid_samples(header: EvalLog) -> int:
     if header.results and not header.invalidated:
         return header.results.completed_samples
-    if header.invalidated:
-        return sum(
-            1
-            for s in read_eval_log_samples(header.location, all_samples_required=False)
-            if s.invalidation is None and s.error is None
-        )
-    else:
-        return sum(
-            1 for s in read_eval_log_sample_summaries(header.location) if s.completed
-        )
+    try:
+        if header.invalidated:
+            return sum(
+                1
+                for s in read_eval_log_samples(
+                    header.location, all_samples_required=False
+                )
+                if s.invalidation is None and s.error is None
+            )
+        else:
+            return sum(
+                1
+                for s in read_eval_log_sample_summaries(header.location)
+                if s.completed and s.error is None
+            )
+    except Exception:
+        logger.warning("Failed to read samples from %s", header.location, exc_info=True)
+        return 0
