@@ -10,8 +10,12 @@ from inspect_ai._util.file import absolute_file_path, copy_file, filesystem
 from inspect_ai.log import (
     EvalLog,
     list_eval_logs,
+    read_eval_log_async,
     read_eval_log_sample_summaries,
     read_eval_log_samples,
+)
+from inspect_ai.log._file import (
+    read_eval_log_sample_summaries_async,
 )
 from rich.text import Text
 
@@ -133,6 +137,27 @@ def num_valid_samples(header: EvalLog) -> int:
             return sum(
                 1
                 for s in read_eval_log_sample_summaries(header.location)
+                if s.completed and s.error is None
+            )
+    except Exception:
+        logger.warning("Failed to read samples from %s", header.location, exc_info=True)
+        return 0
+
+
+async def num_valid_samples_async(header: EvalLog) -> int:
+    if header.results and not header.invalidated:
+        return header.results.completed_samples
+    try:
+        if header.invalidated:
+            log = await read_eval_log_async(header.location, header_only=False)
+            assert log.samples
+            return sum(
+                1 for s in log.samples if s.invalidation is None and s.error is None
+            )
+        else:
+            return sum(
+                1
+                for s in await read_eval_log_sample_summaries_async(header.location)
                 if s.completed and s.error is None
             )
     except Exception:
