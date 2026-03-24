@@ -40,7 +40,7 @@
 | src/inspect\_flow/\_runner/instantiate.py          |      168 |        4 |       80 |        3 |     96.37% |55-57, 92, 258->260 |
 | src/inspect\_flow/\_runner/logs.py                 |      119 |        1 |       52 |        4 |     97.08% |43, 171->169, 174->169, 202->197 |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |      155 |        5 |       62 |        4 |     95.85% |188-189, 206, 208, 222, 256->255 |
+| src/inspect\_flow/\_runner/run.py                  |      167 |        7 |       66 |        5 |     93.99% |176->178, 182, 201-202, 219, 235, 274-275 |
 | src/inspect\_flow/\_runner/task\_log.py            |      136 |        0 |       48 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/deltalake.py             |      332 |       16 |      110 |       14 |     93.21% |91->exit, 135, 152, 172->171, 178->171, 224-226, 254->260, 257->260, 335-336, 340, 379-381, 389, 391->394, 408, 539-540, 544 |
@@ -68,7 +68,7 @@
 | src/inspect\_flow/\_util/util.py                   |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       13 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |        6 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **4156** |  **288** | **1268** |   **98** | **91.37%** |           |
+| **TOTAL**                                          | **4168** |  **290** | **1272** |   **99** | **91.31%** |           |
 
 
 ## Setup coverage badge
