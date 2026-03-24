@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.7.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.6.0...v0.7.0) (2026-03-24)
+
+
+### Features
+
+* FlowFactory to provide type checking of factory argumnets ([#580](https://github.com/meridianlabs-ai/inspect_flow/issues/580)) ([8403977](https://github.com/meridianlabs-ai/inspect_flow/commit/8403977d82f05bec12ba595e345699708e098ffe))
+* list log command ([#575](https://github.com/meridianlabs-ai/inspect_flow/issues/575)) ([87e6b28](https://github.com/meridianlabs-ai/inspect_flow/commit/87e6b2869dadab511d689843b1e5ab6ac754e3b9))
+* store_read and store_write flags. Default store_read off. ([#585](https://github.com/meridianlabs-ai/inspect_flow/issues/585)) ([d9f75b6](https://github.com/meridianlabs-ai/inspect_flow/commit/d9f75b6c0e4f6d078a56b4141a344fb2a7c38875))
+
+
+### Bug Fixes
+
+* add support for tags on FlowTask ([#593](https://github.com/meridianlabs-ai/inspect_flow/issues/593)) ([4d070d7](https://github.com/meridianlabs-ai/inspect_flow/commit/4d070d71ad8c3291571a3cadc78e1432ea6fc422))
+* add viewer url column to flow list log ([#586](https://github.com/meridianlabs-ai/inspect_flow/issues/586)) ([c877ecb](https://github.com/meridianlabs-ai/inspect_flow/commit/c877ecb51a36418f128462762020e3e683a24dcc))
+* count of samples in log when results is missing or invalidated ([#598](https://github.com/meridianlabs-ai/inspect_flow/issues/598)) ([8bca19e](https://github.com/meridianlabs-ai/inspect_flow/commit/8bca19eeb9bd0b8463bf8bab977155dfe0609a0c))
+* do not output file:// prefix in list log tree format ([#581](https://github.com/meridianlabs-ai/inspect_flow/issues/581)) ([3fe7859](https://github.com/meridianlabs-ai/inspect_flow/commit/3fe7859a94cfbdb31c1b005f5ca05f79f41aad64))
+* ensure inspect_ai log level is set correctly before calling eval_set ([#576](https://github.com/meridianlabs-ai/inspect_flow/issues/576)) ([78f2923](https://github.com/meridianlabs-ai/inspect_flow/commit/78f292315380358f67ec950e0b1e0c24dd3f93eb))
+* improved output for store usage ([#591](https://github.com/meridianlabs-ai/inspect_flow/issues/591)) ([dc38b34](https://github.com/meridianlabs-ai/inspect_flow/commit/dc38b34d0c524d8321c0bbfee882f31364035b20))
+* preserve task name when provided ([#563](https://github.com/meridianlabs-ai/inspect_flow/issues/563)) ([a02da20](https://github.com/meridianlabs-ai/inspect_flow/commit/a02da20a5d8b3deebe56b50021717f3202f3f8dd))
+* resolve relative paths on import ([#597](https://github.com/meridianlabs-ai/inspect_flow/issues/597)) ([e5d3268](https://github.com/meridianlabs-ai/inspect_flow/commit/e5d32686b5db73e46517cc46abd6be89172bfa38))
+* set default display to rich ([#577](https://github.com/meridianlabs-ai/inspect_flow/issues/577)) ([77ad180](https://github.com/meridianlabs-ai/inspect_flow/commit/77ad1804b1601c4cd57f714fd93a67e57d7761e7))
+* support multiple --store-filter ([#596](https://github.com/meridianlabs-ai/inspect_flow/issues/596)) ([617c9be](https://github.com/meridianlabs-ai/inspect_flow/commit/617c9be8a3e518811e4897d915720899c6646cdf))
+* support multiple log filters ([#592](https://github.com/meridianlabs-ai/inspect_flow/issues/592)) ([1dcdf32](https://github.com/meridianlabs-ai/inspect_flow/commit/1dcdf327d471471745fe22643f0f371a6ad7f03a))
+* update to new embedded_viewer path ([#590](https://github.com/meridianlabs-ai/inspect_flow/issues/590)) ([ebfbe8b](https://github.com/meridianlabs-ai/inspect_flow/commit/ebfbe8b31faab1be6c0099c60b853b325648fa75))
+
+
+### Documentation
+
+* update docs for PRs [#577](https://github.com/meridianlabs-ai/inspect_flow/issues/577), [#575](https://github.com/meridianlabs-ai/inspect_flow/issues/575), [#563](https://github.com/meridianlabs-ai/inspect_flow/issues/563), [#552](https://github.com/meridianlabs-ai/inspect_flow/issues/552), [#551](https://github.com/meridianlabs-ai/inspect_flow/issues/551), [#550](https://github.com/meridianlabs-ai/inspect_flow/issues/550), [#580](https://github.com/meridianlabs-ai/inspect_flow/issues/580) ([#584](https://github.com/meridianlabs-ai/inspect_flow/issues/584)) ([5b0646d](https://github.com/meridianlabs-ai/inspect_flow/commit/5b0646d1bec7beb3143d9dd67a933f8f0c31d666))
+* update docs for PRs [#592](https://github.com/meridianlabs-ai/inspect_flow/issues/592), [#593](https://github.com/meridianlabs-ai/inspect_flow/issues/593) ([#595](https://github.com/meridianlabs-ai/inspect_flow/issues/595)) ([a9214cb](https://github.com/meridianlabs-ai/inspect_flow/commit/a9214cb56cb4a161ae0f30c8bd9188f9a3372cf3))
+* update docs for store_read/store_write changes ([#585](https://github.com/meridianlabs-ai/inspect_flow/issues/585)) ([#588](https://github.com/meridianlabs-ai/inspect_flow/issues/588)) ([24a173b](https://github.com/meridianlabs-ai/inspect_flow/commit/24a173b849b89498117a829f2af7f64af9c0f367))
+
 ## [0.6.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.5.0...v0.6.0) (2026-03-16)
 
 
