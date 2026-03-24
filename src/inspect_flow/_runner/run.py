@@ -4,8 +4,9 @@ import time
 from datetime import timedelta
 from logging import getLogger
 
+import click
 from inspect_ai import eval_set
-from inspect_ai._eval.evalset import task_identifier
+from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
 from inspect_ai.util._display import init_display_type
@@ -16,6 +17,7 @@ from rich.text import Text
 
 from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
+from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import (
@@ -165,7 +167,10 @@ def run_eval_set(
             embed_viewer=default(options.embed_viewer, False),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except BaseException as e:
+    except (KeyboardInterrupt, click.Abort):
+        flow_print(Rule("Eval Set Interrupted"))
+        result = None
+    except Exception as e:
         if isinstance(e, PrerequisiteError):
             _fix_prerequisite_error_message(e)
         if error_string := str(e):
@@ -175,6 +180,14 @@ def run_eval_set(
             raise FlowHandledError from e
         else:
             raise
+
+    if not result:
+        with ReadLogsProgress() as progress:
+            dir_logs = list_all_eval_logs(
+                log_dir=resolved_spec.log_dir, recursive=False, progress=progress
+            )
+            headers = [log.header for log in dir_logs]
+            result = False, headers
 
     elapsed_time = time.time() - start_time
 
@@ -251,12 +264,17 @@ def _print_result(
             flow_print(bundle_url_output, soft_wrap=True, crop=False)
 
     if num_success < len(logs):
-        flow_print("\nFailed Tasks:")
+        flow_print("Unsuccessful Tasks:")
         for log in logs:
             if log.status == "error":
                 flow_print(
                     f"{log.eval.task}: {log.error.message if log.error else 'Unknown error'}",
                     format="error",
+                )
+            elif log.status != "success":
+                flow_print(
+                    f"{log.eval.task}: {log.status}",
+                    format="warning",
                 )
 
 
