@@ -223,7 +223,8 @@ class TestFindExistingLogs:
             options=FlowOptions(log_dir_allow_dirty=True),
         )
         result = find_existing_logs(task_id_to_task={}, spec=spec, store=None)
-        assert result == {}
+        assert result.task_log_info == {}
+        assert result.unexpected_logs == []
 
 
 # ── task_log.py ─────────────────────────────────────────────
