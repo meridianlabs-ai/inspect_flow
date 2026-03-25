@@ -8,7 +8,7 @@ from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
-from inspect_flow._config.load import ConfigOptions
+from inspect_flow._config.load import ConfigOptions, _apply_overrides
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
@@ -129,6 +129,13 @@ def test_run_command_log_dir_create_unique() -> None:
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
         )
+
+
+def test_no_log_dir_create_unique_overrides_spec() -> None:
+    spec = FlowSpec(tasks=["task"], log_dir="logs", log_dir_create_unique=True)
+    overrides = _options_to_overrides(log_dir_create_unique=False)
+    result = _apply_overrides(spec, overrides)
+    assert not result.log_dir_create_unique
 
 
 def test_config_command_overrides() -> None:

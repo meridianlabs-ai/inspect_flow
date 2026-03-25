@@ -143,9 +143,8 @@ def config_options(f: F) -> F:
         envvar="INSPECT_FLOW_LOG_DIR",
     )(f)
     f = click.option(
-        "--log-dir-create-unique",
-        type=bool,
-        is_flag=True,
+        "--log-dir-create-unique/--no-log-dir-create-unique",
+        default=None,
         help="If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
@@ -204,8 +203,8 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
-    if kwargs.get("log_dir_create_unique"):
-        overrides.append("log_dir_create_unique=True")
+    if (ldu := kwargs.get("log_dir_create_unique")) is not None:
+        overrides.append(f"log_dir_create_unique={ldu}")
     if kwargs.get("log_dir_allow_dirty"):
         overrides.append("options.log_dir_allow_dirty=True")
     if kwargs.get("venv"):

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from inspect_ai.util._display import init_display_type
-
-from inspect_flow._display.display import get_display_type
+from inspect_flow._display.display import display
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import find_existing_logs, get_task_ids_to_tasks
 from inspect_flow._runner.resolve import resolve_spec
@@ -15,8 +13,6 @@ from inspect_flow._util.console import flow_print, path
 def check_eval_set(spec: FlowSpec, base_dir: str) -> dict[str, TaskLogInfo]:
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     options = resolved_spec.options or FlowOptions()
-    display_type = options.display or get_display_type()
-    init_display_type(display_type)
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
@@ -41,6 +37,8 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> dict[str, TaskLogInfo]:
         store if (store_config is not None and store_config.read) else None,
         dry_run=True,
     )
+
+    display().stop()
 
     flow_print(create_task_log_display(task_log_info, completed=True))
     flow_print("Log dir:", path(log_dir), soft_wrap=True, crop=False)

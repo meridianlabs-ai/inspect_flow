@@ -5,11 +5,12 @@ from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
 from inspect_flow._cli.options import (
-    OutputOptionArgs,
+    ConfigOptionArgs,
+    config_options,
     init_output,
-    output_options,
+    parse_config_options,
 )
-from inspect_flow._config.load import ConfigOptions, int_load_spec
+from inspect_flow._config.load import int_load_spec
 from inspect_flow._display.display import DisplayAction, create_display
 from inspect_flow._launcher.launch import launch_check
 from inspect_flow._runner.cli import CHECK_ACTIONS
@@ -22,51 +23,15 @@ _check_actions = {
 
 
 @click.command("check", help="Check a spec against existing logs")
-@click.argument(
-    "config-file",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        resolve_path=True,
-    ),
-    required=True,
-)
-@click.option(
-    "--log-dir",
-    type=click.Path(
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        resolve_path=False,
-    ),
-    default=None,
-    help="Log directory to check against. Overrides `log_dir` in the spec.",
-    envvar="INSPECT_FLOW_LOG_DIR",
-)
-@click.option(
-    "--venv",
-    type=bool,
-    is_flag=True,
-    help="Run in a virtual environment.",
-    envvar="INSPECT_FLOW_VENV",
-)
-@output_options
+@config_options
 def check_command(
     config_file: str,
-    log_dir: str | None,
-    venv: bool,
-    **kwargs: Unpack[OutputOptionArgs],
+    **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to check a spec against existing logs."""
     init_output(**kwargs)
-    overrides: list[str] = []
-    if log_dir:
-        overrides.append(f"log_dir={absolute_file_path(log_dir)}")
-    if venv:
-        overrides.append("execution_type=venv")
+    config_file = absolute_file_path(config_file)
     with create_display(dry_run=True, actions=_check_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
-        spec = int_load_spec(config_file, options=ConfigOptions(overrides=overrides))
+        spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
         launch_check(spec, base_dir=str(Path(config_file).parent))
