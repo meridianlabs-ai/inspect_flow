@@ -5,6 +5,7 @@ import yaml
 
 from inspect_flow._display.display import (
     DisplayAction,
+    DisplayMode,
     DisplayType,
     create_display,
     set_display_type,
@@ -95,7 +96,8 @@ def runner_run(
     signal_ready_and_wait()
     set_display_type(display_type)
     cfg = _read_config(file)
-    with create_display(dry_run=dry_run, actions=RUN_ACTIONS) as disp:
+    mode: DisplayMode = "dry_run" if dry_run else "run"
+    with create_display(mode=mode, actions=RUN_ACTIONS) as disp:
         disp.set_title("VENV Flow Spec:", path(file))
         run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
 
@@ -113,7 +115,7 @@ def runner_check(
     signal_ready_and_wait()
     set_display_type(display_type)
     cfg = _read_config(file)
-    with create_display(dry_run=True, actions=CHECK_ACTIONS) as disp:
+    with create_display(mode="check", actions=CHECK_ACTIONS) as disp:
         disp.set_title("VENV Flow Spec:", path(file))
         check_eval_set(cfg, base_dir=base_dir)
 

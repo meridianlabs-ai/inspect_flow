@@ -11,7 +11,7 @@ from inspect_flow._cli.options import (
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
-from inspect_flow._display.display import DisplayAction, create_display
+from inspect_flow._display.display import DisplayAction, DisplayMode, create_display
 from inspect_flow._launcher.launch import launch
 from inspect_flow._runner.cli import RUN_ACTIONS
 from inspect_flow._util.console import path
@@ -47,7 +47,8 @@ def run_command(
     init_output(**kwargs)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
-    with create_display(dry_run=dry_run, actions=_run_actions) as display:
+    mode: DisplayMode = "dry_run" if dry_run else "run"
+    with create_display(mode=mode, actions=_run_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
         spec = int_load_spec(config_file, options=config_options)
         launch(

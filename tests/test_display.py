@@ -114,12 +114,12 @@ class TestDisplayFactory:
 
     def test_create_display_returns_plain_when_type_is_plain(self) -> None:
         set_display_type("plain")
-        d = create_display(dry_run=False, actions={})
+        d = create_display(mode="run", actions={})
         assert isinstance(d, PlainDisplay)
 
     def test_create_display_returns_full_actions_when_type_is_full(self) -> None:
         set_display_type("full")
-        d = create_display(dry_run=False, actions={})
+        d = create_display(mode="run", actions={})
         assert isinstance(d, FullActionsDisplay)
 
 
@@ -167,7 +167,7 @@ class TestBorderedTable:
         return table
 
     def test_no_title(self) -> None:
-        bt = _BorderedTable(self._make_table("Setup"), dry_run=False)
+        bt = _BorderedTable(self._make_table("Setup"), mode="run")
         output = _render_text(bt)
         assert "╭" in output
         assert "╰" in output
@@ -176,14 +176,12 @@ class TestBorderedTable:
         assert "[" not in output or "DRY RUN" not in output
 
     def test_with_title(self) -> None:
-        bt = _BorderedTable(
-            self._make_table("Setup"), dry_run=False, title=["My", "Flow"]
-        )
+        bt = _BorderedTable(self._make_table("Setup"), mode="run", title=["My", "Flow"])
         output = _render_text(bt)
         assert "[My Flow]" in output
 
     def test_dry_run_markers(self) -> None:
-        bt = _BorderedTable(self._make_table("Setup"), dry_run=True)
+        bt = _BorderedTable(self._make_table("Setup"), mode="dry_run")
         output = _render_text(bt)
         assert output.count("[DRY RUN]") == 4  # 2 top + 2 bottom
 
@@ -193,29 +191,27 @@ class TestBorderedTable:
             "empty": [],
             "b": ["msg-b"],
         }
-        bt = _BorderedTable(self._make_table("Setup"), dry_run=False, messages=msgs)
+        bt = _BorderedTable(self._make_table("Setup"), mode="run", messages=msgs)
         output = _render_text(bt)
         assert "msg-a" in output
         assert "msg-b" in output
 
     def test_messages_with_separator(self) -> None:
         msgs: dict[str, list[RenderableType]] = {"a": ["msg-a"], "b": ["msg-b"]}
-        bt = _BorderedTable(self._make_table("Setup"), dry_run=False, messages=msgs)
+        bt = _BorderedTable(self._make_table("Setup"), mode="run", messages=msgs)
         output = _render_text(bt)
         assert "msg-a" in output
         assert "msg-b" in output
 
     def test_footer(self) -> None:
-        bt = _BorderedTable(
-            self._make_table("Setup"), dry_run=False, footer="my-footer"
-        )
+        bt = _BorderedTable(self._make_table("Setup"), mode="run", footer="my-footer")
         output = _render_text(bt)
         assert "my-footer" in output
 
     def test_height_with_console_output(self) -> None:
         bt = _BorderedTable(
             self._make_table("Setup"),
-            dry_run=False,
+            mode="run",
             height=20,
             console_output=["line1", "line2"],
         )
@@ -224,7 +220,7 @@ class TestBorderedTable:
         assert "line2" in output
 
     def test_rich_measure(self) -> None:
-        bt = _BorderedTable(self._make_table("Setup"), dry_run=False)
+        bt = _BorderedTable(self._make_table("Setup"), mode="run")
         m = Measurement.get(Console(width=60), Console(width=60).options, bt)
         assert m.minimum > 0
         assert m.maximum >= m.minimum
@@ -232,13 +228,13 @@ class TestBorderedTable:
 
 class TestFullActionsDisplay:
     def test_update_action_adds_new_key(self) -> None:
-        d = FullActionsDisplay(dry_run=False, actions={})
+        d = FullActionsDisplay(mode="run", actions={})
         d.update_action("new", DisplayAction(description="New task", status="pending"))
         assert "new" in d._actions
         assert d._actions["new"].description == "New task"
 
     def test_print_with_format_prefix(self) -> None:
-        d = FullActionsDisplay(dry_run=False, actions={})
+        d = FullActionsDisplay(mode="run", actions={})
         d.print("hello", action_key="a", format="error")
         assert len(d._messages["a"]) == 1
 

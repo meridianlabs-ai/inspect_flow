@@ -411,7 +411,7 @@ class TestReadConfig:
 class TestFlowRunCli:
     def teardown_method(self) -> None:
         set_display(None)
-        set_display_type("full")
+        set_display_type("rich")
 
     @patch("inspect_flow._runner.cli.signal_ready_and_wait")
     @patch("inspect_flow._runner.cli.run_eval_set")
