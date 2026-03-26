@@ -235,7 +235,7 @@ def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> 
                 (str(total), NUM),
                 f" {pluralize('task', total)} complete (",
                 (str(missing), NUM),
-                f" {pluralize('task', missing)} missing)",
+                f" {pluralize('log', missing)} incomplete)",
                 style="bold",
             )
         else:

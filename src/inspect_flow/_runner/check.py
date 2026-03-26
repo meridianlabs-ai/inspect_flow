@@ -5,8 +5,7 @@ from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import find_existing_logs, get_task_ids_to_tasks
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._runner.task_log import create_task_log_display
-from inspect_flow._store.store import store_factory
-from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.console import path
 
 
@@ -15,12 +14,6 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> None:
 
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
-    store = store_factory(resolved_spec, base_dir=base_dir, create=False)
-    store_config = (
-        resolved_spec.store
-        if isinstance(resolved_spec.store, FlowStoreConfig)
-        else None
-    )
 
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before checking the flow spec")
@@ -29,7 +22,7 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> None:
     logs_result = find_existing_logs(
         task_id_to_task,
         resolved_spec,
-        store if (store_config is not None and store_config.read) else None,
+        store=None,  # Check checks if the logs are in the log_dir and does not use the store
         mode="check",
     )
 
