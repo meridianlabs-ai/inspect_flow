@@ -118,7 +118,11 @@ def check(
     """
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
-    spec = expand_spec(spec, base_dir=base_dir)
+    spec = expand_spec(
+        spec,
+        base_dir=base_dir,
+        options=ConfigOptions(overrides=["log_dir_create_unique=False"]),
+    )
     if log_dir is not None:
         spec = spec.model_copy(update={"log_dir": log_dir})
     launch_check(spec=spec, base_dir=base_dir)
