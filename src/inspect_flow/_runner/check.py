@@ -34,8 +34,9 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> None:
     )
 
     with RunAction("logs") as action:
-        action.print(create_task_log_display(logs_result.task_log_info, completed=True))
+        action.print(create_task_log_display(logs_result.task_log_info, mode="check"))
         if logs_result.unexpected_logs:
+            action.print("")
             action.print("Unexpected logs:", format="warning")
             for log_name in logs_result.unexpected_logs:
                 action.print(path(log_name))

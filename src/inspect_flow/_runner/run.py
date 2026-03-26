@@ -90,7 +90,7 @@ def run_eval_set(
     task_log_info = logs_result.task_log_info
 
     with RunAction("evalset") as action:
-        action.print(create_task_log_display(task_log_info, completed=False))
+        action.print(create_task_log_display(task_log_info, mode="pre-run"))
         if option_str := _option_string(options):
             action.print("\nOptions:", option_str)
         action.print("")
@@ -238,7 +238,7 @@ def _print_result(
             info.log_samples = num_log_samples(log, info, default_none(options.limit))
             info.log_file = log.location
 
-    task_log = create_task_log_display(task_log_info, completed=True)
+    task_log = create_task_log_display(task_log_info, mode="post-run")
 
     if title:
         spaced = [x for p in title for x in (" ", p)][1:]

@@ -265,7 +265,7 @@ class TestCreateTaskLogDisplay:
         info = {
             "id1": TaskLogInfo(task=_make_task("alpha"), task_samples=3, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1" in output
         assert "alpha" in output
@@ -275,7 +275,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1 task complete" in output
 
@@ -284,7 +284,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=5),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "2 tasks" in output
 
@@ -293,7 +293,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "1 of 2" in output
 
@@ -306,7 +306,7 @@ class TestCreateTaskLogDisplay:
                 log_file="/tmp/log.json",
             ),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "5/10" in output
         assert "x" in output
 
