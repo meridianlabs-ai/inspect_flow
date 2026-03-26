@@ -33,5 +33,6 @@ def check_command(
     config_file = absolute_file_path(config_file)
     with create_display(mode="check", actions=_check_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
+        kwargs["log_dir_create_unique"] = False
         spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
         launch_check(spec, base_dir=str(Path(config_file).parent))

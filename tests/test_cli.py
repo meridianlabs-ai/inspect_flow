@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
+from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
@@ -136,6 +137,20 @@ def test_no_log_dir_create_unique_overrides_spec() -> None:
     overrides = _options_to_overrides(log_dir_create_unique=False)
     result = _apply_overrides(spec, overrides)
     assert not result.log_dir_create_unique
+
+
+def test_check_command_disables_log_dir_create_unique() -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._cli.check.launch_check") as mock_check:
+        result = runner.invoke(
+            check_command,
+            [CONFIG_FILE, "--log-dir-create-unique"],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        spec = mock_check.call_args.args[0]
+        assert not spec.log_dir_create_unique
 
 
 def test_config_command_overrides() -> None:
