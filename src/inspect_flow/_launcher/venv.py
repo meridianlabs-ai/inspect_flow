@@ -19,7 +19,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._runner.cli import VENV_ACTIONS
+from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
@@ -34,12 +34,23 @@ logger = getLogger(__name__)
 
 
 def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
+    _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
+
+
+def venv_check(spec: FlowSpec, base_dir: str) -> None:
+    _venv_spawn(spec, base_dir=base_dir, subcommand="check", dry_run=True)
+
+
+def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -> None:
+    action_keys = (
+        list(RUN_ACTIONS.keys()) if subcommand == "run" else list(CHECK_ACTIONS.keys())
+    )
     with tempfile.TemporaryDirectory() as temp_dir:
         with RunAction("env", info="venv") as action:
             _check_spec_for_venv(spec)
             run_path = (Path(__file__).parents[1] / "_runner" / "cli.py").absolute()
             base_dir = absolute_file_path(base_dir)
-            run_args = ["--dry-run"] if dry_run else []
+            run_args = ["--dry-run"] if dry_run and subcommand == "run" else []
             args = [
                 "--base-dir",
                 base_dir,
@@ -75,7 +86,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
             )
 
         # Stop the parent display so the child inherits real terminal fds
-        display().stop(remove_actions=list(VENV_ACTIONS.keys()))
+        display().stop(remove_actions=action_keys)
 
         # Create pipes for bidirectional signaling with child process
         child_ready_r, child_ready_w = os.pipe()
@@ -86,7 +97,7 @@ def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
         env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
 
         process = subprocess.Popen(
-            [str(python_path), str(run_path), "--file", file, *args],
+            [str(python_path), str(run_path), subcommand, "--file", file, *args],
             env=env,
             pass_fds=(child_ready_w, parent_ack_r),
         )

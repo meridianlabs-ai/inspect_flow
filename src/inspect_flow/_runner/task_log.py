@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
@@ -15,6 +15,8 @@ from inspect_flow._types.flow_types import (
     FlowTask,
 )
 from inspect_flow._util.console import path, pluralize
+
+TaskLogDisplayMode = Literal["check", "pre-run", "post-run"]
 
 
 @dataclass
@@ -214,21 +216,41 @@ def unique_task_names(infos: list[TaskInfo]) -> _TaskQualifiers:
     )
 
 
-def create_task_log_display(
-    task_log_info: dict[str, TaskLogInfo],
-    completed: bool = False,
-) -> RenderableType:
+def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
     total = len(task_log_info)
     num_complete = sum(
         1
         for info in task_log_info.values()
         if info.task_samples is not None and info.log_samples >= info.task_samples
     )
+
     NUM = "bold cyan"
-    if not completed:
+    if mode == "check":
+        missing = total - num_complete
+        if missing > 0:
+            return Text.assemble(
+                "Check: ",
+                (str(num_complete), NUM),
+                "/",
+                (str(total), NUM),
+                f" {pluralize('task', total)} complete (",
+                (str(missing), NUM),
+                f" {pluralize('log', missing)} incomplete)",
+                style="bold",
+            )
+        else:
+            return Text.assemble(
+                "Check: ",
+                (str(total), NUM),
+                "/",
+                (str(total), NUM),
+                f" {pluralize('task', total)} complete",
+                style="bold",
+            )
+    elif mode == "pre-run":
         if num_complete > 0:
             remaining = total - num_complete
-            header = Text.assemble(
+            return Text.assemble(
                 "Running ",
                 (str(remaining), NUM),
                 f" {pluralize('task', remaining)} (",
@@ -237,27 +259,34 @@ def create_task_log_display(
                 style="bold",
             )
         else:
-            header = Text.assemble(
+            return Text.assemble(
                 "Running ",
                 (str(total), NUM),
                 f" {pluralize('task', total)}",
                 style="bold",
             )
-    else:
+    else:  # post-run
         if num_complete < total:
-            header = Text.assemble(
+            return Text.assemble(
                 "Completed ",
                 (str(num_complete), NUM),
                 f" of {total} {pluralize('task', total)}",
                 style="bold",
             )
         else:
-            header = Text.assemble(
+            return Text.assemble(
                 "Completed ",
                 (str(total), NUM),
                 f" {pluralize('task', total)}",
                 style="bold",
             )
+
+
+def create_task_log_display(
+    task_log_info: dict[str, TaskLogInfo],
+    mode: TaskLogDisplayMode = "pre-run",
+) -> RenderableType:
+    header = _header(task_log_info, mode)
 
     infos = list(task_log_info.values())
     qualifiers = unique_task_names([task_log_to_task_info(i) for i in infos])
@@ -265,7 +294,7 @@ def create_task_log_display(
     have_quals = any(qual for _, qual in qualifiers.names)
     have_logs = any(info.log_file for info in infos)
 
-    adj = "Completed" if completed else "Existing"
+    adj = "Completed" if mode == "post-run" else "Existing"
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
     table.add_column("Task", overflow="ellipsis", justify="left")
     if have_quals:

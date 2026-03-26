@@ -12,7 +12,7 @@ from inspect_flow._config.load import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._display.display import DisplayType, set_display_type
-from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.launch import launch, launch_check
 from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
@@ -101,6 +101,31 @@ def run(
         base_dir=base_dir,
         dry_run=dry_run,
     )
+
+
+def check(
+    spec: FlowSpec,
+    base_dir: str | None = None,
+    *,
+    log_dir: str | None = None,
+) -> None:
+    """Check completeness of an inspect_flow evaluation against existing logs.
+
+    Args:
+        spec: The flow spec configuration.
+        base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
+        log_dir: Log directory to check against. Overrides the `log_dir` in the spec.
+    """
+    ensure_init(dotenv_base_dir=base_dir)
+    base_dir = base_dir or Path().cwd().as_posix()
+    spec = expand_spec(
+        spec,
+        base_dir=base_dir,
+        options=ConfigOptions(overrides=["log_dir_create_unique=False"]),
+    )
+    if log_dir is not None:
+        spec = spec.model_copy(update={"log_dir": log_dir})
+    launch_check(spec=spec, base_dir=base_dir)
 
 
 def config(

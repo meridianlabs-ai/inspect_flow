@@ -10,7 +10,7 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSpec
 from inspect_ai.model import Model, get_model
 from inspect_flow._display.display import set_display, set_display_type
-from inspect_flow._runner.cli import _read_config, flow_run
+from inspect_flow._runner.cli import _read_config, runner
 from inspect_flow._runner.logs import (
     _epochs_reducer_changed,
     _num_samples,
@@ -223,7 +223,8 @@ class TestFindExistingLogs:
             options=FlowOptions(log_dir_allow_dirty=True),
         )
         result = find_existing_logs(task_id_to_task={}, spec=spec, store=None)
-        assert result == {}
+        assert result.task_log_info == {}
+        assert result.unexpected_logs == []
 
 
 # ── task_log.py ─────────────────────────────────────────────
@@ -264,7 +265,7 @@ class TestCreateTaskLogDisplay:
         info = {
             "id1": TaskLogInfo(task=_make_task("alpha"), task_samples=3, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1" in output
         assert "alpha" in output
@@ -274,7 +275,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1 task complete" in output
 
@@ -283,7 +284,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=5),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "2 tasks" in output
 
@@ -292,7 +293,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "1 of 2" in output
 
@@ -305,7 +306,7 @@ class TestCreateTaskLogDisplay:
                 log_file="/tmp/log.json",
             ),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "5/10" in output
         assert "x" in output
 
@@ -411,7 +412,7 @@ class TestReadConfig:
 class TestFlowRunCli:
     def teardown_method(self) -> None:
         set_display(None)
-        set_display_type("full")
+        set_display_type("rich")
 
     @patch("inspect_flow._runner.cli.signal_ready_and_wait")
     @patch("inspect_flow._runner.cli.run_eval_set")
@@ -426,8 +427,8 @@ class TestFlowRunCli:
         config_file = tmp_path / "flow.yaml"  # type: ignore[operator]
         config_file.write_text(yaml.dump(config_data))
 
-        runner = CliRunner()
-        result = runner.invoke(flow_run, ["--file", str(config_file)])
+        cli_runner = CliRunner()
+        result = cli_runner.invoke(runner, ["run", "--file", str(config_file)])
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
         mock_signal.assert_called_once()

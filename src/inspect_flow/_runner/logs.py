@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
+from typing import NamedTuple
 
 from inspect_ai import Epochs, Task
 from inspect_ai._eval.eval import eval_resolve_tasks
@@ -17,6 +18,7 @@ from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.scorer._reducer.registry import reducer_log_name
 
+from inspect_flow._display.display import DisplayMode
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask
@@ -34,6 +36,11 @@ from inspect_flow._util.path_util import path_join, path_str
 from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__name__)
+
+
+class FindLogsResult(NamedTuple):
+    task_log_info: dict[str, TaskLogInfo]
+    unexpected_logs: list[str]
 
 
 def get_task_ids_to_tasks(
@@ -128,8 +135,8 @@ def find_existing_logs(
     task_id_to_task: dict[str, InstantiatedTask],
     spec: FlowSpec,
     store: FlowStoreInternal | None,
-    dry_run: bool = False,
-) -> dict[str, TaskLogInfo]:
+    mode: DisplayMode = "run",
+) -> FindLogsResult:
     with RunAction("logs") as action:
         assert spec.log_dir
         with ReadLogsProgress(action=action) as progress:
@@ -139,9 +146,12 @@ def find_existing_logs(
         limit = default_none(options.limit)
 
         logs_by_task: dict[str, list[Log]] = {}
+        unexpected_logs: list[str] = []
         for log in logs:
             if log.task_identifier in task_id_to_task:
                 logs_by_task.setdefault(log.task_identifier, []).append(log)
+            elif mode == "check":
+                unexpected_logs.append(log.info.name)
             elif not options.log_dir_allow_dirty:
                 action.update(
                     status="error",
@@ -182,7 +192,7 @@ def find_existing_logs(
             action.update(info="No existing logs found in log directory")
 
         if not task_id_to_task or not store:
-            return result
+            return FindLogsResult(result, unexpected_logs)
 
         log_files = store.search_for_logs(set(task_id_to_task.keys()))
         if log_files:
@@ -199,10 +209,10 @@ def find_existing_logs(
                 header = read_eval_log(log_file, header_only=True)
                 log_info.log_file = log_file
                 log_info.log_samples = num_log_samples(header, log_info, limit)
-                if not dry_run:
+                if mode == "run":
                     destination = path_join(spec.log_dir, basename(log_file))
                     copy_file(log_file, destination)
 
         if not num_found:
             action.update(info="No existing logs found", status="success")
-    return result
+    return FindLogsResult(result, unexpected_logs)

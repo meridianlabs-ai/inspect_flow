@@ -351,6 +351,10 @@ def _apply_auto_includes(
 
 
 def _maybe_json(value: str) -> Any:
+    if value == "True":
+        return True
+    if value == "False":
+        return False
     try:
         return json.loads(value)
     except json.JSONDecodeError:
