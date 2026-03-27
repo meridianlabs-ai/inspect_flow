@@ -41,6 +41,7 @@ logger = getLogger(__name__)
 class FindLogsResult(NamedTuple):
     task_log_info: dict[str, TaskLogInfo]
     unexpected_logs: list[str]
+    duplicate_logs: list[str]
 
 
 def get_task_ids_to_tasks(
@@ -147,6 +148,7 @@ def find_existing_logs(
 
         logs_by_task: dict[str, list[Log]] = {}
         unexpected_logs: list[str] = []
+        duplicate_logs: list[str] = []
         for log in logs:
             if log.task_identifier in task_id_to_task:
                 logs_by_task.setdefault(log.task_identifier, []).append(log)
@@ -178,7 +180,11 @@ def find_existing_logs(
         for id, log_info in result.items():
             for log in logs_by_task.get(id, []):
                 log_samples = num_log_samples(log.header, log_info, limit)
-                if log_samples >= log_info.log_samples:
+                if log_samples < log_info.log_samples:
+                    duplicate_logs.append(log.info.name)
+                else:
+                    if log_info.log_file:
+                        duplicate_logs.append(log_info.log_file)
                     log_info.log_samples = log_samples
                     log_info.log_file = log.info.name
                     if task_id_to_task.pop(id, None):
@@ -192,9 +198,15 @@ def find_existing_logs(
             action.update(info="No existing logs found in log directory")
 
         if not task_id_to_task or not store:
-            return FindLogsResult(result, unexpected_logs)
+            return FindLogsResult(
+                task_log_info=result,
+                unexpected_logs=unexpected_logs,
+                duplicate_logs=duplicate_logs,
+            )
 
-        log_files = store.search_for_logs(set(task_id_to_task.keys()))
+        log_files = store.search_for_logs(
+            set(task_id_to_task.keys()), duplicate_logs=duplicate_logs
+        )
         if log_files:
             store_msg = f"Found {quantity(len(log_files), 'existing log')} in store. Copying to log directory"
             if num_found:
@@ -215,4 +227,8 @@ def find_existing_logs(
 
         if not num_found:
             action.update(info="No existing logs found", status="success")
-    return FindLogsResult(result, unexpected_logs)
+        return FindLogsResult(
+            task_log_info=result,
+            unexpected_logs=unexpected_logs,
+            duplicate_logs=duplicate_logs,
+        )
