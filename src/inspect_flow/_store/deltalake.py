@@ -25,7 +25,7 @@ from semver import Version
 from typing_extensions import override
 
 from inspect_flow._display.path_progress import PathProgressDisplay, ReadLogsProgress
-from inspect_flow._store.store import FlowStoreInternal, is_better_log
+from inspect_flow._store.store import FlowStoreInternal, StoreLogMatch, is_better_log
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import (
     console,
@@ -449,19 +449,16 @@ class DeltaLakeStore(FlowStoreInternal):
         return len(new_logs)
 
     @override
-    def search_for_logs(
-        self, task_ids: set[str], duplicate_logs: list[str] | None = None
-    ) -> dict[str, str]:
-        results = dict()
-        remaining_task_ids = set(task_ids)
-
-        indexed_logs = self._get_logs(remaining_task_ids)
-        for task_id in list(remaining_task_ids):
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, StoreLogMatch]:
+        results: dict[str, StoreLogMatch] = {}
+        indexed_logs = self._get_logs(set(task_ids))
+        for task_id in task_ids:
             if task_id not in indexed_logs:
                 continue
             logs = indexed_logs[task_id]
-            best_log = None
-            best_eval_log = None
+            best_log: str | None = None
+            best_eval_log: EvalLog | None = None
+            task_duplicates: list[str] = []
             for log in logs:
                 try:
                     eval_log = read_eval_log(log, header_only=True)
@@ -473,14 +470,16 @@ class DeltaLakeStore(FlowStoreInternal):
                 if self._log_filter and not self._log_filter(eval_log):
                     continue
                 if is_better_log(eval_log, best_eval_log):
-                    if best_log and duplicate_logs is not None:
-                        duplicate_logs.append(best_log)
+                    if best_log:
+                        task_duplicates.append(best_log)
                     best_log = log
                     best_eval_log = eval_log
-                elif duplicate_logs is not None:
-                    duplicate_logs.append(log)
+                else:
+                    task_duplicates.append(log)
             if best_log:
-                results[task_id] = best_log
+                results[task_id] = StoreLogMatch(
+                    log_file=best_log, duplicate_logs=task_duplicates
+                )
         return results
 
     @override

@@ -26,6 +26,7 @@ class TaskLogInfo:
     task_samples: int | None = None
     log_file: str | None = None
     log_samples: int = 0
+    duplicate_logs: list[str] = field(default_factory=list)
 
 
 @dataclass
