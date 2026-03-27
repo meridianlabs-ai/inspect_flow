@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.7.0...v0.8.0) (2026-03-27)
+
+
+### Bug Fixes
+
+* add tags column to task display ([#616](https://github.com/meridianlabs-ai/inspect_flow/issues/616)) ([4f4794d](https://github.com/meridianlabs-ai/inspect_flow/commit/4f4794d3a3449423e3c946a56f9628ac3cf222ce))
+* flow check command improvements ([#614](https://github.com/meridianlabs-ai/inspect_flow/issues/614)) ([d337fe5](https://github.com/meridianlabs-ai/inspect_flow/commit/d337fe556c71eb72f482b3da522d08cfeba8329d))
+* improve handling of KeyboardInterrupt during eval_set ([#607](https://github.com/meridianlabs-ai/inspect_flow/issues/607)) ([ebf3789](https://github.com/meridianlabs-ai/inspect_flow/commit/ebf378951e8b16ae82b2cb42f46355e1695f2e54))
+* improve list log performance by reading samples async ([#609](https://github.com/meridianlabs-ai/inspect_flow/issues/609)) ([06f4813](https://github.com/meridianlabs-ai/inspect_flow/commit/06f481344c7e268e8830f93649c22c566a912528))
+* return results from check API method ([#615](https://github.com/meridianlabs-ai/inspect_flow/issues/615)) ([c2f9318](https://github.com/meridianlabs-ai/inspect_flow/commit/c2f93188de388e3e84f91dc6e4b5b7d536a94413))
+
 ## [0.7.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.6.0...v0.7.0) (2026-03-24)
 
 
