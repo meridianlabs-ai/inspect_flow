@@ -5,6 +5,7 @@ try:
 except ImportError:  # pragma: no cover
     __version__ = "unknown"
 
+from inspect_flow._steps.execute import run_step
 from inspect_flow._types.decorator import after_load
 from inspect_flow._types.factories import (
     agents_matrix,
@@ -38,6 +39,7 @@ from inspect_flow._types.log_filter import log_filter
 from inspect_flow._types.merge import (
     merge,
 )
+from inspect_flow._types.step import step
 
 __all__ = [
     "__version__",
@@ -52,6 +54,7 @@ __all__ = [
     "FlowModel",
     "LogFilter",
     "log_filter",
+    "step",
     "FlowOptions",
     "FlowScorer",
     "FlowSolver",
@@ -62,6 +65,7 @@ __all__ = [
     "configs_matrix",
     "configs_with",
     "merge",
+    "run_step",
     "models_matrix",
     "models_with",
     "solvers_matrix",
