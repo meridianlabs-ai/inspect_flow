@@ -25,7 +25,7 @@ from inspect_flow._display.action import (
     DisplayAction,
     info_renderables,
 )
-from inspect_flow._display.display import Display, set_display
+from inspect_flow._display.display import Display, DisplayMode, set_display
 from inspect_flow._util.console import Formats, console, format_prefix, join
 
 logger = logging.getLogger(__name__)
@@ -62,13 +62,19 @@ class _Copyable:
         yield from console.render(self.renderable, options)
 
 
+_MODE_INSET: dict[str, str] = {
+    "dry_run": "[DRY RUN]",
+    "check": "[CHECK]",
+}
+
+
 class _BorderedTable:
-    """Table wrapped in a box border. Shows [DRY RUN] in each corner when enabled."""
+    """Table wrapped in a box border. Shows a mode label in each corner when applicable."""
 
     def __init__(
         self,
         inner: Table,
-        dry_run: bool,
+        mode: DisplayMode,
         messages: dict[str, list[RenderableType]] | None = None,
         footer: RenderableType | None = None,
         title: list[str | Text] | None = None,
@@ -76,7 +82,7 @@ class _BorderedTable:
         console_output: list[str] | None = None,
     ) -> None:
         self._inner = inner
-        self._dry_run = dry_run
+        self._mode = mode
         self._messages = messages or {}
         self._footer = footer
         self._title = title
@@ -86,7 +92,8 @@ class _BorderedTable:
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        inset = "─[DRY RUN]─" if self._dry_run else ""
+        inset_text = _MODE_INSET.get(self._mode, "")
+        inset = f"─{inset_text}─" if inset_text else ""
 
         width = options.max_width
         inner_width = width - 4  # "│ " + " │"
@@ -184,8 +191,8 @@ class _BorderedTable:
 
 
 class FullActionsDisplay(Display):
-    def __init__(self, dry_run: bool, actions: dict[str, DisplayAction]) -> None:
-        self.dry_run = dry_run
+    def __init__(self, mode: DisplayMode, actions: dict[str, DisplayAction]) -> None:
+        self._mode: DisplayMode = mode
         self._actions: dict[str, DisplayAction] = actions
         self._messages: dict[str, list[RenderableType]] = {}
         self._footer: RenderableType | None = None
@@ -277,7 +284,7 @@ class FullActionsDisplay(Display):
         return _SafeRenderable(
             _BorderedTable(
                 table,
-                self.dry_run,
+                self._mode,
                 self._messages,
                 self._footer,
                 self._title,

@@ -3,7 +3,9 @@ import sys
 import click
 from dotenv import find_dotenv, load_dotenv
 
+from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
+from inspect_flow._cli.list import list_command
 from inspect_flow._cli.step import step_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._util.console import flow_print
@@ -38,8 +40,10 @@ def flow(
         ctx.exit()
 
 
+flow.add_command(check_command)
 flow.add_command(run_command)
 flow.add_command(config_command)
+flow.add_command(list_command)
 flow.add_command(store_command)
 flow.add_command(step_command)
 

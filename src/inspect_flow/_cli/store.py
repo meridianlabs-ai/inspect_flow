@@ -102,8 +102,8 @@ def filter_options(f: F) -> F:
         "--filter",
         "filter_name",
         type=str,
-        default=None,
-        help="Log filter. Include only logs that pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        multiple=True,
+        help="Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass).",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
@@ -111,14 +111,14 @@ def filter_options(f: F) -> F:
         "exclude_name",
         type=str,
         default=None,
-        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        help="Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`.",
         envvar="INSPECT_FLOW_STORE_EXCLUDE",
     )(f)
     return f
 
 
 def _resolve_cli_filter(
-    filter_name: str | None, exclude_name: str | None
+    filter_name: tuple[str, ...], exclude_name: str | None
 ) -> LogFilter | None:
     if filter_name and exclude_name:
         raise click.UsageError("--filter and --exclude are mutually exclusive.")
@@ -176,7 +176,7 @@ def store_command() -> None:
         readable=True,
         resolve_path=False,
     ),
-    help="Copy logs from this directory to PATH before importing.",
+    help="Copy logs from this directory to PATH before importing. Supports both local and S3 paths.",
     envvar="INSPECT_FLOW_STORE_IMPORT_COPY_FROM",
 )
 @click.option(
@@ -249,7 +249,7 @@ def store_remove(
     recursive: bool,
     missing: bool,
     dry_run: bool,
-    filter_name: str | None,
+    filter_name: tuple[str, ...],
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
@@ -363,7 +363,7 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
 )
 def store_list(
     format: str,
-    filter_name: str | None,
+    filter_name: tuple[str, ...],
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:

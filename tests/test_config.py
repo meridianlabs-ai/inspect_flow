@@ -29,14 +29,15 @@ from inspect_flow._config.load import (
     expand_spec,
     int_load_spec,
 )
-from inspect_flow._types.flow_types import FlowDependencies, not_given
+from inspect_flow._types.flow_types import FlowDependencies, FlowFactory, not_given
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
 from pydantic import ValidationError
 from rich.console import Console
 
-from tests.local_eval.src.local_eval.tools import add
+from tests.local_eval.src.local_eval.noop import task_with_params
+from tests.local_eval.src.local_eval.tools import add, my_agent
 from tests.test_helpers.config_helpers import validate_config
 
 config_dir = str(Path(__file__).parent / "config")
@@ -761,3 +762,19 @@ def test_matrix_task_limits() -> None:
         ),
     )
     validate_config(config, "test_matrix_task_limits.yaml")
+
+
+def test_from_factory() -> None:
+    config = FlowSpec(
+        log_dir="example_logs",
+        options=FlowOptions(limit=1),
+        tasks=[
+            FlowTask(
+                factory=FlowFactory(
+                    task_with_params, "contrast", use_system_prompt=True
+                ),
+                solver=FlowAgent(factory=FlowFactory(my_agent, tools=[add()])),
+            )
+        ],
+    )
+    validate_config(config, "test_from_factory.yaml")

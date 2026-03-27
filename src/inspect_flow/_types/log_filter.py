@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from inspect_ai._util.module import load_module
@@ -34,15 +34,28 @@ def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
 
 
 def resolve_log_filter(
-    filter: LogFilter | str | None, base_dir: str | None = None
+    filter: LogFilter | str | Sequence[LogFilter | str] | None,
+    base_dir: str | None = None,
 ) -> LogFilter | None:
-    """Resolve a log filter from a callable, registered name, or None.
+    """Resolve a log filter from a callable, registered name, sequence, or None.
 
     Args:
-        filter: A callable, registered name, "file.py@name" string, or None.
+        filter: A callable, registered name, "file.py@name" string, a sequence of
+            any of the above (all must pass), or None.
         base_dir: Base directory for resolving relative file paths in
             "file.py@name" syntax. Defaults to the current working directory.
     """
+    if isinstance(filter, Sequence) and not isinstance(filter, str):
+        filters = [
+            f
+            for f in (resolve_log_filter(f, base_dir) for f in filter)
+            if f is not None
+        ]
+        if not filters:
+            return None
+        if len(filters) == 1:
+            return filters[0]
+        return lambda log: all(f(log) for f in filters)
     if filter is None or callable(filter):
         return filter
     if "@" in filter:

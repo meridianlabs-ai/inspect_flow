@@ -34,15 +34,15 @@ def output_options(f: F) -> F:
             ["full", "rich", "plain"],
             case_sensitive=False,
         ),
-        default="full",
+        default="rich",
         envvar="INSPECT_FLOW_DISPLAY",
-        help="Set the display mode (defaults to `'full'`).",
+        help="Set the display mode (defaults to `'rich'`).",
     )(f)
     return f
 
 
-def config_options(f: F) -> F:
-    """Options for overriding the config."""
+def base_config_options(f: F) -> F:
+    """Shared options for commands that load a flow config."""
     f = output_options(f)
     f = click.argument(
         "config-file",
@@ -91,6 +91,45 @@ def config_options(f: F) -> F:
     """,
     )(f)
     f = click.option(
+        "--log-dir",
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
+        default=None,
+        help="Set the log directory. Will override the `log_dir` specified in the config.",
+        envvar="INSPECT_FLOW_LOG_DIR",
+    )(f)
+    return f
+
+
+def check_options(f: F) -> F:
+    """Options for the check command."""
+    f = base_config_options(f)
+    f = click.option(
+        "--limit",
+        type=int,
+        default=None,
+        help="Set the expected number of samples per task for completeness calculation.",
+        envvar="INSPECT_FLOW_LIMIT",
+    )(f)
+    f = click.option(
+        "--venv",
+        type=bool,
+        is_flag=True,
+        help="If set, resolve tasks in a virtual environment in a temporary directory.",
+        envvar="INSPECT_FLOW_VENV",
+    )(f)
+    return f
+
+
+def config_options(f: F) -> F:
+    """Options for overriding the config."""
+    f = base_config_options(f)
+    f = click.option(
         "--limit",
         type=int,
         default=None,
@@ -113,27 +152,25 @@ def config_options(f: F) -> F:
     f = click.option(
         "--store-filter",
         type=str,
-        default=None,
-        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, file.py@name, or a name defined in _flow.py.",
+        multiple=True,
+        help="Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass).",
         envvar="INSPECT_FLOW_STORE_FILTER",
     )(f)
     f = click.option(
-        "--log-dir",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
+        "--store-read/--no-store-read",
         default=None,
-        help="Set the log directory. Will override the `log_dir` specified in the config.",
-        envvar="INSPECT_FLOW_LOG_DIR",
+        help="Read existing logs from the store (default: `--no-store-read`).",
+        envvar="INSPECT_FLOW_STORE_READ",
     )(f)
     f = click.option(
-        "--log-dir-create-unique",
-        type=bool,
-        is_flag=True,
+        "--store-write/--no-store-write",
+        default=None,
+        help="Write completed logs to the store (default: `--store-write`).",
+        envvar="INSPECT_FLOW_STORE_WRITE",
+    )(f)
+    f = click.option(
+        "--log-dir-create-unique/--no-log-dir-create-unique",
+        default=None,
         help="If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
         envvar="INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE",
     )(f)
@@ -159,23 +196,31 @@ class OutputOptionArgs(TypedDict, total=False):
     display: DisplayType
 
 
-class ConfigOptionArgs(OutputOptionArgs, total=False):
-    store: str | None
-    store_filter: str | None
+class BaseConfigOptionArgs(OutputOptionArgs, total=False):
     log_dir: str | None
+    set: list[str] | None
+    arg: list[str] | None
+
+
+class CheckOptionArgs(BaseConfigOptionArgs, total=False):
+    limit: int | None
+    venv: bool | None
+
+
+class ConfigOptionArgs(CheckOptionArgs, total=False):
+    store: str | None
+    store_filter: tuple[str, ...]
+    store_read: bool | None
+    store_write: bool | None
     log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
     resume: bool | None
-    limit: int | None
-    set: list[str] | None
-    arg: list[str] | None
-    venv: bool | None
 
 
 def init_output(**kwargs: Unpack[OutputOptionArgs]) -> None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
-    display = kwargs.get("display", "full")
+    display = kwargs.get("display", "rich")
     set_display_type(display)
 
 
@@ -190,8 +235,8 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
         overrides.append(f"log_dir={log_dir}")
     if limit := kwargs.get("limit"):
         overrides.append(f"options.limit={limit}")
-    if kwargs.get("log_dir_create_unique"):
-        overrides.append("log_dir_create_unique=True")
+    if (ldu := kwargs.get("log_dir_create_unique")) is not None:
+        overrides.append(f"log_dir_create_unique={ldu}")
     if kwargs.get("log_dir_allow_dirty"):
         overrides.append("options.log_dir_allow_dirty=True")
     if kwargs.get("venv"):
@@ -199,7 +244,7 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     return overrides
 
 
-def _options_to_args(**kwargs: Unpack[ConfigOptionArgs]) -> dict[str, Any]:
+def _options_to_args(**kwargs: Unpack[BaseConfigOptionArgs]) -> dict[str, Any]:
     args = list(kwargs.get("arg") or [])  # arg may be a tuple (at least in tests)
     return parse_cli_args(args)
 
@@ -212,5 +257,7 @@ def parse_config_options(**kwargs: Unpack[ConfigOptionArgs]) -> ConfigOptions:
         overrides=_options_to_overrides(**kwargs),
         args=_options_to_args(**kwargs),
         resume=resume,
-        store_filter=kwargs.get("store_filter"),
+        store_filter=kwargs.get("store_filter") or None,
+        store_read=kwargs.get("store_read"),
+        store_write=kwargs.get("store_write"),
     )

@@ -36,7 +36,7 @@ class FlowAgentDict(TypedDict, closed=True):
 
     name: NotRequired[str | NotGiven | None]
     """Name of the agent. Used to create the agent if the factory is not provided."""
-    factory: NotRequired[NotGiven | None]
+    factory: NotRequired[str | NotGiven | None]
     """Factory function to create the agent instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to agent constructor."""
@@ -58,7 +58,7 @@ class FlowModelDict(TypedDict, closed=True):
 
     name: NotRequired[str | NotGiven | None]
     """Name of the model to use. If factory is not provided, this is used to create the model."""
-    factory: NotRequired[NotGiven | None]
+    factory: NotRequired[str | NotGiven | None]
     """Factory function to create the model instance."""
     role: NotRequired[str | NotGiven | None]
     """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
@@ -90,7 +90,7 @@ class FlowSolverDict(TypedDict, closed=True):
 
     name: NotRequired[str | NotGiven | None]
     """Name of the solver. Used to create the solver if the factory is not provided."""
-    factory: NotRequired[NotGiven | None]
+    factory: NotRequired[str | NotGiven | None]
     """Factory function to create the solver instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to solver constructor."""
@@ -114,7 +114,7 @@ class FlowTaskDict(TypedDict, closed=True):
 
     name: NotRequired[str | NotGiven | None]
     """Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided."""
-    factory: NotRequired[NotGiven | None]
+    factory: NotRequired[str | NotGiven | None]
     """Factory function to create the task instance."""
     args: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional args to pass to task constructor"""
@@ -172,6 +172,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Early stopping callbacks."""
     version: NotRequired[int | str | NotGiven]
     """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
+    tags: NotRequired[Sequence[str] | NotGiven | None]
+    """Tags to associate with the task."""
     metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
     """Additional metadata to associate with the task."""
     sample_id: NotRequired[str | int | Sequence[str | int] | NotGiven | None]

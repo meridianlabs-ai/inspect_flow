@@ -10,7 +10,7 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSpec
 from inspect_ai.model import Model, get_model
 from inspect_flow._display.display import set_display, set_display_type
-from inspect_flow._runner.cli import _read_config, flow_run
+from inspect_flow._runner.cli import _read_config, runner
 from inspect_flow._runner.logs import (
     _epochs_reducer_changed,
     _num_samples,
@@ -25,8 +25,9 @@ from inspect_flow._runner.run import (
 )
 from inspect_flow._runner.task_log import (
     TaskLogInfo,
-    _unique_task_names,
     create_task_log_display,
+    task_log_to_task_info,
+    unique_task_names,
 )
 from inspect_flow._types.flow_types import FlowOptions, FlowSpec, not_given
 from rich.console import Console
@@ -157,19 +158,6 @@ class TestEpochsReducerChanged:
 
 
 class TestNumLogSamples:
-    def test_no_results(self) -> None:
-        header = _make_eval_log(results=None)
-        info = TaskLogInfo(task=_make_task(), task_samples=3)
-        assert num_log_samples(header, info, None) == 0
-
-    def test_invalidated(self) -> None:
-        header = _make_eval_log(
-            results=EvalResults(completed_samples=3),
-            invalidated=True,
-        )
-        info = TaskLogInfo(task=_make_task(), task_samples=3)
-        assert num_log_samples(header, info, None) == 0
-
     def test_reducer_changed(self) -> None:
         header = _make_eval_log(
             results=EvalResults(completed_samples=6),
@@ -235,7 +223,8 @@ class TestFindExistingLogs:
             options=FlowOptions(log_dir_allow_dirty=True),
         )
         result = find_existing_logs(task_id_to_task={}, spec=spec, store=None)
-        assert result == {}
+        assert result.task_log_info == {}
+        assert result.unexpected_logs == []
 
 
 # ── task_log.py ─────────────────────────────────────────────
@@ -244,7 +233,7 @@ class TestFindExistingLogs:
 class TestUniqueTaskNames:
     def test_single_task_no_qualifiers(self) -> None:
         infos = [TaskLogInfo(task=_make_task("alpha"))]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert result.names[0][0] == "alpha"
         assert result.names[0][1].plain == ""
 
@@ -252,7 +241,7 @@ class TestUniqueTaskNames:
         t1 = _make_task("t", model=get_model("mockllm/model-a"))
         t2 = _make_task("t", model=get_model("mockllm/model-b"))
         infos = [TaskLogInfo(task=t1), TaskLogInfo(task=t2)]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert "mockllm/model-a" in result.names[0][1].plain
         assert "mockllm/model-b" in result.names[1][1].plain
         assert result.model_only is True
@@ -265,7 +254,7 @@ class TestUniqueTaskNames:
             TaskLogInfo(task=t1, flow_task=MagicMock(args={"temp": "high"})),
             TaskLogInfo(task=t2, flow_task=MagicMock(args={"temp": "low"})),
         ]
-        result = _unique_task_names(infos)
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert result.model_only is False
         assert "high" in result.names[0][1].plain
         assert "low" in result.names[1][1].plain
@@ -276,7 +265,7 @@ class TestCreateTaskLogDisplay:
         info = {
             "id1": TaskLogInfo(task=_make_task("alpha"), task_samples=3, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1" in output
         assert "alpha" in output
@@ -286,7 +275,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "Running" in output
         assert "1 task complete" in output
 
@@ -295,7 +284,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=5),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "2 tasks" in output
 
@@ -304,7 +293,7 @@ class TestCreateTaskLogDisplay:
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, completed=True))
+        output = _render_text(create_task_log_display(info, mode="post-run"))
         assert "Completed" in output
         assert "1 of 2" in output
 
@@ -314,12 +303,37 @@ class TestCreateTaskLogDisplay:
                 task=_make_task("x"),
                 task_samples=10,
                 log_samples=5,
-                log_file="/tmp/log.json",
             ),
         }
-        output = _render_text(create_task_log_display(info, completed=False))
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "5/10" in output
         assert "x" in output
+
+    def test_tags_column_shown_when_tags_present(self) -> None:
+        eval_log = EvalLog(
+            status="success",
+            eval=EvalSpec(
+                created="2024-01-01T00:00:00Z",
+                task="x",
+                dataset=EvalDataset(),
+                model="none",
+                config=EvalConfig(),
+                tags=["foo", "bar"],
+            ),
+        )
+        info = {
+            "id1": TaskLogInfo(task=_make_task("x"), eval_log=eval_log),
+        }
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
+        assert "Tags" in output
+        assert "bar, foo" in output
+
+    def test_tags_column_hidden_when_no_tags(self) -> None:
+        info = {
+            "id1": TaskLogInfo(task=_make_task("x")),
+        }
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
+        assert "Tags" not in output
 
 
 # ── run.py ──────────────────────────────────────────────────
@@ -423,7 +437,7 @@ class TestReadConfig:
 class TestFlowRunCli:
     def teardown_method(self) -> None:
         set_display(None)
-        set_display_type("full")
+        set_display_type("rich")
 
     @patch("inspect_flow._runner.cli.signal_ready_and_wait")
     @patch("inspect_flow._runner.cli.run_eval_set")
@@ -438,8 +452,8 @@ class TestFlowRunCli:
         config_file = tmp_path / "flow.yaml"  # type: ignore[operator]
         config_file.write_text(yaml.dump(config_data))
 
-        runner = CliRunner()
-        result = runner.invoke(flow_run, ["--file", str(config_file)])
+        cli_runner = CliRunner()
+        result = cli_runner.invoke(runner, ["run", "--file", str(config_file)])
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
         mock_signal.assert_called_once()

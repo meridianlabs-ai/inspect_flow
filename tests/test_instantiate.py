@@ -270,12 +270,23 @@ def test_additional_args_agent_tools_dict() -> None:
 def test_instantiate_s3(mock_s3: BaseClient) -> None:
     spec = FlowSpec(
         tasks=[
-            FlowTask(name="./tests/local_eval/src/local_eval/noop.py@noop"),
+            FlowTask(factory="./tests/local_eval/src/local_eval/noop.py@noop"),
         ]
     )
     tasks = instantiate_tasks(spec=spec, base_dir="s3://test-bucket/configs/")
     assert len(tasks) == 1
     assert tasks[0].task.name == "noop"
+
+
+def test_tags() -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name=task_name, tags=["foo", "bar"]),
+        ]
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.tags == ["foo", "bar"]
 
 
 @task

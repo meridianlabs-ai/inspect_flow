@@ -4,8 +4,9 @@ import time
 from datetime import timedelta
 from logging import getLogger
 
+import click
 from inspect_ai import eval_set
-from inspect_ai._eval.evalset import task_identifier
+from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
 from inspect_ai.util._display import init_display_type
@@ -16,6 +17,7 @@ from rich.text import Text
 
 from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
+from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import (
@@ -29,13 +31,14 @@ from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import (
     FlowOptions,
     FlowSpec,
+    FlowStoreConfig,
 )
 from inspect_flow._util.console import flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
-from inspect_flow._util.logging import get_last_log_level
+from inspect_flow._util.logging import get_last_log_level, update_log_level
 from inspect_flow._util.not_given import default, default_none
-from inspect_flow._util.path_util import cwd_relative_path
+from inspect_flow._util.path_util import apply_bundle_url_mappings, cwd_relative_path
 
 logger = getLogger(__name__)
 
@@ -60,6 +63,17 @@ def run_eval_set(
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
+    store_config = (
+        resolved_spec.store
+        if isinstance(resolved_spec.store, FlowStoreConfig)
+        else None
+    )
+
+    if store is None and store_config is not None:
+        if store_config.read:
+            flow_print("store_read has no effect: store is disabled", format="warning")
+        if store_config.write and "write" in store_config.model_fields_set:
+            flow_print("store_write has no effect: store is disabled", format="warning")
 
     if not resolved_spec.log_dir:
         raise ValueError("log_dir must be set before running the flow spec")
@@ -67,22 +81,34 @@ def run_eval_set(
     if not dry_run:
         write_config_file(resolved_spec)
 
-    task_log_info = find_existing_logs(
-        task_id_to_task, resolved_spec, store, dry_run=dry_run
+    logs_result = find_existing_logs(
+        task_id_to_task,
+        resolved_spec,
+        store if (store_config is not None and store_config.read) else None,
+        mode="dry_run" if dry_run else "run",
     )
+    task_log_info = logs_result.task_log_info
 
     with RunAction("evalset") as action:
-        action.print(create_task_log_display(task_log_info, completed=False))
+        action.print(create_task_log_display(task_log_info, mode="pre-run"))
         if option_str := _option_string(options):
             action.print("\nOptions:", option_str)
         action.print("")
         action.print("Log dir:", path(resolved_spec.log_dir), copyable=True)
+        if options.embed_viewer:
+            print_url = apply_bundle_url_mappings(
+                resolved_spec.log_dir, options.bundle_url_mappings
+            )
+            print_url = _ensure_trailing_slash(print_url)
+            action.print("Viewer:", path(print_url), copyable=True)
 
     if dry_run:
         return False, []
 
     title = display().get_title()
     display().stop()
+
+    update_log_level(log_level)
 
     start_time = time.time()
     try:
@@ -142,7 +168,10 @@ def run_eval_set(
             embed_viewer=default(options.embed_viewer, False),
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
-    except BaseException as e:
+    except (KeyboardInterrupt, click.Abort):
+        flow_print(Rule("Eval Set Interrupted"))
+        result = None
+    except Exception as e:
         if isinstance(e, PrerequisiteError):
             _fix_prerequisite_error_message(e)
         if error_string := str(e):
@@ -153,11 +182,19 @@ def run_eval_set(
         else:
             raise
 
+    if not result:
+        with ReadLogsProgress() as progress:
+            dir_logs = list_all_eval_logs(
+                log_dir=resolved_spec.log_dir, recursive=False, progress=progress
+            )
+            headers = [log.header for log in dir_logs]
+            result = False, headers
+
     elapsed_time = time.time() - start_time
 
     _print_result(resolved_spec, result, elapsed_time, task_log_info, title)
 
-    if store:
+    if store and (store_config is None or store_config.write):
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         # TODO:ransomr better monitoring of the log directory
         try:
@@ -199,9 +236,9 @@ def _print_result(
             logger.error(f"Log returned that does not match any task: {log.location}")
         else:
             info.log_samples = num_log_samples(log, info, default_none(options.limit))
-            info.log_file = log.location
+            info.eval_log = log
 
-    task_log = create_task_log_display(task_log_info, completed=True)
+    task_log = create_task_log_display(task_log_info, mode="post-run")
 
     if title:
         spaced = [x for p in title for x in (" ", p)][1:]
@@ -228,12 +265,17 @@ def _print_result(
             flow_print(bundle_url_output, soft_wrap=True, crop=False)
 
     if num_success < len(logs):
-        flow_print("\nFailed Tasks:")
+        flow_print("Unsuccessful Tasks:")
         for log in logs:
             if log.status == "error":
                 flow_print(
                     f"{log.eval.task}: {log.error.message if log.error else 'Unknown error'}",
                     format="error",
+                )
+            elif log.status != "success":
+                flow_print(
+                    f"{log.eval.task}: {log.status}",
+                    format="warning",
                 )
 
 
@@ -250,6 +292,12 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
         e.args = (modified_message, *e.args[1:])
 
 
+def _ensure_trailing_slash(url: str) -> str:
+    if not url.endswith("/"):
+        return url + "/"
+    return url
+
+
 def _bundle_url_output(spec: FlowSpec) -> Text | None:
     if not spec.options:
         return
@@ -257,28 +305,18 @@ def _bundle_url_output(spec: FlowSpec) -> Text | None:
     result = []
 
     if spec.options.bundle_dir:
-        bundle_url = spec.options.bundle_dir
-        if spec.options.bundle_url_mappings:
-            for local, url in spec.options.bundle_url_mappings.items():
-                bundle_url = bundle_url.replace(local, url)
-
-        print_url = bundle_url
-        if not print_url.endswith("/"):
-            print_url += "/"
-
+        print_url = apply_bundle_url_mappings(
+            spec.options.bundle_dir, spec.options.bundle_url_mappings
+        )
+        print_url = _ensure_trailing_slash(print_url)
         result.append("Bundle: ")
         result.append(path(print_url))
 
     if spec.options.embed_viewer and spec.log_dir:
-        bundle_url = spec.options.bundle_dir
-        embed_viewer_url = spec.log_dir + "/viewer"
-        if spec.options.bundle_url_mappings:
-            for local, url in spec.options.bundle_url_mappings.items():
-                embed_viewer_url = embed_viewer_url.replace(local, url)
-
-        print_url = embed_viewer_url
-        if not print_url.endswith("/"):
-            print_url += "/"
+        print_url = apply_bundle_url_mappings(
+            spec.log_dir, spec.options.bundle_url_mappings
+        )
+        print_url = _ensure_trailing_slash(print_url)
         if result:
             result.append("\n")
         result.append("Viewer: ")

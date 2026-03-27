@@ -4,12 +4,23 @@ from unittest.mock import MagicMock, call, patch
 
 from botocore.client import BaseClient
 from inspect_ai._eval.evalset import task_identifier
-from inspect_ai.log import list_eval_logs, read_eval_log, write_eval_log
+from inspect_ai.log import (
+    ProvenanceData,
+    invalidate_samples,
+    list_eval_logs,
+    read_eval_log,
+    write_eval_log,
+)
 from inspect_ai.log._file import EvalLogInfo
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._store.deltalake import DeltaLakeStore
-from inspect_flow._store.store import _flow_store_path, is_better_log, store_factory
+from inspect_flow._store.store import (
+    StoreLogMatch,
+    _flow_store_path,
+    is_better_log,
+    store_factory,
+)
 from inspect_flow._util.logs import copy_all_logs
 from rich.console import Console
 
@@ -139,26 +150,27 @@ def test_is_better_log_all_paths(tmp_path: Path) -> None:
     partial = read_eval_log(partial_path, header_only=True)
     full = read_eval_log(full_path, header_only=True)
 
+    # Create a log with 1 of 2 samples invalidated (1 valid sample remaining)
+    invalidated_path = str(tmp_path / "invalidated.eval")
+    full_log = read_eval_log(full_path)
+    first_uuid = (full_log.samples or [])[0].uuid
+    assert first_uuid is not None
+    full_log = invalidate_samples(
+        full_log,
+        sample_uuids=[first_uuid],
+        provenance=ProvenanceData(author="test"),
+    )
+    write_eval_log(full_log, location=invalidated_path)
+    invalidated = read_eval_log(invalidated_path, header_only=True)
+
     # best is None → always True
     assert is_better_log(partial, None) is True
 
-    # candidate has no results → False
-    no_results = full.model_copy()
-    no_results.results = None
-    assert is_better_log(no_results, partial) is False
+    # candidate has invalidated samples (1 valid) vs full (2 valid) → False
+    assert is_better_log(invalidated, full) is False
 
-    # candidate invalidated → False
-    invalidated = full.model_copy()
-    invalidated.invalidated = True
-    assert is_better_log(invalidated, partial) is False
-
-    # best has no results → True
-    assert is_better_log(partial, no_results) is True
-
-    # best invalidated → True
-    best_inv = partial.model_copy()
-    best_inv.invalidated = True
-    assert is_better_log(full, best_inv) is True
+    # best has invalidated samples (1 valid), full candidate (2 valid) → True
+    assert is_better_log(full, invalidated) is True
 
     # more completed samples → True
     assert is_better_log(full, partial) is True
@@ -196,16 +208,15 @@ def test_search_prefers_more_completed_samples(tmp_path: Path) -> None:
 
     # Import both into a store and verify search picks the better one
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     results = store.search_for_logs({task_id})
     assert len(results) == 1
-    assert results[task_id] == log2
+    assert results[task_id] == StoreLogMatch(log_file=log2, duplicate_logs=[log1])
 
 
-def test_search_skips_log_without_results(tmp_path: Path) -> None:
-    """A log without results loses to a valid log with fewer samples."""
+def test_search_finds_log_without_results(tmp_path: Path) -> None:
     log_dir1 = str(tmp_path / "logs1")
     log_dir2 = str(tmp_path / "logs2")
 
@@ -218,12 +229,12 @@ def test_search_skips_log_without_results(tmp_path: Path) -> None:
     write_eval_log(full, log1)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     task_id = task_identifier(read_eval_log(log2, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log2
+    assert results[task_id] == StoreLogMatch(log_file=log1, duplicate_logs=[log2])
 
 
 def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
@@ -240,16 +251,15 @@ def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
     write_eval_log(no_results, log2)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     task_id = task_identifier(read_eval_log(log1, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log1
+    assert results[task_id] == StoreLogMatch(log_file=log1, duplicate_logs=[log2])
 
 
-def test_search_skips_invalidated_log(tmp_path: Path) -> None:
-    """An invalidated log with more samples loses to a valid log with fewer samples."""
+def test_search_finds_invalidated_log(tmp_path: Path) -> None:
     log_dir_full = str(tmp_path / "logs_full")
     log_dir_partial = str(tmp_path / "logs_partial")
 
@@ -263,13 +273,14 @@ def test_search_skips_invalidated_log(tmp_path: Path) -> None:
     write_eval_log(full, log_full)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir_full, log_dir_partial])
 
     task_id = task_identifier(read_eval_log(log_full, header_only=True), None)
     results = store.search_for_logs({task_id})
-    # The partial (1 sample) log wins because the full one is invalidated
-    assert results[task_id] == log_partial
+    assert results[task_id] == StoreLogMatch(
+        log_file=log_full, duplicate_logs=[log_partial]
+    )
 
 
 def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:
@@ -282,12 +293,12 @@ def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:
     write_eval_log(full, log_path)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path(log_dir)
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log_path
+    assert results[task_id] == StoreLogMatch(log_file=log_path, duplicate_logs=[])
 
 
 def test_search_prefers_more_recent_when_equal_samples(tmp_path: Path) -> None:
@@ -315,11 +326,11 @@ def test_search_prefers_more_recent_when_equal_samples(tmp_path: Path) -> None:
     task_id = task_identifier(header1, None)
 
     store_dir = str(tmp_path / "store")
-    store = DeltaLakeStore(store_path=store_dir, create=True, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir, create=True)
     store.import_log_path([log_dir1, log_dir2])
 
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log2
+    assert results[task_id] == StoreLogMatch(log_file=log2, duplicate_logs=[log1])
 
 
 def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) -> None:
@@ -346,7 +357,7 @@ def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) ->
     run_eval_set(spec=spec2, base_dir=".")
 
     # Both logs should be in the store
-    store = DeltaLakeStore(store_path=store_dir, quiet=True)
+    store = DeltaLakeStore(store_path=store_dir)
     assert len(store.get_logs()) == 2
 
     header = read_eval_log(list_eval_logs(log_dir2)[0].name, header_only=True)
@@ -355,7 +366,7 @@ def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) ->
     # search_for_logs should pick the full-sample log
     results = store.search_for_logs({task_id})
     full_log = str(list_eval_logs(log_dir2)[0].name)
-    assert results[task_id] == full_log
+    assert results[task_id].log_file == full_log
 
 
 def test_copy_all_logs_s3_to_s3(mock_s3: BaseClient) -> None:

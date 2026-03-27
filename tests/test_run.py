@@ -1,14 +1,16 @@
+import logging
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
 from botocore.client import BaseClient
-from inspect_ai import Task
+from inspect_ai import Task, eval_set
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai._util.logger import LogHandlerVar
+from inspect_ai._util.logger import LogHandler, LogHandlerVar, _logHandler
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
@@ -21,6 +23,7 @@ from inspect_flow import (
     FlowOptions,
     FlowSolver,
     FlowSpec,
+    FlowStoreConfig,
     FlowTask,
     models_matrix,
     solvers_matrix,
@@ -28,6 +31,7 @@ from inspect_flow import (
 )
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._runner.run import run_eval_set
+from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
@@ -98,6 +102,36 @@ def test_default_model(
     run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir)
     assert "ERROR" not in recording_console.export_text()
+
+
+def test_spec_log_level_applied_to_eval_set(recording_console: Console) -> None:
+    # Get the handler set up by the autouse init_log_handler fixture. Putting it in
+    # _logHandler simulates CLI usage, where a second init_logger call (from eval_set)
+    # is a no-op because the handler is already set.
+    root_rich_handlers = [
+        h for h in logging.getLogger().handlers if isinstance(h, LogHandler)
+    ]
+    assert root_rich_handlers, "init_log_handler autouse fixture must set up a handler"
+    flow_handler = root_rich_handlers[0]
+
+    saved = _logHandler["handler"]
+    _logHandler["handler"] = flow_handler
+    try:
+        log_dir = init_test_logs()
+        spec = FlowSpec(
+            log_dir=log_dir,
+            tasks=[
+                FlowTask(
+                    name=task_file + "@debug_logging_task",
+                    model=FlowModel(name="mockllm/model"),
+                )
+            ],
+            options=FlowOptions(log_level="debug"),
+        )
+        run_eval_set(spec=spec, base_dir=".")
+        assert "flow-spec-log-level-debug-marker" in recording_console.export_text()
+    finally:
+        _logHandler["handler"] = saved
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:
@@ -938,7 +972,7 @@ def test_545_bundle_url_map_embed_viewer(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Viewer: http://example.com/view/viewer/" in out
+    assert "Viewer: http://example.com/view/" in out
 
 
 def test_bundle_url_and_embed_viewer(
@@ -966,7 +1000,7 @@ def test_bundle_url_and_embed_viewer(
 
     mock_eval_set.assert_called_once()
     out = recording_console.export_text()
-    assert "Viewer: http://example.com/view/viewer/" in out
+    assert "Viewer: http://example.com/view/" in out
     assert "Bundle: http://example.com/bundle" in out
 
 
@@ -1217,7 +1251,7 @@ def test_log_copy(recording_console: Console) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1235,7 +1269,106 @@ def test_log_copy(recording_console: Console) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "Copying 1 existing log to log dir" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
+
+
+def test_log_copy_store_read_off_by_default(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs1")
+    store_dir = init_test_store()
+
+    # Run a real eval to index the log in the store
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+
+    # Second run with a new log_dir and store read off (default)
+    log_dir2 = str(tmp_path / "logs2")
+    spec.log_dir = log_dir2
+    spec.store = FlowStoreConfig(path=store_dir)  # read=False by default
+
+    with patch("inspect_flow._runner.run.eval_set") as mock:
+        mock.return_value = (True, [])
+        run_eval_set(spec=spec, base_dir=".")
+
+    # No logs should have been copied from the store
+    assert not list(Path(log_dir2).glob("*.eval"))
+
+
+def test_store_write_off_no_using_store_message(recording_console: Console) -> None:
+    log_dir = init_test_logs()
+    store_dir = init_test_store()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=FlowStoreConfig(path=store_dir, write=False),  # read=False by default
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+
+    assert "Using store" not in recording_console.export_text()
+
+
+def test_store_none_write_explicit_warns(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None, write=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_write has no effect" in recording_console.export_text()
+
+
+def test_store_none_write_default_no_warn(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_write has no effect" not in recording_console.export_text()
+
+
+def test_store_none_read_warns(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=None, read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "store_read has no effect" in recording_console.export_text()
+
+
+def test_using_store_write_only(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store()),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (write only):" in recording_console.export_text()
+
+
+def test_using_store_read_write(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store(), read=True),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (read-write):" in recording_console.export_text()
+
+
+def test_using_store_read_only(recording_console: Console) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        store=FlowStoreConfig(path=init_test_store(), read=True, write=False),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    run_eval_set(spec=spec, base_dir=".")
+    assert "Using store (read only):" in recording_console.export_text()
 
 
 def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) -> None:
@@ -1254,13 +1387,15 @@ def test_log_copy_local_and_store(recording_console: Console, tmp_path: Path) ->
 
     # Run both tasks in logdir1 — task1 found locally, task2 copied from store
     run_eval_set(
-        spec=FlowSpec(log_dir=log_dir1, tasks=[task1, task2]),
+        spec=FlowSpec(
+            log_dir=log_dir1, store=FlowStoreConfig(read=True), tasks=[task1, task2]
+        ),
         base_dir=".",
     )
 
     out = recording_console.export_text()
     assert "Found 1 existing log in log directory" in out
-    assert "Copying 1 existing log" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
 
 
 def test_store_log_gone(recording_console: Console) -> None:
@@ -1274,7 +1409,7 @@ def test_store_log_gone(recording_console: Console) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1295,7 +1430,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
 
     spec = FlowSpec(
         log_dir=log_dir,
-        store=store_dir,
+        store=FlowStoreConfig(path=store_dir, read=True),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
     run_eval_set(spec=spec, base_dir=".")
@@ -1312,7 +1447,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     verify_test_logs(spec, log_dir2)
 
     out = recording_console.export_text()
-    assert "Copying 1 existing log to log dir" in out
+    assert "Found 1 existing log in store. Copying to log directory" in out
 
 
 def test_log_level_from_flow(mock_eval_set: MagicMock) -> None:
@@ -1360,18 +1495,25 @@ def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     assert "Test error from eval_set" in str(e.value.__cause__)
 
 
-def test_eval_set_keyboard_interrupt(
-    mock_eval_set: MagicMock, recording_console: Console
-) -> None:
+def test_store_write_on_keyboard_interrupt() -> None:
     log_dir = init_test_logs()
+    store_dir = init_test_store()
+
     spec = FlowSpec(
         log_dir=log_dir,
-        tasks=tasks_matrix(task=[task_file + "@noop"], model=["mockllm/model1"]),
+        store=FlowStoreConfig(path=store_dir),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
-    mock_eval_set.side_effect = KeyboardInterrupt()
 
-    with pytest.raises(KeyboardInterrupt):
+    def eval_set_then_interrupt(*args: Any, **kwargs: Any) -> None:
+        eval_set(*args, **kwargs)
+        raise KeyboardInterrupt()
+
+    with patch(
+        "inspect_flow._runner.run.eval_set", side_effect=eval_set_then_interrupt
+    ):
         run_eval_set(spec=spec, base_dir=".")
 
-    out = recording_console.export_text()
-    assert "Eval Set Failed with Exception" in out
+    store = store_factory(store_dir, base_dir=".")
+    assert store is not None
+    assert len(store.get_logs()) == 1

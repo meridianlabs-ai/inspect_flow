@@ -1,17 +1,19 @@
 # Type definitions for flow config files.
-
 # Important: All default values should be None. This supports merging of partial configs as None values are not merged.
 # But a different default value would override more specific settings.
-
 from __future__ import annotations
 
+import inspect
 from typing import (
     Any,
     Callable,
+    Generic,
     Literal,
     Mapping,
+    ParamSpec,
     Sequence,
     TypeAlias,
+    TypeVar,
 )
 
 import rich.repr
@@ -34,6 +36,7 @@ from inspect_flow._util.pydantic_util import model_dump
 
 CreateArgs: TypeAlias = Mapping[str, Any]
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
+"""A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it."""
 ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
 
 
@@ -63,15 +66,6 @@ class FlowBase(BaseModel, extra="forbid"):
     def __str__(self) -> str:
         return str(model_dump(self))
 
-    @model_validator(mode="before")
-    @classmethod
-    def factory_string_to_name(cls, data: Any) -> Any:
-        """If factory is a string, move it to name and clear factory."""
-        if isinstance(data, dict) and isinstance(data.get("factory"), str):
-            data["name"] = data["factory"]
-            del data["factory"]
-        return data
-
     def __rich_repr__(self) -> rich.repr.Result:
         for field in self.model_fields_set:
             if (value := getattr(self, field)) is not not_given:
@@ -86,7 +80,7 @@ class FlowModel(FlowBase):
         description="Name of the model to use. If factory is not provided, this is used to create the model.",
     )
 
-    factory: Callable[..., Model] | None | NotGiven = Field(
+    factory: FlowFactory[Model] | Callable[..., Model] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the model instance.",
     )
@@ -139,9 +133,11 @@ class FlowScorer(FlowBase):
         description="Name of the scorer. Used to create the scorer if the factory is not provided.",
     )
 
-    factory: Callable[..., Scorer] | None | NotGiven = Field(
-        default=not_given,
-        description="Factory function to create the scorer instance.",
+    factory: FlowFactory[Scorer] | Callable[..., Scorer] | str | None | NotGiven = (
+        Field(
+            default=not_given,
+            description="Factory function to create the scorer instance.",
+        )
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -163,9 +159,11 @@ class FlowSolver(FlowBase):
         description="Name of the solver. Used to create the solver if the factory is not provided.",
     )
 
-    factory: Callable[..., Solver] | None | NotGiven = Field(
-        default=not_given,
-        description="Factory function to create the solver instance.",
+    factory: FlowFactory[Solver] | Callable[..., Solver] | str | None | NotGiven = (
+        Field(
+            default=not_given,
+            description="Factory function to create the solver instance.",
+        )
     )
 
     args: CreateArgs | None | NotGiven = Field(
@@ -187,7 +185,7 @@ class FlowAgent(FlowBase):
         description="Name of the agent. Used to create the agent if the factory is not provided.",
     )
 
-    factory: Callable[..., Agent] | None | NotGiven = Field(
+    factory: FlowFactory[Agent] | Callable[..., Agent] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the agent instance.",
     )
@@ -250,6 +248,63 @@ class FlowExtraArgs(FlowBase):
     )
 
 
+P = ParamSpec("P")
+R = TypeVar("R", bound=Task | Agent | Solver | Scorer | Model)
+
+
+class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
+    """Type-checked factory wrapper for creating Inspect AI objects.
+
+    Wraps a factory callable with its arguments, binding them at construction time
+    so that type errors are caught immediately rather than at evaluation time.
+    Works with `FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, and `FlowModel`.
+
+    Args:
+        factory: Factory function (e.g. a `@task`-decorated function).
+        *args: Positional arguments forwarded to the factory.
+        **kwargs: Keyword arguments forwarded to the factory.
+    """
+
+    factory: Callable[..., R]
+    args: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _validate(cls, value: Any, handler: Any) -> Any:
+        # Use the base class (not cls) since Pydantic creates concrete subclasses for
+        # each generic specialization (e.g. FlowFactory[Agent]), and an unspecialized
+        # FlowFactory instance would fail isinstance(value, cls) for those subclasses.
+        if isinstance(value, FlowFactory):
+            return value
+        # Reject dicts that don't look like FlowFactory field data so that Pydantic's
+        # union validation can fall through to the next candidate (e.g. NotGiven).
+        if not isinstance(value, dict) or "factory" not in value:
+            raise ValueError("Expected a FlowFactory instance or dict with 'factory'")
+        return handler(value)
+
+    def __init__(
+        self,
+        factory: Callable[P, R],
+        *pos_args: P.args,
+        **kw_args: P.kwargs,
+    ) -> None:
+        if not pos_args and set(kw_args.keys()) <= {"args"}:
+            # Pydantic calls __init__ with field data during validation. Set fields
+            # directly to break the cycle — calling super().__init__() would recurse.
+            object.__setattr__(
+                self, "__dict__", {"factory": factory, "args": kw_args.get("args", {})}
+            )
+            object.__setattr__(self, "__pydantic_fields_set__", {"factory", "args"})
+            object.__setattr__(self, "__pydantic_extra__", None)
+        else:
+            sig = inspect.signature(factory)
+            bound = sig.bind(*pos_args, **kw_args)
+            super().__init__(factory=factory, args=dict(bound.arguments))
+
+    def instantiate(self) -> R:
+        return self.factory(**self.args)
+
+
 class FlowTask(FlowBase, arbitrary_types_allowed=True):
     """Configuration for an evaluation task.
 
@@ -261,7 +316,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description='Task name. Any of registry name (`"inspect_evals/mbpp"`), file name (`"./my_task.py"`), or a file name and attr (`"./my_task.py@task_name"`). Used to create the task if the factory is not provided.',
     )
 
-    factory: Callable[..., Task] | None | NotGiven = Field(
+    factory: FlowFactory[Task] | Callable[..., Task] | str | None | NotGiven = Field(
         default=not_given,
         description="Factory function to create the task instance.",
     )
@@ -374,6 +429,10 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
     )
 
+    tags: Sequence[str] | None | NotGiven = Field(
+        default=not_given, description="Tags to associate with the task."
+    )
+
     metadata: dict[str, Any] | None | NotGiven = Field(
         default=not_given, description="Additional metadata to associate with the task."
     )
@@ -449,7 +508,7 @@ class FlowOptions(FlowBase):
     )
 
     display: DisplayType | None | NotGiven = Field(
-        default=not_given, description="Task display type (defaults to `'full'`)."
+        default=not_given, description="Task display type (defaults to `'rich'`)."
     )
 
     approval: str | ApprovalPolicyConfig | None | NotGiven = Field(
@@ -674,9 +733,24 @@ class FlowStoreConfig(FlowBase):
         description="Path to directory to use for flow storage. `'auto'` will use a default application location. `None` will disable storage.",
     )
 
-    filter: SkipValidation[LogFilter] | str | None = Field(
+    filter: (
+        SkipValidation[LogFilter]
+        | str
+        | Sequence[SkipValidation[LogFilter] | str]
+        | None
+    ) = Field(
         default=None,
-        description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, or `None`.",
+        description="Log filter to apply when searching for existing logs. Can be a callable, a registered filter name, a sequence of filters (all must pass), or `None`.",
+    )
+
+    read: bool = Field(
+        default=False,
+        description="Whether to match existing logs from the store. Default is `False`.",
+    )
+
+    write: bool = Field(
+        default=True,
+        description="Whether to index completed logs in the store. Default is `True`.",
     )
 
 

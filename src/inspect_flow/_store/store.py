@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from typing import Sequence
+from typing import NamedTuple, Sequence
 
 from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
 
+from inspect_flow._display.display import display
 from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowStoreConfig,
@@ -13,7 +14,9 @@ from inspect_flow._types.flow_types import (
     NotGiven,
 )
 from inspect_flow._types.log_filter import resolve_log_filter
+from inspect_flow._util.console import path
 from inspect_flow._util.data import user_data_dir
+from inspect_flow._util.logs import num_valid_samples
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
@@ -91,11 +94,16 @@ class FlowStore(ABC):
         pass
 
 
+class StoreLogMatch(NamedTuple):
+    log_file: str
+    duplicate_logs: list[str]
+
+
 class FlowStoreInternal(FlowStore):
     """Internal interface for flow store implementations."""
 
     @abstractmethod
-    def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, StoreLogMatch]:
         pass
 
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
@@ -114,21 +122,28 @@ def is_better_log(candidate: EvalLog, best: EvalLog | None) -> bool:
     """
     if best is None:
         return True
-    if not candidate.results or candidate.invalidated:
+    candidate_samples = num_valid_samples(candidate)
+    best_samples = num_valid_samples(best)
+    if best_samples > candidate_samples:
         return False
-    if not best.results or best.invalidated:
+    if candidate_samples > best_samples:
         return True
-    # Compare completed samples
-    if candidate.results.completed_samples > best.results.completed_samples:
-        return True
-    if candidate.results.completed_samples < best.results.completed_samples:
-        return False
     # If completed samples are equal, take the more recently completed one
     return candidate.stats.completed_at > best.stats.completed_at
 
 
 def _get_default_store_dir() -> Path:
     return user_data_dir()
+
+
+def _store_mode_label(store_config: FlowStoreConfig | None) -> str:
+    read = store_config.read if store_config is not None else False
+    write = store_config.write if store_config is not None else True
+    if read and write:
+        return " (read-write)"
+    if read:
+        return " (read only)"
+    return " (write only)"
 
 
 def store_factory(
@@ -142,7 +157,9 @@ def store_factory(
         store = "auto"
 
     log_filter: LogFilter | None = None
+    store_config: FlowStoreConfig | None = None
     if isinstance(store, FlowStoreConfig):
+        store_config = store
         log_filter = resolve_log_filter(store.filter, base_dir=base_dir)
         store = store.path
 
@@ -151,13 +168,20 @@ def store_factory(
     if store.lower() == "auto":
         store = str(_get_default_store_dir())
 
+    if store_config is not None and not store_config.read and not store_config.write:
+        return None
+
     # Import here to avoid circular imports
     from inspect_flow._store.deltalake import DeltaLakeStore
 
     store_path = absolute_path_relative_to(store, base_dir=base_dir)
-    dl_store = DeltaLakeStore(
-        store_path, create=create, quiet=quiet, log_filter=log_filter
-    )
+    dl_store = DeltaLakeStore(store_path, create=create, log_filter=log_filter)
+    if dl_store.exists and not quiet:
+        display().print(
+            f"Using store{_store_mode_label(store_config)}:",
+            path(store_path),
+            action_key="logs",
+        )
     return dl_store if dl_store.exists else None
 
 
@@ -184,6 +208,6 @@ def delete_store(store_path: str) -> None:
     Args:
         store_path: Path to the store directory.
     """
-    path = _flow_store_path(store_path)
-    fs = filesystem(path)
-    fs.rm(path, recursive=True)
+    flow_path = _flow_store_path(store_path)
+    fs = filesystem(flow_path)
+    fs.rm(flow_path, recursive=True)

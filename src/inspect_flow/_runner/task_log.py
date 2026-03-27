@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Literal
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
+from inspect_ai.log import EvalLog
+from inspect_ai.model._generate_config import GenerateConfig
 from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
 from inspect_flow._types.flow_types import (
     FlowTask,
-    NotGiven,
 )
 from inspect_flow._util.console import path, pluralize
+
+TaskLogDisplayMode = Literal["check", "pre-run", "post-run"]
 
 
 @dataclass
@@ -22,35 +25,79 @@ class TaskLogInfo:
     task: Task
     flow_task: FlowTask | None = None
     task_samples: int | None = None
-    log_file: str | None = None
+    eval_log: EvalLog | None = None
     log_samples: int = 0
+    duplicate_logs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class TaskInfo:
+    """Abstract task info for qualifier computation.
+
+    Can be constructed from either a TaskLogInfo (runner) or an EvalLog header (CLI).
+    """
+
+    name: str
+    model: str | None = None
+    args: dict[str, Any] | None = None
+    model_roles: dict[str, str] | None = None
+    solver: str | None = None
+    approval: str | None = None
+    version: int | str = 0
+    message_limit: int | None = None
+    token_limit: int | None = None
+    time_limit: int | None = None
+    working_limit: int | None = None
+    config: GenerateConfig = field(default_factory=GenerateConfig)
+
+
+def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
+    task = info.task
+    solver_ri = registry_info(task.solver)
+    flow_args = info.flow_task.args if info.flow_task else None
+    return TaskInfo(
+        name=task.name,
+        model=str(task.model) if task.model else None,
+        args=dict(flow_args) if isinstance(flow_args, dict) else None,
+        model_roles=(
+            {k: str(v) for k, v in task.model_roles.items()}
+            if task.model_roles
+            else None
+        ),
+        solver=solver_ri.name if solver_ri else None,
+        approval=str(task.approval) if task.approval else None,
+        version=task.version,
+        message_limit=task.message_limit,
+        token_limit=task.token_limit,
+        time_limit=task.time_limit,
+        working_limit=task.working_limit,
+        config=task.config,
+    )
 
 
 @dataclass
 class _TaskField:
-    extract: Callable[[TaskLogInfo], Any]
+    extract: Callable[[TaskInfo], Any]
     format: Callable[[Any], str]
 
 
 def _config(name: str) -> _TaskField:
     return _TaskField(
-        lambda info, n=name: getattr(info.task.config, n),
+        lambda info, n=name: getattr(info.config, n, None),
         lambda v, n=name: f"{n}={v}",
     )
 
 
-def _attr(name: str) -> _TaskField:
+def _simple_attr(name: str) -> _TaskField:
     return _TaskField(
-        lambda info, n=name: getattr(info.task, n),
+        lambda info, n=name: getattr(info, n, None),
         lambda v, n=name: f"{n}={v}",
     )
 
 
 def _arg(name: str) -> _TaskField:
     return _TaskField(
-        lambda info, n=name: (
-            (info.flow_task.args or {}).get(n) if info.flow_task else None
-        ),
+        lambda info, n=name: (info.args or {}).get(n),
         lambda v, n=name: f"{n}={v}",
     )
 
@@ -58,16 +105,14 @@ def _arg(name: str) -> _TaskField:
 def _model_role(name: str) -> _TaskField:
     return _TaskField(
         lambda info, n=name: (
-            str(info.task.model_roles[n])
-            if info.task.model_roles and n in info.task.model_roles
-            else None
+            info.model_roles[n] if info.model_roles and n in info.model_roles else None
         ),
         lambda v, n=name: f"{n}={v}",
     )
 
 
 def _dict_fields(
-    dicts: list[Mapping[str, Any] | NotGiven | None],
+    dicts: list[Mapping[str, Any] | None],
     make_field: Callable[[str], _TaskField],
 ) -> list[_TaskField]:
     all_keys: set[str] = set()
@@ -77,31 +122,21 @@ def _dict_fields(
     return [make_field(k) for k in sorted(all_keys)]
 
 
-def _solver_name(info: TaskLogInfo) -> str | None:
-    ri = registry_info(info.task.solver)
-    return ri.name if ri else None
-
-
-def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
-    fields = [
+def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
+    return [
         # Task Args
-        *_dict_fields(
-            [info.flow_task.args if info.flow_task else None for info in infos], _arg
-        ),
+        *_dict_fields([info.args for info in infos], _arg),
         # Model Roles
-        *_dict_fields([info.task.model_roles for info in infos], _model_role),
+        *_dict_fields([info.model_roles for info in infos], _model_role),
         # Solver and Approval
-        _TaskField(_solver_name, lambda v: f"solver={v}"),
-        _TaskField(
-            lambda info: str(info.task.approval) if info.task.approval else None,
-            lambda v: f"approval={v}",
-        ),
+        _simple_attr("solver"),
+        _simple_attr("approval"),
         # Task-level fields in task_identifier
-        _attr("version"),
-        _attr("message_limit"),
-        _attr("token_limit"),
-        _attr("time_limit"),
-        _attr("working_limit"),
+        _simple_attr("version"),
+        _simple_attr("message_limit"),
+        _simple_attr("token_limit"),
+        _simple_attr("time_limit"),
+        _simple_attr("working_limit"),
         # GenerateConfig fields included in task_identifier
         # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
         _config("temperature"),
@@ -119,7 +154,7 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
         _config("top_logprobs"),
         _config("parallel_tool_calls"),
         _TaskField(
-            lambda info: getattr(info.task.config, "system_message", None),
+            lambda info: getattr(info.config, "system_message", None),
             lambda v: "system_message=...",
         ),
         _config("cache_prompt"),
@@ -127,7 +162,6 @@ def _task_fields(infos: list[TaskLogInfo]) -> list[_TaskField]:
         _config("reasoning_tokens"),
         _config("effort"),
     ]
-    return fields
 
 
 @dataclass
@@ -136,16 +170,16 @@ class _TaskQualifiers:
     model_only: bool
 
 
-def _unique_task_names(infos: list[TaskLogInfo]) -> _TaskQualifiers:
-    names = [info.task.name for info in infos]
+def unique_task_names(infos: list[TaskInfo]) -> _TaskQualifiers:
+    names = [info.name for info in infos]
     qualifiers: list[list[str]] = [[] for _ in infos]
 
     for i, info in enumerate(infos):
-        if info.task.model:
-            qualifiers[i].append(str(info.task.model))
+        if info.model:
+            qualifiers[i].append(info.model)
 
     model_only = True
-    for field in _task_fields(infos):
+    for task_field in _task_fields(infos):
         groups: dict[str, list[int]] = {}
         for i in range(len(infos)):
             key = names[i] + "\0" + ",".join(qualifiers[i])
@@ -154,13 +188,13 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> _TaskQualifiers:
         for group in groups.values():
             if len(group) < 2:
                 continue
-            values = [field.extract(infos[i]) for i in group]
-            if len(set(str(v) for v in values)) <= 1:
+            values = [task_field.extract(infos[i]) for i in group]
+            if len({str(v) for v in values}) <= 1:
                 continue
             model_only = False
             for i, val in zip(group, values, strict=True):
                 if val is not None:
-                    qualifiers[i].append(field.format(val))
+                    qualifiers[i].append(task_field.format(val))
 
     result: list[tuple[str, Text]] = []
     for i, name in enumerate(names):
@@ -184,21 +218,41 @@ def _unique_task_names(infos: list[TaskLogInfo]) -> _TaskQualifiers:
     )
 
 
-def create_task_log_display(
-    task_log_info: dict[str, TaskLogInfo],
-    completed: bool = False,
-) -> RenderableType:
+def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
     total = len(task_log_info)
     num_complete = sum(
         1
         for info in task_log_info.values()
         if info.task_samples is not None and info.log_samples >= info.task_samples
     )
+
     NUM = "bold cyan"
-    if not completed:
+    if mode == "check":
+        missing = total - num_complete
+        if missing > 0:
+            return Text.assemble(
+                "Check: ",
+                (str(num_complete), NUM),
+                "/",
+                (str(total), NUM),
+                f" {pluralize('task', total)} complete (",
+                (str(missing), NUM),
+                f" {pluralize('log', missing)} incomplete)",
+                style="bold",
+            )
+        else:
+            return Text.assemble(
+                "Check: ",
+                (str(total), NUM),
+                "/",
+                (str(total), NUM),
+                f" {pluralize('task', total)} complete",
+                style="bold",
+            )
+    elif mode == "pre-run":
         if num_complete > 0:
             remaining = total - num_complete
-            header = Text.assemble(
+            return Text.assemble(
                 "Running ",
                 (str(remaining), NUM),
                 f" {pluralize('task', remaining)} (",
@@ -207,35 +261,43 @@ def create_task_log_display(
                 style="bold",
             )
         else:
-            header = Text.assemble(
+            return Text.assemble(
                 "Running ",
                 (str(total), NUM),
                 f" {pluralize('task', total)}",
                 style="bold",
             )
-    else:
+    else:  # post-run
         if num_complete < total:
-            header = Text.assemble(
+            return Text.assemble(
                 "Completed ",
                 (str(num_complete), NUM),
                 f" of {total} {pluralize('task', total)}",
                 style="bold",
             )
         else:
-            header = Text.assemble(
+            return Text.assemble(
                 "Completed ",
                 (str(total), NUM),
                 f" {pluralize('task', total)}",
                 style="bold",
             )
 
+
+def create_task_log_display(
+    task_log_info: dict[str, TaskLogInfo],
+    mode: TaskLogDisplayMode = "pre-run",
+) -> RenderableType:
+    header = _header(task_log_info, mode)
+
     infos = list(task_log_info.values())
-    qualifiers = _unique_task_names(infos)
+    qualifiers = unique_task_names([task_log_to_task_info(i) for i in infos])
 
     have_quals = any(qual for _, qual in qualifiers.names)
-    have_logs = any(info.log_file for info in infos)
+    have_logs = any(info.eval_log for info in infos)
+    have_tags = any(info.eval_log and info.eval_log.tags for info in infos)
 
-    adj = "Completed" if completed else "Existing"
+    adj = "Completed" if mode == "post-run" else "Existing"
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
     table.add_column("Task", overflow="ellipsis", justify="left")
     if have_quals:
@@ -244,6 +306,8 @@ def create_task_log_display(
     if have_logs:
         table.add_column(f"{adj} Log File", no_wrap=True, ratio=2, overflow="ellipsis")
     table.add_column(f"{adj}\nSamples", justify="right")
+    if have_tags:
+        table.add_column("Tags")
     # blank separator row
     table.add_row(*[""] * len(table.columns))
     for info, (base_name, qual) in zip(infos, qualifiers.names, strict=True):
@@ -257,7 +321,10 @@ def create_task_log_display(
         if have_quals:
             row.append(qual)
         if have_logs:
-            row.append(path(info.log_file) if info.log_file else "")
+            row.append(path(info.eval_log.location) if info.eval_log else "")
         row.append(samples)
+        if have_tags:
+            tags = info.eval_log.tags if info.eval_log else None
+            row.append(", ".join(tags) if tags else "")
         table.add_row(*row)
     return Group(header, table)

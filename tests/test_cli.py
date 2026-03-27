@@ -3,12 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
+from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
 from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
-from inspect_flow._config.load import ConfigOptions
+from inspect_flow._config.load import ConfigOptions, _apply_overrides
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
@@ -129,6 +130,27 @@ def test_run_command_log_dir_create_unique() -> None:
             **COMMON_DEFAULTS,
             base_dir=CONFIG_FILE_DIR,
         )
+
+
+def test_no_log_dir_create_unique_overrides_spec() -> None:
+    spec = FlowSpec(tasks=["task"], log_dir="logs", log_dir_create_unique=True)
+    overrides = _options_to_overrides(log_dir_create_unique=False)
+    result = _apply_overrides(spec, overrides)
+    assert not result.log_dir_create_unique
+
+
+def test_check_command_disables_log_dir_create_unique() -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._cli.check.launch_check") as mock_check:
+        result = runner.invoke(
+            check_command,
+            [CONFIG_FILE, "--set", "log_dir_create_unique=True"],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        spec = mock_check.call_args.args[0]
+        assert not spec.log_dir_create_unique
 
 
 def test_config_command_overrides() -> None:
@@ -524,3 +546,38 @@ def test_run_command_resume_and_log_dir_mutually_exclusive() -> None:
     )
     assert result.exit_code != 0
     assert "--resume and --log-dir are mutually exclusive" in result.output
+
+
+def test_run_command_multiple_store_filters() -> None:
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command,
+            [
+                CONFIG_FILE,
+                "--store-filter",
+                "tests/local_eval/src/local_eval/my_filters.py@only_success",
+                "--store-filter",
+                "tests/local_eval/src/local_eval/my_filters.py@only_anthropic",
+            ],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        mock_config.assert_called_once_with(
+            CONFIG_FILE_RESOLVED,
+            options=ConfigOptions(
+                store_filter=(
+                    "tests/local_eval/src/local_eval/my_filters.py@only_success",
+                    "tests/local_eval/src/local_eval/my_filters.py@only_anthropic",
+                ),
+                overrides=[],
+                args={},
+            ),
+        )

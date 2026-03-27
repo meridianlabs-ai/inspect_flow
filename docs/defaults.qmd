@@ -220,12 +220,17 @@ The `_flow.py` inheritance pattern is especially useful for team collaboration. 
 
 ```python
 # _flow.py (at repository root)
+from inspect_flow import FlowSpec, FlowStoreConfig
+
 FlowSpec(
-    store="s3://my-team-bucket/flow-store"
+    store=FlowStoreConfig(
+        path="s3://my-team-bucket/flow-store",
+        read=True,
+    )
 )
 ```
 
-All team members working in the repository will automatically use the shared store, enabling log reuse across the team. See [Flow Store](store.qmd#team-collaboration) for more details.
+All team members working in the repository will automatically inherit the shared store configuration — including `read=True` for log matching. See [Flow Store](store.qmd#team-collaboration) for more details.
 :::
 
 ## CLI Overrides {#cli-overrides}
@@ -302,8 +307,11 @@ flow run config.py
 | `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE`  | `--log-dir-create-unique`  | Create new log directory with numeric suffix if exists   |
 | `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY`    | `--log-dir-allow-dirty`    | Allow log directory to contain logs not in the eval set  |
 | `INSPECT_FLOW_LOG_LEVEL`              | `--log-level`              | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level.   |
-| `INSPECT_FLOW_DISPLAY`                | `--display`                | Display mode: `full` (live progress, default), `plain` (simple text for CI), or `rich` (rich formatting without live updates) |
+| `INSPECT_FLOW_DISPLAY`                | `--display`                | Display mode: `rich` (rich formatting without live updates, default), `full` (live progress), or `plain` (simple text for CI) |
 | `INSPECT_FLOW_STORE`                  | `--store`                  | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
+| `INSPECT_FLOW_STORE_READ`             | `--store-read`             | Match existing logs from the store (default: off) |
+| `INSPECT_FLOW_STORE_WRITE`            | `--store-write`            | Index completed logs in the store (default: on) |
+| `INSPECT_FLOW_STORE_FILTER`           | `--store-filter`           | Registered log filter name to apply when matching logs from the store. Space-separate multiple names (all must pass) |
 | `INSPECT_FLOW_LIMIT`                  | `--limit`                  | Limit number of samples                                  |
 | `INSPECT_FLOW_SET`                    | `--set`                    | Set config overrides (can be specified multiple times)   |
 | `INSPECT_FLOW_ARG`                    | `--arg`                    | Args to pass to spec functions in the config file (can be multiple)      |
@@ -354,4 +362,4 @@ flow config config.py
 flow run config.py --dry-run
 ```
 
-The `flow config` command quickly displays the expanded configuration as YAML. The `--dry-run` flag performs the full setup process—instantiating tasks from the registry and checking for existing logs—showing exactly which tasks would run and which logs would be reused, but stops before actually running the evaluations.
+The `flow config` command quickly displays the expanded configuration as YAML. The `--dry-run` flag performs the full setup process—instantiating tasks from the registry and checking for existing logs in the log directory (and the Flow Store if `--store-read` is enabled)—showing exactly which tasks would run and which logs would be reused, but stops before actually running the evaluations.

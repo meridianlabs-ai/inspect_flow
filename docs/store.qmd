@@ -3,27 +3,44 @@ title: "Flow Store"
 tbl-colwidths: [30,70]
 ---
 
-The Flow Store automatically skips redundant evaluations by tracking which logs you've already completed—across directories, projects, and even team members.
-
-The Flow Store is a **centralized registry of evaluation log file paths** that enables **global log reuse across Flow runs**.
+The Flow Store is a **centralized registry of evaluation log file paths** that tracks your completed evaluations and enables **log reuse across directories, projects, and team members**.
 
 ::: callout-note
 Unlike Inspect AI's [Eval Set](https://inspect.aisi.org.uk/eval-sets.html) which only reuses logs from the same log directory, the Flow Store indexes logs from multiple locations and makes them available for reuse across any Flow run.
 :::
 
-## Basics
+## How It Works
 
-The Flow Store is enabled by default and requires zero configuration. On your first run, the Flow Store is automatically created in the background. When you run an evaluation, Flow automatically:
+The Flow Store has two independent capabilities: **log indexing** (writing to the store) and **log matching** (reading from the store). By default, indexing is on and matching is off — you opt into matching when you want cross-directory log reuse.
+
+### Log Indexing
+
+Log indexing is **on by default** and requires zero configuration. After each `flow run`, Flow automatically adds your completed logs to the Flow Store. This builds up a registry of all your evaluations over time, ready for reuse when you need it.
+
+On your first run, the Flow Store is automatically created in the background at the [default location](#backend).
+
+### Log Matching {#log-matching}
+
+Log matching is **off by default**. Enable it with `--store-read` to reuse logs from across directories and projects:
+
+```bash
+flow run config.py --store-read
+```
+
+When log matching is enabled, Flow:
 
 1. **Searches the Flow Store** for logs matching your task (based on task configuration)
 2. **Selects the best log** (most completed samples, then most recent)
 3. **Copies it to your log directory** for Inspect AI's Eval Set to reuse
 4. **Resumes incomplete logs** by only running missing samples
-5. **Adds the final log** back to the Flow Store after completion
 
-### Example
+::: {.callout-note}
+Even without `--store-read`, Inspect AI's Eval Set still reuses logs already present in your `log_dir`. Store matching adds cross-directory reuse on top of that.
+:::
 
-Let's walk through a concrete example showing how the Flow Store automatically tracks and reuses logs across multiple runs.
+#### Example
+
+Let's walk through a concrete example showing how the Flow Store tracks and reuses logs across runs.
 
 **Run 1: Initial evaluation**
 
@@ -37,12 +54,11 @@ Start with a simple configuration evaluating one model:
 
 When you run `flow run config.py`, Flow:
 
-1. Searches the Flow Store for existing logs (none found)
-2. Runs the evaluation
-3. Saves logs to `project-1/`
-4. Adds to Flow Store: `project-1/2026-01-31T15-55_gpqa-diamond_ABCeD.eval`
+1. Runs the evaluation
+2. Saves logs to `project-1/`
+3. Indexes the log in the Flow Store: `project-1/2026-01-31T15-55_gpqa-diamond_ABCeD.eval`
 
-**Run 2: Modified configuration**
+**Run 2: Cross-directory reuse**
 
 Now modify your config to use a new log directory and add a second model:
 
@@ -69,20 +85,25 @@ FlowSpec(
 2. Same task from Run 1 (gpt-4o on gpqa_diamond)
 3. New task (gpt-5 on gpqa_diamond)
 
-When you run `flow run config.py` again, Flow:
+Since you're using a new log directory with no existing logs, enable store matching to reuse Run 1's results:
 
-1. Searches the Flow Store for existing logs matching your tasks
-2. Finds Run 1's gpt-4o log from `project-1/`
-3. Copies it to `project-2/` for reuse
-4. Skips re-evaluating gpt-4o (already complete)
-5. Only evaluates the new gpt-5 task
-6. Saves both logs to `project-2/`
-7. Updates Flow Store with both log paths
+```bash
+flow run config.py --store-read
+```
+
+Flow:
+
+1. Searches the Flow Store and finds Run 1's gpt-4o log from `project-1/`
+2. Copies it to `project-2/` for reuse
+3. Skips re-evaluating gpt-4o (already complete)
+4. Only evaluates the new gpt-5 task
+5. Saves both logs to `project-2/`
+6. Indexes both log paths in the Flow Store
 
 **Result:** The second run completes much faster by reusing the gpt-4o evaluation from Run 1.
 
 ::: {.callout-note}
-If Run 1 was interrupted with only 80/100 samples completed, Run 2 would automatically resume from where it left off and only evaluate the remaining 20 samples for gpt-4o.
+If Run 1 was interrupted with only 80/100 samples completed, Run 2 would copy the partial log and automatically resume from where it left off, only evaluating the remaining 20 samples for gpt-4o.
 :::
 
 ## Backend
@@ -103,9 +124,48 @@ C:\Users\<username>\AppData\Local\inspect_flow  # Windows
 
 ## Configuration
 
+### Read and write control
+
+Log indexing (write) and log matching (read) are controlled independently via CLI flags or `FlowStoreConfig`:
+
+**CLI flags:**
+
+```bash
+--store-read / --no-store-read    # Match logs from the store (default: --no-store-read)
+--store-write / --no-store-write  # Index completed logs in the store (default: --store-write)
+```
+
+**FlowSpec:**
+
+```python
+from inspect_flow import FlowSpec, FlowStoreConfig
+
+FlowSpec(
+    store=FlowStoreConfig(
+        read=True,   # match logs from the store (default: False)
+        write=True,  # index completed logs (default: True)
+    ),
+    tasks=[...]
+)
+```
+
+CLI flags override `FlowStoreConfig` values. Here's how the flags combine:
+
+: {tbl-colwidths="[60,20,20]"}
+
+| Command | Store read | Store write |
+|---|---|---|
+| `flow run spec.py` | no | yes |
+| `flow run spec.py --store-read` | yes | yes |
+| `flow run spec.py --no-store-write` | no | no |
+| `flow run spec.py --store-read --no-store-write` | yes | no |
+| `flow run spec.py --store none` | no | no |
+
+`--store none` disables the store entirely — no store instance is created, and neither reading nor writing occurs.
+
 ### Setting store location
 
-By default, Flow uses the platform-specific store location shown in [Backend](#backend) to search for and track logs. You can configure which store to use for the `flow run` command with the following precedence:
+By default, Flow uses the platform-specific store location shown in [Backend](#backend) to index and match logs. You can configure which store to use for the `flow run` command with the following precedence:
 
 1. **CLI flag or environment variable** (highest priority):
 ```bash
@@ -140,7 +200,9 @@ FlowSpec(
 )
 ```
 
-This prevents automatic log reuse and Flow Store operations.
+This prevents all Flow Store operations — no logs are indexed or matched.
+
+To disable only matching or only indexing while keeping the other, use the `read` and `write` flags instead (see [Read and write control](#read-and-write-control)).
 
 ### Team collaboration
 
@@ -150,26 +212,22 @@ Set up a shared store on S3 for team collaboration:
 
 ```python
 FlowSpec(
-    store="s3://my-team-bucket/flow-store",
+    store=FlowStoreConfig(
+        path="s3://my-team-bucket/flow-store",
+        read=True,
+    ),
     tasks=[...]
 )
 ```
 
-Team members with access to the S3 bucket can share and reuse logs. Delta Lake supports concurrent access, so multiple team members can safely use the same store simultaneously. See [Inspect AI's S3 documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3) for S3 authentication setup.
+With `read=True`, team members reuse each other's logs automatically. Delta Lake supports concurrent access, so multiple team members can safely use the same store simultaneously. See [Inspect AI's S3 documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3) for S3 authentication setup.
 
 ::: {.callout-tip}
 ## Recommended workflows
 
-**Master FlowSpec approach:** Create a `_flow.py` file at your repository root with the team store location:
+**Master FlowSpec approach:** Create a `_flow.py` file at your repository root with the team store location and `read=True`:
 
-```python
-# _flow.py (at repository root)
-FlowSpec(
-    store="s3://my-team-bucket/flow-store"
-)
-```
-
-Flow automatically discovers and inherits from `_flow.py` files in parent directories, so all team members working in the repository will automatically use the shared store—no explicit includes needed. See [Automatic Discovery](defaults.qmd#inheritance) for details on how `_flow.py` inheritance works.
+Flow automatically discovers and inherits from `_flow.py` files in parent directories, so all team members working in the repository will inherit the shared store configuration — including `read=True` for log matching. No explicit includes needed. See [Automatic Discovery](defaults.qmd#inheritance) for details on how `_flow.py` inheritance works.
 
 **Local-then-import approach:** Run evaluations locally first, then import quality-assured logs to the shared store:
 
@@ -185,6 +243,65 @@ flow store import s3://my-team-bucket/logs/ \
 
 This workflow lets you validate results before sharing them with the team.
 :::
+
+## Filtering
+
+You can filter which logs are eligible for reuse by providing one or more log filters. A log filter is a function that receives an `EvalLog` (loaded in header-only mode) and returns `True` to include the log or `False` to exclude it. When multiple filters are provided, all must pass for a log to be included.
+
+### Defining a filter
+
+Use the `@log_filter` decorator to register a filter function by name:
+
+```python
+from inspect_ai.log import EvalLog
+from inspect_flow import log_filter
+
+@log_filter
+def production_ready(log: EvalLog) -> bool:
+    return log.status == "success" and "reviewed" in (log.eval.tags or [])
+```
+
+### Using a filter with `flow run`
+
+**In your FlowSpec** — use `FlowStoreConfig` to attach a filter to the store:
+
+```python
+from inspect_flow import FlowSpec, FlowStoreConfig
+
+FlowSpec(
+    store=FlowStoreConfig(
+        path="auto",
+        filter=production_ready,  # callable, registered name, or list
+    ),
+    tasks=[...]
+)
+```
+
+**From the CLI** — use `--store-filter` with a registered filter name. Use it multiple times to require all filters to pass:
+
+```bash
+flow run config.py --store-filter production_ready
+flow run config.py --store-filter production_ready --store-filter only_success
+```
+
+The CLI flag overrides any filter set in the spec's `FlowStoreConfig`.
+
+### Using filters with store commands
+
+The `flow store list`, `flow store remove`, and `flow list log` commands support `--filter` and `--exclude` options:
+
+```bash
+# Only show logs that pass the filter
+flow store list --filter production_ready
+
+# Multiple filters (all must pass)
+flow store list --filter production_ready --filter only_success
+
+# Only show logs that do NOT pass the filter
+flow store list --exclude production_ready
+```
+
+`--filter` and `--exclude` are mutually exclusive.
 
 ## CLI Commands
 
@@ -281,6 +398,8 @@ flow store remove logs/old/ --dry-run
 - `INSPECT_FLOW_STORE_RECURSIVE` - Enable recursive search (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_MISSING` - Remove missing logs (`true`/`false`)
 - `INSPECT_FLOW_STORE_REMOVE_DRY_RUN` - Enable dry run mode (`true`/`false`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only remove logs that pass (`--filter`). Space-separate multiple names (all must pass)
+- `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only remove logs that do NOT pass (`--exclude`)
 
 ### The `flow store list` Command
 
@@ -300,6 +419,12 @@ flow store list --format tree
 
 - `INSPECT_FLOW_STORE` - Store location (same as `--store`)
 - `INSPECT_FLOW_STORE_LIST_FORMAT` - Output format (`flat` or `tree`)
+- `INSPECT_FLOW_STORE_FILTER` - Registered filter name; only show logs that pass (`--filter`). Space-separate multiple names (all must pass)
+- `INSPECT_FLOW_STORE_EXCLUDE` - Registered filter name; only show logs that do NOT pass (`--exclude`)
+
+::: {.callout-tip}
+For richer log listing with filtering by task, model, status, and date range, see the [`flow list log`](reference/flow_list.qmd) command.
+:::
 
 ### The `flow store info` Command
 
@@ -337,7 +462,7 @@ flow store delete -y
 
 ### Matching logs
 
-The Flow Store matches logs using a **task identifier** computed by Inspect AI. This identifier is a hash of your task configuration including:
+When [log matching](#log-matching) is enabled, the Flow Store matches logs using a **task identifier** computed by Inspect AI. This identifier is a hash of your task configuration including:
 
 - Task name, model, solver, scorer, and task arguments
 - Model configuration (temperature, top_p, max_tokens, seed, etc.)
@@ -352,9 +477,11 @@ Note that `limit`, `sample_shuffle`, retry parameters, and parallelism settings 
 
 **Missing or corrupted logs**: If a log file referenced in the Flow Store no longer exists or cannot be read, the Flow Store automatically skips it and continues searching for other matching logs. This graceful error handling ensures that deleted or moved log files don't break your workflow.
 
+**Log filters**: Beyond task identifier matching, you can further control which logs are eligible for reuse using log filters. For example, you can restrict reuse to only successful evaluations or logs with specific tags. See [Filtering](#filtering) for details.
+
 ### Resuming incomplete samples
 
-Flow uses Inspect AI's [Eval Set](https://inspect.aisi.org.uk/eval-sets.html#sec-sample-preservation) logic to resume incomplete logs. When the Flow Store finds a matching log, Flow copies it to your current log directory where Inspect's eval_set automatically resumes from it.
+Flow uses Inspect AI's [Eval Set](https://inspect.aisi.org.uk/eval-sets.html#sec-sample-preservation) logic to resume incomplete logs. When log matching is enabled and the Flow Store finds a matching log, Flow copies it to your current log directory where Inspect's eval_set automatically resumes from it. Logs already present in your `log_dir` are always resumed regardless of store settings.
 
 **Sample matching**: For resumption to work, Inspect must match samples from the old log to the current run using sample IDs. There are two approaches:
 

@@ -13,6 +13,7 @@ from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
 
 DisplayType = Literal["full", "rich", "plain"]
+DisplayMode = Literal["run", "dry_run", "check"]
 """Display mode for flow output.
 
 Options:
@@ -20,7 +21,7 @@ Options:
     - "rich": Rich text formatting without interactive elements
     - "plain": Plain text output
 """
-_display_type: DisplayType = "full"
+_display_type: DisplayType = "rich"
 _display: Display | None = None
 
 
@@ -89,7 +90,7 @@ class Display(ABC):
     def stop(self, remove_actions: list[str] | None = None) -> None: ...
 
 
-def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
+def create_display(mode: DisplayMode, actions: dict[str, DisplayAction]) -> Display:
     if _display_type == "plain":
         from inspect_flow._display.plain import PlainDisplay
 
@@ -97,4 +98,4 @@ def create_display(dry_run: bool, actions: dict[str, DisplayAction]) -> Display:
     else:
         from inspect_flow._display.full_actions import FullActionsDisplay
 
-        return FullActionsDisplay(dry_run=dry_run, actions=actions)
+        return FullActionsDisplay(mode=mode, actions=actions)

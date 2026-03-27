@@ -17,16 +17,15 @@ from inspect_ai._eval.evalset import (
     task_identifier,
 )
 from inspect_ai._util._async import run_coroutine, tg_collect
-from inspect_ai._util.file import exists, filesystem, to_uri
+from inspect_ai._util.file import absolute_file_path, exists, filesystem, to_uri
 from inspect_ai.log import EvalLog, read_eval_log, read_eval_log_async
 from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
 
-from inspect_flow._display.display import display
 from inspect_flow._display.path_progress import PathProgressDisplay, ReadLogsProgress
-from inspect_flow._store.store import FlowStoreInternal, is_better_log
+from inspect_flow._store.store import FlowStoreInternal, StoreLogMatch, is_better_log
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.console import (
     console,
@@ -191,7 +190,6 @@ class DeltaLakeStore(FlowStoreInternal):
         self,
         store_path: str,
         create: bool = False,
-        quiet: bool = False,
         log_filter: LogFilter | None = None,
     ) -> None:
         self._log_filter = log_filter
@@ -204,15 +202,11 @@ class DeltaLakeStore(FlowStoreInternal):
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
             logger.info("Using store: %s", path(store_path))
-            if not quiet:
-                display().print("Using store:", path(store_path), action_key="logs")
             self.exists = True
         else:
             logger.info("Store not found")
             if create:
                 logger.info("Creating store: %s", path(store_path))
-                if not quiet:
-                    display().print("Using store:", path(store_path), action_key="logs")
                 self.exists = True
 
     def _filter_logs(self, logs: set[str], filter: LogFilter | None) -> set[str]:
@@ -335,6 +329,7 @@ class DeltaLakeStore(FlowStoreInternal):
         flow_print("\nImporting logs to store")
         logs: list[Log] = []
         for p in log_path:
+            p = absolute_file_path(p)
             fs = filesystem(p)
             if not fs.exists(p):
                 flow_print("Error: Path", path(p), "does not exist", format="error")
@@ -454,17 +449,16 @@ class DeltaLakeStore(FlowStoreInternal):
         return len(new_logs)
 
     @override
-    def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
-        results = dict()
-        remaining_task_ids = set(task_ids)
-
-        indexed_logs = self._get_logs(remaining_task_ids)
-        for task_id in list(remaining_task_ids):
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, StoreLogMatch]:
+        results: dict[str, StoreLogMatch] = {}
+        indexed_logs = self._get_logs(set(task_ids))
+        for task_id in task_ids:
             if task_id not in indexed_logs:
                 continue
             logs = indexed_logs[task_id]
-            best_log = None
-            best_eval_log = None
+            best_log: str | None = None
+            best_eval_log: EvalLog | None = None
+            task_duplicates: list[str] = []
             for log in logs:
                 try:
                     eval_log = read_eval_log(log, header_only=True)
@@ -473,13 +467,19 @@ class DeltaLakeStore(FlowStoreInternal):
                         f"Failed to read log {path_str(log)} referenced from the store. {e}"
                     )
                     continue
+                if self._log_filter and not self._log_filter(eval_log):
+                    continue
                 if is_better_log(eval_log, best_eval_log):
-                    if self._log_filter and not self._log_filter(eval_log):
-                        continue
+                    if best_log:
+                        task_duplicates.append(best_log)
                     best_log = log
                     best_eval_log = eval_log
+                else:
+                    task_duplicates.append(log)
             if best_log:
-                results[task_id] = best_log
+                results[task_id] = StoreLogMatch(
+                    log_file=best_log, duplicate_logs=task_duplicates
+                )
         return results
 
     @override

@@ -31,6 +31,8 @@ website:
           contents:
              - text: flow config
                href: reference/flow_config.qmd
+             - text: flow list
+               href: reference/flow_list.qmd
              - text: flow run
                href: reference/flow_run.qmd
              - text: flow store

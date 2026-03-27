@@ -51,21 +51,22 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     # subprocess.Popen is called once to launch the Python process
     mock_venv_subprocess.popen.assert_called_once()
     args = mock_venv_subprocess.popen.call_args.args[0]
-    assert len(args) == 10
+    assert len(args) == 11
     assert str(args[0]).endswith("/.venv/bin/python")
     assert args[1] == str(
         (
             Path(__file__).parents[1] / "src" / "inspect_flow" / "_runner" / "cli.py"
         ).resolve()
     )
-    assert args[2] == "--file"
-    assert "flow.yaml" in args[3]
-    assert args[4] == "--base-dir"
-    assert args[5] == Path.cwd().as_posix()
-    assert args[6] == "--log-level"
-    assert args[7] == DEFAULT_LOG_LEVEL
-    assert args[8] == "--display"
-    assert args[9] == "full"
+    assert args[2] == "run"
+    assert args[3] == "--file"
+    assert "flow.yaml" in args[4]
+    assert args[5] == "--base-dir"
+    assert args[6] == Path.cwd().as_posix()
+    assert args[7] == "--log-level"
+    assert args[8] == DEFAULT_LOG_LEVEL
+    assert args[9] == "--display"
+    assert args[10] == "rich"
 
 
 def test_env(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
+from typing import NamedTuple
 
 from inspect_ai import Epochs, Task
 from inspect_ai._eval.eval import eval_resolve_tasks
@@ -17,6 +18,7 @@ from inspect_ai.log import EvalConfig, EvalLog, read_eval_log
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.scorer._reducer.registry import reducer_log_name
 
+from inspect_flow._display.display import DisplayMode
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._runner.instantiate import InstantiatedTask
@@ -28,11 +30,17 @@ from inspect_flow._types.flow_types import (
     FlowTask,
 )
 from inspect_flow._util.console import quantity
+from inspect_flow._util.logs import num_valid_samples
 from inspect_flow._util.not_given import default_none
 from inspect_flow._util.path_util import path_join, path_str
 from inspect_flow._util.pydantic_util import model_dump
 
 logger = getLogger(__name__)
+
+
+class FindLogsResult(NamedTuple):
+    task_log_info: dict[str, TaskLogInfo]
+    unexpected_logs: list[str]
 
 
 def get_task_ids_to_tasks(
@@ -102,7 +110,8 @@ def _epochs_reducer_changed(epochs: Epochs | None, config: EvalConfig) -> bool:
 def num_log_samples(
     header: EvalLog, log_info: TaskLogInfo, limit: int | tuple[int, int] | None
 ) -> int:
-    if not header.results or header.invalidated:
+    log_samples = num_valid_samples(header)
+    if log_samples == 0:
         return 0
     task = log_info.task
     epochs = resolve_epochs(
@@ -115,19 +124,19 @@ def num_log_samples(
     epoch_count = epochs.epochs if epochs else 1
     log_epoch_count = header.eval.config.epochs or 1
     if log_epoch_count <= epoch_count:
-        return header.results.completed_samples
+        return log_samples
     else:
         # Log has more epochs than the current task - unclear how many samples can be reused.
         # Assume that samples are evenly distributed across epochs.
-        return int(header.results.completed_samples * epoch_count / log_epoch_count)
+        return int(log_samples * epoch_count / log_epoch_count)
 
 
 def find_existing_logs(
     task_id_to_task: dict[str, InstantiatedTask],
     spec: FlowSpec,
     store: FlowStoreInternal | None,
-    dry_run: bool = False,
-) -> dict[str, TaskLogInfo]:
+    mode: DisplayMode = "run",
+) -> FindLogsResult:
     with RunAction("logs") as action:
         assert spec.log_dir
         with ReadLogsProgress(action=action) as progress:
@@ -137,9 +146,12 @@ def find_existing_logs(
         limit = default_none(options.limit)
 
         logs_by_task: dict[str, list[Log]] = {}
+        unexpected_logs: list[str] = []
         for log in logs:
             if log.task_identifier in task_id_to_task:
                 logs_by_task.setdefault(log.task_identifier, []).append(log)
+            elif mode == "check":
+                unexpected_logs.append(log.info.name)
             elif not options.log_dir_allow_dirty:
                 action.update(
                     status="error",
@@ -166,9 +178,13 @@ def find_existing_logs(
         for id, log_info in result.items():
             for log in logs_by_task.get(id, []):
                 log_samples = num_log_samples(log.header, log_info, limit)
-                if log_samples >= log_info.log_samples:
+                if log_samples < log_info.log_samples:
+                    log_info.duplicate_logs.append(log.info.name)
+                else:
+                    if log_info.eval_log:
+                        log_info.duplicate_logs.append(log_info.eval_log.location)
                     log_info.log_samples = log_samples
-                    log_info.log_file = log.info.name
+                    log_info.eval_log = log.header
                     if task_id_to_task.pop(id, None):
                         num_found += 1
 
@@ -180,28 +196,34 @@ def find_existing_logs(
             action.update(info="No existing logs found in log directory")
 
         if not task_id_to_task or not store:
-            return result
+            return FindLogsResult(
+                task_log_info=result,
+                unexpected_logs=unexpected_logs,
+            )
 
-        log_files = store.search_for_logs(set(task_id_to_task.keys()))
-        if log_files:
+        store_matches = store.search_for_logs(set(task_id_to_task.keys()))
+        if store_matches:
+            store_msg = f"Found {quantity(len(store_matches), 'existing log')} in store. Copying to log directory"
             if num_found:
                 action.update(
-                    info=f"Found {quantity(num_found, 'existing log')} in log directory. Copying {quantity(len(log_files), 'existing log')}, to log directory"
+                    info=f"Found {quantity(num_found, 'existing log')} in log directory. {store_msg}"
                 )
             else:
-                action.update(
-                    info=f"Copying {quantity(len(log_files), 'existing log')} to log dir"
-                )
-            num_found += len(log_files)
-            for task_id, log_file in log_files.items():
+                action.update(info=store_msg)
+            num_found += len(store_matches)
+            for task_id, match in store_matches.items():
                 log_info = result[task_id]
-                header = read_eval_log(log_file, header_only=True)
-                log_info.log_file = log_file
+                header = read_eval_log(match.log_file, header_only=True)
+                log_info.eval_log = header
                 log_info.log_samples = num_log_samples(header, log_info, limit)
-                if not dry_run:
-                    destination = path_join(spec.log_dir, basename(log_file))
-                    copy_file(log_file, destination)
+                log_info.duplicate_logs.extend(match.duplicate_logs)
+                if mode == "run":
+                    destination = path_join(spec.log_dir, basename(match.log_file))
+                    copy_file(match.log_file, destination)
 
         if not num_found:
             action.update(info="No existing logs found", status="success")
-    return result
+        return FindLogsResult(
+            task_log_info=result,
+            unexpected_logs=unexpected_logs,
+        )

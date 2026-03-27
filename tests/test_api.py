@@ -7,7 +7,7 @@ import pytest
 from inspect_flow._api import api as api_module
 from inspect_flow._types.flow_types import FlowSpec, FlowTask, not_given
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
-from inspect_flow.api import config, init, load_spec, run, store_get
+from inspect_flow.api import check, config, init, load_spec, run, store_get
 
 from tests.test_helpers.config_helpers import validate_config
 
@@ -143,3 +143,18 @@ def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
         resumed_log_dir = mock_run_eval_set.call_args.args[0].log_dir
 
     assert resumed_log_dir == first_log_dir
+
+
+def test_check_disables_log_dir_create_unique(tmp_path: Path) -> None:
+    spec = FlowSpec(
+        log_dir=str(tmp_path / "logs"),
+        log_dir_create_unique=True,
+        store="none",
+        tasks=["local_eval/noop"],
+    )
+
+    with patch("inspect_flow._api.api.launch_check") as mock_check:
+        check(spec=spec, base_dir="./tests/config/")
+        checked_spec = mock_check.call_args.kwargs["spec"]
+
+    assert not checked_spec.log_dir_create_unique

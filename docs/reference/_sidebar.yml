@@ -19,8 +19,8 @@ website:
           href: reference/inspect_flow.qmd#flowdependencies
         - text: FlowEpochs
           href: reference/inspect_flow.qmd#flowepochs
-        - text: FlowSpec
-          href: reference/inspect_flow.qmd#flowspec
+        - text: FlowFactory
+          href: reference/inspect_flow.qmd#flowfactory
         - text: FlowModel
           href: reference/inspect_flow.qmd#flowmodel
         - text: FlowOptions
@@ -29,10 +29,18 @@ website:
           href: reference/inspect_flow.qmd#flowscorer
         - text: FlowSolver
           href: reference/inspect_flow.qmd#flowsolver
+        - text: FlowSpec
+          href: reference/inspect_flow.qmd#flowspec
+        - text: FlowStoreConfig
+          href: reference/inspect_flow.qmd#flowstoreconfig
         - text: FlowTask
           href: reference/inspect_flow.qmd#flowtask
+        - text: LogFilter
+          href: reference/inspect_flow.qmd#logfilter
         - text: after_load
           href: reference/inspect_flow.qmd#after_load
+        - text: log_filter
+          href: reference/inspect_flow.qmd#log_filter
         - text: agents_matrix
           href: reference/inspect_flow.qmd#agents_matrix
         - text: agents_with
@@ -66,6 +74,8 @@ website:
           href: reference/inspect_flow.api.qmd#load_spec
         - text: config
           href: reference/inspect_flow.api.qmd#config
+        - text: list_logs
+          href: reference/inspect_flow.api.qmd#list_logs
         - text: store_get
           href: reference/inspect_flow.api.qmd#store_get
         - text: delete_store
@@ -81,6 +91,8 @@ website:
       contents:
       - text: flow config
         href: reference/flow_config.qmd
+      - text: flow list
+        href: reference/flow_list.qmd
       - text: flow run
         href: reference/flow_run.qmd
       - text: flow store
