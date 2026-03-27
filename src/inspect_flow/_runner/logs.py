@@ -181,10 +181,10 @@ def find_existing_logs(
                 if log_samples < log_info.log_samples:
                     log_info.duplicate_logs.append(log.info.name)
                 else:
-                    if log_info.log_file:
-                        log_info.duplicate_logs.append(log_info.log_file)
+                    if log_info.eval_log:
+                        log_info.duplicate_logs.append(log_info.eval_log.location)
                     log_info.log_samples = log_samples
-                    log_info.log_file = log.info.name
+                    log_info.eval_log = log.header
                     if task_id_to_task.pop(id, None):
                         num_found += 1
 
@@ -214,7 +214,7 @@ def find_existing_logs(
             for task_id, match in store_matches.items():
                 log_info = result[task_id]
                 header = read_eval_log(match.log_file, header_only=True)
-                log_info.log_file = match.log_file
+                log_info.eval_log = header
                 log_info.log_samples = num_log_samples(header, log_info, limit)
                 log_info.duplicate_logs.extend(match.duplicate_logs)
                 if mode == "run":

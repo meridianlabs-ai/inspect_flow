@@ -236,7 +236,7 @@ def _print_result(
             logger.error(f"Log returned that does not match any task: {log.location}")
         else:
             info.log_samples = num_log_samples(log, info, default_none(options.limit))
-            info.log_file = log.location
+            info.eval_log = log
 
     task_log = create_task_log_display(task_log_info, mode="post-run")
 
