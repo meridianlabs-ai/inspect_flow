@@ -3,8 +3,6 @@ from typing import Any
 
 from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log, write_eval_log
 
-from inspect_flow._steps.context import clear_context, init_context
-
 
 def run_step(
     step: Callable[..., list[EvalLog]],
@@ -31,11 +29,7 @@ def run_step(
         info.name for p in paths for info in list_eval_logs(p, recursive=recursive)
     ]
     logs = [read_eval_log(p, header_only=True) for p in log_paths]
-    ctx = init_context()
-    try:
-        result = step(logs, **kwargs)
-        for log in ctx.dirty.values():
-            write_eval_log(log, log.location)
-    finally:
-        clear_context()
+    result = step(logs, **kwargs)
+    for log in result:
+        write_eval_log(log, log.location)
     return result
