@@ -41,8 +41,8 @@ def output_options(f: F) -> F:
     return f
 
 
-def config_options(f: F) -> F:
-    """Options for overriding the config."""
+def base_config_options(f: F) -> F:
+    """Shared options for commands that load a flow config."""
     f = output_options(f)
     f = click.argument(
         "config-file",
@@ -91,6 +91,45 @@ def config_options(f: F) -> F:
     """,
     )(f)
     f = click.option(
+        "--log-dir",
+        type=click.Path(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            readable=True,
+            resolve_path=False,
+        ),
+        default=None,
+        help="Set the log directory. Will override the `log_dir` specified in the config.",
+        envvar="INSPECT_FLOW_LOG_DIR",
+    )(f)
+    return f
+
+
+def check_options(f: F) -> F:
+    """Options for the check command."""
+    f = base_config_options(f)
+    f = click.option(
+        "--limit",
+        type=int,
+        default=None,
+        help="Set the expected number of samples per task for completeness calculation.",
+        envvar="INSPECT_FLOW_LIMIT",
+    )(f)
+    f = click.option(
+        "--venv",
+        type=bool,
+        is_flag=True,
+        help="If set, resolve tasks in a virtual environment in a temporary directory.",
+        envvar="INSPECT_FLOW_VENV",
+    )(f)
+    return f
+
+
+def config_options(f: F) -> F:
+    """Options for overriding the config."""
+    f = base_config_options(f)
+    f = click.option(
         "--limit",
         type=int,
         default=None,
@@ -130,19 +169,6 @@ def config_options(f: F) -> F:
         envvar="INSPECT_FLOW_STORE_WRITE",
     )(f)
     f = click.option(
-        "--log-dir",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
-        default=None,
-        help="Set the log directory. Will override the `log_dir` specified in the config.",
-        envvar="INSPECT_FLOW_LOG_DIR",
-    )(f)
-    f = click.option(
         "--log-dir-create-unique/--no-log-dir-create-unique",
         default=None,
         help="If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`).",
@@ -170,19 +196,25 @@ class OutputOptionArgs(TypedDict, total=False):
     display: DisplayType
 
 
-class ConfigOptionArgs(OutputOptionArgs, total=False):
+class BaseConfigOptionArgs(OutputOptionArgs, total=False):
+    log_dir: str | None
+    set: list[str] | None
+    arg: list[str] | None
+
+
+class CheckOptionArgs(BaseConfigOptionArgs, total=False):
+    limit: int | None
+    venv: bool | None
+
+
+class ConfigOptionArgs(CheckOptionArgs, total=False):
     store: str | None
     store_filter: tuple[str, ...]
     store_read: bool | None
     store_write: bool | None
-    log_dir: str | None
     log_dir_allow_dirty: bool | None
     log_dir_create_unique: bool | None
     resume: bool | None
-    limit: int | None
-    set: list[str] | None
-    arg: list[str] | None
-    venv: bool | None
 
 
 def init_output(**kwargs: Unpack[OutputOptionArgs]) -> None:
@@ -212,7 +244,7 @@ def _options_to_overrides(**kwargs: Unpack[ConfigOptionArgs]) -> list[str]:
     return overrides
 
 
-def _options_to_args(**kwargs: Unpack[ConfigOptionArgs]) -> dict[str, Any]:
+def _options_to_args(**kwargs: Unpack[BaseConfigOptionArgs]) -> dict[str, Any]:
     args = list(kwargs.get("arg") or [])  # arg may be a tuple (at least in tests)
     return parse_cli_args(args)
 

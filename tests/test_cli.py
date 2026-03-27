@@ -144,7 +144,7 @@ def test_check_command_disables_log_dir_create_unique() -> None:
     with patch("inspect_flow._cli.check.launch_check") as mock_check:
         result = runner.invoke(
             check_command,
-            [CONFIG_FILE, "--log-dir-create-unique"],
+            [CONFIG_FILE, "--set", "log_dir_create_unique=True"],
             catch_exceptions=False,
         )
 
