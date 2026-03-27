@@ -303,12 +303,37 @@ class TestCreateTaskLogDisplay:
                 task=_make_task("x"),
                 task_samples=10,
                 log_samples=5,
-                log_file="/tmp/log.json",
             ),
         }
         output = _render_text(create_task_log_display(info, mode="pre-run"))
         assert "5/10" in output
         assert "x" in output
+
+    def test_tags_column_shown_when_tags_present(self) -> None:
+        eval_log = EvalLog(
+            status="success",
+            eval=EvalSpec(
+                created="2024-01-01T00:00:00Z",
+                task="x",
+                dataset=EvalDataset(),
+                model="none",
+                config=EvalConfig(),
+                tags=["foo", "bar"],
+            ),
+        )
+        info = {
+            "id1": TaskLogInfo(task=_make_task("x"), eval_log=eval_log),
+        }
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
+        assert "Tags" in output
+        assert "bar, foo" in output
+
+    def test_tags_column_hidden_when_no_tags(self) -> None:
+        info = {
+            "id1": TaskLogInfo(task=_make_task("x")),
+        }
+        output = _render_text(create_task_log_display(info, mode="pre-run"))
+        assert "Tags" not in output
 
 
 # ── run.py ──────────────────────────────────────────────────

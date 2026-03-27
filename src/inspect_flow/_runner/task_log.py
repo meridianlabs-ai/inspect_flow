@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
+from inspect_ai.log import EvalLog
 from inspect_ai.model._generate_config import GenerateConfig
 from rich.console import Group, RenderableType
 from rich.table import Table
@@ -24,7 +25,7 @@ class TaskLogInfo:
     task: Task
     flow_task: FlowTask | None = None
     task_samples: int | None = None
-    log_file: str | None = None
+    eval_log: EvalLog | None = None
     log_samples: int = 0
     duplicate_logs: list[str] = field(default_factory=list)
 
@@ -293,7 +294,8 @@ def create_task_log_display(
     qualifiers = unique_task_names([task_log_to_task_info(i) for i in infos])
 
     have_quals = any(qual for _, qual in qualifiers.names)
-    have_logs = any(info.log_file for info in infos)
+    have_logs = any(info.eval_log for info in infos)
+    have_tags = any(info.eval_log and info.eval_log.tags for info in infos)
 
     adj = "Completed" if mode == "post-run" else "Existing"
     table = Table(show_edge=False, box=None, padding=(0, 1), expand=False)
@@ -304,6 +306,8 @@ def create_task_log_display(
     if have_logs:
         table.add_column(f"{adj} Log File", no_wrap=True, ratio=2, overflow="ellipsis")
     table.add_column(f"{adj}\nSamples", justify="right")
+    if have_tags:
+        table.add_column("Tags")
     # blank separator row
     table.add_row(*[""] * len(table.columns))
     for info, (base_name, qual) in zip(infos, qualifiers.names, strict=True):
@@ -317,7 +321,10 @@ def create_task_log_display(
         if have_quals:
             row.append(qual)
         if have_logs:
-            row.append(path(info.log_file) if info.log_file else "")
+            row.append(path(info.eval_log.location) if info.eval_log else "")
         row.append(samples)
+        if have_tags:
+            tags = info.eval_log.tags if info.eval_log else None
+            row.append(", ".join(tags) if tags else "")
         table.add_row(*row)
     return Group(header, table)

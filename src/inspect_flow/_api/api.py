@@ -158,7 +158,7 @@ def _to_check_result(logs_result: FindLogsResult) -> CheckResult:
             CheckTask(
                 name=info.task.name,
                 task=info.flow_task,
-                log_file=info.log_file,
+                log_file=info.eval_log.location if info.eval_log else None,
                 samples=info.log_samples,
                 total_samples=info.task_samples,
                 duplicate_logs=info.duplicate_logs,
