@@ -15,7 +15,12 @@ from inspect_ai.log._file import EvalLogInfo
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._store.deltalake import DeltaLakeStore
-from inspect_flow._store.store import _flow_store_path, is_better_log, store_factory
+from inspect_flow._store.store import (
+    StoreLogMatch,
+    _flow_store_path,
+    is_better_log,
+    store_factory,
+)
 from inspect_flow._util.logs import copy_all_logs
 from rich.console import Console
 
@@ -208,7 +213,7 @@ def test_search_prefers_more_completed_samples(tmp_path: Path) -> None:
 
     results = store.search_for_logs({task_id})
     assert len(results) == 1
-    assert results[task_id] == log2
+    assert results[task_id] == StoreLogMatch(log_file=log2, duplicate_logs=[log1])
 
 
 def test_search_finds_log_without_results(tmp_path: Path) -> None:
@@ -229,7 +234,7 @@ def test_search_finds_log_without_results(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log2, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log1
+    assert results[task_id] == StoreLogMatch(log_file=log1, duplicate_logs=[log2])
 
 
 def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
@@ -251,7 +256,7 @@ def test_search_prefers_valid_over_no_results(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log1, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log1
+    assert results[task_id] == StoreLogMatch(log_file=log1, duplicate_logs=[log2])
 
 
 def test_search_finds_invalidated_log(tmp_path: Path) -> None:
@@ -259,7 +264,7 @@ def test_search_finds_invalidated_log(tmp_path: Path) -> None:
     log_dir_partial = str(tmp_path / "logs_partial")
 
     log_full = _run_task(log_dir_full)
-    _run_task(log_dir_partial, limit=1)
+    log_partial = _run_task(log_dir_partial, limit=1)
 
     # Invalidate the full log
     full = read_eval_log(log_full)
@@ -273,7 +278,9 @@ def test_search_finds_invalidated_log(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log_full, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log_full
+    assert results[task_id] == StoreLogMatch(
+        log_file=log_full, duplicate_logs=[log_partial]
+    )
 
 
 def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:
@@ -291,7 +298,7 @@ def test_search_uses_invalidated_log_when_only_option(tmp_path: Path) -> None:
 
     task_id = task_identifier(read_eval_log(log_path, header_only=True), None)
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log_path
+    assert results[task_id] == StoreLogMatch(log_file=log_path, duplicate_logs=[])
 
 
 def test_search_prefers_more_recent_when_equal_samples(tmp_path: Path) -> None:
@@ -323,7 +330,7 @@ def test_search_prefers_more_recent_when_equal_samples(tmp_path: Path) -> None:
     store.import_log_path([log_dir1, log_dir2])
 
     results = store.search_for_logs({task_id})
-    assert results[task_id] == log2
+    assert results[task_id] == StoreLogMatch(log_file=log2, duplicate_logs=[log1])
 
 
 def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) -> None:
@@ -359,7 +366,7 @@ def test_search_uses_store_in_run(recording_console: Console, tmp_path: Path) ->
     # search_for_logs should pick the full-sample log
     results = store.search_for_logs({task_id})
     full_log = str(list_eval_logs(log_dir2)[0].name)
-    assert results[task_id] == full_log
+    assert results[task_id].log_file == full_log
 
 
 def test_copy_all_logs_s3_to_s3(mock_s3: BaseClient) -> None:
