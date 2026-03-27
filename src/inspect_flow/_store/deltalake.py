@@ -449,7 +449,9 @@ class DeltaLakeStore(FlowStoreInternal):
         return len(new_logs)
 
     @override
-    def search_for_logs(self, task_ids: set[str]) -> dict[str, str]:
+    def search_for_logs(
+        self, task_ids: set[str], duplicate_logs: list[str] | None = None
+    ) -> dict[str, str]:
         results = dict()
         remaining_task_ids = set(task_ids)
 
@@ -468,11 +470,15 @@ class DeltaLakeStore(FlowStoreInternal):
                         f"Failed to read log {path_str(log)} referenced from the store. {e}"
                     )
                     continue
+                if self._log_filter and not self._log_filter(eval_log):
+                    continue
                 if is_better_log(eval_log, best_eval_log):
-                    if self._log_filter and not self._log_filter(eval_log):
-                        continue
+                    if best_log and duplicate_logs is not None:
+                        duplicate_logs.append(best_log)
                     best_log = log
                     best_eval_log = eval_log
+                elif duplicate_logs is not None:
+                    duplicate_logs.append(log)
             if best_log:
                 results[task_id] = best_log
         return results

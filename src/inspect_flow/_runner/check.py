@@ -33,5 +33,10 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> None:
             action.print("Unexpected logs:", format="warning")
             for log_name in logs_result.unexpected_logs:
                 action.print(path(log_name))
+        if logs_result.duplicate_logs:
+            action.print("")
+            action.print("Duplicate logs:", format="info")
+            for log_name in logs_result.duplicate_logs:
+                action.print(path(log_name))
         action.print("Log dir:", path(log_dir), copyable=True)
         action.print("")

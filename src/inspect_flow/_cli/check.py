@@ -6,7 +6,7 @@ from typing_extensions import Unpack
 
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
-    config_options,
+    check_options,
     init_output,
     parse_config_options,
 )
@@ -22,13 +22,15 @@ _check_actions = {
 } | CHECK_ACTIONS
 
 
-@click.command("check", help="Check a spec against existing logs")
-@config_options
+@click.command(
+    "check",
+    help="Check a spec against existing logs (searches log directory recursively)",
+)
+@check_options
 def check_command(
     config_file: str,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
-    """CLI command to check a spec against existing logs."""
     init_output(**kwargs)
     config_file = absolute_file_path(config_file)
     with create_display(mode="check", actions=_check_actions) as display:
