@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from typing import Sequence
+from typing import NamedTuple, Sequence
 
 from inspect_ai._util.file import filesystem
 from inspect_ai.log import EvalLog
@@ -94,13 +94,16 @@ class FlowStore(ABC):
         pass
 
 
+class StoreLogMatch(NamedTuple):
+    log_file: str
+    duplicate_logs: list[str]
+
+
 class FlowStoreInternal(FlowStore):
     """Internal interface for flow store implementations."""
 
     @abstractmethod
-    def search_for_logs(
-        self, task_ids: set[str], duplicate_logs: list[str] | None = None
-    ) -> dict[str, str]:
+    def search_for_logs(self, task_ids: set[str]) -> dict[str, StoreLogMatch]:
         pass
 
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:

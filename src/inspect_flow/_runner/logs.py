@@ -41,7 +41,6 @@ logger = getLogger(__name__)
 class FindLogsResult(NamedTuple):
     task_log_info: dict[str, TaskLogInfo]
     unexpected_logs: list[str]
-    duplicate_logs: list[str]
 
 
 def get_task_ids_to_tasks(
@@ -148,7 +147,6 @@ def find_existing_logs(
 
         logs_by_task: dict[str, list[Log]] = {}
         unexpected_logs: list[str] = []
-        duplicate_logs: list[str] = []
         for log in logs:
             if log.task_identifier in task_id_to_task:
                 logs_by_task.setdefault(log.task_identifier, []).append(log)
@@ -181,10 +179,10 @@ def find_existing_logs(
             for log in logs_by_task.get(id, []):
                 log_samples = num_log_samples(log.header, log_info, limit)
                 if log_samples < log_info.log_samples:
-                    duplicate_logs.append(log.info.name)
+                    log_info.duplicate_logs.append(log.info.name)
                 else:
                     if log_info.log_file:
-                        duplicate_logs.append(log_info.log_file)
+                        log_info.duplicate_logs.append(log_info.log_file)
                     log_info.log_samples = log_samples
                     log_info.log_file = log.info.name
                     if task_id_to_task.pop(id, None):
@@ -201,34 +199,31 @@ def find_existing_logs(
             return FindLogsResult(
                 task_log_info=result,
                 unexpected_logs=unexpected_logs,
-                duplicate_logs=duplicate_logs,
             )
 
-        log_files = store.search_for_logs(
-            set(task_id_to_task.keys()), duplicate_logs=duplicate_logs
-        )
-        if log_files:
-            store_msg = f"Found {quantity(len(log_files), 'existing log')} in store. Copying to log directory"
+        store_matches = store.search_for_logs(set(task_id_to_task.keys()))
+        if store_matches:
+            store_msg = f"Found {quantity(len(store_matches), 'existing log')} in store. Copying to log directory"
             if num_found:
                 action.update(
                     info=f"Found {quantity(num_found, 'existing log')} in log directory. {store_msg}"
                 )
             else:
                 action.update(info=store_msg)
-            num_found += len(log_files)
-            for task_id, log_file in log_files.items():
+            num_found += len(store_matches)
+            for task_id, match in store_matches.items():
                 log_info = result[task_id]
-                header = read_eval_log(log_file, header_only=True)
-                log_info.log_file = log_file
+                header = read_eval_log(match.log_file, header_only=True)
+                log_info.log_file = match.log_file
                 log_info.log_samples = num_log_samples(header, log_info, limit)
+                log_info.duplicate_logs.extend(match.duplicate_logs)
                 if mode == "run":
-                    destination = path_join(spec.log_dir, basename(log_file))
-                    copy_file(log_file, destination)
+                    destination = path_join(spec.log_dir, basename(match.log_file))
+                    copy_file(match.log_file, destination)
 
         if not num_found:
             action.update(info="No existing logs found", status="success")
         return FindLogsResult(
             task_log_info=result,
             unexpected_logs=unexpected_logs,
-            duplicate_logs=duplicate_logs,
         )
