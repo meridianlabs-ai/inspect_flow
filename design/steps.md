@@ -119,56 +119,7 @@ See [_steps/tag.py](../src/inspect_flow/_steps/tag.py). Applies `TagsEdit` via `
 
 ### `metadata`
 
-```python
-@overload
-def metadata(
-    logs: str | Sequence[str],
-    *,
-    metadata_set: dict[str, Any] | None = None,
-    metadata_remove: list[str] | None = None,
-    provenance: ProvenanceData | None = None,
-    author: str | None = None,
-    reason: str | None = None,
-    recursive: bool = True,
-    dry_run: bool = False,
-) -> list[str]: ...
-
-@overload
-def metadata(
-    logs: EvalLog | Sequence[EvalLog],
-    *,
-    metadata_set: dict[str, Any] | None = None,
-    metadata_remove: list[str] | None = None,
-    provenance: ProvenanceData | None = None,
-    author: str | None = None,
-    reason: str | None = None,
-) -> list[EvalLog]: ...
-
-def metadata(logs, *, metadata_set=None, metadata_remove=None, provenance=None,
-             author=None, reason=None, recursive=True, dry_run=False):
-    """Set or delete metadata fields on eval logs.
-
-    Under the hood: applies MetadataEdit via edit_eval_log.
-
-    In standalone mode (paths): reads each log, applies edit, writes back.
-    In composition mode (EvalLog objects): applies edit in-memory, returns
-    modified EvalLog objects without writing to disk.
-
-    Args:
-        logs: Log file(s), directory(ies), or EvalLog object(s).
-        metadata_set: Key-value pairs to set.
-        metadata_remove: Keys to delete.
-        provenance: Full provenance object. Overrides author/reason.
-        author: Provenance author. Defaults to git user.
-        reason: Provenance reason.
-        recursive: Recurse into directories (standalone mode only).
-        dry_run: Preview changes without writing (standalone mode only).
-            Validates that all logs can be read and edits can be applied.
-
-    Returns:
-        Paths of modified logs (standalone) or modified EvalLog objects (composition).
-    """
-```
+See [_steps/tag.py](../src/inspect_flow/_steps/tag.py). Applies `MetadataEdit` via `edit_eval_log`. Same provenance defaults as `tag`.
 
 ### `validate`
 
