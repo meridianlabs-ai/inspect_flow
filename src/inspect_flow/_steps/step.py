@@ -1,4 +1,6 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Concatenate, ParamSpec, Sequence
 
 from inspect_ai._util.registry import (
@@ -13,6 +15,25 @@ STEP_TYPE = "step"
 P = ParamSpec("P")
 StepFunction = Callable[Concatenate[list[EvalLog], P], list[EvalLog]]
 WrappedStepFunction = Callable[Concatenate[Sequence[EvalLog | str], P], list[EvalLog]]
+
+# Tracks modified logs across nested step calls. None means no active step.
+_step_dirty: ContextVar[dict[str, EvalLog] | None] = ContextVar(
+    "_step_dirty", default=None
+)
+
+
+@contextmanager
+def _step_context() -> Iterator[tuple[dict[str, EvalLog], bool]]:
+    dirty = _step_dirty.get()
+    if dirty is not None:
+        yield dirty, False
+    else:
+        dirty = {}
+        token = _step_dirty.set(dirty)
+        try:
+            yield dirty, True
+        finally:
+            _step_dirty.reset(token)
 
 
 def _read_log(log_or_path: EvalLog | str) -> list[EvalLog]:
@@ -39,10 +60,14 @@ def step(func: StepFunction[P]) -> WrappedStepFunction[P]:
         logs_or_paths: Sequence[EvalLog | str], *args: P.args, **kwargs: P.kwargs
     ) -> list[EvalLog]:
         logs = _read_logs(logs_or_paths)
-        modified_logs = func(logs, *args, **kwargs)
-        for log in modified_logs:
-            write_eval_log(log, log.location)
-        return modified_logs
+        with _step_context() as (dirty, is_outer):
+            modified_logs = func(logs, *args, **kwargs)
+            for log in modified_logs:
+                dirty[log.location] = log
+            if is_outer:
+                for log in dirty.values():
+                    write_eval_log(log, log.location)
+            return modified_logs
 
     name = registry_name(func, func.__name__)
     registry_add(
