@@ -58,7 +58,6 @@ dev = [
 ]
 
 [tool.uv.sources]
-inspect-ai = { path = "../inspect_ai", editable = true }
 local-eval = { path = "tests/local_eval", editable = true }
 
 
