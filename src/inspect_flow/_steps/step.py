@@ -1,7 +1,7 @@
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Concatenate, ParamSpec, Sequence
+from typing import Concatenate, ParamSpec, Sequence, overload
 
 from inspect_ai._util.registry import (
     RegistryInfo,
@@ -48,30 +48,50 @@ def _read_logs(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog]:
     return [log for item in logs_or_paths for log in _read_log(item)]
 
 
-def step(func: StepFunction[P]) -> WrappedStepFunction[P]:
+@overload
+def step(func: StepFunction[P]) -> WrappedStepFunction[P]: ...
+
+
+@overload
+def step(
+    func: None = None, *, flush: bool = ...
+) -> Callable[[StepFunction[P]], WrappedStepFunction[P]]: ...
+
+
+def step(
+    func: StepFunction[P] | None = None, *, flush: bool = False
+) -> WrappedStepFunction[P] | Callable[[StepFunction[P]], WrappedStepFunction[P]]:
     """Decorator to register a step function.
 
     Args:
         func: A function that takes a list of EvalLog objects and performs
             operations on them (tag, validate, copy, etc.).
+        flush: If True, write all dirty logs after this step even if nested,
+            then clear them from the dirty tracking.
     """
 
-    def step_wrapper(
-        logs_or_paths: Sequence[EvalLog | str], *args: P.args, **kwargs: P.kwargs
-    ) -> list[EvalLog]:
-        logs = _read_logs(logs_or_paths)
-        with _step_context() as (dirty, is_outer):
-            modified_logs = func(logs, *args, **kwargs)
-            for log in modified_logs:
-                dirty[log.location] = log
-            if is_outer:
-                for log in dirty.values():
-                    write_eval_log(log, log.location)
-            return modified_logs
+    def decorator(f: StepFunction[P]) -> WrappedStepFunction[P]:
+        def step_wrapper(
+            logs_or_paths: Sequence[EvalLog | str], *args: P.args, **kwargs: P.kwargs
+        ) -> list[EvalLog]:
+            logs = _read_logs(logs_or_paths)
+            with _step_context() as (dirty, is_outer):
+                modified_logs = f(logs, *args, **kwargs)
+                for log in modified_logs:
+                    dirty[log.location] = log
+                if is_outer or flush:
+                    for log in dirty.values():
+                        write_eval_log(log, log.location)
+                    dirty.clear()
+                return modified_logs
 
-    name = registry_name(func, func.__name__)
-    registry_add(
-        step_wrapper,
-        RegistryInfo.model_construct(type=STEP_TYPE, name=name),
-    )
-    return step_wrapper
+        name = registry_name(f, f.__name__)
+        registry_add(
+            step_wrapper,
+            RegistryInfo.model_construct(type=STEP_TYPE, name=name),
+        )
+        return step_wrapper
+
+    if func is not None:
+        return decorator(func)
+    return decorator
