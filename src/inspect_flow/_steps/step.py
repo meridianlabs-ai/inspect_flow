@@ -36,16 +36,18 @@ def _step_context() -> Iterator[tuple[dict[str, EvalLog], bool]]:
             _step_dirty.reset(token)
 
 
-def _read_log(log_or_path: EvalLog | str) -> list[EvalLog]:
+def _read_log(log_or_path: EvalLog | str, header_only: bool) -> list[EvalLog]:
     if isinstance(log_or_path, EvalLog):
         return [log_or_path]
     else:
         log_paths = list_eval_logs(log_or_path, recursive=True)
-        return [read_eval_log(p.name, header_only=True) for p in log_paths]
+        return [read_eval_log(p.name, header_only=header_only) for p in log_paths]
 
 
-def _read_logs(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog]:
-    return [log for item in logs_or_paths for log in _read_log(item)]
+def _read_logs(
+    logs_or_paths: Sequence[EvalLog | str], header_only: bool
+) -> list[EvalLog]:
+    return [log for item in logs_or_paths for log in _read_log(item, header_only)]
 
 
 @overload
@@ -54,12 +56,15 @@ def step(func: StepFunction[P]) -> WrappedStepFunction[P]: ...
 
 @overload
 def step(
-    func: None = None, *, flush: bool = ...
+    func: None = None, *, flush: bool = ..., header_only: bool = ...
 ) -> Callable[[StepFunction[P]], WrappedStepFunction[P]]: ...
 
 
 def step(
-    func: StepFunction[P] | None = None, *, flush: bool = False
+    func: StepFunction[P] | None = None,
+    *,
+    flush: bool = False,
+    header_only: bool = True,
 ) -> WrappedStepFunction[P] | Callable[[StepFunction[P]], WrappedStepFunction[P]]:
     """Decorator to register a step function.
 
@@ -68,13 +73,20 @@ def step(
             operations on them (tag, validate, copy, etc.).
         flush: If True, write all dirty logs after this step even if nested,
             then clear them from the dirty tracking.
+        header_only: If False, read full logs including samples. When nested,
+            raises if the outer step has not also read full logs.
     """
 
     def decorator(f: StepFunction[P]) -> WrappedStepFunction[P]:
         def step_wrapper(
             logs_or_paths: Sequence[EvalLog | str], *args: P.args, **kwargs: P.kwargs
         ) -> list[EvalLog]:
-            logs = _read_logs(logs_or_paths)
+            logs = _read_logs(logs_or_paths, header_only=header_only)
+            if not header_only and any(log.samples is None for log in logs):
+                raise ValueError(
+                    f"Step '{f.__name__}' requires full logs (header_only=False) but received "
+                    "header-only logs. Add header_only=False to the outer @step decorator."
+                )
             with _step_context() as (dirty, is_outer):
                 modified_logs = f(logs, *args, **kwargs)
                 for log in modified_logs:
