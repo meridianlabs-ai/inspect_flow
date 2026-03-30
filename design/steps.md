@@ -4,22 +4,25 @@ After `flow run` produces eval logs, users need to QA and promote them through d
 
 ## Atomic Steps
 
-Four operations that users compose into workflows:
+A step is an operation that modifies log files and returns the set of modified logs. The return value becomes the input for subsequent steps, enabling natural chaining.
 
-| Step | Purpose | Mutates logs? |
+Three operations that users compose into workflows:
+
+| Step | Purpose | Output |
 |---|---|---|
-| `tag` | Add/remove tags on log files | Yes |
-| `metadata` | Set/delete metadata fields on log files | Yes |
-| `validate` | Assert a condition holds for all logs, abort if not | No |
-| `copy` | Copy log files to another location | No (creates new files) |
+| `tag` | Add/remove tags on log files | Modified source logs |
+| `metadata` | Set/delete metadata fields on log files | Modified source logs |
+| `copy` | Copy log files to another location | New destination logs |
 
-> Filtering (selecting a subset of logs) is not a dedicated step — users use list comprehensions or `store.get_logs(filter=...)` from [PR #552](https://github.com/meridianlabs-ai/inspect_flow/pull/552) instead.
+> Filtering (selecting a subset of logs) is not a step — users use list comprehensions or `store.get_logs(filter=...)` from [PR #552](https://github.com/meridianlabs-ai/inspect_flow/pull/552) instead.
+
+> Validation (asserting conditions on logs) is not a step — it doesn't modify logs and has no meaningful "set of modified logs" to pass forward. Use `validate()` as a standalone function call within a step or script.
 
 ## Dependencies
 
 The `tag` and `metadata` steps depend on Inspect AI's [log editing API](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#log-editing) (`edit_eval_log`, `TagsEdit`, `MetadataEdit`, `ProvenanceData`).
 
-The `validate` step and user-defined filtering use `LogFilter = Callable[[EvalLog], bool]` and the `@log_filter` registry from [store_filters.md](store_filters.md).
+`validate` and user-defined filtering use `LogFilter = Callable[[EvalLog], bool]` and the `@log_filter` registry from [store_filters.md](store_filters.md).
 
 ## Execution Model
 
@@ -42,6 +45,7 @@ When called with `EvalLog` objects (`EvalLog | Sequence[EvalLog]`), steps operat
 # Composition: in-memory, no disk I/O per step
 logs = [log for log in logs if my_condition(log)]   # list comprehension for filtering
 logs = tag(logs, tags_add=["golden"])               # returns list[EvalLog], modified in-memory
+logs = copy(logs, dest="s3://my-org/prod/golden")   # returns destination logs
 ```
 
 The `@step` decorator manages the boundary: it reads headers at entry, passes `list[EvalLog]` to the function, and writes back modified logs at exit. This means:
@@ -58,7 +62,7 @@ When `copy` receives `EvalLog` object headers (with in-memory tag/metadata edits
 2. Overlays the in-memory modified header onto the full log
 3. Writes the combined result to the destination
 
-The destination gets the final state (with all pending edits) in a single write. Originals are not modified by `copy`.
+The destination gets the final state (with all pending edits) in a single write. Originals are not modified by `copy`. The return value is the set of new destination logs — subsequent steps operate on those.
 
 #### How `copy` works in the `@step` decorator
 
@@ -86,7 +90,7 @@ The destination gets the final state (with all pending edits) in a single write.
    - validate and list comprehensions operate on in-memory headers (no I/O)
    - tag/metadata call edit_eval_log() in-memory, return modified EvalLogs
    - copy reads full log from log.location, overlays modified header, writes to destination
-5. Function returns successfully
+5. Function returns list[EvalLog] of modified logs
 6. @step writes back all modified logs to their original locations
 7. If the function raises at any point, no tag/metadata edits are persisted to originals
 ```
@@ -250,6 +254,8 @@ def metadata(logs, *, metadata_set=None, metadata_remove=None, provenance=None,
 
 ### `validate`
 
+`validate` is a standalone function, not a step. It doesn't modify logs and returns a result rather than a set of logs to pass forward.
+
 ```python
 @dataclass
 class ValidationResult:
@@ -323,7 +329,7 @@ def copy(
     *,
     dry_run: bool = False,
     import_store: str | None = None,
-) -> list[str]: ...
+) -> list[EvalLog]: ...
 
 def copy(logs, dest, *, recursive=True, dry_run=False, import_store=None):
     """Copy log files to a destination directory.
@@ -346,7 +352,9 @@ def copy(logs, dest, *, recursive=True, dry_run=False, import_store=None):
             Use "auto" for default store. None to skip (default).
 
     Returns:
-        Destination paths of copied logs.
+        Destination paths of copied logs (standalone) or destination
+        EvalLog objects (composition). Subsequent steps operate on the
+        destination logs, not the originals.
     """
 ```
 
@@ -377,11 +385,11 @@ for log in logs:
 from inspect_flow import step, validate, tag, copy
 
 @step
-def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> None:
+def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> list[EvalLog]:
     logs = [log for log in logs if "testing_exercise" in (log.eval.tags or [])]
     validate(logs, condition=lambda log: "auto_qa_passed" in (log.eval.tags or []))
     logs = tag(logs, tags_add=["golden"], reason="Promoted after QA")
-    copy(logs, dest=dest)
+    return copy(logs, dest=dest)
     # @step writes modified headers back to originals here
 
 # From paths — @step reads headers and writes back on success
@@ -403,7 +411,6 @@ flow step tag PATH... --add qa_done --add reviewed --author "Alice" --reason "Ma
 flow step tag PATH... --remove draft
 flow step metadata PATH... --set key=value --set score_threshold=0.9
 flow step metadata PATH... --remove old_key
-flow step validate PATH... --condition success_only
 flow step copy PATH... --dest s3://bucket/golden --import-store auto
 ```
 
@@ -419,10 +426,6 @@ For `tag` and `metadata`:
 - `--reason` — provenance reason
 - `--timestamp` — provenance timestamp (default: now)
 - `--provenance-metadata` — arbitrary key=value pairs for provenance metadata
-
-For `validate`:
-- `--condition` — registered `@log_filter` name (reuses PR #552 semantics)
-- `--format` — output format for the pass/fail report: `flat` (default) or `tree`
 
 ### User-Defined Steps
 
@@ -444,7 +447,7 @@ def _scores_pass(log: EvalLog) -> bool:
 
 
 @step
-def qa(logs: list[EvalLog]) -> None:
+def qa(logs: list[EvalLog]) -> list[EvalLog]:
     """Automated QA: validate scores and tag logs as passed or failed."""
     passed = [log for log in logs if _scores_pass(log)]
     failed = [log for log in logs if log not in passed]
@@ -452,15 +455,16 @@ def qa(logs: list[EvalLog]) -> None:
         tag(passed, tags_add=["auto_qa_passed"], reason="Automated QA: scores passed")
     if failed:
         tag(failed, tags_add=["auto_qa_failed"], reason="Automated QA: refusal or tool error")
+    return passed + failed
 
 
 @step
-def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> None:
+def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> list[EvalLog]:
     """Promote QA-passed logs to golden storage."""
     logs = [log for log in logs if "testing_exercise" in (log.eval.tags or [])]
     validate(logs, condition=lambda log: "auto_qa_passed" in (log.eval.tags or []))
     logs = tag(logs, tags_add=["golden"], reason="Promoted after automated QA")
-    copy(logs, dest=dest)
+    return copy(logs, dest=dest)
 ```
 
 CLI invocation:
@@ -510,7 +514,7 @@ from inspect_flow import ValidationResult, ValidationError
 ### CLI (`_cli/main.py`)
 
 ```python
-flow.add_command(step_command)  # flow step tag|metadata|validate|copy|<user-defined>
+flow.add_command(step_command)  # flow step tag|metadata|copy|<user-defined>
 ```
 
 ## Open Questions
@@ -574,3 +578,4 @@ This would enable fully automated pipelines: run evals → QA scores → tag res
 
 - [ ] Add a composition example using `evals_df` to operate on log headers (e.g., find max score across a set of logs).
 - [ ] Collect real-world QA workflow examples to validate the atomic step design: Inspect Scout scanners, multi-stage approval pipelines, integration with external tools.
+- [ ] Figure out how to expose `validate` (and similar non-step functions) via the CLI — since `validate` doesn't fit `@step`, it likely needs a separate decorator (e.g., `@command`) that registers a CLI command without the step read/write lifecycle.
