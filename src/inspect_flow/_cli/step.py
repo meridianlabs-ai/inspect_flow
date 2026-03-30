@@ -4,7 +4,7 @@ import inspect
 import types
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import click
 import griffe
@@ -12,8 +12,7 @@ from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 from inspect_ai.log import EvalLog
 
-from inspect_flow._steps.execute import run_step
-from inspect_flow._types.step import STEP_TYPE
+from inspect_flow._steps.step import STEP_TYPE
 from inspect_flow._util.path_util import find_auto_includes
 
 StepFunc = Callable[..., list[EvalLog]]
@@ -122,16 +121,9 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
     return click.Command(
         name=name,
         params=params,
-        callback=_make_callback(func),
+        callback=lambda path, **kwargs: func(list(path), **kwargs),
         help=help_text,
     )
-
-
-def _make_callback(func: StepFunc) -> Callable[..., None]:
-    def callback(path: tuple[str, ...], **kwargs: Any) -> None:
-        run_step(func, list(path), **kwargs)
-
-    return callback
 
 
 def _annotation_to_click_type(annotation: object) -> type:

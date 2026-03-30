@@ -3,7 +3,7 @@ import subprocess
 
 from inspect_ai.log import EvalLog, ProvenanceData, TagsEdit, edit_eval_log
 
-from inspect_flow._types.step import step
+from inspect_flow._steps.step import step
 
 
 def _default_author() -> str:
