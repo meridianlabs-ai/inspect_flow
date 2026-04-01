@@ -332,9 +332,8 @@ flow step promote --store auto --filter my_filter --dest s3://...
 ### Public API (`_api/api.py`)
 
 ```python
-# New exports
-from inspect_flow import tag, metadata, validate, copy, step
-from inspect_flow import ValidationResult, ValidationError
+from inspect_flow import step
+from inspect_flow.api import tag, metadata, copy, run_step, StepResult
 ```
 
 ### CLI (`_cli/main.py`)
