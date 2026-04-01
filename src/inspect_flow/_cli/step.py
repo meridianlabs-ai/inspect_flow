@@ -10,9 +10,9 @@ import griffe
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 
-from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._util.path_util import find_auto_includes
+from inspect_flow.api import run_step
 
 
 def _discover_steps() -> list[tuple[str, WrappedStepFunction]]:
@@ -60,9 +60,10 @@ def _parse_arg_help(doc: str) -> dict[str, str]:
 
 def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     """Convert a @step function into a click.Command."""
-    sig = inspect.signature(func)
+    original = getattr(func, "_step_func", func)
+    sig = inspect.signature(original)
     params: list[click.Parameter] = []
-    doc = inspect.getdoc(func) or ""
+    doc = inspect.getdoc(original) or ""
     arg_help = _parse_arg_help(doc)
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg

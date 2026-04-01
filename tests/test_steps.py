@@ -274,3 +274,33 @@ def test_nested_step_with_path_raises(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="nested inside another step"):
         outer(log_path)
+
+
+# --- CLI help ---
+
+
+def test_cli_tag_help() -> None:
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, ["tag", "--help"])
+    assert result.exit_code == 0
+    assert "--add" in result.output
+    assert "--remove" in result.output
+    assert "--author" in result.output
+    assert "--reason" in result.output
+    # Should NOT show raw *args/**kwargs
+    assert "--args" not in result.output
+    assert "--kwargs" not in result.output
+
+
+def test_cli_copy_help() -> None:
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, ["copy", "--help"])
+    assert result.exit_code == 0
+    assert "--dest" in result.output
+    assert "--source-prefix" in result.output
+    assert "--args" not in result.output
+    assert "--kwargs" not in result.output

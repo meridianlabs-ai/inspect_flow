@@ -167,6 +167,7 @@ def step(
                 else:
                     return step_result.log
 
+        step_wrapper._step_func = f  # type: ignore[attr-defined]
         name = registry_name(f, f.__name__)
         registry_add(
             step_wrapper,
