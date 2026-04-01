@@ -1,32 +1,37 @@
-from collections.abc import Iterator
 from typing import ParamSpec, Sequence
 
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
+from inspect_ai.log import EvalLog, list_eval_logs
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from inspect_flow._steps.step import StepFunction
-
-
-def _read_log(log_or_path: EvalLog | str, header_only: bool) -> Iterator[EvalLog]:
-    if isinstance(log_or_path, EvalLog):
-        yield log_or_path
-    else:
-        log_paths = list_eval_logs(log_or_path, recursive=True)
-        for p in log_paths:
-            yield read_eval_log(p.name, header_only=header_only)
+from inspect_flow._display.path_progress import PathProgressDisplay
+from inspect_flow._steps.step import WrappedStepFunction
+from inspect_flow._util.console import console
 
 
-def _read_logs(
-    logs_or_paths: Sequence[EvalLog | str], header_only: bool
-) -> Iterator[EvalLog]:
-    for item in logs_or_paths:
-        yield from _read_log(item, header_only=header_only)
+def _expand_paths(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog | str]:
+    """Expand directories to individual log paths, pass EvalLog objects through."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task("Finding logs…", total=None)
+        result: list[EvalLog | str] = []
+        for item in logs_or_paths:
+            if isinstance(item, EvalLog):
+                result.append(item)
+            else:
+                for info in list_eval_logs(item, recursive=True):
+                    result.append(info.name)
+    return result
 
 
 P = ParamSpec("P")
 
 
 def run_step(
-    step: StepFunction[P],
+    step: WrappedStepFunction[P],
     logs: Sequence[EvalLog | str] | EvalLog | str,
     *args: P.args,
     **kwargs: P.kwargs,
@@ -41,5 +46,9 @@ def run_step(
     """
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
-    for log in _read_logs(logs, header_only=False):
-        step(log, *args, **kwargs)
+    expanded = _expand_paths(logs)
+    with PathProgressDisplay("Processing logs", len(expanded)) as progress:
+        for log in expanded:
+            name = log.location if isinstance(log, EvalLog) else log
+            step(log, *args, **kwargs)
+            progress.advance(name)
