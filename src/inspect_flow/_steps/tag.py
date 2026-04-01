@@ -36,17 +36,17 @@ def _default_author() -> str:
 
 @step
 def tag(
-    logs: list[EvalLog],
+    log: EvalLog,
     *,
     add: list[str] | None = None,
     remove: list[str] | None = None,
     author: str | None = None,
     reason: str | None = None,
-) -> list[EvalLog]:
-    """Add or remove tags on eval logs.
+) -> EvalLog:
+    """Add or remove tags on eval log.
 
     Args:
-        logs: EvalLog objects to modify.
+        log: EvalLog objects to modify.
         add: Tags to add.
         remove: Tags to remove.
         author: Provenance author. Defaults to git user.
@@ -57,30 +57,30 @@ def tag(
     """
     provenance = ProvenanceData(author=author or _default_author(), reason=reason)
     edits = [TagsEdit(tags_add=add or [], tags_remove=remove or [])]
-    return [edit_eval_log(log, edits, provenance) for log in logs]
+    return edit_eval_log(log, edits, provenance)
 
 
 @step
 def metadata(
-    logs: list[EvalLog],
+    log: EvalLog,
     *,
     set: dict[str, Any] | None = None,
     remove: list[str] | None = None,
     author: str | None = None,
     reason: str | None = None,
-) -> list[EvalLog]:
+) -> EvalLog:
     """Set or delete metadata fields on eval logs.
 
     Args:
-        logs: EvalLog objects to modify.
+        log: EvalLog object to modify.
         set: Key-value pairs to set.
         remove: Keys to delete.
         author: Provenance author. Defaults to git user.
         reason: Reason for the edit.
 
     Returns:
-        Modified EvalLog objects.
+        Modified EvalLog object.
     """
     provenance = ProvenanceData(author=author or _default_author(), reason=reason)
     edits = [MetadataEdit(metadata_set=set or {}, metadata_remove=remove or [])]
-    return [edit_eval_log(log, edits, provenance) for log in logs]
+    return edit_eval_log(log, edits, provenance)
