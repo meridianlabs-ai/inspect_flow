@@ -15,10 +15,24 @@ STEP_TYPE = "step"
 
 
 class StepResult(NamedTuple):
+    """Fine-grained return type for @step functions.
+
+    Steps can also return an EvalLog directly (equivalent to
+    StepResult(log=log, modified=True)) or None (equivalent to
+    StepResult(modified=False, skip_log_steps=True)).
+    """
+
     log: EvalLog | None = None
+    """The log to pass to subsequent steps. None to skip remaining steps for this log."""
+
     modified: bool = True
+    """Whether the log was modified. Controls whether the log is written back."""
+
     flush: bool = False
-    stop_run: bool = False
+    """Write all dirty logs immediately, even if nested inside an outer step."""
+
+    skip_log_steps: bool = False
+    """Skip remaining steps for this log. run_step will move to the next log."""
 
 
 P = ParamSpec("P")
@@ -57,7 +71,7 @@ def _to_step_result(result: StepResult | EvalLog | None) -> StepResult:
     elif isinstance(result, EvalLog):
         return StepResult(log=result, modified=True)
     else:
-        return StepResult(log=None, modified=False, stop_run=True)
+        return StepResult(log=None, modified=False, skip_log_steps=True)
 
 
 @overload
@@ -134,7 +148,7 @@ def step(
                         write_eval_log(log, log.location)
                     context.dirty.clear()
 
-                if step_result.stop_run:
+                if step_result.skip_log_steps:
                     return None
                 else:
                     return step_result.log

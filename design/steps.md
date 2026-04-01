@@ -4,7 +4,7 @@ After `flow run` produces eval logs, users need to QA and promote them through d
 
 ## Atomic Steps
 
-A step is an operation that modifies log files and returns the set of modified logs. The return value becomes the input for subsequent steps, enabling natural chaining.
+A step is a function that operates on a single `EvalLog` and returns the modified log (or signals to stop). Steps are run one file at a time to avoid loading all logs into memory — log files can be large. The `run_step` helper (see [_steps/run.py](../src/inspect_flow/_steps/run.py)) iterates over paths/logs and calls the step for each one.
 
 Three operations that users compose into workflows:
 
@@ -26,66 +26,78 @@ The `tag` and `metadata` steps depend on Inspect AI's [log editing API](https://
 
 ## Execution Model
 
-Callers pass either file paths or `EvalLog` objects — `@step` handles path resolution transparently, so each step implementation only needs to deal with `list[EvalLog]`. The decorator reads logs at entry, passes them to the function, and writes back modified logs at exit:
-
-- **Unified input**: callers pass `Sequence[EvalLog | str]` — paths, directories, or in-memory EvalLog objects, freely mixed
-- **Unified output**: always `list[EvalLog]` — the set of modified logs, which becomes the input for the next step
-- **Read once**: all logs are read at the start of the outermost step
-- **Write once**: all modified logs are written back at the end of the outermost step
-- **Natural rollback**: if any operation raises, nothing has been written to disk
+Steps operate on one log at a time. Callers pass either a file path or an `EvalLog` object — `@step` handles path resolution transparently, so each step implementation only receives a single `EvalLog`. The step returns an `EvalLog` (modified log), `StepResult` (for fine-grained control), or `None` (to stop processing).
 
 ```python
-# Caller passes paths — @step reads headers, calls tag(list[EvalLog]), writes back
-tag("./logs/2026-03-11/", add=["reviewed"])
+# Caller passes a path — @step reads the full log, calls tag(EvalLog), writes back
+tag("./logs/2026-03-11/log1.eval", add=["reviewed"])
 
-# Caller passes EvalLog objects — @step passes them through directly
-logs = tag(logs, add=["golden"])                    # returns list[EvalLog]
-logs = copy(logs, dest="s3://my-org/prod/golden")   # returns destination logs
+# Caller passes an EvalLog — @step passes it through directly
+log = tag(log, add=["golden"])                      # returns EvalLog
+log = copy(log, dest="s3://my-org/prod/golden")     # returns destination EvalLog
 ```
 
-Nested steps accumulate into the outermost step's write set via a `ContextVar`. Only the outermost step performs disk writes.
+To run a step across multiple logs, use `run_step` (see [_steps/run.py](../src/inspect_flow/_steps/run.py)):
+
+```python
+# run_step iterates over paths/logs and calls the step for each one
+run_step(tag, "./logs/2026-03-11/", add=["reviewed"])
+
+# From store — caller resolves paths, run_step handles the rest
+run_step(tag, store.get_logs(filter=my_filter), add=["reviewed"])
+```
+
+Nested steps accumulate into the outermost step's dirty set via a `ContextVar`. Only the outermost step performs disk writes.
 
 ### `@step` decorator params
 
 ```python
-@step                           # header_only=True (default) — reads headers only
-@step(header_only=False)        # reads full logs including samples
-@step(flush=True)               # write dirty logs immediately even if nested, then clear
+@step                           # header_only=True (default) — step receives header-only EvalLog
+@step(header_only=False)        # step receives full EvalLog including samples
 ```
+
+### `StepResult`
+
+Steps can return an `EvalLog`, `None`, or a `StepResult` for fine-grained control. See [_steps/step.py](../src/inspect_flow/_steps/step.py) for the full type definition and docstring.
 
 ### How `copy` works
 
-`copy` is decorated with `@step(header_only=False)`, so `@step` reads full logs (including samples) before calling it. `copy` itself only computes destination paths and uses `model_copy(update={"location": dest_path})` to create new `EvalLog` objects pointing at the destination — no I/O, no header merging.
+`copy` is decorated with `@step(header_only=False)` so it receives the full `EvalLog` including samples. It uses `model_copy(update={"location": dest_path})` to create a new `EvalLog` pointing at the destination — no I/O, no header merging. `@step` writes the destination log as part of its dirty set.
 
-Both the source logs (if modified by earlier steps like `tag`) and the destination logs are returned into the outermost step's write set, so `@step` writes everything in a single pass.
+### Exceptions during steps
 
-Since `copy` requires full logs, any outer `@step` that calls `copy` must also use `@step(header_only=False)`. If it doesn't, `copy` raises a `ValueError` at runtime.
-
-If the step raises before `@step` begins writing, no files are modified. If it raises mid-write, some files will have been written and some won't.
+An exception during a step stops all further processing — the current log and any remaining logs in the `run_step` batch are not processed. Logs already written by previous iterations are unaffected, and no files are modified for the current log.
 
 ### How `@step` manages the lifecycle
 
 ```
-1. CLI/caller provides paths
-2. @step reads all headers: read_eval_log(path, header_only=True) for each
-3. @step calls the function body with list[EvalLog]
-4. Inside the function:
-   - validate and list comprehensions operate on in-memory headers (no I/O)
-   - tag/metadata call edit_eval_log() in-memory, return modified EvalLogs
-   - copy reads full log from log.location, overlays modified header, writes to destination
-5. Function returns list[EvalLog] of modified logs
-6. @step writes back all modified logs to their original locations
-7. If the function raises at any point, no tag/metadata edits are persisted to originals
+1. @step receives a single path or EvalLog
+2. If a path: reads the full log from disk (always header_only=False for the read)
+3. If header_only=True: strips samples/reductions before passing to the step function
+4. Calls the step function with a single EvalLog
+5. If header_only=True: reattaches samples/reductions to the returned log
+6. Tracks modified logs in the dirty set (ContextVar)
+7. If outermost step (or flush=True): writes all dirty logs and clears the set
+8. Returns the log (or None if skip_log_steps)
 ```
+
+### `run_step`
+
+`run_step` (see [_steps/run.py](../src/inspect_flow/_steps/run.py)) iterates over multiple logs/paths and calls a step function on each one. This is what the CLI uses, and the primary way to apply a step across a batch of logs.
+
+```python
+run_step(step, logs, *args, **kwargs)
+```
+
+`logs` can be a single path, a single `EvalLog`, or a sequence of either. Directories are expanded recursively.
 
 ## Log Resolution
 
-Steps accept log paths or EvalLog objects, not store queries. Users who want to pull from the store do so explicitly:
+Steps accept a log path or an EvalLog object, not store queries. Users who want to pull from the store do so explicitly:
 
 ```python
 store = store_get()
-paths = store.get_logs(filter=my_filter)
-tag(paths, tags_add=["reviewed"])
+run_step(tag, store.get_logs(filter=my_filter), add=["reviewed"])
 ```
 
 ## Python API
@@ -184,45 +196,39 @@ See [_steps/copy.py](../src/inspect_flow/_steps/copy.py). Decorated with `@step(
 
 ### Composition Examples
 
-#### Inline composition (no outer `@step`)
+#### Chaining steps on a single log
 
-Without an outer `@step`, each step call is its own outermost step — EvalLog objects are passed in memory from step to step, but each step writes to disk immediately when it completes.
+Without an outer `@step`, each step call is its own outermost step — the log is passed in memory from step to step, but each step writes to disk immediately when it completes.
 
 ```python
-from inspect_flow import validate, tag, copy, store_get
 from inspect_ai.log import read_eval_log
 
-store = store_get()
-paths = store.get_logs(filter=lambda log: "gpt-6" in (log.eval.model or ""))
-logs = [read_eval_log(p, header_only=False) for p in paths]
-validate(logs, condition=lambda log: "qa_done" in (log.eval.tags or []))
-logs = tag(logs, add=["golden"], reason="Promoted after QA")
-# tag writes modified logs to disk immediately
-copy(logs, dest="s3://my-org/prod/golden-logs")
-# copy writes destination files to disk immediately
+log = read_eval_log("./logs/2026-03-11/log1.eval")
+log = tag(log, add=["golden"], reason="Promoted after QA")
+# tag writes modified log to disk immediately
+log = copy(log, dest="s3://my-org/prod/golden-logs")
+# copy writes destination file to disk immediately
 ```
 
-#### With `@step`
+#### With `@step` (deferred writes)
 
-Wrapping in `@step` defers all writes to the end — EvalLog objects are passed in memory between nested steps, nothing is written until the outermost step completes, and nothing is persisted if the function raises.
+Wrapping in `@step` defers all writes to the end — the log is passed in memory between nested steps, nothing is written until the outermost step completes, and nothing is persisted if the function raises.
 
 ```python
-from inspect_flow import step, validate, tag, copy
+from inspect_flow import step, tag, copy
 
 @step(header_only=False)  # required because copy needs full logs
-def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> list[EvalLog]:
-    logs = [log for log in logs if "testing_exercise" in (log.eval.tags or [])]
-    validate(logs, condition=lambda log: "auto_qa_passed" in (log.eval.tags or []))
-    logs = tag(logs, add=["golden"], reason="Promoted after QA")
-    return copy(logs, dest=dest)
-    # @step writes all modified and destination logs here
+def promote(log: EvalLog, *, dest: str = "s3://my-org/prod/golden") -> EvalLog:
+    log = tag(log, add=["golden"], reason="Promoted after QA")
+    return copy(log, dest=dest)
+    # @step writes all dirty logs here
 
-# From paths — @step reads full logs and writes back on success
-promote("./logs/2026-03-11/")
+# Run across a directory
+run_step(promote, "./logs/2026-03-11/", dest="s3://my-org/prod/golden")
 
-# From store — caller resolves paths, @step handles the rest
+# From store — caller resolves paths, run_step handles the rest
 store = store_get()
-promote(store.get_logs(filter=my_filter))
+run_step(promote, store.get_logs(filter=my_filter), dest="s3://my-org/prod/golden")
 ```
 
 ## CLI Interface
@@ -257,7 +263,7 @@ For `tag` and `metadata`:
 Users define reusable workflows with `@step`, which are also discoverable under `flow step`:
 
 ```python
-from inspect_flow import step, validate, tag, copy
+from inspect_flow import step, tag, copy
 
 
 def _scores_pass(log: EvalLog) -> bool:
@@ -272,24 +278,19 @@ def _scores_pass(log: EvalLog) -> bool:
 
 
 @step
-def qa(logs: list[EvalLog]) -> list[EvalLog]:
-    """Automated QA: validate scores and tag logs as passed or failed."""
-    passed = [log for log in logs if _scores_pass(log)]
-    failed = [log for log in logs if log not in passed]
-    if passed:
-        tag(passed, add=["auto_qa_passed"], reason="Automated QA: scores passed")
-    if failed:
-        tag(failed, add=["auto_qa_failed"], reason="Automated QA: refusal or tool error")
-    return passed + failed
+def qa(log: EvalLog) -> EvalLog:
+    """Automated QA: tag log as passed or failed based on scores."""
+    if _scores_pass(log):
+        return tag(log, add=["auto_qa_passed"], reason="Automated QA: scores passed")
+    else:
+        return tag(log, add=["auto_qa_failed"], reason="Automated QA: refusal or tool error")
 
 
 @step(header_only=False)  # required because copy needs full logs
-def promote(logs: list[EvalLog], *, dest: str = "s3://my-org/prod/golden") -> list[EvalLog]:
-    """Promote QA-passed logs to golden storage."""
-    logs = [log for log in logs if "testing_exercise" in (log.eval.tags or [])]
-    validate(logs, condition=lambda log: "auto_qa_passed" in (log.eval.tags or []))
-    logs = tag(logs, add=["golden"], reason="Promoted after automated QA")
-    return copy(logs, dest=dest)
+def promote(log: EvalLog, *, dest: str = "s3://my-org/prod/golden") -> EvalLog:
+    """Promote a QA-passed log to golden storage."""
+    log = tag(log, add=["golden"], reason="Promoted after automated QA")
+    return copy(log, dest=dest)
 ```
 
 CLI invocation:
@@ -312,7 +313,7 @@ flow step promote --store s3://my-org/flow/store --filter has_tag_qa_passed --de
 
 The `@step` decorator auto-generates a CLI command from the function signature:
 
-- The first parameter accepting `list[EvalLog]` becomes the `PATH...` argument (the decorator handles path → EvalLog conversion).
+- The first parameter (`EvalLog`) becomes the `PATH...` argument (the CLI uses `run_step` to iterate over paths).
 - Type annotations drive click types (`str` → STRING, `int` → INT, `float` → FLOAT, `bool` → flag).
 - Snake_case parameter names become --kebab-case on CLI.
 - `--store` and `--filter` are auto-injected on all `@step` CLI commands as an alternative to `PATH...`. When `--store` is provided (and PATH is omitted), logs are resolved from the store. `--filter` accepts a registered `@log_filter` name to pre-filter which logs are passed to the step function.
@@ -346,7 +347,7 @@ flow.add_command(step_command)  # flow step tag|metadata|copy|<user-defined>
 
 ### ~~1. Paths-only vs in-memory EvalLog composition~~ (Resolved)
 
-Dual-mode: `@step` accepts `Sequence[EvalLog | str]`, reads from paths, passes `list[EvalLog]` to the function, and writes back at the end. No overloaded signatures — one input type, one output type (`list[EvalLog]`).
+Steps operate on one log at a time. `@step` accepts a path or `EvalLog`, reads the full log if needed, and writes back at the end. `run_step` handles iteration over multiple paths/logs.
 
 ### 2. Transactionality / Rollback
 
