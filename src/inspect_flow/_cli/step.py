@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import types
-from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
@@ -10,21 +9,21 @@ import click
 import griffe
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
-from inspect_ai.log import EvalLog
 
-from inspect_flow._steps.step import STEP_TYPE
+from inspect_flow._steps.run import run_step
+from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._util.path_util import find_auto_includes
 
-StepFunc = Callable[..., list[EvalLog]]
 
-
-def _discover_steps() -> list[tuple[str, StepFunc]]:
+def _discover_steps() -> list[tuple[str, WrappedStepFunction]]:
     """Load _flow.py files and return all registered @step functions."""
     import inspect_flow._steps  # noqa: F401
 
     for flow_file in find_auto_includes(str(Path.cwd())):
         load_module(Path(flow_file))
-    steps = cast(list[StepFunc], registry_find(lambda info: info.type == STEP_TYPE))
+    steps = cast(
+        list[WrappedStepFunction], registry_find(lambda info: info.type == STEP_TYPE)
+    )
     return [(registry_info(s).name.split("/")[-1], s) for s in steps]
 
 
@@ -59,7 +58,7 @@ def _parse_arg_help(doc: str) -> dict[str, str]:
     return result
 
 
-def _step_to_command(name: str, func: StepFunc) -> click.Command:
+def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     """Convert a @step function into a click.Command."""
     sig = inspect.signature(func)
     params: list[click.Parameter] = []
@@ -121,7 +120,7 @@ def _step_to_command(name: str, func: StepFunc) -> click.Command:
     return click.Command(
         name=name,
         params=params,
-        callback=lambda path, **kwargs: func(list(path), **kwargs),
+        callback=lambda path, **kwargs: run_step(func, list(path), **kwargs),
         help=help_text,
     )
 

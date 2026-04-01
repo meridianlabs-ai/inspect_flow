@@ -6,15 +6,12 @@ from inspect_flow._steps.step import step
 
 @step(header_only=False)
 def copy(log: EvalLog, *, dest: str, source_prefix: str | None = None) -> EvalLog:
-    """Copy eval logs to a destination directory.
-
-    Preserves directory structure relative to the common prefix of the
-    source paths when preserve_structure is True, otherwise copies flat.
+    """Copy an eval log to a destination directory.
 
     Args:
         log: EvalLog to copy.
         dest: Destination directory (local or S3).
-        source_prefix: If None files are copied flat into the destination.
+        source_prefix: If None, the file is copied flat into the destination.
             When provided, preserves directory structure relative to the prefix.
 
     Returns:

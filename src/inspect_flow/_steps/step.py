@@ -2,14 +2,14 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Concatenate, NamedTuple, ParamSpec, Sequence, overload
+from typing import Concatenate, NamedTuple, ParamSpec, overload
 
 from inspect_ai._util.registry import (
     RegistryInfo,
     registry_add,
     registry_name,
 )
-from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log, write_eval_log
+from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
 
 STEP_TYPE = "step"
 
@@ -46,25 +46,9 @@ def _step_context() -> Iterator[tuple[StepContext, bool]]:
         context = StepContext()
         token = _step_context_var.set(context)
         try:
-            yield context, False
+            yield context, True
         finally:
             _step_context_var.reset(token)
-
-
-def _read_log(log_or_path: EvalLog | str, header_only: bool) -> Iterator[EvalLog]:
-    if isinstance(log_or_path, EvalLog):
-        yield log_or_path
-    else:
-        log_paths = list_eval_logs(log_or_path, recursive=True)
-        for p in log_paths:
-            yield read_eval_log(p.name, header_only=header_only)
-
-
-def _read_logs(
-    logs_or_paths: Sequence[EvalLog | str], header_only: bool
-) -> Iterator[EvalLog]:
-    for item in logs_or_paths:
-        yield from _read_log(item, header_only=header_only)
 
 
 def _to_step_result(result: StepResult | EvalLog | None) -> StepResult:
