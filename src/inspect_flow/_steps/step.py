@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Concatenate, NamedTuple, ParamSpec, overload
+from typing import Concatenate, NamedTuple, ParamSpec, Protocol, overload
 
 from inspect_ai._util.registry import (
     RegistryInfo,
@@ -40,6 +40,16 @@ StepFunction = Callable[Concatenate[EvalLog, P], StepResult | EvalLog | None]
 WrappedStepFunction = Callable[Concatenate[EvalLog | str, P], EvalLog | None]
 
 
+class _StepDecorator(Protocol):
+    @overload
+    def __call__(
+        self, func: Callable[Concatenate[EvalLog, P], EvalLog]
+    ) -> Callable[Concatenate[EvalLog | str, P], EvalLog]: ...
+
+    @overload
+    def __call__(self, func: StepFunction[P]) -> WrappedStepFunction[P]: ...
+
+
 @dataclass
 class StepContext:
     dirty: dict[str, EvalLog] = field(default_factory=dict)
@@ -75,13 +85,17 @@ def _to_step_result(result: StepResult | EvalLog | None) -> StepResult:
 
 
 @overload
+def step(
+    func: Callable[Concatenate[EvalLog, P], EvalLog],
+) -> Callable[Concatenate[EvalLog | str, P], EvalLog]: ...
+
+
+@overload
 def step(func: StepFunction[P]) -> WrappedStepFunction[P]: ...
 
 
 @overload
-def step(
-    func: None = None, *, header_only: bool = ...
-) -> Callable[[StepFunction[P]], WrappedStepFunction[P]]: ...
+def step(func: None = None, *, header_only: bool = ...) -> _StepDecorator: ...
 
 
 def step(
