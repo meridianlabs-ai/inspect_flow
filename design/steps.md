@@ -86,10 +86,10 @@ An exception during a step stops all further processing — the current log and 
 `run_step` (see [_steps/run.py](../src/inspect_flow/_steps/run.py)) iterates over multiple logs/paths and calls a step function on each one. This is what the CLI uses, and the primary way to apply a step across a batch of logs.
 
 ```python
-run_step(step, logs, dry_run=False, filter=None, *args, **kwargs)
+run_step(step, logs, dry_run=False, filter=None, recursive=True, *args, **kwargs)
 ```
 
-`logs` can be a single path, a single `EvalLog`, or a sequence of either. Directories are expanded recursively. `filter` accepts a callable, registered name, `"file.py@name"` string, or a sequence of any of these (all must pass). `dry_run=True` runs steps but skips writing to disk.
+`logs` can be a single path, a single `EvalLog`, or a sequence of either. Directories are expanded recursively by default (`recursive=False` to disable). `filter` accepts a callable, registered name, `"file.py@name"` string, or a sequence of any of these (all must pass). `dry_run=True` runs steps but skips writing to disk.
 
 ## Log Resolution
 
@@ -215,7 +215,8 @@ log = copy(log, dest="s3://my-org/prod/golden-logs")
 Wrapping in `@step` defers all writes to the end — the log is passed in memory between nested steps, nothing is written until the outermost step completes, and nothing is persisted if the function raises.
 
 ```python
-from inspect_flow import step, tag, copy
+from inspect_flow import step
+from inspect_flow.api import tag, copy, run_step, store_get
 
 @step(header_only=False)  # required because copy needs full logs
 def promote(log: EvalLog, *, dest: str = "s3://my-org/prod/golden") -> EvalLog:
@@ -261,7 +262,8 @@ For `tag` and `metadata`:
 Users define reusable workflows with `@step`, which are also discoverable under `flow step`:
 
 ```python
-from inspect_flow import step, tag, copy
+from inspect_flow import step
+from inspect_flow.api import tag, copy
 
 
 def _scores_pass(log: EvalLog) -> bool:
@@ -314,16 +316,15 @@ The `@step` decorator auto-generates a CLI command from the function signature:
 - The first parameter (`EvalLog`) becomes the `PATH...` argument (the CLI uses `run_step` to iterate over paths).
 - Type annotations drive click types (`str` → STRING, `int` → INT, `float` → FLOAT, `bool` → flag).
 - Snake_case parameter names become --kebab-case on CLI.
-- `--store` and `--filter` are auto-injected on all `@step` CLI commands as an alternative to `PATH...`. When `--store` is provided (and PATH is omitted), logs are resolved from the store. `--filter` accepts a registered `@log_filter` name to pre-filter which logs are passed to the step function.
+- `--store`, `--filter`, `--recursive/--no-recursive`, and `--dry-run` are auto-injected on all `@step` CLI commands. `PATH...` and `--store` are mutually exclusive.
 
-For example, `def promote(logs, *, dest: str = "s3://...")` generates:
+For example, `def promote(log, *, dest: str = "s3://...")` generates:
 
 ```
 flow step promote PATH... --dest s3://...
-flow step promote --store auto --filter my_filter --dest s3://...
+flow step promote --store --filter my_filter --dest s3://...
+flow step promote PATH... --dry-run --dest s3://...
 ```
-
-`PATH...` and `--store` are mutually exclusive — provide one or the other.
 
 ## API Surface
 
