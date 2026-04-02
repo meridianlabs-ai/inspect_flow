@@ -86,10 +86,10 @@ An exception during a step stops all further processing — the current log and 
 `run_step` (see [_steps/run.py](../src/inspect_flow/_steps/run.py)) iterates over multiple logs/paths and calls a step function on each one. This is what the CLI uses, and the primary way to apply a step across a batch of logs.
 
 ```python
-run_step(step, logs, *args, **kwargs)
+run_step(step, logs, dry_run=False, filter=None, *args, **kwargs)
 ```
 
-`logs` can be a single path, a single `EvalLog`, or a sequence of either. Directories are expanded recursively.
+`logs` can be a single path, a single `EvalLog`, or a sequence of either. Directories are expanded recursively. `filter` accepts a callable, registered name, `"file.py@name"` string, or a sequence of any of these (all must pass). `dry_run=True` runs steps but skips writing to disk.
 
 ## Log Resolution
 

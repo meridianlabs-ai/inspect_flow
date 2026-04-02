@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import types
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import click
 import griffe
@@ -11,6 +11,7 @@ from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
+from inspect_flow._store.store import store_factory
 from inspect_flow._util.path_util import find_auto_includes
 from inspect_flow.api import run_step
 
@@ -110,10 +111,19 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
                 )
             )
 
-    # Add PATH argument and --dry-run option
+    # Add PATH argument and common options
     params.insert(
         0,
-        click.Argument(["path"], nargs=-1, required=True, type=click.Path()),
+        click.Argument(["path"], nargs=-1, required=False, type=click.Path()),
+    )
+    params.append(
+        click.Option(
+            ["--store", "-s"],
+            is_flag=False,
+            flag_value="auto",
+            default=None,
+            help="Resolve logs from a store. Use --store for the default store or --store PATH for a specific one.",
+        )
     )
     params.append(
         click.Option(
@@ -135,10 +145,25 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
 
     help_text = doc.split("\n\n")[0] if doc else ""
 
+    def callback(path: tuple[str, ...], **kwargs: Any) -> None:
+        store = kwargs.pop("store", None)
+        if path and store:
+            raise click.UsageError("PATH and --store are mutually exclusive.")
+        if not path and not store:
+            raise click.UsageError("Either PATH or --store is required.")
+        if store:
+            flow_store = store_factory(str(store), base_dir=".", create=False)
+            if not flow_store:
+                raise click.UsageError(f"Could not open store at {store}")
+            logs: list[str] = list(flow_store.get_logs())
+        else:
+            logs = list(path)
+        run_step(func, logs, **kwargs)
+
     return click.Command(
         name=name,
         params=params,
-        callback=lambda path, **kwargs: run_step(func, list(path), **kwargs),
+        callback=callback,
         help=help_text,
     )
 
