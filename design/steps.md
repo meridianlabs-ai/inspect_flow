@@ -247,16 +247,14 @@ flow step copy PATH... --dest s3://bucket/golden --import-store auto
 
 Common options across all `flow step` subcommands:
 - `PATH...` — log files or directories (positional). Mutually exclusive with `--store`.
-- `--store` (`-s`) — resolve logs from this store instead of PATH. Use `"auto"` for default store location. Mutually exclusive with `PATH...`.
-- `--filter` — registered `@log_filter` name to pre-filter which logs are passed to the step. Works with both `PATH...` and `--store`.
-- `--recursive/--no-recursive` (`-r/-R`) — recurse into directories (default: true)
-- `--dry-run` — preview without making changes; validates that logs can be accessed and operations can be applied (for mutating steps: `tag`, `metadata`, `copy`)
+- `--store` (`-s`) — resolve logs from a store. Use `--store` for the default store or `--store PATH` for a specific one. Mutually exclusive with `PATH...`.
+- `--filter` — registered `@log_filter` name to pre-filter which logs are passed to the step. Can be used multiple times (all must pass). Works with both `PATH...` and `--store`.
+- `--recursive/--no-recursive` — recurse into directories (default: true)
+- `--dry-run` — preview changes without writing to disk
 
 For `tag` and `metadata`:
 - `--author` — provenance author (default: git user)
 - `--reason` — provenance reason
-- `--timestamp` — provenance timestamp (default: now)
-- `--provenance-metadata` — arbitrary key=value pairs for provenance metadata
 
 ### User-Defined Steps
 

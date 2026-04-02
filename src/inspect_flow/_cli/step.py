@@ -136,6 +136,13 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     )
     params.append(
         click.Option(
+            ["--recursive/--no-recursive"],
+            default=True,
+            help="Recurse into directories (default: true).",
+        )
+    )
+    params.append(
+        click.Option(
             ["--dry-run"],
             is_flag=True,
             default=False,

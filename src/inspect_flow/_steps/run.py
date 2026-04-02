@@ -11,14 +11,16 @@ from inspect_flow._types.log_filter import resolve_log_filter
 from inspect_flow._util.console import console
 
 
-def _expand_paths(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog | str]:
+def _expand_paths(
+    logs_or_paths: Sequence[EvalLog | str], recursive: bool = True
+) -> list[EvalLog | str]:
     """Expand directories to individual log paths, pass EvalLog objects through."""
     result: list[EvalLog | str] = []
     for item in logs_or_paths:
         if isinstance(item, EvalLog):
             result.append(item)
         else:
-            for info in list_eval_logs(item, recursive=True):
+            for info in list_eval_logs(item, recursive=recursive):
                 result.append(info.name)
     return result
 
@@ -31,6 +33,7 @@ def run_step(
     logs: Sequence[EvalLog | str] | EvalLog | str,
     dry_run: bool = False,
     filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
+    recursive: bool = True,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> None:
@@ -43,12 +46,13 @@ def run_step(
             all filters are processed. Accepts callables, registered names,
             or "file.py@name" strings.
         dry_run: If True, run steps but skip writing logs to disk.
+        recursive: Recurse into directories (default: True).
         args: Positional arguments to pass to the step function.
         kwargs: Keyword arguments to pass to the step function.
     """
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
-    log_paths = _expand_paths(logs)
+    log_paths = _expand_paths(logs, recursive=recursive)
     log_filter = resolve_log_filter(filter)
     if log_filter:
         with console.status("[dim]Filtering...[/dim]"):
