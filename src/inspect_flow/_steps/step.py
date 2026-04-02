@@ -1,7 +1,4 @@
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
-from contextvars import ContextVar
-from dataclasses import dataclass, field
+from collections.abc import Callable
 from typing import Any, Concatenate, NamedTuple, ParamSpec, Protocol, overload
 
 from inspect_ai._util.registry import (
@@ -9,9 +6,10 @@ from inspect_ai._util.registry import (
     registry_add,
     registry_name,
 )
-from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
+from inspect_ai.log import EvalLog
 
-from inspect_flow._util.console import console, path
+from inspect_flow._steps.context import step_context
+from inspect_flow._util.console import console
 
 STEP_TYPE = "step"
 
@@ -52,13 +50,6 @@ class _StepDecorator(Protocol):
     def __call__(self, func: StepFunction[P]) -> WrappedStepFunction[P]: ...
 
 
-@dataclass
-class StepContext:
-    dirty: dict[str, EvalLog] = field(default_factory=dict)
-    depth: int = 0
-    dry_run: bool = False
-
-
 def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
     def _format_value(v: Any) -> str:
         if isinstance(v, tuple):
@@ -72,26 +63,6 @@ def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
         f"{k}={_format_value(v)}" for k, v in kwargs.items() if not _is_empty(v)
     )
     return f"{name}({args_str})"
-
-
-# Tracks modified logs across nested step calls. None means no active step.
-_step_context_var: ContextVar[StepContext | None] = ContextVar(
-    "_step_context_var", default=None
-)
-
-
-@contextmanager
-def _step_context() -> Iterator[tuple[StepContext, bool]]:
-    context = _step_context_var.get()
-    if context is not None:
-        yield context, False
-    else:
-        context = StepContext()
-        token = _step_context_var.set(context)
-        try:
-            yield context, True
-        finally:
-            _step_context_var.reset(token)
 
 
 def _to_step_result(result: StepResult | EvalLog | None) -> StepResult:
@@ -137,31 +108,12 @@ def step(
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> EvalLog | None:
-            dry_run = kwargs.pop("dry_run", False)
-            with _step_context() as (context, is_outer):
-                if is_outer and dry_run:
-                    context.dry_run = True
-                if not log_or_path:
+            dry_run = bool(kwargs.pop("dry_run", False))
+            with step_context(
+                log_or_path, dry_run=dry_run, step_name=f.__name__
+            ) as context:
+                if context.log is None:
                     return None
-                elif isinstance(log_or_path, EvalLog):
-                    log = log_or_path
-                    if context.depth == 0:
-                        console.print(path(log.location))
-                elif not is_outer:
-                    raise ValueError(
-                        f"Step '{f.__name__}' received a path but is nested inside another step. "
-                        "Nested steps must be passed EvalLog objects directly, not paths."
-                    )
-                else:
-                    # In order to write the modified log back to the same location, we need to read it fully here even if
-                    # header_only=True. We could optimize this in the case where the step doesn't modify the log, but
-                    # that would require reading the full log again later to support write or nested steps. In the future
-                    # we could support writing just the header, so using header_only now will support that optimization
-                    # later.
-                    if context.depth == 0:
-                        console.print(path(log_or_path))
-                    with console.status("[dim]Reading[/dim]"):
-                        log = read_eval_log(log_or_path, header_only=False)
 
                 indent = "  " * (context.depth + 1)
                 console.print(
@@ -170,9 +122,9 @@ def step(
                 context.depth += 1
 
                 log_in = (
-                    log.model_copy(update={"samples": None, "reductions": None})
+                    context.log.model_copy(update={"samples": None, "reductions": None})
                     if header_only
-                    else log
+                    else context.log
                 )
 
                 step_result = _to_step_result(f(log_in, *args, **kwargs))
@@ -182,8 +134,8 @@ def step(
                     step_result = step_result._replace(
                         log=step_result.log.model_copy(
                             update={
-                                "samples": log.samples,
-                                "reductions": log.reductions,
+                                "samples": context.log.samples,
+                                "reductions": context.log.reductions,
                             }
                         )
                     )
@@ -191,12 +143,8 @@ def step(
                 if step_result.log and step_result.modified:
                     context.dirty[step_result.log.location] = step_result.log
 
-                if is_outer or step_result.flush:
-                    if not context.dry_run:
-                        for log in context.dirty.values():
-                            with console.status("[dim]Writing[/dim]"):
-                                write_eval_log(log, log.location)
-                    context.dirty.clear()
+                if step_result.flush:
+                    context.write_dirty()
 
                 if step_result.skip_log_steps:
                     return None

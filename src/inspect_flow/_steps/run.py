@@ -1,8 +1,13 @@
-from typing import ParamSpec, Sequence
+from collections.abc import Sequence
+from typing import ParamSpec
 
 from inspect_ai.log import EvalLog, list_eval_logs
+from inspect_ai.log._file import read_eval_log_headers
 
 from inspect_flow._steps.step import WrappedStepFunction
+from inspect_flow._types.flow_types import LogFilter
+from inspect_flow._types.log_filter import resolve_log_filter
+from inspect_flow._util.console import console
 
 
 def _expand_paths(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog | str]:
@@ -23,6 +28,8 @@ P = ParamSpec("P")
 def run_step(
     step: WrappedStepFunction[P],
     logs: Sequence[EvalLog | str] | EvalLog | str,
+    dry_run: bool = False,
+    filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> None:
@@ -31,10 +38,23 @@ def run_step(
     Args:
         step: The step function to run.
         logs: EvalLog objects or paths to eval logs to process.
+        filter: A log filter or sequence of filters. Only logs that pass
+            all filters are processed. Accepts callables, registered names,
+            or "file.py@name" strings.
+        dry_run: If True, run steps but skip writing logs to disk.
         args: Positional arguments to pass to the step function.
         kwargs: Keyword arguments to pass to the step function.
     """
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
-    for log in _expand_paths(logs):
-        step(log, *args, **kwargs)
+    log_paths = _expand_paths(logs)
+    log_filter = resolve_log_filter(filter)
+    if log_filter:
+        with console.status("[dim]Filtering...[/dim]"):
+            paths = [log for log in log_paths if isinstance(log, str)]
+            eval_logs = [log for log in log_paths if isinstance(log, EvalLog)]
+            log_headers = read_eval_log_headers(paths) + eval_logs
+            log_paths = [log.location for log in log_headers if log_filter(log)]
+    kwargs["dry_run"] = dry_run
+    for log_or_path in log_paths:
+        step(log_or_path, *args, **kwargs)

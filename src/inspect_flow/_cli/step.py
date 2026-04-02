@@ -117,6 +117,15 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     )
     params.append(
         click.Option(
+            ["--filter"],
+            "filter",
+            type=str,
+            multiple=True,
+            help="Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass).",
+        )
+    )
+    params.append(
+        click.Option(
             ["--dry-run"],
             is_flag=True,
             default=False,
