@@ -933,21 +933,16 @@ def test_217_bundle_error_message(tmp_path: Path) -> None:
     log_dir = init_test_logs()
 
     bundle_dir = str(tmp_path / "bundle_test")
+    Path(bundle_dir).mkdir()
+
     config = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(bundle_dir=bundle_dir),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
 
-    run_eval_set(spec=(config), base_dir=".")
-
-    assert config.tasks
-    config.tasks = list(config.tasks) + [
-        FlowTask(name=task_file + "@noop", model="mockllm/mock-llm2")
-    ]
-
     with pytest.raises(FlowHandledError) as e:
-        run_eval_set(spec=(config), base_dir=".")
+        run_eval_set(spec=config, base_dir=".")
     assert e.value.__cause__
     assert isinstance(e.value.__cause__, PrerequisiteError)
     assert "'bundle_overwrite'" in str(e.value.__cause__.message)
