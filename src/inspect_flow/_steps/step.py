@@ -56,6 +56,7 @@ class _StepDecorator(Protocol):
 class StepContext:
     dirty: dict[str, EvalLog] = field(default_factory=dict)
     depth: int = 0
+    dry_run: bool = False
 
 
 def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
@@ -136,7 +137,10 @@ def step(
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> EvalLog | None:
+            dry_run = kwargs.pop("dry_run", False)
             with _step_context() as (context, is_outer):
+                if is_outer and dry_run:
+                    context.dry_run = True
                 if not log_or_path:
                     return None
                 elif isinstance(log_or_path, EvalLog):
@@ -188,9 +192,10 @@ def step(
                     context.dirty[step_result.log.location] = step_result.log
 
                 if is_outer or step_result.flush:
-                    for log in context.dirty.values():
-                        with console.status("[dim]Writing[/dim]"):
-                            write_eval_log(log, log.location)
+                    if not context.dry_run:
+                        for log in context.dirty.values():
+                            with console.status("[dim]Writing[/dim]"):
+                                write_eval_log(log, log.location)
                     context.dirty.clear()
 
                 if step_result.skip_log_steps:

@@ -110,10 +110,18 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
                 )
             )
 
-    # Add PATH argument for log paths
+    # Add PATH argument and --dry-run option
     params.insert(
         0,
         click.Argument(["path"], nargs=-1, required=True, type=click.Path()),
+    )
+    params.append(
+        click.Option(
+            ["--dry-run"],
+            is_flag=True,
+            default=False,
+            help="Preview changes without writing to disk.",
+        )
     )
 
     help_text = doc.split("\n\n")[0] if doc else ""

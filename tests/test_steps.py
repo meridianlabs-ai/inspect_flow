@@ -332,9 +332,24 @@ def test_cli_tag_help() -> None:
     assert "--remove" in result.output
     assert "--author" in result.output
     assert "--reason" in result.output
+    assert "--dry-run" in result.output
     # Should NOT show raw *args/**kwargs
     assert "--args" not in result.output
     assert "--kwargs" not in result.output
+
+
+def test_dry_run_skips_write(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    tag(log_path, add=["should_persist"])
+    # Verify tag was written
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "should_persist" in (reloaded.tags or [])
+
+    # dry_run should not write
+    tag(log_path, add=["should_not_persist"], dry_run=True)  # type: ignore[call-arg]
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "should_not_persist" not in (reloaded.tags or [])
+    assert "should_persist" in (reloaded.tags or [])
 
 
 def test_cli_copy_help() -> None:
