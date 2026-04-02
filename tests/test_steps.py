@@ -276,6 +276,49 @@ def test_nested_step_with_path_raises(tmp_path: Path) -> None:
         outer(log_path)
 
 
+# --- _format_step_call ---
+
+
+def test_format_step_call_basic() -> None:
+    from inspect_flow._steps.step import _format_step_call
+
+    assert _format_step_call("tag", {"add": ["golden"]}) == "tag(add=['golden'])"
+
+
+def test_format_step_call_hides_none() -> None:
+    from inspect_flow._steps.step import _format_step_call
+
+    assert (
+        _format_step_call("tag", {"add": ["golden"], "remove": None})
+        == "tag(add=['golden'])"
+    )
+
+
+def test_format_step_call_hides_empty_sequences() -> None:
+    from inspect_flow._steps.step import _format_step_call
+
+    assert (
+        _format_step_call("tag", {"add": ["golden"], "remove": []})
+        == "tag(add=['golden'])"
+    )
+    assert (
+        _format_step_call("tag", {"add": ["golden"], "remove": ()})
+        == "tag(add=['golden'])"
+    )
+
+
+def test_format_step_call_converts_tuples_to_lists() -> None:
+    from inspect_flow._steps.step import _format_step_call
+
+    assert _format_step_call("tag", {"add": ("tag1",)}) == "tag(add=['tag1'])"
+
+
+def test_format_step_call_no_args() -> None:
+    from inspect_flow._steps.step import _format_step_call
+
+    assert _format_step_call("qa", {}) == "qa()"
+
+
 # --- CLI help ---
 
 

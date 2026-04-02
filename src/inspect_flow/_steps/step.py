@@ -59,7 +59,17 @@ class StepContext:
 
 
 def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
-    args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items() if v is not None)
+    def _format_value(v: Any) -> str:
+        if isinstance(v, tuple):
+            return repr(list(v))
+        return repr(v)
+
+    def _is_empty(v: Any) -> bool:
+        return v is None or (isinstance(v, (list, tuple)) and len(v) == 0)
+
+    args_str = ", ".join(
+        f"{k}={_format_value(v)}" for k, v in kwargs.items() if not _is_empty(v)
+    )
     return f"{name}({args_str})"
 
 
