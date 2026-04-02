@@ -14,6 +14,8 @@ class StepContext:
     dirty: dict[str, EvalLog] = field(default_factory=dict)
     depth: int = 0
     dry_run: bool = False
+    index: int | None = None
+    total: int | None = None
 
     def write_dirty(self) -> None:
         """Write all dirty logs to disk and clear the set."""
@@ -36,12 +38,23 @@ def read_log(log_or_path: EvalLog | str, header_only: bool = False) -> EvalLog:
     return read_eval_log(log_or_path, header_only=header_only)
 
 
+def _log_header(location: str, context: StepContext) -> None:
+    suffix = (
+        f" [dim]({context.index} of {context.total})[/dim]"
+        if context.index is not None
+        else ""
+    )
+    console.print(path(location), suffix, sep="")
+
+
 @contextmanager
 def step_context(
     log_or_path: EvalLog | str | None = None,
     *,
     dry_run: bool = False,
     step_name: str = "step",
+    index: int | None = None,
+    total: int | None = None,
 ) -> Iterator[StepContext]:
     """Get or create a step context, optionally resolving a log.
 
@@ -54,22 +67,25 @@ def step_context(
     """
     existing = _step_context_var.get()
     is_outer = existing is None
-    context = existing if existing else StepContext(dry_run=dry_run)
+    context = (
+        existing if existing else StepContext(dry_run=dry_run, index=index, total=total)
+    )
 
     if not log_or_path:
         context.log = None
     elif isinstance(log_or_path, EvalLog):
         context.log = log_or_path
         if context.depth == 0:
-            console.print(path(log_or_path.location))
+            _log_header(log_or_path.location, context)
     elif not is_outer:
-        raise ValueError(
-            f"Step '{step_name}' received a path but is nested inside another step. "
-            "Nested steps must be passed EvalLog objects directly, not paths."
-        )
+        if context.log is None or context.log.location != log_or_path:
+            raise ValueError(
+                f"Step '{step_name}' received a path but is nested inside another step. "
+                "Nested steps must be passed EvalLog objects directly, not paths."
+            )
     else:
         if context.depth == 0:
-            console.print(path(log_or_path))
+            _log_header(log_or_path, context)
         with console.status("[dim]Reading[/dim]"):
             context.log = read_log(log_or_path)
 

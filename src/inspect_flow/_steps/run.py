@@ -4,6 +4,7 @@ from typing import ParamSpec
 from inspect_ai.log import EvalLog, list_eval_logs
 from inspect_ai.log._file import read_eval_log_headers
 
+from inspect_flow._steps.context import step_context
 from inspect_flow._steps.step import WrappedStepFunction
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._types.log_filter import resolve_log_filter
@@ -55,6 +56,7 @@ def run_step(
             eval_logs = [log for log in log_paths if isinstance(log, EvalLog)]
             log_headers = read_eval_log_headers(paths) + eval_logs
             log_paths = [log.location for log in log_headers if log_filter(log)]
-    kwargs["dry_run"] = dry_run
-    for log_or_path in log_paths:
-        step(log_or_path, *args, **kwargs)
+    total = len(log_paths)
+    for i, log_or_path in enumerate(log_paths, 1):
+        with step_context(log_or_path, dry_run=dry_run, index=i, total=total):
+            step(log_or_path, *args, **kwargs)

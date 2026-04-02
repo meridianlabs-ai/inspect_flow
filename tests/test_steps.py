@@ -261,8 +261,9 @@ def test_return_none_skips(tmp_path: Path) -> None:
 # --- nested step receives path raises ---
 
 
-def test_nested_step_with_path_raises(tmp_path: Path) -> None:
-    log_path = _make_log(tmp_path)
+def test_nested_step_with_different_path_raises(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path, "outer.eval")
+    other_path = _make_log(tmp_path, "other.eval")
 
     @step
     def inner(log: EvalLog) -> EvalLog:
@@ -270,7 +271,7 @@ def test_nested_step_with_path_raises(tmp_path: Path) -> None:
 
     @step
     def outer(log: EvalLog) -> EvalLog:
-        return inner(log_path)
+        return inner(other_path)
 
     with pytest.raises(ValueError, match="nested inside another step"):
         outer(log_path)
