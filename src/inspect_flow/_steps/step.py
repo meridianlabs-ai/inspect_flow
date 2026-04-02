@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Concatenate, NamedTuple, ParamSpec, Protocol, overload
+from typing import Any, Concatenate, NamedTuple, ParamSpec, Protocol, overload
 
 from inspect_ai._util.registry import (
     RegistryInfo,
@@ -10,6 +10,8 @@ from inspect_ai._util.registry import (
     registry_name,
 )
 from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
+
+from inspect_flow._util.console import console, path
 
 STEP_TYPE = "step"
 
@@ -53,6 +55,12 @@ class _StepDecorator(Protocol):
 @dataclass
 class StepContext:
     dirty: dict[str, EvalLog] = field(default_factory=dict)
+    depth: int = 0
+
+
+def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
+    args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items() if v is not None)
+    return f"{name}({args_str})"
 
 
 # Tracks modified logs across nested step calls. None means no active step.
@@ -123,6 +131,8 @@ def step(
                     return None
                 elif isinstance(log_or_path, EvalLog):
                     log = log_or_path
+                    if context.depth == 0:
+                        console.print(path(log.location))
                 elif not is_outer:
                     raise ValueError(
                         f"Step '{f.__name__}' received a path but is nested inside another step. "
@@ -134,7 +144,16 @@ def step(
                     # that would require reading the full log again later to support write or nested steps. In the future
                     # we could support writing just the header, so using header_only now will support that optimization
                     # later.
-                    log = read_eval_log(log_or_path, header_only=False)
+                    if context.depth == 0:
+                        console.print(path(log_or_path))
+                    with console.status("[dim]Reading[/dim]"):
+                        log = read_eval_log(log_or_path, header_only=False)
+
+                indent = "  " * (context.depth + 1)
+                console.print(
+                    f"{indent}[dim]{_format_step_call(f.__name__, kwargs)}[/dim]"
+                )
+                context.depth += 1
 
                 log_in = (
                     log.model_copy(update={"samples": None, "reductions": None})
@@ -143,6 +162,7 @@ def step(
                 )
 
                 step_result = _to_step_result(f(log_in, *args, **kwargs))
+                context.depth -= 1
 
                 if step_result.log and header_only:
                     step_result = step_result._replace(
@@ -159,7 +179,8 @@ def step(
 
                 if is_outer or step_result.flush:
                     for log in context.dirty.values():
-                        write_eval_log(log, log.location)
+                        with console.status("[dim]Writing[/dim]"):
+                            write_eval_log(log, log.location)
                     context.dirty.clear()
 
                 if step_result.skip_log_steps:

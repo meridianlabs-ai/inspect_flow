@@ -1,29 +1,19 @@
 from typing import ParamSpec, Sequence
 
 from inspect_ai.log import EvalLog, list_eval_logs
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from inspect_flow._display.path_progress import PathProgressDisplay
 from inspect_flow._steps.step import WrappedStepFunction
-from inspect_flow._util.console import console
 
 
 def _expand_paths(logs_or_paths: Sequence[EvalLog | str]) -> list[EvalLog | str]:
     """Expand directories to individual log paths, pass EvalLog objects through."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-        transient=True,
-    ) as progress:
-        progress.add_task("Finding logs…", total=None)
-        result: list[EvalLog | str] = []
-        for item in logs_or_paths:
-            if isinstance(item, EvalLog):
-                result.append(item)
-            else:
-                for info in list_eval_logs(item, recursive=True):
-                    result.append(info.name)
+    result: list[EvalLog | str] = []
+    for item in logs_or_paths:
+        if isinstance(item, EvalLog):
+            result.append(item)
+        else:
+            for info in list_eval_logs(item, recursive=True):
+                result.append(info.name)
     return result
 
 
@@ -46,9 +36,5 @@ def run_step(
     """
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
-    expanded = _expand_paths(logs)
-    with PathProgressDisplay("Processing logs", len(expanded)) as progress:
-        for log in expanded:
-            name = log.location if isinstance(log, EvalLog) else log
-            step(log, *args, **kwargs)
-            progress.advance(name)
+    for log in _expand_paths(logs):
+        step(log, *args, **kwargs)
