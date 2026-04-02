@@ -14,7 +14,7 @@ Three operations that users compose into workflows:
 | `metadata` | Set/delete metadata fields on log files | Modified source logs |
 | `copy` | Copy log files to another location | New destination logs |
 
-> Filtering (selecting a subset of logs) is not a step — users use list comprehensions or `store.get_logs(filter=...)` from [PR #552](https://github.com/meridianlabs-ai/inspect_flow/pull/552) instead.
+> Filtering (selecting a subset of logs) is not a step — it's handled by `run_step`'s `filter` parameter or `--filter` on the CLI. Filters use the `@log_filter` registry (see [store_filters.md](store_filters.md)). Multiple filters can be combined (all must pass).
 
 > Validation (asserting conditions on logs) is not a step — it doesn't modify logs and has no meaningful "set of modified logs" to pass forward. Use `validate()` as a standalone function call within a step or script.
 
