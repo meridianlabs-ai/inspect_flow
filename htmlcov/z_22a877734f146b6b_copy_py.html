@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_22a877734f146b6b_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-03 19:42 +0000
+            created at 2026-04-03 21:04 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -113,18 +113,17 @@
     <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="str">    Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="str">        log: EvalLog to copy.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="str">        dest: Destination directory (local or S3).</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="str">        source_prefix: If None, the file is copied flat into the destination.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">            When provided, preserves directory structure relative to the prefix.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="str">        overwrite: Overwrite existing files at the destination.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t"><span class="str">    Returns:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t"><span class="str">        EvalLog at the destination location.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">    <span class="nam">dest_path</span> <span class="op">=</span> <span class="nam">dest</span><span class="op">.</span><span class="nam">rstrip</span><span class="op">(</span><span class="str">"/"</span><span class="op">)</span> <span class="op">+</span> <span class="str">"/"</span> <span class="op">+</span> <span class="nam">_relative_path</span><span class="op">(</span><span class="nam">log</span><span class="op">.</span><span class="nam">location</span><span class="op">,</span> <span class="nam">source_prefix</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">overwrite</span> <span class="key">and</span> <span class="nam">exists</span><span class="op">(</span><span class="nam">dest_path</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">        <span class="nam">flow_print</span><span class="op">(</span><span class="fst">f"</span><span class="fst">Skipping (already exists): </span><span class="op">{</span><span class="nam">dest_path</span><span class="op">}</span><span class="fst">"</span><span class="op">,</span> <span class="nam">format</span><span class="op">=</span><span class="str">"warning"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">    <span class="key">return</span> <span class="nam">log</span><span class="op">.</span><span class="nam">model_copy</span><span class="op">(</span><span class="nam">update</span><span class="op">=</span><span class="op">{</span><span class="str">"location"</span><span class="op">:</span> <span class="nam">dest_path</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="str">        source_prefix: Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">        overwrite: Overwrite existing files at the destination.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t"><span class="str">    Returns:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t"><span class="str">        EvalLog at the destination location.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t">    <span class="nam">dest_path</span> <span class="op">=</span> <span class="nam">dest</span><span class="op">.</span><span class="nam">rstrip</span><span class="op">(</span><span class="str">"/"</span><span class="op">)</span> <span class="op">+</span> <span class="str">"/"</span> <span class="op">+</span> <span class="nam">_relative_path</span><span class="op">(</span><span class="nam">log</span><span class="op">.</span><span class="nam">location</span><span class="op">,</span> <span class="nam">source_prefix</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">overwrite</span> <span class="key">and</span> <span class="nam">exists</span><span class="op">(</span><span class="nam">dest_path</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">        <span class="nam">flow_print</span><span class="op">(</span><span class="fst">f"</span><span class="fst">Skipping (already exists): </span><span class="op">{</span><span class="nam">dest_path</span><span class="op">}</span><span class="fst">"</span><span class="op">,</span> <span class="nam">format</span><span class="op">=</span><span class="str">"warning"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">    <span class="key">return</span> <span class="nam">log</span><span class="op">.</span><span class="nam">model_copy</span><span class="op">(</span><span class="nam">update</span><span class="op">=</span><span class="op">{</span><span class="str">"location"</span><span class="op">:</span> <span class="nam">dest_path</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -134,7 +133,7 @@
             <a class="nav" href="z_22a877734f146b6b_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-03 19:42 +0000
+            created at 2026-04-03 21:04 +0000
         </p>
     </div>
 </footer>
