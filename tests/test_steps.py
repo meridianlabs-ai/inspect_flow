@@ -94,6 +94,27 @@ def test_metadata_remove_from_path(tmp_path: Path) -> None:
     assert result.metadata["key2"] == "val2"
 
 
+# --- _relative_path ---
+
+
+def test_relative_path_with_prefix() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", "/a/b") == "c/log.eval"
+
+
+def test_relative_path_without_prefix() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", None) == "log.eval"
+
+
+def test_relative_path_prefix_not_matching() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", "/x/y") == "log.eval"
+
+
 # --- copy step ---
 
 

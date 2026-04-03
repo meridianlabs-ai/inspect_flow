@@ -6,6 +6,16 @@ from inspect_flow._steps.step import step
 from inspect_flow._util.console import flow_print
 
 
+def _relative_path(location: str, source_prefix: str | None) -> str:
+    """Return the relative portion of location for the destination."""
+    if source_prefix:
+        _, abs_location = split_protocol(absolute_file_path(location))
+        _, abs_prefix = split_protocol(absolute_file_path(source_prefix))
+        if abs_location.startswith(abs_prefix):
+            return abs_location.removeprefix(abs_prefix).lstrip("/")
+    return basename(location)
+
+
 @step(header_only=False)
 def copy(
     log: EvalLog,
@@ -26,13 +36,7 @@ def copy(
     Returns:
         EvalLog at the destination location.
     """
-    if source_prefix:
-        _, location = split_protocol(absolute_file_path(log.location))
-        _, prefix = split_protocol(absolute_file_path(source_prefix))
-        relative = location.removeprefix(prefix).lstrip("/")
-    else:
-        relative = basename(log.location)
-    dest_path = dest.rstrip("/") + "/" + relative
+    dest_path = dest.rstrip("/") + "/" + _relative_path(log.location, source_prefix)
     if not overwrite and exists(dest_path):
         flow_print(f"Skipping (already exists): {dest_path}", format="warning")
         return None
