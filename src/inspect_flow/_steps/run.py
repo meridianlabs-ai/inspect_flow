@@ -63,6 +63,7 @@ def run_step(
     if not log_paths:
         flow_print("No logs found", format="warning")
         return
+    log_paths = sorted(log_paths, key=lambda p: p if isinstance(p, str) else p.location)
     total = len(log_paths)
     for i, log_or_path in enumerate(log_paths, 1):
         with step_context(log_or_path, dry_run=dry_run, index=i, total=total):
