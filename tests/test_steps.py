@@ -228,6 +228,16 @@ def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
     assert "No logs found" in captured
 
 
+def test_run_step_evallog_no_duplicate_header(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    log_path = _make_log(tmp_path)
+    log = read_eval_log(log_path)
+    run_step(tag, [log], add=["test"])
+    captured = recording_console.export_text()
+    assert captured.count(log.location) == 1
+
+
 def test_run_step_directory(tmp_path: Path) -> None:
     _make_log(tmp_path, "log1.eval")
     _make_log(tmp_path, "log2.eval")
