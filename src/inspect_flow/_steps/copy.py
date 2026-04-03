@@ -6,7 +6,7 @@ from inspect_flow._steps.step import step
 
 @step(header_only=False)
 def copy(log: EvalLog, *, dest: str, source_prefix: str | None = None) -> EvalLog:
-    """Copy an eval log to a destination directory.
+    """Copy eval logs to a destination directory.
 
     Args:
         log: EvalLog to copy.
