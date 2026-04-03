@@ -50,6 +50,8 @@ def run_step(
         args: Positional arguments to pass to the step function.
         kwargs: Keyword arguments to pass to the step function.
     """
+    flow_print("[DRY RUN] will not write changes")
+
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
     log_paths = _expand_paths(logs, recursive=recursive)
