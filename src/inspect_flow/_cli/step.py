@@ -135,6 +135,14 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     )
     params.append(
         click.Option(
+            ["--exclude"],
+            type=str,
+            multiple=True,
+            help="Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times.",
+        )
+    )
+    params.append(
+        click.Option(
             ["--recursive/--no-recursive"],
             default=True,
             help="Recurse into directories (default: true). No effect when --store is used.",

@@ -33,6 +33,7 @@ def run_step(
     logs: Sequence[EvalLog | str] | EvalLog | str,
     dry_run: bool = False,
     filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
+    exclude: LogFilter | str | Sequence[LogFilter | str] | None = None,
     recursive: bool = True,
     *args: P.args,
     **kwargs: P.kwargs,
@@ -45,6 +46,8 @@ def run_step(
         filter: A log filter or sequence of filters. Only logs that pass
             all filters are processed. Accepts callables, registered names,
             or "file.py@name" strings.
+        exclude: A log filter or sequence of filters. Logs that pass any
+            exclude filter are skipped. Accepts the same formats as filter.
         dry_run: If True, run steps but skip writing logs to disk.
         recursive: Recurse into directories (default: True).
         args: Positional arguments to pass to the step function.
@@ -56,17 +59,24 @@ def run_step(
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
     log_paths = _expand_paths(logs, recursive=recursive)
-    named_filters = resolve_log_filters(filter)
-    if named_filters:
+    include_filters = resolve_log_filters(filter)
+    exclude_filters = resolve_log_filters(exclude)
+    if include_filters or exclude_filters:
         with console.status("[dim]Filtering...[/dim]"):
             paths = [log for log in log_paths if isinstance(log, str)]
             eval_logs = [log for log in log_paths if isinstance(log, EvalLog)]
             log_headers = read_eval_log_headers(paths) + eval_logs
-            for nf in named_filters:
+            for nf in include_filters:
                 before = len(log_headers)
                 log_headers = [log for log in log_headers if nf.fn(log)]
                 flow_print(
                     f"Filter: {nf.name} — {len(log_headers)}/{before} logs matched"
+                )
+            for nf in exclude_filters:
+                before = len(log_headers)
+                log_headers = [log for log in log_headers if not nf.fn(log)]
+                flow_print(
+                    f"Exclude: {nf.name} — {len(log_headers)}/{before} logs remaining"
                 )
             log_paths = [log.location for log in log_headers]
     if not log_paths:

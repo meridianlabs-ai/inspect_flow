@@ -480,6 +480,49 @@ def test_cli_step_multiple_filters(tmp_path: Path, recording_console: Console) -
     )
 
 
+def test_cli_step_exclude(tmp_path: Path, recording_console: Console) -> None:
+    filter_file = "tests/local_eval/src/local_eval/my_filters.py"
+
+    # success log (excluded by only_success)
+    _make_log(tmp_path, "success.eval")
+
+    # error log (not excluded by only_success)
+    _make_log(tmp_path, "error.eval")
+    error_log = read_eval_log(str(tmp_path / "error.eval"))
+    error_log = error_log.model_copy(update={"status": "error"})
+    write_eval_log(error_log, str(tmp_path / "error.eval"))
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        [
+            "tag",
+            str(tmp_path),
+            "--add",
+            "excluded",
+            "--exclude",
+            f"{filter_file}@only_success",
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    captured = recording_console.export_text()
+    assert "Exclude" in captured
+    assert "only_success" in captured
+    assert "1/2 logs remaining" in captured
+
+    # only the error log should be tagged
+    assert "excluded" not in (
+        read_eval_log(str(tmp_path / "success.eval"), header_only=True).tags or []
+    )
+    assert "excluded" in (
+        read_eval_log(str(tmp_path / "error.eval"), header_only=True).tags or []
+    )
+
+
 def test_cli_copy_help() -> None:
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command
