@@ -396,6 +396,69 @@ def test_dry_run_skips_write(tmp_path: Path) -> None:
     assert "should_persist" in (reloaded.tags or [])
 
 
+def test_cli_step_multiple_filters(tmp_path: Path, recording_console: Console) -> None:
+    filter_file = "tests/local_eval/src/local_eval/my_filters.py"
+
+    # passes both only_success and only_anthropic
+    _make_log(tmp_path, "both.eval")
+    both = read_eval_log(str(tmp_path / "both.eval"))
+    both = both.model_copy(
+        update={"eval": both.eval.model_copy(update={"model": "anthropic/claude"})}
+    )
+    write_eval_log(both, str(tmp_path / "both.eval"))
+
+    # passes only_success but not only_anthropic
+    _make_log(tmp_path, "success_only.eval")
+
+    # passes only_anthropic but not only_success
+    _make_log(tmp_path, "anthropic_only.eval")
+    anth = read_eval_log(str(tmp_path / "anthropic_only.eval"))
+    anth = anth.model_copy(
+        update={
+            "status": "error",
+            "eval": anth.eval.model_copy(update={"model": "anthropic/claude"}),
+        }
+    )
+    write_eval_log(anth, str(tmp_path / "anthropic_only.eval"))
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        [
+            "tag",
+            str(tmp_path),
+            "--add",
+            "filtered",
+            "--filter",
+            f"{filter_file}@only_success",
+            "--filter",
+            f"{filter_file}@only_anthropic",
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    # Verify filter summary was printed
+    captured = recording_console.export_text()
+    assert "only_success" in captured
+    assert "2/3 logs matched" in captured
+    assert "only_anthropic" in captured
+    assert "1/2 logs matched" in captured
+
+    assert "filtered" in (
+        read_eval_log(str(tmp_path / "both.eval"), header_only=True).tags or []
+    )
+    assert "filtered" not in (
+        read_eval_log(str(tmp_path / "success_only.eval"), header_only=True).tags or []
+    )
+    assert "filtered" not in (
+        read_eval_log(str(tmp_path / "anthropic_only.eval"), header_only=True).tags
+        or []
+    )
+
+
 def test_cli_copy_help() -> None:
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command

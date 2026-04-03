@@ -7,7 +7,7 @@ from inspect_ai.log._file import read_eval_log_headers
 from inspect_flow._steps.context import step_context
 from inspect_flow._steps.step import WrappedStepFunction
 from inspect_flow._types.flow_types import LogFilter
-from inspect_flow._types.log_filter import resolve_log_filter
+from inspect_flow._types.log_filter import resolve_log_filters
 from inspect_flow._util.console import console, flow_print
 
 
@@ -53,13 +53,19 @@ def run_step(
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
     log_paths = _expand_paths(logs, recursive=recursive)
-    log_filter = resolve_log_filter(filter)
-    if log_filter:
+    named_filters = resolve_log_filters(filter)
+    if named_filters:
         with console.status("[dim]Filtering...[/dim]"):
             paths = [log for log in log_paths if isinstance(log, str)]
             eval_logs = [log for log in log_paths if isinstance(log, EvalLog)]
             log_headers = read_eval_log_headers(paths) + eval_logs
-            log_paths = [log.location for log in log_headers if log_filter(log)]
+            for nf in named_filters:
+                before = len(log_headers)
+                log_headers = [log for log in log_headers if nf.fn(log)]
+                flow_print(
+                    f"Filter: {nf.name} — {len(log_headers)}/{before} logs matched"
+                )
+            log_paths = [log.location for log in log_headers]
     if not log_paths:
         flow_print("No logs found", format="warning")
         return

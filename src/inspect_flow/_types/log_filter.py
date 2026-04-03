@@ -1,4 +1,5 @@
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from inspect_ai._util.module import load_module
@@ -15,6 +16,12 @@ from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._util.path_util import absolute_path_relative_to, find_auto_includes
 
 LOG_FILTER_TYPE = "log_filter"
+
+
+@dataclass
+class NamedFilter:
+    name: str
+    fn: LogFilter
 
 
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
@@ -91,3 +98,31 @@ def resolve_log_filter(
     if resolved is None:
         raise ValueError(f"Log filter '{filter}' not found in registry.")
     return resolved  # type: ignore[return-value]
+
+
+def _filter_name(filter: LogFilter | str) -> str:
+    if isinstance(filter, str):
+        return filter
+    return getattr(filter, "__name__", str(filter))
+
+
+def resolve_log_filters(
+    filter: LogFilter | str | Sequence[LogFilter | str] | None,
+    base_dir: str | None = None,
+) -> list[NamedFilter]:
+    """Resolve filters to a list of named filters.
+
+    Unlike resolve_log_filter which combines multiple filters into one,
+    this returns each filter separately with its name for reporting.
+    """
+    if filter is None:
+        return []
+    if isinstance(filter, str) or callable(filter):
+        filter = [filter]
+    result: list[NamedFilter] = []
+    for f in filter:
+        name = _filter_name(f)
+        resolved = resolve_log_filter(f, base_dir)
+        if resolved is not None:
+            result.append(NamedFilter(name=name, fn=resolved))
+    return result
