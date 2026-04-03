@@ -283,6 +283,24 @@ def test_header_only_step_preserves_samples_on_write(tmp_path: Path) -> None:
     assert len(reloaded.samples) == 1
 
 
+def test_nested_header_only_step_preserves_samples(tmp_path: Path) -> None:
+    """A header_only step that calls another header_only step (e.g. tag)
+    must not destroy samples on disk."""
+    log_path = _make_log(tmp_path)
+
+    @step
+    def qa(log: EvalLog) -> EvalLog:
+        result = tag(log, add=["qa_passed"])
+        assert result is not None
+        return result
+
+    qa(log_path)
+    reloaded = read_eval_log(log_path)
+    assert "qa_passed" in (reloaded.tags or [])
+    assert reloaded.samples is not None
+    assert len(reloaded.samples) == 1
+
+
 # --- StepResult ---
 
 

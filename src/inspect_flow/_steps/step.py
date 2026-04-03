@@ -121,6 +121,8 @@ def step(
                 )
                 context.depth += 1
 
+                saved_samples = context.log.samples
+                saved_reductions = context.log.reductions
                 log_in = (
                     context.log.model_copy(update={"samples": None, "reductions": None})
                     if header_only
@@ -134,8 +136,8 @@ def step(
                     step_result = step_result._replace(
                         log=step_result.log.model_copy(
                             update={
-                                "samples": context.log.samples,
-                                "reductions": context.log.reductions,
+                                "samples": saved_samples,
+                                "reductions": saved_reductions,
                             }
                         )
                     )
