@@ -69,6 +69,7 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg
     step_params = list(sig.parameters.values())[1:]
+    dict_params: set[str] = set()
     for param in step_params:
         option_name = f"--{param.name.replace('_', '-')}"
         annotation = (
@@ -90,6 +91,18 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
                 )
             )
         elif _is_list_of_str(annotation):
+            params.append(
+                click.Option(
+                    [option_name],
+                    multiple=True,
+                    type=str,
+                    default=default or (),
+                    required=required,
+                    help=help_text,
+                )
+            )
+        elif _is_dict_of_str(annotation):
+            dict_params.add(param.name)
             params.append(
                 click.Option(
                     [option_name],
@@ -160,6 +173,9 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     help_text = doc.split("\n\n")[0] if doc else ""
 
     def callback(path: tuple[str, ...], **kwargs: Any) -> None:
+        for dp in dict_params:
+            if dp in kwargs:
+                kwargs[dp] = _parse_key_value_pairs(kwargs[dp])
         store = kwargs.pop("store", None)
         if path and store:
             raise click.UsageError("PATH and --store are mutually exclusive.")
@@ -192,6 +208,26 @@ def _annotation_to_click_type(annotation: object) -> type:
     if annotation is bool:
         return bool
     return str
+
+
+def _is_dict_of_str(annotation: object) -> bool:
+    origin = getattr(annotation, "__origin__", None)
+    if origin is dict:
+        return True
+    if isinstance(annotation, types.UnionType):
+        args = getattr(annotation, "__args__", ())
+        return any(_is_dict_of_str(a) for a in args)
+    return False
+
+
+def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for item in values:
+        if "=" not in item:
+            raise click.BadParameter(f"Expected key=value format, got: {item}")
+        key, value = item.split("=", 1)
+        result[key] = value
+    return result
 
 
 def _is_list_of_str(annotation: object) -> bool:

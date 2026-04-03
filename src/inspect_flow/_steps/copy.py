@@ -29,8 +29,7 @@ def copy(
     Args:
         log: EvalLog to copy.
         dest: Destination directory (local or S3).
-        source_prefix: If None, the file is copied flat into the destination.
-            When provided, preserves directory structure relative to the prefix.
+        source_prefix: Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.
         overwrite: Overwrite existing files at the destination.
 
     Returns:

@@ -68,34 +68,35 @@ def step_context(
     """
     existing = _step_context_var.get()
     is_outer = existing is None
-    context = (
-        existing if existing else StepContext(dry_run=dry_run, index=index, total=total)
-    )
-
-    if not log_or_path:
-        context.log = None
-    elif isinstance(log_or_path, EvalLog):
-        context.log = log_or_path
-        if context.depth == 0:
-            _log_header(log_or_path.location, context)
-    elif not is_outer:
-        if context.log is None or context.log.location != log_or_path:
-            raise ValueError(
-                f"Step '{step_name}' received a path but is nested inside another step. "
-                "Nested steps must be passed EvalLog objects directly, not paths."
-            )
-    else:
-        if context.depth == 0:
-            _log_header(log_or_path, context)
-        with console.status("[dim]Reading[/dim]"):
-            context.log = read_log(log_or_path, header_only=dry_run)
 
     if is_outer:
+        context = StepContext(dry_run=dry_run, index=index, total=total)
+        if not log_or_path:
+            context.log = None
+        elif isinstance(log_or_path, EvalLog):
+            context.log = log_or_path
+            _log_header(log_or_path.location, context)
+        else:
+            _log_header(log_or_path, context)
+            with console.status("[dim]Reading[/dim]"):
+                context.log = read_log(log_or_path, header_only=dry_run)
         token = _step_context_var.set(context)
+    else:
+        context = existing
+        token = None
+        if isinstance(log_or_path, EvalLog):
+            context.log = log_or_path
+        elif isinstance(log_or_path, str):
+            if context.log is None or context.log.location != log_or_path:
+                raise ValueError(
+                    f"Step '{step_name}' received a path but is nested inside another step. "
+                    "Nested steps must be passed EvalLog objects directly, not paths."
+                )
+
     try:
         yield context
         if is_outer:
             context.write_dirty()
     finally:
-        if is_outer:
-            _step_context_var.reset(token)  # type: ignore[possibly-undefined]
+        if token:
+            _step_context_var.reset(token)

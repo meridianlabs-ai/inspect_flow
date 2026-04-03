@@ -228,6 +228,17 @@ def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
     assert "No logs found" in captured
 
 
+def test_run_step_evallog_no_duplicate_header(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    log_path = _make_log(tmp_path)
+    log = read_eval_log(log_path)
+    run_step(tag, [log], add=["test"])
+    captured = recording_console.export_text()
+    header_lines = [line for line in captured.splitlines() if "(1 of 1)" in line]
+    assert len(header_lines) == 1
+
+
 def test_run_step_directory(tmp_path: Path) -> None:
     _make_log(tmp_path, "log1.eval")
     _make_log(tmp_path, "log2.eval")
@@ -279,6 +290,24 @@ def test_header_only_step_preserves_samples_on_write(tmp_path: Path) -> None:
     log_path = _make_log(tmp_path)
     tag(log_path, add=["test"])
     reloaded = read_eval_log(log_path)
+    assert reloaded.samples is not None
+    assert len(reloaded.samples) == 1
+
+
+def test_nested_header_only_step_preserves_samples(tmp_path: Path) -> None:
+    """A header_only step that calls another header_only step (e.g. tag)
+    must not destroy samples on disk."""
+    log_path = _make_log(tmp_path)
+
+    @step
+    def qa(log: EvalLog) -> EvalLog:
+        result = tag(log, add=["qa_passed"])
+        assert result is not None
+        return result
+
+    qa(log_path)
+    reloaded = read_eval_log(log_path)
+    assert "qa_passed" in (reloaded.tags or [])
     assert reloaded.samples is not None
     assert len(reloaded.samples) == 1
 
@@ -382,6 +411,26 @@ def test_format_step_call_no_args() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert _format_step_call("qa", {}) == "qa()"
+
+
+# --- CLI metadata --set ---
+
+
+def test_cli_metadata_set(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        ["metadata", log_path, "--set", "score_threshold=0.9"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert reloaded.metadata is not None
+    assert reloaded.metadata["score_threshold"] == "0.9"
 
 
 # --- CLI help ---
