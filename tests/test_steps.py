@@ -120,6 +120,23 @@ def test_copy_with_source_prefix(tmp_path: Path) -> None:
     assert "subdir/test.eval" in result.location
 
 
+def test_copy_via_run_step_with_source_prefix(tmp_path: Path) -> None:
+    """run_step expands paths via list_eval_logs which returns file:/// URIs.
+
+    source_prefix must still match against the resulting log.location.
+    """
+    src_dir = tmp_path / "logs" / "subdir"
+    src_dir.mkdir(parents=True)
+    log_path = _make_log(src_dir)
+    dest = str(tmp_path / "dest")
+    prefix = str(tmp_path / "logs")
+    run_step(copy, log_path, dest=dest, source_prefix=prefix)
+    dest_file = Path(dest) / "subdir" / "test.eval"
+    assert dest_file.exists()
+    reloaded = read_eval_log(str(dest_file))
+    assert reloaded.eval.task == "test_task"
+
+
 # --- chaining steps on a single log (design doc example) ---
 
 

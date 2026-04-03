@@ -1,4 +1,5 @@
-from inspect_ai._util.file import basename
+from fsspec.core import split_protocol
+from inspect_ai._util.file import absolute_file_path, basename
 from inspect_ai.log import EvalLog
 
 from inspect_flow._steps.step import step
@@ -17,10 +18,11 @@ def copy(log: EvalLog, *, dest: str, source_prefix: str | None = None) -> EvalLo
     Returns:
         EvalLog at the destination location.
     """
-    relative = (
-        log.location.removeprefix(source_prefix).lstrip("/")
-        if source_prefix
-        else basename(log.location)
-    )
+    if source_prefix:
+        _, location = split_protocol(absolute_file_path(log.location))
+        _, prefix = split_protocol(absolute_file_path(source_prefix))
+        relative = location.removeprefix(prefix).lstrip("/")
+    else:
+        relative = basename(log.location)
     dest_path = dest.rstrip("/") + "/" + relative
     return log.model_copy(update={"location": dest_path})
