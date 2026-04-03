@@ -121,6 +121,25 @@ def test_copy_with_source_prefix(tmp_path: Path) -> None:
     assert "subdir/test.eval" in result.location
 
 
+def test_copy_skips_existing(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    first = copy(log_path, dest=dest)
+    assert first is not None
+    second = copy(log_path, dest=dest)
+    assert second is None
+
+
+def test_copy_overwrite(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    first = copy(log_path, dest=dest)
+    assert first is not None
+    second = copy(log_path, dest=dest, overwrite=True)
+    assert second is not None
+    assert second.location == first.location
+
+
 def test_copy_via_run_step_with_source_prefix(tmp_path: Path) -> None:
     """run_step expands paths via list_eval_logs which returns file:/// URIs.
 
@@ -161,7 +180,7 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
     log_path = _make_log(tmp_path)
 
     @step(header_only=False)
-    def promote(log: EvalLog, *, dest: str) -> EvalLog:
+    def promote(log: EvalLog, *, dest: str) -> EvalLog | None:
         log = tag(log, add=["golden"], reason="Promoted")
         assert log is not None
         return copy(log, dest=dest)
