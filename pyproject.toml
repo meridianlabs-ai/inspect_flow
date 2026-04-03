@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "tomli>=2.0.0;python_version<'3.11'",
     "typing_extensions>=4.9.0",
+    "griffe>=1.0.0",
 ]
 
 [project.urls]
@@ -32,14 +33,13 @@ Documentation = "https://meridianlabs-ai.github.io/inspect_flow/"
 flow = "inspect_flow._cli.main:main"
 
 [project.optional-dependencies]
-doc = ["jupyter", "quarto-cli", "griffe", "panflute", "markdown", "click"]
+doc = ["jupyter", "quarto-cli", "panflute", "markdown", "click"]
 
 [dependency-groups]
 dev = [
     "anthropic",
     "datamodel-code-generator",
     "deepdiff",
-    "griffe",
     "flask",
     "flask-cors",
     "local-eval",
