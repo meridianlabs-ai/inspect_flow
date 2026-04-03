@@ -15,6 +15,7 @@ from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
+from rich.console import Console
 
 
 def _make_log(tmp_path: Path, name: str = "test.eval") -> str:
@@ -93,6 +94,27 @@ def test_metadata_remove_from_path(tmp_path: Path) -> None:
     assert result.metadata["key2"] == "val2"
 
 
+# --- _relative_path ---
+
+
+def test_relative_path_with_prefix() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", "/a/b") == "c/log.eval"
+
+
+def test_relative_path_without_prefix() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", None) == "log.eval"
+
+
+def test_relative_path_prefix_not_matching() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/c/log.eval", "/x/y") == "log.eval"
+
+
 # --- copy step ---
 
 
@@ -120,6 +142,42 @@ def test_copy_with_source_prefix(tmp_path: Path) -> None:
     assert "subdir/test.eval" in result.location
 
 
+def test_copy_skips_existing(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    first = copy(log_path, dest=dest)
+    assert first is not None
+    second = copy(log_path, dest=dest)
+    assert second is None
+
+
+def test_copy_overwrite(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    first = copy(log_path, dest=dest)
+    assert first is not None
+    second = copy(log_path, dest=dest, overwrite=True)
+    assert second is not None
+    assert second.location == first.location
+
+
+def test_copy_via_run_step_with_source_prefix(tmp_path: Path) -> None:
+    """run_step expands paths via list_eval_logs which returns file:/// URIs.
+
+    source_prefix must still match against the resulting log.location.
+    """
+    src_dir = tmp_path / "logs" / "subdir"
+    src_dir.mkdir(parents=True)
+    log_path = _make_log(src_dir)
+    dest = str(tmp_path / "dest")
+    prefix = str(tmp_path / "logs")
+    run_step(copy, log_path, dest=dest, source_prefix=prefix)
+    dest_file = Path(dest) / "subdir" / "test.eval"
+    assert dest_file.exists()
+    reloaded = read_eval_log(str(dest_file))
+    assert reloaded.eval.task == "test_task"
+
+
 # --- chaining steps on a single log (design doc example) ---
 
 
@@ -143,7 +201,7 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
     log_path = _make_log(tmp_path)
 
     @step(header_only=False)
-    def promote(log: EvalLog, *, dest: str) -> EvalLog:
+    def promote(log: EvalLog, *, dest: str) -> EvalLog | None:
         log = tag(log, add=["golden"], reason="Promoted")
         assert log is not None
         return copy(log, dest=dest)
@@ -162,6 +220,12 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
 
 
 # --- run_step across multiple logs ---
+
+
+def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
+    run_step(tag, str(tmp_path), add=["batch"])
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
 
 
 def test_run_step_directory(tmp_path: Path) -> None:
@@ -351,6 +415,112 @@ def test_dry_run_skips_write(tmp_path: Path) -> None:
     reloaded = read_eval_log(log_path, header_only=True)
     assert "should_not_persist" not in (reloaded.tags or [])
     assert "should_persist" in (reloaded.tags or [])
+
+
+def test_cli_step_multiple_filters(tmp_path: Path, recording_console: Console) -> None:
+    filter_file = "tests/local_eval/src/local_eval/my_filters.py"
+
+    # passes both only_success and only_anthropic
+    _make_log(tmp_path, "both.eval")
+    both = read_eval_log(str(tmp_path / "both.eval"))
+    both = both.model_copy(
+        update={"eval": both.eval.model_copy(update={"model": "anthropic/claude"})}
+    )
+    write_eval_log(both, str(tmp_path / "both.eval"))
+
+    # passes only_success but not only_anthropic
+    _make_log(tmp_path, "success_only.eval")
+
+    # passes only_anthropic but not only_success
+    _make_log(tmp_path, "anthropic_only.eval")
+    anth = read_eval_log(str(tmp_path / "anthropic_only.eval"))
+    anth = anth.model_copy(
+        update={
+            "status": "error",
+            "eval": anth.eval.model_copy(update={"model": "anthropic/claude"}),
+        }
+    )
+    write_eval_log(anth, str(tmp_path / "anthropic_only.eval"))
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        [
+            "tag",
+            str(tmp_path),
+            "--add",
+            "filtered",
+            "--filter",
+            f"{filter_file}@only_success",
+            "--filter",
+            f"{filter_file}@only_anthropic",
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    # Verify filter summary was printed
+    captured = recording_console.export_text()
+    assert "only_success" in captured
+    assert "2/3 logs matched" in captured
+    assert "only_anthropic" in captured
+    assert "1/2 logs matched" in captured
+
+    assert "filtered" in (
+        read_eval_log(str(tmp_path / "both.eval"), header_only=True).tags or []
+    )
+    assert "filtered" not in (
+        read_eval_log(str(tmp_path / "success_only.eval"), header_only=True).tags or []
+    )
+    assert "filtered" not in (
+        read_eval_log(str(tmp_path / "anthropic_only.eval"), header_only=True).tags
+        or []
+    )
+
+
+def test_cli_step_exclude(tmp_path: Path, recording_console: Console) -> None:
+    filter_file = "tests/local_eval/src/local_eval/my_filters.py"
+
+    # success log (excluded by only_success)
+    _make_log(tmp_path, "success.eval")
+
+    # error log (not excluded by only_success)
+    _make_log(tmp_path, "error.eval")
+    error_log = read_eval_log(str(tmp_path / "error.eval"))
+    error_log = error_log.model_copy(update={"status": "error"})
+    write_eval_log(error_log, str(tmp_path / "error.eval"))
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        [
+            "tag",
+            str(tmp_path),
+            "--add",
+            "excluded",
+            "--exclude",
+            f"{filter_file}@only_success",
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    captured = recording_console.export_text()
+    assert "Exclude" in captured
+    assert "only_success" in captured
+    assert "1/2 logs remaining" in captured
+
+    # only the error log should be tagged
+    assert "excluded" not in (
+        read_eval_log(str(tmp_path / "success.eval"), header_only=True).tags or []
+    )
+    assert "excluded" in (
+        read_eval_log(str(tmp_path / "error.eval"), header_only=True).tags or []
+    )
 
 
 def test_cli_copy_help() -> None:

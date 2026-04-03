@@ -39,12 +39,13 @@ def read_log(log_or_path: EvalLog | str, header_only: bool = False) -> EvalLog:
 
 
 def _log_header(location: str, context: StepContext) -> None:
+    prefix = "[DRY RUN] " if context.dry_run else ""
     suffix = (
         f" [dim]({context.index} of {context.total})[/dim]"
         if context.index is not None
         else ""
     )
-    console.print(path(location), suffix, sep="")
+    console.print(prefix, path(location), suffix, sep="")
 
 
 @contextmanager
@@ -87,7 +88,7 @@ def step_context(
         if context.depth == 0:
             _log_header(log_or_path, context)
         with console.status("[dim]Reading[/dim]"):
-            context.log = read_log(log_or_path)
+            context.log = read_log(log_or_path, header_only=dry_run)
 
     if is_outer:
         token = _step_context_var.set(context)

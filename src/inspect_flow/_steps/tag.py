@@ -43,10 +43,10 @@ def tag(
     author: str | None = None,
     reason: str | None = None,
 ) -> EvalLog:
-    """Add or remove tags on eval log.
+    """Add or remove tags on eval logs.
 
     Args:
-        log: EvalLog objects to modify.
+        log: EvalLog to modify.
         add: Tags to add.
         remove: Tags to remove.
         author: Provenance author. Defaults to git user.

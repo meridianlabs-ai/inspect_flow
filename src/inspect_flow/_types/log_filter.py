@@ -1,4 +1,5 @@
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from inspect_ai._util.module import load_module
@@ -17,6 +18,12 @@ from inspect_flow._util.path_util import absolute_path_relative_to, find_auto_in
 LOG_FILTER_TYPE = "log_filter"
 
 
+@dataclass
+class NamedFilter:
+    name: str
+    fn: LogFilter
+
+
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
     """Decorator to register a log filter function.
 
@@ -33,30 +40,12 @@ def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]:
     return func
 
 
-def resolve_log_filter(
-    filter: LogFilter | str | Sequence[LogFilter | str] | None,
+def _resolve_single(
+    filter: LogFilter | str,
     base_dir: str | None = None,
-) -> LogFilter | None:
-    """Resolve a log filter from a callable, registered name, sequence, or None.
-
-    Args:
-        filter: A callable, registered name, "file.py@name" string, a sequence of
-            any of the above (all must pass), or None.
-        base_dir: Base directory for resolving relative file paths in
-            "file.py@name" syntax. Defaults to the current working directory.
-    """
-    if isinstance(filter, Sequence) and not isinstance(filter, str):
-        filters = [
-            f
-            for f in (resolve_log_filter(f, base_dir) for f in filter)
-            if f is not None
-        ]
-        if not filters:
-            return None
-        if len(filters) == 1:
-            return filters[0]
-        return lambda log: all(f(log) for f in filters)
-    if filter is None or callable(filter):
+) -> LogFilter:
+    """Resolve a single filter (callable or string) to a callable."""
+    if callable(filter):
         return filter
     if "@" in filter:
         file_path, name = filter.rsplit("@", 1)
@@ -66,8 +55,6 @@ def resolve_log_filter(
         filter = name
     resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
     if resolved is None:
-        # Load _flow.py files from cwd and parent dirs, which may register
-        # @log_filter decorators.
         for flow_file in find_auto_includes(str(Path.cwd())):
             load_module(Path(flow_file))
         resolved = registry_lookup(LOG_FILTER_TYPE, filter)  # type: ignore[arg-type]
@@ -91,3 +78,47 @@ def resolve_log_filter(
     if resolved is None:
         raise ValueError(f"Log filter '{filter}' not found in registry.")
     return resolved  # type: ignore[return-value]
+
+
+def resolve_log_filters(
+    filter: LogFilter | str | Sequence[LogFilter | str] | None,
+    base_dir: str | None = None,
+) -> list[NamedFilter]:
+    """Resolve filters to a list of named filters.
+
+    Args:
+        filter: A callable, registered name, "file.py@name" string, a sequence of
+            any of the above, or None.
+        base_dir: Base directory for resolving relative file paths in
+            "file.py@name" syntax. Defaults to the current working directory.
+    """
+    if filter is None:
+        return []
+    if isinstance(filter, str) or callable(filter):
+        filter = [filter]
+    result: list[NamedFilter] = []
+    for f in filter:
+        name = f if isinstance(f, str) else getattr(f, "__name__", str(f))
+        result.append(NamedFilter(name=name, fn=_resolve_single(f, base_dir)))
+    return result
+
+
+def resolve_log_filter(
+    filter: LogFilter | str | Sequence[LogFilter | str] | None,
+    base_dir: str | None = None,
+) -> LogFilter | None:
+    """Resolve a log filter from a callable, registered name, sequence, or None.
+
+    Args:
+        filter: A callable, registered name, "file.py@name" string, a sequence of
+            any of the above (all must pass), or None.
+        base_dir: Base directory for resolving relative file paths in
+            "file.py@name" syntax. Defaults to the current working directory.
+    """
+    named = resolve_log_filters(filter, base_dir)
+    if not named:
+        return None
+    if len(named) == 1:
+        return named[0].fn
+    fns = [nf.fn for nf in named]
+    return lambda log: all(f(log) for f in fns)
