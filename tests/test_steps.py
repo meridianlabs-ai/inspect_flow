@@ -402,6 +402,26 @@ def test_format_step_call_no_args() -> None:
     assert _format_step_call("qa", {}) == "qa()"
 
 
+# --- CLI metadata --set ---
+
+
+def test_cli_metadata_set(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        ["metadata", log_path, "--set", "score_threshold=0.9"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert reloaded.metadata is not None
+    assert reloaded.metadata["score_threshold"] == "0.9"
+
+
 # --- CLI help ---
 
 
