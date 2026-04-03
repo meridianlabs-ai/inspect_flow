@@ -14,6 +14,7 @@ class StepContext:
     dirty: dict[str, EvalLog] = field(default_factory=dict)
     depth: int = 0
     dry_run: bool = False
+    header_only: bool = True
     index: int | None = None
     total: int | None = None
 
@@ -22,7 +23,7 @@ class StepContext:
         if not self.dry_run:
             for log in self.dirty.values():
                 with console.status("[dim]Writing[/dim]"):
-                    write_eval_log(log, log.location)
+                    write_eval_log(log, log.location, header_only=self.header_only)
         self.dirty.clear()
 
 
@@ -52,13 +53,14 @@ def step_context(
     log_or_path: EvalLog | str | None = None,
     *,
     dry_run: bool = False,
+    header_only: bool = True,
     step_name: str = "step",
     index: int | None = None,
     total: int | None = None,
 ) -> Iterator[StepContext]:
     """Get or create a step context, optionally resolving a log.
 
-    When outer and given a path, reads the full log from disk.
+    When outer and given a path, reads the log from disk.
     When nested and given a path, raises ValueError.
     When given an EvalLog, passes it through.
     When given None, sets context.log to None.
@@ -68,7 +70,11 @@ def step_context(
     existing = _step_context_var.get()
     is_outer = existing is None
     context = (
-        existing if existing else StepContext(dry_run=dry_run, index=index, total=total)
+        existing
+        if existing
+        else StepContext(
+            dry_run=dry_run, header_only=header_only, index=index, total=total
+        )
     )
 
     if not log_or_path:
@@ -87,7 +93,7 @@ def step_context(
         if context.depth == 0:
             _log_header(log_or_path, context)
         with console.status("[dim]Reading[/dim]"):
-            context.log = read_log(log_or_path)
+            context.log = read_log(log_or_path, header_only=header_only)
 
     if is_outer:
         token = _step_context_var.set(context)

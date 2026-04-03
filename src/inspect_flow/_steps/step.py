@@ -110,7 +110,10 @@ def step(
         ) -> EvalLog | None:
             dry_run = bool(kwargs.pop("dry_run", False))
             with step_context(
-                log_or_path, dry_run=dry_run, step_name=f.__name__
+                log_or_path,
+                dry_run=dry_run,
+                header_only=header_only,
+                step_name=f.__name__,
             ) as context:
                 if context.log is None:
                     return None
@@ -121,24 +124,8 @@ def step(
                 )
                 context.depth += 1
 
-                log_in = (
-                    context.log.model_copy(update={"samples": None, "reductions": None})
-                    if header_only
-                    else context.log
-                )
-
-                step_result = _to_step_result(f(log_in, *args, **kwargs))
+                step_result = _to_step_result(f(context.log, *args, **kwargs))
                 context.depth -= 1
-
-                if step_result.log and header_only:
-                    step_result = step_result._replace(
-                        log=step_result.log.model_copy(
-                            update={
-                                "samples": context.log.samples,
-                                "reductions": context.log.reductions,
-                            }
-                        )
-                    )
 
                 if step_result.log and step_result.modified:
                     context.dirty[step_result.log.location] = step_result.log
