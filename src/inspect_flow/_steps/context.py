@@ -87,7 +87,7 @@ def step_context(
         if context.depth == 0:
             _log_header(log_or_path, context)
         with console.status("[dim]Reading[/dim]"):
-            context.log = read_log(log_or_path)
+            context.log = read_log(log_or_path, header_only=dry_run)
 
     if is_outer:
         token = _step_context_var.set(context)
