@@ -235,7 +235,8 @@ def test_run_step_evallog_no_duplicate_header(
     log = read_eval_log(log_path)
     run_step(tag, [log], add=["test"])
     captured = recording_console.export_text()
-    assert captured.count(log.location) == 1
+    header_lines = [line for line in captured.splitlines() if "(1 of 1)" in line]
+    assert len(header_lines) == 1
 
 
 def test_run_step_directory(tmp_path: Path) -> None:
