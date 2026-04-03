@@ -15,6 +15,7 @@ from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
+from rich.console import Console
 
 
 def _make_log(tmp_path: Path, name: str = "test.eval") -> str:
@@ -179,6 +180,12 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
 
 
 # --- run_step across multiple logs ---
+
+
+def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
+    run_step(tag, str(tmp_path), add=["batch"])
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
 
 
 def test_run_step_directory(tmp_path: Path) -> None:
