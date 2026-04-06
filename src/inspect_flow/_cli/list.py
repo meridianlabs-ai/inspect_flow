@@ -806,7 +806,7 @@ class _MaxCountCommand(click.Command):
     "since",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or after DATE (e.g. `'2 weeks ago'`, `'2024-01-15'`).",
+    help="Only show logs whose filename timestamp is at or after DATE. Date strings like `'2024-01-15'` resolve to midnight; relative expressions like `'today'` resolve to the current time.",
 )
 @click.option(
     "--until",
@@ -814,7 +814,7 @@ class _MaxCountCommand(click.Command):
     "until",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or before DATE (e.g. `'yesterday'`, `'2024-06-01'`).",
+    help="Only show logs whose filename timestamp is at or before DATE. Date strings like `'2024-06-01'` resolve to midnight; relative expressions like `'yesterday'` resolve to the current time minus one day.",
 )
 @click.argument("path", required=False, default=None)
 def list_log(
