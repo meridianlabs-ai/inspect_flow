@@ -572,6 +572,13 @@ class _MaxCountCommand(click.Command):
     help="Only show logs whose model matches PATTERN (glob). May be repeated.",
 )
 @click.option(
+    "--tag",
+    "tags",
+    multiple=True,
+    metavar="PATTERN",
+    help="Only show logs with a tag matching PATTERN (glob). May be repeated.",
+)
+@click.option(
     "--status",
     "statuses",
     multiple=True,
@@ -601,6 +608,7 @@ def list_log(
     max_count: int | None,
     tasks: tuple[str, ...],
     models: tuple[str, ...],
+    tags: tuple[str, ...],
     statuses: tuple[str, ...],
     since: str | None,
     until: str | None,
@@ -620,6 +628,14 @@ def list_log(
         log_filter = _chain(
             log_filter,
             lambda log: any(fnmatch.fnmatch(log.eval.model, p) for p in model_patterns),
+        )
+    if tags:
+        tag_patterns = tags
+        log_filter = _chain(
+            log_filter,
+            lambda log: any(
+                fnmatch.fnmatch(t, p) for t in log.tags for p in tag_patterns
+            ),
         )
     if statuses:
         status_set = set(statuses)

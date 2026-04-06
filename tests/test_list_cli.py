@@ -5,6 +5,7 @@ import yaml
 from click.testing import CliRunner
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
+from inspect_flow._steps.tag import tag
 from rich.console import Console
 
 LOG_DIR = "tests/test_logs/logs1"
@@ -128,3 +129,59 @@ def test_list_log_viewer_url_bundle_dir(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert f"https://example.com/bundle/#/logs/{_SAMPLE_LOG_FILENAME}" in result.output
+
+
+def _create_tagged_logs(tmp_path: Path) -> None:
+    """Create two logs: one tagged ['golden', 'v2'], one tagged ['draft']."""
+    for name, tags in [("log1", ["golden", "v2"]), ("log2", ["draft"])]:
+        dest = str(tmp_path / f"{name}.eval")
+        shutil.copy(_SAMPLE_LOG, dest)
+        tag(dest, add=tags)
+
+
+def test_list_log_tag_filter(tmp_path: Path) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path), "--tag", "golden"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" not in result.output
+
+
+def test_list_log_tag_filter_multiple(tmp_path: Path) -> None:
+    """Multiple --tag flags use OR: matches logs with any of the tags."""
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--tag", "golden", "--tag", "draft"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" in result.output
+
+
+def test_list_log_tag_filter_glob(tmp_path: Path) -> None:
+    """Tag patterns support glob matching."""
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path), "--tag", "v*"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" not in result.output
+
+
+def test_list_log_tag_filter_no_match(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--tag", "nonexistent"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
