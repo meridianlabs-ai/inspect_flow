@@ -62,17 +62,18 @@ def base_config_options(f: F) -> F:
         type=str,
         envvar="INSPECT_FLOW_SET",
         help="""
-    Set config overrides.
+    Override any field in the flow config using dot notation (e.g. `field.subfield=value`).
+    The path corresponds to the fields of `FlowSpec` and its nested types
+    (`options`, `defaults`, `tasks`, etc.).
 
     Examples:
-      `--set defaults.solver.args.tool_calls=none`
       `--set options.limit=10`
+      `--set defaults.solver.args.tool_calls=none`
       `--set options.metadata={"key1": "val1", "key2": "val2"}`
 
-    The specified value may be a string or json parsable list or dict.
-    If string is provided then it will be appended to existing list values.
-    If json list or dict is provided then it will replace existing values.
-    If the same key is provided multiple times, later values will override earlier ones.
+    Values are parsed as JSON when possible (lists and dicts), otherwise as strings.
+    String values are appended to existing lists; JSON lists and dicts replace existing values.
+    When the same key is provided multiple times, later values override earlier ones.
     """,
     )(f)
     f = click.option(
