@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 from click.testing import CliRunner
@@ -209,3 +210,30 @@ def test_list_log_tag_filter_no_match(
     assert result.exit_code == 0
     captured = recording_console.export_text()
     assert "No logs found" in captured
+
+
+def test_list_log_live() -> None:
+    with patch("inspect_flow._cli.list.time.sleep", side_effect=KeyboardInterrupt):
+        result = CliRunner().invoke(
+            list_command,
+            ["log", LOG_DIR, "--live"],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0
+
+
+def test_list_log_live_custom_interval() -> None:
+    calls: list[int] = []
+
+    def _fake_sleep(n: int) -> None:
+        calls.append(n)
+        raise KeyboardInterrupt
+
+    with patch("inspect_flow._cli.list.time.sleep", side_effect=_fake_sleep):
+        result = CliRunner().invoke(
+            list_command,
+            ["log", LOG_DIR, "--live=5"],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0
+    assert calls == [5]
