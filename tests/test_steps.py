@@ -606,6 +606,24 @@ def test_cli_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
     assert len(dest_paths) == 1, f"Expected new log in store, got: {store_logs}"
 
 
+def test_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
+    """When store= is passed to copy directly, new log paths are added to the store."""
+    log_path = _make_log(tmp_path / "src")
+    store_dir = str(tmp_path / "store")
+    store = DeltaLakeStore(store_path=store_dir, create=True)
+    store.import_log_path(log_path)
+
+    dest = str(tmp_path / "dest")
+    result = copy(log_path, dest=dest, store=store)
+    assert result is not None
+
+    store = DeltaLakeStore(store_path=store_dir)
+    store_logs = store.get_logs()
+    assert any("dest" in log for log in store_logs), (
+        f"Expected new log in store, got: {store_logs}"
+    )
+
+
 def test_cli_copy_help() -> None:
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command

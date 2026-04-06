@@ -69,7 +69,11 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     arg_help = _parse_arg_help(doc)
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg
-    step_params = list(sig.parameters.values())[1:]
+    # Skip params that are added as common options below
+    common_options = {"store", "filter", "exclude", "recursive", "dry_run"}
+    step_params = [
+        p for p in list(sig.parameters.values())[1:] if p.name not in common_options
+    ]
     dict_params: set[str] = set()
     for param in step_params:
         option_name = f"--{param.name.replace('_', '-')}"

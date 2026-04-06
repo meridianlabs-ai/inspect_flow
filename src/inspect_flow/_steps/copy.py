@@ -3,6 +3,7 @@ from inspect_ai._util.file import absolute_file_path, basename, exists
 from inspect_ai.log import EvalLog
 
 from inspect_flow._steps.step import step
+from inspect_flow._store.store import FlowStore
 from inspect_flow._util.console import flow_print
 
 
@@ -23,6 +24,7 @@ def copy(
     dest: str,
     source_prefix: str | None = None,
     overwrite: bool = False,
+    store: FlowStore | None = None,
 ) -> EvalLog | None:
     """Copy eval logs to a destination directory.
 
@@ -31,6 +33,7 @@ def copy(
         dest: Destination directory (local or S3).
         source_prefix: Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.
         overwrite: Overwrite existing files at the destination.
+        store: Optional flow store. The copied log is added to the store.
 
     Returns:
         EvalLog at the destination location.
