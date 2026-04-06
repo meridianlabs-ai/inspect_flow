@@ -152,6 +152,17 @@ def _create_tagged_logs(tmp_path: Path) -> None:
         tag(dest, add=tags)
 
 
+def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "Tags:" in result.output
+    assert "golden" in result.output
+    assert "draft" in result.output
+
+
 def test_list_log_tag_filter(tmp_path: Path) -> None:
     _create_tagged_logs(tmp_path)
     result = CliRunner().invoke(

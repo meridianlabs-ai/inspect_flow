@@ -44,6 +44,7 @@ class ListOptions:
     log_filter: LogFilter | None = None
     max_count: int | None = None
     oneline: bool = False
+    page: bool = True
 
 
 def _find_flow_yaml(dir_path: str) -> FlowSpec | None:
@@ -177,6 +178,7 @@ class LogEntry:
     status: str
     samples: str
     duration: str
+    tags: list[str]
     viewer_url: str | None = None
 
 
@@ -193,13 +195,14 @@ def _compute_entries(
 
     return [
         LogEntry(
-            p,
-            name,
-            qual,
-            headers[p].header.status,
-            _samples_str(headers[p]),
-            _duration_str(headers[p]),
-            _viewer_url(p, spec) if spec else None,
+            log_path=p,
+            task=name,
+            qualifier=qual,
+            status=headers[p].header.status,
+            samples=_samples_str(headers[p]),
+            duration=_duration_str(headers[p]),
+            tags=headers[p].header.tags,
+            viewer_url=_viewer_url(p, spec) if spec else None,
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
@@ -221,6 +224,7 @@ def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
         Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
         Text(entry.samples),
         Text(entry.duration),
+        Text(", ".join(entry.tags)) if entry.tags else Text(""),
         path(log_path),
         Text(entry.viewer_url or ""),
     ]
@@ -313,6 +317,11 @@ def _render_entry_multiline(entry: LogEntry) -> Text:
         result.append(entry.duration)
         result.append("\n")
 
+    if entry.tags:
+        result.append("Tags:     ")
+        result.append(", ".join(entry.tags))
+        result.append("\n")
+
     if entry.viewer_url:
         result.append("Viewer:   ")
         result.append(entry.viewer_url)
@@ -326,10 +335,8 @@ def _render_entries_multiline(entries: list[LogEntry]) -> str:
         return ""
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=2**15)
-    for i, entry in enumerate(entries):
-        if i > 0:
-            console.print()
-        console.print(_render_entry_multiline(entry), end="")
+    for entry in entries:
+        console.print(_render_entry_multiline(entry))
     return buf.getvalue()
 
 
@@ -490,7 +497,7 @@ def _echo_logs(
     total_entries = min(
         sum(len(g) for g in dir_groups), options.max_count or float("inf")
     )
-    if os.isatty(1) and total_entries * lpe > page_size:
+    if options.page and os.isatty(1) and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
         entries = _process_groups(dir_groups, options, progress=progress)
@@ -618,6 +625,13 @@ class _MaxCountCommand(click.Command):
     help="Show each log on a single line (compact table format).",
 )
 @click.option(
+    "--no-page",
+    "no_page",
+    is_flag=True,
+    default=False,
+    help="Disable paged output.",
+)
+@click.option(
     "-n",
     "--max-count",
     "max_count",
@@ -674,6 +688,7 @@ def list_log(
     path: str | None,
     output_format: str,
     oneline: bool,
+    no_page: bool,
     max_count: int | None,
     tasks: tuple[str, ...],
     models: tuple[str, ...],
@@ -714,6 +729,7 @@ def list_log(
         log_filter=log_filter,
         max_count=max_count,
         oneline=oneline,
+        page=not no_page,
     )
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
