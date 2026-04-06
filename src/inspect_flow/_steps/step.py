@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Concatenate, NamedTuple, ParamSpec, Protocol, overload
+from typing import Any, Concatenate, NamedTuple, ParamSpec, Protocol, cast, overload
 
 from inspect_ai._util.registry import (
     RegistryInfo,
@@ -9,6 +9,7 @@ from inspect_ai._util.registry import (
 from inspect_ai.log import EvalLog
 
 from inspect_flow._steps.context import step_context
+from inspect_flow._store.store import FlowStore
 from inspect_flow._util.console import console
 
 STEP_TYPE = "step"
@@ -109,8 +110,9 @@ def step(
             **kwargs: P.kwargs,
         ) -> EvalLog | None:
             dry_run = bool(kwargs.pop("dry_run", False))
+            store = cast(FlowStore | None, kwargs.pop("store", None))
             with step_context(
-                log_or_path, dry_run=dry_run, step_name=f.__name__
+                log_or_path, dry_run=dry_run, step_name=f.__name__, store=store
             ) as context:
                 if context.log is None:
                     return None

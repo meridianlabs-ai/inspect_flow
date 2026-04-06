@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
 
+from inspect_flow._store.store import FlowStore
 from inspect_flow._util.console import console, path
 
 
@@ -16,13 +17,18 @@ class StepContext:
     dry_run: bool = False
     index: int | None = None
     total: int | None = None
+    store: FlowStore | None = None
 
     def write_dirty(self) -> None:
-        """Write all dirty logs to disk and clear the set."""
+        """Write all dirty logs to disk and add new paths to the store."""
         if not self.dry_run:
             for log in self.dirty.values():
                 with console.status("[dim]Writing[/dim]"):
                     write_eval_log(log, log.location)
+            if self.store:
+                self.store.import_log_path(
+                    [log.location for log in self.dirty.values()]
+                )
         self.dirty.clear()
 
 
@@ -56,6 +62,7 @@ def step_context(
     step_name: str = "step",
     index: int | None = None,
     total: int | None = None,
+    store: FlowStore | None = None,
 ) -> Iterator[StepContext]:
     """Get or create a step context, optionally resolving a log.
 
@@ -70,7 +77,7 @@ def step_context(
     is_outer = existing is None
 
     if is_outer:
-        context = StepContext(dry_run=dry_run, index=index, total=total)
+        context = StepContext(dry_run=dry_run, index=index, total=total, store=store)
         if not log_or_path:
             context.log = None
         elif isinstance(log_or_path, EvalLog):

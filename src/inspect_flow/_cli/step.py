@@ -12,6 +12,7 @@ from inspect_ai._util.registry import registry_find, registry_info
 
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._store.store import store_factory
+from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
 from inspect_flow._util.path_util import find_auto_includes
 from inspect_flow.api import run_step
 
@@ -68,7 +69,11 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     arg_help = _parse_arg_help(doc)
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg
-    step_params = list(sig.parameters.values())[1:]
+    # Skip params that are added as common options below
+    common_options = {"store", "filter", "exclude", "recursive", "dry_run"}
+    step_params = [
+        p for p in list(sig.parameters.values())[1:] if p.name not in common_options
+    ]
     dict_params: set[str] = set()
     for param in step_params:
         option_name = f"--{param.name.replace('_', '-')}"
@@ -182,13 +187,18 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         if not path and not store:
             raise click.UsageError("Either PATH or --store is required.")
         if store:
-            flow_store = store_factory(str(store), base_dir=".", create=False)
+            flow_store = store_factory(
+                FlowSpec(store=FlowStoreConfig(path=str(store), read=True, write=True)),
+                base_dir=".",
+                create=False,
+            )
             if not flow_store:
                 raise click.UsageError(f"Could not open store at {store}")
             logs: list[str] = list(flow_store.get_logs())
         else:
+            flow_store = None
             logs = list(path)
-        run_step(func, logs, **kwargs)
+        run_step(func, logs, store=flow_store, **kwargs)
 
     return click.Command(
         name=name,
