@@ -42,4 +42,4 @@ def copy(
     if not overwrite and exists(dest_path):
         flow_print(f"Skipping (already exists): {dest_path}", format="warning")
         return None
-    return log.model_copy(update={"location": dest_path})
+    return log.model_copy(update={"location": dest_path, "etag": None})

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai.log import (
     EvalConfig,
     EvalDataset,
@@ -8,6 +9,7 @@ from inspect_ai.log import (
     EvalResults,
     EvalSample,
     EvalSpec,
+    WriteConflictError,
     read_eval_log,
     write_eval_log,
 )
@@ -240,6 +242,36 @@ def test_run_step_evallog_no_duplicate_header(
     assert len(header_lines) == 1
 
 
+def test_run_step_filter_preserves_in_memory_evallog(tmp_path: Path) -> None:
+    """run_step with filter= must pass the original in-memory EvalLog to the step.
+
+    Regression: filtering converted survivors back to log.location strings,
+    so the step re-read from disk and lost in-memory mutations.
+    """
+    log_path = _make_log(tmp_path)
+    log = read_eval_log(log_path)
+    # Mutate in memory only — add a tag that the on-disk version doesn't have.
+    log = log.model_copy(update={"tags": ["in_memory"]})
+
+    seen_tags: list[list[str]] = []
+
+    @step
+    def capture(log: EvalLog) -> EvalLog:
+        seen_tags.append(list(log.tags or []))
+        return log
+
+    # Filter matches the in-memory object (status == "success").
+    run_step(
+        capture,
+        [log],
+        filter="tests/local_eval/src/local_eval/my_filters.py@only_success",
+    )
+    assert len(seen_tags) == 1
+    assert "in_memory" in seen_tags[0], (
+        f"step received disk version instead of in-memory EvalLog, tags={seen_tags[0]}"
+    )
+
+
 def test_run_step_directory(tmp_path: Path) -> None:
     _make_log(tmp_path, "log1.eval")
     _make_log(tmp_path, "log2.eval")
@@ -325,6 +357,36 @@ def test_step_result_skip_log_steps(tmp_path: Path) -> None:
 
     result = skip_step(log_path)
     assert result is None
+
+
+def test_step_result_modified_false_does_not_advance_context(tmp_path: Path) -> None:
+    """StepResult(modified=False) must not advance context.log.
+
+    A nested step returning modified=False should not become the current log
+    for subsequent nested steps — the original log should remain current.
+    """
+    log_path = _make_log(tmp_path)
+
+    @step
+    def read_then_tag(log: EvalLog) -> EvalLog:
+        # Nested step that returns modified=False with a mutated log
+        @step
+        def read_only(log: EvalLog) -> StepResult:
+            return StepResult(
+                log=log.model_copy(update={"status": "error"}), modified=False
+            )
+
+        read_only(log)
+        # tag should run against the original log, not the read_only result
+        result = tag(log, add=["after_read_only"])
+        assert result is not None
+        return result
+
+    read_then_tag(log_path)
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "after_read_only" in (reloaded.tags or [])
+    # The read_only step's status change should NOT have been written
+    assert reloaded.status == "success"
 
 
 def test_step_result_modified_false_does_not_write(tmp_path: Path) -> None:
@@ -624,6 +686,29 @@ def test_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
     )
 
 
+def test_nested_tag_with_same_path_preserves_both_tags(tmp_path: Path) -> None:
+    """Nested steps called with log.location must see prior dirty mutations.
+
+    Regression: when an outer step calls tag(log.location, add=["a"]) then
+    tag(log.location, add=["b"]), context.log was never advanced to the dirty
+    version, so the second tag replayed from stale state and only "b" survived.
+    """
+    log_path = _make_log(tmp_path)
+
+    @step
+    def add_two_tags(log: EvalLog) -> EvalLog:
+        result = tag(log.location, add=["a"])
+        assert result is not None
+        result = tag(log.location, add=["b"])
+        assert result is not None
+        return result
+
+    add_two_tags(log_path)
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "a" in (reloaded.tags or []), f"tag 'a' missing, tags={reloaded.tags}"
+    assert "b" in (reloaded.tags or []), f"tag 'b' missing, tags={reloaded.tags}"
+
+
 def test_cli_copy_help() -> None:
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command
@@ -634,3 +719,85 @@ def test_cli_copy_help() -> None:
     assert "--source-prefix" in result.output
     assert "--args" not in result.output
     assert "--kwargs" not in result.output
+
+
+# --- etag concurrency guard ---
+
+
+def test_write_dirty_uses_etag_guard(mock_s3: BaseClient) -> None:
+    """write_dirty must pass if_match_etag so concurrent writes are detected.
+
+    Writes a log to S3, reads it (capturing etag), mutates it behind the
+    step's back, then verifies that write_dirty raises WriteConflictError.
+    """
+    from inspect_ai.log import ProvenanceData, TagsEdit, edit_eval_log
+
+    s3_path = "s3://test-bucket/etag_test.eval"
+    log = EvalLog(
+        status="success",
+        eval=EvalSpec(
+            created="2024-01-01T00:00:00+00:00",
+            task="test_task",
+            dataset=EvalDataset(),
+            model="mockllm/model",
+            config=EvalConfig(),
+        ),
+        results=EvalResults(total_samples=1, completed_samples=1),
+    )
+    write_eval_log(log, s3_path)
+
+    # Read back — this captures the etag from S3
+    log_with_etag = read_eval_log(s3_path, header_only=True)
+    assert log_with_etag.etag is not None
+
+    # Simulate concurrent modification via edit_eval_log (produces a real
+    # log_updates entry that changes the on-disk content and thus the S3 etag)
+    concurrent_log = read_eval_log(s3_path, header_only=True)
+    concurrent_log = edit_eval_log(
+        concurrent_log,
+        [TagsEdit(tags_add=["concurrent"], tags_remove=[])],
+        ProvenanceData(author="other-user"),
+    )
+    write_eval_log(concurrent_log, s3_path)
+
+    # Now tag the stale log — write_dirty should detect the conflict
+    with pytest.raises(WriteConflictError):
+        tag(log_with_etag, add=["should_conflict"])
+
+
+def test_copy_to_s3_does_not_use_source_etag(mock_s3: BaseClient) -> None:
+    """copy must not pass the source log's etag when writing to a new destination.
+
+    Regression: the generic etag guard passed if_match_etag for every dirty
+    write, but copy changes location — the destination is a new object with no
+    prior etag. Passing the source's etag causes a spurious PreconditionFailed.
+    """
+    src_path = "s3://test-bucket/src/test.eval"
+    log = EvalLog(
+        status="success",
+        eval=EvalSpec(
+            created="2024-01-01T00:00:00+00:00",
+            task="test_task",
+            dataset=EvalDataset(),
+            model="mockllm/model",
+            config=EvalConfig(),
+        ),
+        results=EvalResults(total_samples=1, completed_samples=1),
+        samples=[
+            EvalSample(id=1, epoch=1, input="hello", target="world", uuid="uuid-1"),
+        ],
+    )
+    write_eval_log(log, src_path)
+
+    # Read back from S3 — this captures the source etag
+    src_log = read_eval_log(src_path)
+    assert src_log.etag is not None
+
+    # Copy to a new S3 path — should succeed, not fail with WriteConflictError
+    dest = "s3://test-bucket/dest"
+    result = copy(src_log, dest=dest)
+    assert result is not None
+
+    # Verify the copy landed
+    copied = read_eval_log(result.location)
+    assert copied.eval.task == "test_task"

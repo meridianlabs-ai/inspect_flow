@@ -24,7 +24,7 @@ class StepContext:
         if not self.dry_run:
             for log in self.dirty.values():
                 with console.status("[dim]Writing[/dim]"):
-                    write_eval_log(log, log.location)
+                    write_eval_log(log, log.location, if_match_etag=log.etag)
             if self.store:
                 self.store.import_log_path(
                     [log.location for log in self.dirty.values()]

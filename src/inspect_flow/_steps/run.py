@@ -81,7 +81,10 @@ def run_step(
                 flow_print(
                     f"Exclude: {nf.name} — {len(log_headers)}/{before} logs remaining"
                 )
-            log_paths = [log.location for log in log_headers]
+            eval_log_map = {log.location: log for log in eval_logs}
+            log_paths = [
+                eval_log_map.get(log.location, log.location) for log in log_headers
+            ]
     if not log_paths:
         flow_print("No logs found", format="warning")
         return
