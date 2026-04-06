@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from botocore.client import BaseClient
 from inspect_ai.log import (
     EvalConfig,
     EvalDataset,
@@ -8,6 +9,7 @@ from inspect_ai.log import (
     EvalResults,
     EvalSample,
     EvalSpec,
+    WriteConflictError,
     read_eval_log,
     write_eval_log,
 )
@@ -687,3 +689,47 @@ def test_cli_copy_help() -> None:
     assert "--source-prefix" in result.output
     assert "--args" not in result.output
     assert "--kwargs" not in result.output
+
+
+# --- etag concurrency guard ---
+
+
+def test_write_dirty_uses_etag_guard(mock_s3: BaseClient) -> None:
+    """write_dirty must pass if_match_etag so concurrent writes are detected.
+
+    Writes a log to S3, reads it (capturing etag), mutates it behind the
+    step's back, then verifies that write_dirty raises WriteConflictError.
+    """
+    from inspect_ai.log import ProvenanceData, TagsEdit, edit_eval_log
+
+    s3_path = "s3://test-bucket/etag_test.eval"
+    log = EvalLog(
+        status="success",
+        eval=EvalSpec(
+            created="2024-01-01T00:00:00+00:00",
+            task="test_task",
+            dataset=EvalDataset(),
+            model="mockllm/model",
+            config=EvalConfig(),
+        ),
+        results=EvalResults(total_samples=1, completed_samples=1),
+    )
+    write_eval_log(log, s3_path)
+
+    # Read back — this captures the etag from S3
+    log_with_etag = read_eval_log(s3_path, header_only=True)
+    assert log_with_etag.etag is not None
+
+    # Simulate concurrent modification via edit_eval_log (produces a real
+    # log_updates entry that changes the on-disk content and thus the S3 etag)
+    concurrent_log = read_eval_log(s3_path, header_only=True)
+    concurrent_log = edit_eval_log(
+        concurrent_log,
+        [TagsEdit(tags_add=["concurrent"], tags_remove=[])],
+        ProvenanceData(author="other-user"),
+    )
+    write_eval_log(concurrent_log, s3_path)
+
+    # Now tag the stale log — write_dirty should detect the conflict
+    with pytest.raises(WriteConflictError):
+        tag(log_with_etag, add=["should_conflict"])
