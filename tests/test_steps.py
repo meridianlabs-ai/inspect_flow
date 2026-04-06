@@ -733,3 +733,41 @@ def test_write_dirty_uses_etag_guard(mock_s3: BaseClient) -> None:
     # Now tag the stale log — write_dirty should detect the conflict
     with pytest.raises(WriteConflictError):
         tag(log_with_etag, add=["should_conflict"])
+
+
+def test_copy_to_s3_does_not_use_source_etag(mock_s3: BaseClient) -> None:
+    """copy must not pass the source log's etag when writing to a new destination.
+
+    Regression: the generic etag guard passed if_match_etag for every dirty
+    write, but copy changes location — the destination is a new object with no
+    prior etag. Passing the source's etag causes a spurious PreconditionFailed.
+    """
+    src_path = "s3://test-bucket/src/test.eval"
+    log = EvalLog(
+        status="success",
+        eval=EvalSpec(
+            created="2024-01-01T00:00:00+00:00",
+            task="test_task",
+            dataset=EvalDataset(),
+            model="mockllm/model",
+            config=EvalConfig(),
+        ),
+        results=EvalResults(total_samples=1, completed_samples=1),
+        samples=[
+            EvalSample(id=1, epoch=1, input="hello", target="world", uuid="uuid-1"),
+        ],
+    )
+    write_eval_log(log, src_path)
+
+    # Read back from S3 — this captures the source etag
+    src_log = read_eval_log(src_path)
+    assert src_log.etag is not None
+
+    # Copy to a new S3 path — should succeed, not fail with WriteConflictError
+    dest = "s3://test-bucket/dest"
+    result = copy(src_log, dest=dest)
+    assert result is not None
+
+    # Verify the copy landed
+    copied = read_eval_log(result.location)
+    assert copied.eval.task == "test_task"
