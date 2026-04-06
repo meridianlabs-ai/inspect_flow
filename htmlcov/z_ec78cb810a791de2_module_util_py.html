@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_ec78cb810a791de2_not_given_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-06 12:41 +0000
+            created at 2026-04-06 13:21 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -170,9 +170,11 @@
     <p class="run"><span class="n"><a id="t86" href="#t86">86</a></span><span class="t">        <span class="key">return</span> <span class="nam">g</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">target_id</span><span class="op">)</span><span class="op">,</span> <span class="nam">g</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t87" href="#t87">87</a></span><span class="t">    <span class="nam">function</span> <span class="op">=</span> <span class="nam">g</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">target_id</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">    <span class="key">assert</span> <span class="nam">function</span> <span class="key">and</span> <span class="nam">callable</span><span class="op">(</span><span class="nam">function</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">    <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">function</span><span class="op">,</span> <span class="nam">INSPECT_FLOW_AFTER_LOAD_ATTR</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t90" href="#t90">90</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span><span class="op">,</span> <span class="nam">g</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t">    <span class="key">return</span> <span class="nam">function</span><span class="op">(</span><span class="op">**</span><span class="nam">args</span><span class="op">)</span><span class="op">,</span> <span class="nam">g</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">    <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">function</span><span class="op">,</span> <span class="nam">INSPECT_FLOW_AFTER_LOAD_ATTR</span><span class="op">)</span> <span class="key">or</span> <span class="nam">hasattr</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t90" href="#t90">90</a></span><span class="t">        <span class="nam">function</span><span class="op">,</span> <span class="str">"_step_func"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t">    <span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t92" href="#t92">92</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span><span class="op">,</span> <span class="nam">g</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t93" href="#t93">93</a></span><span class="t">    <span class="key">return</span> <span class="nam">function</span><span class="op">(</span><span class="op">**</span><span class="nam">args</span><span class="op">)</span><span class="op">,</span> <span class="nam">g</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -182,7 +184,7 @@
             <a class="nav" href="z_ec78cb810a791de2_not_given_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-06 12:41 +0000
+            created at 2026-04-06 13:21 +0000
         </p>
     </div>
 </footer>
