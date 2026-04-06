@@ -335,10 +335,8 @@ def _render_entries_multiline(entries: list[LogEntry]) -> str:
         return ""
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=2**15)
-    for i, entry in enumerate(entries):
-        if i > 0:
-            console.print()
-        console.print(_render_entry_multiline(entry), end="")
+    for entry in entries:
+        console.print(_render_entry_multiline(entry))
     return buf.getvalue()
 
 
