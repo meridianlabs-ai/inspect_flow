@@ -240,6 +240,36 @@ def test_run_step_evallog_no_duplicate_header(
     assert len(header_lines) == 1
 
 
+def test_run_step_filter_preserves_in_memory_evallog(tmp_path: Path) -> None:
+    """run_step with filter= must pass the original in-memory EvalLog to the step.
+
+    Regression: filtering converted survivors back to log.location strings,
+    so the step re-read from disk and lost in-memory mutations.
+    """
+    log_path = _make_log(tmp_path)
+    log = read_eval_log(log_path)
+    # Mutate in memory only — add a tag that the on-disk version doesn't have.
+    log = log.model_copy(update={"tags": ["in_memory"]})
+
+    seen_tags: list[list[str]] = []
+
+    @step
+    def capture(log: EvalLog) -> EvalLog:
+        seen_tags.append(list(log.tags or []))
+        return log
+
+    # Filter matches the in-memory object (status == "success").
+    run_step(
+        capture,
+        [log],
+        filter="tests/local_eval/src/local_eval/my_filters.py@only_success",
+    )
+    assert len(seen_tags) == 1
+    assert "in_memory" in seen_tags[0], (
+        f"step received disk version instead of in-memory EvalLog, tags={seen_tags[0]}"
+    )
+
+
 def test_run_step_directory(tmp_path: Path) -> None:
     _make_log(tmp_path, "log1.eval")
     _make_log(tmp_path, "log2.eval")
