@@ -39,6 +39,7 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
+from inspect_flow._util.pydantic_util import callable_name
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
@@ -92,12 +93,24 @@ class InstantiatedTask:
     task: Task
 
 
-def _get_task_name(task_config: str | FlowTask | Task) -> str:
+def get_task_name(task_config: str | FlowTask | Task) -> str:
+    """Get the display name for a task config."""
     if isinstance(task_config, str):
         return task_config
-    if isinstance(task_config, FlowTask):
+    if isinstance(task_config, Task):
         return task_config.name or "<unnamed>"
-    return task_config.name
+    if isinstance(task_config.name, str):
+        return task_config.name
+    factory = task_config.factory
+    if isinstance(factory, FlowFactory):
+        if isinstance(factory.factory, str):
+            return factory.factory
+        return callable_name(factory.factory)
+    if callable(factory):
+        return callable_name(factory)
+    if isinstance(factory, str):
+        return factory
+    return "<unnamed>"
 
 
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
@@ -113,7 +126,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
         action.update(info=progress)
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
         for task_config in task_configs:
-            task_name = _get_task_name(task_config)
+            task_name = get_task_name(task_config)
             with action.error_context(task_name):
                 progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
                 for task in _instantiate_task(spec, task_config, base_dir=base_dir):
