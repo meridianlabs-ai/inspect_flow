@@ -146,6 +146,7 @@ def step(
 
                 if step_result.log and step_result.modified:
                     context.dirty[step_result.log.location] = step_result.log
+                    context.log = step_result.log
 
                 if step_result.flush:
                     context.write_dirty()

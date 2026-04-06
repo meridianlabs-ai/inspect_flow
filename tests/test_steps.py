@@ -624,6 +624,29 @@ def test_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
     )
 
 
+def test_nested_tag_with_same_path_preserves_both_tags(tmp_path: Path) -> None:
+    """Nested steps called with log.location must see prior dirty mutations.
+
+    Regression: when an outer step calls tag(log.location, add=["a"]) then
+    tag(log.location, add=["b"]), context.log was never advanced to the dirty
+    version, so the second tag replayed from stale state and only "b" survived.
+    """
+    log_path = _make_log(tmp_path)
+
+    @step
+    def add_two_tags(log: EvalLog) -> EvalLog:
+        result = tag(log.location, add=["a"])
+        assert result is not None
+        result = tag(log.location, add=["b"])
+        assert result is not None
+        return result
+
+    add_two_tags(log_path)
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "a" in (reloaded.tags or []), f"tag 'a' missing, tags={reloaded.tags}"
+    assert "b" in (reloaded.tags or []), f"tag 'b' missing, tags={reloaded.tags}"
+
+
 def test_cli_copy_help() -> None:
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command
