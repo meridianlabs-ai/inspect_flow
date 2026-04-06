@@ -15,6 +15,7 @@ from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
+from inspect_flow._store.deltalake import DeltaLakeStore
 from rich.console import Console
 
 
@@ -570,6 +571,39 @@ def test_cli_step_exclude(tmp_path: Path, recording_console: Console) -> None:
     assert "excluded" in (
         read_eval_log(str(tmp_path / "error.eval"), header_only=True).tags or []
     )
+
+
+def test_cli_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
+    """When --store is used with copy, new log paths should be added to the store."""
+    log_path = _make_log(tmp_path / "src")
+    store_dir = str(tmp_path / "store")
+
+    # Create store and import the source log
+    store = DeltaLakeStore(store_path=store_dir, create=True)
+    store.import_log_path(log_path)
+    assert len(store.get_logs()) == 1
+
+    dest = str(tmp_path / "dest")
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        ["copy", "--store", store_dir, "--dest", dest],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    # The copied log should exist on disk
+    dest_file = tmp_path / "dest" / "test.eval"
+    assert dest_file.exists()
+
+    # The new log path should also be in the store
+    store = DeltaLakeStore(store_path=store_dir)
+    store_logs = store.get_logs()
+    dest_paths = [log for log in store_logs if "dest" in log]
+    assert len(dest_paths) == 1, f"Expected new log in store, got: {store_logs}"
 
 
 def test_cli_copy_help() -> None:

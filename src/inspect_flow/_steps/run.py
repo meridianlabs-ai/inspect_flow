@@ -6,6 +6,7 @@ from inspect_ai.log._file import read_eval_log_headers
 
 from inspect_flow._steps.context import step_context
 from inspect_flow._steps.step import WrappedStepFunction
+from inspect_flow._store.store import FlowStore
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._types.log_filter import resolve_log_filters
 from inspect_flow._util.console import console, flow_print
@@ -35,6 +36,7 @@ def run_step(
     filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
     exclude: LogFilter | str | Sequence[LogFilter | str] | None = None,
     recursive: bool = True,
+    store: FlowStore | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> None:
@@ -50,6 +52,7 @@ def run_step(
             exclude filter are skipped. Accepts the same formats as filter.
         dry_run: If True, run steps but skip writing logs to disk.
         recursive: Recurse into directories (default: True).
+        store: Optional flow store. Written logs are added to the store.
         args: Positional arguments to pass to the step function.
         kwargs: Keyword arguments to pass to the step function.
     """
@@ -85,5 +88,7 @@ def run_step(
     log_paths = sorted(log_paths, key=lambda p: p if isinstance(p, str) else p.location)
     total = len(log_paths)
     for i, log_or_path in enumerate(log_paths, 1):
-        with step_context(log_or_path, dry_run=dry_run, index=i, total=total):
+        with step_context(
+            log_or_path, dry_run=dry_run, index=i, total=total, store=store
+        ):
             step(log_or_path, *args, **kwargs)

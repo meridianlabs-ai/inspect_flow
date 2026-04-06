@@ -12,6 +12,7 @@ from inspect_ai._util.registry import registry_find, registry_info
 
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._store.store import store_factory
+from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
 from inspect_flow._util.path_util import find_auto_includes
 from inspect_flow.api import run_step
 
@@ -182,13 +183,18 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         if not path and not store:
             raise click.UsageError("Either PATH or --store is required.")
         if store:
-            flow_store = store_factory(str(store), base_dir=".", create=False)
+            flow_store = store_factory(
+                FlowSpec(store=FlowStoreConfig(path=str(store), read=True, write=True)),
+                base_dir=".",
+                create=False,
+            )
             if not flow_store:
                 raise click.UsageError(f"Could not open store at {store}")
             logs: list[str] = list(flow_store.get_logs())
         else:
+            flow_store = None
             logs = list(path)
-        run_step(func, logs, **kwargs)
+        run_step(func, logs, store=flow_store, **kwargs)
 
     return click.Command(
         name=name,
