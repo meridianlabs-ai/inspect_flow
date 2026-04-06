@@ -16,13 +16,13 @@ Three operations that users compose into workflows:
 
 > Filtering (selecting a subset of logs) is not a step — it's handled by `run_step`'s `filter` parameter or `--filter` on the CLI. Filters use the `@log_filter` registry (see [store_filters.md](store_filters.md)). Multiple filters can be combined (all must pass).
 
-> Validation (asserting conditions on logs) is not a step — it doesn't modify logs and has no meaningful "set of modified logs" to pass forward. Use `validate()` as a standalone function call within a step or script.
+> Validation (asserting conditions on logs) is not a step — it doesn't modify logs and has no meaningful "set of modified logs" to pass forward. Validation logic belongs in user code (within a step or script), not as a built-in step.
 
 ## Dependencies
 
 The `tag` and `metadata` steps depend on Inspect AI's [log editing API](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#log-editing) (`edit_eval_log`, `TagsEdit`, `MetadataEdit`, `ProvenanceData`).
 
-`validate` and user-defined filtering use `LogFilter = Callable[[EvalLog], bool]` and the `@log_filter` registry from [store_filters.md](store_filters.md).
+User-defined filtering uses `LogFilter = Callable[[EvalLog], bool]` and the `@log_filter` registry from [store_filters.md](store_filters.md).
 
 ## Execution Model
 
@@ -104,26 +104,7 @@ run_step(tag, store.get_logs(filter=my_filter), add=["reviewed"])
 
 ### Provenance
 
-All mutating steps (`tag`, `metadata`) require provenance. The Python API offers two ways to provide it:
-
-1. **Convenience parameters** (`author`, `reason`): For simple cases. If omitted, `author` defaults to git `user.name <user.email>` (falling back to OS username), `timestamp` is always now.
-2. **Full `ProvenanceData` object**: For complete control. When provided, convenience parameters are ignored.
-
-```python
-from inspect_ai.log import ProvenanceData
-
-def default_provenance(
-    author: str | None = None,
-    reason: str | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> ProvenanceData:
-    """Create provenance with sensible defaults.
-
-    `author` defaults to git `user.name <user.email>`, falling back to
-    the OS username. `timestamp` is always now.
-    """
-    ...
-```
+All mutating steps (`tag`, `metadata`) accept `author` and `reason` parameters. If `author` is omitted, it defaults to git `user.name <user.email>` (falling back to OS username). `timestamp` is always now.
 
 ### `tag`
 
@@ -305,9 +286,9 @@ Steps return their modified logs. The outermost `@step` tracks these in a `Conte
 
 `@step` registers functions in Inspect AI's global registry. The CLI scans `_flow.py` files (via `find_auto_includes`) and loads them, then queries the registry for all registered steps. See [_cli/step.py](../src/inspect_flow/_cli/step.py).
 
-### 5. Concurrency
+### ~~5. Concurrency~~ (Resolved)
 
-Two users running tag/copy on overlapping log sets on S3 simultaneously could cause conflicts. For tag/metadata writes, Inspect AI supports optimistic concurrency via `write_eval_log(if_match_etag=log.etag)` — S3 rejects the write with `WriteConflictError` if the file was modified since it was read. We should use this. For `copy`, ETags don't help since the destination is a new file (last-write-wins).
+For tag/metadata writes on S3, `write_dirty` passes `if_match_etag=log.etag` to `write_eval_log` — S3 rejects the write with `WriteConflictError` if the file was modified since it was read. For `copy`, the destination is a new file so the etag is cleared (last-write-wins). See [_steps/context.py](../src/inspect_flow/_steps/context.py).
 
 ## Future Directions
 
@@ -317,7 +298,7 @@ There's a related but separate concept: "do all the logs that a spec *requires* 
 
 ### Audit Trail
 
-Tags carry provenance (author, timestamp, reason), which provides per-log audit info. A centralized audit log (e.g., "these 47 logs were promoted at time T by user X") is out of scope for this feature. `validate` doesn't need provenance since it doesn't mutate anything. `copy` could optionally record provenance in the future (e.g., tag the source log with "promoted_to: s3://...").
+Tags carry provenance (author, timestamp, reason), which provides per-log audit info. A centralized audit log (e.g., "these 47 logs were promoted at time T by user X") is out of scope for this feature. `copy` could optionally record provenance in the future (e.g., tag the source log with "promoted_to: s3://...").
 
 ### Post-run hooks
 
@@ -337,4 +318,4 @@ This would enable fully automated pipelines: run evals → QA scores → tag res
 
 - [ ] Add a composition example using `evals_df` to operate on log headers (e.g., find max score across a set of logs).
 - [ ] Collect real-world QA workflow examples to validate the atomic step design: Inspect Scout scanners, multi-stage approval pipelines, integration with external tools.
-- [ ] Figure out how to expose `validate` (and similar non-step functions) via the CLI — since `validate` doesn't fit `@step`, it likely needs a separate decorator (e.g., `@command`) that registers a CLI command without the step read/write lifecycle.
+- [ ] Figure out how to expose non-step functions via the CLI — functions that don't fit `@step` likely need a separate decorator (e.g., `@command`) that registers a CLI command without the step read/write lifecycle.
