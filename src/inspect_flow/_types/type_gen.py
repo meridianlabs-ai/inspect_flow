@@ -288,7 +288,11 @@ def _generate_dict_code() -> GeneratedCode:
     _update_def_titles_and_refs(schema)
     initial_defs: dict[str, Schema] = schema["$defs"]
     _add_generate_config_descriptions(initial_defs)
-    schema["$defs"] = {}
+    schema["$defs"] = {
+        title: type_def
+        for title, type_def in initial_defs.items()
+        if title.startswith("FlowFactory_")
+    }
     _create_dict_types(schema, initial_defs)
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".py") as tmp_file:

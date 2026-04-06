@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Sequence, TypeAlias, TypeVar
+from typing import Any, Callable, NamedTuple, Sequence, TypeAlias, TypeVar
 
 from inspect_ai import Epochs, Task, task_with
 from inspect_ai._eval.loader import load_tasks, scorer_from_spec
@@ -39,6 +39,7 @@ from inspect_flow._types.flow_types import (
 )
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
+from inspect_flow._util.pydantic_util import callable_name
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
@@ -47,16 +48,30 @@ _T = TypeVar("_T", bound=BaseModel)
 _FR = TypeVar("_FR", bound=Task | Agent | Solver | Scorer | Model)
 
 
+class FactoryName(NamedTuple):
+    name: str
+    args: CreateArgs | None
+
+
 def _call_factory(
     factory: FlowFactory[_FR] | Callable[..., _FR] | str | None | NotGiven,
     args: CreateArgs | None | NotGiven,
-) -> _FR | None:
+    name: str | None | NotGiven,
+) -> _FR | FactoryName | None:
+    """Call the factory and return the result, or return FactoryName for registry lookup."""
     if isinstance(factory, FlowFactory):
         if not isinstance(args, NotGiven):
             raise ValueError("args should not be provided when using FlowFactory")
+        if isinstance(factory.factory, str):
+            return FactoryName(factory.factory, factory.args or None)
         return factory.instantiate()
     if callable(factory):
         return factory(**(args or {}))
+    resolved_name = factory if isinstance(factory, str) else name
+    if isinstance(resolved_name, str):
+        return FactoryName(
+            resolved_name, args if not isinstance(args, NotGiven) else None
+        )
     return None
 
 
@@ -78,12 +93,24 @@ class InstantiatedTask:
     task: Task
 
 
-def _get_task_name(task_config: str | FlowTask | Task) -> str:
+def get_task_name(task_config: str | FlowTask | Task) -> str:
+    """Get the display name for a task config."""
     if isinstance(task_config, str):
         return task_config
-    if isinstance(task_config, FlowTask):
+    if isinstance(task_config, Task):
         return task_config.name or "<unnamed>"
-    return task_config.name
+    if isinstance(task_config.name, str):
+        return task_config.name
+    factory = task_config.factory
+    if isinstance(factory, FlowFactory):
+        if isinstance(factory.factory, str):
+            return factory.factory
+        return callable_name(factory.factory)
+    if callable(factory):
+        return callable_name(factory)
+    if isinstance(factory, str):
+        return factory
+    return "<unnamed>"
 
 
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
@@ -99,7 +126,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
         action.update(info=progress)
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
         for task_config in task_configs:
-            task_name = _get_task_name(task_config)
+            task_name = get_task_name(task_config)
             with action.error_context(task_name):
                 progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
                 for task in _instantiate_task(spec, task_config, base_dir=base_dir):
@@ -119,21 +146,20 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
 def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     if isinstance(model, Model):
         return model
-    if (r := _call_factory(model.factory, model.model_args)) is not None:
-        return r
-    name = model.factory if isinstance(model.factory, str) else model.name
-    if not name:
+    result = _call_factory(model.factory, model.model_args, model.name)
+    if isinstance(result, Model):
+        return result
+    if not isinstance(result, FactoryName):
         raise ValueError(f"Model name is required. Model: {model}")
-
     return get_model(
-        model=name,
+        model=result.name,
         role=default_none(model.role),
         default=default_none(model.default),
         config=model.config or GenerateConfig(),
         base_url=default_none(model.base_url),
         api_key=default_none(model.api_key),
         memoize=default(model.memoize, True),
-        **_kwargs("model", model.model_args, task),
+        **_kwargs("model", result.args, task),
     )
 
 
@@ -151,15 +177,15 @@ def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer | Scorer) -> 
         return scorer
     if isinstance(scorer, str):
         scorer = FlowScorer(name=scorer)
-    if (r := _call_factory(scorer.factory, scorer.args)) is not None:
-        return r
-    name = scorer.factory if isinstance(scorer.factory, str) else scorer.name
-    if not name:
+    result = _call_factory(scorer.factory, scorer.args, scorer.name)
+    if isinstance(result, Scorer):
+        return result
+    if not isinstance(result, FactoryName):
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
     return scorer_from_spec(
-        ScorerSpec(scorer=name),
+        ScorerSpec(scorer=result.name),
         task_path=None,
-        **_kwargs("scorer", scorer.args, task),
+        **_kwargs("scorer", result.args, task),
     )
 
 
@@ -188,26 +214,24 @@ def _create_single_solver(task: FlowTask, solver: str | FlowSolver | Solver) -> 
         return solver
     if not isinstance(solver, FlowSolver):
         raise ValueError(f"Solver should have been resolved. Solver: {solver}")
-    if (r := _call_factory(solver.factory, solver.args)) is not None:
-        return r
-    name = solver.factory if isinstance(solver.factory, str) else solver.name
-    if not name:
+    result = _call_factory(solver.factory, solver.args, solver.name)
+    if isinstance(result, Solver):
+        return result
+    if not isinstance(result, FactoryName):
         raise ValueError(f"Solver name is required. Solver: {solver}")
-
     return registry_create(
-        type="solver", name=name, **_kwargs("solver", solver.args, task)
+        type="solver", name=result.name, **_kwargs("solver", result.args, task)
     )
 
 
 def _create_agent(task: FlowTask, agent: FlowAgent) -> Agent:
-    if (r := _call_factory(agent.factory, agent.args)) is not None:
-        return r
-    name = agent.factory if isinstance(agent.factory, str) else agent.name
-    if not name:
+    result = _call_factory(agent.factory, agent.args, agent.name)
+    if isinstance(result, Agent):
+        return result
+    if not isinstance(result, FactoryName):
         raise ValueError(f"Agent name is required. Agent: {agent}")
-
     return registry_create(
-        type="agent", name=name, **_kwargs("agent", agent.args, task)
+        type="agent", name=result.name, **_kwargs("agent", result.args, task)
     )
 
 
@@ -319,20 +343,19 @@ def _instantiate_task(
 
 
 def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
-    if (r := _call_factory(task.factory, task.args)) is not None:
-        return [r]
-
-    name = task.factory if isinstance(task.factory, str) else task.name
-    if not name:
+    result = _call_factory(task.factory, task.args, task.name)
+    if isinstance(result, Task):
+        return [result]
+    if not isinstance(result, FactoryName):
         raise ValueError(f"Task name is required. Task: {task}")
 
-    task_args = registry_kwargs(**(task.args or {}))
+    task_args = registry_kwargs(**(result.args or {}))
     # Try to create by finding task functions in files
     if filesystem(base_dir).is_local():
         with chdir_python(base_dir):
-            tasks = load_tasks(task_specs=[name], task_args=task_args)
+            tasks = load_tasks(task_specs=[result.name], task_args=task_args)
     else:
-        tasks = load_tasks(task_specs=[name], task_args=task_args)
+        tasks = load_tasks(task_specs=[result.name], task_args=task_args)
     if not tasks:
-        raise LookupError(f"No tasks found for name: {name}")
+        raise LookupError(f"No tasks found for name: {result.name}")
     return tasks
