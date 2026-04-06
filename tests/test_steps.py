@@ -359,6 +359,36 @@ def test_step_result_skip_log_steps(tmp_path: Path) -> None:
     assert result is None
 
 
+def test_step_result_modified_false_does_not_advance_context(tmp_path: Path) -> None:
+    """StepResult(modified=False) must not advance context.log.
+
+    A nested step returning modified=False should not become the current log
+    for subsequent nested steps — the original log should remain current.
+    """
+    log_path = _make_log(tmp_path)
+
+    @step
+    def read_then_tag(log: EvalLog) -> EvalLog:
+        # Nested step that returns modified=False with a mutated log
+        @step
+        def read_only(log: EvalLog) -> StepResult:
+            return StepResult(
+                log=log.model_copy(update={"status": "error"}), modified=False
+            )
+
+        read_only(log)
+        # tag should run against the original log, not the read_only result
+        result = tag(log, add=["after_read_only"])
+        assert result is not None
+        return result
+
+    read_then_tag(log_path)
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "after_read_only" in (reloaded.tags or [])
+    # The read_only step's status change should NOT have been written
+    assert reloaded.status == "success"
+
+
 def test_step_result_modified_false_does_not_write(tmp_path: Path) -> None:
     log_path = _make_log(tmp_path)
 

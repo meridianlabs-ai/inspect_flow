@@ -24,10 +24,12 @@ class StepResult(NamedTuple):
     """
 
     log: EvalLog | None = None
-    """The log to pass to subsequent steps. None to skip remaining steps for this log."""
+    """The log returned to the caller. None to skip remaining steps for this log."""
 
     modified: bool = True
-    """Whether the log was modified. Controls whether the log is written back."""
+    """Whether the log was modified. When True, the log is written back to disk
+    and becomes the current log for subsequent nested steps. When False, the log
+    is returned but the current context log is not advanced."""
 
     flush: bool = False
     """Write all dirty logs immediately, even if nested inside an outer step."""
