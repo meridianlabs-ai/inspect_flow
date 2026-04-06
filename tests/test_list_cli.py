@@ -21,6 +21,19 @@ def test_list_log(recording_console: Console) -> None:
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
     assert "gpqa_diamond" in result.output
+    assert "Task:" in result.output
+    assert "Status:" in result.output
+    assert "Samples:" in result.output
+    assert "Duration:" in result.output
+
+
+def test_list_log_oneline(recording_console: Console) -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    result = runner.invoke(list_command, ["log", "--oneline"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "gpqa_diamond" in result.output
+    assert "Task:" not in result.output
 
 
 def test_list_log_empty_store(recording_console: Console) -> None:
