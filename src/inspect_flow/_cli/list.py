@@ -43,6 +43,7 @@ class ListOptions:
     output_format: str = "table"
     log_filter: LogFilter | None = None
     max_count: int | None = None
+    oneline: bool = False
 
 
 def _find_flow_yaml(dir_path: str) -> FlowSpec | None:
@@ -286,6 +287,58 @@ def _render_entries(entries: list[LogEntry]) -> str:
     return buf.getvalue()
 
 
+def _render_entry_multiline(entry: LogEntry) -> Text:
+    result = Text()
+    result.append_text(path(entry.log_path))
+    result.append("\n")
+
+    result.append("Task:     ")
+    result.append(entry.task)
+    if entry.qualifier.plain:
+        result.append(" ")
+        result.append_text(entry.qualifier)
+    result.append("\n")
+
+    result.append("Status:   ")
+    result.append(entry.status, style=_STATUS_STYLES.get(entry.status, ""))
+    result.append("\n")
+
+    if entry.samples:
+        result.append("Samples:  ")
+        result.append(entry.samples)
+        result.append("\n")
+
+    if entry.duration:
+        result.append("Duration: ")
+        result.append(entry.duration)
+        result.append("\n")
+
+    if entry.viewer_url:
+        result.append("Viewer:   ")
+        result.append(entry.viewer_url)
+        result.append("\n")
+
+    return result
+
+
+def _render_entries_multiline(entries: list[LogEntry]) -> str:
+    if not entries:
+        return ""
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=2**15)
+    for i, entry in enumerate(entries):
+        if i > 0:
+            console.print()
+        console.print(_render_entry_multiline(entry), end="")
+    return buf.getvalue()
+
+
+def _render(entries: list[LogEntry], oneline: bool) -> str:
+    if oneline:
+        return _render_entries(entries)
+    return _render_entries_multiline(entries)
+
+
 def _render_tree(renderable: Tree) -> str:
     buf = io.StringIO()
     Console(file=buf, force_terminal=True, width=2**15).print(renderable)
@@ -419,6 +472,10 @@ def _process_groups(
     return entries
 
 
+def _lines_per_entry(oneline: bool) -> int:
+    return 1 if oneline else 6
+
+
 def _echo_logs(
     log_paths: Collection[str],
     options: ListOptions,
@@ -429,8 +486,11 @@ def _echo_logs(
         _echo_tree(dir_groups, options, progress=progress)
         return
     page_size = Console().size.height - 1
-    total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
-    if os.isatty(1) and total > page_size:
+    lpe = _lines_per_entry(options.oneline)
+    total_entries = min(
+        sum(len(g) for g in dir_groups), options.max_count or float("inf")
+    )
+    if os.isatty(1) and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
         entries = _process_groups(dir_groups, options, progress=progress)
@@ -441,7 +501,7 @@ def _echo_logs(
         if not entries:
             flow_print("No logs found")
             return
-        click.echo(_render_entries(entries), nl=False)
+        click.echo(_render(entries, options.oneline), nl=False)
 
 
 def _paged_output(
@@ -455,6 +515,8 @@ def _paged_output(
     pager = env.get("PAGER", "less")
     proc = subprocess.Popen(pager.split(), stdin=subprocess.PIPE, env=env)
     assert proc.stdin
+    lpe = _lines_per_entry(options.oneline)
+    batch_entries = max(1, page_size // lpe)
     emitted = 0
     try:
         pending: list[list[str]] = []
@@ -463,7 +525,7 @@ def _paged_output(
         for group in dir_groups:
             pending.append(group)
             pending_count += len(group)
-            if pending_count >= page_size:
+            if pending_count >= batch_entries:
                 entries = _process_groups(
                     pending, options, progress=progress if first else None
                 )
@@ -474,7 +536,7 @@ def _paged_output(
                 if options.max_count is not None:
                     entries = entries[: options.max_count - emitted]
                 emitted += len(entries)
-                proc.stdin.write(_render_entries(entries).encode())
+                proc.stdin.write(_render(entries, options.oneline).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
@@ -489,7 +551,7 @@ def _paged_output(
             if options.max_count is not None:
                 entries = entries[: options.max_count - emitted]
             emitted += len(entries)
-            proc.stdin.write(_render_entries(entries).encode())
+            proc.stdin.write(_render(entries, options.oneline).encode())
             proc.stdin.flush()
     except BrokenPipeError:
         pass
@@ -550,6 +612,12 @@ class _MaxCountCommand(click.Command):
     help="Output format",
 )
 @click.option(
+    "--oneline",
+    is_flag=True,
+    default=False,
+    help="Show each log on a single line (compact table format).",
+)
+@click.option(
     "-n",
     "--max-count",
     "max_count",
@@ -605,6 +673,7 @@ class _MaxCountCommand(click.Command):
 def list_log(
     path: str | None,
     output_format: str,
+    oneline: bool,
     max_count: int | None,
     tasks: tuple[str, ...],
     models: tuple[str, ...],
@@ -644,6 +713,7 @@ def list_log(
         output_format=output_format,
         log_filter=log_filter,
         max_count=max_count,
+        oneline=oneline,
     )
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
