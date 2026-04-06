@@ -11,6 +11,7 @@ from inspect_flow._types.flow_types import (
     FlowDefaults,
     FlowEpochs,
     FlowExtraArgs,
+    FlowFactory,
     FlowModel,
     FlowScorer,
     FlowSolver,
@@ -287,6 +288,17 @@ def test_tags() -> None:
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
     assert tasks[0].task.tags == ["foo", "bar"]
+
+
+def test_factory_str() -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(factory=FlowFactory(factory=task_name)),
+        ]
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.name == "noop"
 
 
 @task

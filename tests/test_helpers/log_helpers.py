@@ -30,6 +30,8 @@ def _task_name(task: FlowTask) -> str | None:
         return task.name
     if task.factory:
         if isinstance(task.factory, FlowFactory):
+            if isinstance(task.factory.factory, str):
+                return task.factory.factory
             return callable_name(task.factory.factory)
         if callable(task.factory):
             return callable_name(task.factory)
