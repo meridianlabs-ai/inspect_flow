@@ -133,63 +133,6 @@ See [_steps/tag.py](../src/inspect_flow/_steps/tag.py). Applies `TagsEdit` via `
 
 See [_steps/tag.py](../src/inspect_flow/_steps/tag.py). Applies `MetadataEdit` via `edit_eval_log`. Same provenance defaults as `tag`.
 
-### `validate`
-
-`validate` is a standalone function, not a step. It doesn't modify logs and returns a result rather than a set of logs to pass forward.
-
-```python
-@dataclass
-class ValidationResult:
-    """Result of a validation run."""
-    passed: list[str]
-    failed: list[str]
-
-    @property
-    def ok(self) -> bool:
-        return len(self.failed) == 0
-
-
-class ValidationError(Exception):
-    """Raised when validation fails."""
-    def __init__(self, result: ValidationResult) -> None:
-        self.result = result
-        n = len(result.failed)
-        super().__init__(f"Validation failed: {n} log(s) did not pass")
-
-
-@overload
-def validate(
-    logs: str | Sequence[str],
-    condition: LogFilter,
-    *,
-    recursive: bool = True,
-) -> ValidationResult: ...
-
-@overload
-def validate(
-    logs: EvalLog | Sequence[EvalLog],
-    condition: LogFilter,
-) -> ValidationResult: ...
-
-def validate(logs, condition, *, recursive=True):
-    """Assert that all logs satisfy a condition.
-
-    Applies the condition to each log header. If any log fails,
-    raises ValidationError with a report of passed/failed paths.
-
-    Args:
-        logs: Log file(s), directory(ies), or EvalLog object(s).
-        condition: A callable (EvalLog) -> bool.
-        recursive: Recurse into directories (standalone mode only).
-
-    Returns:
-        ValidationResult (only reached if all pass).
-
-    Raises:
-        ValidationError: If any log fails the condition.
-    """
-```
-
 ### `copy`
 
 See [_steps/copy.py](../src/inspect_flow/_steps/copy.py). Decorated with `@step(header_only=False)` — requires full logs. Uses `model_copy` to create destination `EvalLog` objects without mutating originals. Returns destination logs; subsequent steps operate on those, not the sources.
@@ -243,7 +186,7 @@ flow step tag PATH... --add qa_done --add reviewed --author "Alice" --reason "Ma
 flow step tag PATH... --remove draft
 flow step metadata PATH... --set key=value --set score_threshold=0.9
 flow step metadata PATH... --remove old_key
-flow step copy PATH... --dest s3://bucket/golden --import-store auto
+flow step copy PATH... --dest s3://bucket/golden --store auto
 ```
 
 Common options across all `flow step` subcommands:
