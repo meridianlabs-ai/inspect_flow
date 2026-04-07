@@ -7,7 +7,12 @@ from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
-from inspect_flow._cli.options import OutputOptionArgs, init_output, output_options
+from inspect_flow._cli.options import (
+    OutputOptionArgs,
+    init_output,
+    output_options,
+    store_option,
+)
 from inspect_flow._store.store import (
     FlowStore,
     delete_store,
@@ -52,20 +57,7 @@ F = TypeVar("F", bound=Callable[..., object])
 
 def store_options(f: F) -> F:
     f = output_options(f)
-    f = click.option(
-        "--store",
-        "-s",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
-        default=None,
-        help="Path to the store directory",
-        envvar="INSPECT_FLOW_STORE",
-    )(f)
+    f = store_option(f)
     return f
 
 
