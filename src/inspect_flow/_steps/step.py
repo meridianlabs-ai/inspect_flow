@@ -120,6 +120,8 @@ def step(
                     return None
 
                 indent = "  " * (context.depth + 1)
+                if context.dry_run:
+                    indent = indent + " " * len("[DRY RUN] ")
                 console.print(
                     f"{indent}[dim]{_format_step_call(f.__name__, kwargs)}[/dim]"
                 )
