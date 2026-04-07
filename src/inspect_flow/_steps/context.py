@@ -85,8 +85,12 @@ def step_context(
             _log_header(log_or_path.location, context)
         else:
             _log_header(log_or_path, context)
-            with console.status("[dim]Reading[/dim]"):
-                context.log = read_log(log_or_path, header_only=dry_run)
+            try:
+                with console.status("[dim]Reading[/dim]"):
+                    context.log = read_log(log_or_path, header_only=dry_run)
+            except Exception:
+                console.print("  [red]Could not read log[/red]")
+                context.log = None
         token = _step_context_var.set(context)
     else:
         context = existing
