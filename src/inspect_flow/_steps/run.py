@@ -36,6 +36,7 @@ def run_step(
     filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
     exclude: LogFilter | str | Sequence[LogFilter | str] | None = None,
     recursive: bool = True,
+    expand_paths: bool = True,
     store: FlowStore | None = None,
     *args: P.args,
     **kwargs: P.kwargs,
@@ -52,6 +53,8 @@ def run_step(
             exclude filter are skipped. Accepts the same formats as filter.
         dry_run: If True, run steps but skip writing logs to disk.
         recursive: Recurse into directories (default: True).
+        expand_paths: Expand directory paths to individual log paths
+            (default: True). Set to False when paths are already resolved.
         store: Optional flow store. Written logs are added to the store.
         args: Positional arguments to pass to the step function.
         kwargs: Keyword arguments to pass to the step function.
@@ -61,7 +64,7 @@ def run_step(
 
     if isinstance(logs, (EvalLog, str)):
         logs = [logs]
-    log_paths = _expand_paths(logs, recursive=recursive)
+    log_paths = _expand_paths(logs, recursive=recursive) if expand_paths else list(logs)
     include_filters = resolve_log_filters(filter)
     exclude_filters = resolve_log_filters(exclude)
     if include_filters or exclude_filters:
@@ -93,5 +96,7 @@ def run_step(
     for i, log_or_path in enumerate(log_paths, 1):
         with step_context(
             log_or_path, dry_run=dry_run, index=i, total=total, store=store
-        ):
+        ) as ctx:
+            if ctx.log is None:
+                continue
             step(log_or_path, *args, **kwargs)

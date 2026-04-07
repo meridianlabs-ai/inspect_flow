@@ -196,7 +196,7 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         else:
             flow_store = None
             logs = list(path)
-        run_step(func, logs, store=flow_store, **kwargs)
+        run_step(func, logs, store=flow_store, expand_paths=not store, **kwargs)
 
     return click.Command(
         name=name,
