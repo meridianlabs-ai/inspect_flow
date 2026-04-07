@@ -73,6 +73,18 @@ def test_tag_from_evallog(tmp_path: Path) -> None:
     assert "golden" in (result.tags or [])
 
 
+def test_tag_error_no_add_or_remove(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="add.*remove"):
+        tag(log_path)
+
+
+def test_tag_error_empty_add_and_remove(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="add.*remove"):
+        tag(log_path, add=[], remove=[])
+
+
 # --- metadata step ---
 
 
@@ -95,6 +107,18 @@ def test_metadata_remove_from_path(tmp_path: Path) -> None:
     assert result.metadata is not None
     assert "key1" not in result.metadata
     assert result.metadata["key2"] == "val2"
+
+
+def test_metadata_error_no_set_or_remove(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="set.*remove"):
+        metadata(log_path)
+
+
+def test_metadata_error_empty_set_and_remove(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="set.*remove"):
+        metadata(log_path, set={}, remove=[])
 
 
 # --- _relative_path ---
