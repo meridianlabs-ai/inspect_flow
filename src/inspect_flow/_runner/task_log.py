@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
 from inspect_ai.log import EvalLog
 from inspect_ai.model._generate_config import GenerateConfig
-from rich.console import Group, RenderableType
+from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
@@ -18,6 +18,11 @@ from inspect_flow._types.flow_types import (
 from inspect_flow._util.console import path, pluralize
 
 TaskLogDisplayMode = Literal["check", "pre-run", "post-run"]
+
+
+class TaskLogDisplay(NamedTuple):
+    display: RenderableType
+    summary: RenderableType
 
 
 @dataclass
@@ -218,7 +223,7 @@ def unique_task_names(infos: list[TaskInfo]) -> _TaskQualifiers:
     )
 
 
-def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
+def _summary(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
     total = len(task_log_info)
     num_complete = sum(
         1
@@ -287,8 +292,8 @@ def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> 
 def create_task_log_display(
     task_log_info: dict[str, TaskLogInfo],
     mode: TaskLogDisplayMode = "pre-run",
-) -> RenderableType:
-    header = _header(task_log_info, mode)
+) -> TaskLogDisplay:
+    summary = _summary(task_log_info, mode)
 
     infos = list(task_log_info.values())
     qualifiers = unique_task_names([task_log_to_task_info(i) for i in infos])
@@ -327,4 +332,4 @@ def create_task_log_display(
             tags = info.eval_log.tags if info.eval_log else None
             row.append(", ".join(tags) if tags else "")
         table.add_row(*row)
-    return Group(header, table)
+    return TaskLogDisplay(display=table, summary=summary)
