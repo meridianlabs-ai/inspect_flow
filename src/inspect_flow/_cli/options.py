@@ -17,6 +17,24 @@ from inspect_flow._util.logging import init_flow_logging
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+_STORE_OPTION_KWARGS: dict[str, Any] = dict(
+    is_flag=False,
+    flag_value="auto",
+    default=None,
+    envvar="INSPECT_FLOW_STORE",
+)
+
+
+def store_click_option(help: str = "Path to the store directory.") -> click.Option:
+    """Create a ``--store``/``-s`` `click.Option`."""
+    return click.Option(["--store", "-s"], help=help, **_STORE_OPTION_KWARGS)
+
+
+def store_option(f: F, help: str = "Path to the store directory.") -> F:
+    """Decorator that adds a ``--store``/``-s`` option."""
+    return click.option("--store", "-s", help=help, **_STORE_OPTION_KWARGS)(f)
+
+
 def output_options(f: F) -> F:
     f = click.option(
         "--log-level",
@@ -137,19 +155,10 @@ def config_options(f: F) -> F:
         help="Limit the number of samples to run.",
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
-    f = click.option(
-        "--store",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
-        default=None,
+    f = store_option(
+        f,
         help="Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store.",
-        envvar="INSPECT_FLOW_STORE",
-    )(f)
+    )
     f = click.option(
         "--store-filter",
         type=str,

@@ -10,6 +10,7 @@ import griffe
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 
+from inspect_flow._cli.options import store_click_option
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
@@ -135,11 +136,7 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         click.Argument(["path"], nargs=-1, required=False, type=click.Path()),
     )
     params.append(
-        click.Option(
-            ["--store", "-s"],
-            is_flag=False,
-            flag_value="auto",
-            default=None,
+        store_click_option(
             help="Resolve logs from a store. Use --store for the default store or --store PATH for a specific one.",
         )
     )
