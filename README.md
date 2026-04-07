@@ -38,13 +38,13 @@
 | src/inspect\_flow/\_launcher/python\_version.py    |       55 |       14 |       18 |        5 |     68.49% |10, 33-40, 53-\>51, 60-61, 89-95, 117-119, 125 |
 | src/inspect\_flow/\_launcher/venv.py               |      167 |        1 |       58 |        0 |     99.56% |        41 |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/check.py                |       32 |        1 |       10 |        1 |     95.24% |        23 |
+| src/inspect\_flow/\_runner/check.py                |       35 |        1 |       10 |        1 |     95.56% |        23 |
 | src/inspect\_flow/\_runner/cli.py                  |       51 |        8 |        0 |        0 |     84.31% |   113-120 |
 | src/inspect\_flow/\_runner/instantiate.py          |      186 |        3 |       94 |        4 |     97.50% |64, 67, 108, 282-\>284 |
 | src/inspect\_flow/\_runner/logs.py                 |      131 |        1 |       56 |        2 |     98.40% |182, 220-\>214 |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |      168 |        7 |       66 |        5 |     94.02% |177-\>179, 183, 202-203, 220, 236, 275-276 |
-| src/inspect\_flow/\_runner/task\_log.py            |      152 |        0 |       56 |        0 |    100.00% |           |
+| src/inspect\_flow/\_runner/run.py                  |      170 |        7 |       66 |        5 |     94.07% |179-\>181, 185, 204-205, 222, 238, 279-280 |
+| src/inspect\_flow/\_runner/task\_log.py            |      155 |        0 |       56 |        0 |    100.00% |           |
 | src/inspect\_flow/\_steps/\_\_init\_\_.py          |        2 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_steps/context.py               |       61 |        2 |       24 |        3 |     94.12% |43, 82, 96-\>103 |
 | src/inspect\_flow/\_steps/copy.py                  |       20 |        0 |        6 |        0 |    100.00% |           |
@@ -77,7 +77,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       10 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **4960** |  **361** | **1538** |  **136** | **90.90%** |           |
+| **TOTAL**                                          | **4968** |  **361** | **1538** |  **136** | **90.92%** |           |
 
 
 ## Setup coverage badge
