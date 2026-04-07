@@ -15,6 +15,7 @@ from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
 from inspect_flow._util.path_util import find_auto_includes
+from inspect_flow._util.util import maybe_json
 from inspect_flow.api import run_step
 
 
@@ -227,13 +228,13 @@ def _is_dict_of_str(annotation: object) -> bool:
     return False
 
 
-def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, str]:
-    result: dict[str, str] = {}
+def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
     for item in values:
         if "=" not in item:
             raise click.BadParameter(f"Expected key=value format, got: {item}")
         key, value = item.split("=", 1)
-        result[key] = value
+        result[key] = maybe_json(value)
     return result
 
 

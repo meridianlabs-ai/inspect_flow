@@ -1,5 +1,4 @@
 import inspect
-import json
 import traceback
 from logging import getLogger
 from pathlib import Path
@@ -32,6 +31,7 @@ from inspect_flow._util.path_util import (
     find_auto_includes,
 )
 from inspect_flow._util.pydantic_util import model_dump
+from inspect_flow._util.util import maybe_json as _maybe_json
 from inspect_flow._util.util import now
 
 logger = getLogger(__name__)
@@ -348,17 +348,6 @@ def _apply_auto_includes(
         if auto_spec:
             spec = _apply_include(spec, auto_spec)
     return spec
-
-
-def _maybe_json(value: str) -> Any:
-    if value == "True":
-        return True
-    if value == "False":
-        return False
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        return value
 
 
 _OverrideDict: TypeAlias = dict[str, "str | _OverrideDict"]
