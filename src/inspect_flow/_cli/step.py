@@ -234,7 +234,12 @@ def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
         if "=" not in item:
             raise click.BadParameter(f"Expected key=value format, got: {item}")
         key, value = item.split("=", 1)
-        result[key] = maybe_json(value)
+        parsed = maybe_json(value)
+        keys = key.split(".")
+        obj = result
+        for k in keys[:-1]:
+            obj = obj.setdefault(k, {})
+        obj[keys[-1]] = parsed
     return result
 
 
