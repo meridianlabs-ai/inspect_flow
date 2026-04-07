@@ -731,7 +731,7 @@ class _MaxCountCommand(click.Command):
 @list_command.command(
     "log",
     cls=_MaxCountCommand,
-    help="List logs, sorted by timestamp extracted from log file name.",
+    help="List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (--store auto).",
 )
 @store_options
 @filter_options
