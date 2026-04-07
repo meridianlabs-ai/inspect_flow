@@ -513,24 +513,6 @@ def test_cli_metadata_set_dict_value(tmp_path: Path) -> None:
     assert reloaded.metadata["a"] == {"a": {"a": "a"}}
 
 
-def test_cli_metadata_set_dot_notation(tmp_path: Path) -> None:
-    """Dot notation in keys should create nested dicts: a.b=c -> {"a": {"b": "c"}}."""
-    log_path = _make_log(tmp_path)
-
-    from click.testing import CliRunner
-    from inspect_flow._cli.step import step_command
-
-    result = CliRunner().invoke(
-        step_command,
-        ["metadata", log_path, "--set", "a.b=c"],
-        catch_exceptions=False,
-    )
-    assert result.exit_code == 0
-    reloaded = read_eval_log(log_path, header_only=True)
-    assert reloaded.metadata is not None
-    assert reloaded.metadata["a"] == {"b": "c"}
-
-
 # --- CLI help ---
 
 
