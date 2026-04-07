@@ -55,6 +55,8 @@ def tag(
     Returns:
         Modified EvalLog objects.
     """
+    if not add and not remove:
+        raise ValueError("At least one of 'add' or 'remove' must be provided.")
     provenance = ProvenanceData(author=author or _default_author(), reason=reason)
     edits = [TagsEdit(tags_add=add or [], tags_remove=remove or [])]
     return edit_eval_log(log, edits, provenance)
@@ -81,6 +83,8 @@ def metadata(
     Returns:
         Modified EvalLog object.
     """
+    if not set and not remove:
+        raise ValueError("At least one of 'set' or 'remove' must be provided.")
     provenance = ProvenanceData(author=author or _default_author(), reason=reason)
     edits = [MetadataEdit(metadata_set=set or {}, metadata_remove=remove or [])]
     return edit_eval_log(log, edits, provenance)
