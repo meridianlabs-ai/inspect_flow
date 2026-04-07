@@ -22,10 +22,10 @@ def test_list_log(recording_console: Console) -> None:
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
     assert "gpqa_diamond" in result.output
-    assert "Task:" in result.output
-    assert "Status:" in result.output
-    assert "Samples:" in result.output
-    assert "Duration:" in result.output
+    assert "Task " in result.output
+    assert "Status " in result.output
+    assert "samples" in result.output
+    assert "Date " in result.output
 
 
 def test_list_log_oneline(recording_console: Console) -> None:
@@ -159,7 +159,7 @@ def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
         list_command, ["log", str(tmp_path)], catch_exceptions=False
     )
     assert result.exit_code == 0
-    assert "Tags:" in result.output
+    assert "Tags " in result.output
     assert "golden" in result.output
     assert "draft" in result.output
 

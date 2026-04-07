@@ -147,7 +147,7 @@ def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
 
 _STATUS_STYLES: dict[str, str] = {
     "success": "green",
-    "cancelled": "yellow",
+    "cancelled": "gold3",
     "error": "red",
     "started": "cyan",
 }
@@ -160,7 +160,22 @@ def _duration_str(header_result: _HeaderResult) -> str:
     if not started or not completed:
         return ""
     delta = datetime.fromisoformat(completed) - datetime.fromisoformat(started)
-    return str(delta).split(".")[0]
+    total_seconds = int(delta.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
+    if minutes:
+        return f"{minutes}m {seconds:02d}s"
+    return f"{seconds}s"
+
+
+def _date_str(header_result: _HeaderResult) -> str:
+    started = header_result.header.stats.started_at
+    if not started:
+        return ""
+    dt = datetime.fromisoformat(started)
+    return dt.strftime("%Y-%m-%d %H:%M:%S %z")
 
 
 def _samples_str(header_result: _HeaderResult) -> str:
@@ -180,6 +195,7 @@ class LogEntry:
     status: str
     samples: str
     duration: str
+    date: str
     tags: list[str]
     viewer_url: str | None = None
 
@@ -203,6 +219,7 @@ def _compute_entries(
             status=headers[p].header.status,
             samples=_samples_str(headers[p]),
             duration=_duration_str(headers[p]),
+            date=_date_str(headers[p]),
             tags=headers[p].header.tags,
             viewer_url=_viewer_url(p, spec) if spec else None,
         )
@@ -298,34 +315,35 @@ def _render_entry_multiline(entry: LogEntry) -> Text:
     result.append_text(path(entry.log_path))
     result.append("\n")
 
-    result.append("Task:     ")
+    result.append("Task      ", style="grey50")
     result.append(entry.task)
     if entry.qualifier.plain:
         result.append(" ")
         result.append_text(entry.qualifier)
     result.append("\n")
 
-    result.append("Status:   ")
-    result.append(entry.status, style=_STATUS_STYLES.get(entry.status, ""))
-    result.append("\n")
-
-    if entry.samples:
-        result.append("Samples:  ")
-        result.append(entry.samples)
-        result.append("\n")
-
-    if entry.duration:
-        result.append("Duration: ")
-        result.append(entry.duration)
+    if entry.date:
+        result.append("Date      ", style="grey50")
+        result.append(entry.date)
+        if entry.duration:
+            result.append(f", {entry.duration}")
         result.append("\n")
 
     if entry.tags:
-        result.append("Tags:     ")
+        result.append("Tags      ", style="grey50")
         result.append(", ".join(entry.tags))
         result.append("\n")
 
+    result.append("Status    ", style="grey50")
+    result.append(entry.status, style=_STATUS_STYLES.get(entry.status, ""))
+    if entry.samples:
+        result.append(", ")
+        result.append(entry.samples)
+        result.append(" samples")
+    result.append("\n")
+
     if entry.viewer_url:
-        result.append("Viewer:   ")
+        result.append("Viewer    ", style="grey50")
         result.append(entry.viewer_url)
         result.append("\n")
 
