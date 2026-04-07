@@ -206,7 +206,6 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
     @step(header_only=False)
     def promote(log: EvalLog, *, dest: str) -> EvalLog | None:
         log = tag(log, add=["golden"], reason="Promoted")
-        assert log is not None
         return copy(log, dest=dest)
 
     dest = str(tmp_path / "dest")
@@ -493,7 +492,25 @@ def test_cli_metadata_set(tmp_path: Path) -> None:
     assert result.exit_code == 0
     reloaded = read_eval_log(log_path, header_only=True)
     assert reloaded.metadata is not None
-    assert reloaded.metadata["score_threshold"] == "0.9"
+    assert reloaded.metadata["score_threshold"] == 0.9
+
+
+def test_cli_metadata_set_dict_value(tmp_path: Path) -> None:
+    """Values that are valid JSON should be parsed, not stored as strings."""
+    log_path = _make_log(tmp_path)
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command,
+        ["metadata", log_path, "--set", 'a={"a": {"a": "a"}}'],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert reloaded.metadata is not None
+    assert reloaded.metadata["a"] == {"a": {"a": "a"}}
 
 
 # --- CLI help ---
