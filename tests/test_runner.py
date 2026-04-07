@@ -265,37 +265,38 @@ class TestCreateTaskLogDisplay:
         info = {
             "id1": TaskLogInfo(task=_make_task("alpha"), task_samples=3, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, mode="pre-run"))
-        assert "Running" in output
-        assert "1" in output
-        assert "alpha" in output
+        result = create_task_log_display(info, mode="pre-run")
+        assert "alpha" in _render_text(result.display)
+        summary = _render_text(result.summary)
+        assert "Running" in summary
+        assert "1" in summary
 
     def test_running_some_complete(self) -> None:
         info = {
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, mode="pre-run"))
-        assert "Running" in output
-        assert "1 task complete" in output
+        summary = _render_text(create_task_log_display(info, mode="pre-run").summary)
+        assert "Running" in summary
+        assert "1 task complete" in summary
 
     def test_completed_all(self) -> None:
         info = {
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=5),
         }
-        output = _render_text(create_task_log_display(info, mode="post-run"))
-        assert "Completed" in output
-        assert "2 tasks" in output
+        summary = _render_text(create_task_log_display(info, mode="post-run").summary)
+        assert "Completed" in summary
+        assert "2 tasks" in summary
 
     def test_completed_partial(self) -> None:
         info = {
             "id1": TaskLogInfo(task=_make_task("a"), task_samples=3, log_samples=3),
             "id2": TaskLogInfo(task=_make_task("b"), task_samples=5, log_samples=0),
         }
-        output = _render_text(create_task_log_display(info, mode="post-run"))
-        assert "Completed" in output
-        assert "1 of 2" in output
+        summary = _render_text(create_task_log_display(info, mode="post-run").summary)
+        assert "Completed" in summary
+        assert "1 of 2" in summary
 
     def test_table_shows_samples(self) -> None:
         info = {
@@ -305,9 +306,9 @@ class TestCreateTaskLogDisplay:
                 log_samples=5,
             ),
         }
-        output = _render_text(create_task_log_display(info, mode="pre-run"))
-        assert "5/10" in output
-        assert "x" in output
+        display = _render_text(create_task_log_display(info, mode="pre-run").display)
+        assert "5/10" in display
+        assert "x" in display
 
     def test_tags_column_shown_when_tags_present(self) -> None:
         eval_log = EvalLog(
@@ -324,16 +325,16 @@ class TestCreateTaskLogDisplay:
         info = {
             "id1": TaskLogInfo(task=_make_task("x"), eval_log=eval_log),
         }
-        output = _render_text(create_task_log_display(info, mode="pre-run"))
-        assert "Tags" in output
-        assert "bar, foo" in output
+        display = _render_text(create_task_log_display(info, mode="pre-run").display)
+        assert "Tags" in display
+        assert "bar, foo" in display
 
     def test_tags_column_hidden_when_no_tags(self) -> None:
         info = {
             "id1": TaskLogInfo(task=_make_task("x")),
         }
-        output = _render_text(create_task_log_display(info, mode="pre-run"))
-        assert "Tags" not in output
+        display = _render_text(create_task_log_display(info, mode="pre-run").display)
+        assert "Tags" not in display
 
 
 # ── run.py ──────────────────────────────────────────────────
