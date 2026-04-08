@@ -6,7 +6,7 @@ import yaml
 from click.testing import CliRunner
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
-from inspect_flow._steps.tag import tag
+from inspect_flow._steps.tag import metadata, tag
 from rich.console import Console
 
 LOG_DIR = "tests/test_logs/logs1"
@@ -162,6 +162,43 @@ def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
     assert "Tags " in result.output
     assert "golden" in result.output
     assert "draft" in result.output
+
+
+def test_list_log_provenance(tmp_path: Path) -> None:
+    dest = str(tmp_path / "log1.eval")
+    shutil.copy(_SAMPLE_LOG, dest)
+    tag(dest, add=["v1"], author="alice", reason="initial tag")
+    tag(dest, add=["v2"], remove=["v1"], author="bob")
+    metadata(dest, set={"score": 0.95}, author="carol")
+    metadata(dest, remove=["score"], author="dave")
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--provenance"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    # tag edits
+    assert "tags +v1" in result.output
+    assert "alice" in result.output
+    assert "initial tag" in result.output
+    assert "tags +v2, -v1" in result.output
+    assert "bob" in result.output
+    # metadata edits
+    assert "metadata +score=0.95" in result.output
+    assert "carol" in result.output
+    assert "metadata -score" in result.output
+    assert "dave" in result.output
+
+
+def test_list_log_provenance_hidden_by_default(tmp_path: Path) -> None:
+    dest = str(tmp_path / "log1.eval")
+    shutil.copy(_SAMPLE_LOG, dest)
+    tag(dest, add=["v1"], author="alice")
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "Edit " not in result.output
 
 
 def test_list_log_tag_filter(tmp_path: Path) -> None:
