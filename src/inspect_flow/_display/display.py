@@ -13,6 +13,8 @@ from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats
 
 DisplayType = Literal["full", "rich", "plain"]
+"""Display type for flow output."""
+
 DisplayMode = Literal["run", "dry_run", "check"]
 """Display mode for flow output.
 

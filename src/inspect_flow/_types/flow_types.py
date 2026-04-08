@@ -259,10 +259,13 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
     so that type errors are caught immediately rather than at evaluation time.
     Works with `FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, and `FlowModel`.
 
-    Args:
+    Positional and keyword arguments passed to the factory at construction are
+    collected into the `args` field and forwarded to the factory at evaluation
+    time.
+
+    Attributes:
         factory: Factory function (e.g. a `@task`-decorated function).
-        *args: Positional arguments forwarded to the factory.
-        **kwargs: Keyword arguments forwarded to the factory.
+        args: Arguments forwarded to the factory at evaluation time.
     """
 
     factory: Callable[..., R]

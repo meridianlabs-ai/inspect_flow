@@ -1,41 +1,21 @@
 ---
 title: Reference
-tbl-colwidths: [35,66]
-toc-depth: 4
 ---
 
+### Python API
 
-#### Python API
-
-|  |  |
-|----|----|
+| | |
+|---|---|
+| [inspect_flow.api](inspect_flow.api.qmd) | Public API — init, run, load_spec, config, store helpers. |
 | [inspect_flow](inspect_flow.qmd) | Core types and functions. |
-| [inspect_flow.api](inspect_flow.api.qmd) | Output and run a spec. |
+: {.borderless tbl-colwidths=[35,65]}
 
-: {.borderless}
+### CLI
 
-#### Flow CLI
-
-|  |  |
-|------------------------------------|------------------------------------|
-| [flow config](flow_config.qmd) | Output spec as yaml. |
-| [flow list](flow_list.qmd) | List logs. |
-| [flow run](flow_run.qmd) | Run a spec. |
-| [flow store](flow_store.qmd) | Manage the Flow Store. |
-
-: {.borderless}
-
-
-```{=html}
-<style>
-.table td {
-    padding-bottom: 0 !important;
-}
-a {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: underline;
-}
-</style>
-```
+| | |
+|---|---|
+| [flow config](flow_config.qmd) | Display resolved flow configuration. |
+| [flow list](flow_list.qmd) | List logs with filtering and sorting. |
+| [flow run](flow_run.qmd) | Run flow evaluations. |
+| [flow store](flow_store.qmd) | Manage the flow log store. |
+: {.borderless tbl-colwidths=[35,65]}

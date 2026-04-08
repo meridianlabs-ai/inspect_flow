@@ -1,102 +1,39 @@
 project:
-  type: website
-  resources:
-    - llms.txt
-  pre-render:
-    - reference/filter/sidebar.py
-  post-render:
-    - scripts/post-render.sh
+  type: meridianlabs-ai/inspect-docs
 
-metadata-files:
-  - reference/_sidebar.yml
-
-filters:
-  - at: pre-quarto
-    path: reference/filter/interlink.lua
-
-website:
-  title: "Inspect Flow"
-  description: "Workflow orchestration for Inspect AI"
-  bread-crumbs: true
-  page-navigation: true
-  repo-url: https://github.com/meridianlabs-ai/inspect_flow
-  site-url: https://meridianlabs-ai.github.io/inspect_flow
-  repo-actions: [issue]
+inspect-docs:
+  title: Inspect Flow
+  description: Workflow orchestration for Inspect AI
+  logo: images/icon-dark.svg
   favicon: images/icon-dark.svg
-  twitter-card:
-    title: "Inspect Flow"
-    description: "Workflow orchestration for Inspect AI"
-  open-graph:
-    title: "Inspect Flow"
-    description: "Workflow orchestration for Inspect AI"
-  navbar:
-    title: "Inspect Flow"
-    logo: images/icon-dark.svg
-    background: light
-    search: true
-    left:
-      - text: "Welcome"
-        href: index.qmd
-      - text: "Reference"
-        href: reference/index.qmd
-    right:
-      - icon: github
-        href: https://github.com/meridianlabs-ai/inspect_flow
-  sidebar:
-    - title: Main
-      style: docked
+  url: https://meridianlabs-ai.github.io/inspect_flow
+  module: inspect_flow
+  repo: meridianlabs-ai/inspect_flow
+  org: Meridian Labs
+  navigation:
+    - text: Welcome
+      href: index.qmd
       contents:
-        - text: Welcome
-          href: index.qmd
-          contents:
-            - text: Introduction
-              href: index.qmd#introduction
-            - text: Getting Started
-              href: index.qmd#getting-started
-            - text: Basic Example
-              href: index.qmd#basic-example
-        - text: Using Flow
-          contents:
-            - text: Flow Concepts
-              href: flow_concepts.qmd
-            - text: Defaults
-              href: defaults.qmd
-            - text: Matrixing
-              href: matrix.qmd
-            - text: Running Flows
-              href: run.qmd
-            - text: Store
-              href: store.qmd
-            - text: Advanced
-              href: advanced.qmd
-
-  page-footer:
-    left:
-      - text: Meridian Labs
-        href: https://github.com/meridianlabs-ai/
-    center:
-      - text: Code
-        href: https://github.com/meridianlabs-ai/inspect_flow
-      - text: License
-        href: https://github.com/meridianlabs-ai/inspect_flow/blob/main/LICENSE
-      - text: Issues
-        href: https://github.com/meridianlabs-ai/inspect_flow/issues
-    right:
-      - icon: github
-        href: https://github.com/meridianlabs-ai/inspect_flow
-        aria-label: Inspect Flow on GitHub
-
-format:
-  html:
-    theme: [cosmo, theme.scss]
-    toc: true
-    toc-depth: 3
-    code-overflow: wrap
-    code-annotations: select
-    fig-width: 8
-    fig-height: 4
-    syntax-definitions: 
-      - jinja2.xml
+        - text: Introduction
+          href: index.qmd#introduction
+        - text: Getting Started
+          href: index.qmd#getting-started
+        - text: Basic Example
+          href: index.qmd#basic-example
+    - text: Using Flow
+      contents:
+        - text: Flow Concepts
+          href: flow_concepts.qmd
+        - text: Defaults
+          href: defaults.qmd
+        - text: Matrixing
+          href: matrix.qmd
+        - text: Running Flows
+          href: run.qmd
+        - text: Store
+          href: store.qmd
+        - text: Advanced
+          href: advanced.qmd
 
 execute:
   enabled: false

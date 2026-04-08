@@ -1,6 +1,7 @@
 ---
 title: "Inspect Flow"
 description: "Workflow Orchestration for Inspect AI"
+llms-description: Introduction, getting started, and basic example.
 tbl-colwidths: [30,70]
 ---
 
