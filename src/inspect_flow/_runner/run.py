@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from contextlib import nullcontext
 from datetime import timedelta
 from logging import getLogger
 
@@ -19,6 +20,7 @@ from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
+from inspect_flow._runner.hooks import flow_store_hook
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import (
     find_existing_logs,
@@ -112,77 +114,84 @@ def run_eval_set(
 
     update_log_level(log_level)
 
+    store_hook = (
+        flow_store_hook(store, resolved_spec.log_dir)
+        if store is not None and (store_config is None or store_config.write)
+        else nullcontext()
+    )
+
     start_time = time.time()
-    try:
-        result = eval_set(
-            tasks=[t.task for t in tasks],
-            log_dir=cwd_relative_path(resolved_spec.log_dir),
-            retry_attempts=default_none(options.retry_attempts),
-            retry_wait=default_none(options.retry_wait),
-            retry_connections=default_none(options.retry_connections),
-            retry_cleanup=default_none(options.retry_cleanup),
-            # model= FlowTask
-            # model_base_url= FlowModel
-            # model_args= FlowModel
-            # model_roles= FlowTask
-            # task_args= FlowTask
-            sandbox=default_none(options.sandbox),
-            sandbox_cleanup=default_none(options.sandbox_cleanup),
-            # solver= FlowTask
-            tags=sequence_to_list(default_none(options.tags)),
-            metadata=default_none(options.metadata),
-            trace=default_none(options.trace),
-            display=default_none(display_type),
-            approval=default_none(options.approval),
-            score=default(options.score, True),
-            log_level=default_none(log_level),
-            log_level_transcript=default_none(options.log_level_transcript),
-            log_format=default_none(options.log_format),
-            limit=default_none(options.limit),
-            # sample_id= FlowTask
-            sample_shuffle=default_none(options.sample_shuffle),
-            # epochs= FlowTask
-            fail_on_error=default_none(options.fail_on_error),
-            continue_on_fail=default_none(options.continue_on_fail),
-            retry_on_error=default(options.retry_on_error, 3),
-            debug_errors=default_none(options.debug_errors),
-            # message_limit= FlowTask
-            # token_limit= FlowTask
-            # time_limit= FlowTask
-            # working_limit= FlowTask
-            # cost_limit= FlowTask
-            model_cost_config=default_none(options.model_cost_config),
-            max_samples=default_none(options.max_samples),
-            max_tasks=default(options.max_tasks, 10),
-            max_subprocesses=default_none(options.max_subprocesses),
-            max_sandboxes=default_none(options.max_sandboxes),
-            log_samples=default_none(options.log_samples),
-            log_realtime=default_none(options.log_realtime),
-            log_images=default_none(options.log_images),
-            log_model_api=default_none(options.log_model_api),
-            log_refusals=default_none(options.log_refusals),
-            log_buffer=default_none(options.log_buffer),
-            log_shared=default_none(options.log_shared),
-            bundle_dir=default_none(options.bundle_dir),
-            bundle_overwrite=default(options.bundle_overwrite, False),
-            log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
-            eval_set_id=default_none(options.eval_set_id),
-            embed_viewer=default(options.embed_viewer, False),
-            # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
-        )
-    except (KeyboardInterrupt, click.Abort):
-        flow_print(Rule("Eval Set Interrupted"))
-        result = None
-    except Exception as e:
-        if isinstance(e, PrerequisiteError):
-            _fix_prerequisite_error_message(e)
-        if error_string := str(e):
-            flow_print(error_string, format="error")
-        flow_print(Rule("Eval Set Failed with Exception"))
-        if error_string:
-            raise FlowHandledError from e
-        else:
-            raise
+    with store_hook:
+        try:
+            result = eval_set(
+                tasks=[t.task for t in tasks],
+                log_dir=cwd_relative_path(resolved_spec.log_dir),
+                retry_attempts=default_none(options.retry_attempts),
+                retry_wait=default_none(options.retry_wait),
+                retry_connections=default_none(options.retry_connections),
+                retry_cleanup=default_none(options.retry_cleanup),
+                # model= FlowTask
+                # model_base_url= FlowModel
+                # model_args= FlowModel
+                # model_roles= FlowTask
+                # task_args= FlowTask
+                sandbox=default_none(options.sandbox),
+                sandbox_cleanup=default_none(options.sandbox_cleanup),
+                # solver= FlowTask
+                tags=sequence_to_list(default_none(options.tags)),
+                metadata=default_none(options.metadata),
+                trace=default_none(options.trace),
+                display=default_none(display_type),
+                approval=default_none(options.approval),
+                score=default(options.score, True),
+                log_level=default_none(log_level),
+                log_level_transcript=default_none(options.log_level_transcript),
+                log_format=default_none(options.log_format),
+                limit=default_none(options.limit),
+                # sample_id= FlowTask
+                sample_shuffle=default_none(options.sample_shuffle),
+                # epochs= FlowTask
+                fail_on_error=default_none(options.fail_on_error),
+                continue_on_fail=default_none(options.continue_on_fail),
+                retry_on_error=default(options.retry_on_error, 3),
+                debug_errors=default_none(options.debug_errors),
+                # message_limit= FlowTask
+                # token_limit= FlowTask
+                # time_limit= FlowTask
+                # working_limit= FlowTask
+                # cost_limit= FlowTask
+                model_cost_config=default_none(options.model_cost_config),
+                max_samples=default_none(options.max_samples),
+                max_tasks=default(options.max_tasks, 10),
+                max_subprocesses=default_none(options.max_subprocesses),
+                max_sandboxes=default_none(options.max_sandboxes),
+                log_samples=default_none(options.log_samples),
+                log_realtime=default_none(options.log_realtime),
+                log_images=default_none(options.log_images),
+                log_model_api=default_none(options.log_model_api),
+                log_refusals=default_none(options.log_refusals),
+                log_buffer=default_none(options.log_buffer),
+                log_shared=default_none(options.log_shared),
+                bundle_dir=default_none(options.bundle_dir),
+                bundle_overwrite=default(options.bundle_overwrite, False),
+                log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
+                eval_set_id=default_none(options.eval_set_id),
+                embed_viewer=default(options.embed_viewer, False),
+                # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
+            )
+        except (KeyboardInterrupt, click.Abort):
+            flow_print(Rule("Eval Set Interrupted"))
+            result = None
+        except Exception as e:
+            if isinstance(e, PrerequisiteError):
+                _fix_prerequisite_error_message(e)
+            if error_string := str(e):
+                flow_print(error_string, format="error")
+            flow_print(Rule("Eval Set Failed with Exception"))
+            if error_string:
+                raise FlowHandledError from e
+            else:
+                raise
 
     if not result:
         with ReadLogsProgress() as progress:

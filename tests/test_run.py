@@ -1496,6 +1496,35 @@ def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     assert "Test error from eval_set" in str(e.value.__cause__)
 
 
+def test_store_hook_adds_log_during_eval() -> None:
+    log_dir = init_test_logs()
+    store_dir = init_test_store()
+
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store=FlowStoreConfig(path=store_dir),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+
+    store_logs_during_eval: set[str] = set()
+
+    def eval_set_then_check_store(*args: Any, **kwargs: Any) -> Any:
+        result = eval_set(*args, **kwargs)
+        # Check the store BEFORE eval_set returns to run_eval_set,
+        # proving the hook added the log during execution
+        store = store_factory(store_dir, base_dir=".")
+        assert store is not None
+        store_logs_during_eval.update(store.get_logs())
+        return result
+
+    with patch(
+        "inspect_flow._runner.run.eval_set", side_effect=eval_set_then_check_store
+    ):
+        run_eval_set(spec=spec, base_dir=".")
+
+    assert len(store_logs_during_eval) == 1
+
+
 def test_store_write_on_keyboard_interrupt() -> None:
     log_dir = init_test_logs()
     store_dir = init_test_store()
