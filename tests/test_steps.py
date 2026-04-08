@@ -18,6 +18,7 @@ from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
 from inspect_flow._store.deltalake import DeltaLakeStore
+from inspect_flow._store.store import store_factory
 from rich.console import Console
 
 
@@ -721,6 +722,23 @@ def test_copy_with_store_writes_new_logs(tmp_path: Path) -> None:
     assert result is not None
 
     store = DeltaLakeStore(store_path=store_dir)
+    store_logs = store.get_logs()
+    assert any("dest" in log for log in store_logs), (
+        f"Expected new log in store, got: {store_logs}"
+    )
+
+
+def test_copy_with_store_path_writes_new_logs(tmp_path: Path) -> None:
+    """When store= is a string path, copy resolves it and adds new logs."""
+    log_path = _make_log(tmp_path / "src")
+    store_dir = str(tmp_path / "store")
+
+    dest = str(tmp_path / "dest")
+    result = copy(log_path, dest=dest, store=store_dir)
+    assert result is not None
+
+    store = store_factory(store_dir, base_dir=str(tmp_path), quiet=True)
+    assert store is not None
     store_logs = store.get_logs()
     assert any("dest" in log for log in store_logs), (
         f"Expected new log in store, got: {store_logs}"

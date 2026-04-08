@@ -24,7 +24,7 @@ def copy(
     dest: str,
     source_prefix: str | None = None,
     overwrite: bool = False,
-    store: FlowStore | None = None,
+    store: FlowStore | str | None = None,  # noqa: ARG001 handled by @step wrapper
 ) -> EvalLog | None:
     """Copy eval logs to a destination directory.
 
