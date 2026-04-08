@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 from collections.abc import Callable, Collection
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from logging import getLogger
@@ -15,7 +15,6 @@ from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai._util.file import exists, file
 from inspect_ai.log import (
     EvalLog,
-    LogUpdate,
     MetadataEdit,
     TagsEdit,
     read_eval_log_async,
@@ -196,16 +195,19 @@ def _samples_str(header_result: _HeaderResult) -> str:
 
 @dataclass
 class LogEntry:
-    log_path: str
+    header_result: _HeaderResult
     task: str
     qualifier: Text
-    status: str
-    samples: str
-    duration: str
-    date: str
-    tags: list[str]
-    log_updates: list[LogUpdate] = field(default_factory=list)
     viewer_url: str | None = None
+    show_provenance: bool = False
+
+    @property
+    def log_path(self) -> str:
+        return self.header_result.log_path
+
+    @property
+    def header(self) -> EvalLog:
+        return self.header_result.header
 
 
 def _compute_entries(
@@ -223,16 +225,11 @@ def _compute_entries(
 
     return [
         LogEntry(
-            log_path=p,
+            header_result=headers[p],
             task=name,
             qualifier=qual,
-            status=headers[p].header.status,
-            samples=_samples_str(headers[p]),
-            duration=_duration_str(headers[p]),
-            date=_date_str(headers[p]),
-            tags=headers[p].header.tags,
-            log_updates=(headers[p].header.log_updates or []) if provenance else [],
             viewer_url=_viewer_url(p, spec) if spec else None,
+            show_provenance=provenance,
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
@@ -248,13 +245,15 @@ _TREE_GUIDE_WIDTH = 4
 
 def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
     log_path = entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
+    status = entry.header.status
+    tags = entry.header.tags
     return [
         Text(entry.task),
         entry.qualifier,
-        Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
-        Text(entry.samples),
-        Text(entry.duration),
-        Text(", ".join(entry.tags)) if entry.tags else Text(""),
+        Text(status, style=_STATUS_STYLES.get(status, "")),
+        Text(_samples_str(entry.header_result)),
+        Text(_duration_str(entry.header_result)),
+        Text(", ".join(tags)) if tags else Text(""),
         path(log_path),
         Text(entry.viewer_url or ""),
     ]
@@ -360,36 +359,42 @@ def _render_entry_multiline(entry: LogEntry) -> Text:
         result.append_text(entry.qualifier)
     result.append("\n")
 
-    if entry.date:
+    date = _date_str(entry.header_result)
+    if date:
         result.append("Date      ", style="grey50")
-        result.append(entry.date)
-        if entry.duration:
-            result.append(f", {entry.duration}")
+        result.append(date)
+        duration = _duration_str(entry.header_result)
+        if duration:
+            result.append(f", {duration}")
         result.append("\n")
 
-    if entry.tags:
+    tags = entry.header.tags
+    if tags:
         result.append("Tags      ", style="grey50")
-        result.append(", ".join(entry.tags))
+        result.append(", ".join(tags))
         result.append("\n")
 
-    for update in entry.log_updates:
-        prov = update.provenance
-        ts = prov.timestamp.strftime("%Y-%m-%d %H:%M:%S %z")
-        for edit in update.edits:
-            result.append("Edit      ", style="grey50")
-            result.append_text(_describe_edit(edit))
-            result.append("\n")
-            result.append("          ", style="grey50")
-            result.append(f"{prov.author}, {ts}", style="grey50")
-            if prov.reason:
-                result.append(f", {prov.reason}")
-            result.append("\n")
+    if entry.show_provenance:
+        for update in entry.header.log_updates or []:
+            prov = update.provenance
+            ts = prov.timestamp.strftime("%Y-%m-%d %H:%M:%S %z")
+            for edit in update.edits:
+                result.append("Edit      ", style="grey50")
+                result.append_text(_describe_edit(edit))
+                result.append("\n")
+                result.append("          ", style="grey50")
+                result.append(f"{prov.author}, {ts}", style="grey50")
+                if prov.reason:
+                    result.append(f", {prov.reason}")
+                result.append("\n")
 
+    status = entry.header.status
     result.append("Status    ", style="grey50")
-    result.append(entry.status, style=_STATUS_STYLES.get(entry.status, ""))
-    if entry.samples:
+    result.append(status, style=_STATUS_STYLES.get(status, ""))
+    samples = _samples_str(entry.header_result)
+    if samples:
         result.append(", ")
-        result.append(entry.samples)
+        result.append(samples)
         result.append(" samples")
     result.append("\n")
 
