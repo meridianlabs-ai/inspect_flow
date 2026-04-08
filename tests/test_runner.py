@@ -11,6 +11,7 @@ from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSp
 from inspect_ai.model import Model, get_model
 from inspect_flow._display.display import set_display, set_display_type
 from inspect_flow._runner.cli import _read_config, runner
+from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._runner.logs import (
     _epochs_reducer_changed,
     _num_samples,
@@ -29,8 +30,16 @@ from inspect_flow._runner.task_log import (
     task_log_to_task_info,
     unique_task_names,
 )
-from inspect_flow._types.flow_types import FlowOptions, FlowSpec, not_given
+from inspect_flow._types.flow_types import (
+    FlowFactory,
+    FlowOptions,
+    FlowSpec,
+    FlowTask,
+    not_given,
+)
 from rich.console import Console
+
+from tests.local_eval.build.lib.local_eval.noop import task_with_params
 
 
 def _render_text(renderable: object, width: int = 80) -> str:
@@ -258,6 +267,21 @@ class TestUniqueTaskNames:
         assert result.model_only is False
         assert "high" in result.names[0][1].plain
         assert "low" in result.names[1][1].plain
+
+    def test_factory_qualifiers(self) -> None:
+        model = get_model("mockllm/model-a")
+        ft1 = FlowTask(
+            factory=FlowFactory(task_with_params, subset="original"), model=model
+        )
+        ft2 = FlowTask(
+            factory=FlowFactory(task_with_params, subset="contrast"), model=model
+        )
+        tasks = instantiate_tasks(FlowSpec(tasks=[ft1, ft2]), base_dir=".")
+        infos = [TaskLogInfo(task=t.task, flow_task=t.flow_task) for t in tasks]
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
+        assert result.model_only is False
+        assert "original" in result.names[0][1].plain
+        assert "contrast" in result.names[1][1].plain
 
 
 class TestCreateTaskLogDisplay:

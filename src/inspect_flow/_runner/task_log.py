@@ -13,6 +13,7 @@ from rich.table import Table
 from rich.text import Text
 
 from inspect_flow._types.flow_types import (
+    FlowFactory,
     FlowTask,
 )
 from inspect_flow._util.console import path, pluralize
@@ -59,11 +60,16 @@ class TaskInfo:
 def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
     task = info.task
     solver_ri = registry_info(task.solver)
-    flow_args = info.flow_task.args if info.flow_task else None
+    flow_args = None
+    if info.flow_task:
+        if isinstance(info.flow_task.factory, FlowFactory):
+            flow_args = info.flow_task.factory.args
+        else:
+            flow_args = info.flow_task.args
     return TaskInfo(
         name=task.name,
         model=str(task.model) if task.model else None,
-        args=dict(flow_args) if isinstance(flow_args, dict) else None,
+        args=flow_args if isinstance(flow_args, dict) else None,
         model_roles=(
             {k: str(v) for k, v in task.model_roles.items()}
             if task.model_roles
