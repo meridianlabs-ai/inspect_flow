@@ -39,7 +39,7 @@ from inspect_flow._types.flow_types import (
 )
 from rich.console import Console
 
-from tests.local_eval.build.lib.local_eval.noop import task_with_params
+from tests.local_eval.src.local_eval.noop import task_with_params
 
 
 def _render_text(renderable: object, width: int = 80) -> str:
