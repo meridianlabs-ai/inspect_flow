@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 from collections.abc import Callable, Collection
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
 from logging import getLogger
@@ -13,7 +13,13 @@ import click
 import yaml
 from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai._util.file import exists, file
-from inspect_ai.log import EvalLog, read_eval_log_async
+from inspect_ai.log import (
+    EvalLog,
+    LogUpdate,
+    MetadataEdit,
+    TagsEdit,
+    read_eval_log_async,
+)
 from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.progress import Progress
@@ -47,6 +53,7 @@ class ListOptions:
     max_count: int | None = None
     oneline: bool = False
     page: bool = True
+    provenance: bool = False
 
 
 def _find_flow_yaml(dir_path: str) -> FlowSpec | None:
@@ -197,11 +204,14 @@ class LogEntry:
     duration: str
     date: str
     tags: list[str]
+    log_updates: list[LogUpdate] = field(default_factory=list)
     viewer_url: str | None = None
 
 
 def _compute_entries(
-    log_paths: list[str], headers: dict[str, _HeaderResult]
+    log_paths: list[str],
+    headers: dict[str, _HeaderResult],
+    provenance: bool = False,
 ) -> list[LogEntry]:
     """Compute task name and qualifier for a set of logs in the same directory."""
     valid = [p for p in log_paths if p in headers]
@@ -221,6 +231,7 @@ def _compute_entries(
             duration=_duration_str(headers[p]),
             date=_date_str(headers[p]),
             tags=headers[p].header.tags,
+            log_updates=(headers[p].header.log_updates or []) if provenance else [],
             viewer_url=_viewer_url(p, spec) if spec else None,
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
@@ -310,6 +321,33 @@ def _render_entries(entries: list[LogEntry]) -> str:
     return buf.getvalue()
 
 
+def _describe_edit(edit: TagsEdit | MetadataEdit) -> Text:
+    result = Text()
+    if isinstance(edit, TagsEdit):
+        result.append("tags ")
+        items: list[tuple[str, str]] = []
+        for t in edit.tags_add:
+            items.append((f"+{t}", "green"))
+        for t in edit.tags_remove:
+            items.append((f"-{t}", "red"))
+        for i, (text, style) in enumerate(items):
+            if i:
+                result.append(", ")
+            result.append(text, style=style)
+        return result
+    result.append("metadata ")
+    items = []
+    for k, v in (edit.metadata_set or {}).items():
+        items.append((f"+{k}={v}", "green"))
+    for k in edit.metadata_remove or []:
+        items.append((f"-{k}", "red"))
+    for i, (text, style) in enumerate(items):
+        if i:
+            result.append(", ")
+        result.append(text, style=style)
+    return result
+
+
 def _render_entry_multiline(entry: LogEntry) -> Text:
     result = Text()
     result.append_text(path(entry.log_path))
@@ -333,6 +371,19 @@ def _render_entry_multiline(entry: LogEntry) -> Text:
         result.append("Tags      ", style="grey50")
         result.append(", ".join(entry.tags))
         result.append("\n")
+
+    for update in entry.log_updates:
+        prov = update.provenance
+        ts = prov.timestamp.strftime("%Y-%m-%d %H:%M:%S %z")
+        for edit in update.edits:
+            result.append("Edit      ", style="grey50")
+            result.append_text(_describe_edit(edit))
+            result.append("\n")
+            result.append("          ", style="grey50")
+            result.append(f"{prov.author}, {ts}", style="grey50")
+            if prov.reason:
+                result.append(f", {prov.reason}")
+            result.append("\n")
 
     result.append("Status    ", style="grey50")
     result.append(entry.status, style=_STATUS_STYLES.get(entry.status, ""))
@@ -547,7 +598,7 @@ def _process_groups(
     headers = _read_headers(all_paths, options, progress=progress)
     entries: list[LogEntry] = []
     for group in dir_groups:
-        entries.extend(_compute_entries(group, headers))
+        entries.extend(_compute_entries(group, headers, provenance=options.provenance))
     return entries
 
 
@@ -767,6 +818,12 @@ class _MaxCountCommand(click.Command):
     help="Show each log on a single line (compact table format).",
 )
 @click.option(
+    "--provenance",
+    is_flag=True,
+    default=False,
+    help="Show provenance (edit history) for each log. Only displayed in multiline mode.",
+)
+@click.option(
     "--no-page",
     "no_page",
     is_flag=True,
@@ -839,6 +896,7 @@ def list_log(
     path: str | None,
     output_format: str,
     oneline: bool,
+    provenance: bool,
     no_page: bool,
     max_count: int | None,
     tasks: tuple[str, ...],
@@ -882,6 +940,7 @@ def list_log(
         max_count=max_count,
         oneline=oneline,
         page=not no_page,
+        provenance=provenance,
     )
     store = kwargs.get("store") or "auto"
     if live_interval is not None:
