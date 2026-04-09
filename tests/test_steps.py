@@ -860,3 +860,70 @@ def test_copy_to_s3_does_not_use_source_etag(mock_s3: BaseClient) -> None:
     # Verify the copy landed
     copied = read_eval_log(result.location)
     assert copied.eval.task == "test_task"
+
+
+# --- file-based step loading ---
+
+FILE_STEP_PATH = str(Path(__file__).parent / "config" / "file_step.py")
+
+
+def test_cli_file_step_group_help() -> None:
+    """flow step file.py --help lists steps from that file."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, [FILE_STEP_PATH, "--help"])
+    assert result.exit_code == 0
+    assert "file_step_a" in result.output
+    assert "file_step_b" in result.output
+
+
+def test_cli_file_step_subcommand_help() -> None:
+    """flow step file.py step_name --help shows that step's options."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, [FILE_STEP_PATH, "file_step_a", "--help"])
+    assert result.exit_code == 0
+    assert "--label" in result.output
+
+
+def test_cli_file_step_at_syntax_help() -> None:
+    """flow step file.py@step_name --help shows that step's options."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command, [f"{FILE_STEP_PATH}@file_step_a", "--help"]
+    )
+    assert result.exit_code == 0
+    assert "--label" in result.output
+
+
+def test_cli_file_step_run(tmp_path: Path) -> None:
+    """flow step file.py step_name PATH runs the step."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+    result = CliRunner().invoke(
+        step_command, [FILE_STEP_PATH, "file_step_a", "--label", "hello", log_path]
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "hello" in (reloaded.tags or [])
+
+
+def test_cli_file_step_at_syntax_run(tmp_path: Path) -> None:
+    """flow step file.py@step_name PATH runs the step."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+    result = CliRunner().invoke(
+        step_command,
+        [f"{FILE_STEP_PATH}@file_step_a", "--label", "world", log_path],
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert "world" in (reloaded.tags or [])
