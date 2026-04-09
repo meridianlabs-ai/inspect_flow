@@ -31,6 +31,53 @@ def _discover_steps() -> list[tuple[str, WrappedStepFunction]]:
     return [(registry_info(s).name.split("/")[-1], s) for s in steps]
 
 
+def _discover_steps_from_file(
+    file_path: str,
+) -> list[tuple[str, WrappedStepFunction]]:
+    """Load a Python file and return all @step functions defined in it."""
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    path = path.resolve()
+    if not path.exists():
+        raise click.BadParameter(f"File not found: {file_path}")
+    load_module(path)
+    steps = cast(
+        list[WrappedStepFunction], registry_find(lambda info: info.type == STEP_TYPE)
+    )
+    result = []
+    for s in steps:
+        original = getattr(s, "_step_func", s)
+        try:
+            source_file = Path(inspect.getfile(original)).resolve()
+        except (TypeError, OSError):
+            continue
+        if source_file == path:
+            result.append((registry_info(s).name.split("/")[-1], s))
+    return result
+
+
+def _file_step_group(
+    file_path: str, steps: list[tuple[str, WrappedStepFunction]]
+) -> click.Group:
+    """Create a Click Group for steps loaded from a specific file."""
+    step_map = dict(steps)
+
+    class FileStepGroup(click.Group):
+        def list_commands(self, ctx: click.Context) -> list[str]:
+            return sorted(step_map.keys())
+
+        def get_command(
+            self, ctx: click.Context, cmd_name: str
+        ) -> click.Command | None:
+            func = step_map.get(cmd_name)
+            if func:
+                return _step_to_command(cmd_name, func)
+            return None
+
+    return FileStepGroup(name=file_path, help=f"Steps from {file_path}")
+
+
 class StepGroup(click.Group):
     """Click group that lazily discovers @step-decorated functions as subcommands."""
 
@@ -38,6 +85,23 @@ class StepGroup(click.Group):
         return sorted(name for name, _ in _discover_steps())
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        # file.py@step_name — direct command from file
+        if "@" in cmd_name:
+            file_path, step_name = cmd_name.rsplit("@", 1)
+            if file_path.endswith(".py"):
+                for name, func in _discover_steps_from_file(file_path):
+                    if name == step_name:
+                        return _step_to_command(name, func)
+                return None
+
+        # file.py — group of steps from file
+        if cmd_name.endswith(".py"):
+            steps = _discover_steps_from_file(cmd_name)
+            if steps:
+                return _file_step_group(cmd_name, steps)
+            return None
+
+        # Normal registry lookup
         for name, func in _discover_steps():
             if name == cmd_name:
                 return _step_to_command(name, func)
@@ -249,6 +313,22 @@ def _is_list_of_str(annotation: object) -> bool:
     return False
 
 
-@click.group("step", cls=StepGroup, help="Run workflow steps on eval logs")
+@click.group(
+    "step",
+    cls=StepGroup,
+    help="""\
+Run workflow steps on eval logs.
+
+Steps are discovered from built-in steps, _flow.py files in the current
+directory tree, and Python entry points.
+
+You can also load steps from an arbitrary Python file:
+
+\b
+  flow step file.py --help          List steps in a file
+  flow step file.py STEP [ARGS]     Run a step from a file
+  flow step file.py@STEP [ARGS]     Shorthand for the above
+""",
+)
 def step_command() -> None:
     pass
