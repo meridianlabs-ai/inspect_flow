@@ -1,3 +1,4 @@
 ---
-title: flow store
+reference: flow store
+description: Manage the flow log store.
 ---

@@ -1,3 +1,4 @@
 ---
-title: flow config
+reference: flow config
+description: Display resolved flow configuration.
 ---

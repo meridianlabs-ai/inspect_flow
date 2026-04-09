@@ -1,5 +1,6 @@
 ---
 title: "Matrixing"
+llms-description: Parameter sweeping with matrix functions for systematic exploration.
 tbl-colwidths: [30,70]
 ---
 

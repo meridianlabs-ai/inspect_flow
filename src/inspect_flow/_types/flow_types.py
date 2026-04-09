@@ -264,7 +264,11 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
 
     Works with `FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, and `FlowModel`.
 
-    Args:
+    Positional and keyword arguments passed to the factory at construction are
+    collected into the `args` field and forwarded to the factory at evaluation
+    time.
+
+    Attributes:
         factory: Factory function (e.g. a `@task`-decorated function) or string
             registry name.
         *args: Positional arguments forwarded to the factory (callable only).

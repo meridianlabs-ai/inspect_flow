@@ -1,5 +1,6 @@
 ---
-title: inspect_flow
+reference: inspect_flow
+description: Core types and functions.
 ---
 
 ## Types

@@ -1625,7 +1625,9 @@ doc = [
     { name = "jupyter" },
     { name = "markdown" },
     { name = "panflute" },
+    { name = "pyyaml" },
     { name = "quarto-cli" },
+    { name = "types-pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1665,8 +1667,10 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17.0.0" },
     { name = "pydantic", specifier = ">=2.11.2" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
-    { name = "quarto-cli", marker = "extra == 'doc'" },
+    { name = "pyyaml", marker = "extra == 'doc'" },
+    { name = "quarto-cli", marker = "extra == 'doc'", specifier = ">=1.9.36" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.0" },
+    { name = "types-pyyaml", marker = "extra == 'doc'" },
     { name = "typing-extensions", specifier = ">=4.9.0" },
 ]
 provides-extras = ["doc"]

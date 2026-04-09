@@ -1,5 +1,6 @@
 ---
 title: "Flow Concepts"
+llms-description: Core concepts — FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies.
 tbl-colwidths: [30,70]
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Defaults, Inheritance and Overrides"
+llms-description: Defaults, inheritance, and overrides for configuration.
 tbl-colwidths: [30,70]
 ---
 

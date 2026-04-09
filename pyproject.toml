@@ -33,7 +33,15 @@ Documentation = "https://meridianlabs-ai.github.io/inspect_flow/"
 flow = "inspect_flow._cli.main:main"
 
 [project.optional-dependencies]
-doc = ["jupyter", "quarto-cli", "panflute", "markdown", "click"]
+doc = [
+    "jupyter",
+    "quarto-cli>=1.9.36",
+    "panflute",
+    "markdown",
+    "click",
+    "pyyaml",
+    "types-PyYAML",
+]
 
 [dependency-groups]
 dev = [

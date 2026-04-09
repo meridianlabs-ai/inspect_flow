@@ -1,5 +1,6 @@
 ---
 title: "Flow Store"
+llms-description: Persistent log store for reuse across runs.
 tbl-colwidths: [30,70]
 ---
 
