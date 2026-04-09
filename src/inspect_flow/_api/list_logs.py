@@ -30,7 +30,6 @@ def _filter_logs_by_date(
     for p in paths:
         ts = log_filename_ts(p)
         if ts is None:
-            filtered.append(p)
             continue
         if since_dt is not None and ts < since_dt:
             continue
@@ -57,9 +56,13 @@ def list_logs(
         store: The store to read logs from. Can be a `FlowStore` instance,
             a path, or `"auto"` for the default. Only used when `log_dir` is `None`.
         since: Only include logs whose filename timestamp is at or after this date.
-            Accepts a `datetime` or a date string (e.g. `"2 weeks ago"`, `"2024-01-15"`).
+            Accepts a `datetime` or a date string. Date strings like `"2024-01-15"`
+            resolve to midnight; relative expressions like `"today"` resolve to the
+            current time.
         until: Only include logs whose filename timestamp is at or before this date.
-            Accepts a `datetime` or a date string (e.g. `"yesterday"`, `"2024-06-01"`).
+            Accepts a `datetime` or a date string. Date strings like `"2024-06-01"`
+            resolve to midnight; relative expressions like `"yesterday"` resolve to
+            the current time minus one day.
     """
     ensure_init(dotenv_base_dir=".")
     if log_dir is not None:

@@ -2,6 +2,7 @@ import fnmatch
 import io
 import os
 import subprocess
+import time
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,8 +13,14 @@ import click
 import yaml
 from inspect_ai._util._async import run_coroutine, tg_collect
 from inspect_ai._util.file import exists, file
-from inspect_ai.log import EvalLog, read_eval_log_async
-from rich.console import Console
+from inspect_ai.log import (
+    EvalLog,
+    MetadataEdit,
+    TagsEdit,
+    read_eval_log_async,
+)
+from rich.console import Console, Group, RenderableType
+from rich.live import Live
 from rich.progress import Progress
 from rich.text import Text
 from rich.tree import Tree
@@ -43,6 +50,9 @@ class ListOptions:
     output_format: str = "table"
     log_filter: LogFilter | None = None
     max_count: int | None = None
+    oneline: bool = False
+    page: bool = True
+    provenance: bool = False
 
 
 def _find_flow_yaml(dir_path: str) -> FlowSpec | None:
@@ -143,7 +153,7 @@ def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
 
 _STATUS_STYLES: dict[str, str] = {
     "success": "green",
-    "cancelled": "yellow",
+    "cancelled": "gold3",
     "error": "red",
     "started": "cyan",
 }
@@ -156,7 +166,22 @@ def _duration_str(header_result: _HeaderResult) -> str:
     if not started or not completed:
         return ""
     delta = datetime.fromisoformat(completed) - datetime.fromisoformat(started)
-    return str(delta).split(".")[0]
+    total_seconds = int(delta.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
+    if minutes:
+        return f"{minutes}m {seconds:02d}s"
+    return f"{seconds}s"
+
+
+def _date_str(header_result: _HeaderResult) -> str:
+    started = header_result.header.stats.started_at
+    if not started:
+        return ""
+    dt = datetime.fromisoformat(started)
+    return dt.strftime("%Y-%m-%d %H:%M:%S %z")
 
 
 def _samples_str(header_result: _HeaderResult) -> str:
@@ -170,17 +195,25 @@ def _samples_str(header_result: _HeaderResult) -> str:
 
 @dataclass
 class LogEntry:
-    log_path: str
+    header_result: _HeaderResult
     task: str
     qualifier: Text
-    status: str
-    samples: str
-    duration: str
     viewer_url: str | None = None
+    show_provenance: bool = False
+
+    @property
+    def log_path(self) -> str:
+        return self.header_result.log_path
+
+    @property
+    def header(self) -> EvalLog:
+        return self.header_result.header
 
 
 def _compute_entries(
-    log_paths: list[str], headers: dict[str, _HeaderResult]
+    log_paths: list[str],
+    headers: dict[str, _HeaderResult],
+    provenance: bool = False,
 ) -> list[LogEntry]:
     """Compute task name and qualifier for a set of logs in the same directory."""
     valid = [p for p in log_paths if p in headers]
@@ -192,13 +225,11 @@ def _compute_entries(
 
     return [
         LogEntry(
-            p,
-            name,
-            qual,
-            headers[p].header.status,
-            _samples_str(headers[p]),
-            _duration_str(headers[p]),
-            _viewer_url(p, spec) if spec else None,
+            header_result=headers[p],
+            task=name,
+            qualifier=qual,
+            viewer_url=_viewer_url(p, spec) if spec else None,
+            show_provenance=provenance,
         )
         for p, (name, qual) in zip(valid, qualifiers.names, strict=True)
     ]
@@ -214,12 +245,15 @@ _TREE_GUIDE_WIDTH = 4
 
 def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
     log_path = entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
+    status = entry.header.status
+    tags = entry.header.tags
     return [
         Text(entry.task),
         entry.qualifier,
-        Text(entry.status, style=_STATUS_STYLES.get(entry.status, "")),
-        Text(entry.samples),
-        Text(entry.duration),
+        Text(status, style=_STATUS_STYLES.get(status, "")),
+        Text(_samples_str(entry.header_result)),
+        Text(_duration_str(entry.header_result)),
+        Text(", ".join(tags)) if tags else Text(""),
         path(log_path),
         Text(entry.viewer_url or ""),
     ]
@@ -286,6 +320,141 @@ def _render_entries(entries: list[LogEntry]) -> str:
     return buf.getvalue()
 
 
+def _describe_edit(edit: TagsEdit | MetadataEdit) -> Text:
+    result = Text()
+    if isinstance(edit, TagsEdit):
+        result.append("tags ")
+        items: list[tuple[str, str]] = []
+        for t in edit.tags_add:
+            items.append((f"+{t}", "green"))
+        for t in edit.tags_remove:
+            items.append((f"-{t}", "red"))
+        for i, (text, style) in enumerate(items):
+            if i:
+                result.append(", ")
+            result.append(text, style=style)
+        return result
+    result.append("metadata ")
+    items = []
+    for k, v in (edit.metadata_set or {}).items():
+        items.append((f"+{k}={v}", "green"))
+    for k in edit.metadata_remove or []:
+        items.append((f"-{k}", "red"))
+    for i, (text, style) in enumerate(items):
+        if i:
+            result.append(", ")
+        result.append(text, style=style)
+    return result
+
+
+def _render_entry_multiline(entry: LogEntry) -> Text:
+    result = Text()
+    result.append_text(path(entry.log_path))
+    result.append("\n")
+
+    result.append("Task      ", style="grey50")
+    result.append(entry.task)
+    if entry.qualifier.plain:
+        result.append(" ")
+        result.append_text(entry.qualifier)
+    result.append("\n")
+
+    date = _date_str(entry.header_result)
+    if date:
+        result.append("Date      ", style="grey50")
+        result.append(date)
+        duration = _duration_str(entry.header_result)
+        if duration:
+            result.append(f", {duration}")
+        result.append("\n")
+
+    tags = entry.header.tags
+    if tags:
+        result.append("Tags      ", style="grey50")
+        result.append(", ".join(tags))
+        result.append("\n")
+
+    if entry.show_provenance:
+        for update in entry.header.log_updates or []:
+            prov = update.provenance
+            ts = prov.timestamp.strftime("%Y-%m-%d %H:%M:%S %z")
+            for edit in update.edits:
+                result.append("Edit      ", style="grey50")
+                result.append_text(_describe_edit(edit))
+                result.append("\n")
+                result.append("          ", style="grey50")
+                result.append(f"{prov.author}, {ts}", style="grey50")
+                if prov.reason:
+                    result.append(f", {prov.reason}")
+                result.append("\n")
+
+    status = entry.header.status
+    result.append("Status    ", style="grey50")
+    result.append(status, style=_STATUS_STYLES.get(status, ""))
+    samples = _samples_str(entry.header_result)
+    if samples:
+        result.append(", ")
+        result.append(samples)
+        result.append(" samples")
+    result.append("\n")
+
+    if entry.viewer_url:
+        result.append("Viewer    ", style="grey50")
+        result.append(entry.viewer_url)
+        result.append("\n")
+
+    return result
+
+
+def _render_entries_multiline(entries: list[LogEntry]) -> str:
+    if not entries:
+        return ""
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=2**15)
+    for entry in entries:
+        console.print(_render_entry_multiline(entry))
+    return buf.getvalue()
+
+
+def _render(entries: list[LogEntry], oneline: bool) -> str:
+    if oneline:
+        return _render_entries(entries)
+    return _render_entries_multiline(entries)
+
+
+def _entries_renderable(
+    entries: list[LogEntry], oneline: bool, width: int, max_lines: int | None = None
+) -> RenderableType:
+    if oneline:
+        rows = [_make_cells(e) for e in entries]
+        widths = _col_widths(rows)
+        breaks = _break_columns(widths, width)
+        formatted = [_format_row(cells, widths, breaks) for cells in rows]
+        if max_lines is not None:
+            trimmed: list[Text] = []
+            total = 0
+            for row in formatted:
+                lines = row.plain.count("\n") + 1
+                if total + lines > max_lines:
+                    break
+                trimmed.append(row)
+                total += lines
+            formatted = trimmed
+        return Group(*formatted)
+    if max_lines is not None:
+        renderables: list[Text] = []
+        total = 0
+        for e in entries:
+            rendered = _render_entry_multiline(e)
+            lines = rendered.plain.count("\n") + 1
+            if total + lines > max_lines:
+                break
+            renderables.append(rendered)
+            total += lines
+        return Group(*renderables)
+    return Group(*[_render_entry_multiline(e) for e in entries])
+
+
 def _render_tree(renderable: Tree) -> str:
     buf = io.StringIO()
     Console(file=buf, force_terminal=True, width=2**15).print(renderable)
@@ -305,7 +474,11 @@ def _common_prefix(dirs: list[str]) -> str:
     return "/".join(prefix)
 
 
-def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
+def _build_tree(
+    dir_entries: list[tuple[str, list[LogEntry]]],
+    width: int,
+    max_lines: int | None = None,
+) -> Tree:
     all_cells = [
         _make_cells(e, filename_only=True)
         for _, entries in dir_entries
@@ -329,12 +502,16 @@ def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
         default=0,
     )
     tree_indent = _TREE_GUIDE_WIDTH * (max_depth + 1)
-    breaks = _break_columns(widths, Console().size.width - tree_indent)
+    breaks = _break_columns(widths, width - tree_indent)
 
     tree = Tree(prefix or ".")
     nodes: dict[str, Tree] = {}
     idx = 0
+    total_lines = 1  # root node
+    done = False
     for dir_path, entries in dir_entries:
+        if done:
+            break
         rel = dir_path[len(prefix) :].lstrip("/") if prefix else dir_path
         parts = [p for p in rel.split("/") if p]
         current: Tree = tree
@@ -343,12 +520,23 @@ def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
             built = f"{built}/{part}" if built else part
             if built not in nodes:
                 nodes[built] = current.add(part)
+                total_lines += 1
             current = nodes[built]
         for _ in entries:
-            current.add(_format_row(all_cells[idx], widths, breaks))
+            row = _format_row(all_cells[idx], widths, breaks)
+            row_lines = row.plain.count("\n") + 1
+            if max_lines is not None and total_lines + row_lines > max_lines:
+                done = True
+                break
+            current.add(row)
+            total_lines += row_lines
             idx += 1
 
-    return _render_tree(tree)
+    return tree
+
+
+def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
+    return _render_tree(_build_tree(dir_entries, Console().size.width))
 
 
 def _page_string(content: str) -> None:
@@ -415,8 +603,12 @@ def _process_groups(
     headers = _read_headers(all_paths, options, progress=progress)
     entries: list[LogEntry] = []
     for group in dir_groups:
-        entries.extend(_compute_entries(group, headers))
+        entries.extend(_compute_entries(group, headers, provenance=options.provenance))
     return entries
+
+
+def _lines_per_entry(oneline: bool) -> int:
+    return 1 if oneline else 6
 
 
 def _echo_logs(
@@ -429,8 +621,11 @@ def _echo_logs(
         _echo_tree(dir_groups, options, progress=progress)
         return
     page_size = Console().size.height - 1
-    total = min(sum(len(g) for g in dir_groups), options.max_count or float("inf"))
-    if os.isatty(1) and total > page_size:
+    lpe = _lines_per_entry(options.oneline)
+    total_entries = min(
+        sum(len(g) for g in dir_groups), options.max_count or float("inf")
+    )
+    if options.page and os.isatty(1) and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
         entries = _process_groups(dir_groups, options, progress=progress)
@@ -441,7 +636,7 @@ def _echo_logs(
         if not entries:
             flow_print("No logs found")
             return
-        click.echo(_render_entries(entries), nl=False)
+        click.echo(_render(entries, options.oneline), nl=False)
 
 
 def _paged_output(
@@ -455,6 +650,8 @@ def _paged_output(
     pager = env.get("PAGER", "less")
     proc = subprocess.Popen(pager.split(), stdin=subprocess.PIPE, env=env)
     assert proc.stdin
+    lpe = _lines_per_entry(options.oneline)
+    batch_entries = max(1, page_size // lpe)
     emitted = 0
     try:
         pending: list[list[str]] = []
@@ -463,7 +660,7 @@ def _paged_output(
         for group in dir_groups:
             pending.append(group)
             pending_count += len(group)
-            if pending_count >= page_size:
+            if pending_count >= batch_entries:
                 entries = _process_groups(
                     pending, options, progress=progress if first else None
                 )
@@ -474,7 +671,7 @@ def _paged_output(
                 if options.max_count is not None:
                     entries = entries[: options.max_count - emitted]
                 emitted += len(entries)
-                proc.stdin.write(_render_entries(entries).encode())
+                proc.stdin.write(_render(entries, options.oneline).encode())
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
@@ -489,7 +686,7 @@ def _paged_output(
             if options.max_count is not None:
                 entries = entries[: options.max_count - emitted]
             emitted += len(entries)
-            proc.stdin.write(_render_entries(entries).encode())
+            proc.stdin.write(_render(entries, options.oneline).encode())
             proc.stdin.flush()
     except BrokenPipeError:
         pass
@@ -501,6 +698,76 @@ def _paged_output(
         proc.wait()
     if emitted == 0:
         flow_print("No logs found")
+
+
+# -- Live output --------------------------------------------------------------
+
+
+def _compute_renderable(
+    log_dir: str | None,
+    store: str,
+    since: str | None,
+    until: str | None,
+    options: ListOptions,
+    console: Console,
+) -> RenderableType:
+    log_paths = list_logs(log_dir=log_dir, store=store, since=since, until=until)
+    if not log_paths:
+        return Text("No logs found")
+    log_paths_str = [path_str(p) for p in log_paths]
+    dir_groups = group_logs_by_dir(log_paths_str)
+
+    page_lines = console.size.height - 2
+
+    if options.output_format == "tree":
+        all_paths = [p for group in dir_groups for p in group]
+        headers = _read_headers(all_paths, options)
+        dir_entries: list[tuple[str, list[LogEntry]]] = []
+        count = 0
+        for group in dir_groups:
+            entries = _compute_entries(group, headers)
+            if not entries:
+                continue
+            if options.max_count is not None:
+                entries = entries[: options.max_count - count]
+            count += len(entries)
+            dir_path = group[0].rsplit("/", 1)[0] if "/" in group[0] else ""
+            dir_entries.append((dir_path, entries))
+            if options.max_count is not None and count >= options.max_count:
+                break
+        if not dir_entries:
+            return Text("No logs found")
+        return _build_tree(dir_entries, console.size.width, max_lines=page_lines)
+
+    entries = _process_groups(dir_groups, options)
+    if options.max_count is not None:
+        entries = entries[: options.max_count]
+    if not entries:
+        return Text("No logs found")
+    return _entries_renderable(
+        entries, options.oneline, console.size.width, max_lines=page_lines
+    )
+
+
+def _live_output(
+    log_dir: str | None,
+    store: str,
+    since: str | None,
+    until: str | None,
+    options: ListOptions,
+    interval: int,
+) -> None:
+    console = Console()
+    renderable = _compute_renderable(log_dir, store, since, until, options, console)
+    with Live(renderable, console=console, refresh_per_second=1) as live:
+        try:
+            while True:
+                time.sleep(interval)
+                live.update(
+                    _compute_renderable(log_dir, store, since, until, options, console)
+                )
+        except KeyboardInterrupt:
+            pass
 
 
 # -- CLI commands -------------------------------------------------------------
@@ -538,7 +805,7 @@ class _MaxCountCommand(click.Command):
 @list_command.command(
     "log",
     cls=_MaxCountCommand,
-    help="List logs, sorted by timestamp extracted from log file name.",
+    help="List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (--store auto).",
 )
 @store_options
 @filter_options
@@ -548,6 +815,25 @@ class _MaxCountCommand(click.Command):
     type=click.Choice(["table", "tree"]),
     default="table",
     help="Output format",
+)
+@click.option(
+    "--oneline",
+    is_flag=True,
+    default=False,
+    help="Show each log on a single line (compact table format).",
+)
+@click.option(
+    "--provenance",
+    is_flag=True,
+    default=False,
+    help="Show provenance (edit history) for each log. Only displayed in multiline mode.",
+)
+@click.option(
+    "--no-page",
+    "no_page",
+    is_flag=True,
+    default=False,
+    help="Disable paged output.",
 )
 @click.option(
     "-n",
@@ -572,6 +858,13 @@ class _MaxCountCommand(click.Command):
     help="Only show logs whose model matches PATTERN (glob). May be repeated.",
 )
 @click.option(
+    "--tag",
+    "tags",
+    multiple=True,
+    metavar="PATTERN",
+    help="Only show logs with a tag matching PATTERN (glob). May be repeated.",
+)
+@click.option(
     "--status",
     "statuses",
     multiple=True,
@@ -579,12 +872,21 @@ class _MaxCountCommand(click.Command):
     help="Only show logs with this status. May be repeated.",
 )
 @click.option(
+    "--live",
+    "live_interval",
+    type=int,
+    default=None,
+    is_flag=False,
+    flag_value=10,
+    help="Refresh display every N seconds (default: 10).",
+)
+@click.option(
     "--since",
     "--after",
     "since",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or after DATE (e.g. `'2 weeks ago'`, `'2024-01-15'`).",
+    help="Only show logs whose filename timestamp is at or after DATE. Date strings like `'2024-01-15'` resolve to midnight; relative expressions like `'today'` resolve to the current time.",
 )
 @click.option(
     "--until",
@@ -592,16 +894,21 @@ class _MaxCountCommand(click.Command):
     "until",
     default=None,
     metavar="DATE",
-    help="Only show logs whose filename timestamp is at or before DATE (e.g. `'yesterday'`, `'2024-06-01'`).",
+    help="Only show logs whose filename timestamp is at or before DATE. Date strings like `'2024-06-01'` resolve to midnight; relative expressions like `'yesterday'` resolve to the current time minus one day.",
 )
 @click.argument("path", required=False, default=None)
 def list_log(
     path: str | None,
     output_format: str,
+    oneline: bool,
+    provenance: bool,
+    no_page: bool,
     max_count: int | None,
     tasks: tuple[str, ...],
     models: tuple[str, ...],
+    tags: tuple[str, ...],
     statuses: tuple[str, ...],
+    live_interval: int | None,
     since: str | None,
     until: str | None,
     filter_name: tuple[str, ...],
@@ -621,6 +928,14 @@ def list_log(
             log_filter,
             lambda log: any(fnmatch.fnmatch(log.eval.model, p) for p in model_patterns),
         )
+    if tags:
+        tag_patterns = tags
+        log_filter = _chain(
+            log_filter,
+            lambda log: any(
+                fnmatch.fnmatch(t, p) for t in log.tags for p in tag_patterns
+            ),
+        )
     if statuses:
         status_set = set(statuses)
         log_filter = _chain(log_filter, lambda log: log.status in status_set)
@@ -628,13 +943,18 @@ def list_log(
         output_format=output_format,
         log_filter=log_filter,
         max_count=max_count,
+        oneline=oneline,
+        page=not no_page,
+        provenance=provenance,
     )
+    store = kwargs.get("store") or "auto"
+    if live_interval is not None:
+        _live_output(path, store, since, until, options, live_interval)
+        return
     progress = Progress(transient=True)
     progress.add_task("Listing logs…", total=None)
     progress.start()
-    log_paths = list_logs(
-        log_dir=path, store=kwargs.get("store") or "auto", since=since, until=until
-    )
+    log_paths = list_logs(log_dir=path, store=store, since=since, until=until)
     if not log_paths:
         progress.stop()
         flow_print("No logs found")

@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import sys
 from types import TracebackType
@@ -8,6 +9,20 @@ from botocore.exceptions import TokenRetrievalError
 from rich.traceback import install
 
 from inspect_flow._util.console import flow_print
+
+_sso_error_shown: bool = False
+
+
+def print_sso_error() -> None:
+    """Print a friendly message for expired AWS SSO tokens (once per process)."""
+    global _sso_error_shown
+    if _sso_error_shown:
+        return
+    _sso_error_shown = True
+    flow_print(
+        "[bold red]AWS SSO token has expired or is not available.[/bold red]"
+        " Run `aws sso login` to authenticate, then retry."
+    )
 
 
 def exception_hook() -> Callable[..., None]:
@@ -28,10 +43,7 @@ def exception_hook() -> Callable[..., None]:
             # Exit cleanly without traceback
             sys.exit(1)
         elif isinstance(exception, TokenRetrievalError):
-            # No need for stack trace - just print the error message
-            flow_print(
-                f"[bold red]{exception.__class__.__name__}:[/bold red] {str(exception)}"
-            )
+            print_sso_error()
             sys.exit(1)
         else:
             sys_handler(exception_type, exception, traceback)
@@ -42,11 +54,35 @@ def exception_hook() -> Callable[..., None]:
 _exception_hook_set: bool = False
 
 
+class _SSOTokenRefreshFilter(logging.Filter):
+    """Suppress boto/aiobotocore WARNING logs about SSO token refresh failures."""
+
+    _KEYWORDS = (
+        "SSO token refresh attempt failed",
+        "Refreshing temporary credentials failed during mandatory refresh period",
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if any(kw in msg for kw in self._KEYWORDS):
+            print_sso_error()
+            return False
+        return True
+
+
 def set_exception_hook(force: bool = False) -> None:
     global _exception_hook_set
     if not _exception_hook_set or force:
         install(show_locals=False, suppress=[click])
         sys.excepthook = exception_hook()
+        sso_filter = _SSOTokenRefreshFilter()
+        for name in (
+            "aiobotocore.tokens",
+            "aiobotocore.credentials",
+            "botocore.tokens",
+            "botocore.credentials",
+        ):
+            logging.getLogger(name).addFilter(sso_filter)
         _exception_hook_set = True
 
 

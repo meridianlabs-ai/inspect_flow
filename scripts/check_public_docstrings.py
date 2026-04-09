@@ -22,9 +22,19 @@ def find_definition(module_ast: ast.Module, name: str) -> ast.AST | None:
     """Find the definition of a name in a module AST."""
     for node in ast.walk(module_ast):
         if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            if node.name == name:
+            if node.name == name and not _is_overload(node):
                 return node
     return None
+
+
+def _is_overload(node: ast.FunctionDef | ast.ClassDef) -> bool:
+    if not isinstance(node, ast.FunctionDef):
+        return False
+    return any(
+        (isinstance(d, ast.Name) and d.id == "overload")
+        or (isinstance(d, ast.Attribute) and d.attr == "overload")
+        for d in node.decorator_list
+    )
 
 
 def resolve_import(

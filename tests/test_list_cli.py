@@ -1,10 +1,12 @@
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 from click.testing import CliRunner
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
+from inspect_flow._steps.tag import metadata, tag
 from rich.console import Console
 
 LOG_DIR = "tests/test_logs/logs1"
@@ -20,6 +22,19 @@ def test_list_log(recording_console: Console) -> None:
     result = runner.invoke(list_command, ["log"], catch_exceptions=False)
     assert result.exit_code == 0
     assert "gpqa_diamond" in result.output
+    assert "Task " in result.output
+    assert "Status " in result.output
+    assert "samples" in result.output
+    assert "Date " in result.output
+
+
+def test_list_log_oneline(recording_console: Console) -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    result = runner.invoke(list_command, ["log", "--oneline"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "gpqa_diamond" in result.output
+    assert "Task:" not in result.output
 
 
 def test_list_log_empty_store(recording_console: Console) -> None:
@@ -128,3 +143,134 @@ def test_list_log_viewer_url_bundle_dir(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert f"https://example.com/bundle/#/logs/{_SAMPLE_LOG_FILENAME}" in result.output
+
+
+def _create_tagged_logs(tmp_path: Path) -> None:
+    """Create two logs: one tagged ['golden', 'v2'], one tagged ['draft']."""
+    for name, tags in [("log1", ["golden", "v2"]), ("log2", ["draft"])]:
+        dest = str(tmp_path / f"{name}.eval")
+        shutil.copy(_SAMPLE_LOG, dest)
+        tag(dest, add=tags)
+
+
+def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "Tags " in result.output
+    assert "golden" in result.output
+    assert "draft" in result.output
+
+
+def test_list_log_provenance(tmp_path: Path) -> None:
+    dest = str(tmp_path / "log1.eval")
+    shutil.copy(_SAMPLE_LOG, dest)
+    tag(dest, add=["v1"], author="alice", reason="initial tag")
+    tag(dest, add=["v2"], remove=["v1"], author="bob")
+    metadata(dest, set={"score": 0.95}, author="carol")
+    metadata(dest, remove=["score"], author="dave")
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--provenance"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    # tag edits
+    assert "tags +v1" in result.output
+    assert "alice" in result.output
+    assert "initial tag" in result.output
+    assert "tags +v2, -v1" in result.output
+    assert "bob" in result.output
+    # metadata edits
+    assert "metadata +score=0.95" in result.output
+    assert "carol" in result.output
+    assert "metadata -score" in result.output
+    assert "dave" in result.output
+
+
+def test_list_log_provenance_hidden_by_default(tmp_path: Path) -> None:
+    dest = str(tmp_path / "log1.eval")
+    shutil.copy(_SAMPLE_LOG, dest)
+    tag(dest, add=["v1"], author="alice")
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "Edit " not in result.output
+
+
+def test_list_log_tag_filter(tmp_path: Path) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path), "--tag", "golden"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" not in result.output
+
+
+def test_list_log_tag_filter_multiple(tmp_path: Path) -> None:
+    """Multiple --tag flags use OR: matches logs with any of the tags."""
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--tag", "golden", "--tag", "draft"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" in result.output
+
+
+def test_list_log_tag_filter_glob(tmp_path: Path) -> None:
+    """Tag patterns support glob matching."""
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path), "--tag", "v*"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "log1" in result.output
+    assert "log2" not in result.output
+
+
+def test_list_log_tag_filter_no_match(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    _create_tagged_logs(tmp_path)
+    result = CliRunner().invoke(
+        list_command,
+        ["log", str(tmp_path), "--tag", "nonexistent"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+    assert "No logs found" in captured
+
+
+def test_list_log_live() -> None:
+    with patch("inspect_flow._cli.list.time.sleep", side_effect=KeyboardInterrupt):
+        result = CliRunner().invoke(
+            list_command,
+            ["log", LOG_DIR, "--live"],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0
+
+
+def test_list_log_live_custom_interval() -> None:
+    calls: list[int] = []
+
+    def _fake_sleep(n: int) -> None:
+        calls.append(n)
+        raise KeyboardInterrupt
+
+    with patch("inspect_flow._cli.list.time.sleep", side_effect=_fake_sleep):
+        result = CliRunner().invoke(
+            list_command,
+            ["log", LOG_DIR, "--live=5"],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0
+    assert calls == [5]

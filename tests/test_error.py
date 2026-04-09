@@ -2,23 +2,27 @@ import sys
 
 import pytest
 from inspect_flow._util import error
-from inspect_flow._util.error import FlowHandledError, set_exception_hook
+from inspect_flow._util.error import (
+    FlowHandledError,
+    print_sso_error,
+    set_exception_hook,
+)
 from pytest import CaptureFixture
 from rich.console import Console
 
 
 @pytest.fixture(autouse=True)
 def restore_exception_hook():
-    """Fixture to save and restore sys.excepthook and the global flag."""
-    # Save original state
+    """Fixture to save and restore sys.excepthook and the global flags."""
     original_hook = sys.excepthook
     original_flag = error._exception_hook_set
+    original_sso_flag = error._sso_error_shown
 
     yield
 
-    # Restore original state after test
     sys.excepthook = original_hook
     error._exception_hook_set = original_flag
+    error._sso_error_shown = original_sso_flag
 
 
 def test_set_exception_hook_is_idempotent():
@@ -92,6 +96,36 @@ def test_469_exception_hook_handles_keyboard_interrupt(
 
     # Should NOT print anything (clean exit)
     assert recording_console.export_text() == ""
+
+
+def test_602_exception_hook_handles_token_retrieval_error(
+    recording_console: Console,
+) -> None:
+    """Test that TokenRetrievalError shows a friendly message without traceback."""
+    from botocore.exceptions import TokenRetrievalError
+
+    set_exception_hook()
+
+    exc = TokenRetrievalError(
+        provider="sso", error_msg="Token has expired and refresh failed"
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        sys.excepthook(type(exc), exc, None)
+
+    assert exc_info.value.code == 1
+
+    output = recording_console.export_text()
+    assert "aws sso login" in output
+    assert "Traceback" not in output
+
+
+def test_602_print_sso_error_shows_once(recording_console: Console) -> None:
+    """Test that print_sso_error only shows the message once per process."""
+    print_sso_error()
+    print_sso_error()
+    output = recording_console.export_text()
+    assert output.count("aws sso login") == 1
 
 
 def test_469_exception_hook_handles_click_abort(recording_console: Console) -> None:

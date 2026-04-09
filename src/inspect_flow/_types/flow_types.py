@@ -14,6 +14,7 @@ from typing import (
     Sequence,
     TypeAlias,
     TypeVar,
+    overload,
 )
 
 import rich.repr
@@ -255,8 +256,12 @@ R = TypeVar("R", bound=Task | Agent | Solver | Scorer | Model)
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
     """Type-checked factory wrapper for creating Inspect AI objects.
 
-    Wraps a factory callable with its arguments, binding them at construction time
-    so that type errors are caught immediately rather than at evaluation time.
+    Wraps a factory callable or string reference with its arguments. When a
+    callable is provided, arguments are bound at construction time so that type
+    errors are caught immediately rather than at evaluation time. When a string
+    is provided, it is treated as a registry name (equivalent to passing a string
+    directly to the ``factory`` field of the parent Flow type).
+
     Works with `FlowTask`, `FlowAgent`, `FlowSolver`, `FlowScorer`, and `FlowModel`.
 
     Positional and keyword arguments passed to the factory at construction are
@@ -264,11 +269,13 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
     time.
 
     Attributes:
-        factory: Factory function (e.g. a `@task`-decorated function).
-        args: Arguments forwarded to the factory at evaluation time.
+        factory: Factory function (e.g. a `@task`-decorated function) or string
+            registry name.
+        *args: Positional arguments forwarded to the factory (callable only).
+        **kwargs: Keyword arguments forwarded to the factory.
     """
 
-    factory: Callable[..., R]
+    factory: Callable[..., R] | str
     args: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="wrap")
@@ -285,9 +292,17 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
             raise ValueError("Expected a FlowFactory instance or dict with 'factory'")
         return handler(value)
 
+    @overload
+    def __init__(self, factory: str, **kw_args: Any) -> None: ...
+
+    @overload
+    def __init__(
+        self, factory: Callable[P, R], *pos_args: P.args, **kw_args: P.kwargs
+    ) -> None: ...
+
     def __init__(
         self,
-        factory: Callable[P, R],
+        factory: Callable[P, R] | str,
         *pos_args: P.args,
         **kw_args: P.kwargs,
     ) -> None:
@@ -299,12 +314,15 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
             )
             object.__setattr__(self, "__pydantic_fields_set__", {"factory", "args"})
             object.__setattr__(self, "__pydantic_extra__", None)
+        elif isinstance(factory, str):
+            super().__init__(factory=factory, args=kw_args)
         else:
             sig = inspect.signature(factory)
             bound = sig.bind(*pos_args, **kw_args)
             super().__init__(factory=factory, args=dict(bound.arguments))
 
     def instantiate(self) -> R:
+        assert callable(self.factory)
         return self.factory(**self.args)
 
 

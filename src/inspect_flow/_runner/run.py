@@ -90,10 +90,12 @@ def run_eval_set(
     task_log_info = logs_result.task_log_info
 
     with RunAction("evalset") as action:
-        action.print(create_task_log_display(task_log_info, mode="pre-run"))
+        task_log = create_task_log_display(task_log_info, mode="pre-run")
+        action.print(task_log.display)
         if option_str := _option_string(options):
             action.print("\nOptions:", option_str)
         action.print("")
+        action.print(task_log.summary)
         action.print("Log dir:", path(resolved_spec.log_dir), copyable=True)
         if options.embed_viewer:
             print_url = apply_bundle_url_mappings(
@@ -250,7 +252,9 @@ def _print_result(
         Text.assemble(
             summary, "\n", format_prefix("info"), " Total Time: ", elapsed, "\n"
         ),
-        task_log,
+        task_log.display,
+        Text(""),
+        task_log.summary,
     ]
     flow_print(
         Panel(

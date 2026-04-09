@@ -41,6 +41,7 @@ See [src/inspect_flow/README.md](src/inspect_flow/README.md) for detailed module
 - Format code: `ruff format`
 - Lint code: `ruff check --fix`
 - Type check: `pyright`
+- **Do not use `uv run`** to execute Python commands — it re-syncs the lockfile and can overwrite editable installs. Use `python` directly instead.
 
 ## Code Style Guidelines
 - **Formatting**: Follow Google style convention. Use ruff for formatting

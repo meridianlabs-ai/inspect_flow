@@ -34,7 +34,11 @@ from inspect_flow._runner.run import run_eval_set
 from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
-from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.logging import (
+    get_last_log_level,
+    init_flow_logging,
+    update_log_level,
+)
 from rich.console import Console
 
 from .test_helpers.log_helpers import init_test_logs, init_test_store, verify_test_logs
@@ -115,6 +119,7 @@ def test_spec_log_level_applied_to_eval_set(recording_console: Console) -> None:
     flow_handler = root_rich_handlers[0]
 
     saved = _logHandler["handler"]
+    saved_log_level = get_last_log_level()
     _logHandler["handler"] = flow_handler
     try:
         log_dir = init_test_logs()
@@ -132,6 +137,7 @@ def test_spec_log_level_applied_to_eval_set(recording_console: Console) -> None:
         assert "flow-spec-log-level-debug-marker" in recording_console.export_text()
     finally:
         _logHandler["handler"] = saved
+        update_log_level(saved_log_level)
 
 
 def test_model_generate_config(mock_eval_set: MagicMock) -> None:
@@ -933,21 +939,16 @@ def test_217_bundle_error_message(tmp_path: Path) -> None:
     log_dir = init_test_logs()
 
     bundle_dir = str(tmp_path / "bundle_test")
+    Path(bundle_dir).mkdir()
+
     config = FlowSpec(
         log_dir=log_dir,
         options=FlowOptions(bundle_dir=bundle_dir),
         tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
     )
 
-    run_eval_set(spec=(config), base_dir=".")
-
-    assert config.tasks
-    config.tasks = list(config.tasks) + [
-        FlowTask(name=task_file + "@noop", model="mockllm/mock-llm2")
-    ]
-
     with pytest.raises(FlowHandledError) as e:
-        run_eval_set(spec=(config), base_dir=".")
+        run_eval_set(spec=config, base_dir=".")
     assert e.value.__cause__
     assert isinstance(e.value.__cause__, PrerequisiteError)
     assert "'bundle_overwrite'" in str(e.value.__cause__.message)

@@ -86,6 +86,8 @@ def execute_src_and_get_last_result(
         return g.get(target_id), g
     function = g.get(target_id)
     assert function and callable(function)
-    if hasattr(function, INSPECT_FLOW_AFTER_LOAD_ATTR):
+    if hasattr(function, INSPECT_FLOW_AFTER_LOAD_ATTR) or hasattr(
+        function, "_step_func"
+    ):
         return None, g
     return function(**args), g

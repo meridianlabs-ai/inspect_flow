@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "tomli>=2.0.0;python_version<'3.11'",
     "typing_extensions>=4.9.0",
+    "griffe>=1.0.0",
 ]
 
 [project.urls]
@@ -35,7 +36,6 @@ flow = "inspect_flow._cli.main:main"
 doc = [
     "jupyter",
     "quarto-cli>=1.9.36",
-    "griffe",
     "panflute",
     "markdown",
     "click",
@@ -48,7 +48,6 @@ dev = [
     "anthropic",
     "datamodel-code-generator",
     "deepdiff",
-    "griffe",
     "flask",
     "flask-cors",
     "local-eval",

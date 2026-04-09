@@ -2,22 +2,28 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
 from inspect_ai.log import EvalLog
 from inspect_ai.model._generate_config import GenerateConfig
-from rich.console import Group, RenderableType
+from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
 from inspect_flow._types.flow_types import (
+    FlowFactory,
     FlowTask,
 )
 from inspect_flow._util.console import path, pluralize
 
 TaskLogDisplayMode = Literal["check", "pre-run", "post-run"]
+
+
+class TaskLogDisplay(NamedTuple):
+    display: RenderableType
+    summary: RenderableType
 
 
 @dataclass
@@ -54,11 +60,16 @@ class TaskInfo:
 def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
     task = info.task
     solver_ri = registry_info(task.solver)
-    flow_args = info.flow_task.args if info.flow_task else None
+    flow_args = None
+    if info.flow_task:
+        if isinstance(info.flow_task.factory, FlowFactory):
+            flow_args = info.flow_task.factory.args
+        else:
+            flow_args = info.flow_task.args
     return TaskInfo(
         name=task.name,
         model=str(task.model) if task.model else None,
-        args=dict(flow_args) if isinstance(flow_args, dict) else None,
+        args=flow_args if isinstance(flow_args, dict) else None,
         model_roles=(
             {k: str(v) for k, v in task.model_roles.items()}
             if task.model_roles
@@ -218,7 +229,7 @@ def unique_task_names(infos: list[TaskInfo]) -> _TaskQualifiers:
     )
 
 
-def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
+def _summary(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> Text:
     total = len(task_log_info)
     num_complete = sum(
         1
@@ -287,8 +298,8 @@ def _header(task_log_info: dict[str, TaskLogInfo], mode: TaskLogDisplayMode) -> 
 def create_task_log_display(
     task_log_info: dict[str, TaskLogInfo],
     mode: TaskLogDisplayMode = "pre-run",
-) -> RenderableType:
-    header = _header(task_log_info, mode)
+) -> TaskLogDisplay:
+    summary = _summary(task_log_info, mode)
 
     infos = list(task_log_info.values())
     qualifiers = unique_task_names([task_log_to_task_info(i) for i in infos])
@@ -327,4 +338,4 @@ def create_task_log_display(
             tags = info.eval_log.tags if info.eval_log else None
             row.append(", ".join(tags) if tags else "")
         table.add_row(*row)
-    return Group(header, table)
+    return TaskLogDisplay(display=table, summary=summary)

@@ -17,6 +17,24 @@ from inspect_flow._util.logging import init_flow_logging
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+_STORE_OPTION_KWARGS: dict[str, Any] = dict(
+    is_flag=False,
+    flag_value="auto",
+    default=None,
+    envvar="INSPECT_FLOW_STORE",
+)
+
+
+def store_click_option(help: str = "Path to the store directory.") -> click.Option:
+    """Create a ``--store``/``-s`` `click.Option`."""
+    return click.Option(["--store", "-s"], help=help, **_STORE_OPTION_KWARGS)
+
+
+def store_option(f: F, help: str = "Path to the store directory.") -> F:
+    """Decorator that adds a ``--store``/``-s`` option."""
+    return click.option("--store", "-s", help=help, **_STORE_OPTION_KWARGS)(f)
+
+
 def output_options(f: F) -> F:
     f = click.option(
         "--log-level",
@@ -62,17 +80,18 @@ def base_config_options(f: F) -> F:
         type=str,
         envvar="INSPECT_FLOW_SET",
         help="""
-    Set config overrides.
+    Override any field in the flow config using dot notation (e.g. `field.subfield=value`).
+    The path corresponds to the fields of `FlowSpec` and its nested types
+    (`options`, `defaults`, `tasks`, etc.).
 
     Examples:
-      `--set defaults.solver.args.tool_calls=none`
       `--set options.limit=10`
+      `--set defaults.solver.args.tool_calls=none`
       `--set options.metadata={"key1": "val1", "key2": "val2"}`
 
-    The specified value may be a string or json parsable list or dict.
-    If string is provided then it will be appended to existing list values.
-    If json list or dict is provided then it will replace existing values.
-    If the same key is provided multiple times, later values will override earlier ones.
+    Values are parsed as JSON when possible (lists and dicts), otherwise as strings.
+    String values are appended to existing lists; JSON lists and dicts replace existing values.
+    When the same key is provided multiple times, later values override earlier ones.
     """,
     )(f)
     f = click.option(
@@ -136,19 +155,10 @@ def config_options(f: F) -> F:
         help="Limit the number of samples to run.",
         envvar="INSPECT_FLOW_LIMIT",
     )(f)
-    f = click.option(
-        "--store",
-        type=click.Path(
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            readable=True,
-            resolve_path=False,
-        ),
-        default=None,
+    f = store_option(
+        f,
         help="Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store.",
-        envvar="INSPECT_FLOW_STORE",
-    )(f)
+    )
     f = click.option(
         "--store-filter",
         type=str,
