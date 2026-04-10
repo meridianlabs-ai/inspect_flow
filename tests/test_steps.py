@@ -420,15 +420,18 @@ def test_return_none_skips(tmp_path: Path) -> None:
 def test_format_step_call_basic() -> None:
     from inspect_flow._steps.step import _format_step_call
 
-    assert _format_step_call("tag", {"add": ["golden"]}) == "tag(add=['golden'])"
+    assert (
+        _format_step_call("tag", 3, {"add": ["golden"]})
+        == "tag(logs=3, add=['golden'])"
+    )
 
 
 def test_format_step_call_hides_none() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", {"add": ["golden"], "remove": None})
-        == "tag(add=['golden'])"
+        _format_step_call("tag", 1, {"add": ["golden"], "remove": None})
+        == "tag(logs=1, add=['golden'])"
     )
 
 
@@ -436,25 +439,27 @@ def test_format_step_call_hides_empty_sequences() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", {"add": ["golden"], "remove": []})
-        == "tag(add=['golden'])"
+        _format_step_call("tag", 2, {"add": ["golden"], "remove": []})
+        == "tag(logs=2, add=['golden'])"
     )
     assert (
-        _format_step_call("tag", {"add": ["golden"], "remove": ()})
-        == "tag(add=['golden'])"
+        _format_step_call("tag", 2, {"add": ["golden"], "remove": ()})
+        == "tag(logs=2, add=['golden'])"
     )
 
 
 def test_format_step_call_converts_tuples_to_lists() -> None:
     from inspect_flow._steps.step import _format_step_call
 
-    assert _format_step_call("tag", {"add": ("tag1",)}) == "tag(add=['tag1'])"
+    assert (
+        _format_step_call("tag", 1, {"add": ("tag1",)}) == "tag(logs=1, add=['tag1'])"
+    )
 
 
 def test_format_step_call_no_args() -> None:
     from inspect_flow._steps.step import _format_step_call
 
-    assert _format_step_call("qa", {}) == "qa()"
+    assert _format_step_call("qa", 5, {}) == "qa(logs=5)"
 
 
 # --- CLI metadata --set ---

@@ -61,7 +61,7 @@ class _StepDecorator(Protocol):
     def __call__(self, func: StepFunction[P]) -> WrappedStepFunction[P]: ...
 
 
-def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
+def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
     def _format_value(v: Any) -> str:
         if isinstance(v, tuple):
             return repr(list(v))
@@ -73,7 +73,9 @@ def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
     args_str = ", ".join(
         f"{k}={_format_value(v)}" for k, v in kwargs.items() if not _is_empty(v)
     )
-    return f"{name}({args_str})"
+    return (
+        f"{name}(logs={n_logs}, {args_str})" if args_str else f"{name}(logs={n_logs})"
+    )
 
 
 def _to_step_result(result: StepResult | list[EvalLog]) -> StepResult:
@@ -112,10 +114,8 @@ def step(
                     return []
 
                 indent = "  " * (context.depth + 1)
-                if context.dry_run:
-                    indent = indent + " " * len("[DRY RUN] ")
                 console.print(
-                    f"{indent}[dim]{_format_step_call(f.__name__, kwargs)}[/dim]"
+                    f"{indent}{_format_step_call(f.__name__, len(context.logs), kwargs)}"
                 )
                 context.depth += 1
 
