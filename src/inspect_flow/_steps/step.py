@@ -1,5 +1,14 @@
-from collections.abc import Callable
-from typing import Any, Concatenate, NamedTuple, ParamSpec, Protocol, cast, overload
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    NamedTuple,
+    ParamSpec,
+    Protocol,
+    Sequence,
+    cast,
+    overload,
+)
 
 from inspect_ai._util.registry import (
     RegistryInfo,
@@ -18,16 +27,16 @@ STEP_TYPE = "step"
 class StepResult(NamedTuple):
     """Fine-grained return type for @step functions.
 
-    Steps can also return an EvalLog directly (equivalent to
-    StepResult(log=log, modified=True)) or None (equivalent to
+    Steps can also return a sequence of EvalLog directly (equivalent to
+    StepResult(logs=logs, modified=True)) or [] (equivalent to
     StepResult(modified=False, skip_log_steps=True)).
     """
 
-    log: EvalLog | None = None
-    """The log returned to the caller. None to skip remaining steps for this log."""
+    logs: list[EvalLog]
+    """The logs returned to the caller."""
 
     modified: bool = True
-    """Whether the log was modified. When True, the log is written back to disk
+    """Whether the logs were modified. When True, the logs are written back to disk
     and becomes the current log for subsequent nested steps. When False, the log
     is returned but the current context log is not advanced."""
 
@@ -39,8 +48,8 @@ class StepResult(NamedTuple):
 
 
 P = ParamSpec("P")
-StepFunction = Callable[Concatenate[EvalLog, P], StepResult | EvalLog | None]
-WrappedStepFunction = Callable[Concatenate[EvalLog | str, P], EvalLog | None]
+StepFunction = Callable[Concatenate[list[EvalLog], P], StepResult | list[EvalLog]]
+WrappedStepFunction = Callable[Concatenate[Sequence[EvalLog | str], P], list[EvalLog]]
 
 
 class _StepDecorator(Protocol):
@@ -68,49 +77,29 @@ def _format_step_call(name: str, kwargs: dict[str, Any]) -> str:
     return f"{name}({args_str})"
 
 
-def _to_step_result(result: StepResult | EvalLog | None) -> StepResult:
+def _to_step_result(result: StepResult | list[EvalLog]) -> StepResult:
     if isinstance(result, StepResult):
         return result
-    elif isinstance(result, EvalLog):
-        return StepResult(log=result, modified=True)
     else:
-        return StepResult(log=None, modified=False, skip_log_steps=True)
-
-
-@overload
-def step(
-    func: Callable[Concatenate[EvalLog, P], EvalLog],
-) -> Callable[Concatenate[EvalLog | str, P], EvalLog]: ...
-
-
-@overload
-def step(func: StepFunction[P]) -> WrappedStepFunction[P]: ...
-
-
-@overload
-def step(func: None = None, *, header_only: bool = ...) -> _StepDecorator: ...
+        return StepResult(logs=result, modified=True, skip_log_steps=False)
 
 
 def step(
-    func: StepFunction[P] | None = None,
-    *,
-    header_only: bool = True,
-) -> WrappedStepFunction[P] | Callable[[StepFunction[P]], WrappedStepFunction[P]]:
+    func: StepFunction[P],
+) -> WrappedStepFunction[P]:
     """Decorator to register a step function.
 
     Args:
         func: A function that takes a list of EvalLog objects and performs
             operations on them (tag, validate, copy, etc.).
-        header_only: If False, read full logs including samples. When nested,
-            raises if the outer step has not also read full logs.
     """
 
     def decorator(f: StepFunction[P]) -> WrappedStepFunction[P]:
         def step_wrapper(
-            log_or_path: EvalLog | str | None,
+            logs_or_paths: Sequence[EvalLog | str],
             *args: P.args,
             **kwargs: P.kwargs,
-        ) -> EvalLog | None:
+        ) -> list[EvalLog]:
             dry_run = bool(kwargs.pop("dry_run", False))
             store_value = kwargs.pop("store", None)
             if isinstance(store_value, str):
@@ -120,10 +109,10 @@ def step(
             else:
                 store = cast(FlowStore | None, store_value)
             with step_context(
-                log_or_path, dry_run=dry_run, step_name=f.__name__, store=store
+                logs_or_paths, dry_run=dry_run, step_name=f.__name__, store=store
             ) as context:
-                if context.log is None:
-                    return None
+                if not context.logs:
+                    return []
 
                 indent = "  " * (context.depth + 1)
                 if context.dry_run:
@@ -133,38 +122,21 @@ def step(
                 )
                 context.depth += 1
 
-                saved_samples = context.log.samples
-                saved_reductions = context.log.reductions
-                log_in = (
-                    context.log.model_copy(update={"samples": None, "reductions": None})
-                    if header_only
-                    else context.log
-                )
-
-                step_result = _to_step_result(f(log_in, *args, **kwargs))
+                step_result = _to_step_result(f(context.logs, *args, **kwargs))
                 context.depth -= 1
 
-                if step_result.log and header_only:
-                    step_result = step_result._replace(
-                        log=step_result.log.model_copy(
-                            update={
-                                "samples": saved_samples,
-                                "reductions": saved_reductions,
-                            }
-                        )
-                    )
-
-                if step_result.log and step_result.modified:
-                    context.dirty[step_result.log.location] = step_result.log
-                    context.log = step_result.log
+                if step_result.logs and step_result.modified:
+                    for log in step_result.logs:
+                        context.dirty[log.location] = log
+                    context.logs = step_result.logs
 
                 if step_result.flush:
                     context.write_dirty()
 
                 if step_result.skip_log_steps:
-                    return None
+                    return []
                 else:
-                    return step_result.log
+                    return step_result.logs
 
         step_wrapper._step_func = f  # type: ignore[attr-defined]
         name = registry_name(f, f.__name__)
@@ -174,6 +146,4 @@ def step(
         )
         return step_wrapper
 
-    if func is not None:
-        return decorator(func)
-    return decorator
+    return decorator(func)

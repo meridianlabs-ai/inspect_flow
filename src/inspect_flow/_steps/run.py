@@ -93,10 +93,6 @@ def run_step(
         return
     log_paths = sorted(log_paths, key=lambda p: p if isinstance(p, str) else p.location)
     total = len(log_paths)
-    for i, log_or_path in enumerate(log_paths, 1):
-        with step_context(
-            log_or_path, dry_run=dry_run, index=i, total=total, store=store
-        ) as ctx:
-            if ctx.log is None:
-                continue
-            step(log_or_path, *args, **kwargs)
+    with step_context(log_paths, dry_run=dry_run, total=total, store=store) as ctx:
+        if ctx.logs:
+            step(ctx.logs, *args, **kwargs)
