@@ -1,10 +1,9 @@
 from collections.abc import Sequence
-from typing import ParamSpec
+from typing import ParamSpec, cast
 
 from inspect_ai.log import EvalLog, list_eval_logs
-from inspect_ai.log._file import read_eval_log_headers
 
-from inspect_flow._steps.context import step_context
+from inspect_flow._steps.context import read_log_headers, step_context
 from inspect_flow._steps.step import WrappedStepFunction
 from inspect_flow._store.store import FlowStore
 from inspect_flow._types.flow_types import LogFilter
@@ -12,17 +11,12 @@ from inspect_flow._types.log_filter import resolve_log_filters
 from inspect_flow._util.console import console, flow_print
 
 
-def _expand_paths(
-    logs_or_paths: Sequence[EvalLog | str], recursive: bool = True
-) -> list[EvalLog | str]:
-    """Expand directories to individual log paths, pass EvalLog objects through."""
-    result: list[EvalLog | str] = []
-    for item in logs_or_paths:
-        if isinstance(item, EvalLog):
-            result.append(item)
-        else:
-            for info in list_eval_logs(item, recursive=recursive):
-                result.append(info.name)
+def _expand_paths(paths: Sequence[str], recursive: bool = True) -> list[str]:
+    """Expand directories to individual log paths."""
+    result: list[str] = []
+    for p in paths:
+        for info in list_eval_logs(p, recursive=recursive):
+            result.append(info.name)
     return result
 
 
@@ -31,7 +25,7 @@ P = ParamSpec("P")
 
 def run_step(
     step: WrappedStepFunction[P],
-    logs: Sequence[EvalLog | str] | EvalLog | str,
+    logs: list[str] | list[EvalLog] | EvalLog | str,
     dry_run: bool = False,
     filter: LogFilter | str | Sequence[LogFilter | str] | None = None,
     exclude: LogFilter | str | Sequence[LogFilter | str] | None = None,
@@ -62,16 +56,30 @@ def run_step(
     if dry_run:
         flow_print("[DRY RUN] will not write changes")
 
-    if isinstance(logs, (EvalLog, str)):
+    if isinstance(logs, str):
         logs = [logs]
-    log_paths = _expand_paths(logs, recursive=recursive) if expand_paths else list(logs)
+    elif isinstance(logs, EvalLog):
+        logs = [logs]
+
+    # Resolve to homogeneous lists
+    if logs and isinstance(logs[0], str):
+        str_paths = cast(list[str], logs)
+        resolved: list[str] | list[EvalLog] = (
+            _expand_paths(str_paths, recursive=recursive) if expand_paths else str_paths
+        )
+    else:
+        resolved = cast(list[EvalLog], logs)
+
     include_filters = resolve_log_filters(filter)
     exclude_filters = resolve_log_filters(exclude)
     if include_filters or exclude_filters:
         with console.status("[dim]Filtering...[/dim]"):
-            paths = [log for log in log_paths if isinstance(log, str)]
-            eval_logs = [log for log in log_paths if isinstance(log, EvalLog)]
-            log_headers = read_eval_log_headers(paths) + eval_logs
+            if isinstance(resolved[0], str):
+                log_headers = read_log_headers(cast(list[str], resolved))
+                eval_log_map: dict[str, EvalLog] = {}
+            else:
+                log_headers = cast(list[EvalLog], resolved)
+                eval_log_map = {log.location: log for log in log_headers}
             for nf in include_filters:
                 before = len(log_headers)
                 log_headers = [log for log in log_headers if nf.fn(log)]
@@ -84,15 +92,19 @@ def run_step(
                 flow_print(
                     f"Exclude: {nf.name} — {len(log_headers)}/{before} logs remaining"
                 )
-            eval_log_map = {log.location: log for log in eval_logs}
-            log_paths = [
-                eval_log_map.get(log.location, log.location) for log in log_headers
-            ]
-    if not log_paths:
+            # Preserve original in-memory EvalLogs where possible
+            resolved = [eval_log_map.get(log.location, log) for log in log_headers]
+
+    if not resolved:
         flow_print("No logs found", format="warning")
         return
-    log_paths = sorted(log_paths, key=lambda p: p if isinstance(p, str) else p.location)
-    total = len(log_paths)
-    with step_context(log_paths, dry_run=dry_run, total=total, store=store) as ctx:
+
+    if isinstance(resolved[0], str):
+        resolved = sorted(cast(list[str], resolved))
+    else:
+        resolved = sorted(cast(list[EvalLog], resolved), key=lambda log: log.location)
+
+    total = len(resolved)
+    with step_context(resolved, dry_run=dry_run, total=total, store=store) as ctx:
         if ctx.logs:
             step(ctx.logs, *args, **kwargs)

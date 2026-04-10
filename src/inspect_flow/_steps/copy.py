@@ -2,7 +2,7 @@ from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, basename, copy_file, exists
 from inspect_ai.log import EvalLog
 
-from inspect_flow._steps.context import read_log, step_context
+from inspect_flow._steps.context import read_log_headers, step_context
 from inspect_flow._steps.step import step
 from inspect_flow._store.store import FlowStore
 from inspect_flow._util.console import flow_print
@@ -50,4 +50,4 @@ def copy(
         else:
             copy_file(log.location, dest_path)
         dest_paths.append(dest_path)
-    return [read_log(path, header_only=True) for path in dest_paths]
+    return read_log_headers(dest_paths)

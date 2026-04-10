@@ -5,7 +5,6 @@ from typing import (
     NamedTuple,
     ParamSpec,
     Protocol,
-    Sequence,
     cast,
     overload,
 )
@@ -96,7 +95,7 @@ def step(
 
     def decorator(f: StepFunction[P]) -> WrappedStepFunction[P]:
         def step_wrapper(
-            logs_or_paths: Sequence[EvalLog | str],
+            logs_or_paths: list[str] | list[EvalLog],
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> list[EvalLog]:
@@ -108,9 +107,7 @@ def step(
                 )
             else:
                 store = cast(FlowStore | None, store_value)
-            with step_context(
-                logs_or_paths, dry_run=dry_run, step_name=f.__name__, store=store
-            ) as context:
+            with step_context(logs_or_paths, dry_run=dry_run, store=store) as context:
                 if not context.logs:
                     return []
 

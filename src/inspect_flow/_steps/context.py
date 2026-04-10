@@ -1,12 +1,14 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Iterator, Sequence
+from typing import Iterator, cast
 
 from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
+from inspect_ai.log._file import read_eval_log_headers
 
+from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._store.store import FlowStore
-from inspect_flow._util.console import console, path
+from inspect_flow._util.console import console
 
 
 @dataclass
@@ -45,26 +47,21 @@ def read_log(log_or_path: EvalLog | str, header_only: bool = False) -> EvalLog:
     return read_eval_log(log_or_path, header_only=header_only)
 
 
-def _log_header(location: str, context: StepContext) -> None:
-    prefix = "[DRY RUN] " if context.dry_run else ""
-    console.print(prefix, path(location), sep="")
+def read_log_headers(paths: list[str]) -> list[EvalLog]:
+    """Batch-read log headers from a list of paths."""
+    with ReadLogsProgress() as progress:
+        return read_eval_log_headers(paths, progress=progress)
 
 
 @contextmanager
 def step_context(
-    logs_or_paths: Sequence[EvalLog | str],
+    logs_or_paths: list[str] | list[EvalLog],
     *,
     dry_run: bool = False,
-    step_name: str = "step",
     total: int | None = None,
     store: FlowStore | None = None,
 ) -> Iterator[StepContext]:
     """Get or create a step context, optionally resolving a log.
-
-    When outer and given a path, reads the full log from disk.
-    When nested and given a path, raises ValueError.
-    When given an EvalLog, passes it through.
-    When given None, sets context.log to None.
 
     On clean exit, the outer context writes all dirty logs.
     """
@@ -78,19 +75,10 @@ def step_context(
         context = existing
         token = None
 
-    logs = []
-    for log_or_path in logs_or_paths:
-        if isinstance(log_or_path, EvalLog):
-            logs.append(log_or_path)
-            _log_header(log_or_path.location, context)
-        else:
-            _log_header(log_or_path, context)
-            try:
-                with console.status("[dim]Reading[/dim]"):
-                    logs.append(read_log(log_or_path, header_only=True))
-            except Exception:
-                console.print("  [red]Could not read log[/red]")
-    context.logs = logs
+    if logs_or_paths and isinstance(logs_or_paths[0], str):
+        context.logs = read_log_headers(cast(list[str], logs_or_paths))
+    else:
+        context.logs = list(cast(list[EvalLog], logs_or_paths))
 
     try:
         yield context
