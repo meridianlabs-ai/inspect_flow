@@ -581,3 +581,21 @@ def test_run_command_multiple_store_filters() -> None:
                 args={},
             ),
         )
+
+
+def test_no_duplicate_short_flags() -> None:
+    """Regression test for #656: -s was used by both --set and --store."""
+    import warnings
+
+    runner = CliRunner()
+    with (
+        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+        warnings.catch_warnings(record=True) as caught,
+    ):
+        warnings.simplefilter("always")
+        mock_config.return_value = MagicMock()
+        runner.invoke(run_command, [CONFIG_FILE], catch_exceptions=False)
+
+    duplicates = [w for w in caught if "is used more than once" in str(w.message)]
+    assert duplicates == [], [str(w.message) for w in duplicates]
