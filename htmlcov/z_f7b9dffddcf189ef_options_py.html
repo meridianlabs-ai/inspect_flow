@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-09 18:51 +0000
+            created at 2026-04-10 18:57 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -110,13 +110,13 @@
     <p class="pln"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="key">def</span> <span class="nam">store_click_option</span><span class="op">(</span><span class="nam">help</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="str">"Path to the store directory."</span><span class="op">)</span> <span class="op">-></span> <span class="nam">click</span><span class="op">.</span><span class="nam">Option</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">    <span class="str">"""Create a ``--store``/``-s`` `click.Option`."""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">    <span class="key">return</span> <span class="nam">click</span><span class="op">.</span><span class="nam">Option</span><span class="op">(</span><span class="op">[</span><span class="str">"--store"</span><span class="op">,</span> <span class="str">"-s"</span><span class="op">]</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="nam">help</span><span class="op">,</span> <span class="op">**</span><span class="nam">_STORE_OPTION_KWARGS</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">    <span class="str">"""Create a ``--store`` `click.Option`."""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">    <span class="key">return</span> <span class="nam">click</span><span class="op">.</span><span class="nam">Option</span><span class="op">(</span><span class="op">[</span><span class="str">"--store"</span><span class="op">]</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="nam">help</span><span class="op">,</span> <span class="op">**</span><span class="nam">_STORE_OPTION_KWARGS</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="key">def</span> <span class="nam">store_option</span><span class="op">(</span><span class="nam">f</span><span class="op">:</span> <span class="nam">F</span><span class="op">,</span> <span class="nam">help</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="str">"Path to the store directory."</span><span class="op">)</span> <span class="op">-></span> <span class="nam">F</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">    <span class="str">"""Decorator that adds a ``--store``/``-s`` option."""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="key">return</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span><span class="str">"--store"</span><span class="op">,</span> <span class="str">"-s"</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="nam">help</span><span class="op">,</span> <span class="op">**</span><span class="nam">_STORE_OPTION_KWARGS</span><span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">    <span class="str">"""Decorator that adds a ``--store`` option."""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="key">return</span> <span class="nam">click</span><span class="op">.</span><span class="nam">option</span><span class="op">(</span><span class="str">"--store"</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="nam">help</span><span class="op">,</span> <span class="op">**</span><span class="nam">_STORE_OPTION_KWARGS</span><span class="op">)</span><span class="op">(</span><span class="nam">f</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t"><span class="key">def</span> <span class="nam">output_options</span><span class="op">(</span><span class="nam">f</span><span class="op">:</span> <span class="nam">F</span><span class="op">)</span> <span class="op">-></span> <span class="nam">F</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -364,7 +364,7 @@
             <a class="nav" href="z_f7b9dffddcf189ef_run_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-09 18:51 +0000
+            created at 2026-04-10 18:57 +0000
         </p>
     </div>
 </footer>
