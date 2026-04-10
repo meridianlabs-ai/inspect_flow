@@ -78,17 +78,19 @@ def step_context(
         context = existing
         token = None
 
+    logs = []
     for log_or_path in logs_or_paths:
         if isinstance(log_or_path, EvalLog):
-            context.logs.append(log_or_path)
+            logs.append(log_or_path)
             _log_header(log_or_path.location, context)
         else:
             _log_header(log_or_path, context)
             try:
                 with console.status("[dim]Reading[/dim]"):
-                    context.logs.append(read_log(log_or_path, header_only=True))
+                    logs.append(read_log(log_or_path, header_only=True))
             except Exception:
                 console.print("  [red]Could not read log[/red]")
+    context.logs = logs
 
     try:
         yield context

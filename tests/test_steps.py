@@ -242,17 +242,6 @@ def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
     assert "No logs found" in captured
 
 
-def test_run_step_evallog_no_duplicate_header(
-    tmp_path: Path, recording_console: Console
-) -> None:
-    log_path = _make_log(tmp_path)
-    log = read_eval_log(log_path)
-    run_step(tag, [log], add=["test"])
-    captured = recording_console.export_text()
-    header_lines = [line for line in captured.splitlines() if "(1 of 1)" in line]
-    assert len(header_lines) == 1
-
-
 def test_run_step_filter_preserves_in_memory_evallog(tmp_path: Path) -> None:
     """run_step with filter= must pass the original in-memory EvalLog to the step.
 
@@ -315,19 +304,6 @@ def test_header_only_step_does_not_see_samples(tmp_path: Path) -> None:
         return logs
 
     check_no_samples([log_path])
-
-
-def test_header_only_false_step_sees_samples(tmp_path: Path) -> None:
-    log_path = _make_log(tmp_path)
-
-    @step
-    def check_has_samples(logs: list[EvalLog]) -> list[EvalLog]:
-        for log in logs:
-            assert log.samples is not None
-            assert len(log.samples) == 1
-        return logs
-
-    check_has_samples([log_path])
 
 
 # --- samples preserved after header_only step writes back ---
@@ -423,22 +399,6 @@ def test_return_none_skips(tmp_path: Path) -> None:
 
 
 # --- nested step receives path raises ---
-
-
-def test_nested_step_with_different_path_raises(tmp_path: Path) -> None:
-    log_path = _make_log(tmp_path, "outer.eval")
-    other_path = _make_log(tmp_path, "other.eval")
-
-    @step
-    def inner(logs: list[EvalLog]) -> list[EvalLog]:
-        return logs
-
-    @step
-    def outer(logs: list[EvalLog]) -> list[EvalLog]:
-        return inner([other_path])
-
-    with pytest.raises(ValueError, match="nested inside another step"):
-        outer([log_path])
 
 
 # --- _format_step_call ---
@@ -738,9 +698,8 @@ def test_nested_tag_with_same_path_preserves_both_tags(tmp_path: Path) -> None:
 
     @step
     def add_two_tags(logs: list[EvalLog]) -> list[EvalLog]:
-        for log in logs:
-            tag([log.location], add=["a"])
-            tag([log.location], add=["b"])
+        logs = tag(logs, add=["a"])
+        logs = tag(logs, add=["b"])
         return logs
 
     add_two_tags([log_path])

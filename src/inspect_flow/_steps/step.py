@@ -49,7 +49,7 @@ class StepResult(NamedTuple):
 
 P = ParamSpec("P")
 StepFunction = Callable[Concatenate[list[EvalLog], P], StepResult | list[EvalLog]]
-WrappedStepFunction = Callable[Concatenate[Sequence[EvalLog | str], P], list[EvalLog]]
+WrappedStepFunction = Callable[Concatenate[list[EvalLog] | list[str], P], list[EvalLog]]
 
 
 class _StepDecorator(Protocol):

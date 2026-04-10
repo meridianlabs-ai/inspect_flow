@@ -150,7 +150,7 @@ def _create_tagged_logs(tmp_path: Path) -> None:
     for name, tags in [("log1", ["golden", "v2"]), ("log2", ["draft"])]:
         dest = str(tmp_path / f"{name}.eval")
         shutil.copy(_SAMPLE_LOG, dest)
-        tag(dest, add=tags)
+        tag([dest], add=tags)
 
 
 def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
@@ -167,10 +167,10 @@ def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
 def test_list_log_provenance(tmp_path: Path) -> None:
     dest = str(tmp_path / "log1.eval")
     shutil.copy(_SAMPLE_LOG, dest)
-    tag(dest, add=["v1"], author="alice", reason="initial tag")
-    tag(dest, add=["v2"], remove=["v1"], author="bob")
-    metadata(dest, set={"score": 0.95}, author="carol")
-    metadata(dest, remove=["score"], author="dave")
+    tag([dest], add=["v1"], author="alice", reason="initial tag")
+    tag([dest], add=["v2"], remove=["v1"], author="bob")
+    metadata([dest], set={"score": 0.95}, author="carol")
+    metadata([dest], remove=["score"], author="dave")
     result = CliRunner().invoke(
         list_command,
         ["log", str(tmp_path), "--provenance"],
@@ -193,7 +193,7 @@ def test_list_log_provenance(tmp_path: Path) -> None:
 def test_list_log_provenance_hidden_by_default(tmp_path: Path) -> None:
     dest = str(tmp_path / "log1.eval")
     shutil.copy(_SAMPLE_LOG, dest)
-    tag(dest, add=["v1"], author="alice")
+    tag([dest], add=["v1"], author="alice")
     result = CliRunner().invoke(
         list_command, ["log", str(tmp_path)], catch_exceptions=False
     )
