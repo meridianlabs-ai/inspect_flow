@@ -26,13 +26,13 @@ _STORE_OPTION_KWARGS: dict[str, Any] = dict(
 
 
 def store_click_option(help: str = "Path to the store directory.") -> click.Option:
-    """Create a ``--store``/``-s`` `click.Option`."""
-    return click.Option(["--store", "-s"], help=help, **_STORE_OPTION_KWARGS)
+    """Create a ``--store`` `click.Option`."""
+    return click.Option(["--store"], help=help, **_STORE_OPTION_KWARGS)
 
 
 def store_option(f: F, help: str = "Path to the store directory.") -> F:
-    """Decorator that adds a ``--store``/``-s`` option."""
-    return click.option("--store", "-s", help=help, **_STORE_OPTION_KWARGS)(f)
+    """Decorator that adds a ``--store`` option."""
+    return click.option("--store", help=help, **_STORE_OPTION_KWARGS)(f)
 
 
 def output_options(f: F) -> F:
