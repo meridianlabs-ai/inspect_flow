@@ -1,10 +1,12 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Iterator, cast
 
-from inspect_ai.log import EvalLog, read_eval_log, write_eval_log
-from inspect_ai.log._file import read_eval_log_headers
+from inspect_ai._util._async import run_coroutine, tg_collect
+from inspect_ai.log import EvalLog, write_eval_log
+from inspect_ai.log._file import read_eval_log_async
 
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._store.store import FlowStore
@@ -40,17 +42,27 @@ _step_context_var: ContextVar[StepContext | None] = ContextVar(
 )
 
 
-def read_log(log_or_path: EvalLog | str, header_only: bool = False) -> EvalLog:
-    """Read a log from a path, or pass through an existing EvalLog."""
-    if isinstance(log_or_path, EvalLog):
-        return log_or_path
-    return read_eval_log(log_or_path, header_only=header_only)
-
-
 def read_log_headers(paths: list[str]) -> list[EvalLog]:
-    """Batch-read log headers from a list of paths."""
+    """Batch-read log headers, skipping paths that cannot be read."""
+
+    async def _read_log_headers() -> list[EvalLog]:
+        async def _read(path: str) -> EvalLog | None:
+            try:
+                log = await read_eval_log_async(path, header_only=True)
+            except Exception:
+                return None
+            progress.after_read_log(path)
+            return log
+
+        return [
+            log
+            for log in await tg_collect([partial(_read, p) for p in paths])
+            if log is not None
+        ]
+
     with ReadLogsProgress() as progress:
-        return read_eval_log_headers(paths, progress=progress)
+        progress.before_reading_logs(len(paths))
+        return run_coroutine(_read_log_headers())
 
 
 @contextmanager

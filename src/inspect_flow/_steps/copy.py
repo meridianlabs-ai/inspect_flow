@@ -42,12 +42,14 @@ def copy(
     with step_context(logs) as context:
         context.write_dirty()
 
-    dest_paths: list[str] = []
-    for log in logs:
-        dest_path = dest.rstrip("/") + "/" + _relative_path(log.location, source_prefix)
-        if not overwrite and exists(dest_path):
-            flow_print(f"Skipping (already exists): {dest_path}", format="warning")
-        else:
-            copy_file(log.location, dest_path)
-        dest_paths.append(dest_path)
+        dest_paths: list[str] = []
+        for log in logs:
+            dest_path = (
+                dest.rstrip("/") + "/" + _relative_path(log.location, source_prefix)
+            )
+            if not overwrite and exists(dest_path):
+                flow_print(f"Skipping (already exists): {dest_path}", format="warning")
+            elif not context.dry_run:
+                copy_file(log.location, dest_path)
+            dest_paths.append(dest_path)
     return read_log_headers(dest_paths)

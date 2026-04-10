@@ -117,6 +117,19 @@ def test_metadata_error_empty_set_and_remove(tmp_path: Path) -> None:
         metadata([log_path], set={}, remove=[])
 
 
+# --- read_log_headers ---
+
+
+def test_read_log_headers_skips_missing(tmp_path: Path) -> None:
+    from inspect_flow._steps.context import read_log_headers
+
+    valid_path = _make_log(tmp_path)
+    missing_path = str(tmp_path / "missing.eval")
+    result = read_log_headers([valid_path, missing_path])
+    assert len(result) == 1
+    assert result[0].eval.task == "test_task"
+
+
 # --- _relative_path ---
 
 
