@@ -13,7 +13,7 @@ from inspect_flow._store.deltalake import (
     TableDef,
     _check_table_description,
     _create_table_description,
-    _file_to_log,
+    _file_to_log_entry,
     _task_id_col,
 )
 from semver import Version
@@ -90,10 +90,10 @@ def test_missing_task_identifier(tmp_path: Path) -> None:
         storage_options=store._storage_options,
     )
 
-    log = _file_to_log(log1_path)
+    entry = _file_to_log_entry(log1_path)
 
-    logs = store.search_for_logs({log.task_identifier})
-    assert logs[log.task_identifier].log_file == log1_path
+    logs = store.search_for_logs({entry.task_identifier})
+    assert logs[entry.task_identifier].log_file == log1_path
 
 
 class TestCheckTableDescription:

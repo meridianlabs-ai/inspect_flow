@@ -4,7 +4,9 @@ from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime
 from functools import partial
 from logging import getLogger
-from typing import Any, Sequence
+from pathlib import Path
+from typing import Any, NamedTuple, Sequence
+from urllib.parse import urlparse
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -12,14 +14,12 @@ from deltalake import DeltaTable, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 from inspect_ai._eval.evalset import (
     TASK_IDENTIFIER_VERSION,
-    Log,
     list_all_eval_logs,
     task_identifier,
 )
 from inspect_ai._util._async import run_coroutine, tg_collect
-from inspect_ai._util.file import absolute_file_path, exists, filesystem, to_uri
+from inspect_ai._util.file import absolute_file_path, exists, filesystem
 from inspect_ai.log import EvalLog, read_eval_log, read_eval_log_async
-from inspect_ai.log._file import log_files_from_ls
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from semver import Version
 from typing_extensions import override
@@ -47,6 +47,14 @@ def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
     metadata = kwargs.pop("metadata", {})
     metadata["pa_type"] = pa_type
     return field(metadata=metadata, **kwargs)
+
+
+def to_uri(path_or_uri: str) -> str:
+    """Convert a file path to a URI. Already-URI inputs are returned as-is."""
+    parsed = urlparse(path_or_uri)
+    if parsed.scheme:
+        return path_or_uri
+    return "file://" + str(Path(path_or_uri).absolute())
 
 
 def _task_id_col() -> str:
@@ -128,22 +136,21 @@ def _check_table_description(table: TableDef, description: str) -> None:
             )
 
 
-def _file_to_log(log_file: str) -> Log:
-    info = filesystem(log_file).info(log_file)
-    log_files = log_files_from_ls([info])
-    if not log_files:
-        raise NoLogsError(f"No log found: {log_file}")
+class LogEntry(NamedTuple):
+    task_identifier: str
+    log_path: str
+
+
+def _file_to_log_entry(log_file: str) -> LogEntry:
     header = read_eval_log(log_file, header_only=True)
-    task_id = task_identifier(header, None)
-    assert task_id
-    return Log(info=log_files[0], header=header, task_identifier=task_id)
+    tid = task_identifier(header, None)
+    assert tid
+    return LogEntry(task_identifier=tid, log_path=to_uri(log_file))
 
 
-def _eval_log_to_log(eval_log: EvalLog) -> Log:
-    return _file_to_log(eval_log.location)
-
-
-def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) -> None:
+def _add_log_dir(
+    log_dir: str, recursive: bool, entries: list[LogEntry], verbose: bool
+) -> None:
     with ReadLogsProgress() as progress:
         dir_logs = list_all_eval_logs(
             log_dir=log_dir, recursive=recursive, progress=progress
@@ -153,7 +160,10 @@ def _add_log_dir(log_dir: str, recursive: bool, logs: list[Log], verbose: bool) 
     if verbose:
         for log in dir_logs:
             flow_print(path(log.info.name))
-    logs.extend(dir_logs)
+    entries.extend(
+        LogEntry(task_identifier=log.task_identifier, log_path=to_uri(log.info.name))
+        for log in dir_logs
+    )
 
 
 def _remove_prefix(
@@ -312,8 +322,14 @@ class DeltaLakeStore(FlowStoreInternal):
 
     @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
-        logs = [_eval_log_to_log(eval_log) for eval_log in eval_logs]
-        self._add_logs(logs, dry_run=False)
+        entries = [
+            LogEntry(
+                task_identifier=task_identifier(log, None),
+                log_path=to_uri(log.location),
+            )
+            for log in eval_logs
+        ]
+        self._add_logs(entries, dry_run=False)
 
     @override
     def import_log_path(
@@ -327,7 +343,7 @@ class DeltaLakeStore(FlowStoreInternal):
             log_path = [log_path]
         # Collect dirs and logs to add
         flow_print("\nImporting logs to store")
-        logs: list[Log] = []
+        entries: list[LogEntry] = []
         for p in log_path:
             p = absolute_file_path(p)
             fs = filesystem(p)
@@ -338,13 +354,13 @@ class DeltaLakeStore(FlowStoreInternal):
             if info.type == "file":
                 if verbose:
                     flow_print(path(p))
-                logs.append(_file_to_log(p))
+                entries.append(_file_to_log_entry(p))
             else:
                 dir = to_uri(p)
                 _add_log_dir(
-                    log_dir=dir, recursive=recursive, logs=logs, verbose=verbose
+                    log_dir=dir, recursive=recursive, entries=entries, verbose=verbose
                 )
-        num_added = self._add_logs(logs, dry_run=dry_run)
+        num_added = self._add_logs(entries, dry_run=dry_run)
         flow_print(
             f"Imported {quantity(num_added, 'new log')} to store",
             format="success" if num_added > 0 else "warning",
@@ -413,29 +429,28 @@ class DeltaLakeStore(FlowStoreInternal):
         metrics = dt.delete(predicate=f"log_path IN ({quoted_logs})")
         return metrics.get("num_deleted_rows", 0)
 
-    def _add_logs(self, logs: list[Log], dry_run: bool) -> int:
-        if not logs:
+    def _add_logs(self, entries: list[LogEntry], dry_run: bool) -> int:
+        if not entries:
             return 0
-        task_ids = {log.task_identifier for log in logs}
+        task_ids = {e.task_identifier for e in entries}
         existing_logs = self._get_logs(task_ids)
-        new_logs = [
-            log
-            for log in logs
-            if to_uri(log.info.name)
-            not in existing_logs.get(log.task_identifier, set())
+        new_entries = [
+            e
+            for e in entries
+            if e.log_path not in existing_logs.get(e.task_identifier, set())
         ]
-        if not new_logs:
+        if not new_entries:
             return 0
         if dry_run:
-            return len(new_logs)
+            return len(new_entries)
 
         new_data = pa.Table.from_pylist(
             [
                 LogRecord(
-                    log_path=to_uri(log.info.name),
-                    task_identifier_1=log.task_identifier,
+                    log_path=e.log_path,
+                    task_identifier_1=e.task_identifier,
                 ).to_dict()
-                for log in new_logs
+                for e in new_entries
             ],
             schema=LogRecord.to_schema(),
         )
@@ -446,7 +461,7 @@ class DeltaLakeStore(FlowStoreInternal):
             mode="append",
             storage_options=self._storage_options,
         )
-        return len(new_logs)
+        return len(new_entries)
 
     @override
     def search_for_logs(self, task_ids: set[str]) -> dict[str, StoreLogMatch]:
@@ -539,8 +554,8 @@ class DeltaLakeStore(FlowStoreInternal):
             )
             for log_path in log_paths_to_update:
                 try:
-                    log = _file_to_log(log_path)
-                    logs_to_update.append((log_path, log.task_identifier))
+                    entry = _file_to_log_entry(log_path)
+                    logs_to_update.append((log_path, entry.task_identifier))
                 except Exception as e:
                     logger.info(f"Failed to read log {path_str(log_path)}: {e}")
                 progress.advance(progress_task)

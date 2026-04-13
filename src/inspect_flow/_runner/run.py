@@ -198,7 +198,6 @@ def run_eval_set(
 
     if store and (store_config is None or store_config.write):
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
-        # TODO:ransomr better monitoring of the log directory
         try:
             store.add_run_logs(result[1])
         except NoLogsError as e:
