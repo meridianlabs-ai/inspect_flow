@@ -50,6 +50,7 @@ def read_log_headers(paths: list[str]) -> list[EvalLog]:
             try:
                 log = await read_eval_log_async(path, header_only=True)
             except Exception:
+                console.print(f"[red]Could not read log {path}[/red]")
                 return None
             progress.after_read_log(path)
             return log
