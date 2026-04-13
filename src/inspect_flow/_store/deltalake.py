@@ -323,9 +323,11 @@ class DeltaLakeStore(FlowStoreInternal):
     @override
     def add_run_logs(self, eval_logs: list[EvalLog]) -> None:
         entries = [
-            LogEntry(task_identifier=tid, log_path=to_uri(log.location))
+            LogEntry(
+                task_identifier=task_identifier(log, None),
+                log_path=to_uri(log.location),
+            )
             for log in eval_logs
-            if (tid := task_identifier(log, None))
         ]
         self._add_logs(entries, dry_run=False)
 
