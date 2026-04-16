@@ -33,11 +33,6 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> FindLogsResult:
     with RunAction("logs") as action:
         task_log = create_task_log_display(logs_result.task_log_info, mode="check")
         action.print(task_log.display)
-        if logs_result.unexpected_logs:
-            action.print("")
-            action.print("Unexpected logs:", format="warning")
-            for log_name in logs_result.unexpected_logs:
-                action.print(path(log_name))
         all_duplicates = [
             log
             for info in logs_result.task_log_info.values()
@@ -47,6 +42,11 @@ def check_eval_set(spec: FlowSpec, base_dir: str) -> FindLogsResult:
             action.print("")
             action.print("Duplicate logs:", format="info")
             for log_name in all_duplicates:
+                action.print(path(log_name))
+        if logs_result.unexpected_logs:
+            action.print("")
+            action.print("Unexpected logs:", format="warning")
+            for log_name in logs_result.unexpected_logs:
                 action.print(path(log_name))
         action.print("")
         action.print(task_log.summary)
