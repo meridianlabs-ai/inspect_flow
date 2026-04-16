@@ -296,7 +296,7 @@ class GenerateConfigDict(TypedDict):
     max_tool_output: NotRequired[int | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Literal["auto"] | bool | None]
-    """Whether to cache the prompt prefix. Defaults to "auto", which will enable caching for requests with tools. Anthropic only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
     """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
     effort: NotRequired[Literal["low", "medium", "high", "max"] | None]
@@ -365,7 +365,7 @@ class GenerateConfigMatrixDict(TypedDict):
     max_tool_output: NotRequired[Sequence[int | None] | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
-    """Whether to cache the prompt prefix. Defaults to "auto", which will enable caching for requests with tools. Anthropic only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
     reasoning_effort: NotRequired[
         Sequence[Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None]
         | None
