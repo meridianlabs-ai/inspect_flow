@@ -3,5 +3,5 @@ from inspect_flow._steps.step import step
 
 
 @step
-def my_step(log: EvalLog) -> EvalLog:
-    return log
+def my_step(logs: list[EvalLog]) -> list[EvalLog]:
+    return logs
