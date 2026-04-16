@@ -43,13 +43,13 @@
 | src/inspect\_flow/\_runner/instantiate.py          |      186 |        1 |       94 |        2 |     98.93% |64, 282-\>284 |
 | src/inspect\_flow/\_runner/logs.py                 |      131 |        1 |       56 |        2 |     98.40% |182, 220-\>214 |
 | src/inspect\_flow/\_runner/resolve.py              |       13 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_runner/run.py                  |      170 |        7 |       66 |        5 |     94.07% |179-\>181, 185, 203-204, 221, 237, 278-279 |
+| src/inspect\_flow/\_runner/run.py                  |      170 |        7 |       66 |        5 |     94.07% |180-\>182, 186, 204-205, 222, 238, 279-280 |
 | src/inspect\_flow/\_runner/task\_log.py            |      159 |        0 |       60 |        0 |    100.00% |           |
 | src/inspect\_flow/\_steps/\_\_init\_\_.py          |        2 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_steps/context.py               |       65 |        5 |       24 |        3 |     91.01% |43, 82, 91-93, 100-\>107 |
-| src/inspect\_flow/\_steps/copy.py                  |       20 |        0 |        6 |        0 |    100.00% |           |
-| src/inspect\_flow/\_steps/run.py                   |       52 |        2 |       22 |        2 |     94.59% |   63, 101 |
-| src/inspect\_flow/\_steps/step.py                  |       84 |        2 |       32 |        7 |     92.24% |48-\>exit, 53-\>exit, 81-\>exit, 87-\>exit, 91-\>exit, 126, 162 |
+| src/inspect\_flow/\_steps/context.py               |       60 |        0 |       14 |        0 |    100.00% |           |
+| src/inspect\_flow/\_steps/copy.py                  |       27 |        0 |       10 |        1 |     97.30% |   52-\>54 |
+| src/inspect\_flow/\_steps/run.py                   |       55 |        2 |       26 |        3 |     93.83% |57, 62, 109-\>exit |
+| src/inspect\_flow/\_steps/step.py                  |       66 |        2 |       20 |        4 |     93.02% |56-\>exit, 61-\>exit, 114, 131 |
 | src/inspect\_flow/\_steps/tag.py                   |       28 |        4 |        6 |        0 |     82.35% |     24-32 |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_store/deltalake.py             |      336 |       15 |      112 |       13 |     93.75% |99-\>exit, 159, 182-\>181, 188-\>181, 234-236, 264-\>270, 267-\>270, 351-352, 356, 395-397, 405, 407-\>410, 424, 559-560, 564 |
@@ -62,7 +62,7 @@
 | src/inspect\_flow/\_types/log\_filter.py           |       57 |        4 |       28 |        3 |     91.76% |59, 71, 73-74 |
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/console.py                |       71 |        6 |       32 |        5 |     89.32% |28-\>exit, 40-43, 89, 92, 106-\>108 |
+| src/inspect\_flow/\_util/console.py                |       71 |        6 |       32 |        6 |     88.35% |28-\>exit, 40-43, 64-\>73, 89, 92, 106-\>108 |
 | src/inspect\_flow/\_util/constants.py              |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/data.py                   |       25 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/error.py                  |       50 |        5 |       16 |        0 |     89.39% |     66-70 |
@@ -77,7 +77,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       10 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **5085** |  **368** | **1600** |  **142** | **90.96%** |           |
+| **TOTAL**                                          | **5072** |  **363** | **1586** |  **139** | **91.05%** |           |
 
 
 ## Setup coverage badge
