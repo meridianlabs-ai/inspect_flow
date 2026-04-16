@@ -1,17 +1,23 @@
 ---
 reference: inspect_flow.api
-description: Public API — init, run, load_spec, config, store helpers.
+description: Public API — run, check, steps, config, store helpers.
 ---
 
 ## Python API
 
 ### init
 ### run
+### check
+### run_step
 ### load_spec
 ### config
 ### list_logs
 ### store_get
 ### delete_store
 ### copy_all_logs
+### tag
+### metadata
+### copy
 ### FlowStore
+### StepResult
 ### DisplayType

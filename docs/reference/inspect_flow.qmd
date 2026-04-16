@@ -1,6 +1,6 @@
 ---
 reference: inspect_flow
-description: Core types and functions.
+description: Core types, decorators, and matrix functions.
 ---
 
 ## Types
@@ -26,6 +26,7 @@ description: Core types and functions.
 
 ### after_load
 ### log_filter
+### step
 
 ## Functions
 
