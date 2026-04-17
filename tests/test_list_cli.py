@@ -259,6 +259,35 @@ def test_list_log_live() -> None:
     assert result.exit_code == 0
 
 
+def test_list_log_index_prefix() -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    result = runner.invoke(list_command, ["log"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "[1]" in result.output
+    assert "[2]" in result.output
+
+
+def test_list_log_index_prefix_oneline() -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    result = runner.invoke(list_command, ["log", "--oneline"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "[1]" in result.output
+    assert "[2]" in result.output
+
+
+def test_list_log_index_prefix_tree() -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    result = runner.invoke(
+        list_command, ["log", "--format", "tree"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "[1]" in result.output
+    assert "[2]" in result.output
+
+
 def test_list_log_live_custom_interval() -> None:
     calls: list[int] = []
 
