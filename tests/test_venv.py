@@ -118,6 +118,44 @@ def test_relative_dependency() -> None:
         ]
 
 
+def test_671_vcs_url_dependency() -> None:
+    base_dir = Path(__file__).parent.resolve().as_posix()
+    vcs_url = "git+https://github.com/meridianlabs-ai/flow_steps_demo.git@main"
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+        patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        _create_venv(
+            spec=FlowSpec(
+                dependencies=FlowDependencies(
+                    dependency_file="no_file",
+                    additional_dependencies=[vcs_url],
+                ),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=base_dir,
+            temp_dir=temp_dir,
+            env=os.environ.copy(),
+            dry_run=False,
+            action=_test_action,
+        )
+
+        assert mock_run.call_count == 2
+        args = mock_run.call_args.args[0]
+        flow_path = str((Path(__file__).parents[1]).resolve())
+        assert args[:5] == [
+            "uv",
+            "pip",
+            "install",
+            vcs_url,
+            f"-e {flow_path}",
+        ]
+
+
 def test_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
