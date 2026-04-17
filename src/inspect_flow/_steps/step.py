@@ -4,9 +4,7 @@ from typing import (
     Concatenate,
     NamedTuple,
     ParamSpec,
-    Protocol,
     cast,
-    overload,
 )
 
 from inspect_ai._util.registry import (
@@ -49,16 +47,6 @@ class StepResult(NamedTuple):
 P = ParamSpec("P")
 StepFunction = Callable[Concatenate[list[EvalLog], P], StepResult | list[EvalLog]]
 WrappedStepFunction = Callable[Concatenate[list[EvalLog] | list[str], P], list[EvalLog]]
-
-
-class _StepDecorator(Protocol):
-    @overload
-    def __call__(
-        self, func: Callable[Concatenate[EvalLog, P], EvalLog]
-    ) -> Callable[Concatenate[EvalLog | str, P], EvalLog]: ...
-
-    @overload
-    def __call__(self, func: StepFunction[P]) -> WrappedStepFunction[P]: ...
 
 
 def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
