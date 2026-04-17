@@ -20,6 +20,7 @@ class FullDisplay(Display):
         self._last_action_key: str | None = None
         self._title: list[str | Text] | None = None
         self._live: Live | None = None
+        self._was_recording = False
 
     def update_action(self, key: str, action: DisplayAction) -> None:
         status = action.status or "pending"
@@ -44,6 +45,8 @@ class FullDisplay(Display):
     def set_footer(self, renderable: RenderableType | None) -> None:
         if renderable is not None:
             if self._live is None:
+                self._was_recording = console.record
+                console.record = False
                 self._live = Live(
                     renderable,
                     console=console,
@@ -60,6 +63,7 @@ class FullDisplay(Display):
         if self._live is not None:
             self._live.stop()
             self._live = None
+            console.record = self._was_recording
 
     def get_title(self) -> list[str | Text] | None:
         return self._title

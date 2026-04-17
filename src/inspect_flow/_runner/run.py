@@ -6,6 +6,7 @@ from logging import getLogger
 
 import click
 from inspect_ai import eval_set
+from inspect_ai._display.textual.app import set_initial_console_content
 from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
@@ -33,7 +34,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowStoreConfig,
 )
-from inspect_flow._util.console import flow_print, format_prefix, path
+from inspect_flow._util.console import console, flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import get_last_log_level, update_log_level
@@ -111,6 +112,9 @@ def run_eval_set(
     display().stop()
 
     update_log_level(log_level)
+
+    if display_type == "full":
+        set_initial_console_content(console.export_text(styles=True))
 
     start_time = time.time()
     try:
