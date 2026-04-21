@@ -1,6 +1,6 @@
-# Flow Concepts – Inspect Flow
+# Spec – Inspect Flow
 
-The primary interface for defining a workflow in Flow is a [FlowSpec](./reference/inspect_flow.html.md#flowspec). A [FlowSpec](./reference/inspect_flow.html.md#flowspec) defines the log directory, tasks, models, and other options that make up the spec. When Inspect Flow processes the [FlowSpec](./reference/inspect_flow.html.md#flowspec), it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect’s `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
+[FlowSpec](./reference/inspect_flow.html.md#flowspec) is the declarative interface for defining evaluations in Inspect Flow. A [FlowSpec](./reference/inspect_flow.html.md#flowspec) defines the log directory, tasks, models, and other options that make up a spec. When Inspect Flow processes the [FlowSpec](./reference/inspect_flow.html.md#flowspec), it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect’s `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
 
 Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:
 

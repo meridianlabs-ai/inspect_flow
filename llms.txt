@@ -1,25 +1,27 @@
 # Inspect Flow
 
-> Workflow orchestration for Inspect AI that enables you to run evaluations at scale with repeatability and maintainability. Provides declarative configuration, powerful defaults, and parameter sweeping for systematic AI evaluations.
+> Workflow orchestration for Inspect AI
 
-## Docs
+## Welcome
 
-- [Welcome](https://meridianlabs-ai.github.io/inspect_flow/index.html.md): Introduction, getting started, and basic example
-- [Flow Concepts](https://meridianlabs-ai.github.io/inspect_flow/flow_concepts.html.md): Core concepts — FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies
-- [Defaults](https://meridianlabs-ai.github.io/inspect_flow/defaults.html.md): Defaults, inheritance, and overrides for configuration
-- [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html.md): Parameter sweeping with matrix functions for systematic exploration
-- [Running Flows](https://meridianlabs-ai.github.io/inspect_flow/run.html.md): How to run flows, execution modes, and CLI flags
-- [Store](https://meridianlabs-ai.github.io/inspect_flow/store.html.md): Persistent log store for reuse across runs
-- [Advanced](https://meridianlabs-ai.github.io/inspect_flow/advanced.html.md): Execution modes and virtual environments
+- [Introduction](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#introduction)
+- [Getting Started](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#getting-started)
+- [Basic Example](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#basic-example)
+- [Matrix Functions](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#matrix-functions)
+- [Run Evaluations](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#run-evaluations)
+- [After Running](https://meridianlabs-ai.github.io/inspect_flow/index.html.md#after-running)
 
-## Reference: Python API
+## Using Flow
 
-- [inspect_flow](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.html.md): Core types and functions
-- [inspect_flow.api](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.api.html.md): Public API — init, run, load_spec, config, store_get, delete_store, copy_all_logs
+- [Spec](https://meridianlabs-ai.github.io/inspect_flow/spec.html.md): FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies.
+- [Defaults](https://meridianlabs-ai.github.io/inspect_flow/defaults.html.md): Defaults, inheritance, and overrides for configuration.
+- [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html.md): Parameter sweeping with matrix functions for systematic exploration.
+- [Running Flows](https://meridianlabs-ai.github.io/inspect_flow/run.html.md): How to run flows, execution modes, and CLI flags.
+- [Store](https://meridianlabs-ai.github.io/inspect_flow/store.html.md): Persistent log store for reuse across runs.
+- [Steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html.md): Post-evaluation workflows — tag, validate, copy, and promote logs with composable steps.
+- [Advanced](https://meridianlabs-ai.github.io/inspect_flow/advanced.html.md): Execution modes and virtual environments.
 
-## Reference: CLI
+## Reference
 
-- [flow config](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_config.html.md): Display resolved flow configuration
-- [flow list](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_list.html.md): List logs with filtering and sorting
-- [flow run](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_run.html.md): Run flow evaluations
-- [flow store](https://meridianlabs-ai.github.io/inspect_flow/reference/flow_store.html.md): Manage the flow log store
+- [inspect_flow.api](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.api.html.md): Public API — run, check, steps, config, store helpers.
+- [inspect_flow](https://meridianlabs-ai.github.io/inspect_flow/reference/inspect_flow.html.md): Core types, decorators, and matrix functions.

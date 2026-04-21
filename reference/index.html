@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>Reference – Inspect Flow</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -30,19 +33,18 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../reference/inspect_flow.html" rel="next">
+<link href="../reference/inspect_flow.api.html" rel="next">
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-72637b827d473abb408ec7315341daec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-00bb9cb7cda113ac4013fc9b55ca6f24.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -101,16 +103,82 @@ ul.task-list li input[type="checkbox"] {
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="../index.html"> 
-<span class="menu-text">Welcome</span></a>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-welcome" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Welcome</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-welcome">    
+        <li>
+    <a class="dropdown-item" href="../index.html#introduction">
+ <span class="dropdown-text">Introduction</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../index.html#getting-started">
+ <span class="dropdown-text">Getting Started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../index.html#basic-example">
+ <span class="dropdown-text">Basic Example</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../index.html#matrix-functions">
+ <span class="dropdown-text">Matrix Functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../index.html#run-evaluations">
+ <span class="dropdown-text">Run Evaluations</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../index.html#after-running">
+ <span class="dropdown-text">After Running</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-using-flow" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Using Flow</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-using-flow">    
+        <li>
+    <a class="dropdown-item" href="../spec.html">
+ <span class="dropdown-text">Spec</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../defaults.html">
+ <span class="dropdown-text">Defaults</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../matrix.html">
+ <span class="dropdown-text">Matrixing</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../run.html">
+ <span class="dropdown-text">Running Flows</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../store.html">
+ <span class="dropdown-text">Store</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../steps.html">
+ <span class="dropdown-text">Steps</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../advanced.html">
+ <span class="dropdown-text">Advanced</span></a>
+  </li>  
+    </ul>
+  </li>
   <li class="nav-item">
     <a class="nav-link active" href="../reference/index.html" aria-current="page"> 
 <span class="menu-text">Reference</span></a>
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../CHANGELOG.html"> 
+<span class="menu-text">Changelog</span></a>
+  </li>  
   <li class="nav-item compact">
     <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_flow"> <i class="bi bi-github" role="img">
 </i> 
@@ -147,7 +215,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
+            <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Python API</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -156,13 +224,120 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow</span></a>
+            <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">inspect_flow.api</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#init" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">init</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#run" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">run</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#check" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">check</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#run_step" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">run_step</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#load_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_spec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">config</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#list_logs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">list_logs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#store_get" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">store_get</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#delete_store" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">delete_store</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#copy_all_logs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">copy_all_logs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#tag" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">tag</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#metadata" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">metadata</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#copy" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">copy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#flowstore" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">FlowStore</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#stepresult" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">StepResult</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#displaytype" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">DisplayType</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">inspect_flow</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowagent" class="sidebar-item-text sidebar-link">
@@ -255,6 +430,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.html#step" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">step</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#agents_matrix" class="sidebar-item-text sidebar-link">
  <span class="menu-text">agents_matrix</span></a>
   </div>
@@ -321,88 +502,23 @@ ul.task-list li input[type="checkbox"] {
 </li>
       </ul>
   </li>
-          <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow.api</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#init" class="sidebar-item-text sidebar-link">
- <span class="menu-text">init</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#run" class="sidebar-item-text sidebar-link">
- <span class="menu-text">run</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#load_spec" class="sidebar-item-text sidebar-link">
- <span class="menu-text">load_spec</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
- <span class="menu-text">config</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#list_logs" class="sidebar-item-text sidebar-link">
- <span class="menu-text">list_logs</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#store_get" class="sidebar-item-text sidebar-link">
- <span class="menu-text">store_get</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#delete_store" class="sidebar-item-text sidebar-link">
- <span class="menu-text">delete_store</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#copy_all_logs" class="sidebar-item-text sidebar-link">
- <span class="menu-text">copy_all_logs</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#flowstore" class="sidebar-item-text sidebar-link">
- <span class="menu-text">FlowStore</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../reference/inspect_flow.api.html#displaytype" class="sidebar-item-text sidebar-link">
- <span class="menu-text">DisplayType</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Inspect CLI</span></a>
+            <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CLI Commands</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">flow check</span></a>
+  </div>
+</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
@@ -423,6 +539,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/flow_step.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">flow step</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/flow_store.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">flow store</span></a>
   </div>
@@ -435,14 +557,14 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#python-api" id="toc-python-api" class="nav-link active" data-scroll-target="#python-api">Python API</a></li>
-  <li><a href="#flow-cli" id="toc-flow-cli" class="nav-link" data-scroll-target="#flow-cli">Flow CLI</a></li>
+  <li><a href="#cli" id="toc-cli" class="nav-link" data-scroll-target="#cli">CLI</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -466,8 +588,8 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="python-api" class="level4">
-<h4 class="anchored" data-anchor-id="python-api">Python API</h4>
+<section id="python-api" class="level3">
+<h3 class="anchored" data-anchor-id="python-api">Python API</h3>
 <table class="table-borderless caption-top table">
 <colgroup>
 <col style="width: 35%">
@@ -475,18 +597,18 @@ ul.task-list li input[type="checkbox"] {
 </colgroup>
 <tbody>
 <tr class="odd">
-<td><a href="../reference/inspect_flow.html">inspect_flow</a></td>
-<td>Core types and functions.</td>
+<td><a href="../reference/inspect_flow.api.html">inspect_flow.api</a></td>
+<td>Public API — run, check, steps, config, store helpers.</td>
 </tr>
 <tr class="even">
-<td><a href="../reference/inspect_flow.api.html">inspect_flow.api</a></td>
-<td>Output and run a spec.</td>
+<td><a href="../reference/inspect_flow.html">inspect_flow</a></td>
+<td>Core types, decorators, and matrix functions.</td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="flow-cli" class="level4">
-<h4 class="anchored" data-anchor-id="flow-cli">Flow CLI</h4>
+<section id="cli" class="level3">
+<h3 class="anchored" data-anchor-id="cli">CLI</h3>
 <table class="table-borderless caption-top table">
 <colgroup>
 <col style="width: 35%">
@@ -494,39 +616,104 @@ ul.task-list li input[type="checkbox"] {
 </colgroup>
 <tbody>
 <tr class="odd">
-<td><a href="../reference/flow_config.html">flow config</a></td>
-<td>Output spec as yaml.</td>
+<td><a href="../reference/flow_check.html">flow check</a></td>
+<td>Check spec completeness against existing logs.</td>
 </tr>
 <tr class="even">
-<td><a href="../reference/flow_list.html">flow list</a></td>
-<td>List logs.</td>
+<td><a href="../reference/flow_config.html">flow config</a></td>
+<td>Display resolved flow configuration.</td>
 </tr>
 <tr class="odd">
+<td><a href="../reference/flow_list.html">flow list</a></td>
+<td>List logs with filtering and sorting.</td>
+</tr>
+<tr class="even">
 <td><a href="../reference/flow_run.html">flow run</a></td>
-<td>Run a spec.</td>
+<td>Run flow evaluations.</td>
+</tr>
+<tr class="odd">
+<td><a href="../reference/flow_step.html">flow step</a></td>
+<td>Run workflow steps on eval logs.</td>
 </tr>
 <tr class="even">
 <td><a href="../reference/flow_store.html">flow store</a></td>
-<td>Manage the Flow Store.</td>
+<td>Manage the flow log store.</td>
 </tr>
 </tbody>
 </table>
-<style>
-.table td {
-    padding-bottom: 0 !important;
-}
-a {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: underline;
-}
-</style>
 
 
 </section>
 
 </main> <!-- /main -->
+<div id="copy-page-btn" class="btn-group" style="display:none;">
+  <button type="button" class="btn btn-sm btn-light" id="copy-page-action" title="Copy page as Markdown">
+    <i class="bi bi-clipboard"></i> Copy page
+  </button>
+  <button type="button" class="btn btn-sm btn-light dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="visually-hidden">Toggle Dropdown</span>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" href="#" id="copy-page-md">
+      <i class="bi bi-clipboard"></i> Copy page as Markdown
+    </a></li>
+    <li><a class="dropdown-item" href="#" id="open-page-md">
+      <i class="bi bi-box-arrow-up-right"></i> Open Markdown
+    </a></li>
+  </ul>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var mdUrl = window.location.pathname.replace(/\.html$/, ".html.md");
+  var btn = document.getElementById("copy-page-btn");
+  var cachedMarkdown = null;
+
+  // Pre-fetch the .html.md content
+  fetch(mdUrl)
+    .then(function (res) {
+      if (!res.ok) throw new Error(res.status);
+      return res.text();
+    })
+    .then(function (text) {
+      cachedMarkdown = text;
+
+      // Relocate button into the .quarto-title div
+      var titleDiv = document.querySelector(".quarto-title");
+      if (titleDiv) {
+        titleDiv.appendChild(btn);
+        btn.style.display = "";
+      }
+    })
+    .catch(function () {
+      // No .html.md available — remove button entirely
+      btn.remove();
+    });
+
+  function copyMarkdown(e) {
+    e.preventDefault();
+    if (!cachedMarkdown) return;
+    navigator.clipboard.writeText(cachedMarkdown).then(function () {
+      // Brief visual feedback — lock width to prevent layout shift
+      var actionBtn = document.getElementById("copy-page-action");
+      var original = actionBtn.innerHTML;
+      actionBtn.style.minWidth = actionBtn.offsetWidth + "px";
+      actionBtn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+      setTimeout(function () {
+        actionBtn.innerHTML = original;
+        actionBtn.style.minWidth = "";
+      }, 1500);
+    });
+  }
+
+  document.getElementById("copy-page-action").addEventListener("click", copyMarkdown);
+  document.getElementById("copy-page-md").addEventListener("click", copyMarkdown);
+  document.getElementById("open-page-md").addEventListener("click", function (e) {
+    e.preventDefault();
+    window.open(mdUrl, "_blank");
+  });
+});
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
@@ -972,7 +1159,7 @@ a:hover {
   <div class="nav-page nav-page-previous">
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../reference/inspect_flow.html" class="pagination-link" aria-label="Python API">
+      <a href="../reference/inspect_flow.api.html" class="pagination-link" aria-label="Python API">
         <span class="nav-page-text">Python API</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
@@ -983,7 +1170,7 @@ a:hover {
     <div class="nav-footer-left">
       <ul class="footer-items list-unstyled">
     <li class="nav-item">
-    <a class="nav-link" href="https://github.com/meridianlabs-ai/">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai">
 <p>Meridian Labs</p>
 </a>
   </li>  
@@ -997,6 +1184,11 @@ a:hover {
 </a>
   </li>  
     <li class="nav-item">
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_flow/blob/main/CHANGELOG.md">
+<p>Changelog</p>
+</a>
+  </li>  
+    <li class="nav-item">
     <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_flow/blob/main/LICENSE">
 <p>License</p>
 </a>
@@ -1007,13 +1199,14 @@ a:hover {
 </a>
   </li>  
 </ul>
-    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/meridianlabs-ai/inspect_flow/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div>
+    </div>
     <div class="nav-footer-right">
       <ul class="footer-items list-unstyled">
     <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_flow">
-<p>Code</p>
-</a>
+    <a class="nav-link" href="https://github.com/meridianlabs-ai/inspect_flow/">
+      <i class="bi bi-github" role="img" aria-label="Inspect Flow on GitHub">
+</i> 
+    </a>
   </li>  
 </ul>
     </div>

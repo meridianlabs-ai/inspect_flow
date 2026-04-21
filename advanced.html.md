@@ -1,30 +1,24 @@
-# Advanced
-
+# Advanced – Inspect Flow
 
 ## Execution Modes
 
-Flow supports two execution modes that determine how your evaluations
-run: **in-process (inproc)** and **virtual environment (venv)**.
-Understanding these modes helps you choose the right approach for your
-workflow.
+Flow supports two execution modes that determine how your evaluations run: **in-process (inproc)** and **virtual environment (venv)**. Understanding these modes helps you choose the right approach for your workflow.
 
 ### In-Process Mode (Default)
 
-By default, Flow runs evaluations in your current Python process without
-creating an isolated environment.
+By default, Flow runs evaluations in your current Python process without creating an isolated environment.
 
 **Characteristics:**
 
 - Runs directly in your current Python environment
 - No automatic dependency installation—you manage packages yourself
-- Supports direct use of Inspect AI objects (`Task`, `Model`, `Solver`,
-  `Agent`)
+- Supports direct use of Inspect AI objects (`Task`, `Model`, `Solver`, `Agent`)
 - Faster startup (no environment creation overhead)
 - Best for development, iteration, and when you control the environment
 
 **Example:**
 
-**inproc_mode.py**
+    inproc_mode.py
 
 ``` python
 from inspect_ai import Task
@@ -35,51 +29,45 @@ from inspect_flow import FlowSpec
 FlowSpec(
     log_dir="logs",
     tasks=[
-        Task(
+1        Task(
             dataset=example_dataset("security_guide"),
             solver=generate(),
         ),
-        "inspect_evals/gpqa_diamond",
+2        "inspect_evals/gpqa_diamond",
     ],
 )
 ```
 
-Line 9  
+1  
 Direct Inspect AI Task object (supported in inproc mode)
 
-Line 13  
+2  
 Registry reference works in both modes
 
 ### Virtual Environment Mode
 
-Opt into virtual environment mode for isolated, reproducible evaluation
-runs.
+Opt into virtual environment mode for isolated, reproducible evaluation runs.
 
 **Characteristics:**
 
-- Creates a temporary virtual environment with
-  [`uv`](https://github.com/astral-sh/uv) for each run
-- Automatically installs dependencies from `pyproject.toml`, `uv.lock`,
-  or `requirements.txt`
-- Auto-detects and installs packages based on config (e.g.,
-  `model="openai/gpt-4"` → installs `openai`)
-- Cleans up the temporary environment after completion (logs persist in
-  `log_dir`)
-- Requires Flow types only—cannot use direct Inspect AI objects (`Task`,
-  `Model`, etc.)
+- Creates a temporary virtual environment with [`uv`](https://github.com/astral-sh/uv) for each run
+- Automatically installs dependencies from `pyproject.toml`, `uv.lock`, or `requirements.txt`
+- Auto-detects and installs packages based on config (e.g., `model="openai/gpt-4"` → installs `openai`)
+- Cleans up the temporary environment after completion (logs persist in `log_dir`)
+- Requires Flow types only—cannot use direct Inspect AI objects (`Task`, `Model`, etc.)
 - Best for reproducibility and sharing
 
 **Example:**
 
-**venv_mode.py**
+    venv_mode.py
 
 ``` python
 from inspect_flow import FlowSpec, FlowTask
 
 FlowSpec(
     log_dir="logs",
-    execution_type="venv",
-    python_version="3.11",
+1    execution_type="venv",
+2    python_version="3.11",
     tasks=[
         FlowTask(
             name="inspect_evals/gpqa_diamond",
@@ -89,10 +77,10 @@ FlowSpec(
 )
 ```
 
-Line 5  
+1  
 Enable virtual environment mode
 
-Line 6  
+2  
 Optional: specify Python version
 
 Or use the CLI flag:
@@ -115,67 +103,37 @@ flow run config.py --venv
 
 ## Dependencies
 
-This section details Flow’s dependency management system, which
-primarily applies to virtual environment mode.
+This section details Flow’s dependency management system, which primarily applies to virtual environment mode.
 
 ### Automatic Dependency Discovery
 
-In virtual environment mode, Flow automatically discovers and installs
-dependencies without requiring explicit configuration:
+In virtual environment mode, Flow automatically discovers and installs dependencies without requiring explicit configuration:
 
-- **Dependency files**: Searches upward from your config file directory
-  for `pyproject.toml` or `requirements.txt`. Relative paths will be
-  resolved relative to the config file (when using the CLI) or
-  `base_dir` arg (when using the API)
-- **Package inference**: Detects packages from Flow type names in your
-  config:
+- **Dependency files**: Searches upward from your config file directory for `pyproject.toml` or `requirements.txt`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API)
+- **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
-  - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs
-    `inspect-evals`
-  - Note: Package inference only works with Flow types (`FlowTask`,
-    `FlowModel`, etc.), not direct Inspect AI objects
+  - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Note: Package inference only works with Flow types ([FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
 
-> [!NOTE]
+> **NOTE: NoteIn-Process Mode Dependencies**
 >
-> ### In-Process Mode Dependencies
+> In in-process mode (the default), these files are **ignored** for automatic installation. You’re responsible for installing dependencies yourself using your preferred package manager (`uv`, `pip`, `conda`, etc.). However, you can still use the same `pyproject.toml` or `requirements.txt` files to manage your dependencies manually.
 >
-> In in-process mode (the default), these files are **ignored** for
-> automatic installation. You’re responsible for installing dependencies
-> yourself using your preferred package manager (`uv`, `pip`, `conda`,
-> etc.). However, you can still use the same `pyproject.toml` or
-> `requirements.txt` files to manage your dependencies manually.
->
-> Flow still generates a `flow-requirements.txt` file in your log
-> directory to document what packages were installed when you ran the
-> evaluation, helping with reproducibility.
+> Flow still generates a `flow-requirements.txt` file in your log directory to document what packages were installed when you ran the evaluation, helping with reproducibility.
 
-> [!NOTE]
+> **NOTE: NoteConfig Inheritance**
 >
-> ### Config Inheritance
->
-> Flow automatically includes any `_flow.py` files in the config
-> directory or parent directories (see
-> [Inheritance](defaults.qmd#inheritance)). When these files specify
-> `dependencies` in venv mode, those dependencies are automatically
-> installed. This works in both execution modes—the inheritance
-> mechanism applies everywhere, but dependency installation only happens
-> in venv mode.
+> Flow automatically includes any `_flow.py` files in the config directory or parent directories (see [Inheritance](./defaults.html.md#inheritance)). When these files specify `dependencies` in venv mode, those dependencies are automatically installed. This works in both execution modes—the inheritance mechanism applies everywhere, but dependency installation only happens in venv mode.
 
 ### Explicit Dependencies
 
-While automatic dependency discovery works for most cases, you may need
-explicit dependencies when you require specific package versions for
-reproducibility e.g. `openai==2.8.0`, need to specify a non-standard
-dependency file location, or need to override the automatic detection
-behavior. Explicit dependencies give you full control over what gets
-installed in your workflow’s virtual environment.
+While automatic dependency discovery works for most cases, you may need explicit dependencies when you require specific package versions for reproducibility e.g. `openai==2.8.0`, need to specify a non-standard dependency file location, or need to override the automatic detection behavior. Explicit dependencies give you full control over what gets installed in your workflow’s virtual environment.
 
-The `dependencies` field in `FlowSpec` accepts a `FlowDependencies`
-object:
+The `dependencies` field in [FlowSpec](./reference/inspect_flow.html.md#flowspec) accepts a [FlowDependencies](./reference/inspect_flow.html.md#flowdependencies) object:
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowDependencies, FlowSpec, FlowTask
@@ -183,9 +141,9 @@ from inspect_flow import FlowDependencies, FlowSpec, FlowTask
 FlowSpec(
     execution_type="venv",
     dependencies=FlowDependencies(
-        dependency_file="../foo/pyproject.toml",
-        additional_dependencies=["pandas==2.0.0"],
-        auto_detect_dependencies=True,
+1        dependency_file="../foo/pyproject.toml",
+2        additional_dependencies=["pandas==2.0.0"],
+3        auto_detect_dependencies=True,
     ),
     log_dir="logs",
     tasks=[
@@ -197,34 +155,26 @@ FlowSpec(
 )
 ```
 
-Line 6  
-How to find dependency files: Defaults to `"auto"` which auto-detects a
-`requirements.txt` or a `pyproject.toml` file. May also be set to a path
-to a dependency file or `"no_file"` to not use a dependency file. When
-using `pyproject.toml`, if a `uv.lock` file exists in the same
-directory, it will be used automatically for reproducible installs.
+1  
+How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
 
-Line 7  
-Extra packages beyond the dependency file. Accepts a string or list of
-strings. Supports: PyPI packages, Git repositories, local packages.
+2  
+Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
-Line 8  
-Auto-install packages based on task and model names in the config
-(default: `True`). For example, `model="openai/gpt-4"` installs
-`openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+3  
+Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
 
 ### Python Version
 
-Specify the Python version for your spec’s virtual environment when
-using venv mode:
+Specify the Python version for your spec’s virtual environment when using venv mode:
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowSpec, FlowTask
 
 FlowSpec(
-    execution_type="venv",
+1    execution_type="venv",
     python_version="3.11",
     log_dir="logs",
     tasks=[
@@ -236,14 +186,12 @@ FlowSpec(
 )
 ```
 
-Line 4  
+1  
 Required for python_version to take effect.
 
-> [!NOTE]
+> **NOTE: Note**
 >
-> The `python_version` field only applies to virtual environment mode.
-> In in-process mode, evaluations run using your current Python
-> interpreter.
+> The `python_version` field only applies to virtual environment mode. In in-process mode, evaluations run using your current Python interpreter.
 
 ### Checking Config
 
@@ -253,43 +201,28 @@ To verify which dependencies and Python version will be used:
 flow run config.py --dry-run --venv
 ```
 
-> [!TIP]
+> **TIP: TipRepeatability Best Practices**
 >
-> ### Repeatability Best Practices
+> For repeatable workflows, use **virtual environment mode** with the following practices:
 >
-> For repeatable workflows, use **virtual environment mode** with the
-> following practices:
+> - **Enable venv mode**: Set `execution_type="venv"` in your [FlowSpec](./reference/inspect_flow.html.md#flowspec) or use the `--venv` flag. This ensures isolated environments and automatic dependency installation.
+> - **Pin package versions**: Use exact versions for PyPI packages (`"inspect-evals==0.3.15"`) and commit hashes for Git repositories (`"git+https://github.com/user/repo@commit_hash"`).
+> - **Specify Python version**: Explicitly set `python_version` (e.g., `"3.11"`) to ensure consistent Python environments.
+> - **Use lockfiles**: When using `pyproject.toml`, include a `uv.lock` file for fully reproducible dependency resolution (automatically detected if present).
 >
-> - **Enable venv mode**: Set `execution_type="venv"` in your `FlowSpec`
->   or use the `--venv` flag. This ensures isolated environments and
->   automatic dependency installation.
-> - **Pin package versions**: Use exact versions for PyPI packages
->   (`"inspect-evals==0.3.15"`) and commit hashes for Git repositories
->   (`"git+https://github.com/user/repo@commit_hash"`).
-> - **Specify Python version**: Explicitly set `python_version` (e.g.,
->   `"3.11"`) to ensure consistent Python environments.
-> - **Use lockfiles**: When using `pyproject.toml`, include a `uv.lock`
->   file for fully reproducible dependency resolution (automatically
->   detected if present).
->
-> This combination ensures your evaluations can be reliably repeated and
-> shared with others.
+> This combination ensures your evaluations can be reliably repeated and shared with others.
 
 ## Parameterized Jobs
 
 ### Flow Args (`--arg`)
 
-Pass custom variables to Python config files using `--arg` or the
-`INSPECT_FLOW_ARG` environment variable. Use this for dynamic
-configuration that isn’t available via `--set`. To access the args the
-last statement in the config file should be a function that returns a
-`FlowSpec`. This function will be called with any provided args:
+Pass custom variables to Python config files using `--arg` or the `INSPECT_FLOW_ARG` environment variable. Use this for dynamic configuration that isn’t available via `--set`. To access the args the last statement in the config file should be a function that returns a [FlowSpec](./reference/inspect_flow.html.md#flowspec). This function will be called with any provided args:
 
 ``` bash
 flow run config.py --arg task_min_priority=2
 ```
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowSpec, FlowTask
@@ -314,8 +247,7 @@ def spec(task_min_priority: int = 1) -> FlowSpec:
 
 ### Template Substitution
 
-Use `{field_name}` syntax to reference other `FlowSpec` configuration
-values. Substitutions are applied after the config is loaded:
+Use `{field_name}` syntax to reference other [FlowSpec](./reference/inspect_flow.html.md#flowspec) configuration values. Substitutions are applied after the config is loaded:
 
 ``` python
 FlowSpec(
@@ -325,38 +257,29 @@ FlowSpec(
 )
 ```
 
-For nested fields, use bracket notation: `{options[eval_set_id]}` or
-`{flow_metadata[key]}`. Substitutions are resolved recursively until no
-more remain.
+For nested fields, use bracket notation: `{options[eval_set_id]}` or `{flow_metadata[key]}`. Substitutions are resolved recursively until no more remain.
 
 #### Built-in Substitutions
 
-In addition to `FlowSpec` field names, the following built-in
-substitution keys are available:
+In addition to [FlowSpec](./reference/inspect_flow.html.md#flowspec) field names, the following built-in substitution keys are available:
 
 | Key          | Description       | Example Output        |
 |--------------|-------------------|-----------------------|
 | `{DATETIME}` | Current timestamp | `2026-03-04T16-56-25` |
 
-Built-in keys use uppercase names to distinguish them from `FlowSpec`
-field names (which are lowercase). For example, `{DATETIME}` is a
-built-in key while `{log_dir}` references the `log_dir` field.
+Built-in keys use uppercase names to distinguish them from [FlowSpec](./reference/inspect_flow.html.md#flowspec) field names (which are lowercase). For example, `{DATETIME}` is a built-in key while `{log_dir}` references the `log_dir` field.
 
 ## Metadata
 
-Flow supports two types of metadata with distinct purposes: `metadata`
-and `flow_metadata`.
+Flow supports two types of metadata with distinct purposes: `metadata` and `flow_metadata`.
 
 ### `metadata` (Inspect AI Metadata)
 
-The `metadata` field in `FlowOptions` and `FlowTask` is passed directly
-to Inspect AI and stored in evaluation logs. Use this for tracking
-experiment information that should be accessible in Inspect AI’s log
-viewer and analysis tools.
+The `metadata` field in [FlowOptions](./reference/inspect_flow.html.md#flowoptions) and [FlowTask](./reference/inspect_flow.html.md#flowtask) is passed directly to Inspect AI and stored in evaluation logs. Use this for tracking experiment information that should be accessible in Inspect AI’s log viewer and analysis tools.
 
 **Example:**
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
@@ -383,17 +306,11 @@ FlowSpec(
 )
 ```
 
-The metadata from `FlowOptions` is applied globally to all tasks in the
-evaluation run, while task-level metadata is specific to each task.
-These metadata dictionaries are merged in Inspect AI, with task-level
-metadata keys overriding the global options.
+The metadata from [FlowOptions](./reference/inspect_flow.html.md#flowoptions) is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.
 
 ### `flow_metadata` (Flow-Only Metadata)
 
-The `flow_metadata` field is available on `FlowSpec`, `FlowTask`,
-`FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata
-is **not passed to Inspect AI**—it exists only in the Flow configuration
-and is useful for configuration-time logic and organization.
+The `flow_metadata` field is available on [FlowSpec](./reference/inspect_flow.html.md#flowspec), [FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), [FlowScorer](./reference/inspect_flow.html.md#flowscorer), [FlowSolver](./reference/inspect_flow.html.md#flowsolver), and [FlowAgent](./reference/inspect_flow.html.md#flowagent). This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
 
 **Use cases:**
 
@@ -404,7 +321,7 @@ and is useful for configuration-time logic and organization.
 
 **Example: Configuration-time filtering**
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowModel, FlowSpec, tasks_matrix
@@ -434,29 +351,18 @@ FlowSpec(
 
 ## Viewer Bundling
 
-Flow provides two ways to make evaluation results browsable without
-running `inspect view`, both configurable via `FlowOptions`:
+Flow provides two ways to make evaluation results browsable without running `inspect view`, both configurable via [FlowOptions](./reference/inspect_flow.html.md#flowoptions):
 
-- **`embed_viewer`** — Embeds a viewer into the log directory by
-  creating a `viewer/` subdirectory with viewer assets that reference
-  logs in the parent directory. No log files are copied.
-- **`bundle_dir`** — Creates a self-contained package in a separate
-  directory with the viewer and copies of all log files. The bundle can
-  be moved or deployed independently of the log directory.
+- **`embed_viewer`** — Embeds a viewer into the log directory by creating a `viewer/` subdirectory with viewer assets that reference logs in the parent directory. No log files are copied.
+- **`bundle_dir`** — Creates a self-contained package in a separate directory with the viewer and copies of all log files. The bundle can be moved or deployed independently of the log directory.
 
-Both options work with static hosting (S3, web servers) and can be used
-together. The key difference is that `embed_viewer` keeps everything in
-the log directory, while `bundle_dir` produces a standalone copy that
-can be deployed separately.
+Both options work with static hosting (S3, web servers) and can be used together. The key difference is that `embed_viewer` keeps everything in the log directory, while `bundle_dir` produces a standalone copy that can be deployed separately.
 
 ### Bundle URL Mappings
 
-Convert local paths to public URLs for sharing evaluation results. The
-`bundle_url_mappings` in `FlowOptions` applies string replacements to
-`bundle_dir` and `embed_viewer` paths to generate a shareable URL that’s
-printed to stdout after the evaluation completes.
+Convert local paths to public URLs for sharing evaluation results. The `bundle_url_mappings` in [FlowOptions](./reference/inspect_flow.html.md#flowoptions) applies string replacements to `bundle_dir` and `embed_viewer` paths to generate a shareable URL that’s printed to stdout after the evaluation completes.
 
-**config.py**
+    config.py
 
 ``` python
 from inspect_flow import FlowOptions, FlowSpec, FlowTask
@@ -471,48 +377,32 @@ FlowSpec(
 )
 ```
 
-After running this prints:
-`Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval`
+After running this prints: `Bundle URL: https://my-bucket.s3.amazonaws.com/bundles/my_eval`
 
-Use this when storing bundles on cloud storage like S3 or on servers
-with public HTTP access. Multiple mappings are applied in order.
+Use this when storing bundles on cloud storage like S3 or on servers with public HTTP access. Multiple mappings are applied in order.
 
-Using Bundle URL maps makes sense along with the spec
-[inheritance](defaults.qmd#inheritance) feature so you can configure the
-same bundle mapping for all configs in a repository.
+Using Bundle URL maps makes sense along with the spec [inheritance](./defaults.html.md#inheritance) feature so you can configure the same bundle mapping for all configs in a repository.
 
 ## Config Scripts
 
-When loading a configuration file, Flow expects the last expression to
-either be a `FlowSpec` or a function that returns a `FlowSpec`. Other
-than this requirement, the configuration file may execute arbitrary
-code.
+When loading a configuration file, Flow expects the last expression to either be a [FlowSpec](./reference/inspect_flow.html.md#flowspec) or a function that returns a [FlowSpec](./reference/inspect_flow.html.md#flowspec). Other than this requirement, the configuration file may execute arbitrary code.
 
 ### after_load
 
-Configuration scripts are executed while loading the spec. At the time
-that the script is running the spec is in an intermediate state
-(includes may not have been processed, overrides not applied, and
-template substitutions will not have run). To run code after the spec is
-fully loaded a script can decorate a function with `@after_load`.
+Configuration scripts are executed while loading the spec. At the time that the script is running the spec is in an intermediate state (includes may not have been processed, overrides not applied, and template substitutions will not have run). To run code after the spec is fully loaded a script can decorate a function with `@after_load`.
 
 The decorated function may optionally implement the following arguments:
 
-- `spec` - the fully loaded `FlowSpec`
+- `spec` - the fully loaded [FlowSpec](./reference/inspect_flow.html.md#flowspec)
 - `files` - the list of configuration files that were loaded
 
-One example of functionality that can be implemented using this feature
-is validation code to enforce constraints. Instead of repeating this
-validation code in every Flow configuration file, the code could be
-placed in a `_flow.py` file that is auto included.
+One example of functionality that can be implemented using this feature is validation code to enforce constraints. Instead of repeating this validation code in every Flow configuration file, the code could be placed in a `_flow.py` file that is auto included.
 
 ### Prevent Runs with Uncommitted Changes
 
-Place a `_flow.py` file at your repository root to validate that all
-configs are in clean git repositories. This validation runs
-automatically for all configs in subdirectories.
+Place a `_flow.py` file at your repository root to validate that all configs are in clean git repositories. This validation runs automatically for all configs in subdirectories.
 
-**\_flow.py**
+    _flow.py
 
 ``` python
 import subprocess
@@ -544,7 +434,7 @@ def validate_no_dirty_repo(files: list[str]) -> None:
         check_repo(path)
 ```
 
-**config.py**
+    config.py
 
 ``` python
 # Automatically inherits _flow.py
@@ -561,7 +451,7 @@ FlowSpec(
 
 A `_flow.py` file can prevent configs from overriding critical settings:
 
-**\_flow.py**
+    _flow.py
 
 ``` python
 from inspect_flow import FlowOptions, FlowSpec, after_load
@@ -580,7 +470,7 @@ FlowSpec(
 )
 ```
 
-**config.py**
+    config.py
 
 ``` python
 # Automatically inherits _flow.py
@@ -593,6 +483,4 @@ FlowSpec(
 )
 ```
 
-This pattern is useful for enforcing organizational standards (resource
-limits, safety constraints, etc.) across all evaluation configs in a
-repository.
+This pattern is useful for enforcing organizational standards (resource limits, safety constraints, etc.) across all evaluation configs in a repository.

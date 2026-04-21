@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Flow Concepts – Inspect Flow</title>
+<title>Spec – Inspect Flow</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -69,7 +69,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./defaults.html" rel="next">
-<link href="./index.qmd#basic-example" rel="prev">
+<link href="./index.qmd#after-running" rel="prev">
 <link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -162,6 +162,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="./index.html#basic-example">
  <span class="dropdown-text">Basic Example</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./index.html#matrix-functions">
+ <span class="dropdown-text">Matrix Functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./index.html#run-evaluations">
+ <span class="dropdown-text">Run Evaluations</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./index.html#after-running">
+ <span class="dropdown-text">After Running</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -170,8 +182,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-using-flow">    
         <li>
-    <a class="dropdown-item" href="./flow_concepts.html">
- <span class="dropdown-text">Flow Concepts</span></a>
+    <a class="dropdown-item" href="./spec.html">
+ <span class="dropdown-text">Spec</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="./defaults.html">
@@ -188,6 +200,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li>
     <a class="dropdown-item" href="./store.html">
  <span class="dropdown-text">Store</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./steps.html">
+ <span class="dropdown-text">Steps</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="./advanced.html">
@@ -221,7 +237,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./flow_concepts.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./flow_concepts.html">Flow Concepts</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./spec.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./spec.html">Spec</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -260,6 +276,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">Basic Example</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html#matrix-functions" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Matrix Functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html#run-evaluations" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Run Evaluations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html#after-running" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">After Running</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
@@ -273,8 +307,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./flow_concepts.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Flow Concepts</span></a>
+  <a href="./spec.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Spec</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -299,6 +333,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="./store.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Store</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./steps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Steps</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -337,9 +377,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./flow_concepts.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./flow_concepts.html">Flow Concepts</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./spec.html">Using Flow</a></li><li class="breadcrumb-item"><a href="./spec.html">Spec</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Flow Concepts</h1>
+<h1 class="title">Spec</h1>
 </div>
 
 
@@ -356,7 +396,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The primary interface for defining a workflow in Flow is a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>. A <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> defines the log directory, tasks, models, and other options that make up the spec. When Inspect Flow processes the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect’s <code>eval_set()</code> function along with any additional configuration, and Inspect executes the tasks.</p>
+<p><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> is the declarative interface for defining evaluations in Inspect Flow. A <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> defines the log directory, tasks, models, and other options that make up a spec. When Inspect Flow processes the <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span>, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect’s <code>eval_set()</code> function along with any additional configuration, and Inspect executes the tasks.</p>
 <p>Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:</p>
 <ul>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span></strong> — The top-level spec definition. Contains a list of tasks and spec settings. Under the hood it translates to an Inspect AI <a href="https://inspect.aisi.org.uk/eval-sets.html">Eval Set</a>.</li>
@@ -1250,8 +1290,8 @@ document.addEventListener("DOMContentLoaded", function () {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./index.html#basic-example" class="pagination-link" aria-label="Basic Example">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Basic Example</span>
+      <a href="./index.html#after-running" class="pagination-link" aria-label="After Running">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">After Running</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

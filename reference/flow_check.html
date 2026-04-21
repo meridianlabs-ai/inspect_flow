@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Display resolved flow configuration.">
+<meta name="description" content="Check spec completeness against existing logs.">
 
-<title>flow_config – Inspect Flow</title>
+<title>flow_check – Inspect Flow</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -34,8 +34,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../reference/flow_list.html" rel="next">
-<link href="../reference/flow_check.html" rel="prev">
+<link href="../reference/flow_config.html" rel="next">
+<link href="../reference/inspect_flow.qmd#tasks_with" rel="prev">
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -197,7 +197,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_check.html">CLI Commands</a></li><li class="breadcrumb-item"><a href="../reference/flow_config.html">flow config</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_check.html">CLI Commands</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -508,7 +508,7 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
+            <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">CLI Commands</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -517,13 +517,13 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
+  <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">flow check</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link active">
+  <a href="../reference/flow_config.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">flow config</span></a>
   </div>
 </li>
@@ -564,14 +564,14 @@ ul.task-list li input[type="checkbox"] {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/flow_check.html">CLI Commands</a></li><li class="breadcrumb-item"><a href="../reference/flow_config.html">flow config</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">flow config</h1>
+<h1 class="title">flow check</h1>
 </div>
 
 <div>
   <div class="description">
-    Display resolved flow configuration.
+    Check spec completeness against existing logs.
   </div>
 </div>
 
@@ -590,10 +590,10 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<p>Output config</p>
+<p>Check a spec against existing logs (searches log directory recursively)</p>
 <section id="usage" class="level4">
 <h4 class="anchored" data-anchor-id="usage">Usage</h4>
-<pre class="text"><code>flow config [OPTIONS] CONFIG_FILE</code></pre>
+<pre class="text"><code>flow check [OPTIONS] CONFIG_FILE</code></pre>
 </section>
 <section id="options" class="level4">
 <h4 class="anchored" data-anchor-id="options">Options</h4>
@@ -616,49 +616,13 @@ ul.task-list li input[type="checkbox"] {
 <tr class="odd">
 <td><code>--venv</code></td>
 <td>boolean</td>
-<td>If set run the flow in a virtual environment in a temporary directory.</td>
+<td>If set, resolve tasks in a virtual environment in a temporary directory.</td>
 <td><code>False</code></td>
-</tr>
-<tr class="even">
-<td><code>--resume</code></td>
-<td>boolean</td>
-<td>Resume from the previous run by reusing its log directory. Mutually exclusive with <code>--log-dir</code>.</td>
-<td><code>False</code></td>
-</tr>
-<tr class="odd">
-<td><code>--log-dir-create-unique</code> / <code>--no-log-dir-create-unique</code></td>
-<td>boolean</td>
-<td>If set, create a unique log directory by appending a datetime subdirectory (e.g.&nbsp;<code>2025-12-09T17-36-43</code>) under the specified <code>log_dir</code>. If not set, use the existing <code>log_dir</code> (which must be empty or have <code>log_dir_allow_dirty=True</code>).</td>
-<td>None</td>
-</tr>
-<tr class="even">
-<td><code>--store-write</code> / <code>--no-store-write</code></td>
-<td>boolean</td>
-<td>Write completed logs to the store (default: <code>--store-write</code>).</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--store-read</code> / <code>--no-store-read</code></td>
-<td>boolean</td>
-<td>Read existing logs from the store (default: <code>--no-store-read</code>).</td>
-<td>None</td>
-</tr>
-<tr class="even">
-<td><code>--store-filter</code></td>
-<td>text</td>
-<td>Log filter to apply when searching the store for existing logs. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
-<td>None</td>
-</tr>
-<tr class="odd">
-<td><code>--store</code></td>
-<td>text</td>
-<td>Path to the store directory. Will override the store specified in the config. <code>'auto'</code> for default location. <code>'none'</code> for no store.</td>
-<td>None</td>
 </tr>
 <tr class="even">
 <td><code>--limit</code></td>
 <td>integer</td>
-<td>Limit the number of samples to run.</td>
+<td>Set the expected number of samples per task for completeness calculation.</td>
 <td>None</td>
 </tr>
 <tr class="odd">
@@ -1213,13 +1177,13 @@ document.addEventListener("DOMContentLoaded", function () {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../reference/flow_check.html" class="pagination-link" aria-label="CLI Commands">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">CLI Commands</span>
+      <a href="../reference/inspect_flow.html#tasks_with" class="pagination-link" aria-label="tasks_with">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">tasks_with</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../reference/flow_list.html" class="pagination-link" aria-label="flow list">
-        <span class="nav-page-text">flow list</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../reference/flow_config.html" class="pagination-link" aria-label="flow config">
+        <span class="nav-page-text">flow config</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

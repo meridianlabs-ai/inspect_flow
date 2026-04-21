@@ -1,30 +1,19 @@
-# Reference
+# Reference – Inspect Flow
 
+### Python API
 
-#### Python API
+|  |  |
+|----|----|
+| [inspect_flow.api](../reference/inspect_flow.api.html.md) | Public API — run, check, steps, config, store helpers. |
+| [inspect_flow](../reference/inspect_flow.html.md) | Core types, decorators, and matrix functions. |
 
-|                                          |                           |
-|------------------------------------------|---------------------------|
-| [inspect_flow](inspect_flow.qmd)         | Core types and functions. |
-| [inspect_flow.api](inspect_flow.api.qmd) | Output and run a spec.    |
+### CLI
 
-#### Flow CLI
-
-|                                |                        |
-|--------------------------------|------------------------|
-| [flow config](flow_config.qmd) | Output spec as yaml.   |
-| [flow list](flow_list.qmd)     | List logs.             |
-| [flow run](flow_run.qmd)       | Run a spec.            |
-| [flow store](flow_store.qmd)   | Manage the Flow Store. |
-
-<style>
-.table td {
-    padding-bottom: 0 !important;
-}
-a {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: underline;
-}
-</style>
+|  |  |
+|----|----|
+| [flow check](../reference/flow_check.html.md) | Check spec completeness against existing logs. |
+| [flow config](../reference/flow_config.html.md) | Display resolved flow configuration. |
+| [flow list](../reference/flow_list.html.md) | List logs with filtering and sorting. |
+| [flow run](../reference/flow_run.html.md) | Run flow evaluations. |
+| [flow step](../reference/flow_step.html.md) | Run workflow steps on eval logs. |
+| [flow store](../reference/flow_store.html.md) | Manage the flow log store. |

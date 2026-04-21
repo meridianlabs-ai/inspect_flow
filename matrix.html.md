@@ -1,29 +1,20 @@
-# Matrixing
+# Matrixing – Inspect Flow
 
+Matrixing lets you systematically explore evaluation configurations by generating Cartesian products of parameters. Instead of manually writing every combination, Flow provides `*_matrix()` and `*_with()` functions to declaratively generate evaluation grids.
 
-Matrixing lets you systematically explore evaluation configurations by
-generating Cartesian products of parameters. Instead of manually writing
-every combination, Flow provides `*_matrix()` and `*_with()` functions
-to declaratively generate evaluation grids.
-
-> [!NOTE]
+> **NOTE: Note**
 >
-> `*_matrix()` and `*_with()` functions work with Flow types
-> (`FlowTask`, `FlowModel`, `FlowSolver`, `FlowAgent`) and strings (for
-> registry references). They cannot operate directly on Inspect AI
-> objects (`Task`, `Model`, `Solver`, `Agent`).
+> `*_matrix()` and `*_with()` functions work with Flow types ([FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), [FlowSolver](./reference/inspect_flow.html.md#flowsolver), [FlowAgent](./reference/inspect_flow.html.md#flowagent)) and strings (for registry references). They cannot operate directly on Inspect AI objects (`Task`, `Model`, `Solver`, `Agent`).
 
 ## Matrix Functions
 
-Matrix functions generate all combinations of their parameters using
-Cartesian products.
+Matrix functions generate all combinations of their parameters using Cartesian products.
 
 ### tasks_matrix()
 
-Generate task configurations by combining tasks with models, configs,
-solvers, and arguments:
+Generate task configurations by combining tasks with models, configs, solvers, and arguments:
 
-**tasks_matrix.py**
+    tasks_matrix.py
 
 ``` python
 from inspect_flow import FlowSpec, tasks_matrix
@@ -39,17 +30,13 @@ FlowSpec(
 
 This creates **4 tasks** (2 tasks × 2 models).
 
-In addition to `model`, `config`, `solver`, and `args`, you can also
-sweep over sample limit fields: `message_limit`, `token_limit`,
-`time_limit`, `working_limit`, and `cost_limit`. See [this
-example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py)
-for usage.
+In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
 
 ### models_matrix()
 
 Generate model configurations with different generation settings:
 
-**models_matrix.py**
+    models_matrix.py
 
 ``` python
 from inspect_ai.model import GenerateConfig
@@ -82,10 +69,9 @@ This creates **16 tasks** (2 task × 2 models × 4 resoning_effort).
 
 ### configs_matrix()
 
-Generate generation config combinations by specifying individual
-parameters:
+Generate generation config combinations by specifying individual parameters:
 
-**configs_matrix.py**
+    configs_matrix.py
 
 ``` python
 from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
@@ -116,7 +102,7 @@ This creates **16 tasks** (2 task × 2 models × 4 resoning_effort).
 
 Generate solver configurations with different arguments:
 
-**solvers_matrix.py**
+    solvers_matrix.py
 
 ``` python
 from inspect_flow import FlowSpec, solvers_matrix, tasks_matrix
@@ -143,7 +129,7 @@ This creates **3 tasks** (1 task × 3 solver configurations).
 
 Generate agent configurations with different arguments:
 
-**agents_matrix.py**
+    agents_matrix.py
 
 ``` python
 from inspect_ai.tool import bash, python, web_search
@@ -169,24 +155,18 @@ This creates **3 tasks** (1 task × 3 agent configurations).
 
 ## With Functions (Apply to All)
 
-“With” functions apply the same setting to all items in a list, without
-creating a Cartesian product. Unlike matrix functions which multiply
-combinations, with functions keep the list size the same.
+“With” functions apply the same setting to all items in a list, without creating a Cartesian product. Unlike matrix functions which multiply combinations, with functions keep the list size the same.
 
 **Key difference:**
 
-- **Matrix functions** create all combinations:
-  `models_matrix(model=[A, B], temperature=[0.5, 1.0])` → 4 tasks (A at
-  0.5, A at 1.0, B at 0.5, B at 1.0)
-- **With functions** apply to each item:
-  `models_with(model=[A, B], temperature=0.5)` → 2 tasks (A at 0.5, B at
-  0.5)
+- **Matrix functions** create all combinations: `models_matrix(model=[A, B], temperature=[0.5, 1.0])` → 4 tasks (A at 0.5, A at 1.0, B at 0.5, B at 1.0)
+- **With functions** apply to each item: `models_with(model=[A, B], temperature=0.5)` → 2 tasks (A at 0.5, B at 0.5)
 
 ### tasks_with()
 
 Apply common settings to multiple tasks:
 
-**tasks_with.py**
+    tasks_with.py
 
 ``` python
 from inspect_ai.model import GenerateConfig
@@ -195,16 +175,16 @@ from inspect_flow import FlowSpec, tasks_with
 FlowSpec(
     tasks=tasks_with(
         task=["inspect_evals/gpqa_diamond", "inspect_evals/mmlu_0_shot"],
-        model="openai/gpt-4o",
-        config=GenerateConfig(temperature=0.7),
+1        model="openai/gpt-4o",
+2        config=GenerateConfig(temperature=0.7),
     )
 )
 ```
 
-Line 7  
+1  
 Apply the same model to both tasks
 
-Line 8  
+2  
 Apply the same generation config to both tasks
 
 This creates **2 tasks** (2 tasks, each with the same model and config).
@@ -213,7 +193,7 @@ This creates **2 tasks** (2 tasks, each with the same model and config).
 
 Apply common settings to multiple models:
 
-**models_with.py**
+    models_with.py
 
 ``` python
 from inspect_ai.model import GenerateConfig
@@ -225,13 +205,13 @@ FlowSpec(
         task="my_task",
         model=models_with(
             model=["openai/gpt-4o", "anthropic/claude-3-5-sonnet-20241022"],
-            config=GenerateConfig(temperature=0.7),
+1            config=GenerateConfig(temperature=0.7),
         ),
     ),
 )
 ```
 
-Line 10  
+1  
 Apply the same generation config to both models
 
 This creates **2 tasks** (1 task × 2 models, each with the same config).
@@ -240,7 +220,7 @@ This creates **2 tasks** (1 task × 2 models, each with the same config).
 
 Apply common settings to multiple configs:
 
-**configs_with.py**
+    configs_with.py
 
 ``` python
 from inspect_ai.model import GenerateConfig
@@ -256,23 +236,22 @@ FlowSpec(
                 GenerateConfig(temperature=0.5),
                 GenerateConfig(temperature=1.0),
             ],
-            max_tokens=1000,
+1            max_tokens=1000,
         ),
     ),
 )
 ```
 
-Line 14  
+1  
 Apply the same max_tokens to all three temperature configs
 
-This creates **3 tasks** (1 task × 3 configs, each with the same
-max_tokens).
+This creates **3 tasks** (1 task × 3 configs, each with the same max_tokens).
 
 ### solvers_with()
 
 Apply common settings to multiple solvers:
 
-**solvers_with.py**
+    solvers_with.py
 
 ``` python
 from inspect_flow import FlowSpec, solvers_with, tasks_matrix
@@ -289,14 +268,13 @@ FlowSpec(
 )
 ```
 
-This creates **3 tasks** (1 task × 3 solvers, each with the same
-max_attempts).
+This creates **3 tasks** (1 task × 3 solvers, each with the same max_attempts).
 
 ### agents_with()
 
 Apply common settings to multiple agents:
 
-**agents_with.py**
+    agents_with.py
 
 ``` python
 from inspect_flow import FlowSpec, agents_with, tasks_matrix
@@ -319,7 +297,7 @@ This creates **3 tasks** (1 task × 3 agents, each with cache enabled).
 
 Mix parameter sweeps with common settings:
 
-**matrix_and_with.py**
+    matrix_and_with.py
 
 ``` python
 from inspect_flow import (
@@ -332,35 +310,34 @@ from inspect_flow import (
 FlowSpec(
     log_dir="logs",
     tasks=tasks_with(
-        task=tasks_matrix(
+1        task=tasks_matrix(
             task=["task1", "task2"],
             config=configs_matrix(
                 temperature=[0.0, 0.5, 1.0],
             ),
         ),
-        model="openai/gpt-4o",
-        sandbox="docker",
+2        model="openai/gpt-4o",
+3        sandbox="docker",
     ),
 )
 ```
 
-Lines 11-16  
+1  
 Create a matrix of 6 tasks (2 tasks × 3 temperature values)
 
-Line 17  
+2  
 Apply the same model to all 6 tasks from the matrix
 
-Line 18  
+3  
 Apply the same sandbox to all 6 tasks from the matrix
 
 ## Nested Sweeps
 
-Matrix functions can be nested to create complex parameter grids. Use
-the unpacking operator `*` to expand inner matrix results:
+Matrix functions can be nested to create complex parameter grids. Use the unpacking operator `*` to expand inner matrix results:
 
 **Example: Tasks with nested model sweep**
 
-**nested_model_sweep.py**
+    nested_model_sweep.py
 
 ``` python
 from inspect_ai.model import GenerateConfig
@@ -370,9 +347,9 @@ FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=["inspect_evals/mmlu_0_shot", "inspect_evals/gpqa_diamond"],
-        model=[
-            "anthropic/claude-3-5-sonnet",
-            *models_matrix(
+1        model=[
+2            "anthropic/claude-3-5-sonnet",
+3            *models_matrix(
                 model=["openai/gpt-4o", "openai/gpt-4o-mini"],
                 config=[
                     GenerateConfig(reasoning_effort="low"),
@@ -384,22 +361,20 @@ FlowSpec(
 )
 ```
 
-Line 8  
-Total of 5 models: 1 single model + 4 from the matrix (2 models × 2
-reasoning_effort values)
+1  
+Total of 5 models: 1 single model + 4 from the matrix (2 models × 2 reasoning_effort values)
 
-Line 9  
+2  
 A single model configuration for Claude
 
-Line 10  
-Use the unpacking operator `*` to expand the nested model matrix into
-the list
+3  
+Use the unpacking operator `*` to expand the nested model matrix into the list
 
 This creates **10 tasks** (2 tasks × 5 model configurations).
 
 **Example: Tasks with nested task sweep**
 
-**nested_task_sweep.py**
+    nested_task_sweep.py
 
 ``` python
 from inspect_flow import FlowSpec, FlowTask, tasks_matrix
@@ -408,9 +383,9 @@ FlowSpec(
     log_dir="logs",
     tasks=tasks_matrix(
         task=[
-            FlowTask(name="task1", args={"subset": "test"}),
-            *tasks_matrix(
-                task="task2",
+1            FlowTask(name="task1", args={"subset": "test"}),
+2            *tasks_matrix(
+3                task="task2",
                 args=[
                     {"language": "en"},
                     {"language": "de"},
@@ -423,22 +398,18 @@ FlowSpec(
 )
 ```
 
-Line 7  
+1  
 A single task configuration with specific arguments
 
-Line 8  
-Use the unpacking operator `*` to expand the nested task matrix into the
-list
+2  
+Use the unpacking operator `*` to expand the nested task matrix into the list
 
-Lines 9-16  
-Total of 4 tasks: 1 single task + 3 from the matrix (1 task × 3 language
-variants)
+3  
+Total of 4 tasks: 1 single task + 3 from the matrix (1 task × 3 language variants)
 
 This creates **8 tasks** (4 task variants × 2 models).
 
-> [!WARNING]
->
-> ### Watch Out for Combinatorial Explosion
+> **WARNING: WarningWatch Out for Combinatorial Explosion**
 >
 > Parameter sweeps grow multiplicatively. A sweep with:
 >
@@ -449,12 +420,9 @@ This creates **8 tasks** (4 task variants × 2 models).
 >
 > Results in 3 × 4 × 5 × 3 = **180 evaluations**.
 >
-> Always preview with `--dry-run` to check the number of evaluations
-> before running expensive grids.
+> Always preview with `--dry-run` to check the number of evaluations before running expensive grids.
 >
-> The [Flow Store](store.qmd) indexes logs from every run. With
-> `--store-read` enabled, re-running a large sweep only evaluates what’s
-> new or changed.
+> The [Flow Store](./store.html.md) indexes logs from every run. With `--store-read` enabled, re-running a large sweep only evaluates what’s new or changed.
 
 ## Matrix Merge
 
@@ -464,20 +432,19 @@ When base objects already have values, matrix parameters are merged:
 tasks_matrix(
     task=FlowTask(
         name="task",
-        config=GenerateConfig(temperature=0.5)
+1        config=GenerateConfig(temperature=0.5)
     ),
     config=[
-        GenerateConfig(max_tokens=1000),
+2        GenerateConfig(max_tokens=1000),
         GenerateConfig(max_tokens=2000),
     ]
 )
 ```
 
-Line 4  
+1  
 Base value of temperature=0.5
 
-Lines 7-8  
+2  
 Adds max_tokens, keeps temperature=0.5
 
-This creates 2 tasks: one with `temperature=0.5, max_tokens=1000` and
-another with `temperature=0.5, max_tokens=2000`.
+This creates 2 tasks: one with `temperature=0.5, max_tokens=1000` and another with `temperature=0.5, max_tokens=2000`.

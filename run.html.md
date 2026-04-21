@@ -1,9 +1,6 @@
-# Running Flows
+# Running Flows – Inspect Flow
 
-
-Once you’ve defined your Flow configuration, you can execute evaluations
-using the `flow run` command. Flow also provides tools for previewing
-configurations and controlling runtime behavior.
+Once you’ve defined your Flow configuration, you can execute evaluations using the `flow run` command. Flow also provides tools for previewing configurations and controlling runtime behavior.
 
 ## The `flow run` Command
 
@@ -13,9 +10,7 @@ Execute your evaluation workflow:
 flow run config.py
 ```
 
-You can also run from a YAML config file (see [this
-example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/first_config.yml)
-for the YAML format):
+You can also run from a YAML config file (see [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/first_config.yml) for the YAML format):
 
 ``` bash
 flow run config.yaml
@@ -25,31 +20,20 @@ flow run config.yaml
 
 1.  Flow loads your configuration file
 2.  Resolves all defaults and matrix expansions
-3.  Checks for existing logs in the log directory (and the [Flow
-    Store](store.qmd) if `--store-read` is enabled)
-4.  Executes evaluations via Inspect AI’s `eval_set()` in the current
-    Python process
+3.  Checks for existing logs in the log directory (and the [Flow Store](./store.html.md) if `--store-read` is enabled)
+4.  Executes evaluations via Inspect AI’s `eval_set()` in the current Python process
 5.  Stores logs in `log_dir`
-6.  Indexes logs in the [Flow Store](store.qmd) and generates
-    `flow-requirements.txt`
+6.  Indexes logs in the [Flow Store](./store.html.md) and generates `flow-requirements.txt`
 
-> [!TIP]
+> **TIP: TipVirtual Environment Mode**
 >
-> ### Virtual Environment Mode
->
-> For reproducible evaluation runs, you can use [virtual environment
-> mode](advanced.qmd#virtual-environment-mode) which automatically
-> creates an isolated environment and installs dependencies:
+> For reproducible evaluation runs, you can use [virtual environment mode](./advanced.html.md#virtual-environment-mode) which automatically creates an isolated environment and installs dependencies:
 >
 > ``` bash
 > flow run matrix.py --venv
 > ```
 >
-> Or set `execution_type="venv"` in your `FlowSpec`. Virtual environment
-> mode automatically installs packages based on your config (e.g.,
-> `model="openai/gpt-4"` installs `openai`) and dependency files, making
-> it easy to share workflows with others. See [Execution
-> Modes](advanced.qmd#execution-modes) to learn more.
+> Or set `execution_type="venv"` in your [FlowSpec](./reference/inspect_flow.html.md#flowspec). Virtual environment mode automatically installs packages based on your config (e.g., `model="openai/gpt-4"` installs `openai`) and dependency files, making it easy to share workflows with others. See [Execution Modes](./advanced.html.md#execution-modes) to learn more.
 
 ### Common CLI Flags
 
@@ -63,13 +47,11 @@ Performs the full setup process and shows what would run:
 
 - Applies all defaults and expands all matrix functions
 - Instantiates tasks from the registry
-- Checks for existing logs in the log directory (and the Flow Store if
-  `--store-read` is enabled)
+- Checks for existing logs in the log directory (and the Flow Store if `--store-read` is enabled)
 - Shows which tasks would run and which logs would be reused
 - Stops before actually running evaluations
 
-This is invaluable for debugging what will actually run in your
-evaluations.
+This is invaluable for debugging what will actually run in your evaluations.
 
 **Resume a previous run:**
 
@@ -77,10 +59,7 @@ evaluations.
 flow run config.py --resume
 ```
 
-Reuses the log directory from the most recent run. Use this to pick up
-where you left off after an interruption, or to add new evaluations to
-an existing log directory after updating your config. Mutually exclusive
-with `--log-dir`.
+Reuses the log directory from the most recent run. Use this to pick up where you left off after an interruption, or to add new evaluations to an existing log directory after updating your config. Mutually exclusive with `--log-dir`.
 
 **Override log directory:**
 
@@ -96,10 +75,7 @@ Changes where logs and results are stored.
 flow run config.py --log-dir ./experiments/baseline --log-dir-create-unique
 ```
 
-Creates a subdirectory within the specified `log_dir` using the current
-timestamp (e.g., `./experiments/baseline/2026-03-04T16-56-25/`). Useful
-for keeping separate log directories across repeated runs without
-overwriting previous results.
+Creates a subdirectory within the specified `log_dir` using the current timestamp (e.g., `./experiments/baseline/2026-03-04T16-56-25/`). Useful for keeping separate log directories across repeated runs without overwriting previous results.
 
 **Runtime overrides:**
 
@@ -109,8 +85,7 @@ flow run config.py \
   --set defaults.config.temperature=0.5
 ```
 
-Override any configuration value at runtime. See [CLI
-Overrides](defaults.qmd#cli-overrides) for more details.
+Override any configuration value at runtime. See [CLI Overrides](./defaults.html.md#cli-overrides) for more details.
 
 ## The `flow config` Command
 
@@ -120,24 +95,21 @@ Preview your configuration before running:
 flow config config.py
 ```
 
-Displays the expanded configuration as YAML (applies defaults, includes,
-and CLI overrides). Does not instantiate tasks or check for existing
-logs—it only loads and expands the configuration file.
+Displays the expanded configuration as YAML (applies defaults, includes, and CLI overrides). Does not instantiate tasks or check for existing logs—it only loads and expands the configuration file.
 
-> [!TIP]
->
-> ### When to Use Each Command
+> **TIP: TipWhen to Use Each Command**
 >
 > - **`flow config`** - View expanded config as YAML, quick syntax check
-> - **`flow run --dry-run`** - Preview what would run, check which logs
->   would be reused
+> - **`flow run --dry-run`** - Preview what would run, check which logs would be reused
 > - **`flow run`** - Execute evaluations
+> - **`flow check`** - Check completeness of a spec against a log directory
+> - **`flow step`** - Run [post-evaluation steps](./steps.html.md) on logs (tag, copy, promote, etc.)
 
 ## Running from Python
 
 You can run Flow evaluations programmatically using the Python API:
 
-**run.py**
+    run.py
 
 ``` python
 from inspect_flow import FlowSpec, FlowTask
@@ -159,24 +131,18 @@ spec = FlowSpec(
 run(spec=spec)
 ```
 
-The `inspect_flow.api` module provides programmatic access to Flow
-capabilities. Key functions include:
+The `inspect_flow.api` module provides programmatic access to Flow capabilities. Key functions include:
 
-- **`run()`** - Execute a Flow spec with full environment setup
-  (equivalent to `flow run`)
-- **`load_spec()`** - Load a Flow configuration from a Python file into
-  a `FlowSpec` object
-- **`config()`** - Get the expanded configuration as YAML (applies
-  defaults, includes, overrides - equivalent to `flow config`)
-- **`init()`** - Initialize Flow session settings (logging, display,
-  .env loading)
-- **`list_logs()`** - List log files from a directory or the Flow Store
-  (equivalent to `flow list log`)
-- **`store_get()`** - Get a FlowStore instance for programmatic store
-  access
+- **[run()](./reference/inspect_flow.api.html.md#run)** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
+- **[check()](./reference/inspect_flow.api.html.md#check)** - Check completeness of a spec against existing logs (equivalent to `flow check`)
+- **[load_spec()](./reference/inspect_flow.api.html.md#load_spec)** - Load a Flow configuration from a Python file into a [FlowSpec](./reference/inspect_flow.html.md#flowspec) object
+- **[config()](./reference/inspect_flow.api.html.md#config)** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
+- **[init()](./reference/inspect_flow.api.html.md#init)** - Initialize Flow session settings (logging, display, .env loading)
+- **[list_logs()](./reference/inspect_flow.api.html.md#list_logs)** - List log files from a directory or the Flow Store (equivalent to `flow list log`)
+- **[store_get()](./reference/inspect_flow.api.html.md#store_get)** - Get a FlowStore instance for programmatic store access
+- **[run_step()](./reference/inspect_flow.api.html.md#run_step)** - Run a [step](./steps.html.md) on logs with filtering and dry-run support (equivalent to `flow step`)
 
-See the [API Reference](reference/inspect_flow.api.qmd) for complete
-documentation.
+See the [API Reference](./reference/inspect_flow.api.html.md) for complete documentation.
 
 ## Results and Logs
 
@@ -195,31 +161,24 @@ Evaluation results are stored in the `log_dir`:
 
 **Directory structure:**
 
-- Flow passes the `log_dir` directly to Inspect AI `eval_set()` for
-  evaluation log storage
+- Flow passes the `log_dir` directly to Inspect AI `eval_set()` for evaluation log storage
 - Inspect AI handles the actual evaluation log file naming and storage
-- Log file naming conventions follow Inspect AI’s standards (see
-  [Inspect AI logging
-  docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
-- Flow automatically saves the resolved configuration as `flow.yaml` in
-  the log directory
-- Flow saves a snapshot of installed packages as
-  `flow-requirements.txt`:
-  - In **venv mode**: captures packages installed in the isolated
-    environment
+- Log file naming conventions follow Inspect AI’s standards (see [Inspect AI logging docs](https://inspect.aisi.org.uk/eval-logs.html#log-file-name))
+- Flow automatically saves the resolved configuration as `flow.yaml` in the log directory
+- Flow saves a snapshot of installed packages as `flow-requirements.txt`:
+  - In **venv mode**: captures packages installed in the isolated environment
   - In **inproc mode**: captures packages from your current environment
 - The `.eval-set-id` file contains the eval set identifier
 - The `eval-set.json` file contains eval set metadata
 
-> [!NOTE]
+> **NOTE: Note**
 >
-> Logs in this directory are indexed in the [Flow Store](store.qmd),
-> enabling log reuse across future runs when `--store-read` is enabled.
+> Logs in this directory are indexed in the [Flow Store](./store.html.md), enabling log reuse across future runs when `--store-read` is enabled.
 
 **Log formats:**
 
 - `.eval` - Binary Inspect AI log format (default, high-performance)
-- `.json` - JSON format (if `log_format="json"` in `FlowOptions`)
+- `.json` - JSON format (if `log_format="json"` in [FlowOptions](./reference/inspect_flow.html.md#flowoptions))
 
 ### Viewing Results
 
@@ -229,20 +188,19 @@ Evaluation results are stored in the `log_dir`:
 inspect view
 ```
 
-Opens the Inspect AI viewer to explore evaluation logs interactively.
-[Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can
-automatically detect Flow config files in the log directory and render
-them in the UI, making it easier to review the spec for the evaluations.
+Opens the Inspect AI viewer to explore evaluation logs interactively. [Inspect View](https://inspect.aisi.org.uk/log-viewer.html) can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the spec for the evaluations.
 
-Click the Flow icon in the top right hand corner to view the Flow
-config.
+Click the Flow icon in the top right hand corner to view the Flow config.
 
-![Eval list rendered by Inspect View](images/inspect_view_list.png)
+![](images/inspect_view_list.png)
+
+Eval list rendered by Inspect View
 
 The Flow config file is rendered in YAML format.
 
-![Flow config rendered by Inspect
-View](images/inspect_view_flow_config.png)
+![](images/inspect_view_flow_config.png)
+
+Flow config rendered by Inspect View
 
 ### S3 Support
 
@@ -255,6 +213,4 @@ FlowSpec(
 )
 ```
 
-For more information on configuring an S3 bucket as a logs directory,
-refer to the Inspect AI
-[documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3).
+For more information on configuring an S3 bucket as a logs directory, refer to the Inspect AI [documentation](https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3).

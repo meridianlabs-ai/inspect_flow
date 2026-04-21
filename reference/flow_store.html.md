@@ -1,5 +1,4 @@
-# flow store
-
+# flow_store – Inspect Flow
 
 Manage the flow store
 
@@ -33,7 +32,7 @@ flow store import [OPTIONS] PATH...
 
 | Name | Type | Description | Default |
 |----|----|----|----|
-| `--store`, `-s` | directory | Path to the store directory | None |
+| `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
@@ -55,7 +54,7 @@ flow store remove [OPTIONS] [PREFIX]...
 
 | Name | Type | Description | Default |
 |----|----|----|----|
-| `--store`, `-s` | directory | Path to the store directory | None |
+| `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
@@ -79,7 +78,7 @@ flow store info [OPTIONS]
 
 | Name | Type | Description | Default |
 |----|----|----|----|
-| `--store`, `-s` | directory | Path to the store directory | None |
+| `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
@@ -98,7 +97,7 @@ flow store delete [OPTIONS]
 
 | Name | Type | Description | Default |
 |----|----|----|----|
-| `--store`, `-s` | directory | Path to the store directory | None |
+| `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--yes`, `-y` | boolean | Skip confirmation prompt | `False` |
@@ -118,7 +117,7 @@ flow store list [OPTIONS]
 
 | Name | Type | Description | Default |
 |----|----|----|----|
-| `--store`, `-s` | directory | Path to the store directory | None |
+| `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
