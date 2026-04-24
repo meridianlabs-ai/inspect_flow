@@ -339,6 +339,7 @@ def test_python_version() -> None:
             ]
 
 
+@pytest.mark.slow
 def test_5_flow_requirements() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         log_dir = Path(temp_dir) / "logs"
@@ -393,6 +394,7 @@ def test_333_no_flow_requirements() -> None:
         assert not requirements_path.exists()
 
 
+@pytest.mark.slow
 def test_241_dependency_file() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -419,6 +421,7 @@ def test_241_dependency_file() -> None:
             assert "local_eval" in requirements
 
 
+@pytest.mark.slow
 def test_241_no_uvlock() -> None:
     # Delete uv.lock if it exists to test behavior without lockfile
     uv_lock_path = Path("tests/local_eval/uv.lock")
@@ -456,6 +459,7 @@ def test_241_no_uvlock() -> None:
             uv_lock_path.write_bytes(uv_lock_contents)
 
 
+@pytest.mark.slow
 def test_241_requirements_txt() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -610,6 +614,7 @@ def test_325_uv_sync_args() -> None:
                 ]
 
 
+@pytest.mark.slow
 def test_369_flow_requirements_s3(mock_s3: BaseClient) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -741,6 +746,7 @@ my-package==1.0.0
     assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
 
 
+@pytest.mark.slow
 def test_pip_error(recording_console: Console) -> None:
     spec = FlowSpec(
         log_dir="logs",
