@@ -15,6 +15,7 @@ dependencies = [
     "dateparser>=1.2.0",
     "deltalake>=0.18.0",
     "inspect-ai>=0.3.207",
+    "inspect-scout",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
     "pydantic>=2.11.2",
