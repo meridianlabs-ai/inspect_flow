@@ -299,10 +299,10 @@ class GenerateConfigDict(TypedDict):
     """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
     """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
-    effort: NotRequired[Literal["low", "medium", "high", "max"] | None]
-    """Control how many tokens are used for a response, trading off between response thoroughness and token efficiency. Anthropic Claude Opus 4.5 and 4.6 only (`max` only supported on 4.6)."""
+    effort: NotRequired[Literal["low", "medium", "high", "xhigh", "max"] | None]
+    """Control how many tokens are used for a response, trading off between response thoroughness and token efficiency. Anthropic Claude Opus 4.5+ only (`max` only supported on 4.6 and 4.7, `xhigh` supported only on 4.7)."""
     reasoning_effort: NotRequired[
-        Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None
+        Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_tokens: NotRequired[int | None]
@@ -367,7 +367,9 @@ class GenerateConfigMatrixDict(TypedDict):
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
     """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
     reasoning_effort: NotRequired[
-        Sequence[Literal["none", "minimal", "low", "medium", "high", "xhigh"] | None]
+        Sequence[
+            Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None
+        ]
         | None
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""

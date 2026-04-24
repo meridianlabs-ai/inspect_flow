@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -61,6 +61,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
         run: uv run pytest --cov --cov-report=term --cov-report=xml --cov-branch
+          --runslow
       - name: Coverage comment
         if: matrix.python-version == '3.10'
         uses: py-cov-action/python-coverage-comment-action@v3
@@ -82,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
@@ -104,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup

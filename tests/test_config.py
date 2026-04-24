@@ -435,6 +435,17 @@ def test_auto_include_two(recording_console: Console) -> None:
     assert "Applyingmultiple_flow.py.#2:" in out_normalized
 
 
+def test_auto_include_constants_only_flow() -> None:
+    """Auto-included _flow.py that contains only constants (no FlowSpec) should
+    not raise. Previously raised TypeError at load.py:261 because
+    execute_file_and_get_last_result returns the last constant value."""
+    spec = load_spec(
+        str(Path(__file__).parent / "config" / "constants" / "other_flow.py")
+    )
+    assert isinstance(spec.tasks, list)
+    assert len(spec.tasks) == 1
+
+
 def test_216_auto_include_from_sub_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     flow_file = (
         Path(__file__).parent / "config" / "auto" / "sub" / "model_and_task_flow.py"
@@ -671,9 +682,8 @@ def test_unsupported_format() -> None:
 
 def test_not_flow_spec() -> None:
     config_path = str(Path(config_dir) / "not_flow.py")
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(ValueError, match="No FlowSpec returned"):
         load_spec(config_path)
-    assert "got <class 'int'>" in str(e.value)
 
 
 def test_auto_include_protocol() -> None:

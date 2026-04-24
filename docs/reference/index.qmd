@@ -6,16 +6,18 @@ title: Reference
 
 | | |
 |---|---|
-| [inspect_flow.api](inspect_flow.api.qmd) | Public API — init, run, load_spec, config, store helpers. |
-| [inspect_flow](inspect_flow.qmd) | Core types and functions. |
+| [inspect_flow.api](inspect_flow.api.qmd) | Public API — run, check, steps, config, store helpers. |
+| [inspect_flow](inspect_flow.qmd) | Core types, decorators, and matrix functions. |
 : {.borderless tbl-colwidths=[35,65]}
 
 ### CLI
 
 | | |
 |---|---|
+| [flow check](flow_check.qmd) | Check spec completeness against existing logs. |
 | [flow config](flow_config.qmd) | Display resolved flow configuration. |
 | [flow list](flow_list.qmd) | List logs with filtering and sorting. |
 | [flow run](flow_run.qmd) | Run flow evaluations. |
+| [flow step](flow_step.qmd) | Run workflow steps on eval logs. |
 | [flow store](flow_store.qmd) | Manage the flow log store. |
 : {.borderless tbl-colwidths=[35,65]}
