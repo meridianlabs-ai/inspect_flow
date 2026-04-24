@@ -59,7 +59,7 @@ def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
         file = absolute_file_path(file)
         spec = _load_spec_from_file(file, args=options.args, state=state)
         if spec is None:
-            raise ValueError(f"No value returned from Python config file: {file}")
+            raise ValueError(f"No FlowSpec returned from Python config file: {file}")
 
         base_dir = Path(file).parent.as_posix()
         spec = expand_spec(spec, base_dir=base_dir, options=options, state=state)
@@ -247,20 +247,16 @@ def _load_spec_from_file(
         with file(config_file, "r") as f:
             if config_path.suffix == ".py":
                 spec, globals = execute_file_and_get_last_result(config_file, args=args)
-                if spec is None or isinstance(spec, FlowSpec):
-                    state.files_to_specs[config_file] = spec
-                    state.after_flow_spec_loaded_funcs.extend(
-                        [
-                            v
-                            for v in globals.values()
-                            if hasattr(v, INSPECT_FLOW_AFTER_LOAD_ATTR)
-                        ]
-                    )
-
-                else:
-                    raise TypeError(
-                        f"Expected FlowSpec from Python config file, got {type(spec)}"
-                    )
+                if not isinstance(spec, FlowSpec):
+                    spec = None
+                state.files_to_specs[config_file] = spec
+                state.after_flow_spec_loaded_funcs.extend(
+                    [
+                        v
+                        for v in globals.values()
+                        if hasattr(v, INSPECT_FLOW_AFTER_LOAD_ATTR)
+                    ]
+                )
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
                     data = yaml.safe_load(f)
