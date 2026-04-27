@@ -91,6 +91,10 @@ class Display(ABC):
     @abstractmethod
     def stop(self, remove_actions: list[str] | None = None) -> None: ...
 
+    def make_renderable(self) -> RenderableType | None:
+        """Render the current display state, for handoff to another display."""
+        return None
+
 
 def create_display(mode: DisplayMode, actions: dict[str, DisplayAction]) -> Display:
     if _display_type == "plain":

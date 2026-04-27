@@ -11,7 +11,7 @@ from time import sleep
 from types import TracebackType
 from typing import Any, Optional, Type
 
-from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
+from rich.console import Console, ConsoleOptions, Group, RenderableType, RenderResult
 from rich.live import Live
 from rich.measure import Measurement
 from rich.segment import Segment
@@ -199,14 +199,11 @@ class FullActionsDisplay(Display):
         self._title: list[str | Text] | None = None
         self._live: Live | None = None
         self._output_capture = _OutputCapture()
-        self._was_recording = False
 
     def __enter__(self) -> Display:
         assert not self._live
         set_display(self)
         self._output_capture.start()
-        self._was_recording = console.record
-        console.record = False
         self._live = Live(
             self._make_display(),
             console=console,
@@ -237,7 +234,6 @@ class FullActionsDisplay(Display):
         set_display(None)
         self._live.__exit__(exc_type, exc_val, exc_tb)
         self._live = None
-        console.record = self._was_recording
         console.print(self._make_display(fill_height=False))
         for msgs in self._messages.values():
             for msg in msgs:
@@ -296,6 +292,14 @@ class FullActionsDisplay(Display):
                 console_output=console_output,
             )
         )
+
+    def make_renderable(self) -> RenderableType:
+        parts: list[RenderableType] = [self._make_display(fill_height=False)]
+        for msgs in self._messages.values():
+            for msg in msgs:
+                if isinstance(msg, _Copyable):
+                    parts.append(msg.renderable)
+        return Group(*parts)
 
     def get_title(self) -> list[str | Text] | None:
         return self._title

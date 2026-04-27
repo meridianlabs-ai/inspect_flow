@@ -11,7 +11,7 @@ from rich.text import Text
 
 from inspect_flow._util.path_util import path_str
 
-console = Console(record=True)
+console = Console()
 
 Formats = Literal["default", "success", "info", "warning", "error"]
 
