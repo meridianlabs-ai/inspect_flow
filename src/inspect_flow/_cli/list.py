@@ -238,16 +238,17 @@ def _compute_entries(
 # -- Formatting ---------------------------------------------------------------
 
 
-_RIGHT_ALIGN = frozenset({3, 4})  # samples, duration
+_RIGHT_ALIGN = frozenset({4, 5})  # samples, duration
 _COL_PAD = 2
 _TREE_GUIDE_WIDTH = 4
 
 
-def _make_cells(entry: LogEntry, filename_only: bool = False) -> list[Text]:
+def _make_cells(entry: LogEntry, index: int, filename_only: bool = False) -> list[Text]:
     log_path = entry.log_path.rsplit("/", 1)[-1] if filename_only else entry.log_path
     status = entry.header.status
     tags = entry.header.tags
     return [
+        Text(f"[{index}]"),
         Text(entry.task),
         entry.qualifier,
         Text(status, style=_STATUS_STYLES.get(status, "")),
@@ -284,12 +285,13 @@ def _break_columns(widths: list[int], available: int) -> list[list[int]]:
 
 def _format_row(cells: list[Text], widths: list[int], breaks: list[list[int]]) -> Text:
     result = Text()
+    wrap = "\n" + " " * (widths[0] + _COL_PAD)
     first = True
     for cols in breaks:
         if all(cells[ci].cell_len == 0 for ci in cols):
             continue
         if not first:
-            result.append("\n  ")
+            result.append(wrap)
         first = False
         for j, ci in enumerate(cols):
             if j > 0:
@@ -307,10 +309,10 @@ def _format_row(cells: list[Text], widths: list[int], breaks: list[list[int]]) -
     return result
 
 
-def _render_entries(entries: list[LogEntry]) -> str:
+def _render_entries(entries: list[LogEntry], start_index: int = 1) -> str:
     if not entries:
         return ""
-    rows = [_make_cells(e) for e in entries]
+    rows = [_make_cells(e, start_index + i) for i, e in enumerate(entries)]
     widths = _col_widths(rows)
     breaks = _break_columns(widths, Console().size.width)
     buf = io.StringIO()
@@ -347,8 +349,9 @@ def _describe_edit(edit: TagsEdit | MetadataEdit) -> Text:
     return result
 
 
-def _render_entry_multiline(entry: LogEntry) -> Text:
+def _render_entry_multiline(entry: LogEntry, index: int) -> Text:
     result = Text()
+    result.append(f"[{index}] ")
     result.append_text(path(entry.log_path))
     result.append("\n")
 
@@ -406,27 +409,31 @@ def _render_entry_multiline(entry: LogEntry) -> Text:
     return result
 
 
-def _render_entries_multiline(entries: list[LogEntry]) -> str:
+def _render_entries_multiline(entries: list[LogEntry], start_index: int = 1) -> str:
     if not entries:
         return ""
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=2**15)
-    for entry in entries:
-        console.print(_render_entry_multiline(entry))
+    for i, entry in enumerate(entries):
+        console.print(_render_entry_multiline(entry, start_index + i))
     return buf.getvalue()
 
 
-def _render(entries: list[LogEntry], oneline: bool) -> str:
+def _render(entries: list[LogEntry], oneline: bool, start_index: int = 1) -> str:
     if oneline:
-        return _render_entries(entries)
-    return _render_entries_multiline(entries)
+        return _render_entries(entries, start_index)
+    return _render_entries_multiline(entries, start_index)
 
 
 def _entries_renderable(
-    entries: list[LogEntry], oneline: bool, width: int, max_lines: int | None = None
+    entries: list[LogEntry],
+    oneline: bool,
+    width: int,
+    start_index: int = 1,
+    max_lines: int | None = None,
 ) -> RenderableType:
     if oneline:
-        rows = [_make_cells(e) for e in entries]
+        rows = [_make_cells(e, start_index + i) for i, e in enumerate(entries)]
         widths = _col_widths(rows)
         breaks = _break_columns(widths, width)
         formatted = [_format_row(cells, widths, breaks) for cells in rows]
@@ -444,15 +451,17 @@ def _entries_renderable(
     if max_lines is not None:
         renderables: list[Text] = []
         total = 0
-        for e in entries:
-            rendered = _render_entry_multiline(e)
+        for i, e in enumerate(entries):
+            rendered = _render_entry_multiline(e, start_index + i)
             lines = rendered.plain.count("\n") + 1
             if total + lines > max_lines:
                 break
             renderables.append(rendered)
             total += lines
         return Group(*renderables)
-    return Group(*[_render_entry_multiline(e) for e in entries])
+    return Group(
+        *[_render_entry_multiline(e, start_index + i) for i, e in enumerate(entries)]
+    )
 
 
 def _render_tree(renderable: Tree) -> str:
@@ -477,13 +486,15 @@ def _common_prefix(dirs: list[str]) -> str:
 def _build_tree(
     dir_entries: list[tuple[str, list[LogEntry]]],
     width: int,
+    start_index: int = 1,
     max_lines: int | None = None,
 ) -> Tree:
-    all_cells = [
-        _make_cells(e, filename_only=True)
-        for _, entries in dir_entries
-        for e in entries
-    ]
+    all_cells: list[list[Text]] = []
+    n = start_index
+    for _, entries in dir_entries:
+        for e in entries:
+            all_cells.append(_make_cells(e, n, filename_only=True))
+            n += 1
     widths = _col_widths(all_cells) if all_cells else []
 
     dirs = [d for d, _ in dir_entries]
@@ -535,8 +546,10 @@ def _build_tree(
     return tree
 
 
-def _format_tree(dir_entries: list[tuple[str, list[LogEntry]]]) -> str:
-    return _render_tree(_build_tree(dir_entries, Console().size.width))
+def _format_tree(
+    dir_entries: list[tuple[str, list[LogEntry]]], start_index: int = 1
+) -> str:
+    return _render_tree(_build_tree(dir_entries, Console().size.width, start_index))
 
 
 def _page_string(content: str) -> None:
@@ -670,8 +683,11 @@ def _paged_output(
                 first = False
                 if options.max_count is not None:
                     entries = entries[: options.max_count - emitted]
+                start = emitted + 1
                 emitted += len(entries)
-                proc.stdin.write(_render(entries, options.oneline).encode())
+                proc.stdin.write(
+                    _render(entries, options.oneline, start_index=start).encode()
+                )
                 proc.stdin.flush()
                 pending = []
                 pending_count = 0
@@ -685,8 +701,11 @@ def _paged_output(
                 progress.stop()
             if options.max_count is not None:
                 entries = entries[: options.max_count - emitted]
+            start = emitted + 1
             emitted += len(entries)
-            proc.stdin.write(_render(entries, options.oneline).encode())
+            proc.stdin.write(
+                _render(entries, options.oneline, start_index=start).encode()
+            )
             proc.stdin.flush()
     except BrokenPipeError:
         pass

@@ -1,0 +1,4 @@
+---
+reference: flow check
+description: Check spec completeness against existing logs.
+---

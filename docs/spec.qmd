@@ -1,10 +1,10 @@
 ---
-title: "Flow Concepts"
-llms-description: Core concepts — FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies.
+title: "Spec"
+llms-description: FlowSpec, FlowTask, FlowModel, FlowSolver, FlowAgent, FlowScorer, FlowOptions, FlowDefaults, FlowDependencies.
 tbl-colwidths: [30,70]
 ---
 
-The primary interface for defining a workflow in Flow is a `FlowSpec`. A `FlowSpec` defines the log directory, tasks, models, and other options that make up the spec. When Inspect Flow processes the `FlowSpec`, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect's `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
+`FlowSpec` is the declarative interface for defining evaluations in Inspect Flow. A `FlowSpec` defines the log directory, tasks, models, and other options that make up a spec. When Inspect Flow processes the `FlowSpec`, it resolves the configuration into a list of evaluation tasks to be run. These tasks are provided to Inspect's `eval_set()` function along with any additional configuration, and Inspect executes the tasks.
 
 Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 

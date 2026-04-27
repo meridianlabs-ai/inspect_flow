@@ -2,16 +2,17 @@
 
 # Inspect Flow
 
-Workflow orchestration for [Inspect AI](https://inspect.aisi.org.uk/) that enables you to run evaluations at scale with repeatability and maintainability.
+Workflow orchestration for [Inspect AI](https://inspect.aisi.org.uk/) that enables you to define, run, and manage evaluations at scale — from configuration through to production.
 
 ## Why Inspect Flow?
 
-As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
+As evaluation workflows grow in complexity—running multiple tasks across different models with varying parameters, then reviewing, validating, and promoting results—managing these experiments becomes challenging. Inspect Flow addresses this by providing:
 
 1. **Declarative Configuration**: Define complex evaluations with tasks, models, and parameters in type-safe schemas
 2. **Repeatable & Shareable**: Encapsulated definitions of tasks, models, configurations, and Python dependencies ensure experiments can be reliably repeated and shared
 3. **Powerful Defaults**: Define defaults once and reuse them everywhere with automatic inheritance
 4. **Parameter Sweeping**: Matrix patterns for systematic exploration across tasks, models, and hyperparameters
+5. **Post-Evaluation Workflows**: Tag, validate, and promote evaluation logs with composable steps
 
 Inspect Flow is designed for researchers and engineers running systematic AI evaluations who need to scale beyond ad-hoc scripts.
 
@@ -139,69 +140,17 @@ tasks:
     name: openai/gpt-5-mini
 ```
 
-`tasks_matrix` and `models_matrix` are powerful functions that can operate on multiple levels of nested matrixes which enable sophisticated parameter sweeping. Let's say you want to explore different reasoning efforts across models—you can achieve this with the `models_matrix` function.
+Flow provides additional matrix functions (`models_matrix`, `configs_matrix`) for sweeping over model settings, generation configs, and more. See [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html) for details.
 
-```python
-from inspect_ai.model import GenerateConfig
-from inspect_flow import FlowSpec, models_matrix, tasks_matrix
+## Run Evaluations
 
-FlowSpec(
-    log_dir="logs",
-    tasks=tasks_matrix(
-        task=[
-            "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmlu_0_shot",
-        ],
-        model=models_matrix(
-            model=[
-                "openai/gpt-5",
-                "openai/gpt-5-mini",
-            ],
-            config=[
-                GenerateConfig(reasoning_effort="minimal"),
-                GenerateConfig(reasoning_effort="low"),
-                GenerateConfig(reasoning_effort="medium"),
-                GenerateConfig(reasoning_effort="high"),
-            ],
-        ),
-    ),
-)
-```
-
-For even more concise parameter sweeping, use `configs_matrix` to generate configuration variants. This produces the same 16 evaluations (2 tasks × 2 models × 4 reasoning levels) as above, but with less boilerplate:
-
-```python
-from inspect_flow import FlowSpec, configs_matrix, models_matrix, tasks_matrix
-
-FlowSpec(
-    log_dir="logs",
-    tasks=tasks_matrix(
-        task=[
-            "inspect_evals/gpqa_diamond",
-            "inspect_evals/mmlu_0_shot",
-        ],
-        model=models_matrix(
-            model=[
-                "openai/gpt-5",
-                "openai/gpt-5-mini",
-            ],
-            config=configs_matrix(
-                reasoning_effort=["minimal", "low", "medium", "high"],
-            ),
-        ),
-    ),
-)
-```
-
-### Run evaluations
-
-Before running evaluations, preview the resolved configuration with `--dry-run`:
+Before running evaluations, preview what would run with `--dry-run`:
 
 ```bash
 flow run matrix.py --dry-run
 ```
 
-This creates the virtual environment, installs all dependencies, imports tasks from the registry, applies all defaults, and expands all matrix functions—everything except actually running the evaluations. It's invaluable for verifying that dependencies can be installed, tasks are properly configured, and the exact settings are what you expect. Unlike `flow config` which just parses the config file, `--dry-run` performs the full setup process.
+This performs the full setup process—importing tasks from the registry, applying all defaults, expanding all matrix functions, and checking for existing logs—showing exactly what would run, but stops before actually running the evaluations.
 
 To run the config:
 
@@ -209,7 +158,7 @@ To run the config:
 flow run matrix.py
 ```
 
-This will run all 16 evaluations (2 tasks × 2 models × 4 reasoning levels). When complete, you'll find a link to the logs at the bottom of the task results summary.
+When complete, you'll find a link to the logs at the bottom of the task results summary.
 
 ![Log path printed in terminal](https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/logs_terminal.png)
 
@@ -221,13 +170,30 @@ inspect view --log-dir logs
 
 ![Eval logs rendered by Inspect View](https://raw.githubusercontent.com/meridianlabs-ai/inspect_flow/main/docs/images/inspect_view_eval.png)
 
+## After Running
+
+Once evaluations complete, use [steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html) to operate on the resulting logs. For example, tag logs after reviewing them:
+
+```bash
+flow step tag logs/ --add reviewed --reason "Manually inspected"
+```
+
+Use `flow check` to verify the completeness of a spec against a log directory — for example, checking how much of a production directory has been filled:
+
+```bash
+flow check matrix.py --log-dir s3://bucket/prod/logs
+```
+
+Steps can be composed into full workflows — filtering, tagging, and copying logs between directories. See [Steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html) for custom steps, filters, and an end-to-end example.
+
 ## Learning More
 
 See the following articles to learn more about using Flow:
 
-- [Flow Concepts](https://meridianlabs-ai.github.io/inspect_flow/flow_concepts.html): Flow type system, config structure and basics.
+- [Spec](https://meridianlabs-ai.github.io/inspect_flow/spec.html): Flow type system, config structure and basics.
 - [Defaults](https://meridianlabs-ai.github.io/inspect_flow/defaults.html): Define defaults once and reuse them everywhere with automatic inheritance.
 - [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html): Systematic parameter exploration with matrix and with functions.
+- [Steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html): Post-evaluation workflows — tag, validate, and promote logs with composable steps.
 - [Reference](https://meridianlabs-ai.github.io/inspect_flow/reference/): Detailed documentation on the Flow Python API and CLI commands.
 
 ## Development

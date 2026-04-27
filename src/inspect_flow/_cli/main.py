@@ -5,6 +5,7 @@ from dotenv import find_dotenv, load_dotenv
 
 from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
+from inspect_flow._cli.constants import resolve_tokens
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.step import step_command
 from inspect_flow._cli.store import store_command
@@ -15,7 +16,17 @@ from .. import __version__
 from .run import run_command
 
 
-@click.group(invoke_without_command=True, context_settings={"max_content_width": 120})
+class FlowGroup(click.Group):
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        args = resolve_tokens(args)
+        return super().parse_args(ctx, args)
+
+
+@click.group(
+    cls=FlowGroup,
+    invoke_without_command=True,
+    context_settings={"max_content_width": 120},
+)
 @click.option(
     "--version",
     type=bool,

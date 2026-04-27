@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 from click.testing import CliRunner
 from inspect_flow._api.api import load_spec
@@ -10,6 +11,7 @@ from inspect_flow._types.flow_types import FlowSpec
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
 
+@pytest.mark.slow
 def test_local_e2e() -> None:
     log_dir = init_test_logs()
 

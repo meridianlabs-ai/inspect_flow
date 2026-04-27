@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.8.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.7.0...v0.8.0) (2026-04-17)
+
+
+### Features
+
+* flow step command ([#562](https://github.com/meridianlabs-ai/inspect_flow/issues/562)) ([5b0854b](https://github.com/meridianlabs-ai/inspect_flow/commit/5b0854bcf8707452ad949a892caab18a0c196bad))
+
+
+### Bug Fixes
+
+* add --live option to flow list log ([#630](https://github.com/meridianlabs-ai/inspect_flow/issues/630)) ([b044b6d](https://github.com/meridianlabs-ai/inspect_flow/commit/b044b6d93bdf1d33dbe9283473d94f717cdd003a))
+* add --provenance flag to flow list log ([#649](https://github.com/meridianlabs-ai/inspect_flow/issues/649)) ([e0c28bd](https://github.com/meridianlabs-ai/inspect_flow/commit/e0c28bd957016294011f3a302fca518e5c690f9f))
+* add --tag filtering support to flow list log ([#626](https://github.com/meridianlabs-ai/inspect_flow/issues/626)) ([908af10](https://github.com/meridianlabs-ai/inspect_flow/commit/908af103673c6822830f73971954324101e7d0e8))
+* add numbering to flow list log ([#673](https://github.com/meridianlabs-ai/inspect_flow/issues/673)) ([ec57fd7](https://github.com/meridianlabs-ai/inspect_flow/commit/ec57fd7428698c12a0151009df3b53e7895ab5d4))
+* add tags column to task display ([#616](https://github.com/meridianlabs-ai/inspect_flow/issues/616)) ([4f4794d](https://github.com/meridianlabs-ai/inspect_flow/commit/4f4794d3a3449423e3c946a56f9628ac3cf222ce))
+* add tags to flow list log ([#629](https://github.com/meridianlabs-ai/inspect_flow/issues/629)) ([04f0f70](https://github.com/meridianlabs-ai/inspect_flow/commit/04f0f702c97ac77432d9206036d076c028f9b618))
+* better handling of SSO refresh errors ([#627](https://github.com/meridianlabs-ai/inspect_flow/issues/627)) ([6f6b097](https://github.com/meridianlabs-ai/inspect_flow/commit/6f6b097a51576b3bb228cc84bb9ad1cca50750de))
+* consistent --store param ([#636](https://github.com/meridianlabs-ai/inspect_flow/issues/636)) ([158ae48](https://github.com/meridianlabs-ai/inspect_flow/commit/158ae480de43254c30632941c8e6ea246f6936f2))
+* flow check command improvements ([#614](https://github.com/meridianlabs-ai/inspect_flow/issues/614)) ([d337fe5](https://github.com/meridianlabs-ai/inspect_flow/commit/d337fe556c71eb72f482b3da522d08cfeba8329d))
+* flow list log default to multiline format ([#628](https://github.com/meridianlabs-ai/inspect_flow/issues/628)) ([6cfbab4](https://github.com/meridianlabs-ai/inspect_flow/commit/6cfbab45fef57fdd75ad855a6fa04b37a5462c70))
+* improve --set help text ([#622](https://github.com/meridianlabs-ai/inspect_flow/issues/622)) ([8859d5d](https://github.com/meridianlabs-ai/inspect_flow/commit/8859d5d0ed6aa3df1ecddbae41e7540e46b5ac50))
+* improve and document filter behavior ([#632](https://github.com/meridianlabs-ai/inspect_flow/issues/632)) ([b069e2f](https://github.com/meridianlabs-ai/inspect_flow/commit/b069e2fc4988a6cd23ff3c738846fa7f251116ea))
+* improve handling of KeyboardInterrupt during eval_set ([#607](https://github.com/meridianlabs-ai/inspect_flow/issues/607)) ([ebf3789](https://github.com/meridianlabs-ai/inspect_flow/commit/ebf378951e8b16ae82b2cb42f46355e1695f2e54))
+* improve list log performance by reading samples async ([#609](https://github.com/meridianlabs-ai/inspect_flow/issues/609)) ([06f4813](https://github.com/meridianlabs-ai/inspect_flow/commit/06f481344c7e268e8830f93649c22c566a912528))
+* improve performance of adding logs to store ([#663](https://github.com/meridianlabs-ai/inspect_flow/issues/663)) ([bb91abc](https://github.com/meridianlabs-ai/inspect_flow/commit/bb91abcff9fd38f30e43e62510ba458626f50f6f))
+* improved flow list log output format ([#638](https://github.com/meridianlabs-ai/inspect_flow/issues/638)) ([37b6f3f](https://github.com/meridianlabs-ai/inspect_flow/commit/37b6f3fd7b58207a36886696f85f11de23f0a05a))
+* including files with just [@step](https://github.com/step) function ([#623](https://github.com/meridianlabs-ai/inspect_flow/issues/623)) ([922a9d1](https://github.com/meridianlabs-ai/inspect_flow/commit/922a9d1d42b33750f773c1010cfb16ded96314b5))
+* installing git+ additional depcencies ([#672](https://github.com/meridianlabs-ai/inspect_flow/issues/672)) ([c0fb27a](https://github.com/meridianlabs-ai/inspect_flow/commit/c0fb27afb204b562610745f31ab77287baa1b9e0))
+* move duplicate logs before unnexpected logs in flow check output ([#665](https://github.com/meridianlabs-ai/inspect_flow/issues/665)) ([d9f9f10](https://github.com/meridianlabs-ai/inspect_flow/commit/d9f9f1054ee636b559f35aac1af723cfd170c4f9))
+* remove unused _StepDecorator ([#670](https://github.com/meridianlabs-ai/inspect_flow/issues/670)) ([ae3a829](https://github.com/meridianlabs-ai/inspect_flow/commit/ae3a82949e7c762a0d401cc6b8857101d32a8e0c))
+* return results from check API method ([#615](https://github.com/meridianlabs-ai/inspect_flow/issues/615)) ([c2f9318](https://github.com/meridianlabs-ai/inspect_flow/commit/c2f93188de388e3e84f91dc6e4b5b7d536a94413))
+* steps write new logs to store ([#625](https://github.com/meridianlabs-ai/inspect_flow/issues/625)) ([499ebd6](https://github.com/meridianlabs-ai/inspect_flow/commit/499ebd62e90ad1afc545c68f02ee88f4b14c14ba))
+* support factory instantiation in venv mode ([#624](https://github.com/meridianlabs-ai/inspect_flow/issues/624)) ([bc90db4](https://github.com/meridianlabs-ai/inspect_flow/commit/bc90db4bfd39c7272a81176955dffd95c2aca06d))
+* task differentiator when FlowFactory args are used ([#647](https://github.com/meridianlabs-ai/inspect_flow/issues/647)) ([90a119c](https://github.com/meridianlabs-ai/inspect_flow/commit/90a119ccc74309e3a8308e14d096441d7cd680fd))
+* update display to show summary at bottom of box ([#639](https://github.com/meridianlabs-ai/inspect_flow/issues/639)) ([8124c1b](https://github.com/meridianlabs-ai/inspect_flow/commit/8124c1b4b3ed61546c78583cd8bf1fcd1391133c))
+
+
+### Documentation
+
+* add documentation for flow steps and flow check ([#667](https://github.com/meridianlabs-ai/inspect_flow/issues/667)) ([2ea1895](https://github.com/meridianlabs-ai/inspect_flow/commit/2ea1895daa148943dcdfb43a502263b50dc9d63a))
+* clarify list log falls back to default store when PATH not provided ([#634](https://github.com/meridianlabs-ai/inspect_flow/issues/634)) ([c60f83a](https://github.com/meridianlabs-ai/inspect_flow/commit/c60f83a341b80148a6500edaaa2e329877f671bf))
+
 ## [0.7.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.6.0...v0.7.0) (2026-03-24)
 
 

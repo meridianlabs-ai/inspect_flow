@@ -118,6 +118,44 @@ def test_relative_dependency() -> None:
         ]
 
 
+def test_671_vcs_url_dependency() -> None:
+    base_dir = Path(__file__).parent.resolve().as_posix()
+    vcs_url = "git+https://github.com/meridianlabs-ai/flow_steps_demo.git@main"
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+        patch("subprocess.run") as mock_run,
+    ):
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        _create_venv(
+            spec=FlowSpec(
+                dependencies=FlowDependencies(
+                    dependency_file="no_file",
+                    additional_dependencies=[vcs_url],
+                ),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=base_dir,
+            temp_dir=temp_dir,
+            env=os.environ.copy(),
+            dry_run=False,
+            action=_test_action,
+        )
+
+        assert mock_run.call_count == 2
+        args = mock_run.call_args.args[0]
+        flow_path = str((Path(__file__).parents[1]).resolve())
+        assert args[:5] == [
+            "uv",
+            "pip",
+            "install",
+            vcs_url,
+            f"-e {flow_path}",
+        ]
+
+
 def test_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
@@ -301,6 +339,7 @@ def test_python_version() -> None:
             ]
 
 
+@pytest.mark.slow
 def test_5_flow_requirements() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         log_dir = Path(temp_dir) / "logs"
@@ -355,6 +394,7 @@ def test_333_no_flow_requirements() -> None:
         assert not requirements_path.exists()
 
 
+@pytest.mark.slow
 def test_241_dependency_file() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -381,6 +421,7 @@ def test_241_dependency_file() -> None:
             assert "local_eval" in requirements
 
 
+@pytest.mark.slow
 def test_241_no_uvlock() -> None:
     # Delete uv.lock if it exists to test behavior without lockfile
     uv_lock_path = Path("tests/local_eval/uv.lock")
@@ -418,6 +459,7 @@ def test_241_no_uvlock() -> None:
             uv_lock_path.write_bytes(uv_lock_contents)
 
 
+@pytest.mark.slow
 def test_241_requirements_txt() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -572,6 +614,7 @@ def test_325_uv_sync_args() -> None:
                 ]
 
 
+@pytest.mark.slow
 def test_369_flow_requirements_s3(mock_s3: BaseClient) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         env = os.environ.copy()
@@ -703,6 +746,7 @@ my-package==1.0.0
     assert "abc123def456789012345678901234567890abcd" in my_package_lines[0]
 
 
+@pytest.mark.slow
 def test_pip_error(recording_console: Console) -> None:
     spec = FlowSpec(
         log_dir="logs",

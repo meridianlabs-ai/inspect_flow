@@ -42,7 +42,7 @@ def test_readme_python_blocks() -> None:
     content = readme_path.read_text()
 
     blocks = extract_python_blocks(content)
-    assert len(blocks) == 5, (
+    assert len(blocks) == 3, (
         "Unexpected number of Python code blocks found in README.md"
     )
 

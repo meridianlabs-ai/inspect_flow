@@ -304,6 +304,10 @@ flow store list --exclude production_ready
 
 `--filter` and `--exclude` are mutually exclusive.
 
+::: callout-note
+Filters are also used by [`flow step`](steps.qmd) to select which logs to process.
+:::
+
 ## CLI Commands
 
 The Flow Store provides commands to manually manage logs in the Flow Store. All commands support the `--store` flag to specify which store to operate on.

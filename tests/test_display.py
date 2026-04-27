@@ -4,8 +4,10 @@ import os
 
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._display.display import (
+    DisplayType,
     create_display,
     display,
+    get_display_type,
     set_display,
     set_display_type,
 )
@@ -100,12 +102,15 @@ class TestPlainDisplay:
 
 
 class TestDisplayFactory:
+    _prev_display_type: DisplayType
+
     def setup_method(self) -> None:
+        self._prev_display_type = get_display_type()
         set_display(None)
 
     def teardown_method(self) -> None:
         set_display(None)
-        set_display_type("full")
+        set_display_type(self._prev_display_type)
 
     def test_display_returns_plain_when_type_is_plain(self) -> None:
         set_display_type("plain")

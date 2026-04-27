@@ -109,6 +109,8 @@ Displays the expanded configuration as YAML (applies defaults, includes, and CLI
 -   **`flow config`** - View expanded config as YAML, quick syntax check
 -   **`flow run --dry-run`** - Preview what would run, check which logs would be reused
 -   **`flow run`** - Execute evaluations
+-   **`flow check`** - Check completeness of a spec against a log directory
+-   **`flow step`** - Run [post-evaluation steps](steps.qmd) on logs (tag, copy, promote, etc.)
 :::
 
 ## Running from Python
@@ -122,11 +124,13 @@ You can run Flow evaluations programmatically using the Python API:
 The `inspect_flow.api` module provides programmatic access to Flow capabilities. Key functions include:
 
 - **`run()`** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
+- **`check()`** - Check completeness of a spec against existing logs (equivalent to `flow check`)
 - **`load_spec()`** - Load a Flow configuration from a Python file into a `FlowSpec` object
 - **`config()`** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
 - **`init()`** - Initialize Flow session settings (logging, display, .env loading)
 - **`list_logs()`** - List log files from a directory or the Flow Store (equivalent to `flow list log`)
 - **`store_get()`** - Get a FlowStore instance for programmatic store access
+- **`run_step()`** - Run a [step](steps.qmd) on logs with filtering and dry-run support (equivalent to `flow step`)
 
 See the [API Reference](reference/inspect_flow.api.qmd) for complete documentation.
 

@@ -194,6 +194,8 @@ def _create_venv(
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
+    if "://" in dependency or dependency.startswith(("git+", "hg+", "bzr+", "svn+")):
+        return dependency
     if "/" in dependency:
         return absolute_path_relative_to(dependency, base_dir=base_dir)
     return dependency

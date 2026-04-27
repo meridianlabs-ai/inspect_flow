@@ -20,10 +20,16 @@ inspect-docs:
           href: index.qmd#getting-started
         - text: Basic Example
           href: index.qmd#basic-example
+        - text: Matrix Functions
+          href: index.qmd#matrix-functions
+        - text: Run Evaluations
+          href: index.qmd#run-evaluations
+        - text: After Running
+          href: index.qmd#after-running
     - text: Using Flow
       contents:
-        - text: Flow Concepts
-          href: flow_concepts.qmd
+        - text: Spec
+          href: spec.qmd
         - text: Defaults
           href: defaults.qmd
         - text: Matrixing
@@ -32,6 +38,8 @@ inspect-docs:
           href: run.qmd
         - text: Store
           href: store.qmd
+        - text: Steps
+          href: steps.qmd
         - text: Advanced
           href: advanced.qmd
 
