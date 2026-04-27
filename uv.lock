@@ -1219,7 +1219,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -1664,7 +1664,7 @@ wheels = [
 
 [[package]]
 name = "inspect-ai"
-version = "0.3.211"
+version = "0.3.212"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioboto3" },
@@ -1707,9 +1707,9 @@ dependencies = [
     { name = "zipp" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/55/47/469704be6e5bfbf4d8992580d414fb49573ee4be795a8fc9026da0bd82d4/inspect_ai-0.3.211.tar.gz", hash = "sha256:4661e5d2b511d292aafd643319accc2e0a87f4ce9ab2d1f40a2f9c89147c1613", size = 45368418, upload-time = "2026-04-23T21:16:18.528Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/4d/be87a2feab6c623870e600190062598d007ac43424d63f85ce514c4b796e/inspect_ai-0.3.212.tar.gz", hash = "sha256:e0ca468ead125fe03eb7e0edff02319dbb438400f74f5ee3b66f537f7861d2b8", size = 45386004, upload-time = "2026-04-25T00:51:56.661Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/da/4545ee3a32a30f9ff2d3044e8b8236b4f7fb3f32017d59e707580bc837ae/inspect_ai-0.3.211-py3-none-any.whl", hash = "sha256:615dda8f5f8aad0b06183b27aa708e06358baa66a34f73ea25caf86c322aec75", size = 35982597, upload-time = "2026-04-23T21:16:09.677Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/f5/ea9e309727d3f383751e48935644af1a2b7561463f0452ed67845aa502aa/inspect_ai-0.3.212-py3-none-any.whl", hash = "sha256:5907d739c9d733319be57401c72355e8f644e3bcc8f15bd4a7b92547e14b5f37", size = 35997711, upload-time = "2026-04-25T00:51:48.745Z" },
 ]
 
 [[package]]
@@ -1853,7 +1853,7 @@ wheels = [
 
 [[package]]
 name = "inspect-swe"
-version = "0.2.47"
+version = "0.2.48"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agent-client-protocol" },
@@ -1867,9 +1867,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/6d/08d7f6f24fa24cecadfec461bb02a4a3d0f645dbbec03bd6e9999d5b9d72/inspect_swe-0.2.47.tar.gz", hash = "sha256:5920f4573222a0cb7034011f7815c9bad841ccf2a0b83101f9afde60ed6c99d3", size = 68093, upload-time = "2026-04-13T19:47:20.937Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/90/2b34e476fbe7c245843b4f6d4dd003f81e978bfc32218fa36c3e73a8825a/inspect_swe-0.2.48.tar.gz", hash = "sha256:30671d1580dccefcc3c435663da92d2de7f36d013f54703196440b95fdf296d4", size = 68092, upload-time = "2026-04-26T19:32:47.962Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/65/98/c240888167e0018ed84f448c92bd65b41a877275c4a7f4e09823c8220237/inspect_swe-0.2.47-py3-none-any.whl", hash = "sha256:ed5c22b22ebae73ac0d597f6e045908f6c3a3b229ca164cf3c5c7a24a9dcd43a", size = 95100, upload-time = "2026-04-13T19:47:19.463Z" },
+    { url = "https://files.pythonhosted.org/packages/79/56/57ebd6dd97f6ad7c88e91468305f2107c9b6404c208d3a27ab46b79ababb/inspect_swe-0.2.48-py3-none-any.whl", hash = "sha256:b6324fa749134346554a91194d3ff262cab8e16ee96941bf638a14a78cc45fce", size = 95111, upload-time = "2026-04-26T19:32:46.612Z" },
 ]
 
 [[package]]
@@ -3304,11 +3304,11 @@ wheels = [
 
 [[package]]
 name = "packaging"
-version = "26.1"
+version = "26.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/df/de/0d2b39fb4af88a0258f3bac87dfcbb48e73fbdea4a2ed0e2213f9a4c2f9a/packaging-26.1.tar.gz", hash = "sha256:f042152b681c4bfac5cae2742a55e103d27ab2ec0f3d88037136b6bfe7c9c5de", size = 215519, upload-time = "2026-04-14T21:12:49.362Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/f1/e7a6dd94a8d4a5626c03e4e99c87f241ba9e350cd9e6d75123f992427270/packaging-26.2.tar.gz", hash = "sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661", size = 228134, upload-time = "2026-04-24T20:15:23.917Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/c2/920ef838e2f0028c8262f16101ec09ebd5969864e5a64c4c05fad0617c56/packaging-26.1-py3-none-any.whl", hash = "sha256:5d9c0669c6285e491e0ced2eee587eaf67b670d94a19e94e3984a481aba6802f", size = 95831, upload-time = "2026-04-14T21:12:47.56Z" },
+    { url = "https://files.pythonhosted.org/packages/df/b2/87e62e8c3e2f4b32e5fe99e0b86d576da1312593b39f47d8ceef365e95ed/packaging-26.2-py3-none-any.whl", hash = "sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e", size = 100195, upload-time = "2026-04-24T20:15:22.081Z" },
 ]
 
 [[package]]
@@ -3415,11 +3415,11 @@ wheels = [
 
 [[package]]
 name = "pathspec"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2e/17/9c3094b822982b9f1ea666d8580ce59000f61f87c1663556fb72031ad9ec/pathspec-1.1.0.tar.gz", hash = "sha256:f5d7c555da02fd8dde3e4a2354b6aba817a89112fa8f333f7917a2a4834dd080", size = 133918, upload-time = "2026-04-23T01:46:22.298Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/82/42f767fc1c1143d6fd36efb827202a2d997a375e160a71eb2888a925aac1/pathspec-1.1.1.tar.gz", hash = "sha256:17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a", size = 135180, upload-time = "2026-04-27T01:46:08.907Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/c9/8eed0486f074e9f1ca7f8ce5ad663e65f12fdab344028d658fa1b03d35e0/pathspec-1.1.0-py3-none-any.whl", hash = "sha256:574b128f7456bd899045ccd142dd446af7e6cfd0072d63ad73fbc55fbb4aaa42", size = 56264, upload-time = "2026-04-23T01:46:20.606Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl", hash = "sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189", size = 57328, upload-time = "2026-04-27T01:46:07.06Z" },
 ]
 
 [[package]]
@@ -4690,15 +4690,15 @@ wheels = [
 
 [[package]]
 name = "sse-starlette"
-version = "3.3.4"
+version = "3.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/8c/f9290339ef6d79badbc010f067cd769d6601ec11a57d78569c683fb4dd87/sse_starlette-3.3.4.tar.gz", hash = "sha256:aaf92fc067af8a5427192895ac028e947b484ac01edbc3caf00e7e7137c7bef1", size = 32427, upload-time = "2026-03-29T09:00:23.307Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/9a/f35932a8c0eb6b2287b66fa65a0321df8c84e4e355a659c1841a37c39fdb/sse_starlette-3.4.1.tar.gz", hash = "sha256:f780bebcf6c8997fe514e3bd8e8c648d8284976b391c8bed0bcb1f611632b555", size = 35127, upload-time = "2026-04-26T13:32:32.292Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/7f/3de5402f39890ac5660b86bcf5c03f9d855dad5c4ed764866d7b592b46fd/sse_starlette-3.3.4-py3-none-any.whl", hash = "sha256:84bb06e58939a8b38d8341f1bc9792f06c2b53f48c608dd207582b664fc8f3c1", size = 14330, upload-time = "2026-03-29T09:00:21.846Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/07/45c21ed03d708c477367305726b89919b020a3a2a01f72aaf5ad941caf35/sse_starlette-3.4.1-py3-none-any.whl", hash = "sha256:6b43cf21f1d574d582a6e1b0cfbde1c94dc86a32a701a7168c99c4475c6bd1d0", size = 16487, upload-time = "2026-04-26T13:32:30.819Z" },
 ]
 
 [[package]]
@@ -5382,7 +5382,7 @@ name = "zipfile-zstd"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zstandard" },
+    { name = "zstandard", marker = "python_full_version < '3.14'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f7/2a/2e0941bc0058d10ab37d8c578b94a19f611f6ae54f124140f2fb451f0932/zipfile-zstd-0.0.4.tar.gz", hash = "sha256:c1498e15b7922a3d1af0ea55df8b11b2af4e8f7e0e80e414e25d66899f7def89", size = 4603, upload-time = "2021-12-08T07:38:16.245Z" }
 wheels = [
