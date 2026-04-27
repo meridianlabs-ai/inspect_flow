@@ -15,6 +15,9 @@ from inspect_flow._util.console import Formats
 DisplayType = Literal["full", "rich", "plain"]
 """Display type for flow output."""
 
+DEFAULT_DISPLAY_TYPE: DisplayType = "full"
+"""Default display type for flow output."""
+
 DisplayMode = Literal["run", "dry_run", "check"]
 """Display mode for flow output.
 
@@ -23,7 +26,7 @@ Options:
     - "rich": Rich text formatting without interactive elements
     - "plain": Plain text output
 """
-_display_type: DisplayType = "rich"
+_display_type: DisplayType = DEFAULT_DISPLAY_TYPE
 _display: Display | None = None
 
 

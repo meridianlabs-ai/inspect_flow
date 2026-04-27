@@ -10,7 +10,11 @@ from inspect_ai._util.file import absolute_file_path
 from typing_extensions import TypedDict, Unpack
 
 from inspect_flow._config.load import ConfigOptions
-from inspect_flow._display.display import DisplayType, set_display_type
+from inspect_flow._display.display import (
+    DEFAULT_DISPLAY_TYPE,
+    DisplayType,
+    set_display_type,
+)
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 
@@ -52,9 +56,9 @@ def output_options(f: F) -> F:
             ["full", "rich", "plain"],
             case_sensitive=False,
         ),
-        default="rich",
+        default=DEFAULT_DISPLAY_TYPE,
         envvar="INSPECT_FLOW_DISPLAY",
-        help="Set the display mode (defaults to `'rich'`).",
+        help=f"Set the display mode (defaults to `'{DEFAULT_DISPLAY_TYPE}'`).",
     )(f)
     return f
 
@@ -230,7 +234,7 @@ class ConfigOptionArgs(CheckOptionArgs, total=False):
 def init_output(**kwargs: Unpack[OutputOptionArgs]) -> None:
     log_level = kwargs.get("log_level", DEFAULT_LOG_LEVEL)
     init_flow_logging(log_level)
-    display = kwargs.get("display", "rich")
+    display = kwargs.get("display", DEFAULT_DISPLAY_TYPE)
     set_display_type(display)
 
 
