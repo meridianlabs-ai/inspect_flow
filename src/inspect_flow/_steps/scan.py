@@ -1,4 +1,3 @@
-import os
 from logging import getLogger
 from typing import Any, Literal, Sequence
 
@@ -30,7 +29,9 @@ from inspect_scout._scanjob import (
 )
 from inspect_scout._scanner.scanner import scanners_from_file
 
+from inspect_flow._display.display import get_display_type
 from inspect_flow._steps._scan_options import scan_cli_options
+from inspect_flow._steps.context import _step_context_var
 from inspect_flow._steps.step import step
 from inspect_flow._util.logging import get_last_log_level
 
@@ -80,6 +81,7 @@ def scan_logs(
     debug: bool = False,
     debug_port: int = 5678,
     fail_on_error: bool = False,
+    dry_run: bool = False,
 ) -> Status:
     """Run Inspect Scout scanners against the transcripts of eval logs.
 
@@ -124,6 +126,7 @@ def scan_logs(
         debug: Wait to attach a debugger before running.
         debug_port: Port number for the debugger.
         fail_on_error: Re-raise scanner exceptions instead of capturing them.
+        dry_run: Print resolved scanners and transcript counts without scanning.
 
     Returns:
         Scout's `Status` describing the completed scan.
@@ -139,7 +142,10 @@ def scan_logs(
         debugpy.wait_for_client()
         click.echo("Debugger attached")
 
-    os.environ["SCOUT_LOG_LEVEL"] = get_last_log_level().upper()
+    flow_display = get_display_type()
+    scout_display: Literal["rich", "plain", "log", "none"] = (
+        "rich" if flow_display == "full" else flow_display
+    )
 
     scanjob_args = parse_cli_args(s)
     resolved_scanners: ScannersSpec
@@ -227,7 +233,10 @@ def scan_logs(
         shuffle=scan_shuffle,
         tags=tags.split(",") if tags else None,
         metadata=parse_cli_args(metadata) if metadata else None,
+        display=scout_display,
+        log_level=get_last_log_level(),
         fail_on_error=fail_on_error,
+        dry_run=dry_run,
     )
 
 
@@ -349,5 +358,6 @@ def scan(
         debug=debug,
         debug_port=debug_port,
         fail_on_error=fail_on_error,
+        dry_run=(ctx := _step_context_var.get()) is not None and ctx.dry_run,
     )
     return logs
