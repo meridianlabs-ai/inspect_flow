@@ -289,6 +289,8 @@ class GenerateConfigDict(TypedDict):
     """Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Huggingface, llama-cpp-python, vLLM, and SGLang only."""
     top_logprobs: NotRequired[int | None]
     """Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only."""
+    prompt_logprobs: NotRequired[int | None]
+    """Number of log probabilities to return per prompt token (1-20). When greater than 1, top-N alternative tokens are also returned. vLLM only."""
     parallel_tool_calls: NotRequired[bool | None]
     """Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only."""
     internal_tools: NotRequired[bool | None]
