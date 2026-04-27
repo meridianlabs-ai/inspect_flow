@@ -159,6 +159,43 @@ For team workflows, import your steps in a `_flow.py` at the repository root so 
 from my_project.steps import promote, review_scores  # noqa: F401
 ```
 
+## Referencing Constants {#referencing-constants}
+
+Define module-level string constants in your `_flow.py` and reference them from any `flow` CLI command with `@NAME`. This lets you share the same tag values, log directories, and other strings across commands and teammates without retyping them — and without worrying about typos drifting them apart over time.
+
+``` {.python filename="_flow.py"}
+LOG_DIR_DEV = "s3://my-bucket/dev/logs"
+LOG_DIR_PROD = "s3://my-bucket/prod/logs"
+TAG_QA_NEEDED = "qa_needed"
+```
+
+``` bash
+flow step tag @LOG_DIR_DEV --add @TAG_QA_NEEDED
+flow check spec.py --log-dir @LOG_DIR_DEV
+flow list log @LOG_DIR_DEV --tag @TAG_QA_NEEDED
+```
+
+This works for all `flow` subcommands — `run`, `check`, `step`, `list`, `config`, `store` — wherever you would otherwise type a literal string.
+
+### Discovery Rules
+
+Constants are discovered from `_flow.py` files walking up from your current directory (same [automatic discovery](defaults.qmd#automatic-discovery) as for defaults, steps, and filters). To be eligible, a name must be:
+
+- **UPPERCASE** (e.g. `LOG_DIR_DEV`, not `log_dir_dev` or `MixedCase`)
+- **String-valued** (lists, ints, and other types are skipped)
+- **Module-level** (not nested inside a class or function)
+- **Public** (no leading underscore)
+
+If the same name is defined in multiple `_flow.py` files with **different** values, resolution fails and asks you to disambiguate. Identical values across files are fine.
+
+### Disambiguating
+
+Use `@file.py@NAME` to resolve from a specific file, bypassing the global lookup and the collision check:
+
+``` bash
+flow step tag logs/ --add @prod/_flow.py@TAG_QA_NEEDED
+```
+
 ## Filtering {#filtering}
 
 Use `@log_filter` to define named functions that select logs based on their properties:
