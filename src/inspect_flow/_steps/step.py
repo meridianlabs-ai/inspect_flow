@@ -14,6 +14,7 @@ from inspect_ai._util.registry import (
 )
 from inspect_ai.log import EvalLog
 
+from inspect_flow._api.api import ensure_init
 from inspect_flow._steps.context import step_context
 from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._util.console import console
@@ -89,6 +90,7 @@ def step(
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> list[EvalLog]:
+            ensure_init(dotenv_base_dir=".")
             dry_run = bool(kwargs.pop("dry_run", False))
             store_value = kwargs.pop("store", None)
             if isinstance(store_value, str):
