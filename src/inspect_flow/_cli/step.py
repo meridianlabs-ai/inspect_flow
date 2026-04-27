@@ -10,13 +10,13 @@ import griffe
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 
-from inspect_flow._cli.options import store_click_option
+from inspect_flow._cli.options import output_options, store_click_option
 from inspect_flow._steps.step import STEP_TYPE, WrappedStepFunction
 from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowStoreConfig
 from inspect_flow._util.path_util import find_auto_includes
 from inspect_flow._util.util import maybe_json
-from inspect_flow.api import run_step
+from inspect_flow.api import init, run_step
 
 
 def _discover_steps() -> list[tuple[str, WrappedStepFunction]]:
@@ -134,11 +134,28 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     doc = inspect.getdoc(original) or ""
     arg_help = _parse_arg_help(doc)
 
-    # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg
-    # Skip params that are added as common options below
-    common_options = {"store", "filter", "exclude", "recursive", "dry_run"}
+    # Click decorators (@click.option) accumulate on __click_params__ in
+    # bottom-up order. Reverse to get declaration order for help display.
+    custom_params: list[click.Parameter] = list(
+        reversed(getattr(original, "__click_params__", []))
+    )
+    custom_names = {p.name for p in custom_params if p.name is not None}
+
+    # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg.
+    # Skip params added as common options below or already covered by custom decorators.
+    common_options = {
+        "store",
+        "filter",
+        "exclude",
+        "recursive",
+        "dry_run",
+        "log_level",
+        "display",
+    }
     step_params = [
-        p for p in list(sig.parameters.values())[1:] if p.name not in common_options
+        p
+        for p in list(sig.parameters.values())[1:]
+        if p.name not in common_options and p.name not in custom_names
     ]
     dict_params: set[str] = set()
     for param in step_params:
@@ -195,11 +212,12 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
                 )
             )
 
-    # Add PATH argument and common options
+    # Add PATH argument first, then custom click options (in declaration order)
     params.insert(
         0,
         click.Argument(["path"], nargs=-1, required=False, type=click.Path()),
     )
+    params.extend(custom_params)
     params.append(
         store_click_option(
             help="Resolve logs from a store. Use --store for the default store or --store PATH for a specific one.",
@@ -243,6 +261,7 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         for dp in dict_params:
             if dp in kwargs:
                 kwargs[dp] = _parse_key_value_pairs(kwargs[dp])
+        init(log_level=kwargs.pop("log_level"), display=kwargs.pop("display"))
         store = kwargs.pop("store", None)
         if path and store:
             raise click.UsageError("PATH and --store are mutually exclusive.")
@@ -261,6 +280,9 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
             flow_store = None
             logs = list(path)
         run_step(func, logs, store=flow_store, expand_paths=not store, **kwargs)
+
+    output_options(callback)
+    params.extend(reversed(getattr(callback, "__click_params__", [])))
 
     return click.Command(
         name=name,
