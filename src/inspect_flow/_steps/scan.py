@@ -30,8 +30,8 @@ from inspect_scout._scanjob import (
 from inspect_scout._scanner.scanner import scanners_from_file
 
 from inspect_flow._display.display import get_display_type
-from inspect_flow._steps._scan_options import scan_cli_options
 from inspect_flow._steps.context import _step_context_var
+from inspect_flow._steps.scan_options import scan_cli_options
 from inspect_flow._steps.step import step
 from inspect_flow._util.logging import get_last_log_level
 
