@@ -47,7 +47,7 @@ ScannersSpec = (
 )
 
 
-def scan_logs(
+def scan(
     logs: list[EvalLog],
     scanners: ScannersSpec | None = None,
     s: tuple[str, ...] = (),
@@ -88,7 +88,7 @@ def scan_logs(
     Mirrors the CLI surface of `scout scan`, minus `-T/--transcripts` (which
     flow sources from log paths) and `-F/--filter` (handled by flow's own
     `--filter`). Returns scout's `Status`. For use as a flow step (logs only),
-    see `scan`.
+    see `scan_step`.
 
     Args:
         logs: EvalLog objects whose transcripts will be scanned.
@@ -242,7 +242,7 @@ def scan_logs(
 
 @step
 @scan_cli_options
-def scan(
+def scan_step(
     logs: list[EvalLog],
     scanners: ScannersSpec | None = None,
     s: tuple[str, ...] = (),
@@ -282,7 +282,7 @@ def scan(
     Mirrors the CLI surface of `scout scan`, minus `-T/--transcripts` (which
     flow sources from log paths) and `-F/--filter` (handled by flow's own
     `--filter`). For programmatic callers needing scout's `Status` return
-    value, use `scan_logs`.
+    value, use `scan`.
 
     Args:
         logs: EvalLog objects whose transcripts will be scanned.
@@ -324,7 +324,7 @@ def scan(
     Returns:
         The input EvalLog objects, unmodified.
     """
-    scan_logs(
+    scan(
         logs,
         scanners=scanners,
         s=s,

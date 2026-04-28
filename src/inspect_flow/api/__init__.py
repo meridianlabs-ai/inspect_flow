@@ -5,7 +5,7 @@ from inspect_flow._api.list_logs import list_logs
 from inspect_flow._display.display import DisplayType
 from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
-from inspect_flow._steps.scan import scan
+from inspect_flow._steps.scan import scan, scan_step
 from inspect_flow._steps.step import StepResult
 from inspect_flow._steps.tag import metadata, tag
 from inspect_flow._store.store import FlowStore, delete_store
@@ -27,6 +27,7 @@ __all__ = [
     "run",
     "run_step",
     "scan",
+    "scan_step",
     "store_get",
     "tag",
 ]

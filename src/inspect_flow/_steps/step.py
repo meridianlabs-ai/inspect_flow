@@ -21,6 +21,20 @@ from inspect_flow._util.console import console
 
 STEP_TYPE = "step"
 
+_STEP_SUFFIX = "_step"
+
+
+def _step_name(f: Callable[..., Any]) -> str:
+    """The name a step is registered/displayed as.
+
+    Strips a trailing `_step` so authors can use `scan_step` in Python while
+    the CLI command and console output show `scan`.
+    """
+    name = f.__name__
+    if name.endswith(_STEP_SUFFIX) and len(name) > len(_STEP_SUFFIX):
+        return name[: -len(_STEP_SUFFIX)]
+    return name
+
 
 class StepResult(NamedTuple):
     """Fine-grained return type for @step functions.
@@ -105,7 +119,7 @@ def step(
 
                 indent = "  " * (context.depth + 1)
                 console.print(
-                    f"{indent}{_format_step_call(f.__name__, len(context.logs), kwargs)}"
+                    f"{indent}{_format_step_call(_step_name(f), len(context.logs), kwargs)}"
                 )
                 context.depth += 1
 
@@ -126,7 +140,7 @@ def step(
                     return step_result.logs
 
         step_wrapper._step_func = f  # type: ignore[attr-defined]
-        name = registry_name(f, f.__name__)
+        name = registry_name(f, _step_name(f))
         registry_add(
             step_wrapper,
             RegistryInfo.model_construct(type=STEP_TYPE, name=name),
