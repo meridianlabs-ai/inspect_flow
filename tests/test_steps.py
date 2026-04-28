@@ -417,12 +417,18 @@ def test_return_none_skips(tmp_path: Path) -> None:
 # --- _format_step_call ---
 
 
+def _tag_stub() -> None: ...
+
+
+def _qa_stub() -> None: ...
+
+
 def test_format_step_call_basic() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 3, {"add": ["golden"]})
-        == "tag(logs=3, add=['golden'])"
+        _format_step_call(_tag_stub, 3, {"add": ["golden"]})
+        == "_tag_stub(logs=3, add=['golden'])"
     )
 
 
@@ -430,8 +436,8 @@ def test_format_step_call_hides_none() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 1, {"add": ["golden"], "remove": None})
-        == "tag(logs=1, add=['golden'])"
+        _format_step_call(_tag_stub, 1, {"add": ["golden"], "remove": None})
+        == "_tag_stub(logs=1, add=['golden'])"
     )
 
 
@@ -439,12 +445,12 @@ def test_format_step_call_hides_empty_sequences() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 2, {"add": ["golden"], "remove": []})
-        == "tag(logs=2, add=['golden'])"
+        _format_step_call(_tag_stub, 2, {"add": ["golden"], "remove": []})
+        == "_tag_stub(logs=2, add=['golden'])"
     )
     assert (
-        _format_step_call("tag", 2, {"add": ["golden"], "remove": ()})
-        == "tag(logs=2, add=['golden'])"
+        _format_step_call(_tag_stub, 2, {"add": ["golden"], "remove": ()})
+        == "_tag_stub(logs=2, add=['golden'])"
     )
 
 
@@ -452,14 +458,28 @@ def test_format_step_call_converts_tuples_to_lists() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 1, {"add": ("tag1",)}) == "tag(logs=1, add=['tag1'])"
+        _format_step_call(_tag_stub, 1, {"add": ("tag1",)})
+        == "_tag_stub(logs=1, add=['tag1'])"
     )
 
 
 def test_format_step_call_no_args() -> None:
     from inspect_flow._steps.step import _format_step_call
 
-    assert _format_step_call("qa", 5, {}) == "qa(logs=5)"
+    assert _format_step_call(_qa_stub, 5, {}) == "_qa_stub(logs=5)"
+
+
+def test_format_step_call_hides_signature_defaults() -> None:
+    """kwargs whose value matches the function's signature default are hidden."""
+    from inspect_flow._steps.step import _format_step_call
+
+    def myop(logs: list[EvalLog], debug: bool = False, port: int = 5678) -> None: ...
+
+    assert _format_step_call(myop, 1, {"debug": False, "port": 5678}) == "myop(logs=1)"
+    assert (
+        _format_step_call(myop, 1, {"debug": True, "port": 5678})
+        == "myop(logs=1, debug=True)"
+    )
 
 
 # --- CLI metadata --set ---
@@ -929,3 +949,47 @@ def test_cli_scan_help_describes_default_scans() -> None:
     assert result.exit_code == 0
     assert "--scans" in result.output
     assert "alongside the input logs" in result.output
+
+
+def test_cli_scan_only_prints_user_provided_params(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    """`flow step scan` should only show params the user passed on the CLI.
+
+    Regression: defaults like shuffle=0, debug=False, debug_port=5678,
+    fail_on_error=False were being rendered in the scan(...) call summary
+    even when the user didn't pass those flags.
+    """
+    from unittest.mock import patch
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+
+    with patch("inspect_flow._steps.scan.scan") as mock_scan:
+        result = CliRunner().invoke(
+            step_command,
+            [
+                "scan",
+                log_path,
+                "--scanners",
+                "fake/scanner.py",
+                "--model",
+                "openai/gpt-5-nano",
+                "--dry-run",
+            ],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0, result.output
+    assert mock_scan.called
+
+    captured = recording_console.export_text()
+    assert "scan(" in captured
+    assert "scanners='fake/scanner.py'" in captured
+    assert "model='openai/gpt-5-nano'" in captured
+    # Defaults the user didn't set must not appear
+    assert "shuffle=" not in captured
+    assert "debug=" not in captured
+    assert "debug_port=" not in captured
+    assert "fail_on_error=" not in captured

@@ -64,7 +64,7 @@ def scan(
     max_transcripts: int | None = None,
     max_processes: int | None = None,
     limit: int | None = None,
-    shuffle: int | None = None,
+    shuffle: int = 0,
     tags: str | None = None,
     metadata: tuple[str, ...] = (),
     cache: int | str | None = None,
@@ -223,7 +223,7 @@ def scan(
     scan_shuffle: bool | int | None
     if shuffle == -1:
         scan_shuffle = True
-    elif shuffle == 0 or shuffle is None:
+    elif shuffle == 0:
         scan_shuffle = None
     else:
         scan_shuffle = shuffle
@@ -269,7 +269,7 @@ def scan_step(
     max_transcripts: int | None = None,
     max_processes: int | None = None,
     limit: int | None = None,
-    shuffle: int | None = None,
+    shuffle: int = 0,
     tags: str | None = None,
     metadata: tuple[str, ...] = (),
     cache: int | str | None = None,

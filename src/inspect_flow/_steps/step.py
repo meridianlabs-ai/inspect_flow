@@ -1,3 +1,4 @@
+import inspect
 from typing import (
     Any,
     Callable,
@@ -64,7 +65,18 @@ StepFunction = Callable[Concatenate[list[EvalLog], P], StepResult | list[EvalLog
 WrappedStepFunction = Callable[Concatenate[list[EvalLog] | list[str], P], list[EvalLog]]
 
 
-def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
+def _format_step_call(
+    f: Callable[..., Any],
+    n_logs: int,
+    kwargs: dict[str, Any],
+) -> str:
+    name = _step_name(f)
+    defaults = {
+        p.name: p.default
+        for p in inspect.signature(f).parameters.values()
+        if p.default is not inspect.Parameter.empty
+    }
+
     def _format_value(v: Any) -> str:
         if isinstance(v, tuple):
             return repr(list(v))
@@ -73,8 +85,13 @@ def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
     def _is_empty(v: Any) -> bool:
         return v is None or (isinstance(v, (list, tuple)) and len(v) == 0)
 
+    def _is_default(k: str, v: Any) -> bool:
+        return k in defaults and defaults[k] == v
+
     args_str = ", ".join(
-        f"{k}={_format_value(v)}" for k, v in kwargs.items() if not _is_empty(v)
+        f"{k}={_format_value(v)}"
+        for k, v in kwargs.items()
+        if not _is_empty(v) and not _is_default(k, v)
     )
     return (
         f"{name}(logs={n_logs}, {args_str})" if args_str else f"{name}(logs={n_logs})"
@@ -119,7 +136,7 @@ def step(
 
                 indent = "  " * (context.depth + 1)
                 console.print(
-                    f"{indent}{_format_step_call(_step_name(f), len(context.logs), kwargs)}"
+                    f"{indent}{_format_step_call(f, len(context.logs), kwargs)}"
                 )
                 context.depth += 1
 
