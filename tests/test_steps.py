@@ -884,3 +884,48 @@ def test_cli_file_step_at_syntax_run(tmp_path: Path) -> None:
     assert result.exit_code == 0
     reloaded = read_eval_log(log_path, header_only=True)
     assert "world" in (reloaded.tags or [])
+
+
+# --- scan step ---
+
+
+def test_scan_default_scans_dir_under_log_dir(tmp_path: Path) -> None:
+    """When scans is None, it defaults to <log_dir>/scans where log_dir is
+    the common directory of all input log locations."""
+    from unittest.mock import patch
+
+    from inspect_flow._steps.scan import scan
+
+    log1 = read_eval_log(_make_log(tmp_path, "log1.eval"))
+    log2 = read_eval_log(_make_log(tmp_path, "log2.eval"))
+
+    with patch("inspect_flow._steps.scan.scout_scan") as mock:
+        scan([log1, log2], scanners=[])
+
+    assert mock.call_args.kwargs["scans"] == str(tmp_path / "scans")
+
+
+def test_scan_default_scans_errors_on_mixed_dirs(tmp_path: Path) -> None:
+    """When scans is None and logs are in different directories, raise."""
+    from inspect_flow._steps.scan import scan
+
+    dir1 = tmp_path / "a"
+    dir2 = tmp_path / "b"
+    dir1.mkdir()
+    dir2.mkdir()
+    log1 = read_eval_log(_make_log(dir1, "log.eval"))
+    log2 = read_eval_log(_make_log(dir2, "log.eval"))
+
+    with pytest.raises(ValueError, match="multiple directories"):
+        scan([log1, log2], scanners=[])
+
+
+def test_cli_scan_help_describes_default_scans() -> None:
+    """`flow step scan --help` documents the inferred --scans default."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, ["scan", "--help"])
+    assert result.exit_code == 0
+    assert "--scans" in result.output
+    assert "alongside the input logs" in result.output

@@ -8,6 +8,7 @@ from inspect_ai._cli.util import (
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
+from inspect_ai._util.file import dirname
 from inspect_ai.log import EvalLog
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig
 from inspect_scout import (
@@ -34,6 +35,7 @@ from inspect_flow._steps.context import _step_context_var
 from inspect_flow._steps.scan_options import scan_cli_options
 from inspect_flow._steps.step import step
 from inspect_flow._util.logging import get_last_log_level
+from inspect_flow._util.path_util import path_join
 
 logger = getLogger(__name__)
 
@@ -166,6 +168,16 @@ def scan(
 
     if isinstance(resolved_scanners, ScanJob):
         merge_project_into_scanjob(read_project(), resolved_scanners)
+
+    if scans is None:
+        log_dirs = {dirname(log.location) for log in logs}
+        if len(log_dirs) > 1:
+            raise ValueError(
+                "Cannot infer scans location: input logs are in multiple "
+                "directories. Specify scans explicitly."
+            )
+        if log_dirs:
+            scans = path_join(next(iter(log_dirs)), "scans")
 
     parsed_validation = _parse_validation(validation) if validation else None
     parsed_model_args = (

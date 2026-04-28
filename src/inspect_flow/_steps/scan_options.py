@@ -41,7 +41,9 @@ def scan_cli_options(func: F) -> F:
             "--scans",
             type=str,
             default=None,
-            help="Location to write scan results to.",
+            help="Location to write scan results to. Defaults to a 'scans' "
+            "directory alongside the input logs (errors if logs are in "
+            "multiple directories).",
             envvar="SCOUT_SCAN_SCANS",
         ),
         click.option(
