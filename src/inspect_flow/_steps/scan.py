@@ -9,7 +9,7 @@ from inspect_ai._cli.util import (
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
-from inspect_ai._util.file import dirname, file
+from inspect_ai._util.file import dirname, file, filesystem
 from inspect_ai.log import EvalLog
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig
 from inspect_scout import (
@@ -52,6 +52,12 @@ ScannersSpec = (
 
 def _write_scout_project_file(*, scans: str, transcripts: str) -> None:
     project_path = path_join(dirname(scans), "scout.yaml")
+    if filesystem(project_path).exists(project_path):
+        logger.info(
+            "scout project file already exists at %s; leaving it unchanged",
+            project_path,
+        )
+        return
     with file(project_path, "w") as f:
         f.write(yaml.safe_dump({"transcripts": transcripts, "scans": scans}))
 

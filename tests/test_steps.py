@@ -960,6 +960,26 @@ def test_scan_writes_scout_project_file(tmp_path: Path) -> None:
     assert project == {"transcripts": str(tmp_path), "scans": scans_dir}
 
 
+def test_scan_preserves_existing_scout_project_file(tmp_path: Path) -> None:
+    """If a scout.yaml already exists, `scan` leaves it unchanged."""
+    from unittest.mock import patch
+
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    scans_dir = str(out_dir / "scans")
+    project_file = out_dir / "scout.yaml"
+    original = "filter: model = 'gpt-4'\n"
+    project_file.write_text(original)
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans=scans_dir)
+
+    assert project_file.read_text() == original
+
+
 def test_cli_scan_help_describes_default_scans() -> None:
     """`flow step scan --help` documents the inferred --scans default."""
     from click.testing import CliRunner
