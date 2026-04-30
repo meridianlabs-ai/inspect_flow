@@ -64,7 +64,7 @@ def _write_scout_project_file(*, scans: str, transcripts: str) -> None:
 
 def scan(
     logs: list[EvalLog],
-    scanners: ScannersSpec | None = None,
+    scanners: ScannersSpec,
     s: tuple[str, ...] = (),
     scans: str | None = None,
     worklist: str | None = None,
@@ -146,9 +146,6 @@ def scan(
     Returns:
         Scout's `Status` describing the completed scan.
     """
-    if scanners is None:
-        raise click.UsageError("scanners must be provided")
-
     if debug:
         import debugpy
 
@@ -273,7 +270,7 @@ def scan(
 @scan_cli_options
 def scan_step(
     logs: list[EvalLog],
-    scanners: ScannersSpec | None = None,
+    scanners: ScannersSpec,
     s: tuple[str, ...] = (),
     scans: str | None = None,
     worklist: str | None = None,
