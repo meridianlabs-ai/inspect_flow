@@ -92,8 +92,6 @@ def scan(
     reasoning_tokens: int | None = None,
     reasoning_summary: Literal["concise", "detailed", "auto"] | None = None,
     reasoning_history: Literal["none", "all", "last", "auto"] | None = None,
-    debug: bool = False,
-    debug_port: int = 5678,
     fail_on_error: bool = False,
     dry_run: bool = False,
 ) -> Status:
@@ -136,22 +134,12 @@ def scan(
         reasoning_tokens: Maximum reasoning tokens (Anthropic Claude).
         reasoning_summary: Reasoning summary style (OpenAI).
         reasoning_history: Reasoning history inclusion style.
-        debug: Wait to attach a debugger before running.
-        debug_port: Port number for the debugger.
         fail_on_error: Re-raise scanner exceptions instead of capturing them.
         dry_run: Print resolved scanners and transcript counts without scanning.
 
     Returns:
         Scout's `Status` describing the completed scan.
     """
-    if debug:
-        import debugpy
-
-        debugpy.listen(debug_port)
-        click.echo("Waiting for debugger attach")
-        debugpy.wait_for_client()
-        click.echo("Debugger attached")
-
     flow_display = get_display_type()
     scout_display: Literal["rich", "plain", "log", "none"] = (
         "rich" if flow_display == "full" else flow_display
@@ -295,8 +283,6 @@ def scan_step(
     reasoning_tokens: int | None = None,
     reasoning_summary: Literal["concise", "detailed", "auto"] | None = None,
     reasoning_history: Literal["none", "all", "last", "auto"] | None = None,
-    debug: bool = False,
-    debug_port: int = 5678,
     fail_on_error: bool = False,
 ) -> list[EvalLog]:
     """Run Inspect Scout scanners against the transcripts of eval logs.
@@ -338,8 +324,6 @@ def scan_step(
         reasoning_tokens: Maximum reasoning tokens (Anthropic Claude).
         reasoning_summary: Reasoning summary style (OpenAI).
         reasoning_history: Reasoning history inclusion style.
-        debug: Wait to attach a debugger before running.
-        debug_port: Port number for the debugger.
         fail_on_error: Re-raise scanner exceptions instead of capturing them.
 
     Returns:
@@ -375,8 +359,6 @@ def scan_step(
         reasoning_tokens=reasoning_tokens,
         reasoning_summary=reasoning_summary,
         reasoning_history=reasoning_history,
-        debug=debug,
-        debug_port=debug_port,
         fail_on_error=fail_on_error,
         dry_run=(ctx := _step_context_var.get()) is not None and ctx.dry_run,
     )

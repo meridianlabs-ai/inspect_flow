@@ -211,19 +211,6 @@ def scan_cli_options(func: F) -> F:
             envvar="SCOUT_SCAN_REASONING_HISTORY",
         ),
         click.option(
-            "--debug",
-            is_flag=True,
-            envvar="SCOUT_DEBUG",
-            help="Wait to attach debugger",
-        ),
-        click.option(
-            "--debug-port",
-            type=int,
-            default=5678,
-            envvar="SCOUT_DEBUG_PORT",
-            help="Port number for debugger",
-        ),
-        click.option(
             "--fail-on-error",
             type=bool,
             is_flag=True,
