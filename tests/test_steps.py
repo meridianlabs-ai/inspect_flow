@@ -19,6 +19,7 @@ from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
 from inspect_flow._store.deltalake import DeltaLakeStore
 from inspect_flow._store.store import store_factory
+from inspect_flow._util.error import NoLogsError
 from rich.console import Console
 
 
@@ -249,10 +250,9 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
 # --- run_step across multiple logs ---
 
 
-def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
-    run_step(tag, str(tmp_path), add=["batch"])
-    captured = recording_console.export_text()
-    assert "No logs found" in captured
+def test_run_step_no_logs(tmp_path: Path) -> None:
+    with pytest.raises(NoLogsError, match="No logs found"):
+        run_step(tag, str(tmp_path), add=["batch"])
 
 
 def test_run_step_filter_preserves_in_memory_evallog(tmp_path: Path) -> None:

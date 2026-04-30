@@ -9,6 +9,7 @@ from inspect_flow._store.store import FlowStore
 from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._types.log_filter import resolve_log_filters
 from inspect_flow._util.console import console, flow_print
+from inspect_flow._util.error import NoLogsError
 
 
 def _expand_paths(paths: Sequence[str], recursive: bool = True) -> list[str]:
@@ -96,8 +97,7 @@ def run_step(
             resolved = [eval_log_map.get(log.location, log) for log in log_headers]
 
     if not resolved:
-        flow_print("No logs found", format="warning")
-        return
+        raise NoLogsError("No logs found")
 
     if isinstance(resolved[0], str):
         resolved = sorted(cast(list[str], resolved))
