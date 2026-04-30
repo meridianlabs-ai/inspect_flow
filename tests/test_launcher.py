@@ -10,6 +10,7 @@ from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
 from inspect_flow._config.load import ConfigOptions, int_load_spec
+from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
@@ -66,7 +67,7 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert args[7] == "--log-level"
     assert args[8] == DEFAULT_LOG_LEVEL
     assert args[9] == "--display"
-    assert args[10] == "rich"
+    assert args[10] == DEFAULT_DISPLAY_TYPE
 
 
 def test_env(

@@ -1136,7 +1136,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -1553,7 +1553,7 @@ wheels = [
 
 [[package]]
 name = "inspect-ai"
-version = "0.3.212"
+version = "0.3.215"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioboto3" },
@@ -1596,9 +1596,9 @@ dependencies = [
     { name = "zipp" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/4d/be87a2feab6c623870e600190062598d007ac43424d63f85ce514c4b796e/inspect_ai-0.3.212.tar.gz", hash = "sha256:e0ca468ead125fe03eb7e0edff02319dbb438400f74f5ee3b66f537f7861d2b8", size = 45386004, upload-time = "2026-04-25T00:51:56.661Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/b7/0ac0f923728ba8af347efc2c042f2b0efd14bcedc4f83232d7e71e1bc511/inspect_ai-0.3.215.tar.gz", hash = "sha256:32f5593c36bbd5b1f70bd97c7c0cea4505b058b87e596abdee6538a2d4e3b5cf", size = 45491275, upload-time = "2026-04-30T17:04:04.765Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/f5/ea9e309727d3f383751e48935644af1a2b7561463f0452ed67845aa502aa/inspect_ai-0.3.212-py3-none-any.whl", hash = "sha256:5907d739c9d733319be57401c72355e8f644e3bcc8f15bd4a7b92547e14b5f37", size = 35997711, upload-time = "2026-04-25T00:51:48.745Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/d3/e052b704872a9f5cbe7206d4aa5cbdba14047fd474b9ccaf66fa2e3920fd/inspect_ai-0.3.215-py3-none-any.whl", hash = "sha256:3dc903e04c48f927a826df934c36e90a18db9a89750d021c49b7b8281bed7b58", size = 36032142, upload-time = "2026-04-30T17:03:52.731Z" },
 ]
 
 [[package]]
@@ -1658,7 +1658,7 @@ requires-dist = [
     { name = "dateparser", specifier = ">=1.2.0" },
     { name = "deltalake", specifier = ">=0.18.0" },
     { name = "griffe", specifier = ">=1.0.0" },
-    { name = "inspect-ai", specifier = ">=0.3.207" },
+    { name = "inspect-ai", specifier = ">=0.3.215" },
     { name = "jupyter", marker = "extra == 'doc'" },
     { name = "markdown", marker = "extra == 'doc'" },
     { name = "packaging", specifier = ">=21.0" },
@@ -4999,7 +4999,7 @@ name = "zipfile-zstd"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zstandard" },
+    { name = "zstandard", marker = "python_full_version < '3.14'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f7/2a/2e0941bc0058d10ab37d8c578b94a19f611f6ae54f124140f2fb451f0932/zipfile-zstd-0.0.4.tar.gz", hash = "sha256:c1498e15b7922a3d1af0ea55df8b11b2af4e8f7e0e80e414e25d66899f7def89", size = 4603, upload-time = "2021-12-08T07:38:16.245Z" }
 wheels = [

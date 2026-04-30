@@ -6,6 +6,7 @@ from logging import getLogger
 
 import click
 from inspect_ai import eval_set
+from inspect_ai._display.textual.app import set_flow_content
 from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
@@ -108,6 +109,10 @@ def run_eval_set(
         return False, []
 
     title = display().get_title()
+    if display_type == "full":
+        content = display().make_renderable()
+        if content is not None:
+            set_flow_content(content)
     display().stop()
 
     update_log_level(log_level)
