@@ -2,13 +2,14 @@ from logging import getLogger
 from typing import Any, Literal, Sequence
 
 import click
+import yaml
 from inspect_ai._cli.util import (
     parse_cli_args,
     parse_cli_config,
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
-from inspect_ai._util.file import dirname
+from inspect_ai._util.file import dirname, file
 from inspect_ai.log import EvalLog
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig
 from inspect_scout import (
@@ -47,6 +48,12 @@ ScannersSpec = (
     | ScanJobConfig
     | str
 )
+
+
+def _write_scout_project_file(*, scans: str, transcripts: str) -> None:
+    project_path = path_join(dirname(scans), "scout.yaml")
+    with file(project_path, "w") as f:
+        f.write(yaml.safe_dump({"transcripts": transcripts, "scans": scans}))
 
 
 def scan(
@@ -169,15 +176,19 @@ def scan(
     if isinstance(resolved_scanners, ScanJob):
         merge_project_into_scanjob(read_project(), resolved_scanners)
 
-    if scans is None:
-        log_dirs = {dirname(log.location) for log in logs}
-        if len(log_dirs) > 1:
+    log_dirs = {dirname(log.location) for log in logs}
+
+    if len(log_dirs) > 1:
+        if scans is None:
             raise ValueError(
                 "Cannot infer scans location: input logs are in multiple "
                 "directories. Specify scans explicitly."
             )
-        if log_dirs:
-            scans = path_join(next(iter(log_dirs)), "scans")
+    elif len(log_dirs) == 1:
+        log_dir = next(iter(log_dirs))
+        if scans is None:
+            scans = path_join(log_dir, "scans")
+        _write_scout_project_file(scans=scans, transcripts=log_dir)
 
     parsed_validation = _parse_validation(validation) if validation else None
     parsed_model_args = (

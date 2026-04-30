@@ -940,6 +940,26 @@ def test_scan_default_scans_errors_on_mixed_dirs(tmp_path: Path) -> None:
         scan([log1, log2], scanners=[])
 
 
+def test_scan_writes_scout_project_file(tmp_path: Path) -> None:
+    """`scan` writes a scout.yaml in the parent of the scans dir with
+    `transcripts` set to the log dir and `scans` set to the scans dir."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    scans_dir = str(tmp_path / "out" / "scans")
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans=scans_dir)
+
+    project_file = tmp_path / "out" / "scout.yaml"
+    assert project_file.exists()
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": scans_dir}
+
+
 def test_cli_scan_help_describes_default_scans() -> None:
     """`flow step scan --help` documents the inferred --scans default."""
     from click.testing import CliRunner
