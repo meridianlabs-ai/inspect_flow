@@ -108,6 +108,46 @@ class StepGroup(click.Group):
         return None
 
 
+_COMMON_OPTION_NAMES = {
+    "store",
+    "filter",
+    "exclude",
+    "recursive",
+    "dry_run",
+    "display",
+    "log_level",
+    "help",
+}
+
+
+class _SectionedCommand(click.Command):
+    """Click command that renders options in two sections.
+
+    Step-specific options appear under "Options" and shared flow options
+    (--store, --filter, --display, etc.) under "Common Options".
+    """
+
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        step_opts: list[tuple[str, str]] = []
+        common_opts: list[tuple[str, str]] = []
+        for param in self.get_params(ctx):
+            rv = param.get_help_record(ctx)
+            if rv is None:
+                continue
+            if param.name in _COMMON_OPTION_NAMES:
+                common_opts.append(rv)
+            else:
+                step_opts.append(rv)
+        if step_opts:
+            with formatter.section("Options"):
+                formatter.write_dl(step_opts)
+        if common_opts:
+            with formatter.section("Common Options"):
+                formatter.write_dl(common_opts)
+
+
 def _parse_arg_help(doc: str) -> dict[str, str]:
     import logging
 
@@ -143,19 +183,10 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg.
     # Skip params added as common options below or already covered by custom decorators.
-    common_options = {
-        "store",
-        "filter",
-        "exclude",
-        "recursive",
-        "dry_run",
-        "log_level",
-        "display",
-    }
     step_params = [
         p
         for p in list(sig.parameters.values())[1:]
-        if p.name not in common_options and p.name not in custom_names
+        if p.name not in _COMMON_OPTION_NAMES and p.name not in custom_names
     ]
     dict_params: set[str] = set()
     for param in step_params:
@@ -284,7 +315,7 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     output_options(callback)
     params.extend(reversed(getattr(callback, "__click_params__", [])))
 
-    return click.Command(
+    return _SectionedCommand(
         name=name,
         params=params,
         callback=callback,
