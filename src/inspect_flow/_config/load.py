@@ -334,13 +334,14 @@ def _apply_auto_includes(
             continue
         auto_spec = _load_spec_from_file(auto_file, args=options.args, state=state)
         if (auto_include_count := auto_include_count + 1) > 1:
-            flow_print(
+            display().print(
                 f"Applying multiple {AUTO_INCLUDE_FILENAME}. #{auto_include_count}:",
                 path(auto_file),
+                action_key="load",
                 format="warning",
             )
         else:
-            flow_print("Auto-include:", path(auto_file))
+            display().print("Auto-include:", path(auto_file), action_key="load")
         if auto_spec:
             spec = _apply_include(spec, auto_spec)
     return spec

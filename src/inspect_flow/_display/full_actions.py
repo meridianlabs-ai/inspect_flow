@@ -11,7 +11,7 @@ from time import sleep
 from types import TracebackType
 from typing import Any, Optional, Type
 
-from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
+from rich.console import Console, ConsoleOptions, Group, RenderableType, RenderResult
 from rich.live import Live
 from rich.measure import Measurement
 from rich.segment import Segment
@@ -292,6 +292,14 @@ class FullActionsDisplay(Display):
                 console_output=console_output,
             )
         )
+
+    def make_renderable(self) -> RenderableType:
+        parts: list[RenderableType] = [self._make_display(fill_height=False)]
+        for msgs in self._messages.values():
+            for msg in msgs:
+                if isinstance(msg, _Copyable):
+                    parts.append(msg.renderable)
+        return Group(*parts)
 
     def get_title(self) -> list[str | Text] | None:
         return self._title

@@ -4,6 +4,7 @@ import click
 import yaml
 
 from inspect_flow._display.display import (
+    DEFAULT_DISPLAY_TYPE,
     DisplayAction,
     DisplayMode,
     DisplayType,
@@ -64,7 +65,7 @@ def _common_options(fn: click.decorators.FC) -> click.decorators.FC:
         "--display",
         "display_type",
         type=click.Choice(["full", "rich", "plain"]),
-        default="rich",
+        default=DEFAULT_DISPLAY_TYPE,
         help="Display type.",
     )(fn)
     return fn

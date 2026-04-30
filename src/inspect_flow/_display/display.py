@@ -16,6 +16,9 @@ from inspect_flow._util.console import Formats, console
 DisplayType = Literal["full", "rich", "plain"]
 """Display type for flow output."""
 
+DEFAULT_DISPLAY_TYPE: DisplayType = "full"
+"""Default display type for flow output."""
+
 DisplayMode = Literal["run", "dry_run", "check"]
 """Display mode for flow output.
 
@@ -24,7 +27,7 @@ Options:
     - "rich": Rich text formatting without interactive elements
     - "plain": Plain text output
 """
-_display_type: DisplayType = "rich"
+_display_type: DisplayType = DEFAULT_DISPLAY_TYPE
 _display: Display | None = None
 
 
@@ -94,6 +97,10 @@ class Display(ABC):
 
     @abstractmethod
     def stop(self, remove_actions: list[str] | None = None) -> None: ...
+
+    def make_renderable(self) -> RenderableType | None:
+        """Render the current display state, for handoff to another display."""
+        return None
 
 
 def create_display(mode: DisplayMode, actions: dict[str, DisplayAction]) -> Display:
