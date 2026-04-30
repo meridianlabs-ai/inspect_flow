@@ -67,7 +67,6 @@ def scan(
     scanners: ScannersSpec,
     s: tuple[str, ...] = (),
     scans: str | None = None,
-    worklist: str | None = None,
     validation: tuple[str, ...] = (),
     model: str | None = None,
     model_base_url: str | None = None,
@@ -112,7 +111,6 @@ def scan(
             scanjob/scanner definitions.
         s: One or more scanjob or scanner arguments (e.g. `-S arg=value`).
         scans: Location to write scan results to.
-        worklist: Path to a JSON/YAML worklist file.
         validation: One or more validation set specifications.
         model: Default model for llm scanners.
         model_base_url: Base URL for the model API.
@@ -246,7 +244,6 @@ def scan(
         scanners=resolved_scanners,
         transcripts=transcripts_from([log.location for log in logs]),
         scans=scans,
-        worklist=worklist,
         validation=parsed_validation,
         model=model,
         model_config=generate_config,
@@ -273,7 +270,6 @@ def scan_step(
     scanners: ScannersSpec,
     s: tuple[str, ...] = (),
     scans: str | None = None,
-    worklist: str | None = None,
     validation: tuple[str, ...] = (),
     model: str | None = None,
     model_base_url: str | None = None,
@@ -317,7 +313,6 @@ def scan_step(
             scanjob/scanner definitions.
         s: One or more scanjob or scanner arguments (e.g. `-S arg=value`).
         scans: Location to write scan results to.
-        worklist: Path to a JSON/YAML worklist file.
         validation: One or more validation set specifications.
         model: Default model for llm scanners.
         model_base_url: Base URL for the model API.
@@ -355,7 +350,6 @@ def scan_step(
         scanners=scanners,
         s=s,
         scans=scans,
-        worklist=worklist,
         validation=validation,
         model=model,
         model_base_url=model_base_url,

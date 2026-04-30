@@ -47,12 +47,6 @@ def scan_cli_options(func: F) -> F:
             envvar="SCOUT_SCAN_SCANS",
         ),
         click.option(
-            "--worklist",
-            type=click.Path(exists=True),
-            help="Transcript ids to process for each scanner (JSON or YAML file).",
-            envvar="SCOUT_SCAN_WORKLIST",
-        ),
-        click.option(
             "-V",
             "--validation",
             multiple=True,
