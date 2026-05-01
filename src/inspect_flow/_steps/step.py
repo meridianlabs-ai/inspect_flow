@@ -1,3 +1,4 @@
+import inspect
 from typing import (
     Any,
     Callable,
@@ -14,11 +15,26 @@ from inspect_ai._util.registry import (
 )
 from inspect_ai.log import EvalLog
 
+from inspect_flow._api.api import ensure_init
 from inspect_flow._steps.context import step_context
 from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._util.console import console
 
 STEP_TYPE = "step"
+
+_STEP_SUFFIX = "_step"
+
+
+def _step_name(f: Callable[..., Any]) -> str:
+    """The name a step is registered/displayed as.
+
+    Strips a trailing `_step` so authors can use `scan_step` in Python while
+    the CLI command and console output show `scan`.
+    """
+    name = f.__name__
+    if name.endswith(_STEP_SUFFIX) and len(name) > len(_STEP_SUFFIX):
+        return name[: -len(_STEP_SUFFIX)]
+    return name
 
 
 class StepResult(NamedTuple):
@@ -49,7 +65,18 @@ StepFunction = Callable[Concatenate[list[EvalLog], P], StepResult | list[EvalLog
 WrappedStepFunction = Callable[Concatenate[list[EvalLog] | list[str], P], list[EvalLog]]
 
 
-def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
+def _format_step_call(
+    f: Callable[..., Any],
+    n_logs: int,
+    kwargs: dict[str, Any],
+) -> str:
+    name = _step_name(f)
+    defaults = {
+        p.name: p.default
+        for p in inspect.signature(f).parameters.values()
+        if p.default is not inspect.Parameter.empty
+    }
+
     def _format_value(v: Any) -> str:
         if isinstance(v, tuple):
             return repr(list(v))
@@ -58,8 +85,13 @@ def _format_step_call(name: str, n_logs: int, kwargs: dict[str, Any]) -> str:
     def _is_empty(v: Any) -> bool:
         return v is None or (isinstance(v, (list, tuple)) and len(v) == 0)
 
+    def _is_default(k: str, v: Any) -> bool:
+        return k in defaults and defaults[k] == v
+
     args_str = ", ".join(
-        f"{k}={_format_value(v)}" for k, v in kwargs.items() if not _is_empty(v)
+        f"{k}={_format_value(v)}"
+        for k, v in kwargs.items()
+        if not _is_empty(v) and not _is_default(k, v)
     )
     return (
         f"{name}(logs={n_logs}, {args_str})" if args_str else f"{name}(logs={n_logs})"
@@ -89,6 +121,7 @@ def step(
             *args: P.args,
             **kwargs: P.kwargs,
         ) -> list[EvalLog]:
+            ensure_init(dotenv_base_dir=".")
             dry_run = bool(kwargs.pop("dry_run", False))
             store_value = kwargs.pop("store", None)
             if isinstance(store_value, str):
@@ -103,7 +136,7 @@ def step(
 
                 indent = "  " * (context.depth + 1)
                 console.print(
-                    f"{indent}{_format_step_call(f.__name__, len(context.logs), kwargs)}"
+                    f"{indent}{_format_step_call(f, len(context.logs), kwargs)}"
                 )
                 context.depth += 1
 
@@ -124,7 +157,7 @@ def step(
                     return step_result.logs
 
         step_wrapper._step_func = f  # type: ignore[attr-defined]
-        name = registry_name(f, f.__name__)
+        name = registry_name(f, _step_name(f))
         registry_add(
             step_wrapper,
             RegistryInfo.model_construct(type=STEP_TYPE, name=name),

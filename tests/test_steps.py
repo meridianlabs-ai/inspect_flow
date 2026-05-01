@@ -19,6 +19,7 @@ from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
 from inspect_flow._store.deltalake import DeltaLakeStore
 from inspect_flow._store.store import store_factory
+from inspect_flow._util.error import NoLogsError
 from rich.console import Console
 
 
@@ -249,10 +250,9 @@ def test_nested_step_defers_writes(tmp_path: Path) -> None:
 # --- run_step across multiple logs ---
 
 
-def test_run_step_no_logs(tmp_path: Path, recording_console: Console) -> None:
-    run_step(tag, str(tmp_path), add=["batch"])
-    captured = recording_console.export_text()
-    assert "No logs found" in captured
+def test_run_step_no_logs(tmp_path: Path) -> None:
+    with pytest.raises(NoLogsError, match="No logs found"):
+        run_step(tag, str(tmp_path), add=["batch"])
 
 
 def test_run_step_filter_preserves_in_memory_evallog(tmp_path: Path) -> None:
@@ -417,12 +417,18 @@ def test_return_none_skips(tmp_path: Path) -> None:
 # --- _format_step_call ---
 
 
+def _tag_stub() -> None: ...
+
+
+def _qa_stub() -> None: ...
+
+
 def test_format_step_call_basic() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 3, {"add": ["golden"]})
-        == "tag(logs=3, add=['golden'])"
+        _format_step_call(_tag_stub, 3, {"add": ["golden"]})
+        == "_tag_stub(logs=3, add=['golden'])"
     )
 
 
@@ -430,8 +436,8 @@ def test_format_step_call_hides_none() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 1, {"add": ["golden"], "remove": None})
-        == "tag(logs=1, add=['golden'])"
+        _format_step_call(_tag_stub, 1, {"add": ["golden"], "remove": None})
+        == "_tag_stub(logs=1, add=['golden'])"
     )
 
 
@@ -439,12 +445,12 @@ def test_format_step_call_hides_empty_sequences() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 2, {"add": ["golden"], "remove": []})
-        == "tag(logs=2, add=['golden'])"
+        _format_step_call(_tag_stub, 2, {"add": ["golden"], "remove": []})
+        == "_tag_stub(logs=2, add=['golden'])"
     )
     assert (
-        _format_step_call("tag", 2, {"add": ["golden"], "remove": ()})
-        == "tag(logs=2, add=['golden'])"
+        _format_step_call(_tag_stub, 2, {"add": ["golden"], "remove": ()})
+        == "_tag_stub(logs=2, add=['golden'])"
     )
 
 
@@ -452,14 +458,28 @@ def test_format_step_call_converts_tuples_to_lists() -> None:
     from inspect_flow._steps.step import _format_step_call
 
     assert (
-        _format_step_call("tag", 1, {"add": ("tag1",)}) == "tag(logs=1, add=['tag1'])"
+        _format_step_call(_tag_stub, 1, {"add": ("tag1",)})
+        == "_tag_stub(logs=1, add=['tag1'])"
     )
 
 
 def test_format_step_call_no_args() -> None:
     from inspect_flow._steps.step import _format_step_call
 
-    assert _format_step_call("qa", 5, {}) == "qa(logs=5)"
+    assert _format_step_call(_qa_stub, 5, {}) == "_qa_stub(logs=5)"
+
+
+def test_format_step_call_hides_signature_defaults() -> None:
+    """kwargs whose value matches the function's signature default are hidden."""
+    from inspect_flow._steps.step import _format_step_call
+
+    def myop(logs: list[EvalLog], debug: bool = False, port: int = 5678) -> None: ...
+
+    assert _format_step_call(myop, 1, {"debug": False, "port": 5678}) == "myop(logs=1)"
+    assert (
+        _format_step_call(myop, 1, {"debug": True, "port": 5678})
+        == "myop(logs=1, debug=True)"
+    )
 
 
 # --- CLI metadata --set ---
@@ -884,3 +904,155 @@ def test_cli_file_step_at_syntax_run(tmp_path: Path) -> None:
     assert result.exit_code == 0
     reloaded = read_eval_log(log_path, header_only=True)
     assert "world" in (reloaded.tags or [])
+
+
+# --- scan step ---
+
+
+def test_scan_default_scans_dir_under_log_dir(tmp_path: Path) -> None:
+    """When scans is None, it defaults to <log_dir>/scans where log_dir is
+    the common directory of all input log locations."""
+    from unittest.mock import patch
+
+    from inspect_flow._steps.scan import scan
+
+    log1 = read_eval_log(_make_log(tmp_path, "log1.eval"))
+    log2 = read_eval_log(_make_log(tmp_path, "log2.eval"))
+
+    with patch("inspect_flow._steps.scan.scout_scan") as mock:
+        scan([log1, log2], scanners=[])
+
+    assert mock.call_args.kwargs["scans"] == str(tmp_path / "scans")
+
+
+def test_scan_default_scans_errors_on_mixed_dirs(tmp_path: Path) -> None:
+    """When scans is None and logs are in different directories, raise."""
+    from inspect_flow._steps.scan import scan
+
+    dir1 = tmp_path / "a"
+    dir2 = tmp_path / "b"
+    dir1.mkdir()
+    dir2.mkdir()
+    log1 = read_eval_log(_make_log(dir1, "log.eval"))
+    log2 = read_eval_log(_make_log(dir2, "log.eval"))
+
+    with pytest.raises(ValueError, match="multiple directories"):
+        scan([log1, log2], scanners=[])
+
+
+def test_scan_writes_scout_project_file(tmp_path: Path) -> None:
+    """`scan` writes a scout.yaml in the parent of the scans dir with
+    `transcripts` set to the log dir and `scans` set to the scans dir."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    scans_dir = str(tmp_path / "out" / "scans")
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans=scans_dir)
+
+    project_file = tmp_path / "out" / "scout.yaml"
+    assert project_file.exists()
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": scans_dir}
+
+
+def test_scan_writes_scout_project_file_for_bare_scans_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When scans is a bare relative path (no parent dir, e.g. 'scan_dir'),
+    the scout.yaml should be written in the current working directory rather
+    than at the filesystem root."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    monkeypatch.chdir(tmp_path)
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans="scan_dir")
+
+    project_file = tmp_path / "scout.yaml"
+    assert project_file.exists()
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": "scan_dir"}
+
+
+def test_scan_preserves_existing_scout_project_file(tmp_path: Path) -> None:
+    """If a scout.yaml already exists, `scan` leaves it unchanged."""
+    from unittest.mock import patch
+
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    scans_dir = str(out_dir / "scans")
+    project_file = out_dir / "scout.yaml"
+    original = "filter: model = 'gpt-4'\n"
+    project_file.write_text(original)
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans=scans_dir)
+
+    assert project_file.read_text() == original
+
+
+def test_cli_scan_help_describes_default_scans() -> None:
+    """`flow step scan --help` documents the inferred --scans default."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(step_command, ["scan", "--help"])
+    assert result.exit_code == 0
+    assert "--scans" in result.output
+    assert "alongside the input logs" in result.output
+
+
+def test_cli_scan_only_prints_user_provided_params(
+    tmp_path: Path, recording_console: Console
+) -> None:
+    """`flow step scan` should only show params the user passed on the CLI.
+
+    Regression: defaults like shuffle=0, debug=False, debug_port=5678,
+    fail_on_error=False were being rendered in the scan(...) call summary
+    even when the user didn't pass those flags.
+    """
+    from unittest.mock import patch
+
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+
+    with patch("inspect_flow._steps.scan.scan") as mock_scan:
+        result = CliRunner().invoke(
+            step_command,
+            [
+                "scan",
+                log_path,
+                "--scanners",
+                "fake/scanner.py",
+                "--model",
+                "openai/gpt-5-nano",
+                "--dry-run",
+            ],
+            catch_exceptions=False,
+        )
+    assert result.exit_code == 0, result.output
+    assert mock_scan.called
+
+    captured = recording_console.export_text()
+    assert "scan(" in captured
+    assert "scanners='fake/scanner.py'" in captured
+    assert "model='openai/gpt-5-nano'" in captured
+    # Defaults the user didn't set must not appear
+    assert "shuffle=" not in captured
+    assert "debug=" not in captured
+    assert "debug_port=" not in captured
+    assert "fail_on_error=" not in captured

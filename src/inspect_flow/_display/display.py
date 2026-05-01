@@ -7,10 +7,11 @@ from types import TracebackType
 from typing import Literal, Optional, Type
 
 from rich.console import RenderableType
+from rich.highlighter import NullHighlighter, ReprHighlighter
 from rich.text import Text
 
 from inspect_flow._display.action import DisplayAction
-from inspect_flow._util.console import Formats
+from inspect_flow._util.console import Formats, console
 
 DisplayType = Literal["full", "rich", "plain"]
 """Display type for flow output."""
@@ -37,6 +38,9 @@ def get_display_type() -> DisplayType:
 def set_display_type(display_type: DisplayType) -> None:
     global _display_type
     _display_type = display_type
+    plain = display_type == "plain"
+    console.no_color = plain
+    console.highlighter = NullHighlighter() if plain else ReprHighlighter()
 
 
 def display() -> Display:

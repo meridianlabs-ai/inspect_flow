@@ -5,14 +5,12 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Optional, Type
 
-from rich.console import Console, RenderableType
+from rich.console import RenderableType
 from rich.text import Text
 
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._display.display import Display, set_display
-from inspect_flow._util.console import Formats
-
-console = Console(no_color=True, highlight=False)
+from inspect_flow._util.console import Formats, console
 
 PLAIN_ICONS: dict[str, str] = {
     "pending": "[ ]",

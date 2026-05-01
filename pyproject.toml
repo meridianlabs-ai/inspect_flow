@@ -15,6 +15,7 @@ dependencies = [
     "dateparser>=1.2.0",
     "deltalake>=0.18.0",
     "inspect-ai>=0.3.215",
+    "inspect-scout @ git+https://github.com/meridianlabs-ai/inspect_scout.git@main",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
     "pydantic>=2.11.2",
@@ -81,6 +82,9 @@ version-file = "src/inspect_flow/_version.py"
 
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version" # Important for PyPI compatibility
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.uv]
 managed = true
