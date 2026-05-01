@@ -960,6 +960,29 @@ def test_scan_writes_scout_project_file(tmp_path: Path) -> None:
     assert project == {"transcripts": str(tmp_path), "scans": scans_dir}
 
 
+def test_scan_writes_scout_project_file_for_bare_scans_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When scans is a bare relative path (no parent dir, e.g. 'scan_dir'),
+    the scout.yaml should be written in the current working directory rather
+    than at the filesystem root."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    monkeypatch.chdir(tmp_path)
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        scan([log], scanners=[], scans="scan_dir")
+
+    project_file = tmp_path / "scout.yaml"
+    assert project_file.exists()
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": "scan_dir"}
+
+
 def test_scan_preserves_existing_scout_project_file(tmp_path: Path) -> None:
     """If a scout.yaml already exists, `scan` leaves it unchanged."""
     from unittest.mock import patch

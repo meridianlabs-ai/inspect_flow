@@ -51,7 +51,8 @@ ScannersSpec = (
 
 
 def _write_scout_project_file(*, scans: str, transcripts: str) -> None:
-    project_path = path_join(dirname(scans), "scout.yaml")
+    parent = dirname(scans)
+    project_path = path_join(parent, "scout.yaml") if parent else "scout.yaml"
     if filesystem(project_path).exists(project_path):
         logger.info(
             "scout project file already exists at %s; leaving it unchanged",
