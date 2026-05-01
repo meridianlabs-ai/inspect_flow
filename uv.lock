@@ -1771,7 +1771,7 @@ requires-dist = [
     { name = "deltalake", specifier = ">=0.18.0" },
     { name = "griffe", specifier = ">=1.0.0" },
     { name = "inspect-ai", specifier = ">=0.3.215" },
-    { name = "inspect-scout" },
+    { name = "inspect-scout", git = "https://github.com/meridianlabs-ai/inspect_scout.git?rev=main" },
     { name = "jupyter", marker = "extra == 'doc'" },
     { name = "markdown", marker = "extra == 'doc'" },
     { name = "packaging", specifier = ">=21.0" },
@@ -1811,8 +1811,8 @@ dev = [
 
 [[package]]
 name = "inspect-scout"
-version = "0.4.28"
-source = { registry = "https://pypi.org/simple" }
+version = "0.4.29.dev12"
+source = { git = "https://github.com/meridianlabs-ai/inspect_scout.git?rev=main#fb634f8706f5f437d2971c30fc0d38858bd68546" }
 dependencies = [
     { name = "anyio" },
     { name = "click" },
@@ -1845,10 +1845,6 @@ dependencies = [
     { name = "uvicorn" },
     { name = "wrapt" },
     { name = "zstandard" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/b8/34efe14149c94b300dc37e78be1a6e46019ff4abb805e1a6d1516cb6480f/inspect_scout-0.4.28.tar.gz", hash = "sha256:2204800c557a3174601fc57bc23c1230e9abe9dbdb56ea21f6e1d1241c4b83e3", size = 2500994, upload-time = "2026-04-29T22:21:24.291Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/47/2b414b453464e4b37b4dcbbd3a0cd4d1a460cfe6f0425c1b86d793f69288/inspect_scout-0.4.28-py3-none-any.whl", hash = "sha256:f5b95213b3630c23cf33284cab432cc7113c3cf7e4a1dbedd0bf724532a8b732", size = 2612992, upload-time = "2026-04-29T22:21:21.976Z" },
 ]
 
 [[package]]
