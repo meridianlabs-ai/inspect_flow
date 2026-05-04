@@ -17,7 +17,7 @@ from inspect_ai.model import (
 )
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
-from inspect_ai.util import SandboxEnvironmentSpec
+from inspect_ai.util import AdaptiveConcurrency, SandboxEnvironmentSpec
 from typing_extensions import NotRequired, TypedDict
 
 from inspect_flow._types.flow_types import (
@@ -261,6 +261,8 @@ class GenerateConfigDict(TypedDict):
     """Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries)."""
     max_connections: NotRequired[int | None]
     """Maximum number of concurrent connections to Model API (default is model specific)."""
+    adaptive_connections: NotRequired[bool | AdaptiveConcurrency | None]
+    """Enable adaptive concurrency for model API connections. `True` for defaults (min=4, start=20, max=200), or pass `AdaptiveConcurrency` to customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` overrides this and uses static concurrency."""
     system_message: NotRequired[str | None]
     """Override the default system message."""
     max_tokens: NotRequired[int | None]
