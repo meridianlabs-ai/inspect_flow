@@ -40,7 +40,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ImageOutput, Model, ResponseSchema\n",
     "from inspect_ai.scorer import Scorer\n",
     "from inspect_ai.solver import Solver\n",
-    "from inspect_ai.util import SandboxEnvironmentSpec\n",
+    "from inspect_ai.util import AdaptiveConcurrency, SandboxEnvironmentSpec\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig\n",
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowExtraArgs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
 ]
