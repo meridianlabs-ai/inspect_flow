@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import boto3
 import pytest
 from botocore.client import BaseClient
-from inspect_ai._util.logger import LogHandlerVar
+from inspect_ai._util.logger import LogHandlerVar, _logHandler
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from rich.console import Console
@@ -33,9 +33,35 @@ def mock_call_arg(
 
 
 @pytest.fixture(autouse=True)
-def init_log_handler() -> None:
+def init_log_handler() -> Generator[None, None, None]:
+    # Snapshot logger handler state so a test calling `init_flow_logging` without
+    # an explicit `log_handler_var` can't permanently pollute global handlers
+    # (and their display levels) for subsequent tests.
+    import logging
+
+    saved_global = _logHandler["handler"]
+    saved_handlers = {
+        name: list(logging.getLogger(name).handlers)
+        for name in ("", "inspect_flow", "inspect_ai")
+    }
+    saved_levels = {
+        name: logging.getLogger(name).level
+        for name in ("", "inspect_flow", "inspect_ai")
+    }
+
     log_handler: LogHandlerVar = {"handler": None}
     init_flow_logging(log_level=DEFAULT_LOG_LEVEL, log_handler_var=log_handler)
+    # Route any in-test `init_flow_logging()` calls (which default to the global
+    # `_logHandler`) at this test's fresh handler so they no-op cleanly.
+    _logHandler["handler"] = log_handler["handler"]
+    try:
+        yield
+    finally:
+        _logHandler["handler"] = saved_global
+        for name, handlers in saved_handlers.items():
+            logging.getLogger(name).handlers = handlers
+        for name, level in saved_levels.items():
+            logging.getLogger(name).setLevel(level)
 
 
 @pytest.fixture(autouse=True)
