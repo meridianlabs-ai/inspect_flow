@@ -17,7 +17,7 @@
 | src/inspect\_flow/\_cli/options.py                 |       79 |        0 |       16 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/run.py                     |       24 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/step.py                    |      195 |       17 |       84 |       19 |     87.10% |27, 40, 43, 53-54, 76, 85, 91-\>98, 93-\>92, 95, 102, 108, 143-\>146, 146-\>exit, 293-\>292, 298, 300, 308, 330, 332, 334, 352 |
-| src/inspect\_flow/\_cli/store.py                   |      159 |        0 |       46 |        3 |     98.54% |45-\>47, 256-\>exit, 365-\>exit |
+| src/inspect\_flow/\_cli/store.py                   |      160 |        0 |       46 |        3 |     98.54% |45-\>47, 256-\>exit, 366-\>exit |
 | src/inspect\_flow/\_config/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/defaults.py             |       86 |        0 |       44 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/load.py                 |      261 |        4 |      110 |        5 |     97.57% |93-\>97, 97-\>99, 100, 102, 106, 227 |
@@ -26,7 +26,7 @@
 | src/inspect\_flow/\_display/action.py              |       25 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_display/display.py             |       43 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_display/full.py                |       56 |        0 |       12 |        1 |     98.53% | 69-\>exit |
-| src/inspect\_flow/\_display/full\_actions.py       |      257 |       12 |       90 |        7 |     92.80% |49-50, 62, 142, 155-\>166, 158-\>166, 245-246, 297-302, 309-\>exit, 314-\>exit, 390-\>392 |
+| src/inspect\_flow/\_display/full\_actions.py       |      257 |       14 |       90 |        7 |     92.22% |49-50, 62, 142, 155-\>166, 158-\>166, 245-246, 297-302, 309-\>exit, 314-\>exit, 371-372, 390-\>392 |
 | src/inspect\_flow/\_display/path\_progress.py      |       46 |        0 |        8 |        1 |     98.15% | 33-\>exit |
 | src/inspect\_flow/\_display/plain.py               |       50 |        0 |       10 |        1 |     98.33% | 70-\>exit |
 | src/inspect\_flow/\_display/run\_action.py         |       39 |        0 |        4 |        0 |    100.00% |           |
@@ -55,7 +55,7 @@
 | src/inspect\_flow/\_steps/step.py                  |       74 |        2 |       18 |        2 |     95.65% |  135, 152 |
 | src/inspect\_flow/\_steps/tag.py                   |       28 |        4 |        6 |        0 |     82.35% |     24-32 |
 | src/inspect\_flow/\_store/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_store/deltalake.py             |      336 |       16 |      112 |       14 |     93.30% |99-\>exit, 159, 182-\>181, 188-\>181, 234-236, 264-\>270, 267-\>270, 351-352, 356, 395-397, 405, 407-\>410, 424, 493, 559-560, 564 |
+| src/inspect\_flow/\_store/deltalake.py             |      336 |       15 |      112 |       13 |     93.75% |99-\>exit, 159, 182-\>181, 188-\>181, 234-236, 264-\>270, 267-\>270, 351-352, 356, 395-397, 405, 407-\>410, 424, 559-560, 564 |
 | src/inspect\_flow/\_store/store.py                 |       76 |        1 |       24 |        1 |     98.00% |110, 190-\>192 |
 | src/inspect\_flow/\_types/\_\_init\_\_.py          |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_types/decorator.py             |        7 |        0 |        0 |        0 |    100.00% |           |
@@ -80,7 +80,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       11 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **5292** |  **350** | **1668** |  **159** | **91.42%** |           |
+| **TOTAL**                                          | **5293** |  **351** | **1668** |  **158** | **91.42%** |           |
 
 
 ## Setup coverage badge
