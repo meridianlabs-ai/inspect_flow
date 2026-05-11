@@ -361,6 +361,7 @@ def store_list(
 ) -> None:
     assert format in ("flat", "tree")
     log_filter = _resolve_cli_filter(filter_name, exclude_name)
-    flow_store = init_store(**kwargs)
+    quiet = kwargs.get("display") == "plain"
+    flow_store = init_store(quiet=quiet, **kwargs)
     if flow_store:
         _echo_logs(flow_store, format=format, filter=log_filter)

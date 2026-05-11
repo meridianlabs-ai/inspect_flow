@@ -138,6 +138,31 @@ def test_store_list_tree(recording_console: Console) -> None:
     assert "├" in captured or "└" in captured
 
 
+def test_store_list_plain_outputs_only_paths(recording_console: Console) -> None:
+    """`flow store list --display plain` should emit only log paths.
+
+    Regression test for https://github.com/meridianlabs-ai/inspect_flow/issues/683 —
+    the output must be pipeable to `xargs flow store import` without a
+    "Using store ..." preamble.
+    """
+    runner = CliRunner()
+    _import_logs(runner)
+    recording_console.export_text()  # discard import output
+
+    result = runner.invoke(
+        store_command, ["list", "--display", "plain"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    captured = recording_console.export_text()
+
+    assert "Using store" not in captured
+
+    lines = [line for line in captured.splitlines() if line.strip()]
+    assert lines, "Expected at least one log path line"
+    for line in lines:
+        assert line.endswith(".eval"), f"Unexpected non-path line: {line!r}"
+
+
 def test_store_list_empty(recording_console: Console) -> None:
     runner = CliRunner()
     _import_logs(runner)
