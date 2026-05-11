@@ -211,12 +211,12 @@ class DeltaLakeStore(FlowStoreInternal):
         self.exists = False
         found = [self._init_table(table, create=create) for table in TABLES]
         if any(found):
-            logger.info("Using store: %s", path(store_path))
+            logger.debug("Using store: %s", path(store_path))
             self.exists = True
         else:
-            logger.info("Store not found")
+            logger.debug("Store not found")
             if create:
-                logger.info("Creating store: %s", path(store_path))
+                logger.debug("Creating store: %s", path(store_path))
                 self.exists = True
 
     def _filter_logs(self, logs: set[str], filter: LogFilter | None) -> set[str]:
@@ -287,11 +287,11 @@ class DeltaLakeStore(FlowStoreInternal):
     def _init_table(self, table: TableDef, create: bool) -> bool:
         table_path = self._table_path(table.name)
         if dt := self._get_table(table_path):
-            logger.info(f"Existing table: {table_path}")
+            logger.debug(f"Existing table: {table_path}")
             _check_table_description(table, dt.metadata().description)
             return True
         elif create:
-            logger.info(f"Creating table: {table_path}")
+            logger.debug(f"Creating table: {table_path}")
             fs = filesystem(table_path)
             # Create _store_path first to make it less likely to need to create an s3 bucket, which can cause errors
             fs.mkdir(self._store_path, exist_ok=True)
