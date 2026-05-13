@@ -964,8 +964,8 @@ def test_scan_writes_scout_project_file_for_bare_scans_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """When scans is a bare relative path (no parent dir, e.g. 'scan_dir'),
-    the scout.yaml should be written in the current working directory rather
-    than at the filesystem root."""
+    it should be resolved to an absolute path under the current working
+    directory before being written to scout.yaml."""
     from unittest.mock import patch
 
     import yaml
@@ -980,7 +980,10 @@ def test_scan_writes_scout_project_file_for_bare_scans_path(
     project_file = tmp_path / "scout.yaml"
     assert project_file.exists()
     project = yaml.safe_load(project_file.read_text())
-    assert project == {"transcripts": str(tmp_path), "scans": "scan_dir"}
+    assert project == {
+        "transcripts": str(tmp_path),
+        "scans": str(tmp_path / "scan_dir"),
+    }
 
 
 def test_scan_preserves_existing_scout_project_file(tmp_path: Path) -> None:
@@ -1001,6 +1004,60 @@ def test_scan_preserves_existing_scout_project_file(tmp_path: Path) -> None:
         scan([log], scanners=[], scans=scans_dir)
 
     assert project_file.read_text() == original
+
+
+def test_scan_scout_project_paths_consistent_when_location_is_file_uri(
+    tmp_path: Path,
+) -> None:
+    """scout.yaml paths should be plain absolute (no file://) regardless of
+    whether log.location includes a file:// prefix (e.g. when logs came via
+    list_eval_logs)."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_ai.log import list_eval_logs
+    from inspect_flow._steps.scan import scan
+
+    _make_log(tmp_path)
+    # list_eval_logs returns names with file:// prefix on local filesystems
+    infos = list_eval_logs(str(tmp_path))
+    log = read_eval_log(infos[0].name)
+    assert log.location.startswith("file://")
+
+    scans_dir = str(tmp_path / "out" / "scans")
+    with patch("inspect_flow._steps.scan.scout_scan") as mock:
+        scan([log], scanners=[], scans=scans_dir)
+
+    project_file = tmp_path / "out" / "scout.yaml"
+    assert project_file.exists()
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": scans_dir}
+    assert mock.call_args.kwargs["scans"] == scans_dir
+
+
+def test_scan_default_scans_absolute_when_location_is_file_uri(
+    tmp_path: Path,
+) -> None:
+    """When scans is None and log.location has file:// prefix, the inferred
+    scans path should be a plain absolute path (no file://)."""
+    from unittest.mock import patch
+
+    import yaml
+    from inspect_ai.log import list_eval_logs
+    from inspect_flow._steps.scan import scan
+
+    _make_log(tmp_path)
+    infos = list_eval_logs(str(tmp_path))
+    log = read_eval_log(infos[0].name)
+
+    with patch("inspect_flow._steps.scan.scout_scan") as mock:
+        scan([log], scanners=[])
+
+    expected_scans = str(tmp_path / "scans")
+    assert mock.call_args.kwargs["scans"] == expected_scans
+    project_file = tmp_path / "scout.yaml"
+    project = yaml.safe_load(project_file.read_text())
+    assert project == {"transcripts": str(tmp_path), "scans": expected_scans}
 
 
 def test_cli_scan_help_describes_default_scans() -> None:
