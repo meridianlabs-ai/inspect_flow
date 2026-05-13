@@ -9,7 +9,13 @@ from inspect_ai._cli.util import (
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
-from inspect_ai._util.file import dirname, file, filesystem
+from inspect_ai._util.file import (
+    absolute_file_path,
+    dirname,
+    file,
+    filesystem,
+    local_path,
+)
 from inspect_ai.log import EvalLog
 from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig
 from inspect_scout import (
@@ -48,6 +54,16 @@ ScannersSpec = (
     | ScanJobConfig
     | str
 )
+
+
+def _canonical_path(path: str) -> str:
+    """Canonical form for scout.yaml path values.
+
+    Local paths are returned as absolute paths without a file:// prefix; remote
+    paths (s3://, etc.) are returned unchanged. Keeps the two keys in scout.yaml
+    in a single consistent form.
+    """
+    return absolute_file_path(local_path(path))
 
 
 def _write_scout_project_file(*, scans: str, transcripts: str) -> None:
@@ -175,9 +191,8 @@ def scan(
                 "directories. Specify scans explicitly."
             )
     elif len(log_dirs) == 1:
-        log_dir = next(iter(log_dirs))
-        if scans is None:
-            scans = path_join(log_dir, "scans")
+        log_dir = _canonical_path(next(iter(log_dirs)))
+        scans = _canonical_path(scans) if scans else path_join(log_dir, "scans")
         _write_scout_project_file(scans=scans, transcripts=log_dir)
 
     parsed_validation = _parse_validation(validation) if validation else None
