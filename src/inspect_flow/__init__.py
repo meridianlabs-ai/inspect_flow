@@ -33,6 +33,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowStoreConfig,
     FlowTask,
+    InstantiateConfig,
     LogFilter,
 )
 from inspect_flow._types.log_filter import log_filter
@@ -51,6 +52,7 @@ __all__ = [
     "FlowSpec",
     "FlowStoreConfig",
     "FlowModel",
+    "InstantiateConfig",
     "LogFilter",
     "log_filter",
     "step",

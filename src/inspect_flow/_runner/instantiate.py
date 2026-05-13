@@ -1,3 +1,5 @@
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Sequence, TypeAlias, TypeVar
 
@@ -10,6 +12,7 @@ from inspect_ai._util.notgiven import NotGiven as InspectNotGiven
 from inspect_ai._util.path import chdir_python
 from inspect_ai._util.registry import (
     registry_kwargs,
+    registry_lookup,
 )
 from inspect_ai.agent import Agent
 from inspect_ai.model import Model, get_model
@@ -34,6 +37,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
     GenerateConfig,
+    InstantiateConfig,
     ModelRolesConfig,
     NotGiven,
 )
@@ -43,9 +47,15 @@ from inspect_flow._util.pydantic_util import callable_name
 
 ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
+TaskSpec: TypeAlias = str | FlowTask | Task
 
 _T = TypeVar("_T", bound=BaseModel)
 _FR = TypeVar("_FR", bound=Task | Agent | Solver | Scorer | Model)
+
+# inspect_ai's load_tasks and scorer_from_spec call chdir_python internally
+# when loading from a file path. chdir_python is process-wide and explicitly
+# not thread-safe, so serialize any such call across worker threads.
+_chdir_lock = threading.Lock()
 
 
 class FactoryName(NamedTuple):
@@ -93,7 +103,7 @@ class InstantiatedTask:
     task: Task
 
 
-def get_task_name(task_config: str | FlowTask | Task) -> str:
+def get_task_name(task_config: TaskSpec) -> str:
     """Get the display name for a task config."""
     if isinstance(task_config, str):
         return task_config
@@ -113,11 +123,35 @@ def get_task_name(task_config: str | FlowTask | Task) -> str:
     return "<unnamed>"
 
 
+def _resolve_instantiate(spec: FlowSpec) -> InstantiateConfig:
+    value = spec.instantiate
+    if isinstance(value, NotGiven) or value is None:
+        return InstantiateConfig()
+    if isinstance(value, str):
+        return InstantiateConfig(mode=value)
+    return value
+
+
+def _instantiate_one(
+    spec: FlowSpec,
+    task_config: TaskSpec,
+    base_dir: str,
+) -> list[InstantiatedTask]:
+    tasks = _instantiate_task(spec, task_config, base_dir=base_dir)
+    return [
+        InstantiatedTask(
+            flow_task=task_config if isinstance(task_config, FlowTask) else None,
+            task=task,
+        )
+        for task in tasks
+    ]
+
+
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
-    task_configs = spec.tasks or []
+    task_configs = list(spec.tasks or [])
     if not task_configs:
         return []
-    results: list[InstantiatedTask] = []
+    cfg = _resolve_instantiate(spec)
     with RunAction("instantiate") as action:
         progress = Progress(
             TextColumn("[progress.percentage]{task.completed}/{task.total}"),
@@ -125,22 +159,96 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
         )
         action.update(info=progress)
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
-        for task_config in task_configs:
-            task_name = get_task_name(task_config)
-            with action.error_context(task_name):
-                progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
-                for task in _instantiate_task(spec, task_config, base_dir=base_dir):
-                    results.append(
-                        InstantiatedTask(
-                            flow_task=task_config
-                            if isinstance(task_config, FlowTask)
-                            else None,
-                            task=task,
-                        )
-                    )
-            progress.advance(progress_task)
+        if cfg.mode == "serial":
+            results = _instantiate_serial(
+                spec, task_configs, base_dir, action, progress, progress_task
+            )
+        else:
+            results = _instantiate_threaded(
+                spec, task_configs, base_dir, cfg, progress, progress_task
+            )
         action.update(info=f"Instantiated {len(results)} tasks")
     return results
+
+
+def _instantiate_serial(
+    spec: FlowSpec,
+    task_configs: list[TaskSpec],
+    base_dir: str,
+    action: RunAction,
+    progress: Progress,
+    progress_task: Any,
+) -> list[InstantiatedTask]:
+    results: list[InstantiatedTask] = []
+    for task_config in task_configs:
+        task_name = get_task_name(task_config)
+        with action.error_context(task_name):
+            progress.update(progress_task, description=f"[cyan]{task_name}[/cyan]")
+            results.extend(_instantiate_one(spec, task_config, base_dir))
+        progress.advance(progress_task)
+    return results
+
+
+@dataclass(frozen=True)
+class _IndexedSpec:
+    position: int
+    spec: TaskSpec
+
+
+# A unit is the work given to one worker: a single spec under "parallel",
+# or all specs sharing a task name under "by_task".
+_Unit: TypeAlias = list[_IndexedSpec]
+
+
+def _instantiate_threaded(
+    spec: FlowSpec,
+    task_configs: list[TaskSpec],
+    base_dir: str,
+    cfg: InstantiateConfig,
+    progress: Progress,
+    progress_task: Any,
+) -> list[InstantiatedTask]:
+    indexed = [
+        _IndexedSpec(position, task_config)
+        for position, task_config in enumerate(task_configs)
+    ]
+    if cfg.mode == "parallel":
+        units: list[_Unit] = [[item] for item in indexed]
+    else:
+        groups: dict[str, _Unit] = {}
+        for item in indexed:
+            groups.setdefault(get_task_name(item.spec), []).append(item)
+        units = list(groups.values())
+
+    def run_unit(unit: _Unit) -> dict[int, list[InstantiatedTask]]:
+        unit_results: dict[int, list[InstantiatedTask]] = {}
+        for item in unit:
+            unit_results[item.position] = _instantiate_one(spec, item.spec, base_dir)
+            progress.advance(progress_task)
+        return unit_results
+
+    max_workers = max(1, min(cfg.max_threads, len(units)))
+    progress.update(progress_task, description=f"[cyan]{cfg.mode}[/cyan]")
+    results_by_position: dict[int, list[InstantiatedTask]] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures: dict[Future[dict[int, list[InstantiatedTask]]], str] = {
+            executor.submit(run_unit, unit): get_task_name(unit[0].spec)
+            for unit in units
+        }
+        for fut in as_completed(futures):
+            try:
+                results_by_position.update(fut.result())
+            except BaseException as e:
+                task_name = futures[fut]
+                for other in futures:
+                    other.cancel()
+                raise type(e)(f"{task_name}: {e}") from e
+
+    return [
+        result
+        for position in sorted(results_by_position)
+        for result in results_by_position[position]
+    ]
 
 
 def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
@@ -182,11 +290,15 @@ def _create_single_scorer(task: FlowTask, scorer: str | FlowScorer | Scorer) -> 
         return result
     if not isinstance(result, FactoryName):
         raise ValueError(f"Scorer name is required. Scorer: {scorer}")
-    return scorer_from_spec(
-        ScorerSpec(scorer=result.name),
-        task_path=None,
-        **_kwargs("scorer", result.args, task),
-    )
+    # scorer_from_spec chdirs into the scorer file's directory when given a
+    # file path. Skip the lock for already-registered scorers so user @scorer
+    # code can run in parallel.
+    spec = ScorerSpec(scorer=result.name)
+    kwargs = _kwargs("scorer", result.args, task)
+    if registry_lookup("scorer", result.name) is not None:
+        return scorer_from_spec(spec, task_path=None, **kwargs)
+    with _chdir_lock:
+        return scorer_from_spec(spec, task_path=None, **kwargs)
 
 
 def _create_scorer(
@@ -252,9 +364,7 @@ def _create_solver(
     return [_create_single_solver(task, single_solver) for single_solver in solver]
 
 
-def _instantiate_task(
-    spec: FlowSpec, flow_task: str | FlowTask | Task, base_dir: str
-) -> list[Task]:
+def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> list[Task]:
     if isinstance(flow_task, Task):
         return [flow_task]
     if (
@@ -350,12 +460,18 @@ def _create_task(task: FlowTask, base_dir: str) -> list[Task]:
         raise ValueError(f"Task name is required. Task: {task}")
 
     task_args = registry_kwargs(**(result.args or {}))
-    # Try to create by finding task functions in files
-    if filesystem(base_dir).is_local():
-        with chdir_python(base_dir):
-            tasks = load_tasks(task_specs=[result.name], task_args=task_args)
-    else:
+    # If the task is already registered, load_tasks dispatches straight to
+    # task_create with no chdir, so user @task code can run concurrently.
+    # Otherwise we must serialize because load_tasks uses chdir_python.
+    if registry_lookup("task", result.name) is not None:
         tasks = load_tasks(task_specs=[result.name], task_args=task_args)
+    else:
+        with _chdir_lock:
+            if filesystem(base_dir).is_local():
+                with chdir_python(base_dir):
+                    tasks = load_tasks(task_specs=[result.name], task_args=task_args)
+            else:
+                tasks = load_tasks(task_specs=[result.name], task_args=task_args)
     if not tasks:
         raise LookupError(f"No tasks found for name: {result.name}")
     return tasks

@@ -746,6 +746,23 @@ class FlowDependencies(FlowBase):
     )
 
 
+InstantiateMode: TypeAlias = Literal["serial", "by_task", "parallel"]
+
+
+class InstantiateConfig(FlowBase):
+    """Configuration for task instantiation parallelism."""
+
+    mode: InstantiateMode = Field(
+        default="serial",
+        description="`'serial'` instantiates one task at a time. `'by_task'` parallelizes across distinct task names but serializes instances that share a name. `'parallel'` instantiates everything concurrently.",
+    )
+
+    max_threads: int = Field(
+        default=32,
+        description="Maximum worker threads to use for instantiation.",
+    )
+
+
 class FlowStoreConfig(FlowBase):
     """Store configuration with optional log filter."""
 
@@ -833,4 +850,9 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
 
     tasks: Sequence[str | FlowTask | Task] | None | NotGiven = Field(
         default=not_given, description="Tasks to run"
+    )
+
+    instantiate: InstantiateMode | InstantiateConfig | None | NotGiven = Field(
+        default=not_given,
+        description="How to instantiate tasks before running. `'serial'` (default) instantiates one task at a time. `'by_task'` parallelizes across distinct task names but serializes instances that share a name. `'parallel'` instantiates everything concurrently. Pass an `InstantiateConfig` to also set `max_threads`.",
     )

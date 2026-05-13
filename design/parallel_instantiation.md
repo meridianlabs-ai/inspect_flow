@@ -126,7 +126,7 @@ Both preserve the **input order** of `task_configs` in the returned list (so dow
 
 These are real concerns that show up the moment we add threads. Each must be addressed before merging.
 
-1. **`chdir_python(base_dir)` is process-wide and explicitly non-thread-safe** ([inspect_ai/_util/path.py](https://inspect.aisi.org.uk/) `chdir_python` docstring: "Non thread-safe context manager"). It's used inside `_create_task` for local filesystems. All flow tasks share the same `base_dir`, so the fix is to enter `chdir_python(base_dir)` **once** on the main thread around the parallel section, and remove the per-task chdir when running in a parallel mode. `_create_task` accepts a flag (or splits into two helpers) so the inner call skips chdir when already inside an outer one.
+1. **`chdir_python` is process-wide and explicitly non-thread-safe.** It's used inside `_create_task` for local filesystems, and inspect_ai's `load_file_tasks` also calls it internally when resolving file-based task specs. We can't simply enter `chdir_python(base_dir)` once on the main thread, because inspect_ai still issues its own nested chdir on each `load_tasks` call. Fix: serialize the chdir-using portion with a module-level `_load_tasks_lock`. We only acquire the lock when the task name is *not* already in the registry — once a task is registered (via prior file load or `@task` import), `load_tasks` dispatches straight to `task_create` without any chdir, so user code (the `@task` body, which may load datasets) runs unlocked and in parallel.
 
 2. **`init_active_model` writes a `ContextVar`.** ContextVars are per-context; `ThreadPoolExecutor` copies the submitting context into each worker. Setting it in a worker only affects that worker's view, which is what we want — `_create_task` reads the active model on the same thread.
 
@@ -179,7 +179,7 @@ run(FlowSpec(
 
 - Unit: `resolve_instantiate` handles every union arm (NotGiven, None, each string, full model).
 - Integration: a flow spec with N tasks across M names runs to completion under each mode and produces the same set of `InstantiatedTask` results in the same order.
-- Thread-safety smoke: a `parallel`-mode test exercising `_create_task` with local filesystem `base_dir` confirms the chdir-once approach works (no `FileNotFoundError` from racing chdirs).
+- Thread-safety smoke: a `parallel`-mode test where the registered task body waits on a `threading.Barrier` confirms multiple workers actually run user task code concurrently (the barrier would time out under serial).
 - Error propagation: a flow spec where one task's factory raises confirms the failing task name appears in the surfaced error under all three modes, and that `parallel`/`by_task` modes fail fast (don't wait for unrelated work to complete before raising).
 
 ## Open Questions
