@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_a2c901045fd13314_log_filter_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-05-13 18:18 +0000
+            created at 2026-05-18 13:40 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -345,8 +345,8 @@
     <p class="run"><span class="n"><a id="t261" href="#t261">261</a></span><span class="t">    <span class="str">"""Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries)."""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t262" href="#t262">262</a></span><span class="t">    <span class="nam">max_connections</span><span class="op">:</span> <span class="nam">NotRequired</span><span class="op">[</span><span class="nam">int</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t263" href="#t263">263</a></span><span class="t">    <span class="str">"""Maximum number of concurrent connections to Model API (default is model specific)."""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t264" href="#t264">264</a></span><span class="t">    <span class="nam">adaptive_connections</span><span class="op">:</span> <span class="nam">NotRequired</span><span class="op">[</span><span class="nam">bool</span> <span class="op">|</span> <span class="nam">AdaptiveConcurrency</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t265" href="#t265">265</a></span><span class="t">    <span class="str">"""Enable adaptive concurrency for model API connections. `True` for defaults (min=4, start=20, max=200), or pass `AdaptiveConcurrency` to customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` overrides this and uses static concurrency."""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t264" href="#t264">264</a></span><span class="t">    <span class="nam">adaptive_connections</span><span class="op">:</span> <span class="nam">NotRequired</span><span class="op">[</span><span class="nam">bool</span> <span class="op">|</span> <span class="nam">int</span> <span class="op">|</span> <span class="nam">AdaptiveConcurrency</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t265" href="#t265">265</a></span><span class="t">    <span class="str">"""Adaptive concurrency for model API connections. Defaults to enabled (`None` and `True` both resolve to `AdaptiveConcurrency()` defaults: min=4, start=20, max=100). Pass `False` to opt out (uses static concurrency). Pass an integer `N` as shorthand for `AdaptiveConcurrency(max=N)`. Pass an `AdaptiveConcurrency` to fully customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` or `batch=True` takes precedence and uses static concurrency."""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t266" href="#t266">266</a></span><span class="t">    <span class="nam">system_message</span><span class="op">:</span> <span class="nam">NotRequired</span><span class="op">[</span><span class="nam">str</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t267" href="#t267">267</a></span><span class="t">    <span class="str">"""Override the default system message."""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t268" href="#t268">268</a></span><span class="t">    <span class="nam">max_tokens</span><span class="op">:</span> <span class="nam">NotRequired</span><span class="op">[</span><span class="nam">int</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -484,7 +484,7 @@
             <a class="nav" href="z_a2c901045fd13314_log_filter_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-05-13 18:18 +0000
+            created at 2026-05-18 13:40 +0000
         </p>
     </div>
 </footer>

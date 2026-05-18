@@ -65,7 +65,7 @@
 | src/inspect\_flow/\_types/log\_filter.py           |       57 |        4 |       28 |        3 |     91.76% |59, 71, 73-74 |
 | src/inspect\_flow/\_types/merge.py                 |       27 |        0 |        8 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/\_\_init\_\_.py           |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_util/console.py                |       71 |        6 |       32 |        6 |     88.35% |28-\>exit, 40-43, 64-\>73, 89, 92, 106-\>108 |
+| src/inspect\_flow/\_util/console.py                |       71 |        6 |       32 |        5 |     89.32% |28-\>exit, 40-43, 89, 92, 106-\>108 |
 | src/inspect\_flow/\_util/constants.py              |        3 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/data.py                   |       25 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/error.py                  |       53 |        7 |       18 |        1 |     85.92% |40-41, 69-73 |
@@ -80,7 +80,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       11 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **5294** |  **351** | **1666** |  **158** | **91.42%** |           |
+| **TOTAL**                                          | **5294** |  **351** | **1666** |  **157** | **91.44%** |           |
 
 
 ## Setup coverage badge
