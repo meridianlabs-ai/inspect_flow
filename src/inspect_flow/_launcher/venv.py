@@ -11,6 +11,13 @@ from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
@@ -185,8 +192,11 @@ def _create_venv(
     if auto_detect_dependencies:
         dependencies.extend(collect_auto_dependencies(spec))
     dependencies.append(get_pip_string("inspect-flow"))
-    # Ensure same version of inspect-ai is installed (supports -e installs)
-    dependencies.append(get_pip_string("inspect-ai"))
+    if not any(
+        _spec_is_inspect_ai(d) for d in dependencies
+    ) and not _explicit_dependency_file_specifies_inspect_ai(spec, base_dir):
+        # Ensure same version of inspect-ai is installed (supports -e installs)
+        dependencies.append(get_pip_string("inspect-ai"))
 
     _uv_pip_install(dependencies, temp_dir, env)
 
@@ -199,6 +209,43 @@ def _resolve_dependency(dependency: str, base_dir: str) -> str:
     if "/" in dependency:
         return absolute_path_relative_to(dependency, base_dir=base_dir)
     return dependency
+
+
+def _spec_is_inspect_ai(requirement: str) -> bool:
+    try:
+        return canonicalize_name(Requirement(requirement).name) == "inspect-ai"
+    except InvalidRequirement:
+        return False
+
+
+def _file_specifies_inspect_ai(file_path: str) -> bool:
+    if file_path.endswith("pyproject.toml"):
+        with open(file_path, "rb") as f:
+            data = tomllib.load(f)
+        deps = data.get("project", {}).get("dependencies") or []
+        return any(isinstance(d, str) and _spec_is_inspect_ai(d) for d in deps)
+    with open(file_path) as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith(("#", "-")):
+                continue
+            if _spec_is_inspect_ai(line):
+                return True
+    return False
+
+
+def _explicit_dependency_file_specifies_inspect_ai(
+    spec: FlowSpec, base_dir: str
+) -> bool:
+    if not spec.dependencies:
+        return False
+    df = spec.dependencies.dependency_file
+    if not isinstance(df, str) or df in ("auto", "no_file"):
+        return False
+    file_path = absolute_path_relative_to(df, base_dir=base_dir)
+    if not Path(file_path).exists():
+        return False
+    return _file_specifies_inspect_ai(file_path)
 
 
 def _get_create_venv_with_base_dependencies(

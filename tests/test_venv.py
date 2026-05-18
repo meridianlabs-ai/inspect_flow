@@ -614,6 +614,137 @@ def test_325_uv_sync_args() -> None:
                 ]
 
 
+def test_inspect_ai_version_via_additional_dependencies() -> None:
+    """When the user pins inspect-ai in additional_dependencies, the venv
+    setup must install that exact version rather than the auto-pinned
+    currently-installed version."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+
+            _create_venv(
+                spec=FlowSpec(
+                    dependencies=FlowDependencies(
+                        additional_dependencies=["inspect-ai==0.3.100"],
+                    ),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
+            )
+
+            args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert args == [
+                "uv",
+                "pip",
+                "install",
+                "inspect-ai==0.3.100",
+                f"-e {flow_path}",
+            ]
+
+
+def test_inspect_ai_version_via_dependency_file_requirements() -> None:
+    """When the user pins inspect-ai in a requirements.txt dependency_file,
+    the venv setup must install that file and must not also append the
+    auto-pinned inspect-ai (which would override the user's version)."""
+    with tempfile.TemporaryDirectory() as base_dir:
+        req_file = Path(base_dir) / "requirements.txt"
+        req_file.write_text("inspect-ai==0.3.100\n")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(
+                    args=[], returncode=0, stdout="mocked output"
+                )
+
+                _create_venv(
+                    spec=FlowSpec(
+                        dependencies=FlowDependencies(
+                            dependency_file=req_file.as_posix(),
+                        ),
+                        tasks=[FlowTask(name="task_name")],
+                    ),
+                    base_dir=base_dir,
+                    temp_dir=temp_dir,
+                    env=os.environ.copy(),
+                    dry_run=False,
+                    action=_test_action,
+                )
+
+            assert mock_run.call_count == 3
+
+            install_req_args = mock_run.mock_calls[1].args[0]
+            assert install_req_args == [
+                "uv",
+                "pip",
+                "install",
+                "-r",
+                req_file.as_posix(),
+            ]
+
+            last_args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert last_args == [
+                "uv",
+                "pip",
+                "install",
+                f"-e {flow_path}",
+            ]
+
+
+def test_inspect_ai_version_via_dependency_file_pyproject() -> None:
+    """When the user pins inspect-ai in a pyproject.toml dependency_file,
+    the venv setup must use that file and must not also append the
+    auto-pinned inspect-ai (which would override the user's version)."""
+    with tempfile.TemporaryDirectory() as base_dir:
+        pyproject_file = Path(base_dir) / "pyproject.toml"
+        pyproject_file.write_text(
+            "[project]\n"
+            'name = "test_project"\n'
+            'version = "0.1.0"\n'
+            'requires-python = ">=3.10"\n'
+            'dependencies = ["inspect-ai==0.3.100"]\n'
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(
+                    args=[], returncode=0, stdout="mocked output"
+                )
+
+                _create_venv(
+                    spec=FlowSpec(
+                        dependencies=FlowDependencies(
+                            dependency_file=pyproject_file.as_posix(),
+                        ),
+                        python_version="3.11",
+                        tasks=[FlowTask(name="task_name")],
+                    ),
+                    base_dir=base_dir,
+                    temp_dir=temp_dir,
+                    env=os.environ.copy(),
+                    dry_run=False,
+                    action=_test_action,
+                )
+
+            assert mock_run.call_count == 2
+
+            last_args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            assert last_args == [
+                "uv",
+                "pip",
+                "install",
+                f"-e {flow_path}",
+            ]
+
+
 @pytest.mark.slow
 def test_369_flow_requirements_s3(mock_s3: BaseClient) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
