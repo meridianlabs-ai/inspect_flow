@@ -18,6 +18,7 @@ description: Public API — run, check, steps, config, store helpers.
 ### tag
 ### metadata
 ### copy
+### scan
 ### FlowStore
 ### StepResult
 ### DisplayType
