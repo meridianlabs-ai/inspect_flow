@@ -508,8 +508,18 @@ class DeltaLakeStore(FlowStoreInternal):
         self._set_task_identifiers()
 
         dt = self._open_table(LOGS)
-        dataset = dt.to_pyarrow_dataset()
-        table = dataset.to_table(filter=pc.field(_task_id_col()).isin(task_ids))
+        # deltalake 1.6 writes string columns as parquet `string_view`, and
+        # pyarrow 24's Acero scanner has no comparison kernels for that type,
+        # so every form of pushdown filter (isin, equal, cast.isin, deltalake's
+        # own `filters=` arg) fails. We materialize the two needed columns —
+        # Acero casts string_view→string during scan — then filter in Python.
+        # Retest with later pyarrow versions: once the missing kernels land
+        # (or deltalake stops emitting string_view), switch back to passing
+        # `filter=pc.field(_task_id_col()).isin(task_ids)` to to_table for
+        # proper predicate pushdown.
+        table = dt.to_pyarrow_dataset().to_table(columns=[_task_id_col(), "log_path"])
+        mask = pc.is_in(table[_task_id_col()], value_set=pa.array(list(task_ids)))
+        table = table.filter(mask)
 
         result: dict[str, set[str]] = {}
         for task_id, log_path in zip(
@@ -517,6 +527,8 @@ class DeltaLakeStore(FlowStoreInternal):
             table["log_path"].to_pylist(),
             strict=True,
         ):
+            if task_id is None or log_path is None:
+                continue
             if task_id not in result:
                 result[task_id] = set()
             result[task_id].add(log_path)
