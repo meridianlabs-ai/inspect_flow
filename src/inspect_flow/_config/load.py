@@ -13,8 +13,12 @@ from pydantic_core import ValidationError
 from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._display.display import display
 from inspect_flow._display.run_action import RunAction
+from inspect_flow._types.after_instantiate import (
+    INSPECT_FLOW_AFTER_INSTANTIATE_ATTR,
+)
 from inspect_flow._types.decorator import INSPECT_FLOW_AFTER_LOAD_ATTR
 from inspect_flow._types.flow_types import (
+    FlowInternal,
     FlowSpec,
     FlowStoreConfig,
     NotGiven,
@@ -51,6 +55,7 @@ class ConfigOptions:
 class LoadState:
     files_to_specs: dict[str, FlowSpec | None] = field(factory=dict)
     after_flow_spec_loaded_funcs: list[Callable] = field(factory=list)
+    python_files: set[str] = field(factory=set)
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
@@ -110,8 +115,24 @@ def expand_spec(
         spec.log_dir_create_unique = False
     spec = _apply_substitutions(spec, base_dir=base_dir)
     spec = apply_defaults(spec)
+    spec = _attach_internal(spec, state)
     _after_flow_spec_loaded(spec, state)
     return spec
+
+
+def _attach_internal(spec: FlowSpec, state: LoadState) -> FlowSpec:
+    if not state.python_files:
+        return spec
+    base = spec.internal if isinstance(spec.internal, FlowInternal) else FlowInternal()
+    return spec.model_copy(
+        update={
+            "internal": base.model_copy(
+                update={
+                    "python_files": sorted(state.python_files),
+                }
+            )
+        }
+    )
 
 
 def _after_flow_spec_loaded(spec: FlowSpec, state: LoadState) -> None:
@@ -257,6 +278,11 @@ def _load_spec_from_file(
                         if hasattr(v, INSPECT_FLOW_AFTER_LOAD_ATTR)
                     ]
                 )
+                if any(
+                    hasattr(v, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR)
+                    for v in globals.values()
+                ):
+                    state.python_files.add(config_file)
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
                     data = yaml.safe_load(f)

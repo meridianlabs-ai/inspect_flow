@@ -763,6 +763,26 @@ class InstantiateConfig(FlowBase):
     )
 
 
+class FlowInternal(FlowBase):
+    """State populated by the spec loader. Not intended for direct user configuration.
+
+    Carries information from the parent process to the venv subprocess that is
+    not part of the user-facing spec.
+    """
+
+    python_files: Sequence[str] | None | NotGiven = Field(
+        default=not_given,
+        description=(
+            "Absolute paths to Python files that the runner should execute "
+            "for their side effects (e.g. registering decorators). Loaded "
+            "before task instantiation so registrations in these files are "
+            "visible in the runner's registry. Populated automatically by "
+            "the spec loader from any files that register `@after_instantiate` "
+            "(or similar runner-side decorators) at load time."
+        ),
+    )
+
+
 class FlowStoreConfig(FlowBase):
     """Store configuration with optional log filter."""
 
@@ -855,4 +875,9 @@ class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     instantiate: InstantiateMode | InstantiateConfig | None | NotGiven = Field(
         default=not_given,
         description="How to instantiate tasks before running. `'serial'` (default) instantiates one task at a time. `'by_task'` parallelizes across distinct task names but serializes instances that share a name. `'parallel'` instantiates everything concurrently. Pass an `InstantiateConfig` to also set `max_threads`.",
+    )
+
+    internal: FlowInternal | None | NotGiven = Field(
+        default=not_given,
+        description="Internal state populated by the spec loader. Not intended for direct user configuration.",
     )

@@ -106,7 +106,7 @@ for hook in hooks:
 
 `registry_find` doesn't guarantee an order. To make hook ordering reproducible regardless of import order, we sort alphabetically by registered name before invoking. Users who care can name their hooks `01_foo`, `02_bar`, etc. — same lever they'd use for log filters.
 
-## The venv bridge: `FlowInternal.after_instantiate_files`
+## The venv bridge: `FlowInternal.python_files`
 
 The registry solves discovery once the decorator has run. There's still a delivery problem for one case: hooks defined in **the user's `config.py` or `_flow.py`**. Those files are executed by the *parent* during spec loading. The parent's registry knows about the hook. The venv child has its own fresh registry and never executes the config file (it reads the resolved `flow.yaml` instead).
 
@@ -120,21 +120,17 @@ Add a `FlowInternal` sub-model on `FlowSpec`. It's *not* a user-facing field —
 
 ```python
 class FlowInternal(FlowBase):
-    """State populated by the spec loader. Not intended for direct user configuration.
+    """State populated by the spec loader. Not intended for direct user configuration."""
 
-    Carries information from the parent process to the venv subprocess that
-    isn't part of the user-facing spec — for example, paths to Python files
-    whose `@after_instantiate` decorators must re-run inside the venv.
-    """
-
-    after_instantiate_files: Sequence[str] | None | NotGiven = Field(
+    python_files: Sequence[str] | None | NotGiven = Field(
         default=not_given,
         description=(
-            "Absolute paths to Python files that registered "
-            "@after_instantiate hooks at spec-load time. Loaded inside the "
-            "venv subprocess so the decorators re-register in the child's "
-            "registry. Other sources (task modules, entry points) register "
-            "themselves naturally during instantiation."
+            "Absolute paths to Python files that the runner should execute "
+            "for their side effects (e.g. registering decorators). Loaded "
+            "before task instantiation so registrations in these files are "
+            "visible in the runner's registry. Populated automatically by "
+            "the spec loader from any files that register `@after_instantiate` "
+            "(or similar runner-side decorators) at load time."
         ),
     )
 
@@ -150,21 +146,23 @@ class FlowSpec(...):
     )
 ```
 
+The field is named generically (`python_files`, not `after_instantiate_files`) because the bridge mechanism is useful for any side-effect-registering decorator that lives in the spec / `_flow.py`, not just `@after_instantiate`. Future runner-side decorators can reuse this exact channel without needing a parallel field.
+
 In the resolved YAML the child reads:
 
 ```yaml
 internal:
-  after_instantiate_files:
+  python_files:
     - /abs/path/_flow.py
     - /abs/path/config.py
 ```
 
-Why a sub-model instead of a top-level `_after_instantiate_files`:
+Why a sub-model instead of a top-level field:
 
 - **Visual segregation.** Anyone opening `flow.yaml` sees `internal:` and knows to leave it alone.
 - **Scales.** Future loader-populated state (resolved auto-include manifests, cached resolution data) goes inside `FlowInternal` without growing `FlowSpec`'s top-level surface.
 - **Plays nicely with `extra="forbid"`.** Users still get a clean validation error if they typo a real top-level field; only carefully-named keys are allowed inside `internal:`.
-- **Discoverable in code.** `spec.internal.after_instantiate_files` reads as what it is.
+- **Discoverable in code.** `spec.internal.python_files` reads as what it is.
 
 ### Populating the bridge
 
@@ -194,7 +192,7 @@ if any(
     hasattr(v, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR)
     for v in globals.values()
 ):
-    state.after_instantiate_files.add(config_file)
+    state.python_files.add(config_file)
 ```
 
 The attribute is purely a convenience for the parent loader's per-file detection. The child does not look at the attribute — it uses the registry.
@@ -202,7 +200,7 @@ The attribute is purely a convenience for the parent loader's per-file detection
 Then in `expand_spec`, before returning:
 
 ```python
-if state.after_instantiate_files:
+if state.python_files:
     internal = (
         spec.internal
         if isinstance(spec.internal, FlowInternal)
@@ -210,7 +208,7 @@ if state.after_instantiate_files:
     )
     spec = spec.model_copy(update={
         "internal": internal.model_copy(update={
-            "after_instantiate_files": sorted(state.after_instantiate_files),
+            "python_files": sorted(state.python_files),
         }),
     })
 ```
@@ -223,7 +221,7 @@ In the child's `run_eval_set`, before the registry scan:
 
 ```python
 internal = resolved_spec.internal
-files = internal.after_instantiate_files if isinstance(internal, FlowInternal) else None
+files = internal.python_files if isinstance(internal, FlowInternal) else None
 for file_path in files or []:
     execute_file_and_get_last_result(file_path, args={})  # side effect: decorators register
 ```
@@ -240,7 +238,7 @@ Then `instantiate_tasks` runs (more hooks may register as a side effect), then `
 
 ### Inproc
 
-For `execution_type="inproc"`, parent and child are the same process. Config and `_flow.py` are loaded by the parent's spec-loading, decorators register, and the same `registry_find` scan after `instantiate_tasks` picks them up. The `FlowInternal.after_instantiate_files` field is populated for consistency (since the spec might still be serialized by `write_config_file`) but is effectively a no-op in inproc — re-loading an already-imported file is idempotent at the registry layer (`registry_add` overwrites with the same callable).
+For `execution_type="inproc"`, parent and child are the same process. Config and `_flow.py` are loaded by the parent's spec-loading, decorators register, and the same `registry_find` scan after `instantiate_tasks` picks them up. The `FlowInternal.python_files` field is populated for consistency (since the spec might still be serialized by `write_config_file`) but is effectively a no-op in inproc — re-loading an already-imported file is idempotent at the registry layer (`registry_add` overwrites with the same callable).
 
 ## Why not copy hook files into the venv tempdir?
 
@@ -259,6 +257,8 @@ AfterInstantiate: TypeAlias = Callable[[list[Task]], list[Task] | None]
 ```
 
 A hook receives the full list of `Task` objects. Return a new list, or `None` for "I mutated in place." We deliberately do not expose `InstantiatedTask` (the internal pairing of `flow_task` + `task`) — hooks operating on plain `Task` objects can be tested without constructing a `FlowTask`, and it matches what `eval_set` sees. If a hook needs `FlowTask.flow_metadata`, that information should be propagated onto `Task.metadata` by the instantiation layer; that's a narrower separate change.
+
+Hooks that mutate a `Task` should use `inspect_ai.task_with(task, ...)` rather than assigning to attributes directly. `task_with` is the canonical mutator in Inspect AI (and what `instantiate_tasks` itself uses to apply `FlowTask` overrides), so going through it keeps Flow hooks consistent with the rest of the pipeline and avoids stepping around any normalization Inspect performs on the way in.
 
 ## Multiple hooks
 
@@ -288,9 +288,9 @@ No new types or fields in the user-facing API surface — `FlowInternal` is inte
 
 - **Inproc, hook in config.py**: a config with `@after_instantiate` that reverses the task list — `eval_set` receives tasks reversed.
 - **Inproc, hook in `_flow.py`**: same, decorator in an auto-included `_flow.py`.
-- **Venv, hook in config.py**: the YAML's `internal.after_instantiate_files` contains the config path; the child loads it; `eval_set` receives reversed tasks.
+- **Venv, hook in config.py**: the YAML's `internal.python_files` contains the config path; the child loads it; `eval_set` receives reversed tasks.
 - **Venv, hook in `_flow.py`**: same, with `_flow.py` path in the field.
-- **Venv, hook in a task module**: a `@after_instantiate` defined in `./my_task.py` (loaded by `load_tasks`) fires in the child *without* its path appearing in `after_instantiate_files` — confirms registry-based discovery works for task-module sources.
+- **Venv, hook in a task module**: a `@after_instantiate` defined in `./my_task.py` (loaded by `load_tasks`) fires in the child *without* its path appearing in `python_files` — confirms registry-based discovery works for task-module sources.
 - **Venv, hook from an entry-point package**: a small test package with an `@after_instantiate` registered via entry points is installed into the venv via `additional_dependencies`; the hook fires in the child.
 - **Multiple hooks**: two hooks compose in alphabetical-by-name order.
 - **Error path**: a hook that raises produces an error whose display info contains the hook's registered name.

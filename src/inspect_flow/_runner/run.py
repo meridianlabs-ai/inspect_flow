@@ -29,7 +29,9 @@ from inspect_flow._runner.logs import (
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._runner.task_log import TaskLogInfo, create_task_log_display
 from inspect_flow._store.store import store_factory
+from inspect_flow._types.after_instantiate import run_after_instantiate_hooks
 from inspect_flow._types.flow_types import (
+    FlowInternal,
     FlowOptions,
     FlowSpec,
     FlowStoreConfig,
@@ -38,6 +40,7 @@ from inspect_flow._util.console import flow_print, format_prefix, path
 from inspect_flow._util.error import FlowHandledError, NoLogsError
 from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.logging import get_last_log_level, update_log_level
+from inspect_flow._util.module_util import execute_file_and_get_last_result
 from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.path_util import apply_bundle_url_mappings, cwd_relative_path
 
@@ -61,6 +64,7 @@ def run_eval_set(
     init_display_type(display_type)
     log_level = options.log_level or get_last_log_level()
 
+    _load_internal_python_files(resolved_spec)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
@@ -117,10 +121,12 @@ def run_eval_set(
 
     update_log_level(log_level)
 
+    eval_tasks = run_after_instantiate_hooks([t.task for t in tasks])
+
     start_time = time.time()
     try:
         result = eval_set(
-            tasks=[t.task for t in tasks],
+            tasks=eval_tasks,
             log_dir=cwd_relative_path(resolved_spec.log_dir),
             retry_attempts=default_none(options.retry_attempts),
             retry_wait=default_none(options.retry_wait),
@@ -286,6 +292,22 @@ def _print_result(
                     f"{log.eval.task}: {log.status}",
                     format="warning",
                 )
+
+
+def _load_internal_python_files(spec: FlowSpec) -> None:
+    # Executes the Python files listed in spec.internal.python_files for
+    # their side effects (e.g. registering @after_instantiate decorators).
+    # Effectively a no-op inproc (the parent already loaded these); for venv
+    # subprocesses, this is the bridge that carries side-effect registrations
+    # across the parent → child boundary.
+    internal = spec.internal
+    if not isinstance(internal, FlowInternal):
+        return
+    files = internal.python_files
+    if not files:
+        return
+    for file_path in files:
+        execute_file_and_get_last_result(file_path, args={})
 
 
 def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
