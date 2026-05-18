@@ -377,10 +377,11 @@ directory tree, and Python entry points.
 
 You can also load steps from an arbitrary Python file:
 
-\b
-  flow step file.py --help          List steps in a file
-  flow step file.py STEP [ARGS]     Run a step from a file
-  flow step file.py@STEP [ARGS]     Shorthand for the above
+    flow step file.py --help          List steps in a file
+
+    flow step file.py STEP [ARGS]     Run a step from a file
+
+    flow step file.py@STEP [ARGS]     Shorthand for the above
 """,
 )
 def step_command() -> None:
