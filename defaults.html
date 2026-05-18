@@ -80,7 +80,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-00bb9cb7cda113ac4013fc9b55ca6f24.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -670,7 +670,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="automatic-discovery" class="level3">
 <h3 class="anchored" data-anchor-id="automatic-discovery">Automatic Discovery</h3>
 <p>Inspect Flow automatically discovers and includes files named <code>_flow.py</code> in parent directories. Starting from your config file’s location, it searches upward through the directory tree for <code>_flow.py</code> files and automatically merges them.</p>
-<p>This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for <a href="./steps.html"><code>@step</code></a> functions and <a href="./store.html#filtering"><code>@log_filter</code></a> definitions.</p>
+<p>This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for <a href="./steps.html"><code>@step</code></a> functions, <a href="./store.html#filtering"><code>@log_filter</code></a> definitions, and <a href="./steps.html#referencing-constants">string constants</a> referenced from CLI args.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">

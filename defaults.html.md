@@ -254,7 +254,7 @@ Inspect Flow supports configuration inheritance to share settings across multipl
 
 Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file’s location, it searches upward through the directory tree for `_flow.py` files and automatically merges them.
 
-This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for [`@step`](./steps.html.md) functions and [`@log_filter`](./store.html.md#filtering) definitions.
+This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for [`@step`](./steps.html.md) functions, [`@log_filter`](./store.html.md#filtering) definitions, and [string constants](./steps.html.md#referencing-constants) referenced from CLI args.
 
 > **NOTE: Note**
 >

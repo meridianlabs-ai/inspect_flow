@@ -192,13 +192,13 @@ Opens the Inspect AI viewer to explore evaluation logs interactively. [Inspect V
 
 Click the Flow icon in the top right hand corner to view the Flow config.
 
-![](images/inspect_view_list.png)
+[![Eval list rendered by Inspect View](images/inspect_view_list.png)](images/inspect_view_list.png "Eval list rendered by Inspect View")
 
 Eval list rendered by Inspect View
 
 The Flow config file is rendered in YAML format.
 
-![](images/inspect_view_flow_config.png)
+[![Flow config rendered by Inspect View](images/inspect_view_flow_config.png)](images/inspect_view_flow_config.png "Flow config rendered by Inspect View")
 
 Flow config rendered by Inspect View
 

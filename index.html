@@ -80,7 +80,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-00bb9cb7cda113ac4013fc9b55ca6f24.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -114,11 +117,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta property="og:description" content="Workflow orchestration for Inspect AI">
 <meta property="og:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/config_progress_terminal.png">
 <meta property="og:site_name" content="Inspect Flow">
+<meta property="og:image:alt" content="Progress bar in terminal">
 <meta property="og:image:height" content="786">
 <meta property="og:image:width" content="1780">
 <meta name="twitter:title" content="Inspect Flow">
 <meta name="twitter:description" content="Workflow orchestration for Inspect AI">
 <meta name="twitter:image" content="https://meridianlabs-ai.github.io/inspect_flow/images/config_progress_terminal.png">
+<meta name="twitter:image:alt" content="Progress bar in terminal">
 <meta name="twitter:image-height" content="786">
 <meta name="twitter:image-width" content="1780">
 <meta name="twitter:card" content="summary_large_image">
@@ -525,7 +530,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Both tasks will run with progress displayed in your terminal.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/config_progress_terminal.png" class="img-fluid figure-img"></p>
+<p><a href="images/config_progress_terminal.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Progress bar in terminal"><img src="images/config_progress_terminal.png" class="img-fluid figure-img" alt="Progress bar in terminal"></a></p>
 <figcaption>Progress bar in terminal</figcaption>
 </figure>
 </div>
@@ -609,7 +614,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>When complete, you’ll find a link to the logs at the bottom of the task results summary.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/logs_terminal.png" class="img-fluid figure-img"></p>
+<p><a href="images/logs_terminal.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Log path printed in terminal"><img src="images/logs_terminal.png" class="img-fluid figure-img" alt="Log path printed in terminal"></a></p>
 <figcaption>Log path printed in terminal</figcaption>
 </figure>
 </div>
@@ -617,7 +622,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view <span class="at">--log-dir</span> logs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/inspect_view_eval.png" class="img-fluid figure-img" style="width:80.0%"></p>
+<p><a href="images/inspect_view_eval.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Eval logs rendered by Inspect View"><img src="images/inspect_view_eval.png" class="img-fluid figure-img" style="width:80.0%" alt="Eval logs rendered by Inspect View"></a></p>
 <figcaption>Eval logs rendered by Inspect View</figcaption>
 </figure>
 </div>
@@ -1212,6 +1217,38 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
   </div>
 </footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 

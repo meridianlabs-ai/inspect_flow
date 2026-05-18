@@ -1,6 +1,6 @@
 # Steps – Inspect Flow
 
-Steps are operations you run on evaluation logs *after* `flow run` completes. Use them to tag logs, set metadata, copy logs between directories, validate results, or compose these into multi-stage workflows like QA pipelines.
+Steps are operations you run on evaluation logs *after* `flow run` completes. Use them to tag logs, set metadata, copy logs between directories, scan transcripts, validate results, or compose these into multi-stage workflows like QA pipelines.
 
 ## The `flow step` Command
 
@@ -71,6 +71,20 @@ flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
 
+### [**scan**](./reference/inspect_flow.api.html.md#scan)
+
+Run Inspect Scout scanners against the transcripts of eval logs:
+
+``` bash
+flow step scan logs/ --scanners scanners.py
+flow step scan logs/ --scanners scanners.py --model openai/gpt-5
+flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
+```
+
+`--scanners` accepts a path to a Python or YAML file containing `@scanjob` or `@scanner` definitions (or, from the Python API, a `ScanJob`, `ScanJobConfig`, sequence, or dict of scanners). Scan results are written to `<log_dir>/scans` by default — set `--scans` to override, which is required when input logs span multiple directories. A `scout.yaml` project file is written alongside to link transcripts and scans.
+
+Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
+
 ## Custom Steps
 
 Define custom steps with the `@step` decorator. A step is a function that takes a `list[EvalLog]` and returns a `list[EvalLog]`:
@@ -138,7 +152,7 @@ def audit(logs: list[EvalLog]) -> StepResult:
 
 Steps are discovered from multiple sources:
 
-1.  **Built-in steps** — `tag`, `metadata`, `copy`
+1.  **Built-in steps** — `tag`, `metadata`, `copy`, `scan`
 2.  **`_flow.py` files** — any `@step` functions defined or imported in `_flow.py` files in the current directory or parent directories are automatically discovered (same [automatic discovery](./defaults.html.md#automatic-discovery) as for defaults)
 3.  **Arbitrary files** — load steps from any Python file, without needing them in `_flow.py`:
 
@@ -153,6 +167,45 @@ For team workflows, import your steps in a `_flow.py` at the repository root so 
 ``` python
 # _flow.py
 from my_project.steps import promote, review_scores  # noqa: F401
+```
+
+## Referencing Constants
+
+Define module-level string constants in your `_flow.py` and reference them from any `flow` CLI command with `@NAME`. This lets you share the same tag values, log directories, and other strings across commands and teammates without retyping them — and without worrying about typos drifting them apart over time.
+
+    _flow.py
+
+``` python
+LOG_DIR_DEV = "s3://my-bucket/dev/logs"
+LOG_DIR_PROD = "s3://my-bucket/prod/logs"
+TAG_QA_NEEDED = "qa_needed"
+```
+
+``` bash
+flow step tag @LOG_DIR_DEV --add @TAG_QA_NEEDED
+flow check spec.py --log-dir @LOG_DIR_DEV
+flow list log @LOG_DIR_DEV --tag @TAG_QA_NEEDED
+```
+
+This works for all `flow` subcommands — `run`, `check`, `step`, `list`, `config`, `store` — wherever you would otherwise type a literal string.
+
+### Discovery Rules
+
+Constants are discovered from `_flow.py` files walking up from your current directory (same [automatic discovery](./defaults.html.md#automatic-discovery) as for defaults, steps, and filters). To be eligible, a name must be:
+
+- **UPPERCASE** (e.g. `LOG_DIR_DEV`, not `log_dir_dev` or `MixedCase`)
+- **String-valued** (lists, ints, and other types are skipped)
+- **Module-level** (not nested inside a class or function)
+- **Public** (no leading underscore)
+
+If the same name is defined in multiple `_flow.py` files with **different** values, resolution fails and asks you to disambiguate. Identical values across files are fine.
+
+### Disambiguating
+
+Use `@file.py@NAME` to resolve from a specific file, bypassing the global lookup and the collision check:
+
+``` bash
+flow step tag logs/ --add @prod/_flow.py@TAG_QA_NEEDED
 ```
 
 ## Filtering

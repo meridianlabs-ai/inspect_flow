@@ -6,7 +6,7 @@
 
 Configuration for an Agent.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L181)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L181)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -33,7 +33,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Default field values for Inspect objects. Will be overriden by more specific settings.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L680)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L680)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -72,7 +72,7 @@ Task defaults for task name prefixes. E.g. `{'inspect_evals/': FTask(...)}`
 
 Configuration for flow dependencies to install in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L725)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L725)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -98,7 +98,7 @@ Configuration for task epochs.
 
 Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L215)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L215)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -122,7 +122,7 @@ Works with [FlowTask](../reference/inspect_flow.html.md#flowtask), [FlowAgent](.
 
 Positional and keyword arguments passed to the factory at construction are collected into the `args` field and forwarded to the factory at evaluation time.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L256)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L256)
 
 ``` python
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
@@ -132,7 +132,7 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
 
 Configuration for a Model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L76)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L76)
 
 ``` python
 class FlowModel(FlowBase)
@@ -174,7 +174,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Evaluation options.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L485)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L485)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -303,7 +303,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_
 
 Configuration for a Scorer.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L129)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L129)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -327,7 +327,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a Solver.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L155)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L155)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -351,7 +351,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Top-level flow specification.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L778)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L778)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -399,7 +399,7 @@ Tasks to run
 
 Store configuration with optional log filter.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L749)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L749)
 
 ``` python
 class FlowStoreConfig(FlowBase)
@@ -425,7 +425,7 @@ Configuration for an evaluation task.
 
 Tasks are the basis for defining and running evaluations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L329)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L329)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -519,7 +519,7 @@ Returns: The model name if set, otherwise None.
 
 A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L39)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L39)
 
 ``` python
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
@@ -544,7 +544,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 - `files`: List of file paths that were loaded to create the [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -557,7 +557,7 @@ The function to decorate.
 
 Decorator to register a log filter function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/log_filter.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/log_filter.py#L27)
 
 ``` python
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]
@@ -570,7 +570,7 @@ A function that takes an EvalLog and returns True to include.
 
 Decorator to register a step function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/step.py#L76)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/step.py#L108)
 
 ``` python
 def step(
@@ -587,7 +587,7 @@ A function that takes a list of EvalLog objects and performs operations on them 
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -607,7 +607,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -643,7 +643,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Create a list of generate configs from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -755,7 +755,7 @@ Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, 
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -765,6 +765,7 @@ def configs_with(
     timeout: int | None = ...,
     attempt_timeout: int | None = ...,
     max_connections: int | None = ...,
+    adaptive_connections: bool | int | AdaptiveConcurrency | None = ...,
     system_message: str | None = ...,
     max_tokens: int | None = ...,
     top_p: float | None = ...,
@@ -779,6 +780,7 @@ def configs_with(
     num_choices: int | None = ...,
     logprobs: bool | None = ...,
     top_logprobs: int | None = ...,
+    prompt_logprobs: int | None = ...,
     parallel_tool_calls: bool | None = ...,
     internal_tools: bool | None = ...,
     max_tool_output: int | None = ...,
@@ -812,6 +814,9 @@ Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt an
 
 `max_connections` int \| None  
 Maximum number of concurrent connections to Model API (default is model specific).
+
+`adaptive_connections` bool \| int \| AdaptiveConcurrency \| None  
+Adaptive concurrency for model API connections. Defaults to enabled (`None` and `True` both resolve to `AdaptiveConcurrency()` defaults: min=4, start=20, max=100). Pass `False` to opt out (uses static concurrency). Pass an integer `N` as shorthand for `AdaptiveConcurrency(max=N)`. Pass an `AdaptiveConcurrency` to fully customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` or `batch=True` takes precedence and uses static concurrency.
 
 `system_message` str \| None  
 Override the default system message.
@@ -854,6 +859,9 @@ Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Hugging
 
 `top_logprobs` int \| None  
 Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only.
+
+`prompt_logprobs` int \| None  
+Number of log probabilities to return per prompt token (1-20). When greater than 1, top-N alternative tokens are also returned. vLLM only.
 
 `parallel_tool_calls` bool \| None  
 Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only.
@@ -909,7 +917,7 @@ Merge two flow objects, with `add` values overriding `base` values.
 
 Only explicitly set fields in `add` override `base` — unset fields (defaulting to `NotGiven`) are ignored. Nested fields like `config` and `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -925,7 +933,7 @@ The object to merge into the base. Only explicitly set fields override those in 
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -945,7 +953,7 @@ Configuration for model. Config values will be override settings on the [FlowTas
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -1001,7 +1009,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -1021,7 +1029,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -1053,7 +1061,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -1109,7 +1117,7 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(

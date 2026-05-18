@@ -74,7 +74,7 @@ Alternatively, use the `--venv` flag to automatically install dependencies in an
 flow run first_config.py --venv
 ```
 
-![](images/first_config_progress_terminal.png)
+[![Progress bar in terminal](images/first_config_progress_terminal.png)](images/first_config_progress_terminal.png "Progress bar in terminal")
 
 Progress bar in terminal
 

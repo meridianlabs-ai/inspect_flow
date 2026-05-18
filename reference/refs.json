@@ -12,6 +12,7 @@
   "tag": "inspect_flow.api.qmd#tag",
   "metadata": "inspect_flow.api.qmd#metadata",
   "copy": "inspect_flow.api.qmd#copy",
+  "scan": "inspect_flow.api.qmd#scan",
   "FlowStore": "inspect_flow.api.qmd#flowstore",
   "StepResult": "inspect_flow.api.qmd#stepresult",
   "DisplayType": "inspect_flow.api.qmd#displaytype",

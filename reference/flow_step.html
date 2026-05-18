@@ -46,7 +46,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-00bb9cb7cda113ac4013fc9b55ca6f24.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -313,6 +313,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#scan" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">scan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#flowstore" class="sidebar-item-text sidebar-link">
  <span class="menu-text">FlowStore</span></a>
   </div>
@@ -565,6 +571,7 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#flow-step-copy" id="toc-flow-step-copy" class="nav-link active" data-scroll-target="#flow-step-copy">flow step copy</a></li>
   <li><a href="#flow-step-metadata" id="toc-flow-step-metadata" class="nav-link" data-scroll-target="#flow-step-metadata">flow step metadata</a></li>
+  <li><a href="#flow-step-scan" id="toc-flow-step-scan" class="nav-link" data-scroll-target="#flow-step-scan">flow step scan</a></li>
   <li><a href="#flow-step-tag" id="toc-flow-step-tag" class="nav-link" data-scroll-target="#flow-step-tag">flow step tag</a></li>
   </ul>
 </nav>
@@ -601,7 +608,11 @@ ul.task-list li input[type="checkbox"] {
 <p>Run workflow steps on eval logs.</p>
 <p>Steps are discovered from built-in steps, _flow.py files in the current directory tree, and Python entry points.</p>
 <p>You can also load steps from an arbitrary Python file:</p>
-<p>flow step file.py –help List steps in a file flow step file.py STEP [ARGS] Run a step from a file flow step <a href="mailto:file.py@STEP" class="email">file.py@STEP</a> [ARGS] Shorthand for the above</p>
+<pre><code>flow step file.py --help          List steps in a file
+
+flow step file.py STEP [ARGS]     Run a step from a file
+
+flow step file.py@STEP [ARGS]     Shorthand for the above</code></pre>
 <section id="usage" class="level4">
 <h4 class="anchored" data-anchor-id="usage">Usage</h4>
 <pre class="text"><code>flow step [OPTIONS] COMMAND [ARGS]...</code></pre>
@@ -623,6 +634,10 @@ ul.task-list li input[type="checkbox"] {
 <td>Set or delete metadata fields on eval logs.</td>
 </tr>
 <tr class="odd">
+<td><a href="#flow-step-scan">scan</a></td>
+<td>Run Inspect Scout scanners against the transcripts of eval logs.</td>
+</tr>
+<tr class="even">
 <td><a href="#flow-step-tag">tag</a></td>
 <td>Add or remove tags on eval logs.</td>
 </tr>
@@ -701,6 +716,18 @@ ul.task-list li input[type="checkbox"] {
 <td>boolean</td>
 <td>Preview changes without writing to disk.</td>
 <td><code>False</code></td>
+</tr>
+<tr class="odd">
+<td><code>--display</code></td>
+<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>Set the display mode (defaults to <code>'full'</code>).</td>
+<td><code>full</code></td>
+</tr>
+<tr class="even">
+<td><code>--log-level</code></td>
+<td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
+<td>Set the log level (defaults to <code>'warning'</code>).</td>
+<td><code>warning</code></td>
 </tr>
 <tr class="odd">
 <td><code>--help</code></td>
@@ -792,6 +819,269 @@ ul.task-list li input[type="checkbox"] {
 <td><code>False</code></td>
 </tr>
 <tr class="even">
+<td><code>--display</code></td>
+<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>Set the display mode (defaults to <code>'full'</code>).</td>
+<td><code>full</code></td>
+</tr>
+<tr class="odd">
+<td><code>--log-level</code></td>
+<td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
+<td>Set the log level (defaults to <code>'warning'</code>).</td>
+<td><code>warning</code></td>
+</tr>
+<tr class="even">
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="flow-step-scan" class="level2" data-toc-label="scan">
+<h2 data-toc-label="scan" class="anchored" data-anchor-id="flow-step-scan">flow step scan</h2>
+<p>Run Inspect Scout scanners against the transcripts of eval logs.</p>
+<section id="usage-3" class="level4">
+<h4 class="anchored" data-anchor-id="usage-3">Usage</h4>
+<pre class="text"><code>flow step scan [OPTIONS] [PATH]...</code></pre>
+</section>
+<section id="options-2" class="level4">
+<h4 class="anchored" data-anchor-id="options-2">Options</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 15%">
+<col style="width: 50%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--scanners</code></td>
+<td>text</td>
+<td>Scanners to run, as a sequence, dict, <code>ScanJob</code>, <code>ScanJobConfig</code>, or a path to a Python/YAML file containing scanjob/scanner definitions.</td>
+<td>_required</td>
+</tr>
+<tr class="even">
+<td><code>-S</code></td>
+<td>text</td>
+<td>One or more scanjob or scanner arguments (e.g.&nbsp;-S arg=value)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--scans</code></td>
+<td>text</td>
+<td>Location to write scan results to. Defaults to a ‘scans’ directory alongside the input logs (errors if logs are in multiple directories).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>-V</code>, <code>--validation</code></td>
+<td>text</td>
+<td>One or more validation sets to apply for scanners (e.g.&nbsp;-V myscanner:deception.csv)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--model</code></td>
+<td>text</td>
+<td>Model used by default for llm scanners.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--model-base-url</code></td>
+<td>text</td>
+<td>Base URL for for model API</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>-M</code></td>
+<td>text</td>
+<td>One or more native model arguments (e.g.&nbsp;-M arg=value)</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--model-config</code></td>
+<td>text</td>
+<td>YAML or JSON config file with model arguments.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--model-role</code></td>
+<td>text</td>
+<td>Named model role with model name or YAML/JSON config, e.g.&nbsp;–model-role critic=openai/gpt-4o or –model-role grader=“{model: mockllm/model, temperature: 0.5}”</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--max-transcripts</code></td>
+<td>integer</td>
+<td>Maximum number of transcripts to scan concurrently (defaults to 25)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--max-processes</code></td>
+<td>integer</td>
+<td>Number of worker processes. Defaults to 4.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--limit</code></td>
+<td>integer</td>
+<td>Limit number of transcripts to scan.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--shuffle</code></td>
+<td>text</td>
+<td>Shuffle order of transcripts (pass a seed to make the order deterministic)</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--tags</code></td>
+<td>text</td>
+<td>Tags to associate with this scan job (comma separated)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--metadata</code></td>
+<td>text</td>
+<td>Metadata to associate with this scan job (more than one –metadata argument can be specified).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--cache</code></td>
+<td>text</td>
+<td>Policy for caching of model generations. Specify –cache to cache with 7 day expiration (7D). Specify an explicit duration (e.g.&nbsp;(e.g.&nbsp;1h, 3d, 6M) to set the expiration explicitly (durations can be expressed as s, m, h, D, W, M, or Y). Alternatively, pass the file path to a YAML or JSON config file with a full <code>CachePolicy</code> configuration.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--batch</code></td>
+<td>text</td>
+<td>Batch requests together to reduce API calls when using a model that supports batching (by default, no batching). Specify –batch to batch with default configuration, specify a batch size e.g.&nbsp;<code>--batch=1000</code> to configure batches of 1000 requests, or pass the file path to a YAML or JSON config file with batch configuration.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--max-connections</code></td>
+<td>integer</td>
+<td>Maximum number of concurrent connections to Model API (defaults to max_transcripts)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--max-retries</code></td>
+<td>integer</td>
+<td>Maximum number of times to retry model API requests (defaults to unlimited)</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--timeout</code></td>
+<td>integer</td>
+<td>Model API request timeout in seconds (defaults to no timeout)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--max-tokens</code></td>
+<td>integer</td>
+<td>The maximum number of tokens that can be generated in the completion (default is model specific)</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--temperature</code></td>
+<td>float</td>
+<td>What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--top-p</code></td>
+<td>float</td>
+<td>An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--top-k</code></td>
+<td>integer</td>
+<td>Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, and vLLM only.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--reasoning-effort</code></td>
+<td>choice (<code>minimal</code> | <code>low</code> | <code>medium</code> | <code>high</code>)</td>
+<td>Constrains effort on reasoning for reasoning models (defaults to <code>medium</code>). Open AI o-series and gpt-5 models only.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--reasoning-tokens</code></td>
+<td>integer</td>
+<td>Maximum number of tokens to use for reasoning. Anthropic Claude models only.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--reasoning-summary</code></td>
+<td>choice (<code>concise</code> | <code>detailed</code> | <code>auto</code>)</td>
+<td>Provide summary of reasoning steps (defaults to no summary). Use ‘auto’ to access the most detailed summarizer available for the current model. OpenAI reasoning models only.</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--reasoning-history</code></td>
+<td>choice (<code>none</code> | <code>all</code> | <code>last</code> | <code>auto</code>)</td>
+<td>Include reasoning in chat message history sent to generate (defaults to “auto”, which uses the recommended default for each provider)</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--fail-on-error</code></td>
+<td>boolean</td>
+<td>Re-raise exceptions instead of capturing them in results</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
+<td><code>--store</code></td>
+<td>text</td>
+<td>Resolve logs from a store. Use –store for the default store or –store PATH for a specific one.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--filter</code></td>
+<td>text</td>
+<td>Log filter. Only process logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><code>--exclude</code></td>
+<td>text</td>
+<td>Log filter. Exclude logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times.</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td><code>--recursive</code> / <code>--no-recursive</code></td>
+<td>boolean</td>
+<td>Recurse into directories (default: true). No effect when –store is used.</td>
+<td><code>True</code></td>
+</tr>
+<tr class="even">
+<td><code>--dry-run</code></td>
+<td>boolean</td>
+<td>Preview changes without writing to disk.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="odd">
+<td><code>--display</code></td>
+<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>Set the display mode (defaults to <code>'full'</code>).</td>
+<td><code>full</code></td>
+</tr>
+<tr class="even">
+<td><code>--log-level</code></td>
+<td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
+<td>Set the log level (defaults to <code>'warning'</code>).</td>
+<td><code>warning</code></td>
+</tr>
+<tr class="odd">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -804,12 +1094,12 @@ ul.task-list li input[type="checkbox"] {
 <section id="flow-step-tag" class="level2" data-toc-label="tag">
 <h2 data-toc-label="tag" class="anchored" data-anchor-id="flow-step-tag">flow step tag</h2>
 <p>Add or remove tags on eval logs.</p>
-<section id="usage-3" class="level4">
-<h4 class="anchored" data-anchor-id="usage-3">Usage</h4>
+<section id="usage-4" class="level4">
+<h4 class="anchored" data-anchor-id="usage-4">Usage</h4>
 <pre class="text"><code>flow step tag [OPTIONS] [PATH]...</code></pre>
 </section>
-<section id="options-2" class="level4">
-<h4 class="anchored" data-anchor-id="options-2">Options</h4>
+<section id="options-3" class="level4">
+<h4 class="anchored" data-anchor-id="options-3">Options</h4>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 25%">
@@ -879,6 +1169,18 @@ ul.task-list li input[type="checkbox"] {
 <td>boolean</td>
 <td>Preview changes without writing to disk.</td>
 <td><code>False</code></td>
+</tr>
+<tr class="even">
+<td><code>--display</code></td>
+<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>Set the display mode (defaults to <code>'full'</code>).</td>
+<td><code>full</code></td>
+</tr>
+<tr class="odd">
+<td><code>--log-level</code></td>
+<td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
+<td>Set the log level (defaults to <code>'warning'</code>).</td>
+<td><code>warning</code></td>
 </tr>
 <tr class="even">
 <td><code>--help</code></td>

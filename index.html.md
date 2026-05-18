@@ -106,7 +106,7 @@ flow run config.py
 
 Both tasks will run with progress displayed in your terminal.
 
-![](images/config_progress_terminal.png)
+[![Progress bar in terminal](images/config_progress_terminal.png)](images/config_progress_terminal.png "Progress bar in terminal")
 
 Progress bar in terminal
 
@@ -203,7 +203,7 @@ flow run matrix.py
 
 When complete, you’ll find a link to the logs at the bottom of the task results summary.
 
-![](images/logs_terminal.png)
+[![Log path printed in terminal](images/logs_terminal.png)](images/logs_terminal.png "Log path printed in terminal")
 
 Log path printed in terminal
 
@@ -213,7 +213,7 @@ To view logs interactively, run:
 inspect view --log-dir logs
 ```
 
-![](images/inspect_view_eval.png)
+[![Eval logs rendered by Inspect View](images/inspect_view_eval.png)](images/inspect_view_eval.png "Eval logs rendered by Inspect View")
 
 Eval logs rendered by Inspect View
 

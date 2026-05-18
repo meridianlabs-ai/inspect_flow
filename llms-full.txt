@@ -111,7 +111,7 @@ flow run config.py
 
 Both tasks will run with progress displayed in your terminal.
 
-![](images/config_progress_terminal.png)
+[![Progress bar in terminal](images/config_progress_terminal.png)](images/config_progress_terminal.png "Progress bar in terminal")
 
 Progress bar in terminal
 
@@ -208,7 +208,7 @@ flow run matrix.py
 
 When complete, you’ll find a link to the logs at the bottom of the task results summary.
 
-![](images/logs_terminal.png)
+[![Log path printed in terminal](images/logs_terminal.png)](images/logs_terminal.png "Log path printed in terminal")
 
 Log path printed in terminal
 
@@ -218,7 +218,7 @@ To view logs interactively, run:
 inspect view --log-dir logs
 ```
 
-![](images/inspect_view_eval.png)
+[![Eval logs rendered by Inspect View](images/inspect_view_eval.png)](images/inspect_view_eval.png "Eval logs rendered by Inspect View")
 
 Eval logs rendered by Inspect View
 
@@ -326,7 +326,7 @@ Alternatively, use the `--venv` flag to automatically install dependencies in an
 flow run first_config.py --venv
 ```
 
-![](images/first_config_progress_terminal.png)
+[![Progress bar in terminal](images/first_config_progress_terminal.png)](images/first_config_progress_terminal.png "Progress bar in terminal")
 
 Progress bar in terminal
 
@@ -841,7 +841,7 @@ Inspect Flow supports configuration inheritance to share settings across multipl
 
 Inspect Flow automatically discovers and includes files named `_flow.py` in parent directories. Starting from your config file’s location, it searches upward through the directory tree for `_flow.py` files and automatically merges them.
 
-This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for [`@step`](./steps.html.md) functions and [`@log_filter`](./store.html.md#filtering) definitions.
+This allows you to define shared defaults (model settings, dependencies, etc.) at a repository root that apply to all configs in subdirectories without explicit includes. These files also serve as discovery locations for [`@step`](./steps.html.md) functions, [`@log_filter`](./store.html.md#filtering) definitions, and [string constants](./steps.html.md#referencing-constants) referenced from CLI args.
 
 > **NOTE: Note**
 >
@@ -1769,13 +1769,13 @@ Opens the Inspect AI viewer to explore evaluation logs interactively. [Inspect V
 
 Click the Flow icon in the top right hand corner to view the Flow config.
 
-![](images/inspect_view_list.png)
+[![Eval list rendered by Inspect View](images/inspect_view_list.png)](images/inspect_view_list.png "Eval list rendered by Inspect View")
 
 Eval list rendered by Inspect View
 
 The Flow config file is rendered in YAML format.
 
-![](images/inspect_view_flow_config.png)
+[![Flow config rendered by Inspect View](images/inspect_view_flow_config.png)](images/inspect_view_flow_config.png "Flow config rendered by Inspect View")
 
 Flow config rendered by Inspect View
 
@@ -2304,7 +2304,7 @@ Flow uses Inspect AI’s [Eval Set](https://inspect.aisi.org.uk/eval-sets.html#s
 
 # Steps – Inspect Flow
 
-Steps are operations you run on evaluation logs *after* `flow run` completes. Use them to tag logs, set metadata, copy logs between directories, validate results, or compose these into multi-stage workflows like QA pipelines.
+Steps are operations you run on evaluation logs *after* `flow run` completes. Use them to tag logs, set metadata, copy logs between directories, scan transcripts, validate results, or compose these into multi-stage workflows like QA pipelines.
 
 ## The `flow step` Command
 
@@ -2375,6 +2375,20 @@ flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
 
+### [**scan**](./reference/inspect_flow.api.html.md#scan)
+
+Run Inspect Scout scanners against the transcripts of eval logs:
+
+``` bash
+flow step scan logs/ --scanners scanners.py
+flow step scan logs/ --scanners scanners.py --model openai/gpt-5
+flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
+```
+
+`--scanners` accepts a path to a Python or YAML file containing `@scanjob` or `@scanner` definitions (or, from the Python API, a `ScanJob`, `ScanJobConfig`, sequence, or dict of scanners). Scan results are written to `<log_dir>/scans` by default — set `--scans` to override, which is required when input logs span multiple directories. A `scout.yaml` project file is written alongside to link transcripts and scans.
+
+Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
+
 ## Custom Steps
 
 Define custom steps with the `@step` decorator. A step is a function that takes a `list[EvalLog]` and returns a `list[EvalLog]`:
@@ -2442,7 +2456,7 @@ def audit(logs: list[EvalLog]) -> StepResult:
 
 Steps are discovered from multiple sources:
 
-1.  **Built-in steps** — `tag`, `metadata`, `copy`
+1.  **Built-in steps** — `tag`, `metadata`, `copy`, `scan`
 2.  **`_flow.py` files** — any `@step` functions defined or imported in `_flow.py` files in the current directory or parent directories are automatically discovered (same [automatic discovery](./defaults.html.md#automatic-discovery) as for defaults)
 3.  **Arbitrary files** — load steps from any Python file, without needing them in `_flow.py`:
 
@@ -2457,6 +2471,45 @@ For team workflows, import your steps in a `_flow.py` at the repository root so 
 ``` python
 # _flow.py
 from my_project.steps import promote, review_scores  # noqa: F401
+```
+
+## Referencing Constants
+
+Define module-level string constants in your `_flow.py` and reference them from any `flow` CLI command with `@NAME`. This lets you share the same tag values, log directories, and other strings across commands and teammates without retyping them — and without worrying about typos drifting them apart over time.
+
+    _flow.py
+
+``` python
+LOG_DIR_DEV = "s3://my-bucket/dev/logs"
+LOG_DIR_PROD = "s3://my-bucket/prod/logs"
+TAG_QA_NEEDED = "qa_needed"
+```
+
+``` bash
+flow step tag @LOG_DIR_DEV --add @TAG_QA_NEEDED
+flow check spec.py --log-dir @LOG_DIR_DEV
+flow list log @LOG_DIR_DEV --tag @TAG_QA_NEEDED
+```
+
+This works for all `flow` subcommands — `run`, `check`, `step`, `list`, `config`, `store` — wherever you would otherwise type a literal string.
+
+### Discovery Rules
+
+Constants are discovered from `_flow.py` files walking up from your current directory (same [automatic discovery](./defaults.html.md#automatic-discovery) as for defaults, steps, and filters). To be eligible, a name must be:
+
+- **UPPERCASE** (e.g. `LOG_DIR_DEV`, not `log_dir_dev` or `MixedCase`)
+- **String-valued** (lists, ints, and other types are skipped)
+- **Module-level** (not nested inside a class or function)
+- **Public** (no leading underscore)
+
+If the same name is defined in multiple `_flow.py` files with **different** values, resolution fails and asks you to disambiguate. Identical values across files are fine.
+
+### Disambiguating
+
+Use `@file.py@NAME` to resolve from a specific file, bypassing the global lookup and the collision check:
+
+``` bash
+flow step tag logs/ --add @prod/_flow.py@TAG_QA_NEEDED
 ```
 
 ## Filtering
@@ -3108,7 +3161,7 @@ flow check [OPTIONS] CONFIG_FILE
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
 | `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -3138,7 +3191,7 @@ flow config [OPTIONS] CONFIG_FILE
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
 | `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -3174,7 +3227,7 @@ flow list log [OPTIONS] [PATH]
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
 | `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
@@ -3220,7 +3273,7 @@ flow run [OPTIONS] CONFIG_FILE
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
 | `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
 | `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -3233,7 +3286,11 @@ Steps are discovered from built-in steps, \_flow.py files in the current directo
 
 You can also load steps from an arbitrary Python file:
 
-flow step file.py –help List steps in a file flow step file.py STEP \[ARGS\] Run a step from a file flow step <file.py@STEP> \[ARGS\] Shorthand for the above
+    flow step file.py --help          List steps in a file
+
+    flow step file.py STEP [ARGS]     Run a step from a file
+
+    flow step file.py@STEP [ARGS]     Shorthand for the above
 
 #### Usage
 
@@ -3247,6 +3304,7 @@ flow step [OPTIONS] COMMAND [ARGS]...
 |----|----|
 | [copy](#flow-step-copy) | Copy eval logs to a destination directory. |
 | [metadata](#flow-step-metadata) | Set or delete metadata fields on eval logs. |
+| [scan](#flow-step-scan) | Run Inspect Scout scanners against the transcripts of eval logs. |
 | [tag](#flow-step-tag) | Add or remove tags on eval logs. |
 
 ## flow step copy
@@ -3271,6 +3329,8 @@ flow step copy [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
 ## flow step metadata
@@ -3296,6 +3356,60 @@ flow step metadata [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
+| `--help` | boolean | Show this message and exit. | `False` |
+
+## flow step scan
+
+Run Inspect Scout scanners against the transcripts of eval logs.
+
+#### Usage
+
+``` text
+flow step scan [OPTIONS] [PATH]...
+```
+
+#### Options
+
+| Name | Type | Description | Default |
+|----|----|----|----|
+| `--scanners` | text | Scanners to run, as a sequence, dict, `ScanJob`, `ScanJobConfig`, or a path to a Python/YAML file containing scanjob/scanner definitions. | \_required |
+| `-S` | text | One or more scanjob or scanner arguments (e.g. -S arg=value) | None |
+| `--scans` | text | Location to write scan results to. Defaults to a ‘scans’ directory alongside the input logs (errors if logs are in multiple directories). | None |
+| `-V`, `--validation` | text | One or more validation sets to apply for scanners (e.g. -V myscanner:deception.csv) | None |
+| `--model` | text | Model used by default for llm scanners. | None |
+| `--model-base-url` | text | Base URL for for model API | None |
+| `-M` | text | One or more native model arguments (e.g. -M arg=value) | None |
+| `--model-config` | text | YAML or JSON config file with model arguments. | None |
+| `--model-role` | text | Named model role with model name or YAML/JSON config, e.g. –model-role critic=openai/gpt-4o or –model-role grader=“{model: mockllm/model, temperature: 0.5}” | None |
+| `--max-transcripts` | integer | Maximum number of transcripts to scan concurrently (defaults to 25) | None |
+| `--max-processes` | integer | Number of worker processes. Defaults to 4. | None |
+| `--limit` | integer | Limit number of transcripts to scan. | None |
+| `--shuffle` | text | Shuffle order of transcripts (pass a seed to make the order deterministic) | None |
+| `--tags` | text | Tags to associate with this scan job (comma separated) | None |
+| `--metadata` | text | Metadata to associate with this scan job (more than one –metadata argument can be specified). | None |
+| `--cache` | text | Policy for caching of model generations. Specify –cache to cache with 7 day expiration (7D). Specify an explicit duration (e.g. (e.g. 1h, 3d, 6M) to set the expiration explicitly (durations can be expressed as s, m, h, D, W, M, or Y). Alternatively, pass the file path to a YAML or JSON config file with a full `CachePolicy` configuration. | None |
+| `--batch` | text | Batch requests together to reduce API calls when using a model that supports batching (by default, no batching). Specify –batch to batch with default configuration, specify a batch size e.g. `--batch=1000` to configure batches of 1000 requests, or pass the file path to a YAML or JSON config file with batch configuration. | None |
+| `--max-connections` | integer | Maximum number of concurrent connections to Model API (defaults to max_transcripts) | None |
+| `--max-retries` | integer | Maximum number of times to retry model API requests (defaults to unlimited) | None |
+| `--timeout` | integer | Model API request timeout in seconds (defaults to no timeout) | None |
+| `--max-tokens` | integer | The maximum number of tokens that can be generated in the completion (default is model specific) | None |
+| `--temperature` | float | What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. | None |
+| `--top-p` | float | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | None |
+| `--top-k` | integer | Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, and vLLM only. | None |
+| `--reasoning-effort` | choice (`minimal` \| `low` \| `medium` \| `high`) | Constrains effort on reasoning for reasoning models (defaults to `medium`). Open AI o-series and gpt-5 models only. | None |
+| `--reasoning-tokens` | integer | Maximum number of tokens to use for reasoning. Anthropic Claude models only. | None |
+| `--reasoning-summary` | choice (`concise` \| `detailed` \| `auto`) | Provide summary of reasoning steps (defaults to no summary). Use ‘auto’ to access the most detailed summarizer available for the current model. OpenAI reasoning models only. | None |
+| `--reasoning-history` | choice (`none` \| `all` \| `last` \| `auto`) | Include reasoning in chat message history sent to generate (defaults to “auto”, which uses the recommended default for each provider) | None |
+| `--fail-on-error` | boolean | Re-raise exceptions instead of capturing them in results | `False` |
+| `--store` | text | Resolve logs from a store. Use –store for the default store or –store PATH for a specific one. | None |
+| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
+| `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
+| `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
 ## flow step tag
@@ -3321,6 +3435,8 @@ flow step tag [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
 
@@ -3359,7 +3475,7 @@ flow store import [OPTIONS] PATH...
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
 | `--copy-from` | directory | Copy logs from this directory to PATH before importing. Supports both local and S3 paths. | None |
@@ -3381,7 +3497,7 @@ flow store remove [OPTIONS] [PREFIX]...
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
 | `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
@@ -3405,7 +3521,7 @@ flow store info [OPTIONS]
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -3424,7 +3540,7 @@ flow store delete [OPTIONS]
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--yes`, `-y` | boolean | Skip confirmation prompt | `False` |
 | `--help` | boolean | Show this message and exit. | `False` |
@@ -3444,7 +3560,7 @@ flow store list [OPTIONS]
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'rich'`). | `rich` |
+| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
 | `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
@@ -3460,7 +3576,7 @@ flow store list [OPTIONS]
 
 Initialize the inspect_flow API.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L27)
 
 ``` python
 def init(
@@ -3483,7 +3599,7 @@ Directory (or file path) to search for `.env` files. If a file path is given, it
 
 Run an inspect_flow evaluation.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L74)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L74)
 
 ``` python
 def run(
@@ -3511,7 +3627,7 @@ If `True`, reuse the log directory from the previous run.
 
 Check completeness of an inspect_flow evaluation against existing logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L124)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L124)
 
 ``` python
 def check(
@@ -3535,7 +3651,7 @@ Log directory to check against. Overrides the `log_dir` in the spec.
 
 Run a step function on the given logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/run.py#L26)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/run.py#L27)
 
 ``` python
 def run_step(
@@ -3586,7 +3702,7 @@ Keyword arguments to pass to the step function.
 
 Load a spec from file.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L59)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L59)
 
 ``` python
 def load_spec(
@@ -3606,7 +3722,7 @@ A dictionary of arguments to pass as kwargs to the function in the flow config.
 
 Return the flow spec configuration.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L170)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L170)
 
 ``` python
 def config(
@@ -3627,7 +3743,7 @@ List log paths grouped by directory, directories ordered by most recent log file
 
 Within each directory, logs are sorted by filename timestamp descending. Logs without a timestamp prefix sort at the end.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/list_logs.py#L42)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/list_logs.py#L42)
 
 ``` python
 def list_logs(
@@ -3654,7 +3770,7 @@ Only include logs whose filename timestamp is at or before this date. Accepts a 
 
 Get a FlowStore instance.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_api/api.py#L187)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_api/api.py#L187)
 
 ``` python
 def store_get(store: str = "auto", create: bool = True) -> FlowStore
@@ -3670,7 +3786,7 @@ Whether to create the store if it does not exist.
 
 Delete a flow store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_store/store.py#L205)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_store/store.py#L205)
 
 ``` python
 def delete_store(store_path: str) -> None
@@ -3683,7 +3799,7 @@ Path to the store directory.
 
 Copy all log files from src_dir to dest_dir, preserving directory structure.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_util/logs.py#L91)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_util/logs.py#L91)
 
 ``` python
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
@@ -3705,7 +3821,7 @@ If True, search src_dir recursively for log files.
 
 Add or remove tags on eval logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/tag.py#L37)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/tag.py#L37)
 
 ``` python
 @step
@@ -3738,7 +3854,7 @@ Reason for the edit.
 
 Set or delete metadata fields on eval logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/tag.py#L65)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/tag.py#L65)
 
 ``` python
 @step
@@ -3771,7 +3887,7 @@ Reason for the edit.
 
 Copy eval logs to a destination directory.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/copy.py#L21)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/copy.py#L21)
 
 ``` python
 @step
@@ -3800,11 +3916,148 @@ Overwrite existing files at the destination.
 `store` [FlowStore](../reference/inspect_flow.api.html.md#flowstore) \| str \| None  
 Optional flow store. The copied log is added to the store.
 
+### scan
+
+Run Inspect Scout scanners against the transcripts of eval logs.
+
+Mirrors the CLI surface of `scout scan`, minus `-T/--transcripts` (which flow sources from log paths) and `-F/--filter` (handled by flow’s own `--filter`). Returns scout’s `Status`. For use as a flow step (logs only), see `scan_step`.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/scan.py#L82)
+
+``` python
+def scan(
+    logs: list[EvalLog],
+    scanners: ScannersSpec,
+    s: tuple[str, ...] = (),
+    scans: str | None = None,
+    validation: tuple[str, ...] = (),
+    model: str | None = None,
+    model_base_url: str | None = None,
+    m: tuple[str, ...] = (),
+    model_config: str | None = None,
+    model_role: tuple[str, ...] = (),
+    max_transcripts: int | None = None,
+    max_processes: int | None = None,
+    limit: int | None = None,
+    shuffle: int = 0,
+    tags: str | None = None,
+    metadata: tuple[str, ...] = (),
+    cache: int | str | None = None,
+    batch: int | str | None = None,
+    max_connections: int | None = None,
+    max_retries: int | None = None,
+    timeout: int | None = None,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
+    top_p: float | None = None,
+    top_k: int | None = None,
+    reasoning_effort: Literal["minimal", "low", "medium", "high"] | None = None,
+    reasoning_tokens: int | None = None,
+    reasoning_summary: Literal["concise", "detailed", "auto"] | None = None,
+    reasoning_history: Literal["none", "all", "last", "auto"] | None = None,
+    fail_on_error: bool = False,
+    dry_run: bool = False,
+) -> Status
+```
+
+`logs` list\[EvalLog\]  
+EvalLog objects whose transcripts will be scanned.
+
+`scanners` ScannersSpec  
+Scanners to run, as a sequence, dict, `ScanJob`, `ScanJobConfig`, or a path to a Python/YAML file containing scanjob/scanner definitions.
+
+`s` tuple\[str, ...\]  
+One or more scanjob or scanner arguments (e.g. `-S arg=value`).
+
+`scans` str \| None  
+Location to write scan results to.
+
+`validation` tuple\[str, ...\]  
+One or more validation set specifications.
+
+`model` str \| None  
+Default model for llm scanners.
+
+`model_base_url` str \| None  
+Base URL for the model API.
+
+`m` tuple\[str, ...\]  
+Native model arguments (e.g. `-M arg=value`).
+
+`model_config` str \| None  
+YAML/JSON file with model arguments.
+
+`model_role` tuple\[str, ...\]  
+Named model role with model name or YAML/JSON config.
+
+`max_transcripts` int \| None  
+Maximum number of transcripts to scan concurrently.
+
+`max_processes` int \| None  
+Number of worker processes.
+
+`limit` int \| None  
+Limit number of transcripts to scan.
+
+`shuffle` int  
+Shuffle order of transcripts (pass a seed for determinism).
+
+`tags` str \| None  
+Comma-separated tags for the scan job.
+
+`metadata` tuple\[str, ...\]  
+Metadata key=value pairs for the scan job.
+
+`cache` int \| str \| None  
+Cache policy for model generations.
+
+`batch` int \| str \| None  
+Batch configuration for model requests.
+
+`max_connections` int \| None  
+Maximum concurrent connections to the model API.
+
+`max_retries` int \| None  
+Maximum retries for model API requests.
+
+`timeout` int \| None  
+Model API request timeout in seconds.
+
+`max_tokens` int \| None  
+Maximum tokens for completions.
+
+`temperature` float \| None  
+Sampling temperature.
+
+`top_p` float \| None  
+Nucleus sampling parameter.
+
+`top_k` int \| None  
+Top-k sampling parameter.
+
+`reasoning_effort` Literal\['minimal', 'low', 'medium', 'high'\] \| None  
+Reasoning effort level (OpenAI o-series, gpt-5).
+
+`reasoning_tokens` int \| None  
+Maximum reasoning tokens (Anthropic Claude).
+
+`reasoning_summary` Literal\['concise', 'detailed', 'auto'\] \| None  
+Reasoning summary style (OpenAI).
+
+`reasoning_history` Literal\['none', 'all', 'last', 'auto'\] \| None  
+Reasoning history inclusion style.
+
+`fail_on_error` bool  
+Re-raise scanner exceptions instead of capturing them.
+
+`dry_run` bool  
+Print resolved scanners and transcript counts without scanning.
+
 ### FlowStore
 
 Interface for flow store implementations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_store/store.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_store/store.py#L25)
 
 ``` python
 class FlowStore(ABC)
@@ -3823,7 +4076,7 @@ The store version.
 import_log_path  
 Import a log file(s) or directory(ies) into the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_store/store.py#L40)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_store/store.py#L40)
 
 ``` python
 @abstractmethod
@@ -3851,7 +4104,7 @@ Print paths of files being added
 get_logs  
 Get all log file paths in the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_store/store.py#L58)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_store/store.py#L58)
 
 ``` python
 @abstractmethod
@@ -3864,7 +4117,7 @@ Optional filter to apply to log headers. Only logs passing the filter are includ
 remove_log_prefix  
 Remove logs matching the given prefixes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_store/store.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_store/store.py#L72)
 
 ``` python
 @abstractmethod
@@ -3903,7 +4156,7 @@ Fine-grained return type for @step functions.
 
 Steps can also return a sequence of EvalLog directly (equivalent to StepResult(logs=logs, modified=True)) or \[\] (equivalent to StepResult(modified=False, skip_log_steps=True)).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/step.py#L24)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/step.py#L40)
 
 ``` python
 class StepResult(NamedTuple)
@@ -3927,7 +4180,7 @@ Skip remaining steps for this log. run_step will move to the next log.
 
 Display type for flow output.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_display/display.py#L15)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_display/display.py#L16)
 
 ``` python
 DisplayType = Literal["full", "rich", "plain"]
@@ -3942,7 +4195,7 @@ DisplayType = Literal["full", "rich", "plain"]
 
 Configuration for an Agent.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L181)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L181)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -3969,7 +4222,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Default field values for Inspect objects. Will be overriden by more specific settings.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L680)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L680)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -4008,7 +4261,7 @@ Task defaults for task name prefixes. E.g. `{'inspect_evals/': FTask(...)}`
 
 Configuration for flow dependencies to install in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L725)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L725)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -4034,7 +4287,7 @@ Configuration for task epochs.
 
 Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L215)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L215)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -4058,7 +4311,7 @@ Works with [FlowTask](../reference/inspect_flow.html.md#flowtask), [FlowAgent](.
 
 Positional and keyword arguments passed to the factory at construction are collected into the `args` field and forwarded to the factory at evaluation time.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L256)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L256)
 
 ``` python
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
@@ -4068,7 +4321,7 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
 
 Configuration for a Model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L76)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L76)
 
 ``` python
 class FlowModel(FlowBase)
@@ -4110,7 +4363,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Evaluation options.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L485)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L485)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -4239,7 +4492,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_
 
 Configuration for a Scorer.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L129)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L129)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -4263,7 +4516,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a Solver.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L155)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L155)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -4287,7 +4540,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Top-level flow specification.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L778)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L778)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -4335,7 +4588,7 @@ Tasks to run
 
 Store configuration with optional log filter.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L749)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L749)
 
 ``` python
 class FlowStoreConfig(FlowBase)
@@ -4361,7 +4614,7 @@ Configuration for an evaluation task.
 
 Tasks are the basis for defining and running evaluations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L329)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L329)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -4455,7 +4708,7 @@ Returns: The model name if set, otherwise None.
 
 A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/flow_types.py#L39)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/flow_types.py#L39)
 
 ``` python
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
@@ -4480,7 +4733,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 - `files`: List of file paths that were loaded to create the [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -4493,7 +4746,7 @@ The function to decorate.
 
 Decorator to register a log filter function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/log_filter.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/log_filter.py#L27)
 
 ``` python
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]
@@ -4506,7 +4759,7 @@ A function that takes an EvalLog and returns True to include.
 
 Decorator to register a step function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_steps/step.py#L76)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_steps/step.py#L108)
 
 ``` python
 def step(
@@ -4523,7 +4776,7 @@ A function that takes a list of EvalLog objects and performs operations on them 
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -4543,7 +4796,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -4579,7 +4832,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Create a list of generate configs from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -4691,7 +4944,7 @@ Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, 
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -4701,6 +4954,7 @@ def configs_with(
     timeout: int | None = ...,
     attempt_timeout: int | None = ...,
     max_connections: int | None = ...,
+    adaptive_connections: bool | int | AdaptiveConcurrency | None = ...,
     system_message: str | None = ...,
     max_tokens: int | None = ...,
     top_p: float | None = ...,
@@ -4715,6 +4969,7 @@ def configs_with(
     num_choices: int | None = ...,
     logprobs: bool | None = ...,
     top_logprobs: int | None = ...,
+    prompt_logprobs: int | None = ...,
     parallel_tool_calls: bool | None = ...,
     internal_tools: bool | None = ...,
     max_tool_output: int | None = ...,
@@ -4748,6 +5003,9 @@ Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt an
 
 `max_connections` int \| None  
 Maximum number of concurrent connections to Model API (default is model specific).
+
+`adaptive_connections` bool \| int \| AdaptiveConcurrency \| None  
+Adaptive concurrency for model API connections. Defaults to enabled (`None` and `True` both resolve to `AdaptiveConcurrency()` defaults: min=4, start=20, max=100). Pass `False` to opt out (uses static concurrency). Pass an integer `N` as shorthand for `AdaptiveConcurrency(max=N)`. Pass an `AdaptiveConcurrency` to fully customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` or `batch=True` takes precedence and uses static concurrency.
 
 `system_message` str \| None  
 Override the default system message.
@@ -4790,6 +5048,9 @@ Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Hugging
 
 `top_logprobs` int \| None  
 Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only.
+
+`prompt_logprobs` int \| None  
+Number of log probabilities to return per prompt token (1-20). When greater than 1, top-N alternative tokens are also returned. vLLM only.
 
 `parallel_tool_calls` bool \| None  
 Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only.
@@ -4845,7 +5106,7 @@ Merge two flow objects, with `add` values overriding `base` values.
 
 Only explicitly set fields in `add` override `base` — unset fields (defaulting to `NotGiven`) are ignored. Nested fields like `config` and `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -4861,7 +5122,7 @@ The object to merge into the base. Only explicitly set fields override those in 
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -4881,7 +5142,7 @@ Configuration for model. Config values will be override settings on the [FlowTas
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -4937,7 +5198,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -4957,7 +5218,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -4989,7 +5250,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -5045,7 +5306,7 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/53f086c9b9e0248ce63a652ddb755242aafd9897/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/752f9a27797756461e54cc569fdc0067106882ea/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(

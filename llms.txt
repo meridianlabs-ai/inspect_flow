@@ -18,7 +18,7 @@
 - [Matrixing](https://meridianlabs-ai.github.io/inspect_flow/matrix.html.md): Parameter sweeping with matrix functions for systematic exploration.
 - [Running Flows](https://meridianlabs-ai.github.io/inspect_flow/run.html.md): How to run flows, execution modes, and CLI flags.
 - [Store](https://meridianlabs-ai.github.io/inspect_flow/store.html.md): Persistent log store for reuse across runs.
-- [Steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html.md): Post-evaluation workflows — tag, validate, copy, and promote logs with composable steps.
+- [Steps](https://meridianlabs-ai.github.io/inspect_flow/steps.html.md): Post-evaluation workflows — tag, scan, validate, copy, and promote logs with composable steps.
 - [Advanced](https://meridianlabs-ai.github.io/inspect_flow/advanced.html.md): Execution modes and virtual environments.
 
 ## Reference

@@ -80,7 +80,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-00bb9cb7cda113ac4013fc9b55ca6f24.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -363,6 +363,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#metadata" id="toc-metadata" class="nav-link" data-scroll-target="#metadata"><strong>metadata</strong></a></li>
   <li><a href="#provenance" id="toc-provenance" class="nav-link" data-scroll-target="#provenance">Provenance</a></li>
   <li><a href="#copy" id="toc-copy" class="nav-link" data-scroll-target="#copy"><strong>copy</strong></a></li>
+  <li><a href="#scan" id="toc-scan" class="nav-link" data-scroll-target="#scan"><strong>scan</strong></a></li>
   </ul></li>
   <li><a href="#custom-steps" id="toc-custom-steps" class="nav-link" data-scroll-target="#custom-steps">Custom Steps</a>
   <ul class="collapse">
@@ -370,6 +371,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#stepresult" id="toc-stepresult" class="nav-link" data-scroll-target="#stepresult">StepResult</a></li>
   </ul></li>
   <li><a href="#step-discovery" id="toc-step-discovery" class="nav-link" data-scroll-target="#step-discovery">Step Discovery</a></li>
+  <li><a href="#referencing-constants" id="toc-referencing-constants" class="nav-link" data-scroll-target="#referencing-constants">Referencing Constants</a>
+  <ul class="collapse">
+  <li><a href="#discovery-rules" id="toc-discovery-rules" class="nav-link" data-scroll-target="#discovery-rules">Discovery Rules</a></li>
+  <li><a href="#disambiguating" id="toc-disambiguating" class="nav-link" data-scroll-target="#disambiguating">Disambiguating</a></li>
+  </ul></li>
   <li><a href="#filtering" id="toc-filtering" class="nav-link" data-scroll-target="#filtering">Filtering</a></li>
   <li><a href="#checking-completeness" id="toc-checking-completeness" class="nav-link" data-scroll-target="#checking-completeness">Checking Completeness</a>
   <ul class="collapse">
@@ -402,7 +408,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Steps are operations you run on evaluation logs <em>after</em> <code>flow run</code> completes. Use them to tag logs, set metadata, copy logs between directories, validate results, or compose these into multi-stage workflows like QA pipelines.</p>
+<p>Steps are operations you run on evaluation logs <em>after</em> <code>flow run</code> completes. Use them to tag logs, set metadata, copy logs between directories, scan transcripts, validate results, or compose these into multi-stage workflows like QA pipelines.</p>
 <section id="the-flow-step-command" class="level2">
 <h2 class="anchored" data-anchor-id="the-flow-step-command">The <code>flow step</code> Command</h2>
 <p>Run a step on logs in a directory:</p>
@@ -480,30 +486,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step copy logs/ <span class="at">--dest</span> ./archive/ <span class="at">--source-prefix</span> ./logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Without <code>--source-prefix</code>, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use <code>--overwrite</code> to replace existing files. Use <code>--store</code> to add copied logs to the Flow Store index.</p>
 </section>
+<section id="scan" class="level3">
+<h3 class="anchored" data-anchor-id="scan"><a href="./reference/inspect_flow.api.html#scan"><strong>scan</strong></a></h3>
+<p>Run Inspect Scout scanners against the transcripts of eval logs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step scan logs/ <span class="at">--scanners</span> scanners.py</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step scan logs/ <span class="at">--scanners</span> scanners.py <span class="at">--model</span> openai/gpt-5</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step scan logs/ <span class="at">--scanners</span> scanjob.yaml <span class="at">-S</span> threshold=0.8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>--scanners</code> accepts a path to a Python or YAML file containing <code>@scanjob</code> or <code>@scanner</code> definitions (or, from the Python API, a <code>ScanJob</code>, <code>ScanJobConfig</code>, sequence, or dict of scanners). Scan results are written to <code>&lt;log_dir&gt;/scans</code> by default — set <code>--scans</code> to override, which is required when input logs span multiple directories. A <code>scout.yaml</code> project file is written alongside to link transcripts and scans.</p>
+<p>Logs pass through unmodified, so <code>scan</code> composes with other steps. The full set of scanner, model, and execution options mirrors <code>scout scan</code> — run <code>flow step scan --help</code> or see the <a href="https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan">Inspect Scout docs</a> for details.</p>
+</section>
 </section>
 <section id="custom-steps" class="level2">
 <h2 class="anchored" data-anchor-id="custom-steps">Custom Steps</h2>
 <p>Define custom steps with the <code>@step</code> decorator. A step is a function that takes a <code>list[EvalLog]</code> and returns a <code>list[EvalLog]</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> step</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> tag, metadata</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> review_scores(</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    min_score: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Tag logs that meet a score threshold and record it in metadata.</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">        min_score: Minimum score to pass review.</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    passing <span class="op">=</span> [log <span class="cf">for</span> log <span class="kw">in</span> logs <span class="cf">if</span> (log.results.scores[<span class="dv">0</span>].value <span class="kw">or</span> <span class="dv">0</span>) <span class="op">&gt;=</span> min_score]</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    passing <span class="op">=</span> tag(passing, add<span class="op">=</span>[<span class="st">"passing"</span>])</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> metadata(passing, <span class="bu">set</span><span class="op">=</span>{<span class="st">"min_score"</span>: min_score})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> step</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> tag, metadata</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> review_scores(</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    min_score: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Tag logs that meet a score threshold and record it in metadata.</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co">        min_score: Minimum score to pass review.</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    passing <span class="op">=</span> [log <span class="cf">for</span> log <span class="kw">in</span> logs <span class="cf">if</span> (log.results.scores[<span class="dv">0</span>].value <span class="kw">or</span> <span class="dv">0</span>) <span class="op">&gt;=</span> min_score]</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    passing <span class="op">=</span> tag(passing, add<span class="op">=</span>[<span class="st">"passing"</span>])</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> metadata(passing, <span class="bu">set</span><span class="op">=</span>{<span class="st">"min_score"</span>: min_score})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The function’s keyword arguments are automatically converted to CLI options:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step review_scores logs/ <span class="at">--min-score</span> 0.9</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step review_scores logs/ <span class="at">--min-score</span> 0.9</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Parameter help text shown in <code>--help</code> is extracted from Google-style docstrings.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -561,58 +576,90 @@ Note
 </tr>
 </tbody>
 </table>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> StepResult</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> audit(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> StepResult:</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Print a summary of log statuses."""</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> log <span class="kw">in</span> logs:</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>log<span class="sc">.</span><span class="bu">eval</span><span class="sc">.</span>task<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>log<span class="sc">.</span>status<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> StepResult(logs<span class="op">=</span>logs, modified<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> StepResult</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> audit(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> StepResult:</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Print a summary of log statuses."""</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> log <span class="kw">in</span> logs:</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>log<span class="sc">.</span><span class="bu">eval</span><span class="sc">.</span>task<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>log<span class="sc">.</span>status<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> StepResult(logs<span class="op">=</span>logs, modified<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="step-discovery" class="level2">
 <h2 class="anchored" data-anchor-id="step-discovery">Step Discovery</h2>
 <p>Steps are discovered from multiple sources:</p>
 <ol type="1">
-<li><strong>Built-in steps</strong> — <code>tag</code>, <code>metadata</code>, <code>copy</code></li>
+<li><strong>Built-in steps</strong> — <code>tag</code>, <code>metadata</code>, <code>copy</code>, <code>scan</code></li>
 <li><strong><code>_flow.py</code> files</strong> — any <code>@step</code> functions defined or imported in <code>_flow.py</code> files in the current directory or parent directories are automatically discovered (same <a href="./defaults.html#automatic-discovery">automatic discovery</a> as for defaults)</li>
 <li><strong>Arbitrary files</strong> — load steps from any Python file, without needing them in <code>_flow.py</code>:</li>
 </ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py <span class="at">--help</span>            <span class="co"># List steps defined in a file</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py step_name <span class="pp">[</span><span class="ss">ARGS</span><span class="pp">]</span>  <span class="co"># Run a step from a file</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py@step_name <span class="pp">[</span><span class="ss">ARGS</span><span class="pp">]</span>  <span class="co"># Shorthand for the above</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py <span class="at">--help</span>            <span class="co"># List steps defined in a file</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py step_name <span class="pp">[</span><span class="ss">ARGS</span><span class="pp">]</span>  <span class="co"># Run a step from a file</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step file.py@step_name <span class="pp">[</span><span class="ss">ARGS</span><span class="pp">]</span>  <span class="co"># Shorthand for the above</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For team workflows, import your steps in a <code>_flow.py</code> at the repository root so they’re discoverable by all team members:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># _flow.py</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> promote, review_scores  <span class="co"># noqa: F401</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># _flow.py</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> promote, review_scores  <span class="co"># noqa: F401</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="referencing-constants" class="level2">
+<h2 class="anchored" data-anchor-id="referencing-constants">Referencing Constants</h2>
+<p>Define module-level string constants in your <code>_flow.py</code> and reference them from any <code>flow</code> CLI command with <code>@NAME</code>. This lets you share the same tag values, log directories, and other strings across commands and teammates without retyping them — and without worrying about typos drifting them apart over time.</p>
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>_flow.py</strong></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13" data-filename="_flow.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>LOG_DIR_DEV <span class="op">=</span> <span class="st">"s3://my-bucket/dev/logs"</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>LOG_DIR_PROD <span class="op">=</span> <span class="st">"s3://my-bucket/prod/logs"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>TAG_QA_NEEDED <span class="op">=</span> <span class="st">"qa_needed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step tag @LOG_DIR_DEV <span class="at">--add</span> @TAG_QA_NEEDED</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> @LOG_DIR_DEV</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> list log @LOG_DIR_DEV <span class="at">--tag</span> @TAG_QA_NEEDED</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This works for all <code>flow</code> subcommands — <code>run</code>, <code>check</code>, <code>step</code>, <code>list</code>, <code>config</code>, <code>store</code> — wherever you would otherwise type a literal string.</p>
+<section id="discovery-rules" class="level3">
+<h3 class="anchored" data-anchor-id="discovery-rules">Discovery Rules</h3>
+<p>Constants are discovered from <code>_flow.py</code> files walking up from your current directory (same <a href="./defaults.html#automatic-discovery">automatic discovery</a> as for defaults, steps, and filters). To be eligible, a name must be:</p>
+<ul>
+<li><strong>UPPERCASE</strong> (e.g.&nbsp;<code>LOG_DIR_DEV</code>, not <code>log_dir_dev</code> or <code>MixedCase</code>)</li>
+<li><strong>String-valued</strong> (lists, ints, and other types are skipped)</li>
+<li><strong>Module-level</strong> (not nested inside a class or function)</li>
+<li><strong>Public</strong> (no leading underscore)</li>
+</ul>
+<p>If the same name is defined in multiple <code>_flow.py</code> files with <strong>different</strong> values, resolution fails and asks you to disambiguate. Identical values across files are fine.</p>
+</section>
+<section id="disambiguating" class="level3">
+<h3 class="anchored" data-anchor-id="disambiguating">Disambiguating</h3>
+<p>Use <code>@file.py@NAME</code> to resolve from a specific file, bypassing the global lookup and the collision check:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step tag logs/ <span class="at">--add</span> @prod/_flow.py@TAG_QA_NEEDED</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 </section>
 <section id="filtering" class="level2">
 <h2 class="anchored" data-anchor-id="filtering">Filtering</h2>
 <p>Use <code>@log_filter</code> to define named functions that select logs based on their properties:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> log_filter</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reviewed(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been reviewed."""</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"review_done"</span> <span class="kw">in</span> log.tags <span class="kw">and</span> <span class="st">"review_needed"</span> <span class="kw">not</span> <span class="kw">in</span> log.tags</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> promoted(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been marked as golden."""</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"golden"</span> <span class="kw">in</span> log.tags</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> log_filter</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reviewed(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been reviewed."""</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"review_done"</span> <span class="kw">in</span> log.tags <span class="kw">and</span> <span class="st">"review_needed"</span> <span class="kw">not</span> <span class="kw">in</span> log.tags</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> promoted(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been marked as golden."""</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"golden"</span> <span class="kw">in</span> log.tags</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Filters can be used with <code>flow step</code> via the <code>--filter</code> and <code>--exclude</code> options:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Only process reviewed logs</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step promote logs/ <span class="at">--filter</span> reviewed</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Process all reviewed logs except those already marked golden</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step tag logs/ <span class="at">--filter</span> reviewed <span class="at">--exclude</span> promoted <span class="at">--add</span> golden</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Only process reviewed logs</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step promote logs/ <span class="at">--filter</span> reviewed</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Process all reviewed logs except those already marked golden</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step tag logs/ <span class="at">--filter</span> reviewed <span class="at">--exclude</span> promoted <span class="at">--add</span> golden</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The same <code>@log_filter</code> functions work across Flow — with <a href="./reference/flow_list.html"><code>flow list log</code></a>, <a href="./store.html#filtering"><code>flow run --store-filter</code></a>, and store commands. Like steps, filters defined or imported in <code>_flow.py</code> files are automatically discovered.</p>
 </section>
 <section id="checking-completeness" class="level2">
 <h2 class="anchored" data-anchor-id="checking-completeness">Checking Completeness</h2>
 <p>The <a href="./reference/flow_check.html"><code>flow check</code></a> command checks the completeness of a spec against existing logs in a directory. Its primary use is checking against a different log directory than the one in the spec — for example, checking how complete a production directory is:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> /path/to/prod/logs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> /path/to/prod/logs</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This instantiates tasks from the spec, searches the target directory recursively for matching logs, and reports:</p>
 <ul>
 <li>A table of tasks with their matched log file, completed samples, and tags</li>
@@ -623,74 +670,74 @@ Note
 <p>Unlike <code>flow run --dry-run</code>, <code>flow check</code> does not use the Flow Store — it only searches the specified log directory.</p>
 <section id="python-api" class="level3">
 <h3 class="anchored" data-anchor-id="python-api">Python API</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> check, load_spec</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> load_spec(<span class="st">"spec.py"</span>)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> check(spec, log_dir<span class="op">=</span><span class="st">"/path/to/prod/logs"</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> task <span class="kw">in</span> result.tasks:</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>task<span class="sc">.</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>task<span class="sc">.</span>samples<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>task<span class="sc">.</span>total_samples<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> check, load_spec</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> load_spec(<span class="st">"spec.py"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> check(spec, log_dir<span class="op">=</span><span class="st">"/path/to/prod/logs"</span>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> task <span class="kw">in</span> result.tasks:</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>task<span class="sc">.</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>task<span class="sc">.</span>samples<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>task<span class="sc">.</span>total_samples<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="example-review-and-promote-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="example-review-and-promote-workflow">Example: Review and Promote Workflow</h2>
 <p>Here’s a complete workflow combining steps, filters, and check to manage evaluations from development through to production.</p>
 <p><strong>Define a filter</strong> (<code>filters.py</code>):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> log_filter</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reviewed(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been reviewed."""</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"review_done"</span> <span class="kw">in</span> log.tags <span class="kw">and</span> <span class="st">"review_needed"</span> <span class="kw">not</span> <span class="kw">in</span> log.tags</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> log_filter</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">@log_filter</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reviewed(log: EvalLog) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""True when a log has been reviewed."""</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"review_done"</span> <span class="kw">in</span> log.tags <span class="kw">and</span> <span class="st">"review_needed"</span> <span class="kw">not</span> <span class="kw">in</span> log.tags</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Define steps</strong> (<code>steps.py</code>):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> step</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> tag, copy</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.filters <span class="im">import</span> reviewed</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mark_reviewed(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Mark logs as manually reviewed."""</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tag(logs, add<span class="op">=</span>[<span class="st">"review_done"</span>], remove<span class="op">=</span>[<span class="st">"review_needed"</span>])</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> promote(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Promote reviewed logs to production."""</span></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    logs <span class="op">=</span> [log <span class="cf">for</span> log <span class="kw">in</span> logs <span class="cf">if</span> reviewed(log)]</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    logs <span class="op">=</span> tag(logs, add<span class="op">=</span>[<span class="st">"promoted"</span>], reason<span class="op">=</span><span class="st">"Passed review"</span>)</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> copy(logs, dest<span class="op">=</span><span class="st">"s3://bucket/prod/logs"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.log <span class="im">import</span> EvalLog</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> step</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> tag, copy</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.filters <span class="im">import</span> reviewed</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mark_reviewed(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Mark logs as manually reviewed."""</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tag(logs, add<span class="op">=</span>[<span class="st">"review_done"</span>], remove<span class="op">=</span>[<span class="st">"review_needed"</span>])</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> promote(logs: <span class="bu">list</span>[EvalLog]) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]:</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Promote reviewed logs to production."""</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    logs <span class="op">=</span> [log <span class="cf">for</span> log <span class="kw">in</span> logs <span class="cf">if</span> reviewed(log)]</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    logs <span class="op">=</span> tag(logs, add<span class="op">=</span>[<span class="st">"promoted"</span>], reason<span class="op">=</span><span class="st">"Passed review"</span>)</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> copy(logs, dest<span class="op">=</span><span class="st">"s3://bucket/prod/logs"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Import for discovery</strong> (<code>_flow.py</code>):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.filters <span class="im">import</span> reviewed  <span class="co"># noqa: F401</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> mark_reviewed, promote  <span class="co"># noqa: F401</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.filters <span class="im">import</span> reviewed  <span class="co"># noqa: F401</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> mark_reviewed, promote  <span class="co"># noqa: F401</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Run the workflow:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Check if logs already exist (from teammates, previous runs, etc.)</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> s3://bucket/dev/logs/</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Run evaluations (logs written to e.g. s3://bucket/dev/logs/2026-04-14T10-30-00/)</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run spec.py</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Review in Viewer</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view <span class="at">--log-dir</span> s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Mark as reviewed</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step mark_reviewed s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Promote to production</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step promote s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Verify production completeness</span></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> s3://bucket/prod/logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Check if logs already exist (from teammates, previous runs, etc.)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> s3://bucket/dev/logs/</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Run evaluations (logs written to e.g. s3://bucket/dev/logs/2026-04-14T10-30-00/)</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run spec.py</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Review in Viewer</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view <span class="at">--log-dir</span> s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Mark as reviewed</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step mark_reviewed s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Promote to production</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> step promote s3://bucket/dev/logs/2026-04-14T10-30-00/</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Verify production completeness</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> check spec.py <span class="at">--log-dir</span> s3://bucket/prod/logs/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="python-api-1" class="level2">
 <h2 class="anchored" data-anchor-id="python-api-1">Python API</h2>
 <p>The same workflow can be run programmatically via <code>inspect_flow.api</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> check, load_spec, run_step</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> mark_reviewed, promote</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>run_dir <span class="op">=</span> <span class="st">"s3://bucket/dev/logs/2026-04-14T10-30-00/"</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>run_step(mark_reviewed, run_dir)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>run_step(promote, run_dir)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> check, load_spec, run_step</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> my_project.steps <span class="im">import</span> mark_reviewed, promote</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>run_dir <span class="op">=</span> <span class="st">"s3://bucket/dev/logs/2026-04-14T10-30-00/"</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>run_step(mark_reviewed, run_dir)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>run_step(promote, run_dir)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>See the <a href="./reference/inspect_flow.api.html">API Reference</a> for complete documentation.</p>
 
 
