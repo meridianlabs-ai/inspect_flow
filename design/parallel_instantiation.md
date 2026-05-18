@@ -95,68 +95,70 @@ def resolve_instantiate(spec: FlowSpec) -> InstantiateConfig:
 
 ### `instantiate_tasks` rewrite
 
-The current loop in [instantiate.py:116](../src/inspect_flow/_runner/instantiate.py) becomes a dispatch on mode:
+The current loop in [instantiate.py](../src/inspect_flow/_runner/instantiate.py) becomes a dispatch on mode:
 
 ```python
 def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
-    task_configs = spec.tasks or []
+    task_configs = list(spec.tasks or [])
     if not task_configs:
         return []
-    cfg = resolve_instantiate(spec)
+    cfg = _resolve_instantiate(spec)
     with RunAction("instantiate") as action:
-        progress, progress_task = _make_progress(action, total=len(task_configs))
+        progress = Progress(...)
+        action.update(info=progress)
+        progress_task = progress.add_task("Instantiating", total=len(task_configs))
         if cfg.mode == "serial":
-            results = _instantiate_serial(spec, task_configs, base_dir, progress, progress_task, action)
-        elif cfg.mode == "by_task":
-            results = _instantiate_by_task(spec, task_configs, base_dir, cfg.max_threads, progress, progress_task, action)
-        else:  # "parallel"
-            results = _instantiate_parallel(spec, task_configs, base_dir, cfg.max_threads, progress, progress_task, action)
+            results = _instantiate_serial(spec, task_configs, base_dir, action, progress, progress_task)
+        else:
+            results = _instantiate_threaded(spec, task_configs, base_dir, cfg, action, progress, progress_task)
         action.update(info=f"Instantiated {len(results)} tasks")
     return results
 ```
 
-`_instantiate_serial` keeps the existing semantics verbatim. The parallel variants use `concurrent.futures.ThreadPoolExecutor`:
+`_instantiate_serial` keeps the existing semantics verbatim. `_instantiate_threaded` handles both `parallel` and `by_task` by grouping inputs into **units of work** (a `list[_IndexedSpec]`, where `_IndexedSpec` is a frozen dataclass pairing the input position with its `TaskSpec`):
 
-- `_instantiate_parallel` submits every `task_config` and consumes results via `as_completed`.
-- `_instantiate_by_task` groups `task_configs` by `get_task_name(task_config)` and submits one future per group; the group worker iterates its configs serially.
+- In `parallel` mode, each input is its own unit.
+- In `by_task` mode, inputs are grouped by `get_task_name(...)` so that all specs sharing a name form one unit and run serially in a single worker.
 
-Both preserve the **input order** of `task_configs` in the returned list (so downstream behavior — task identifier construction, log-discovery ordering — is unchanged regardless of mode). Implementation: index each input config, fan results back into an ordered list by index.
+Units are dispatched to a `concurrent.futures.ThreadPoolExecutor` capped at `min(cfg.max_threads, len(units))`. Each worker returns a `dict[int, list[InstantiatedTask]]` keyed by original position; the main thread merges these as futures complete (no shared-state mutation from workers). Output is sorted by position so the returned list matches input order — downstream behavior (task identifier construction, log-discovery ordering) is unchanged regardless of mode.
 
 ### Thread-safety considerations
 
 These are real concerns that show up the moment we add threads. Each must be addressed before merging.
 
-1. **`chdir_python` is process-wide and explicitly non-thread-safe.** It's used inside `_create_task` for local filesystems, and inspect_ai's `load_file_tasks` also calls it internally when resolving file-based task specs. We can't simply enter `chdir_python(base_dir)` once on the main thread, because inspect_ai still issues its own nested chdir on each `load_tasks` call. Fix: serialize the chdir-using portion with a module-level `_load_tasks_lock`. We only acquire the lock when the task name is *not* already in the registry — once a task is registered (via prior file load or `@task` import), `load_tasks` dispatches straight to `task_create` without any chdir, so user code (the `@task` body, which may load datasets) runs unlocked and in parallel. User-visible implication: local file-based specs such as `path/to/task.py@my_task` still serialize on their first load; they only benefit from parallel instantiation after the task has already been imported or registered.
+1. **`chdir_python` is process-wide and explicitly non-thread-safe.** It's called by inspect_ai's `load_tasks` (via `load_file_tasks`) and by `scorer_from_spec` whenever the spec resolves to a file path. Both can run on worker threads. We can't simply enter `chdir_python(base_dir)` once on the main thread, because inspect_ai still issues its own nested chdir on each call. Fix: serialize the chdir-using portion with a module-level `_chdir_lock`, used at both `load_tasks` and `scorer_from_spec` call sites. We acquire the lock only when the name is *not* already in its registry — once a task or scorer is registered (via prior file load or `@task` / `@scorer` import), the inspect_ai entry point dispatches straight to `task_create` / `scorer_create` without any chdir, so user code (the `@task` body, which may load datasets) runs unlocked and in parallel. User-visible implication: local file-based specs such as `path/to/task.py@my_task` still serialize on their first load; they only benefit from parallel instantiation after the underlying file has already been imported.
 
 2. **`init_active_model` writes a `ContextVar`.** ContextVars are per-context; `ThreadPoolExecutor` copies the submitting context into each worker. Setting it in a worker only affects that worker's view, which is what we want — `_create_task` reads the active model on the same thread.
 
-3. **Inspect AI's registry.** `load_tasks`, `registry_create`, and `scorer_from_spec` read/write module-level registry dicts. Reads are safe; the risky case is two threads loading the *same* Python file at the same time, which can race on import and registry insertion. `by_task` mode avoids this for repeated task names by construction. For `parallel` mode we accept the residual risk and document it — users selecting `parallel` are asserting their factories are safe. If we hit a real-world race we can add a module-level lock around `load_tasks`.
+3. **`get_model` memoizes into a module-level `_models` dict.** Concurrent writes are atomic under CPython's GIL, so the worst case is two threads constructing the same model and one cached instance being briefly overwritten — no correctness issue. We don't add a lock here.
 
-4. **User task factories.** Some factories aren't thread-safe (e.g. shared dataset cache writes, monkey-patches). `by_task` is the escape hatch for users who want parallelism across distinct tasks but not within. We do not attempt to detect non-thread-safe factories.
+4. **`registry_create` (used for solvers and agents)** is pure registry lookup — no chdir, no file loading. Safe to call from workers.
+
+5. **User task / scorer / solver / agent factories.** Some factories aren't thread-safe (e.g. shared dataset cache writes, monkey-patches). `by_task` is the escape hatch for users who want parallelism across distinct tasks but not within. We do not attempt to detect non-thread-safe factories.
 
 ### Progress and display
 
-`rich.progress.Progress` is thread-safe (uses an internal lock). Worker threads call `progress.update(...)` and `progress.advance(...)` directly. The "current task" description (`description=f"[cyan]{task_name}[/cyan]"`) is less meaningful when multiple tasks are in flight, so in parallel modes we render a count-only description (`"Instantiating ({active} in flight)"`) and drop the per-task name from the progress line. Per-task errors still report which task failed via the error path below.
+`rich.progress.Progress` is thread-safe (uses an internal lock). Worker threads call `progress.advance(...)` directly. The "current task" description (`description=f"[cyan]{task_name}[/cyan]"`) is less meaningful when multiple tasks are in flight, so in threaded modes we set the description to the mode name itself (e.g. `[cyan]parallel[/cyan]`) rather than a single task name. Per-task errors still report which task failed via the error path below.
 
 ### Error handling
 
-The current code uses `action.error_context(task_name)` to attach a task name to any exception that bubbles up. With threads, a single shared error context doesn't work.
-
-Strategy: fail fast. As soon as any future raises, cancel pending futures, wait for in-flight workers to return, and re-raise the first failure with its task name prefixed (matching serial behavior).
+Strategy: fail fast. As soon as any future raises, cancel pending futures and re-raise the **original** exception unchanged. The task name is surfaced via `action.error_context(...)`, which sets the display info that `RunAction.__exit__` formats when the exception propagates — same mechanism serial mode uses.
 
 ```python
 for fut in as_completed(futures):
-    task_name = futures[fut]
     try:
-        results_by_index[futures_index[fut]] = fut.result()
-    except BaseException as e:
+        results_by_position.update(fut.result())
+    except BaseException:
+        task_name = futures[fut]
         for other in futures:
             other.cancel()
-        executor.shutdown(wait=True, cancel_futures=True)
-        raise type(e)(f"{task_name}: {e}") from e
+        with action.error_context(task_name):
+            raise
 ```
 
-In-flight workers can't be interrupted mid-call, so `shutdown(wait=True)` lets them finish before the exception propagates. Already-completed results are discarded — the caller sees the same failure semantics as serial mode.
+We deliberately do **not** wrap with `type(e)(f"{task_name}: {e}")` — that approach breaks for any exception type that doesn't accept a single-string constructor (e.g. `subprocess.CalledProcessError(returncode, cmd)`, or any custom exception with multiple required args), turning the original failure into a `TypeError` from the reconstruction. Callers can pattern-match the original exception type, and the failing task name still appears in the rich display via the action's error context.
+
+In-flight workers can't be interrupted mid-call; `ThreadPoolExecutor.__exit__` waits for them when the `with` block exits, then the exception propagates. Already-completed results are discarded — the caller sees the same failure semantics as serial mode.
 
 ## CLI
 
