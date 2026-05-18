@@ -165,7 +165,7 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
             )
         else:
             results = _instantiate_threaded(
-                spec, task_configs, base_dir, cfg, progress, progress_task
+                spec, task_configs, base_dir, cfg, action, progress, progress_task
             )
         action.update(info=f"Instantiated {len(results)} tasks")
     return results
@@ -205,6 +205,7 @@ def _instantiate_threaded(
     task_configs: list[TaskSpec],
     base_dir: str,
     cfg: InstantiateConfig,
+    action: RunAction,
     progress: Progress,
     progress_task: Any,
 ) -> list[InstantiatedTask]:
@@ -238,11 +239,12 @@ def _instantiate_threaded(
         for fut in as_completed(futures):
             try:
                 results_by_position.update(fut.result())
-            except BaseException as e:
+            except BaseException:
                 task_name = futures[fut]
                 for other in futures:
                     other.cancel()
-                raise type(e)(f"{task_name}: {e}") from e
+                with action.error_context(task_name):
+                    raise
 
     return [
         result

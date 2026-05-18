@@ -389,7 +389,7 @@ def test_instantiate_by_task_serializes_within_name() -> None:
     assert b_started.is_set()
 
 
-def test_instantiate_parallel_fail_fast() -> None:
+def test_instantiate_parallel_fail_fast(recording_console: Console) -> None:
     spec = FlowSpec(
         tasks=[
             FlowTask(name=task_name),
@@ -400,8 +400,36 @@ def test_instantiate_parallel_fail_fast() -> None:
     )
     with pytest.raises(ValueError) as e:
         instantiate_tasks(spec=spec, base_dir=".")
+    # The original ValueError is re-raised unchanged so callers can pattern-match
+    # on its type and args. The failing task name is surfaced via the display.
     assert "Instantiation Error" in str(e.value)
-    assert "instantiate_error_task" in str(e.value)
+    out = recording_console.export_text()
+    assert "instantiate_error_task" in out
+
+
+class _TwoArgError(Exception):
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(f"{code}: {message}")
+        self.code = code
+        self.message = message
+
+
+@task
+def two_arg_error_task() -> Task:
+    raise _TwoArgError(42, "boom")
+
+
+def test_instantiate_parallel_preserves_exception_type() -> None:
+    """Regression: parallel mode used to call type(e)(f'{name}: {e}'), which
+    only works for exceptions accepting a single string arg."""
+    spec = FlowSpec(
+        tasks=[FlowTask(name="two_arg_error_task")],
+        instantiate="parallel",
+    )
+    with pytest.raises(_TwoArgError) as e:
+        instantiate_tasks(spec=spec, base_dir=".")
+    assert e.value.code == 42
+    assert e.value.message == "boom"
 
 
 def test_instantiate_config_max_threads() -> None:
