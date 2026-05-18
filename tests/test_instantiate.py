@@ -1,3 +1,5 @@
+import threading
+import time
 from typing import Any
 
 import pytest
@@ -17,6 +19,7 @@ from inspect_flow._types.flow_types import (
     FlowSolver,
     FlowSpec,
     FlowTask,
+    InstantiateConfig,
 )
 from inspect_flow._util.pydantic_util import model_dump
 from rich.console import Console
@@ -314,3 +317,125 @@ def test_534_instantiate_error(recording_console: Console) -> None:
     out = recording_console.export_text()
     assert "Instantiation Error" in out
     assert "instantiate_error_task" in out
+
+
+@pytest.mark.parametrize("instantiate", ["serial", "by_task", "parallel", None])
+def test_instantiate_modes_preserve_order(instantiate: Any) -> None:
+    tasks_in = [FlowTask(name=task_name, tags=[f"tag-{i}"]) for i in range(5)]
+    spec = FlowSpec(tasks=tasks_in, instantiate=instantiate)
+    tasks_out = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks_out) == len(tasks_in)
+    assert [t.task.tags for t in tasks_out] == [[f"tag-{i}"] for i in range(5)]
+
+
+def test_instantiate_parallel_runs_concurrently() -> None:
+    barrier = threading.Barrier(3, timeout=10)
+
+    @task
+    def barrier_task() -> Task:
+        barrier.wait()
+        return Task()
+
+    spec = FlowSpec(
+        tasks=[FlowTask(name="barrier_task") for _ in range(3)],
+        instantiate="parallel",
+    )
+    start = time.monotonic()
+    tasks_out = instantiate_tasks(spec=spec, base_dir=".")
+    elapsed = time.monotonic() - start
+    assert len(tasks_out) == 3
+    assert elapsed < 10  # barrier would have timed out if serial
+
+
+def test_instantiate_by_task_serializes_within_name() -> None:
+    a_inflight = 0
+    a_max_concurrent = 0
+    lock = threading.Lock()
+    a_started = threading.Event()
+    b_started = threading.Event()
+
+    @task
+    def by_task_a() -> Task:
+        nonlocal a_inflight, a_max_concurrent
+        with lock:
+            a_inflight += 1
+            a_max_concurrent = max(a_max_concurrent, a_inflight)
+        a_started.set()
+        # The first `a` waits for `b` to start before exiting, proving that `a`
+        # and `b` run concurrently. Later `a`s see b_started already set.
+        b_started.wait(timeout=10)
+        with lock:
+            a_inflight -= 1
+        return Task()
+
+    @task
+    def by_task_b() -> Task:
+        a_started.wait(timeout=10)
+        b_started.set()
+        return Task()
+
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name="by_task_a"),
+            FlowTask(name="by_task_a"),
+            FlowTask(name="by_task_a"),
+            FlowTask(name="by_task_b"),
+        ],
+        instantiate="by_task",
+    )
+    tasks_out = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks_out) == 4
+    assert a_max_concurrent == 1
+    assert b_started.is_set()
+
+
+def test_instantiate_parallel_fail_fast(recording_console: Console) -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name=task_name),
+            FlowTask(name="instantiate_error_task"),
+            FlowTask(name=task_name),
+        ],
+        instantiate="parallel",
+    )
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(spec=spec, base_dir=".")
+    # The original ValueError is re-raised unchanged so callers can pattern-match
+    # on its type and args. The failing task name is surfaced via the display.
+    assert "Instantiation Error" in str(e.value)
+    out = recording_console.export_text()
+    assert "instantiate_error_task" in out
+
+
+class _TwoArgError(Exception):
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(f"{code}: {message}")
+        self.code = code
+        self.message = message
+
+
+@task
+def two_arg_error_task() -> Task:
+    raise _TwoArgError(42, "boom")
+
+
+def test_instantiate_parallel_preserves_exception_type() -> None:
+    """Regression: parallel mode used to call type(e)(f'{name}: {e}'), which
+    only works for exceptions accepting a single string arg."""
+    spec = FlowSpec(
+        tasks=[FlowTask(name="two_arg_error_task")],
+        instantiate="parallel",
+    )
+    with pytest.raises(_TwoArgError) as e:
+        instantiate_tasks(spec=spec, base_dir=".")
+    assert e.value.code == 42
+    assert e.value.message == "boom"
+
+
+def test_instantiate_config_max_threads() -> None:
+    spec = FlowSpec(
+        tasks=[FlowTask(name=task_name) for _ in range(3)],
+        instantiate=InstantiateConfig(mode="parallel", max_threads=2),
+    )
+    tasks_out = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks_out) == 3
