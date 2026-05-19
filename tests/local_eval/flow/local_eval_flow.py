@@ -1,6 +1,21 @@
-from inspect_flow import FlowOptions, FlowSpec, FlowTask, tasks_matrix
+from inspect_ai import Task, task_with
+from inspect_flow import (
+    FlowOptions,
+    FlowSpec,
+    FlowTask,
+    after_instantiate,
+    tasks_matrix,
+)
 from inspect_flow._types.flow_types import FlowAgent
 from local_eval import add, my_agent, noop2
+
+
+@after_instantiate
+def tag_with_e2e_marker(tasks: list[Task]) -> list[Task]:
+    for t in tasks:
+        task_with(t, tags=(t.tags or []) + ["e2e_hook_ran"])
+    return tasks
+
 
 FlowSpec(
     store=None,

@@ -4,9 +4,10 @@ from pathlib import Path
 import pytest
 import yaml
 from click.testing import CliRunner
+from inspect_ai.log import list_eval_logs, read_eval_log
 from inspect_flow._api.api import load_spec
 from inspect_flow._cli.main import flow
-from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._types.flow_types import FlowInternal, FlowSpec
 
 from tests.test_helpers.log_helpers import init_test_logs, verify_test_logs
 
@@ -50,3 +51,18 @@ def test_local_e2e() -> None:
         loaded_spec.python_version
         == f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     )
+
+    # The config registers an @after_instantiate hook that tags each task.
+    # Asserting the tag appears on every produced log proves the venv child
+    # loaded the bridge file, re-registered the decorator, and ran the hook.
+    assert isinstance(loaded_spec.internal, FlowInternal)
+    files = loaded_spec.internal.preload_files
+    assert isinstance(files, list)
+    assert any(f.endswith("local_eval_flow.py") for f in files)
+
+    logs = [read_eval_log(log) for log in list_eval_logs(log_dir)]
+    assert logs
+    for log in logs:
+        assert "e2e_hook_ran" in (log.eval.tags or []), (
+            f"hook tag missing from {log.location}; tags={log.eval.tags}"
+        )
