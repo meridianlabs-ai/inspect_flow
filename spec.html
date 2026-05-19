@@ -581,6 +581,11 @@ Note
 <td><code>"auto"</code></td>
 </tr>
 <tr class="odd">
+<td><code>instantiate</code></td>
+<td>Controls parallelism of the task-instantiation phase (running task/model/scorer/solver factories before <code>eval_set</code> is called). <code>"serial"</code> (default) instantiates one task at a time. <code>"by_task"</code> instantiates distinct task names in parallel but serializes specs that share a name. <code>"parallel"</code> instantiates everything concurrently. Pass an <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#instantiateconfig">InstantiateConfig</a></span> to also set <code>max_threads</code> (default <code>32</code>)</td>
+<td><code>"serial"</code></td>
+</tr>
+<tr class="even">
 <td><code>flow_metadata</code></td>
 <td>Metadata stored in the flow config (not passed to Inspect AI, see <a href="./advanced.html#flow_metadata-flow-only-metadata">flow_metadata</a>)</td>
 <td><code>None</code></td>

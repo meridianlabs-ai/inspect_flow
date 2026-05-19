@@ -111,6 +111,7 @@ When using `--venv`, Flow additionally creates an isolated virtual environment, 
 | `options` | Runtime options passed to `eval_set` (see [FlowOptions](./reference/inspect_flow.html.md#flowoptions) reference) | `None` |
 | `defaults` | Default values applied across tasks, models, solvers, and agents (see [Defaults](./defaults.html.md) and [FlowDefaults](./reference/inspect_flow.html.md#flowdefaults) reference) | `None` |
 | `store` | Flow Store configuration for indexing and reusing logs across runs. Accepts a path string, [FlowStoreConfig](./reference/inspect_flow.html.md#flowstoreconfig), or `None` to disable. `"auto"` uses the platform-specific [default location](./store.html.md#backend). See [Flow Store](./store.html.md) | `"auto"` |
+| `instantiate` | Controls parallelism of the task-instantiation phase (running task/model/scorer/solver factories before `eval_set` is called). `"serial"` (default) instantiates one task at a time. `"by_task"` instantiates distinct task names in parallel but serializes specs that share a name. `"parallel"` instantiates everything concurrently. Pass an [InstantiateConfig](./reference/inspect_flow.html.md#instantiateconfig) to also set `max_threads` (default `32`) | `"serial"` |
 | `flow_metadata` | Metadata stored in the flow config (not passed to Inspect AI, see [flow_metadata](./advanced.html.md#flow_metadata-flow-only-metadata)) | `None` |
 
 ## Tasks
