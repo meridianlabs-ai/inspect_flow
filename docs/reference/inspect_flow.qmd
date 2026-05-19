@@ -17,6 +17,7 @@ description: Core types, decorators, and matrix functions.
 ### FlowSpec
 ### FlowStoreConfig
 ### FlowTask
+### InstantiateConfig
 
 ## Type Aliases
 
@@ -24,6 +25,7 @@ description: Core types, decorators, and matrix functions.
 
 ## Decorators
 
+### after_instantiate
 ### after_load
 ### log_filter
 ### step
