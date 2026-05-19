@@ -56,7 +56,7 @@ def test_local_e2e() -> None:
     # Asserting the tag appears on every produced log proves the venv child
     # loaded the bridge file, re-registered the decorator, and ran the hook.
     assert isinstance(loaded_spec.internal, FlowInternal)
-    files = loaded_spec.internal.python_files
+    files = loaded_spec.internal.preload_files
     assert isinstance(files, list)
     assert any(f.endswith("local_eval_flow.py") for f in files)
 

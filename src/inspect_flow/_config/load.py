@@ -55,7 +55,7 @@ class ConfigOptions:
 class LoadState:
     files_to_specs: dict[str, FlowSpec | None] = field(factory=dict)
     after_flow_spec_loaded_funcs: list[Callable] = field(factory=list)
-    python_files: set[str] = field(factory=set)
+    preload_files: set[str] = field(factory=set)
 
 
 def int_load_spec(file: str, options: ConfigOptions) -> FlowSpec:
@@ -121,14 +121,14 @@ def expand_spec(
 
 
 def _attach_internal(spec: FlowSpec, state: LoadState) -> FlowSpec:
-    if not state.python_files:
+    if not state.preload_files:
         return spec
     base = spec.internal if isinstance(spec.internal, FlowInternal) else FlowInternal()
     return spec.model_copy(
         update={
             "internal": base.model_copy(
                 update={
-                    "python_files": sorted(state.python_files),
+                    "preload_files": sorted(state.preload_files),
                 }
             )
         }
@@ -282,7 +282,7 @@ def _load_spec_from_file(
                     hasattr(v, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR)
                     for v in globals.values()
                 ):
-                    state.python_files.add(config_file)
+                    state.preload_files.add(config_file)
             else:
                 if config_path.suffix in [".yaml", ".yml"]:
                     data = yaml.safe_load(f)

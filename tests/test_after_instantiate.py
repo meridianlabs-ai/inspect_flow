@@ -87,10 +87,10 @@ def test_multiple_hooks_run_in_alphabetical_order() -> None:
     assert order == ["a", "b"]
 
 
-def test_loader_populates_python_files() -> None:
+def test_loader_populates_preload_files() -> None:
     spec = load_spec(str(Path(config_dir) / "after_instantiate_flow.py"))
     assert isinstance(spec.internal, FlowInternal)
-    files = spec.internal.python_files
+    files = spec.internal.preload_files
     assert isinstance(files, list)
     assert any(f.endswith("after_instantiate_flow.py") for f in files)
 
@@ -125,12 +125,12 @@ def test_bridge_loads_hook_file_into_registry() -> None:
     spec = FlowSpec(
         log_dir="example_logs",
         internal=FlowInternal(
-            python_files=[str(Path(config_dir) / "after_instantiate_flow.py")]
+            preload_files=[str(Path(config_dir) / "after_instantiate_flow.py")]
         ),
     )
-    from inspect_flow._runner.run import _load_internal_python_files
+    from inspect_flow._runner.run import _load_preload_files
 
-    _load_internal_python_files(spec)
+    _load_preload_files(spec)
     hooks = registered_after_instantiate_hooks()
     assert len(hooks) == 1
     assert hooks[0].__name__ == "reverse_tasks"

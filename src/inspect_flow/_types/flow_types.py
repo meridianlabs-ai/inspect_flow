@@ -770,15 +770,14 @@ class FlowInternal(FlowBase):
     not part of the user-facing spec.
     """
 
-    python_files: Sequence[str] | None | NotGiven = Field(
+    preload_files: Sequence[str] | None | NotGiven = Field(
         default=not_given,
         description=(
-            "Absolute paths to Python files that the runner should execute "
-            "for their side effects (e.g. registering decorators). Loaded "
-            "before task instantiation so registrations in these files are "
-            "visible in the runner's registry. Populated automatically by "
-            "the spec loader from any files that register `@after_instantiate` "
-            "(or similar runner-side decorators) at load time."
+            "Absolute paths to Python files the runner should execute for "
+            "their side effects (e.g. registering decorators) before task "
+            "instantiation. Populated automatically by the spec loader from "
+            "any files that register `@after_instantiate` (or similar "
+            "runner-side decorators) at load time."
         ),
     )
 

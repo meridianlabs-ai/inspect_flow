@@ -64,7 +64,7 @@ def run_eval_set(
     init_display_type(display_type)
     log_level = options.log_level or get_last_log_level()
 
-    _load_internal_python_files(resolved_spec)
+    _load_preload_files(resolved_spec)
     tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
     task_id_to_task = get_task_ids_to_tasks(tasks=tasks, spec=resolved_spec)
     store = store_factory(resolved_spec, base_dir=base_dir, create=True)
@@ -294,8 +294,8 @@ def _print_result(
                 )
 
 
-def _load_internal_python_files(spec: FlowSpec) -> None:
-    # Executes the Python files listed in spec.internal.python_files for
+def _load_preload_files(spec: FlowSpec) -> None:
+    # Executes the Python files listed in spec.internal.preload_files for
     # their side effects (e.g. registering @after_instantiate decorators).
     # Effectively a no-op inproc (the parent already loaded these); for venv
     # subprocesses, this is the bridge that carries side-effect registrations
@@ -303,7 +303,7 @@ def _load_internal_python_files(spec: FlowSpec) -> None:
     internal = spec.internal
     if not isinstance(internal, FlowInternal):
         return
-    files = internal.python_files
+    files = internal.preload_files
     if not files:
         return
     for file_path in files:
