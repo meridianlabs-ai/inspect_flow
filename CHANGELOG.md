@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.9.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.8.0...v0.9.0) (2026-05-19)
+
+
+### Features
+
+* add [@after](https://github.com/after)_instantiate hook ([#695](https://github.com/meridianlabs-ai/inspect_flow/issues/695)) ([69b4c40](https://github.com/meridianlabs-ai/inspect_flow/commit/69b4c407b057d9fab3fa707a2473cdfb9d391e7c))
+* add ability to reference python constants in _flow.py form the CLI ([#674](https://github.com/meridianlabs-ai/inspect_flow/issues/674)) ([cff24a3](https://github.com/meridianlabs-ai/inspect_flow/commit/cff24a301d5d4264bd41b70518b1bb4cf02c96bd))
+* allow user to pin inspect-ai version via dependencies ([#694](https://github.com/meridianlabs-ai/inspect_flow/issues/694)) ([9a55f74](https://github.com/meridianlabs-ai/inspect_flow/commit/9a55f746509de5f00980ad2684a8c4078cc40bc0))
+* flow step scan command ([#680](https://github.com/meridianlabs-ai/inspect_flow/issues/680)) ([941f16e](https://github.com/meridianlabs-ai/inspect_flow/commit/941f16e15a3d0f398a39f8b0661bee39c376e49d))
+* parallel task instantiation ([#691](https://github.com/meridianlabs-ai/inspect_flow/issues/691)) ([71f0e51](https://github.com/meridianlabs-ai/inspect_flow/commit/71f0e514a57093431be8f7d15557ae1589adba37))
+
+
+### Bug Fixes
+
+* `flow store list --display plain` outputs only log paths ([#685](https://github.com/meridianlabs-ai/inspect_flow/issues/685)) ([17d54df](https://github.com/meridianlabs-ai/inspect_flow/commit/17d54dfa5c507851e753e9278216437866e29d92))
+* scout.yaml writes paths in a single consistent form ([#686](https://github.com/meridianlabs-ai/inspect_flow/issues/686)) ([#690](https://github.com/meridianlabs-ai/inspect_flow/issues/690)) ([9064884](https://github.com/meridianlabs-ai/inspect_flow/commit/9064884f1c7df888afbf6b0cd704ffa1323d4852))
+* switch default display to full and add flow output as a tab ([#681](https://github.com/meridianlabs-ai/inspect_flow/issues/681)) ([282b448](https://github.com/meridianlabs-ai/inspect_flow/commit/282b448910f55f0fb6c3a8a4d7df5a5d37711c24))
+* workaround missing pyarrow kernel (and upgrade) ([#696](https://github.com/meridianlabs-ai/inspect_flow/issues/696)) ([799c94e](https://github.com/meridianlabs-ai/inspect_flow/commit/799c94e634789f49245bf0190824b6800903a7f5))
+
+
+### Documentation
+
+* document @CONST CLI feature ([#679](https://github.com/meridianlabs-ai/inspect_flow/issues/679)) ([2ee155a](https://github.com/meridianlabs-ai/inspect_flow/commit/2ee155a293a64672f2211b9715c02c190b69df14))
+* document flow step scan command ([#693](https://github.com/meridianlabs-ai/inspect_flow/issues/693)) ([752f9a2](https://github.com/meridianlabs-ai/inspect_flow/commit/752f9a27797756461e54cc569fdc0067106882ea))
+
 ## [0.8.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.7.0...v0.8.0) (2026-04-17)
 
 
