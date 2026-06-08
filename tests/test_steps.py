@@ -18,7 +18,7 @@ from inspect_flow._steps.run import run_step
 from inspect_flow._steps.step import StepResult, step
 from inspect_flow._steps.tag import metadata, tag
 from inspect_flow._store.deltalake import DeltaLakeStore
-from inspect_flow._store.store import store_factory
+from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._util.error import NoLogsError
 from rich.console import Console
 
@@ -723,6 +723,68 @@ def test_copy_with_store_path_writes_new_logs(tmp_path: Path) -> None:
     assert any("dest" in log for log in store_logs), (
         f"Expected new log in store, got: {store_logs}"
     )
+
+
+def test_copy_and_change_task_args_adds_new_store_identifier(tmp_path: Path) -> None:
+    """Reference: copy a log and change its args so it becomes a *distinct* task
+    in the store.
+
+    The store keys logs by `task_identifier`, which hashes `task_args_passed`
+    (not `task_args`). A step that copies a log and updates *both* arg dicts
+    therefore produces a new file under a new identifier, leaving the original
+    entry intact — so the store holds two entries with different identifiers.
+    """
+    from inspect_flow._store.deltalake import LOGS, _task_id_col
+
+    log_path = _make_log(tmp_path / "src")
+    store_dir = str(tmp_path / "store")
+    store = DeltaLakeStore(store_path=store_dir, create=True)
+    store.import_log_path(log_path)
+
+    dest = str(tmp_path / "dest")
+
+    @step
+    def copy_and_align_task_args(
+        logs: list[EvalLog],
+        *,
+        dest: str,
+        args: dict[str, object],
+        store: FlowStore | str | None = None,  # noqa: ARG001 handled by @step wrapper
+    ) -> list[EvalLog]:
+        copied = copy(logs, dest=dest)
+        modified_logs = []
+        for log in copied:
+            new_eval = log.eval.model_copy(
+                update={
+                    "task_args": {**log.eval.task_args, **args},
+                    "task_args_passed": {**log.eval.task_args_passed, **args},
+                }
+            )
+            modified_logs.append(log.model_copy(update={"eval": new_eval}))
+        return modified_logs
+
+    copy_and_align_task_args(
+        [log_path], dest=dest, args={"temperature": 0.5}, store=store
+    )
+
+    store = DeltaLakeStore(store_path=store_dir)
+    table = (
+        store._open_table(LOGS)
+        .to_pyarrow_dataset()
+        .to_table(columns=[_task_id_col(), "log_path"])
+    )
+    by_path = dict(
+        zip(
+            table["log_path"].to_pylist(),
+            table[_task_id_col()].to_pylist(),
+            strict=True,
+        )
+    )
+
+    src_id = next(tid for p, tid in by_path.items() if "src" in p)
+    dest_id = next(tid for p, tid in by_path.items() if "dest" in p)
+    assert len(by_path) == 2
+    assert src_id != dest_id
 
 
 def test_nested_tag_with_same_path_preserves_both_tags(tmp_path: Path) -> None:
