@@ -26,6 +26,7 @@ from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
+    CheckpointConfig,
     DisplayType,
     EarlyStopping,
     SandboxEnvironmentType,
@@ -513,6 +514,16 @@ class FlowOptions(FlowBase):
     sandbox_cleanup: bool | None | NotGiven = Field(
         default=not_given,
         description="Cleanup sandbox environments after task completes (defaults to `True`).",
+    )
+
+    checkpoint: SkipValidation[CheckpointConfig] | bool | None | NotGiven = Field(
+        default=not_given,
+        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level `checkpoint` when set.",
+    )
+
+    acp_server: bool | int | str | None | NotGiven = Field(
+        default=not_given,
+        description="Override the original eval's ACP server transport on retry. `True` enables a default AF_UNIX socket; an integer binds a TCP loopback port; a string is taken as a custom UNIX socket path; `None` (default) replays whatever transport (or no transport) was persisted in the original log's `EvalConfig.acp_server`.",
     )
 
     ctl_server: bool | str | None | NotGiven = Field(
