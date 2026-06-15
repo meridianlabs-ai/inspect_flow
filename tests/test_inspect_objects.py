@@ -197,6 +197,7 @@ def test_inspect_object_options_passed(mock_eval_set: MagicMock) -> None:
             score_display=False,
             score_on_error=True,
             max_dataset_memory=128,
+            ctl_server="keep-alive",
         ),
     )
     with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
@@ -208,6 +209,7 @@ def test_inspect_object_options_passed(mock_eval_set: MagicMock) -> None:
     assert kwargs["score_display"] is False
     assert kwargs["score_on_error"] is True
     assert kwargs["max_dataset_memory"] == 128
+    assert kwargs["ctl_server"] == "keep-alive"
 
 
 def test_inspect_object_matrix(mock_eval_set: MagicMock) -> None:

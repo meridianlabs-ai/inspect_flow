@@ -139,6 +139,7 @@ def run_eval_set(
             # task_args= FlowTask
             sandbox=default_none(options.sandbox),
             sandbox_cleanup=default_none(options.sandbox_cleanup),
+            ctl_server=default_none(options.ctl_server),
             # solver= FlowTask
             tags=sequence_to_list(default_none(options.tags)),
             metadata=default_none(options.metadata),
