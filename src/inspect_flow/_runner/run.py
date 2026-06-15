@@ -139,13 +139,18 @@ def run_eval_set(
             # task_args= FlowTask
             sandbox=default_none(options.sandbox),
             sandbox_cleanup=default_none(options.sandbox_cleanup),
+            checkpoint=default_none(options.checkpoint),
+            acp_server=default_none(options.acp_server),
+            ctl_server=default_none(options.ctl_server),
             # solver= FlowTask
             tags=sequence_to_list(default_none(options.tags)),
             metadata=default_none(options.metadata),
             trace=default_none(options.trace),
             display=default_none(display_type),
             approval=default_none(options.approval),
+            notification=default_none(options.notification),
             score=default(options.score, True),
+            score_display=default_none(options.score_display),
             log_level=default_none(log_level),
             log_level_transcript=default_none(options.log_level_transcript),
             log_format=default_none(options.log_format),
@@ -156,6 +161,7 @@ def run_eval_set(
             fail_on_error=default_none(options.fail_on_error),
             continue_on_fail=default_none(options.continue_on_fail),
             retry_on_error=default(options.retry_on_error, 3),
+            score_on_error=default_none(options.score_on_error),
             debug_errors=default_none(options.debug_errors),
             # message_limit= FlowTask
             # token_limit= FlowTask
@@ -164,6 +170,7 @@ def run_eval_set(
             # cost_limit= FlowTask
             model_cost_config=default_none(options.model_cost_config),
             max_samples=default_none(options.max_samples),
+            max_dataset_memory=default_none(options.max_dataset_memory),
             max_tasks=default(options.max_tasks, 10),
             max_subprocesses=default_none(options.max_subprocesses),
             max_sandboxes=default_none(options.max_sandboxes),

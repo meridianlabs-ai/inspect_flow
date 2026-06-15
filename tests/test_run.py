@@ -1096,6 +1096,13 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             log_dir_allow_dirty=True,
             eval_set_id="test_eval_set_001",
             embed_viewer=True,
+            notification=True,
+            score_display=False,
+            score_on_error=True,
+            max_dataset_memory=128,
+            checkpoint=True,
+            acp_server=8080,
+            ctl_server="keep-alive",
         ),
         tasks=[
             task_file + "@noop",
@@ -1145,6 +1152,13 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["log_dir_allow_dirty"] == spec.options.log_dir_allow_dirty
     assert call_args.kwargs["eval_set_id"] == spec.options.eval_set_id
     assert call_args.kwargs["embed_viewer"] == spec.options.embed_viewer
+    assert call_args.kwargs["notification"] == spec.options.notification
+    assert call_args.kwargs["score_display"] == spec.options.score_display
+    assert call_args.kwargs["score_on_error"] == spec.options.score_on_error
+    assert call_args.kwargs["max_dataset_memory"] == spec.options.max_dataset_memory
+    assert call_args.kwargs["checkpoint"] == spec.options.checkpoint
+    assert call_args.kwargs["acp_server"] == spec.options.acp_server
+    assert call_args.kwargs["ctl_server"] == spec.options.ctl_server
 
 
 @pytest.mark.asyncio

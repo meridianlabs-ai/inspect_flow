@@ -26,6 +26,7 @@ from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
+    CheckpointConfig,
     DisplayType,
     EarlyStopping,
     SandboxEnvironmentType,
@@ -515,6 +516,21 @@ class FlowOptions(FlowBase):
         description="Cleanup sandbox environments after task completes (defaults to `True`).",
     )
 
+    checkpoint: SkipValidation[CheckpointConfig] | bool | None | NotGiven = Field(
+        default=not_given,
+        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level `checkpoint` when set.",
+    )
+
+    acp_server: bool | int | str | None | NotGiven = Field(
+        default=not_given,
+        description="Override the original eval's ACP server transport on retry. `True` enables a default AF_UNIX socket; an integer binds a TCP loopback port; a string is taken as a custom UNIX socket path; `None` (default) replays whatever transport (or no transport) was persisted in the original log's `EvalConfig.acp_server`.",
+    )
+
+    ctl_server: bool | str | None | NotGiven = Field(
+        default=not_given,
+        description='Control-channel server for this eval-set process. `True` or `None` (default) binds the default AF_UNIX socket; `False` disables the control endpoint; `"keep-alive"` additionally keeps the process running after the eval-set finishes so external clients (the `inspect ctl` CLI, scripted agents, TUIs) can still query state and read results — exit via `inspect ctl release` (or `POST /release`). Requires `retry_immediate=True` (the default) for the `"keep-alive"` value.',
+    )
+
     tags: Sequence[str] | None | NotGiven = Field(
         default=not_given, description="Tags to associate with this evaluation run."
     )
@@ -539,6 +555,16 @@ class FlowOptions(FlowBase):
 
     score: bool | None | NotGiven = Field(
         default=not_given, description="Score output (defaults to `True`)."
+    )
+
+    score_display: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Show scoring metrics in realtime (defaults to `True`).",
+    )
+
+    notification: bool | str | None | NotGiven = Field(
+        default=not_given,
+        description="Enable out-of-band notifications when a human-in-the-loop interaction (`ask_user`, human approval) is posted. Pass `True` to send via the URL(s) in the `INSPECT_EVAL_NOTIFICATION` environment variable (single URL, comma-separated list, or path to an Apprise config file). Alternatively pass a path to an Apprise YAML/text config file. URLs are not accepted directly so secrets never end up in source code, shell history, process listings, or eval logs. Requires the `apprise` package.",
     )
 
     log_level: str | None | NotGiven = Field(
@@ -581,6 +607,11 @@ class FlowOptions(FlowBase):
         description="Number of times to retry samples if they encounter errors (defaults to 3).",
     )
 
+    score_on_error: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Score samples that error rather than failing the eval mid-run. Errors still count toward the `fail_on_error` threshold for marking the eval log as 'error'. Only takes effect after retries (if any) are exhausted.",
+    )
+
     debug_errors: bool | None | NotGiven = Field(
         default=not_given,
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).",
@@ -594,6 +625,11 @@ class FlowOptions(FlowBase):
     max_samples: int | None | NotGiven = Field(
         default=not_given,
         description="Maximum number of samples to run in parallel (default is `max_connections`).",
+    )
+
+    max_dataset_memory: int | None | NotGiven = Field(
+        default=not_given,
+        description="Maximum MB of dataset sample data to hold in memory per task. When exceeded, samples are paged to a temporary file on disk (defaults to `None`, which keeps all samples in memory).",
     )
 
     max_tasks: int | None | NotGiven = Field(
