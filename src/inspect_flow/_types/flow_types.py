@@ -541,6 +541,16 @@ class FlowOptions(FlowBase):
         default=not_given, description="Score output (defaults to `True`)."
     )
 
+    score_display: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Show scoring metrics in realtime (defaults to `True`).",
+    )
+
+    notification: bool | str | None | NotGiven = Field(
+        default=not_given,
+        description="Enable out-of-band notifications when a human-in-the-loop interaction (`ask_user`, human approval) is posted. Pass `True` to send via the URL(s) in the `INSPECT_EVAL_NOTIFICATION` environment variable (single URL, comma-separated list, or path to an Apprise config file). Alternatively pass a path to an Apprise YAML/text config file. URLs are not accepted directly so secrets never end up in source code, shell history, process listings, or eval logs. Requires the `apprise` package.",
+    )
+
     log_level: str | None | NotGiven = Field(
         default=not_given,
         description='Level for logging to the console: `"debug"`, `"http"`, `"sandbox"`, `"info"`, `"warning"`, `"error"`, `"critical"`, or `"notset"` (defaults to `"warning"`).',
@@ -581,6 +591,11 @@ class FlowOptions(FlowBase):
         description="Number of times to retry samples if they encounter errors (defaults to 3).",
     )
 
+    score_on_error: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Score samples that error rather than failing the eval mid-run. Errors still count toward the `fail_on_error` threshold for marking the eval log as 'error'. Only takes effect after retries (if any) are exhausted.",
+    )
+
     debug_errors: bool | None | NotGiven = Field(
         default=not_given,
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).",
@@ -594,6 +609,11 @@ class FlowOptions(FlowBase):
     max_samples: int | None | NotGiven = Field(
         default=not_given,
         description="Maximum number of samples to run in parallel (default is `max_connections`).",
+    )
+
+    max_dataset_memory: int | None | NotGiven = Field(
+        default=not_given,
+        description="Maximum MB of dataset sample data to hold in memory per task. When exceeded, samples are paged to a temporary file on disk (defaults to `None`, which keeps all samples in memory).",
     )
 
     max_tasks: int | None | NotGiven = Field(
