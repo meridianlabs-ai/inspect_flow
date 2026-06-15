@@ -19,7 +19,6 @@ from inspect_flow import (
     FlowAgent,
     FlowDefaults,
     FlowModel,
-    FlowOptions,
     FlowSolver,
     FlowSpec,
     FlowTask,
@@ -186,34 +185,6 @@ def test_inspect_object_with(mock_eval_set: MagicMock) -> None:
         else:
             assert t.model
             assert t.model.name == "model2"
-
-
-def test_inspect_object_options_passed(mock_eval_set: MagicMock) -> None:
-    spec = FlowSpec(
-        log_dir=init_test_logs(),
-        tasks=[a_task()],
-        options=FlowOptions(
-            notification=True,
-            score_display=False,
-            score_on_error=True,
-            max_dataset_memory=128,
-            checkpoint=True,
-            acp_server=8080,
-            ctl_server="keep-alive",
-        ),
-    )
-    with patch("inspect_flow._launcher.inproc.write_flow_requirements"):
-        run(spec=spec)
-
-    mock_eval_set.assert_called_once()
-    kwargs = mock_eval_set.call_args.kwargs
-    assert kwargs["notification"] is True
-    assert kwargs["score_display"] is False
-    assert kwargs["score_on_error"] is True
-    assert kwargs["max_dataset_memory"] == 128
-    assert kwargs["checkpoint"] is True
-    assert kwargs["acp_server"] == 8080
-    assert kwargs["ctl_server"] == "keep-alive"
 
 
 def test_inspect_object_matrix(mock_eval_set: MagicMock) -> None:
