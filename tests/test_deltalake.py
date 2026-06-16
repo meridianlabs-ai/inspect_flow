@@ -73,7 +73,7 @@ def test_missing_task_identifier(tmp_path: Path) -> None:
 
     record = LogRecord(
         log_path=to_uri(log1_path),
-        task_identifier_1="invalid",
+        task_identifier="invalid",
     )
     dict = record.to_dict()
     dict.pop(_task_id_col())  # don't set the task_identifier

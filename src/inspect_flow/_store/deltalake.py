@@ -1,6 +1,6 @@
 import json
 import os
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from logging import getLogger
@@ -42,13 +42,6 @@ from inspect_flow._util.util import now
 logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
 
 
-def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
-    """Create a dataclass field with PyArrow type metadata."""
-    metadata = kwargs.pop("metadata", {})
-    metadata["pa_type"] = pa_type
-    return field(metadata=metadata, **kwargs)
-
-
 def to_uri(path_or_uri: str) -> str:
     """Convert a file path to a URI. Already-URI inputs are returned as-is."""
     parsed = urlparse(path_or_uri)
@@ -59,6 +52,10 @@ def to_uri(path_or_uri: str) -> str:
 
 def _task_id_col() -> str:
     return f"task_identifier_{TASK_IDENTIFIER_VERSION}"
+
+
+def _task_id_cols() -> list[str]:
+    return [f"task_identifier_{v}" for v in range(1, TASK_IDENTIFIER_VERSION + 1)]
 
 
 def _escape_sql_string(s: str) -> str:
@@ -91,20 +88,26 @@ LOGS = "_table_logs"
 
 @dataclass
 class LogRecord:
-    log_path: str = pa_field(pa.string())
-    task_identifier_1: str = pa_field(pa.string())
-    ts: datetime = pa_field(pa.timestamp("ms"), default=None)
+    log_path: str
+    task_identifier: str
+    ts: datetime | None = None
 
     def __post_init__(self) -> None:
         if self.ts is None:
             self.ts = now()
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        row: dict[str, Any] = {"log_path": self.log_path, "ts": self.ts}
+        for col in _task_id_cols():
+            row[col] = self.task_identifier if col == _task_id_col() else None
+        return row
 
     @classmethod
     def to_schema(cls) -> pa.Schema:
-        return pa.schema([(f.name, f.metadata["pa_type"]) for f in fields(cls)])
+        cols: list[tuple[str, pa.DataType]] = [("log_path", pa.string())]
+        cols += [(col, pa.string()) for col in _task_id_cols()]
+        cols.append(("ts", pa.timestamp("ms")))
+        return pa.schema(cols)
 
 
 TABLES: list[TableDef] = [
@@ -448,7 +451,7 @@ class DeltaLakeStore(FlowStoreInternal):
             [
                 LogRecord(
                     log_path=e.log_path,
-                    task_identifier_1=e.task_identifier,
+                    task_identifier=e.task_identifier,
                 ).to_dict()
                 for e in new_entries
             ],
@@ -579,7 +582,7 @@ class DeltaLakeStore(FlowStoreInternal):
         update_table = pa.Table.from_pydict(
             {
                 "log_path": [log_path for log_path, _ in logs_to_update],
-                "task_identifier_1": [task_id for _, task_id in logs_to_update],
+                _task_id_col(): [task_id for _, task_id in logs_to_update],
             }
         )
 
