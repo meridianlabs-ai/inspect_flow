@@ -39,6 +39,7 @@ jobs:
                   def convert(text):
                       out = []
                       for line in text.split("\n"):
+                          line = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                           line = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"<\2|\1>", line)
                           heading = re.match(r"^#{1,6}\s+(.*)$", line)
                           if heading:
@@ -46,11 +47,16 @@ jobs:
                           else:
                               line = re.sub(r"^(\s*)[*-]\s+", r"\1• ", line)
                           out.append(line)
-                      return "\n".join(out)
+                      return out
 
-                  text = convert(os.environ["RELEASE_BODY"])
-                  if len(text) > 2900:
-                      text = text[:2900].rstrip() + "\n… _(truncated — see full release below)_"
+                  kept, total = [], 0
+                  for line in convert(os.environ["RELEASE_BODY"]):
+                      if total + len(line) + 1 > 2900:
+                          kept.append("… _(truncated — see full release below)_")
+                          break
+                      kept.append(line)
+                      total += len(line) + 1
+                  text = "\n".join(kept)
 
                   delim = f"SLACK_EOF_{secrets.token_hex(16)}"
                   with open(os.environ["GITHUB_OUTPUT"], "a") as f:
