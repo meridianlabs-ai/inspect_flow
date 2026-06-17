@@ -57,11 +57,13 @@ FlowSpec(
 )
 ```
 
-To run the evaluations, run the following command in your shell. This will create a virtual environment for this spec run and install the dependencies. Note that task and model dependencies (like the `inspect-evals` and `openai` Python packages) are inferred and installed automatically.
+To run the evaluations, run the following command in your shell:
 
 ```bash
 flow run config.py
 ```
+
+By default, Flow runs in-process using your current Python environment, so the task and model dependencies (like the `inspect-evals` and `openai` Python packages) need to be installed in it. To run in an isolated, reproducible virtual environment instead—where those dependencies are inferred and installed automatically—use the `--venv` flag (or set `execution_type="venv"`). See [Execution modes](https://meridianlabs-ai.github.io/inspect_flow/advanced.html) for details.
 
 This will run both tasks and display progress in your terminal.
 
