@@ -13,6 +13,8 @@ jobs:
         outputs:
             release_created: ${{ steps.release.outputs.release_created }}
             tag_name: ${{ steps.release.outputs.tag_name }}
+            html_url: ${{ steps.release.outputs.html_url }}
+            body: ${{ steps.release.outputs.body }}
         steps:
             - uses: googleapis/release-please-action@v4
               id: release
@@ -20,6 +22,56 @@ jobs:
                   token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
                   release-type: python
                   config-file: .release-please-config.json
+
+    notify-slack:
+        needs: release-please
+        if: ${{ needs.release-please.outputs.release_created }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Convert release notes to Slack mrkdwn
+              id: transform
+              env:
+                  RELEASE_BODY: ${{ needs.release-please.outputs.body }}
+              run: |
+                  python3 <<'PY'
+                  import os, re
+
+                  def convert(text):
+                      out = []
+                      for line in text.split("\n"):
+                          line = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"<\2|\1>", line)
+                          heading = re.match(r"^#{1,6}\s+(.*)$", line)
+                          if heading:
+                              line = f"*{heading.group(1)}*"
+                          else:
+                              line = re.sub(r"^(\s*)[*-]\s+", r"\1• ", line)
+                          out.append(line)
+                      return "\n".join(out)
+
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                      f.write("text<<SLACK_EOF\n")
+                      f.write(convert(os.environ["RELEASE_BODY"]))
+                      f.write("\nSLACK_EOF\n")
+                  PY
+
+            - uses: slackapi/slack-github-action@v2
+              with:
+                  webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  webhook-type: incoming-webhook
+                  payload: |
+                      blocks:
+                        - type: header
+                          text:
+                            type: plain_text
+                            text: ":rocket: inspect-flow ${{ needs.release-please.outputs.tag_name }} released"
+                        - type: section
+                          text:
+                            type: mrkdwn
+                            text: ${{ toJSON(steps.transform.outputs.text) }}
+                        - type: section
+                          text:
+                            type: mrkdwn
+                            text: "<${{ needs.release-please.outputs.html_url }}|View the full release>"
 
     publish:
         needs: release-please
