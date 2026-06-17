@@ -55,7 +55,12 @@ See [src/inspect_flow/README.md](src/inspect_flow/README.md) for detailed module
 - **Error Handling**: Use appropriate exception types; include context in error messages. Avoid try/except blocks unless absolutely necessary—if you add one, include a test that exercises that code path.
 - **Testing**: Write tests with pytest. Prefer integration tests that exercise real behavior through public entry points (CLI commands, public API) over unit tests that mock internal details. Only mock at system boundaries (external APIs, file system, network). Avoid mocking internal classes or methods—this couples tests to implementation and makes refactoring harder. Test what the code *does* (observable output, side effects), not *how* it does it. Tests should rarely need to change when internal code is refactored. Use existing fixtures (e.g. `recording_console`) instead of ad-hoc mocking.
 - **Bug Fixes**: Include a test that reproduces the bug before fixing it
-- **Pull Requests**: Keep PRs small and focused. Include a description of changes and rationale. Use conventional commit messages ("fix:" and "feat:").
+- **Pull Requests**: Keep PRs small and focused. Include a description of changes and rationale. Use conventional commit messages for PR titles. Release notes are generated from `feat:` and `fix:` titles, so choose the prefix accordingly:
+  - `feat:` — only for significant user-facing features.
+  - `fix:` — only for product bug fixes that affect users.
+  - `build:` — build system, dependencies, and packaging changes.
+  - `test:` — test additions, fixes, and CI test infrastructure.
+  - Use other conventional types (`docs:`, `refactor:`, `chore:`, `ci:`) as appropriate. Anything that is not a user-facing feature or product bug fix should avoid `feat:`/`fix:` so it is excluded from release notes.
 
 Respect existing code patterns when modifying files. Run linting before committing changes.
 
