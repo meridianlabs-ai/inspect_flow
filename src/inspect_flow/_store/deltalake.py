@@ -10,8 +10,9 @@ from urllib.parse import urlparse
 
 import pyarrow as pa
 import pyarrow.compute as pc
-from deltalake import DeltaTable, write_deltalake
+from deltalake import DeltaTable, Field, write_deltalake
 from deltalake.exceptions import TableNotFoundError
+from deltalake.schema import PrimitiveType
 from inspect_ai._eval.evalset import (
     TASK_IDENTIFIER_VERSION,
     list_all_eval_logs,
@@ -54,10 +55,6 @@ def _task_id_col() -> str:
     return f"task_identifier_{TASK_IDENTIFIER_VERSION}"
 
 
-def _task_id_cols() -> list[str]:
-    return [f"task_identifier_{v}" for v in range(1, TASK_IDENTIFIER_VERSION + 1)]
-
-
 def _escape_sql_string(s: str) -> str:
     return s.replace("'", "''")
 
@@ -97,17 +94,21 @@ class LogRecord:
             self.ts = now()
 
     def to_dict(self) -> dict[str, Any]:
-        row: dict[str, Any] = {"log_path": self.log_path, "ts": self.ts}
-        for col in _task_id_cols():
-            row[col] = self.task_identifier if col == _task_id_col() else None
-        return row
+        return {
+            "log_path": self.log_path,
+            _task_id_col(): self.task_identifier,
+            "ts": self.ts,
+        }
 
     @classmethod
     def to_schema(cls) -> pa.Schema:
-        cols: list[tuple[str, pa.DataType]] = [("log_path", pa.string())]
-        cols += [(col, pa.string()) for col in _task_id_cols()]
-        cols.append(("ts", pa.timestamp("ms")))
-        return pa.schema(cols)
+        return pa.schema(
+            [
+                ("log_path", pa.string()),
+                (_task_id_col(), pa.string()),
+                ("ts", pa.timestamp("ms")),
+            ]
+        )
 
 
 TABLES: list[TableDef] = [
@@ -462,6 +463,7 @@ class DeltaLakeStore(FlowStoreInternal):
             self._table_path(LOGS),
             new_data,
             mode="append",
+            schema_mode="merge",
             storage_options=self._storage_options,
         )
         return len(new_entries)
@@ -537,9 +539,17 @@ class DeltaLakeStore(FlowStoreInternal):
             result[task_id].add(log_path)
         return result
 
+    def _ensure_task_id_col(self) -> DeltaTable:
+        """Add the current task identifier column to a store written by older code."""
+        dt = self._open_table(LOGS)
+        if _task_id_col() not in [f.name for f in dt.schema().fields]:
+            dt.alter.add_columns(Field(_task_id_col(), PrimitiveType("string")))
+            dt = self._open_table(LOGS)
+        return dt
+
     def _set_task_identifiers(self) -> None:
         """Find logs with missing task_identifier and compute it from the log header."""
-        dt = self._open_table(LOGS)
+        dt = self._ensure_task_id_col()
         table = dt.to_pyarrow_table()
 
         # Find entries with empty or null task_identifier

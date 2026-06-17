@@ -96,6 +96,65 @@ def test_missing_task_identifier(tmp_path: Path) -> None:
     assert logs[entry.task_identifier].log_file == log1_path
 
 
+def test_task_identifier_version_bump(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A store created at one task-identifier version is migrated on access by newer code."""
+    store_path = str(tmp_path)
+
+    # Create the store and import logs while at version 1.
+    store = DeltaLakeStore(store_path=store_path, create=True)
+    store.import_log_path(dir1base, recursive=True)
+
+    entry = _file_to_log_entry(log1_path)
+
+    dt = store._open_table(LOGS)
+    v1_table = dt.to_pyarrow_table()
+    assert "task_identifier_1" in v1_table.column_names
+    assert "task_identifier_2" not in v1_table.column_names
+    v1_ids = {
+        log: tid
+        for log, tid in zip(
+            v1_table["log_path"].to_pylist(),
+            v1_table["task_identifier_1"].to_pylist(),
+            strict=True,
+        )
+    }
+    assert v1_ids[log1_path] == entry.task_identifier
+
+    # Bump the task identifier version: newer code reads/writes task_identifier_2.
+    monkeypatch.setattr("inspect_flow._store.deltalake.TASK_IDENTIFIER_VERSION", 2)
+    assert _task_id_col() == "task_identifier_2"
+
+    # Reading triggers on-demand migration: the new column is added and backfilled.
+    store = DeltaLakeStore(store_path=store_path)
+    logs = store.search_for_logs({entry.task_identifier})
+    assert logs[entry.task_identifier].log_file == log1_path
+
+    migrated = store._open_table(LOGS).to_pyarrow_table()
+    assert "task_identifier_2" in migrated.column_names
+    migrated_ids = {
+        log: (tid1, tid2)
+        for log, tid1, tid2 in zip(
+            migrated["log_path"].to_pylist(),
+            migrated["task_identifier_1"].to_pylist(),
+            migrated["task_identifier_2"].to_pylist(),
+            strict=True,
+        )
+    }
+    # The old column is preserved and the new column is backfilled.
+    assert migrated_ids[log1_path][0] == entry.task_identifier
+    assert migrated_ids[log1_path][1] == entry.task_identifier
+
+    # Appending new logs under the bumped version works against the legacy table.
+    store.import_log_path(dir2base, recursive=True)
+    log2_name = "2026-01-09T18-27-59+00-00_mmlu-0-shot_AaMwC64MK8EccYgfhUqy3n.eval"
+    log2_path = dir2 + "/" + log2_name
+    entry2 = _file_to_log_entry(log2_path)
+    logs2 = store.search_for_logs({entry2.task_identifier})
+    assert logs2[entry2.task_identifier].log_file == log2_path
+
+
 class TestCheckTableDescription:
     """Tests for _check_table_description version validation."""
 
