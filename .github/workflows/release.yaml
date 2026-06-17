@@ -34,7 +34,7 @@ jobs:
                   RELEASE_BODY: ${{ needs.release-please.outputs.body }}
               run: |
                   python3 <<'PY'
-                  import os, re
+                  import os, re, secrets
 
                   def convert(text):
                       out = []
@@ -48,10 +48,15 @@ jobs:
                           out.append(line)
                       return "\n".join(out)
 
+                  text = convert(os.environ["RELEASE_BODY"])
+                  if len(text) > 2900:
+                      text = text[:2900].rstrip() + "\n… _(truncated — see full release below)_"
+
+                  delim = f"SLACK_EOF_{secrets.token_hex(16)}"
                   with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                      f.write("text<<SLACK_EOF\n")
-                      f.write(convert(os.environ["RELEASE_BODY"]))
-                      f.write("\nSLACK_EOF\n")
+                      f.write(f"text<<{delim}\n")
+                      f.write(text)
+                      f.write(f"\n{delim}\n")
                   PY
 
             - uses: slackapi/slack-github-action@v2
