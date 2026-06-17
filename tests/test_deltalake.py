@@ -102,29 +102,38 @@ def test_task_identifier_version_bump(
     """A store created at one task-identifier version is migrated on access by newer code."""
     store_path = str(tmp_path)
 
-    # Create the store and import logs while at version 1.
+    def set_version(version: int) -> str:
+        monkeypatch.setattr(
+            "inspect_flow._store.deltalake.TASK_IDENTIFIER_VERSION", version
+        )
+        col = f"task_identifier_{version}"
+        assert _task_id_col() == col
+        return col
+
+    # Create the store and import logs at an older task-identifier version. Pin the
+    # version explicitly so the test does not depend on inspect-ai's current value.
+    old_col = set_version(1)
     store = DeltaLakeStore(store_path=store_path, create=True)
     store.import_log_path(dir1base, recursive=True)
 
     entry = _file_to_log_entry(log1_path)
 
     dt = store._open_table(LOGS)
-    v1_table = dt.to_pyarrow_table()
-    assert "task_identifier_1" in v1_table.column_names
-    assert "task_identifier_2" not in v1_table.column_names
-    v1_ids = {
+    old_table = dt.to_pyarrow_table()
+    assert old_col in old_table.column_names
+    assert "task_identifier_2" not in old_table.column_names
+    old_ids = {
         log: tid
         for log, tid in zip(
-            v1_table["log_path"].to_pylist(),
-            v1_table["task_identifier_1"].to_pylist(),
+            old_table["log_path"].to_pylist(),
+            old_table[old_col].to_pylist(),
             strict=True,
         )
     }
-    assert v1_ids[log1_path] == entry.task_identifier
+    assert old_ids[log1_path] == entry.task_identifier
 
-    # Bump the task identifier version: newer code reads/writes task_identifier_2.
-    monkeypatch.setattr("inspect_flow._store.deltalake.TASK_IDENTIFIER_VERSION", 2)
-    assert _task_id_col() == "task_identifier_2"
+    # Bump the task identifier version: newer code reads/writes the new column.
+    new_col = set_version(2)
 
     # Reading triggers on-demand migration: the new column is added and backfilled.
     store = DeltaLakeStore(store_path=store_path)
@@ -132,13 +141,13 @@ def test_task_identifier_version_bump(
     assert logs[entry.task_identifier].log_file == log1_path
 
     migrated = store._open_table(LOGS).to_pyarrow_table()
-    assert "task_identifier_2" in migrated.column_names
+    assert new_col in migrated.column_names
     migrated_ids = {
-        log: (tid1, tid2)
-        for log, tid1, tid2 in zip(
+        log: (tid_old, tid_new)
+        for log, tid_old, tid_new in zip(
             migrated["log_path"].to_pylist(),
-            migrated["task_identifier_1"].to_pylist(),
-            migrated["task_identifier_2"].to_pylist(),
+            migrated[old_col].to_pylist(),
+            migrated[new_col].to_pylist(),
             strict=True,
         )
     }
