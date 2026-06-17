@@ -1,6 +1,6 @@
 import json
 import os
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from logging import getLogger
@@ -10,8 +10,9 @@ from urllib.parse import urlparse
 
 import pyarrow as pa
 import pyarrow.compute as pc
-from deltalake import DeltaTable, write_deltalake
+from deltalake import DeltaTable, Field, write_deltalake
 from deltalake.exceptions import TableNotFoundError
+from deltalake.schema import PrimitiveType
 from inspect_ai._eval.evalset import (
     TASK_IDENTIFIER_VERSION,
     list_all_eval_logs,
@@ -40,13 +41,6 @@ from inspect_flow._util.path_util import path_str
 from inspect_flow._util.util import now
 
 logger = PrefixLogger(getLogger(__name__), prefix="flow-store")
-
-
-def pa_field(pa_type: pa.DataType, **kwargs: Any) -> Any:
-    """Create a dataclass field with PyArrow type metadata."""
-    metadata = kwargs.pop("metadata", {})
-    metadata["pa_type"] = pa_type
-    return field(metadata=metadata, **kwargs)
 
 
 def to_uri(path_or_uri: str) -> str:
@@ -91,20 +85,30 @@ LOGS = "_table_logs"
 
 @dataclass
 class LogRecord:
-    log_path: str = pa_field(pa.string())
-    task_identifier_1: str = pa_field(pa.string())
-    ts: datetime = pa_field(pa.timestamp("ms"), default=None)
+    log_path: str
+    task_identifier: str
+    ts: datetime | None = None
 
     def __post_init__(self) -> None:
         if self.ts is None:
             self.ts = now()
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "log_path": self.log_path,
+            _task_id_col(): self.task_identifier,
+            "ts": self.ts,
+        }
 
     @classmethod
     def to_schema(cls) -> pa.Schema:
-        return pa.schema([(f.name, f.metadata["pa_type"]) for f in fields(cls)])
+        return pa.schema(
+            [
+                ("log_path", pa.string()),
+                (_task_id_col(), pa.string()),
+                ("ts", pa.timestamp("ms")),
+            ]
+        )
 
 
 TABLES: list[TableDef] = [
@@ -448,7 +452,7 @@ class DeltaLakeStore(FlowStoreInternal):
             [
                 LogRecord(
                     log_path=e.log_path,
-                    task_identifier_1=e.task_identifier,
+                    task_identifier=e.task_identifier,
                 ).to_dict()
                 for e in new_entries
             ],
@@ -459,6 +463,7 @@ class DeltaLakeStore(FlowStoreInternal):
             self._table_path(LOGS),
             new_data,
             mode="append",
+            schema_mode="merge",
             storage_options=self._storage_options,
         )
         return len(new_entries)
@@ -534,9 +539,17 @@ class DeltaLakeStore(FlowStoreInternal):
             result[task_id].add(log_path)
         return result
 
+    def _ensure_task_id_col(self) -> DeltaTable:
+        """Add the current task identifier column to a store written by older code."""
+        dt = self._open_table(LOGS)
+        if _task_id_col() not in [f.name for f in dt.schema().fields]:
+            dt.alter.add_columns(Field(_task_id_col(), PrimitiveType("string")))
+            dt = self._open_table(LOGS)
+        return dt
+
     def _set_task_identifiers(self) -> None:
         """Find logs with missing task_identifier and compute it from the log header."""
-        dt = self._open_table(LOGS)
+        dt = self._ensure_task_id_col()
         table = dt.to_pyarrow_table()
 
         # Find entries with empty or null task_identifier
@@ -579,7 +592,7 @@ class DeltaLakeStore(FlowStoreInternal):
         update_table = pa.Table.from_pydict(
             {
                 "log_path": [log_path for log_path, _ in logs_to_update],
-                "task_identifier_1": [task_id for _, task_id in logs_to_update],
+                _task_id_col(): [task_id for _, task_id in logs_to_update],
             }
         )
 
