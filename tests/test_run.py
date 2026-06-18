@@ -30,7 +30,7 @@ from inspect_flow import (
     tasks_matrix,
 )
 from inspect_flow._config.write import config_to_yaml
-from inspect_flow._runner.run import run_eval_set
+from inspect_flow._runner.run import _min_inspect_ai_version, run_eval_set
 from inspect_flow._store.store import store_factory
 from inspect_flow._types.flow_types import FlowScorer, not_given
 from inspect_flow._util.error import FlowHandledError
@@ -39,6 +39,7 @@ from inspect_flow._util.logging import (
     init_flow_logging,
     update_log_level,
 )
+from packaging.version import Version
 from rich.console import Console
 
 from .test_helpers.log_helpers import init_test_logs, init_test_store, verify_test_logs
@@ -1518,18 +1519,14 @@ def test_eval_set_stale_inspect_ai_hint(
         log_dir=log_dir,
         tasks=[task_file + "@noop"],
     )
-    mock_eval_set.side_effect = ValueError(
-        "1 validation error for GenerateConfig\n"
-        "Value error, Unknown GenerateConfig field(s): "
-        "acp_server, ctl_server, notification.\n"
-        "Use extra_body for provider-specific options."
-    )
+    mock_eval_set.side_effect = ValueError("Some unrelated error")
 
-    with pytest.raises(FlowHandledError):
-        run_eval_set(spec=spec, base_dir=".")
+    with patch("inspect_flow._runner.run.version", return_value="0.0.1"):
+        with pytest.raises(FlowHandledError):
+            run_eval_set(spec=spec, base_dir=".")
 
     out = recording_console.export_text()
-    assert "inspect-ai >= 0.3.240" in out
+    assert f"inspect-ai >= {_min_inspect_ai_version()}" in out
 
 
 def test_eval_set_error_no_stale_hint(
@@ -1542,11 +1539,18 @@ def test_eval_set_error_no_stale_hint(
     )
     mock_eval_set.side_effect = ValueError("Some unrelated error")
 
-    with pytest.raises(FlowHandledError):
-        run_eval_set(spec=spec, base_dir=".")
+    with patch("inspect_flow._runner.run.version", return_value="999.0.0"):
+        with pytest.raises(FlowHandledError):
+            run_eval_set(spec=spec, base_dir=".")
 
     out = recording_console.export_text()
-    assert "inspect-ai >= 0.3.240" not in out
+    assert "older than the required" not in out
+
+
+def test_min_inspect_ai_version_derived_from_metadata() -> None:
+    required = _min_inspect_ai_version()
+    assert required is not None
+    Version(required)
 
 
 def test_store_write_on_keyboard_interrupt() -> None:
