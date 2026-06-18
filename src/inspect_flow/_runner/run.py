@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError, requires, version
 from logging import getLogger
 
 import click
@@ -11,6 +12,9 @@ from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
 from inspect_ai.util._display import init_display_type
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import Version
 from rich.console import Group
 from rich.panel import Panel
 from rich.rule import Rule
@@ -197,6 +201,8 @@ def run_eval_set(
             _fix_prerequisite_error_message(e)
         if error_string := str(e):
             flow_print(error_string, format="error")
+        if hint := _stale_inspect_ai_hint():
+            flow_print(hint, format="warning")
         flow_print(Rule("Eval Set Failed with Exception"))
         if error_string:
             raise FlowHandledError from e
@@ -328,6 +334,33 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
     modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
     if original_message != modified_message:
         e.args = (modified_message, *e.args[1:])
+
+
+def _min_inspect_ai_version() -> str | None:
+    for req in requires("inspect_flow") or ():
+        requirement = Requirement(req)
+        if canonicalize_name(requirement.name) == "inspect-ai":
+            for spec in requirement.specifier:
+                if spec.operator in (">=", "=="):
+                    return spec.version
+    return None
+
+
+def _stale_inspect_ai_hint() -> str | None:
+    required = _min_inspect_ai_version()
+    if required is None:
+        return None
+    try:
+        installed = version("inspect-ai")
+    except PackageNotFoundError:
+        return None
+    if Version(installed) >= Version(required):
+        return None
+    return (
+        f"The installed inspect-ai ({installed}) is older than the required "
+        f"inspect-ai >= {required}, which may be the cause of the error above. "
+        f"Run `uv sync` (or otherwise upgrade inspect-ai to >= {required}) and retry."
+    )
 
 
 def _ensure_trailing_slash(url: str) -> str:
