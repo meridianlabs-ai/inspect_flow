@@ -64,8 +64,9 @@ def collect_auto_dependencies(
     for task in spec.tasks or []:
         _collect_task_dependencies(task, result)
 
-    # Explicit dependencies (and their requirements) take precedence over the
-    # auto-detected host versions, so drop any package the user pinned directly.
+    # An explicit pin must win over the auto-detected host version of the same
+    # package, so drop any package the user named directly. Its version
+    # requirement (and whatever uv resolves from it) then governs instead.
     exclude = {canonicalize_name(p) for p in exclude_packages}
 
     # inspect_ai is already included by inspect-flow
