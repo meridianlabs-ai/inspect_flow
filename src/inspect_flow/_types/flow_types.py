@@ -75,7 +75,11 @@ class FlowBase(BaseModel, extra="forbid"):
 
 
 class FlowModel(FlowBase):
-    """Configuration for a Model."""
+    """Configuration for a model.
+
+    `name` is an Inspect model identifier (e.g. ``"openai/gpt-4o"``); `config`,
+    `model_args`, `base_url`, `api_key`, and `role` tune how it is created.
+    """
 
     name: str | None | NotGiven = Field(
         default=not_given,
@@ -128,7 +132,7 @@ class FlowModel(FlowBase):
 
 
 class FlowScorer(FlowBase):
-    """Configuration for a Scorer."""
+    """Configuration for a scorer: a registry `name` (or `factory`) plus its `args`."""
 
     name: str | None | NotGiven = Field(
         default=not_given,
@@ -154,7 +158,7 @@ class FlowScorer(FlowBase):
 
 
 class FlowSolver(FlowBase):
-    """Configuration for a Solver."""
+    """Configuration for a solver: a registry `name` (or `factory`) plus its `args`."""
 
     name: str | None | NotGiven = Field(
         default=not_given,
@@ -180,7 +184,7 @@ class FlowSolver(FlowBase):
 
 
 class FlowAgent(FlowBase):
-    """Configuration for an Agent."""
+    """Configuration for an agent: a registry `name` (or `factory`) plus its `args`."""
 
     name: str | None | NotGiven = Field(
         default=not_given,
@@ -328,9 +332,11 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True):
 
 
 class FlowTask(FlowBase, arbitrary_types_allowed=True):
-    """Configuration for an evaluation task.
+    """Configuration for a single evaluation task.
 
-    Tasks are the basis for defining and running evaluations.
+    Identifies the task (`name` or `factory`) and carries its per-task settings:
+    `model`, `solver`, `scorer`, `config` (generation config), `epochs`, `sandbox`,
+    `approval`, and the various limits. Unset fields fall back to `FlowDefaults`.
     """
 
     name: str | None | NotGiven = Field(
@@ -484,7 +490,12 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
 
 class FlowOptions(FlowBase):
-    """Evaluation options."""
+    """Eval-set-wide options forwarded to Inspect's ``eval_set``.
+
+    These apply to the whole run (retries, sandbox cleanup, global limits, display,
+    scoring, the control channel, etc.) rather than to individual tasks — set per-task
+    settings on `FlowTask`. Attached to a spec via ``FlowSpec(options=...)``.
+    """
 
     retry_attempts: int | None | NotGiven = Field(
         default=not_given,
@@ -714,7 +725,11 @@ class FlowOptions(FlowBase):
 
 
 class FlowDefaults(FlowBase):
-    """Default field values for Inspect objects. Will be overriden by more specific settings."""
+    """Default `model`/`solver`/`agent`/`task` values applied to every task in the spec.
+
+    A value set on an individual `FlowTask` overrides the default here. The ``*_prefix``
+    variants apply defaults by registry-name prefix. Attached via ``FlowSpec(defaults=...)``.
+    """
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
@@ -759,7 +774,12 @@ class FlowDefaults(FlowBase):
 
 
 class FlowDependencies(FlowBase):
-    """Configuration for flow dependencies to install in the venv."""
+    """Dependencies to install in the per-run virtual environment.
+
+    Only applies in venv execution mode (``execution_type="venv"``); combines an optional
+    `dependency_file`, `additional_dependencies`, and automatic detection
+    (`auto_detect_dependencies`).
+    """
 
     dependency_file: Literal["auto", "no_file"] | str | None | NotGiven = Field(
         default=not_given,
@@ -848,7 +868,14 @@ class FlowStoreConfig(FlowBase):
 
 
 class FlowSpec(FlowBase, arbitrary_types_allowed=True):
-    """Top-level flow specification."""
+    """Top-level flow specification: the tasks to run plus how to run them.
+
+    `tasks` lists what to evaluate; per-task configuration (model, solver, scorer,
+    epochs, limits) lives on each `FlowTask`. Cross-cutting settings live in dedicated
+    fields: `defaults` (`FlowDefaults`, applied to every task), `options` (`FlowOptions`,
+    eval-set-wide options forwarded to Inspect), and `dependencies` (`FlowDependencies`,
+    for venv mode). Eval parameters are not set directly at this top level.
+    """
 
     includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
         default=not_given,
