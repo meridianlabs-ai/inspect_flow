@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError, version
 from logging import getLogger
 
 import click
@@ -197,6 +198,8 @@ def run_eval_set(
             _fix_prerequisite_error_message(e)
         if error_string := str(e):
             flow_print(error_string, format="error")
+        if hint := _stale_inspect_ai_hint(e):
+            flow_print(hint, format="warning")
         flow_print(Rule("Eval Set Failed with Exception"))
         if error_string:
             raise FlowHandledError from e
@@ -328,6 +331,31 @@ def _fix_prerequisite_error_message(e: PrerequisiteError) -> None:
     modified_message = original_message.replace("'overwrite'", "'bundle_overwrite'")
     if original_message != modified_message:
         e.args = (modified_message, *e.args[1:])
+
+
+# eval_set params added in inspect-ai 0.3.240. Against an older inspect-ai they
+# fall through to GenerateConfig and surface as an opaque validation error that
+# never mentions inspect-ai or its version.
+_MIN_INSPECT_AI_VERSION = "0.3.240"
+_VERSION_GATED_EVAL_SET_PARAMS = ("acp_server", "ctl_server", "notification")
+
+
+def _stale_inspect_ai_hint(e: Exception) -> str | None:
+    message = str(e)
+    if "Unknown GenerateConfig field(s)" not in message:
+        return None
+    if not any(param in message for param in _VERSION_GATED_EVAL_SET_PARAMS):
+        return None
+    try:
+        installed = version("inspect-ai")
+    except PackageNotFoundError:
+        installed = "unknown"
+    return (
+        f"This likely means the installed inspect-ai ({installed}) predates the "
+        f"control-channel and notification eval_set options, which require "
+        f"inspect-ai >= {_MIN_INSPECT_AI_VERSION}. Run `uv sync` (or otherwise "
+        f"upgrade inspect-ai to >= {_MIN_INSPECT_AI_VERSION}) and retry."
+    )
 
 
 def _ensure_trailing_slash(url: str) -> str:

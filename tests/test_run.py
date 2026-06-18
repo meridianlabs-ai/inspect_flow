@@ -1510,6 +1510,45 @@ def test_eval_set_error(mock_eval_set: MagicMock) -> None:
     assert "Test error from eval_set" in str(e.value.__cause__)
 
 
+def test_eval_set_stale_inspect_ai_hint(
+    mock_eval_set: MagicMock, recording_console: Console
+) -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=[task_file + "@noop"],
+    )
+    mock_eval_set.side_effect = ValueError(
+        "1 validation error for GenerateConfig\n"
+        "Value error, Unknown GenerateConfig field(s): "
+        "acp_server, ctl_server, notification.\n"
+        "Use extra_body for provider-specific options."
+    )
+
+    with pytest.raises(FlowHandledError):
+        run_eval_set(spec=spec, base_dir=".")
+
+    out = recording_console.export_text()
+    assert "inspect-ai >= 0.3.240" in out
+
+
+def test_eval_set_error_no_stale_hint(
+    mock_eval_set: MagicMock, recording_console: Console
+) -> None:
+    log_dir = init_test_logs()
+    spec = FlowSpec(
+        log_dir=log_dir,
+        tasks=[task_file + "@noop"],
+    )
+    mock_eval_set.side_effect = ValueError("Some unrelated error")
+
+    with pytest.raises(FlowHandledError):
+        run_eval_set(spec=spec, base_dir=".")
+
+    out = recording_console.export_text()
+    assert "inspect-ai >= 0.3.240" not in out
+
+
 def test_store_write_on_keyboard_interrupt() -> None:
     log_dir = init_test_logs()
     store_dir = init_test_store()
