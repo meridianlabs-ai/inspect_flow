@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,7 +11,10 @@ from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
-from inspect_flow._launcher.freeze import _deduplicate_freeze_requirements
+from inspect_flow._launcher.freeze import (
+    _deduplicate_freeze_requirements,
+    write_flow_requirements,
+)
 from inspect_flow._launcher.pip_string import _get_pip_string_with_version
 from inspect_flow._launcher.venv import _create_venv, venv_launch
 from rich.console import Console
@@ -898,3 +902,71 @@ def test_pip_error(recording_console: Console) -> None:
         "Because not-existing-package was not found in the package registry and you require not-existing-package>=0.1.0, we can conclude that your requirements are unsatisfiable."
         in output
     )
+
+
+def test_712_concurrent_flow_requirements_no_race() -> None:
+    # Two flow runs sharing a working directory must not collide on the
+    # intermediate requirements input file written by write_flow_requirements.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        cwd = Path(temp_dir) / "cwd"
+        cwd.mkdir()
+        thread_freeze = {
+            "run-a": "package-a==1.0.0\n",
+            "run-b": "package-b==2.0.0\n",
+        }
+        log_dirs = {
+            "run-a": Path(temp_dir) / "logs-a",
+            "run-b": Path(temp_dir) / "logs-b",
+        }
+        # Block all compile calls until both threads have written their input
+        # file, maximizing the chance a shared filename would be clobbered.
+        compile_barrier = threading.Barrier(2)
+
+        def fake_run(
+            args: list[str], *pos: object, **kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            if args[:3] == ["uv", "pip", "freeze"]:
+                return subprocess.CompletedProcess(
+                    args=args,
+                    returncode=0,
+                    stdout=thread_freeze[threading.current_thread().name],
+                )
+            # uv pip compile: echo back the contents of the input file so a
+            # clobbered file would surface as wrong flow-requirements.txt.
+            compile_barrier.wait()
+            requirements_in = Path(args[-1])
+            return subprocess.CompletedProcess(
+                args=args, returncode=0, stdout=requirements_in.read_text()
+            )
+
+        errors: dict[str, BaseException] = {}
+
+        def run(name: str) -> None:
+            try:
+                write_flow_requirements(
+                    spec=FlowSpec(
+                        log_dir=log_dirs[name].as_posix(),
+                        tasks=[FlowTask(name="task_name")],
+                    ),
+                    cwd=str(cwd),
+                    env=os.environ.copy(),
+                    dry_run=False,
+                )
+            except BaseException as e:  # noqa: BLE001
+                errors[name] = e
+
+        with patch("subprocess.run", side_effect=fake_run):
+            threads = [
+                threading.Thread(target=run, name=n, args=(n,)) for n in thread_freeze
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        assert not errors, errors
+        for name, expected in thread_freeze.items():
+            requirements_txt = log_dirs[name] / "flow-requirements.txt"
+            assert requirements_txt.read_text() == expected
+        # The temporary input files must be cleaned up.
+        assert list(cwd.glob("*.in")) == []

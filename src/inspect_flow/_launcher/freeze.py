@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import tempfile
 from pathlib import Path
 
 from inspect_ai._util.file import file, filesystem
@@ -23,9 +24,15 @@ def write_flow_requirements(
         log_output=False,  # Don't log the full freeze output
     )
     deduplicated_output = _deduplicate_freeze_requirements(freeze_result.stdout)
-    requirements_in = Path(cwd) / "flow-requirements.in"
-    with open(requirements_in, "w") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        dir=cwd,
+        prefix="flow-requirements-",
+        suffix=".in",
+        delete=False,
+    ) as f:
         f.write(deduplicated_output)
+        requirements_in = Path(f.name)
 
     try:
         compile_result = run_with_logging(
