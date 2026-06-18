@@ -1,6 +1,6 @@
 import os
 from logging import getLogger
-from typing import Sequence
+from typing import Collection, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.registry import (
@@ -14,6 +14,7 @@ from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import SandboxEnvironmentType
 from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
+from packaging.utils import canonicalize_name
 
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
@@ -55,14 +56,27 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
 }
 
 
-def collect_auto_dependencies(spec: FlowSpec) -> list[str]:
+def collect_auto_dependencies(
+    spec: FlowSpec, exclude_packages: Collection[str] = ()
+) -> list[str]:
     result = set()
 
     for task in spec.tasks or []:
         _collect_task_dependencies(task, result)
 
+    # An explicit pin must win over the auto-detected host version of the same
+    # package, so drop any package the user named directly. Its version
+    # requirement (and whatever uv resolves from it) then governs instead.
+    exclude = {canonicalize_name(p) for p in exclude_packages}
+
     # inspect_ai is already included by inspect-flow
-    return sorted({get_pip_string(dep) for dep in result if dep != "inspect_ai"})
+    return sorted(
+        {
+            get_pip_string(dep)
+            for dep in result
+            if dep != "inspect_ai" and canonicalize_name(dep) not in exclude
+        }
+    )
 
 
 def _collect_task_dependencies(

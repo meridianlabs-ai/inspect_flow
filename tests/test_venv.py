@@ -231,6 +231,65 @@ def test_auto_dependency() -> None:
             ]
 
 
+def test_715_explicit_dependency_overrides_auto_pin() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="mocked output"
+            )
+            spec = FlowSpec(
+                dependencies=FlowDependencies(
+                    additional_dependencies=["openai>=2.40.0"],
+                ),
+                tasks=[
+                    FlowTask(
+                        name="inspect_evals/task_name",
+                        model="openai/gpt-4o-mini",
+                    ),
+                ],
+            )
+
+            _create_venv(
+                spec=spec,
+                base_dir=".",
+                temp_dir=temp_dir,
+                env=os.environ.copy(),
+                dry_run=False,
+                action=_test_action,
+            )
+
+            assert mock_run.call_count == 2
+            args = mock_run.call_args.args[0]
+            flow_path = str((Path(__file__).parents[1]).resolve())
+            # The explicit "openai>=2.40.0" pin must win; the auto-detected
+            # "openai==<host version>" must be excluded to avoid a conflict.
+            assert args[:6] == [
+                "uv",
+                "pip",
+                "install",
+                "openai>=2.40.0",
+                "inspect_evals",
+                f"-e {flow_path}",
+            ]
+            assert not any(arg.startswith("openai==") for arg in args)
+
+
+def test_715_collect_auto_dependencies_exclude_packages() -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(name="inspect_evals/task_name", model="openai/gpt-4o-mini"),
+        ]
+    )
+
+    dependencies = collect_auto_dependencies(spec)
+    assert any(dep.startswith("openai") for dep in dependencies)
+
+    # Canonicalization should match regardless of name normalization.
+    excluded = collect_auto_dependencies(spec, exclude_packages=["OpenAI"])
+    assert not any(dep.startswith("openai") for dep in excluded)
+    assert "inspect_evals" in excluded
+
+
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:

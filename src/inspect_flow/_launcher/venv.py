@@ -175,22 +175,27 @@ def _create_venv(
 
     create_venv_func()
 
-    dependencies: List[str] = []
+    explicit_dependencies: List[str] = []
     if spec.dependencies and spec.dependencies.additional_dependencies:
         if isinstance(spec.dependencies.additional_dependencies, str):
-            dependencies.append(spec.dependencies.additional_dependencies)
+            explicit_dependencies.append(spec.dependencies.additional_dependencies)
         else:
-            dependencies.extend(spec.dependencies.additional_dependencies)
-        dependencies = [
-            _resolve_dependency(dep, base_dir=base_dir) for dep in dependencies
-        ]
+            explicit_dependencies.extend(spec.dependencies.additional_dependencies)
+
+    dependencies: List[str] = [
+        _resolve_dependency(dep, base_dir=base_dir) for dep in explicit_dependencies
+    ]
 
     auto_detect_dependencies = True
     if spec.dependencies and spec.dependencies.auto_detect_dependencies is False:
         auto_detect_dependencies = False
 
     if auto_detect_dependencies:
-        dependencies.extend(collect_auto_dependencies(spec))
+        dependencies.extend(
+            collect_auto_dependencies(
+                spec, exclude_packages=_explicit_dependency_names(explicit_dependencies)
+            )
+        )
     dependencies.append(get_pip_string("inspect-flow"))
     if not any(
         _spec_is_inspect_ai(d) for d in dependencies
@@ -209,6 +214,17 @@ def _resolve_dependency(dependency: str, base_dir: str) -> str:
     if "/" in dependency:
         return absolute_path_relative_to(dependency, base_dir=base_dir)
     return dependency
+
+
+def _explicit_dependency_names(dependencies: List[str]) -> set[str]:
+    names: set[str] = set()
+    for dependency in dependencies:
+        try:
+            names.add(canonicalize_name(Requirement(dependency).name))
+        except InvalidRequirement:
+            # Paths, URLs, and VCS specs have no parseable package name to match.
+            continue
+    return names
 
 
 def _spec_is_inspect_ai(requirement: str) -> bool:
