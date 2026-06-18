@@ -57,7 +57,7 @@ class FlowFactoryTask(TypedDict):
 
 
 class FlowAgentDict(TypedDict, closed=True):
-    """Configuration for an Agent."""
+    """Configuration for an agent: a registry `name` (or `factory`) plus its `args`."""
 
     name: NotRequired[str | NotGiven | None]
     """Name of the agent. Used to create the agent if the factory is not provided."""
@@ -72,14 +72,19 @@ class FlowAgentDict(TypedDict, closed=True):
 
 
 class FlowAgentMatrixDict(TypedDict, closed=True):
-    """Configuration for an Agent."""
+    """Configuration for an agent: a registry `name` (or `factory`) plus its `args`."""
 
     args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to agent constructor."""
 
 
 class FlowModelDict(TypedDict, closed=True):
-    """Configuration for a Model."""
+    """
+    Configuration for a model.
+
+    `name` is an Inspect model identifier (e.g. ``"openai/gpt-4o"``); `config`,
+    `model_args`, `base_url`, `api_key`, and `role` tune how it is created.
+    """
 
     name: NotRequired[str | NotGiven | None]
     """Name of the model to use. If factory is not provided, this is used to create the model."""
@@ -104,14 +109,19 @@ class FlowModelDict(TypedDict, closed=True):
 
 
 class FlowModelMatrixDict(TypedDict, closed=True):
-    """Configuration for a Model."""
+    """
+    Configuration for a model.
+
+    `name` is an Inspect model identifier (e.g. ``"openai/gpt-4o"``); `config`,
+    `model_args`, `base_url`, `api_key`, and `role` tune how it is created.
+    """
 
     config: NotRequired[Sequence[GenerateConfig | NotGiven | None] | None]
     """Configuration for model. Config values will be override settings on the `FlowTask` and `FlowSpec`."""
 
 
 class FlowSolverDict(TypedDict, closed=True):
-    """Configuration for a Solver."""
+    """Configuration for a solver: a registry `name` (or `factory`) plus its `args`."""
 
     name: NotRequired[str | NotGiven | None]
     """Name of the solver. Used to create the solver if the factory is not provided."""
@@ -124,7 +134,7 @@ class FlowSolverDict(TypedDict, closed=True):
 
 
 class FlowSolverMatrixDict(TypedDict, closed=True):
-    """Configuration for a Solver."""
+    """Configuration for a solver: a registry `name` (or `factory`) plus its `args`."""
 
     args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
     """Additional args to pass to solver constructor."""
@@ -132,9 +142,11 @@ class FlowSolverMatrixDict(TypedDict, closed=True):
 
 class FlowTaskDict(TypedDict, closed=True):
     """
-    Configuration for an evaluation task.
+    Configuration for a single evaluation task.
 
-    Tasks are the basis for defining and running evaluations.
+    Identifies the task (`name` or `factory`) and carries its per-task settings:
+    `model`, `solver`, `scorer`, `config` (generation config), `epochs`, `sandbox`,
+    `approval`, and the various limits. Unset fields fall back to `FlowDefaults`.
     """
 
     name: NotRequired[str | NotGiven | None]
@@ -209,9 +221,11 @@ class FlowTaskDict(TypedDict, closed=True):
 
 class FlowTaskMatrixDict(TypedDict, closed=True):
     """
-    Configuration for an evaluation task.
+    Configuration for a single evaluation task.
 
-    Tasks are the basis for defining and running evaluations.
+    Identifies the task (`name` or `factory`) and carries its per-task settings:
+    `model`, `solver`, `scorer`, `config` (generation config), `epochs`, `sandbox`,
+    `approval`, and the various limits. Unset fields fall back to `FlowDefaults`.
     """
 
     args: NotRequired[Sequence[Mapping[str, Any] | NotGiven | None] | None]
