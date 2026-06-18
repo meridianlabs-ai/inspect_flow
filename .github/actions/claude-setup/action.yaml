@@ -1,0 +1,15 @@
+name: Claude agent environment
+description: >-
+  Provision the project so Claude Code agents (dev + reviewer) can actually run
+  pytest/ruff/pyright instead of falling back to static checks. Invoked by the
+  reusable agent workflows in meridianlabs-ai/agents when present. Delegates to
+  the existing CI setup so the install logic and uv cache are shared, not
+  duplicated.
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup
+      with:
+        # CI runs a 3.10/3.11 matrix; the agent only needs one interpreter.
+        python-version: "3.11"
