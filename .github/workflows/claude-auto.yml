@@ -45,12 +45,16 @@ jobs:
       head_branch: ${{ github.event.workflow_run.head_branch }}
       ci_run_id: ${{ github.event.workflow_run.id }}
 
-  # Review -> fix. Skip approvals here (nothing to address); the reusable
-  # workflow gates the rest (reviewer identity + `auto` label + round cap).
+  # Review -> fix. Same-repo only (the reusable workflow checks out and runs the
+  # PR head code, and pull_request_review runs in base-repo context with secrets
+  # even for fork PRs — so exclude forks here, matching ci-fix). Skip approvals
+  # (nothing to address); the reusable workflow gates the rest (reviewer identity
+  # + `auto` label + round cap).
   review-fix:
     if: >-
       github.event_name == 'pull_request_review' &&
-      github.event.review.state != 'approved'
+      github.event.review.state != 'approved' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     uses: meridianlabs-ai/agents/.github/workflows/claude-auto-review.yml@main
     permissions:
       contents: write
