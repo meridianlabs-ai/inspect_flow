@@ -38,12 +38,16 @@ jobs:
       contains(github.event.issue.title, '@claude') ||
       github.event.label.name == 'claude'
     uses: meridianlabs-ai/agents/.github/workflows/claude.yml@main
-    # Pass MARVIN_TOKEN (the machine-account PAT, an org secret) through to the
-    # reusable workflow so agent-opened PRs trigger CI and @review. `inherit` is
-    # harmless where the secret isn't available — the agent still runs, but
-    # issue-triggered PR creation degrades (see the reusable workflow's
+    # Pass the machine-account PAT (MARVIN_TOKEN, an org secret) through to the
+    # reusable workflow so agent-opened PRs trigger CI and @review. Passed
+    # explicitly — NOT via `secrets: inherit` — so this repo's other secrets
+    # aren't exposed to an external workflow pinned to a mutable @main ref
+    # (least privilege; the reusable workflow consumes only this one secret).
+    # An absent MARVIN_TOKEN resolves to empty: the agent still runs, just with
+    # issue-triggered PR creation degraded (see the reusable workflow's
     # secrets.MARVIN_TOKEN and design/auto-agent.md).
-    secrets: inherit
+    secrets:
+      MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
     permissions:
       contents: write
       pull-requests: write
