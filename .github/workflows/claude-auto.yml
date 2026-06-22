@@ -18,9 +18,11 @@ on:
     # <-- replace with this repo's CI workflow name(s), e.g. ["Build"]
     workflows: ["Build"]
     types: [completed]
-  # Phase 2: react to the automated reviewer posting a review.
-  pull_request_review:
-    types: [submitted]
+  # Phase 2/3: react to the reviewer's marked summary comment. issue_comment
+  # fires from the default branch, so this works on pristine-base forks too
+  # (unlike pull_request_review).
+  issue_comment:
+    types: [created]
 
 jobs:
   # CI-failure -> fix. Only a *failed* CI run for a *same-repo* PR (same-repo
@@ -43,18 +45,19 @@ jobs:
       MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
     with:
       head_branch: ${{ github.event.workflow_run.head_branch }}
+      pr_number: ${{ github.event.workflow_run.pull_requests[0].number }}
       ci_run_id: ${{ github.event.workflow_run.id }}
 
-  # Review -> fix. Same-repo only (the reusable workflow checks out and runs the
-  # PR head code, and pull_request_review runs in base-repo context with secrets
-  # even for fork PRs — so exclude forks here, matching ci-fix). Skip approvals
-  # (nothing to address); the reusable workflow gates the rest (reviewer identity
-  # + `auto` label + round cap).
+  # Review -> fix / handoff. Fire only on the reviewer's marked summary comment
+  # on a PR. Cheap gate here (it's a PR, author is the reviewer, body has the
+  # marker); the reusable workflow does the rest (same-repo, `auto` label, round
+  # cap). Adjust the reviewer login if yours differs from claude[bot].
   review-fix:
     if: >-
-      github.event_name == 'pull_request_review' &&
-      github.event.review.state != 'approved' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request != null &&
+      github.event.comment.user.login == 'claude[bot]' &&
+      contains(github.event.comment.body, '<!-- claude-review-summary -->')
     uses: meridianlabs-ai/agents/.github/workflows/claude-auto-review.yml@main
     permissions:
       contents: write
@@ -65,7 +68,5 @@ jobs:
     secrets:
       MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
     with:
-      pr_number: ${{ github.event.pull_request.number }}
-      head_branch: ${{ github.event.pull_request.head.ref }}
-      review_id: ${{ github.event.review.id }}
-      review_author: ${{ github.event.review.user.login }}
+      pr_number: ${{ github.event.issue.number }}
+      comment_author: ${{ github.event.comment.user.login }}
