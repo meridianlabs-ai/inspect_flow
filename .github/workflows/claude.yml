@@ -54,3 +54,28 @@ jobs:
       issues: write
       id-token: write
       actions: read
+
+  # @auto kickoff (distinct from the one-shot `claude` above). An `auto` label or
+  # `@auto` mention drives the issue autonomously: the dev agent opens a PR, the
+  # PR inherits the `auto` label (so the loop in claude-auto.yml engages), and it
+  # runs to a human handoff. Same reusable dev workflow, different trigger — the
+  # action's trigger_phrase/label_trigger are single-valued, so `auto` needs its
+  # own invocation. Needs MARVIN_TOKEN (the PR must trigger CI/@review).
+  claude-auto:
+    if: |
+      contains(github.event.comment.body, '@auto') ||
+      contains(github.event.issue.body, '@auto') ||
+      contains(github.event.issue.title, '@auto') ||
+      github.event.label.name == 'auto'
+    uses: meridianlabs-ai/agents/.github/workflows/claude.yml@main
+    secrets:
+      MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    with:
+      trigger_phrase: "@auto"
+      label_trigger: "auto"
