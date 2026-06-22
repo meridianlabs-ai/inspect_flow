@@ -171,11 +171,17 @@ def config(
     spec: FlowSpec,
     base_dir: str | None = None,
 ) -> str:
-    """Return the flow spec configuration.
+    """Return the flow spec configuration as YAML.
+
+    Expands the spec (applying defaults and resolving matrix patterns) and
+    serializes the result to a YAML string.
 
     Args:
         spec: The flow spec configuration.
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
+
+    Returns:
+        The expanded flow spec configuration serialized as a YAML string.
     """
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
