@@ -8,6 +8,15 @@
 
 name: Claude
 
+# Trigger-resolution caveat: GitHub runs issue_comment / issues workflows from
+# the DEFAULT branch, but pull_request_review_comment / pull_request_review
+# (the pull_request family) from the PR's OWN branches. So the latter two only
+# fire where this file exists on the PR's base/head branch. On a pristine-base
+# mirror like the inspect_ai fork — where the Claude workflows live only on the
+# default branch and PRs target an upstream-mirror base that lacks them — those
+# two never fire; only top-level @claude comments (issue_comment) and the
+# `claude` label (issues) work. Drop the two review triggers in that setup so
+# the surface matches reality (the fork's deployed stub does).
 on:
   issue_comment:
     types: [created]
@@ -29,6 +38,12 @@ jobs:
       contains(github.event.issue.title, '@claude') ||
       github.event.label.name == 'claude'
     uses: meridianlabs-ai/agents/.github/workflows/claude.yml@main
+    # Pass MARVIN_TOKEN (the machine-account PAT, an org secret) through to the
+    # reusable workflow so agent-opened PRs trigger CI and @review. `inherit` is
+    # harmless where the secret isn't available — the agent still runs, but
+    # issue-triggered PR creation degrades (see the reusable workflow's
+    # secrets.MARVIN_TOKEN and design/auto-agent.md).
+    secrets: inherit
     permissions:
       contents: write
       pull-requests: write
