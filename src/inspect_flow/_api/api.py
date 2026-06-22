@@ -131,18 +131,36 @@ def run(
 
 @dataclass
 class CheckTask:
-    name: str  # resolved task name
-    task: FlowTask  # original spec input (post-expansion)
-    log_file: str | None  # path to matched log, None if no log found
-    samples: int  # completed samples in log (0 if no log)
-    total_samples: int | None  # expected samples (None if unknown)
-    duplicate_logs: list[str]  # log file paths that are duplicates of log_file
+    """Completeness status of a single task in a checked eval set."""
+
+    name: str
+    """Resolved task name."""
+
+    task: FlowTask
+    """Original spec input (post-expansion)."""
+
+    log_file: str | None
+    """Path to the matched log, or `None` if no log was found."""
+
+    samples: int
+    """Completed samples in the log (0 if no log)."""
+
+    total_samples: int | None
+    """Expected samples, or `None` if unknown."""
+
+    duplicate_logs: list[str]
+    """Log file paths that are duplicates of `log_file`."""
 
 
 @dataclass
 class CheckResult:
+    """Result of checking an inspect_flow evaluation against existing logs."""
+
     tasks: list[CheckTask]
-    unrecognized: list[str]  # log file paths not matching any task in spec
+    """Per-task completeness status for the checked spec."""
+
+    unrecognized: list[str]
+    """Log file paths not matching any task in the spec."""
 
 
 def check(
