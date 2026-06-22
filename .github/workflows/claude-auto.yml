@@ -55,7 +55,7 @@ jobs:
   review-fix:
     if: >-
       github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request != null &&
+      github.event.issue.pull_request != '' &&
       github.event.comment.user.login == 'claude[bot]' &&
       contains(github.event.comment.body, '<!-- claude-review-summary -->')
     uses: meridianlabs-ai/agents/.github/workflows/claude-auto-review.yml@main
