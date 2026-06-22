@@ -5,6 +5,7 @@ from typing import Any
 from dotenv import find_dotenv, load_dotenv
 from inspect_ai._util.file import filesystem
 from inspect_ai._util.path import chdir_python
+from inspect_ai.log import EvalLog
 
 from inspect_flow._config.load import (
     ConfigOptions,
@@ -71,13 +72,27 @@ def load_spec(
     return int_load_spec(file=file, options=ConfigOptions(args=args or {}))
 
 
+@dataclass
+class RunResult:
+    """Result of running an inspect_flow evaluation."""
+
+    success: bool
+    """Whether all tasks in the eval set completed successfully."""
+
+    logs: list[EvalLog]
+    """The eval log headers produced by the run."""
+
+    log_dir: str
+    """The log directory the run wrote to."""
+
+
 def run(
     spec: FlowSpec,
     base_dir: str | None = None,
     *,
     dry_run: bool = False,
     resume: bool = False,
-) -> None:
+) -> RunResult | None:
     """Run an inspect_flow evaluation.
 
     Args:
@@ -85,6 +100,10 @@ def run(
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If `True`, do not run eval, but show a count of tasks that would be run.
         resume: If `True`, reuse the log directory from the previous run.
+
+    Returns:
+        A RunResult with the success flag, eval logs, and log directory when run
+        inproc. None when run in a venv (the result lives in the subprocess).
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -98,11 +117,16 @@ def run(
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions(resume=resume))
-    launch(
+    result = launch(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
     )
+    if result is None:
+        return None
+    success, logs = result
+    assert spec.log_dir
+    return RunResult(success=success, logs=logs, log_dir=spec.log_dir)
 
 
 @dataclass

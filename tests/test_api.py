@@ -7,9 +7,11 @@ import pytest
 from inspect_flow._api import api as api_module
 from inspect_flow._types.flow_types import FlowSpec, FlowTask, not_given
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
-from inspect_flow.api import check, config, init, load_spec, run, store_get
+from inspect_flow.api import RunResult, check, config, init, load_spec, run, store_get
 
 from tests.test_helpers.config_helpers import validate_config
+
+_TASK = "tests/local_eval/src/local_eval/noop.py@noop"
 
 
 @pytest.fixture(autouse=True)
@@ -27,6 +29,7 @@ def test_258_run_includes() -> None:
         ],
     )
     with patch("inspect_flow._api.api.launch") as mock_launch:
+        mock_launch.return_value = None
         run(spec=spec, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_spec = mock_launch.mock_calls[0].kwargs["spec"]
@@ -51,7 +54,8 @@ def test_ensure_init_loads_dotenv_from_base_dir() -> None:
     """When init() is not called explicitly, _ensure_init should load .env from base_dir."""
     os.environ.pop("TEST_ENV_VAR", None)
     spec = FlowSpec(tasks=["local_eval/noop"])
-    with patch("inspect_flow._api.api.launch"):
+    with patch("inspect_flow._api.api.launch") as mock_launch:
+        mock_launch.return_value = None
         run(spec=spec, base_dir="./tests/config/")
     assert os.environ.get("TEST_ENV_VAR") == "test_value"
     del os.environ["TEST_ENV_VAR"]
@@ -89,6 +93,7 @@ def test_resume(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
+        mock_run_eval_set.return_value = (True, [])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
@@ -123,6 +128,7 @@ def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
+        mock_run_eval_set.return_value = (True, [])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
@@ -143,6 +149,41 @@ def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
         resumed_log_dir = mock_run_eval_set.call_args.args[0].log_dir
 
     assert resumed_log_dir == first_log_dir
+
+
+def test_run_returns_result(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs")
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store="none",
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+
+    result = run(spec=spec, base_dir=".")
+
+    assert isinstance(result, RunResult)
+    assert result.success
+    assert len(result.logs) == 1
+    assert result.logs[0].status == "success"
+    assert Path(result.log_dir).is_absolute()
+    assert Path(result.log_dir).name == "logs"
+
+
+def test_run_dry_run_returns_result(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs")
+    spec = FlowSpec(
+        log_dir=log_dir,
+        store="none",
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+
+    result = run(spec=spec, base_dir=".", dry_run=True)
+
+    assert isinstance(result, RunResult)
+    assert not result.success
+    assert result.logs == []
+    assert Path(result.log_dir).is_absolute()
+    assert Path(result.log_dir).name == "logs"
 
 
 def test_check_disables_log_dir_create_unique(tmp_path: Path) -> None:
