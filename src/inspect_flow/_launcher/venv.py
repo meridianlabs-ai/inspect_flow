@@ -9,6 +9,7 @@ from typing import Callable, List, Literal, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
+from inspect_ai.log import EvalLog
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 from packaging.requirements import InvalidRequirement, Requirement
@@ -34,21 +35,31 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import (
     CHILD_READY_FD_ENV,
     PARENT_ACK_FD_ENV,
+    RUN_RESULT_FILE_ENV,
+    read_run_result,
     run_with_logging,
 )
 
 logger = getLogger(__name__)
 
 
-def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
-    _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
+def venv_launch(
+    spec: FlowSpec, base_dir: str, dry_run: bool
+) -> tuple[bool, list[EvalLog]]:
+    # The eval logs live in the subprocess; only the success flag is signaled back
+    # (via a per-run result file) on a clean exit. A crash raises in _venv_spawn.
+    success = _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
+    assert success is not None
+    return success, []
 
 
 def venv_check(spec: FlowSpec, base_dir: str) -> None:
     _venv_spawn(spec, base_dir=base_dir, subcommand="check", dry_run=True)
 
 
-def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -> None:
+def _venv_spawn(
+    spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool
+) -> bool | None:
     action_keys = (
         list(RUN_ACTIONS.keys()) if subcommand == "run" else list(CHECK_ACTIONS.keys())
     )
@@ -103,6 +114,11 @@ def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -
         env[CHILD_READY_FD_ENV] = str(child_ready_w)
         env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
 
+        # Per-run path (in temp_dir) the run child writes its success flag to
+        result_path = Path(temp_dir) / "run_result.json"
+        if subcommand == "run":
+            env[RUN_RESULT_FILE_ENV] = str(result_path)
+
         process = subprocess.Popen(
             [str(python_path), str(run_path), subcommand, "--file", file, *args],
             env=env,
@@ -130,6 +146,10 @@ def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -
                 returncode=process.returncode,
                 cmd=process.args,
             )
+
+        if subcommand == "run":
+            return read_run_result(str(result_path))
+        return None
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:

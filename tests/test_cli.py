@@ -47,7 +47,7 @@ def test_flow_version() -> None:
 def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
@@ -96,7 +96,7 @@ def test_run_command_overrides() -> None:
 def test_run_command_log_dir_create_unique() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
@@ -224,7 +224,7 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
 def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -248,7 +248,7 @@ def test_run_command_dry_run() -> None:
 def test_run_command_args() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -278,7 +278,7 @@ def test_run_command_args() -> None:
 def test_run_command_venv() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -305,7 +305,7 @@ def test_run_command_venv() -> None:
 def test_run_command_allow_dirty() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -561,7 +561,7 @@ def test_run_display_passed_to_eval_set(mock_eval_set: MagicMock) -> None:
 def test_run_command_resume() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -598,7 +598,7 @@ def test_run_command_resume_and_log_dir_mutually_exclusive() -> None:
 def test_run_command_multiple_store_filters() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -636,7 +636,7 @@ def test_no_duplicate_short_flags() -> None:
 
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch("inspect_flow._cli.run.launch", return_value=(True, [])),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
         warnings.catch_warnings(record=True) as caught,
     ):

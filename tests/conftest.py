@@ -7,6 +7,7 @@ os.environ["NO_COLOR"] = "1"
 
 import importlib.util
 import inspect
+import json
 import subprocess
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar, _logHandler
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV
 from rich.console import Console
 
 
@@ -325,9 +327,18 @@ def mock_venv_subprocess() -> Generator[MockVenvSubprocess, None, None]:
             args=[], returncode=0, stdout="mocked output"
         )
 
-        # Configure subprocess.Popen to return a mock process
+        # Configure subprocess.Popen to return a mock process. By default the
+        # fake child reports success by writing the per-run result file the
+        # parent told it to use, so launch() returns cleanly.
         mock_process = MagicMock()
-        mock_process.wait.return_value = None
+
+        def write_success_result() -> None:
+            env = mock_popen.call_args.kwargs.get("env") or {}
+            result_path = env.get(RUN_RESULT_FILE_ENV)
+            if result_path:
+                Path(result_path).write_text(json.dumps({"success": True}))
+
+        mock_process.wait.side_effect = write_success_result
         mock_process.returncode = 0
         mock_popen.return_value = mock_process
 

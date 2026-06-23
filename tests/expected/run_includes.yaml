@@ -1,3 +1,5 @@
+log_dir: logs
+log_dir_create_unique: false
 tasks:
 - name: local_eval/noop
 - name: local_eval/noop

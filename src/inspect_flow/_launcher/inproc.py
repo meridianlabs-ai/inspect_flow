@@ -1,6 +1,8 @@
 import os
 from logging import getLogger
 
+from inspect_ai.log import EvalLog
+
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._runner.check import check_eval_set
@@ -11,14 +13,15 @@ from inspect_flow._types.flow_types import FlowSpec
 logger = getLogger(__name__)
 
 
-def inproc_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> bool:
+def inproc_launch(
+    spec: FlowSpec, base_dir: str, dry_run: bool
+) -> tuple[bool, list[EvalLog]]:
     with RunAction("env", info="inproc"):
         if spec.env:
             os.environ.update(spec.env)
 
         write_flow_requirements(spec, cwd=".", env=os.environ.copy(), dry_run=dry_run)
-    success, _ = run_eval_set(spec, base_dir=base_dir, dry_run=dry_run)
-    return success or dry_run
+    return run_eval_set(spec, base_dir=base_dir, dry_run=dry_run)
 
 
 def inproc_check(spec: FlowSpec, base_dir: str) -> FindLogsResult:

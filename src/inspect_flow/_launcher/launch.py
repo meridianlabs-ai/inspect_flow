@@ -1,18 +1,20 @@
-import subprocess
 from logging import getLogger
+
+from inspect_ai.log import EvalLog
 
 from inspect_flow._launcher.inproc import inproc_check, inproc_launch
 from inspect_flow._launcher.venv import venv_check, venv_launch
 from inspect_flow._runner.logs import FindLogsResult
 from inspect_flow._types.flow_types import FlowSpec
-from inspect_flow._util.constants import EXIT_INCOMPLETE
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.path_util import absolute_path_relative_to
 
 logger = getLogger(__name__)
 
 
-def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> bool:
+def launch(
+    spec: FlowSpec, base_dir: str, dry_run: bool = False
+) -> tuple[bool, list[EvalLog]]:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
@@ -31,17 +33,7 @@ def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> bool:
             }
 
     if spec.execution_type == "venv":
-        # venv_launch raises CalledProcessError if the child exits non-zero. An
-        # exit of EXIT_INCOMPLETE means the run completed but some tasks did not
-        # succeed, which we surface as False to match the inproc contract. Any
-        # other non-zero code is a genuine error and propagates.
-        try:
-            venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
-            return True
-        except subprocess.CalledProcessError as ex:
-            if ex.returncode == EXIT_INCOMPLETE:
-                return False
-            raise
+        return venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
     else:
         return inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
 
