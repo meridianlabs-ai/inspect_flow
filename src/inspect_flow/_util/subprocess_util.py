@@ -1,8 +1,10 @@
 """Utilities for running subprocesses with logging support."""
 
+import json
 import os
 import subprocess
 from logging import getLogger
+from pathlib import Path
 from typing import Any
 
 from inspect_flow._util.console import flow_print
@@ -13,6 +15,46 @@ logger = getLogger(__name__)
 # The parent sets these before spawning the child process.
 CHILD_READY_FD_ENV = "INSPECT_FLOW_CHILD_READY_FD"
 PARENT_ACK_FD_ENV = "INSPECT_FLOW_PARENT_ACK_FD"
+
+# Absolute path of a per-run file the child writes its success flag to. The
+# parent creates the path and sets this before spawning the child. Using an
+# explicit per-run path (rather than a shared key) keeps concurrent runs from
+# racing and is unaffected by env changes to the child's HOME/XDG_DATA_HOME.
+RUN_RESULT_FILE_ENV = "INSPECT_FLOW_RUN_RESULT_FILE"
+
+
+def write_run_result(success: bool) -> None:
+    """Write the run success flag to the per-run result file, if one was set.
+
+    Called by a child runner process spawned with `RUN_RESULT_FILE_ENV`. Does
+    nothing when the env var is unset (e.g. when invoked standalone).
+
+    Args:
+        success: Whether the eval set completed successfully.
+    """
+    result_path = os.environ.get(RUN_RESULT_FILE_ENV)
+    if result_path:
+        Path(result_path).write_text(json.dumps({"success": success}))
+
+
+def read_run_result(result_path: str) -> bool:
+    """Read the success flag a child runner wrote to its per-run result file.
+
+    Args:
+        result_path: Absolute path the child was told to write to.
+
+    Returns:
+        The success flag written by the child.
+
+    Raises:
+        RuntimeError: If the child exited without writing a result.
+    """
+    path = Path(result_path)
+    if not path.exists():
+        raise RuntimeError(
+            f"venv run process exited without reporting a result at {result_path}"
+        )
+    return bool(json.loads(path.read_text())["success"])
 
 
 def signal_ready_and_wait() -> None:
