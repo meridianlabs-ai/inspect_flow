@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -18,7 +19,7 @@ from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._runner.cli import runner
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
-from inspect_flow._util.data import LAST_RUN_SUCCESS_KEY, read_data, write_data
+from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
@@ -80,11 +81,15 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
 def test_launch_venv_returns_subprocess_success(
     mock_venv_subprocess: MockVenvSubprocess, child_success: bool
 ) -> None:
-    # The child signals its success flag over the data channel before exiting; the
-    # parent reads it back and returns it (with empty logs, which live in the child).
-    mock_venv_subprocess.popen.return_value.wait.side_effect = lambda: write_data(
-        LAST_RUN_SUCCESS_KEY, child_success
-    )
+    # The child writes its success flag to the per-run result file before exiting;
+    # the parent reads it back and returns it (with empty logs, in the child).
+    def write_result() -> None:
+        env = mock_venv_subprocess.popen.call_args.kwargs["env"]
+        Path(env[RUN_RESULT_FILE_ENV]).write_text(
+            json.dumps({"success": child_success})
+        )
+
+    mock_venv_subprocess.popen.return_value.wait.side_effect = write_result
 
     success, logs = launch(
         spec=FlowSpec(execution_type="venv", log_dir="logs", tasks=["task_name"]),
@@ -95,14 +100,31 @@ def test_launch_venv_returns_subprocess_success(
     assert logs == []
 
 
+def test_launch_venv_missing_result_raises(
+    mock_venv_subprocess: MockVenvSubprocess,
+) -> None:
+    # Child exits cleanly but never writes a result; the parent must not silently
+    # report success or failure.
+    mock_venv_subprocess.popen.return_value.wait.side_effect = None
+    with pytest.raises(RuntimeError, match="without reporting a result"):
+        launch(
+            spec=FlowSpec(execution_type="venv", log_dir="logs", tasks=["task_name"]),
+            base_dir=".",
+        )
+
+
 @pytest.mark.parametrize("eval_set_success", [True, False])
-def test_runner_run_writes_success(tmp_path: Path, eval_set_success: bool) -> None:
+def test_runner_run_writes_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, eval_set_success: bool
+) -> None:
     spec = FlowSpec(
         log_dir=str(tmp_path / "logs"),
         store="none",
         tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
     )
     config_file = write_config_file(spec)
+    result_path = tmp_path / "run_result.json"
+    monkeypatch.setenv(RUN_RESULT_FILE_ENV, str(result_path))
 
     with patch(
         "inspect_flow._runner.cli.run_eval_set",
@@ -115,7 +137,7 @@ def test_runner_run_writes_success(tmp_path: Path, eval_set_success: bool) -> No
         )
 
     assert result.exit_code == 0
-    assert read_data(LAST_RUN_SUCCESS_KEY) is eval_set_success
+    assert read_run_result(str(result_path)) is eval_set_success
 
 
 def test_env(

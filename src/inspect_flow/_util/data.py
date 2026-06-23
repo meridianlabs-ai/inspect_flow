@@ -9,7 +9,6 @@ from inspect_flow._util.constants import PKG_NAME
 _DATA_FILE = "flow_data.json"
 
 LAST_LOG_DIR_KEY = "last_log_dir"
-LAST_RUN_SUCCESS_KEY = "last_run_success"
 
 
 def user_data_dir() -> Path:
