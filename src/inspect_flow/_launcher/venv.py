@@ -9,7 +9,6 @@ from typing import Callable, List, Literal, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
-from inspect_ai.log import EvalLog
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 from packaging.requirements import InvalidRequirement, Requirement
@@ -28,6 +27,7 @@ from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
@@ -43,13 +43,11 @@ from inspect_flow._util.subprocess_util import (
 logger = getLogger(__name__)
 
 
-def venv_launch(
-    spec: FlowSpec, base_dir: str, dry_run: bool
-) -> tuple[bool, list[EvalLog]]:
+def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> LaunchResult:
     # The eval logs live in the subprocess; only the success flag is signaled back
     # (via a per-run result file) on a clean exit. A crash raises in _venv_spawn.
     success = _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
-    return success, []
+    return LaunchResult(success=success, logs=[])
 
 
 def venv_check(spec: FlowSpec, base_dir: str) -> bool:

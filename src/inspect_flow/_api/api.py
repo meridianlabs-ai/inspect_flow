@@ -122,13 +122,13 @@ def run(
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions(resume=resume))
-    success, logs = launch(
+    result = launch(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
     )
     assert spec.log_dir
-    return RunResult(success=success, logs=logs, log_dir=spec.log_dir)
+    return RunResult(success=result.success, logs=result.logs, log_dir=spec.log_dir)
 
 
 @dataclass
@@ -197,8 +197,8 @@ def check(
     )
     if log_dir is not None:
         spec = spec.model_copy(update={"log_dir": log_dir})
-    _, logs_result = launch_check(spec=spec, base_dir=base_dir)
-    return _to_check_result(logs_result) if logs_result is not None else None
+    result = launch_check(spec=spec, base_dir=base_dir)
+    return _to_check_result(result.logs) if result.logs is not None else None
 
 
 def _to_check_result(logs_result: FindLogsResult) -> CheckResult:

@@ -17,6 +17,7 @@ from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._runner.cli import runner
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
@@ -34,7 +35,7 @@ def test_launch_inproc() -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_run,
     ):
-        mock_run_eval_set.return_value = (True, [])
+        mock_run_eval_set.return_value = LaunchResult(success=True, logs=[])
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
@@ -129,7 +130,7 @@ def test_runner_run_writes_success(
 
     with patch(
         "inspect_flow._runner.cli.run_eval_set",
-        return_value=(eval_set_success, []),
+        return_value=LaunchResult(success=eval_set_success, logs=[]),
     ):
         result = CliRunner().invoke(
             runner,
@@ -169,7 +170,10 @@ def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv1", raising=False)
     monkeypatch.delenv("myenv2", raising=False)
 
-    with patch("inspect_flow._launcher.inproc.run_eval_set", return_value=(True, [])):
+    with patch(
+        "inspect_flow._launcher.inproc.run_eval_set",
+        return_value=LaunchResult(success=True, logs=[]),
+    ):
         launch(
             spec=FlowSpec(
                 execution_type="inproc",

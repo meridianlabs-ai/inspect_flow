@@ -53,10 +53,10 @@ def run_command(
     with create_display(mode=mode, actions=_run_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
         spec = int_load_spec(config_file, options=config_options)
-        success, _ = launch(
+        result = launch(
             spec,
             base_dir=str(Path(config_file).parent),
             dry_run=dry_run,
         )
-    if not dry_run and not success:
+    if not dry_run and not result.success:
         sys.exit(EXIT_INCOMPLETE)

@@ -100,8 +100,8 @@ def runner_run(
     mode: DisplayMode = "dry_run" if dry_run else "run"
     with create_display(mode=mode, actions=RUN_ACTIONS) as disp:
         disp.set_title("VENV Flow Spec:", path(file))
-        success, _ = run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
-    write_run_result(success)
+        result = run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    write_run_result(result.success)
 
 
 @runner.command("check")
