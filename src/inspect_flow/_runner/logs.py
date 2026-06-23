@@ -42,6 +42,13 @@ class FindLogsResult(NamedTuple):
     task_log_info: dict[str, TaskLogInfo]
     unexpected_logs: list[str]
 
+    @property
+    def is_complete(self) -> bool:
+        return all(
+            info.task_samples is not None and info.log_samples >= info.task_samples
+            for info in self.task_log_info.values()
+        )
+
 
 def get_task_ids_to_tasks(
     tasks: list[InstantiatedTask], spec: FlowSpec

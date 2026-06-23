@@ -88,6 +88,21 @@ def test_check_result_task_has_duplicate_logs(tmp_path: Path) -> None:
     assert len(result.tasks[0].duplicate_logs) == 1
 
 
+def test_check_result_is_complete(tmp_path: Path) -> None:
+    log_dir = str(tmp_path / "logs")
+    flow_task = FlowTask(name=_TASK, model="mockllm/mock-llm")
+    spec = FlowSpec(log_dir=log_dir, tasks=[flow_task])
+
+    incomplete = check(spec=spec, base_dir=".")
+    assert incomplete is not None
+    assert not incomplete.is_complete
+
+    run_eval_set(spec=spec, base_dir=".")
+    complete = check(spec=spec, base_dir=".")
+    assert complete is not None
+    assert complete.is_complete
+
+
 def test_check_result_has_unrecognized_logs(tmp_path: Path) -> None:
     log_dir = str(tmp_path / "logs")
     spec = FlowSpec(

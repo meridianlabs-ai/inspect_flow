@@ -28,6 +28,19 @@ def test_list_log(recording_console: Console) -> None:
     assert "Date " in result.output
 
 
+def test_list_log_no_page_when_not_tty() -> None:
+    runner = CliRunner()
+    _import_logs(runner)
+    with (
+        patch("inspect_flow._cli.list.os.isatty", return_value=False),
+        patch("inspect_flow._cli.list._paged_output") as paged,
+    ):
+        result = runner.invoke(list_command, ["log"], catch_exceptions=False)
+    assert result.exit_code == 0
+    paged.assert_not_called()
+    assert "gpqa_diamond" in result.output
+
+
 def test_list_log_oneline(recording_console: Console) -> None:
     runner = CliRunner()
     _import_logs(runner)

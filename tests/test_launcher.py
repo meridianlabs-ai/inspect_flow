@@ -27,6 +27,7 @@ def test_launch_inproc() -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_run,
     ):
+        mock_run_eval_set.return_value = (True, [])
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
@@ -98,7 +99,7 @@ def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv1", raising=False)
     monkeypatch.delenv("myenv2", raising=False)
 
-    with patch("inspect_flow._launcher.inproc.run_eval_set"):
+    with patch("inspect_flow._launcher.inproc.run_eval_set", return_value=(True, [])):
         launch(
             spec=FlowSpec(
                 execution_type="inproc",

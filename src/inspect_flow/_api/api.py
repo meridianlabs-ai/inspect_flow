@@ -77,7 +77,7 @@ def run(
     *,
     dry_run: bool = False,
     resume: bool = False,
-) -> None:
+) -> bool:
     """Run an inspect_flow evaluation.
 
     Args:
@@ -85,6 +85,10 @@ def run(
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If `True`, do not run eval, but show a count of tasks that would be run.
         resume: If `True`, reuse the log directory from the previous run.
+
+    Returns:
+        `True` if the eval set completed successfully (or was a dry run), `False`
+        if some tasks did not complete successfully.
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -98,7 +102,7 @@ def run(
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions(resume=resume))
-    launch(
+    return launch(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
@@ -119,6 +123,14 @@ class CheckTask:
 class CheckResult:
     tasks: list[CheckTask]
     unrecognized: list[str]  # log file paths not matching any task in spec
+
+    @property
+    def is_complete(self) -> bool:
+        """`True` if every task has a log with at least its expected samples."""
+        return all(
+            task.total_samples is not None and task.samples >= task.total_samples
+            for task in self.tasks
+        )
 
 
 def check(

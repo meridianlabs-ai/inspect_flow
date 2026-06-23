@@ -11,13 +11,14 @@ from inspect_flow._types.flow_types import FlowSpec
 logger = getLogger(__name__)
 
 
-def inproc_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> None:
+def inproc_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> bool:
     with RunAction("env", info="inproc"):
         if spec.env:
             os.environ.update(spec.env)
 
         write_flow_requirements(spec, cwd=".", env=os.environ.copy(), dry_run=dry_run)
-    run_eval_set(spec, base_dir=base_dir, dry_run=dry_run)
+    success, _ = run_eval_set(spec, base_dir=base_dir, dry_run=dry_run)
+    return success or dry_run
 
 
 def inproc_check(spec: FlowSpec, base_dir: str) -> FindLogsResult:

@@ -1,3 +1,4 @@
+import sys
 from collections.abc import Callable
 from typing import Any, Literal, TypeVar
 
@@ -319,6 +320,13 @@ def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_print("Version: ", flow_store.version)
 
 
+def _stdin_is_interactive() -> bool:
+    try:
+        return sys.stdin is not None and sys.stdin.isatty()
+    except (ValueError, OSError):
+        return False
+
+
 @store_command.command("delete", help="Delete the flow store")
 @store_options
 @click.option(
@@ -334,6 +342,11 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
         flow_print("Store not found at", path(store_path), format="error")
         return
     if not yes:
+        if not _stdin_is_interactive():
+            raise click.UsageError(
+                f"Refusing to delete the store at {store_path} without confirmation "
+                "on a non-interactive terminal. Re-run with --yes to confirm."
+            )
         click.confirm(
             f"Are you sure you want to delete the store at {store_path}?",
             abort=True,

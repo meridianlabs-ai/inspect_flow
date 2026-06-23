@@ -391,6 +391,38 @@ def test_417_invalid_run() -> None:
     )
 
 
+def test_run_command_exit_code_incomplete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._runner.run.eval_set", return_value=(False, [])):
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 2
+
+
+def test_run_command_exit_code_success(tmp_path: Path) -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._runner.run.eval_set", return_value=(True, [])):
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 0
+
+
+def test_check_command_exit_code_incomplete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(check_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 2
+
+
+def test_check_command_exit_code_complete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    run_result = runner.invoke(
+        run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)], catch_exceptions=False
+    )
+    assert run_result.exit_code == 0
+    check_result = runner.invoke(
+        check_command, [CONFIG_FILE, "--log-dir", str(tmp_path)], catch_exceptions=False
+    )
+    assert check_result.exit_code == 0
+
+
 def test_store_commands() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
@@ -433,9 +465,10 @@ def test_store_delete() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    result = runner.invoke(
-        store_command, ["delete", "--log-level", "error"], input="y\n"
-    )
+    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=True):
+        result = runner.invoke(
+            store_command, ["delete", "--log-level", "error"], input="y\n"
+        )
     assert result.exit_code == 0
     assert "Deleted store" in result.output
     result = runner.invoke(store_command, ["info", "--log-level", "error"])
@@ -455,10 +488,24 @@ def test_store_delete_abort() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    result = runner.invoke(
-        store_command, ["delete", "--log-level", "error"], input="n\n"
-    )
+    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=True):
+        result = runner.invoke(
+            store_command, ["delete", "--log-level", "error"], input="n\n"
+        )
     assert result.exit_code != 0
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "2 logs" in result.output
+
+
+def test_store_delete_non_tty_requires_yes() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=False):
+        result = runner.invoke(store_command, ["delete", "--log-level", "error"])
+    assert result.exit_code != 0
+    assert "--yes" in result.output
+    # The store must be left intact when confirmation is refused.
     result = runner.invoke(store_command, ["info", "--log-level", "error"])
     assert "2 logs" in result.output
 

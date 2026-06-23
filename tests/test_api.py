@@ -89,6 +89,7 @@ def test_resume(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
+        mock_run_eval_set.return_value = (True, [])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
@@ -123,6 +124,7 @@ def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
+        mock_run_eval_set.return_value = (True, [])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
