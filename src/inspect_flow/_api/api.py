@@ -20,7 +20,6 @@ from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
-from inspect_flow._util.logs import samples_complete
 from inspect_flow._util.module_util import is_loading_spec
 
 _initialized = False
@@ -158,18 +157,14 @@ class CheckTask:
 class CheckResult:
     """Result of checking an inspect_flow evaluation against existing logs."""
 
+    is_complete: bool
+    """`True` if every task has a log with at least its expected samples."""
+
     tasks: list[CheckTask]
-    """Completeness information for each task in the spec."""
+    """Completeness information for each task in the spec. Empty for venv execution."""
 
     unrecognized: list[str]
-    """Log file paths not matching any task in the spec."""
-
-    @property
-    def is_complete(self) -> bool:
-        """`True` if every task has a log with at least its expected samples."""
-        return samples_complete(
-            (task.samples, task.total_samples) for task in self.tasks
-        )
+    """Log file paths not matching any task in the spec. Empty for venv execution."""
 
 
 def check(
@@ -177,7 +172,7 @@ def check(
     base_dir: str | None = None,
     *,
     log_dir: str | None = None,
-) -> CheckResult | None:
+) -> CheckResult:
     """Check completeness of an inspect_flow evaluation against existing logs.
 
     Args:
@@ -186,7 +181,10 @@ def check(
         log_dir: Log directory to check against. Overrides the `log_dir` in the spec.
 
     Returns:
-        A CheckResult object containing the check results when run inproc. None when run in a venv.
+        A CheckResult whose `is_complete` flag reflects whether every task has a
+        log with at least its expected samples. For venv execution the per-task
+        details live in the subprocess, so `tasks` and `unrecognized` are empty
+        and only `is_complete` is populated.
     """
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
@@ -198,10 +196,12 @@ def check(
     if log_dir is not None:
         spec = spec.model_copy(update={"log_dir": log_dir})
     result = launch_check(spec=spec, base_dir=base_dir)
-    return _to_check_result(result.logs) if result.logs is not None else None
+    if result.logs is None:
+        return CheckResult(is_complete=result.is_complete, tasks=[], unrecognized=[])
+    return _to_check_result(result.is_complete, result.logs)
 
 
-def _to_check_result(logs_result: FindLogsResult) -> CheckResult:
+def _to_check_result(is_complete: bool, logs_result: FindLogsResult) -> CheckResult:
     tasks = []
     for info in logs_result.task_log_info.values():
         assert info.flow_task is not None
@@ -215,7 +215,11 @@ def _to_check_result(logs_result: FindLogsResult) -> CheckResult:
                 duplicate_logs=info.duplicate_logs,
             )
         )
-    return CheckResult(tasks=tasks, unrecognized=logs_result.unexpected_logs)
+    return CheckResult(
+        is_complete=is_complete,
+        tasks=tasks,
+        unrecognized=logs_result.unexpected_logs,
+    )
 
 
 def config(

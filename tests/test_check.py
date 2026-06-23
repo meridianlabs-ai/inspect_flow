@@ -36,7 +36,6 @@ def test_check_returns_result_with_no_existing_logs(tmp_path: Path) -> None:
 
     result = check(spec=spec, base_dir=".")
 
-    assert result is not None
     assert len(result.tasks) == 1
     assert result.unrecognized == []
 
@@ -57,7 +56,6 @@ def test_check_returns_result_with_completed_log(tmp_path: Path) -> None:
     run_eval_set(spec=spec, base_dir=".")
     result = check(spec=spec, base_dir=".")
 
-    assert result is not None
     assert len(result.tasks) == 1
     assert result.unrecognized == []
 
@@ -84,7 +82,6 @@ def test_check_result_task_has_duplicate_logs(tmp_path: Path) -> None:
 
     result = check(spec=spec, base_dir=".")
 
-    assert result is not None
     assert len(result.tasks[0].duplicate_logs) == 1
 
 
@@ -94,12 +91,10 @@ def test_check_result_is_complete(tmp_path: Path) -> None:
     spec = FlowSpec(log_dir=log_dir, tasks=[flow_task])
 
     incomplete = check(spec=spec, base_dir=".")
-    assert incomplete is not None
     assert not incomplete.is_complete
 
     run_eval_set(spec=spec, base_dir=".")
     complete = check(spec=spec, base_dir=".")
-    assert complete is not None
     assert complete.is_complete
 
 
@@ -116,6 +111,5 @@ def test_check_result_has_unrecognized_logs(tmp_path: Path) -> None:
     empty_spec = FlowSpec(log_dir=log_dir, tasks=[])
     result = check(spec=empty_spec, base_dir=".")
 
-    assert result is not None
     assert len(result.unrecognized) == 1
     assert result.tasks == []
