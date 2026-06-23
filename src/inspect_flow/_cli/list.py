@@ -41,6 +41,7 @@ from inspect_flow._util.logs import (
     num_valid_samples_async,
 )
 from inspect_flow._util.path_util import apply_bundle_url_mappings, path_str
+from inspect_flow._util.terminal import stdout_is_terminal
 
 logger = getLogger(__name__)
 
@@ -598,7 +599,7 @@ def _echo_tree(
         flow_print("No logs found")
         return
     output = _format_tree(dir_entries)
-    if os.isatty(1) and output.count("\n") > Console().size.height - 1:
+    if stdout_is_terminal() and output.count("\n") > Console().size.height - 1:
         _page_string(output)
     else:
         click.echo(output, nl=False)
@@ -638,7 +639,7 @@ def _echo_logs(
     total_entries = min(
         sum(len(g) for g in dir_groups), options.max_count or float("inf")
     )
-    if options.page and os.isatty(1) and total_entries * lpe > page_size:
+    if options.page and stdout_is_terminal() and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
         entries = _process_groups(dir_groups, options, progress=progress)

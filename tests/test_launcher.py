@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from botocore.client import BaseClient
@@ -87,9 +87,7 @@ def test_launch_venv_returns_subprocess_success(
     # the parent reads it back and returns it (with empty logs, in the child).
     def write_result() -> None:
         env = mock_venv_subprocess.popen.call_args.kwargs["env"]
-        Path(env[RUN_RESULT_FILE_ENV]).write_text(
-            json.dumps({"success": child_success})
-        )
+        Path(env[RUN_RESULT_FILE_ENV]).write_text(json.dumps({"ok": child_success}))
 
     mock_venv_subprocess.popen.return_value.wait.side_effect = write_result
 
@@ -140,6 +138,33 @@ def test_runner_run_writes_success(
 
     assert result.exit_code == 0
     assert read_run_result(str(result_path)) is eval_set_success
+
+
+@pytest.mark.parametrize("is_complete", [True, False])
+def test_runner_check_writes_is_complete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, is_complete: bool
+) -> None:
+    spec = FlowSpec(
+        log_dir=str(tmp_path / "logs"),
+        store="none",
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+    config_file = write_config_file(spec)
+    result_path = tmp_path / "run_result.json"
+    monkeypatch.setenv(RUN_RESULT_FILE_ENV, str(result_path))
+
+    with patch(
+        "inspect_flow._runner.cli.check_eval_set",
+        return_value=MagicMock(is_complete=is_complete),
+    ):
+        result = CliRunner().invoke(
+            runner,
+            ["check", "--file", config_file, "--base-dir", "."],
+            catch_exceptions=False,
+        )
+
+    assert result.exit_code == 0
+    assert read_run_result(str(result_path)) is is_complete
 
 
 def test_env(

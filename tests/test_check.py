@@ -1,6 +1,8 @@
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from inspect_flow import FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow.api import check
@@ -96,6 +98,26 @@ def test_check_result_is_complete(tmp_path: Path) -> None:
     run_eval_set(spec=spec, base_dir=".")
     complete = check(spec=spec, base_dir=".")
     assert complete.is_complete
+
+
+@pytest.mark.parametrize("is_complete", [True, False])
+def test_check_venv_returns_is_complete(tmp_path: Path, is_complete: bool) -> None:
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir=str(tmp_path / "logs"),
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+
+    with patch(
+        "inspect_flow._launcher.launch.venv_check", return_value=is_complete
+    ) as mock_venv_check:
+        result = check(spec=spec, base_dir=".")
+
+    mock_venv_check.assert_called_once()
+    # The per-task details live in the subprocess; only is_complete comes back.
+    assert result.is_complete is is_complete
+    assert result.tasks == []
+    assert result.unrecognized == []
 
 
 def test_check_result_has_unrecognized_logs(tmp_path: Path) -> None:

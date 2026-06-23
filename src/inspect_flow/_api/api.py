@@ -196,9 +196,9 @@ def check(
     if log_dir is not None:
         spec = spec.model_copy(update={"log_dir": log_dir})
     result = launch_check(spec=spec, base_dir=base_dir)
-    if result.logs is None:
+    if result.find_result is None:
         return CheckResult(is_complete=result.is_complete, tasks=[], unrecognized=[])
-    return _to_check_result(result.is_complete, result.logs)
+    return _to_check_result(result.is_complete, result.find_result)
 
 
 def _to_check_result(is_complete: bool, logs_result: FindLogsResult) -> CheckResult:

@@ -32,7 +32,7 @@ def test_list_log_no_page_when_not_tty() -> None:
     runner = CliRunner()
     _import_logs(runner)
     with (
-        patch("inspect_flow._cli.list.os.isatty", return_value=False),
+        patch("inspect_flow._cli.list.stdout_is_terminal", return_value=False),
         patch("inspect_flow._cli.list._paged_output") as paged,
     ):
         result = runner.invoke(list_command, ["log"], catch_exceptions=False)

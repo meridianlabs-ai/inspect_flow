@@ -150,7 +150,7 @@ def test_no_log_dir_create_unique_overrides_spec() -> None:
 def test_check_command_disables_log_dir_create_unique() -> None:
     runner = CliRunner()
     with patch("inspect_flow._cli.check.launch_check") as mock_check:
-        mock_check.return_value = CheckLaunchResult(is_complete=True, logs=None)
+        mock_check.return_value = CheckLaunchResult(is_complete=True, find_result=None)
         result = runner.invoke(
             check_command,
             [CONFIG_FILE, "--set", "log_dir_create_unique=True"],
@@ -444,6 +444,23 @@ def test_check_command_exit_code_complete(tmp_path: Path) -> None:
     assert check_result.exit_code == 0
 
 
+@pytest.mark.parametrize("is_complete,expected_code", [(True, 0), (False, 3)])
+def test_check_command_venv_exit_code(
+    tmp_path: Path, is_complete: bool, expected_code: int
+) -> None:
+    runner = CliRunner()
+    with patch(
+        "inspect_flow._launcher.launch.venv_check", return_value=is_complete
+    ) as mock_venv_check:
+        result = runner.invoke(
+            check_command,
+            [CONFIG_FILE, "--log-dir", str(tmp_path), "--set", "execution_type=venv"],
+            catch_exceptions=False,
+        )
+    mock_venv_check.assert_called_once()
+    assert result.exit_code == expected_code
+
+
 def test_store_commands() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
@@ -486,7 +503,7 @@ def test_store_delete() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=True):
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=True):
         result = runner.invoke(
             store_command, ["delete", "--log-level", "error"], input="y\n"
         )
@@ -509,7 +526,7 @@ def test_store_delete_abort() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=True):
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=True):
         result = runner.invoke(
             store_command, ["delete", "--log-level", "error"], input="n\n"
         )
@@ -522,7 +539,7 @@ def test_store_delete_non_tty_requires_yes() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    with patch("inspect_flow._cli.store._stdin_is_interactive", return_value=False):
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=False):
         result = runner.invoke(store_command, ["delete", "--log-level", "error"])
     assert result.exit_code != 0
     assert "--yes" in result.output

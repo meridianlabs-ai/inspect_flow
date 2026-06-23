@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 
 class CheckLaunchResult(NamedTuple):
     is_complete: bool
-    logs: FindLogsResult | None
+    find_result: FindLogsResult | None
 
 
 def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
@@ -50,8 +50,8 @@ def launch_check(spec: FlowSpec, base_dir: str) -> CheckLaunchResult:
         # The full result lives in the subprocess; only the completeness flag is
         # signaled back (via a per-run result file) on a clean exit.
         return CheckLaunchResult(
-            is_complete=venv_check(spec=spec, base_dir=base_dir), logs=None
+            is_complete=venv_check(spec=spec, base_dir=base_dir), find_result=None
         )
     else:
         result = inproc_check(spec=spec, base_dir=base_dir)
-        return CheckLaunchResult(is_complete=result.is_complete, logs=result)
+        return CheckLaunchResult(is_complete=result.is_complete, find_result=result)
