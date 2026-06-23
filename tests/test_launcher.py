@@ -14,7 +14,7 @@ from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
-from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL, EXIT_INCOMPLETE
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
@@ -313,3 +313,22 @@ def test_flow_process_error(mock_venv_subprocess: MockVenvSubprocess) -> None:
         launch(spec=spec, base_dir="./tests/config/")
     mock_create_venv.assert_called_once()
     assert e.value.returncode == 123
+
+
+def test_flow_process_incomplete_returns_false(
+    mock_venv_subprocess: MockVenvSubprocess,
+) -> None:
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        tasks=[
+            "local_eval/noop",
+        ],
+    )
+
+    mock_venv_subprocess.popen.return_value.returncode = EXIT_INCOMPLETE
+
+    with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
+        complete = launch(spec=spec, base_dir="./tests/config/")
+    mock_create_venv.assert_called_once()
+    assert complete is False
