@@ -13,3 +13,12 @@ runs:
       with:
         # CI runs a 3.10/3.11 matrix; the agent only needs one interpreter.
         python-version: "3.11"
+    # Put the uv-managed project venv on PATH so the agent's allow-listed bare
+    # `pytest`/`ruff`/`pyright` resolve. Without this they aren't on PATH, so the
+    # agent falls back to `.venv/bin/...` / `make check` — neither allow-listed —
+    # and the verify loop is blocked (it then ships unverified, noting it could
+    # not run the tools). Plain `run:` step (no post phase) so it's safe on the
+    # fork dev agent too.
+    - name: Put the project venv on PATH for the agent
+      shell: bash
+      run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
