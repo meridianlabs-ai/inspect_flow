@@ -395,7 +395,7 @@ def test_run_command_exit_code_incomplete(tmp_path: Path) -> None:
     runner = CliRunner()
     with patch("inspect_flow._runner.run.eval_set", return_value=(False, [])):
         result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
-    assert result.exit_code == 2
+    assert result.exit_code == 3
 
 
 def test_run_command_exit_code_success(tmp_path: Path) -> None:
@@ -408,7 +408,7 @@ def test_run_command_exit_code_success(tmp_path: Path) -> None:
 def test_check_command_exit_code_incomplete(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(check_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
-    assert result.exit_code == 2
+    assert result.exit_code == 3
 
 
 def test_check_command_exit_code_complete(tmp_path: Path) -> None:
