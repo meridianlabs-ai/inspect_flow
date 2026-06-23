@@ -19,6 +19,7 @@ from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.logs import samples_complete
 from inspect_flow._util.module_util import is_loading_spec
 
 _initialized = False
@@ -127,9 +128,8 @@ class CheckResult:
     @property
     def is_complete(self) -> bool:
         """`True` if every task has a log with at least its expected samples."""
-        return all(
-            task.total_samples is not None and task.samples >= task.total_samples
-            for task in self.tasks
+        return samples_complete(
+            (task.samples, task.total_samples) for task in self.tasks
         )
 
 

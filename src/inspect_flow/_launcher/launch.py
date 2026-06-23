@@ -35,6 +35,10 @@ def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> bool:
         # exit of EXIT_INCOMPLETE means the run completed but some tasks did not
         # succeed, which we surface as False to match the inproc contract. Any
         # other non-zero code is a genuine error and propagates.
+        #
+        # EXIT_INCOMPLETE (2) is also click's conventional usage-error code, so a
+        # malformed child invocation would be misread as incomplete. The child
+        # args are fully internal/controlled here, so that case does not arise.
         try:
             venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
             return True
