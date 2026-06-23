@@ -5,21 +5,27 @@ from unittest.mock import patch
 
 import pytest
 from botocore.client import BaseClient
+from click.testing import CliRunner
 from inspect_ai import Task
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
 from inspect_flow._config.load import ConfigOptions, int_load_spec
+from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
+from inspect_flow._runner.cli import runner
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.data import LAST_RUN_SUCCESS_KEY, read_data, write_data
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
 
 CREATE_VENV_RUN_CALLS = 4
+
+_TASK = "tests/local_eval/src/local_eval/noop.py@noop"
 
 
 def test_launch_inproc() -> None:
@@ -68,6 +74,48 @@ def test_launch_venv(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert args[8] == DEFAULT_LOG_LEVEL
     assert args[9] == "--display"
     assert args[10] == DEFAULT_DISPLAY_TYPE
+
+
+@pytest.mark.parametrize("child_success", [True, False])
+def test_launch_venv_returns_subprocess_success(
+    mock_venv_subprocess: MockVenvSubprocess, child_success: bool
+) -> None:
+    # The child signals its success flag over the data channel before exiting; the
+    # parent reads it back and returns it (with empty logs, which live in the child).
+    mock_venv_subprocess.popen.return_value.wait.side_effect = lambda: write_data(
+        LAST_RUN_SUCCESS_KEY, child_success
+    )
+
+    success, logs = launch(
+        spec=FlowSpec(execution_type="venv", log_dir="logs", tasks=["task_name"]),
+        base_dir=".",
+    )
+
+    assert success is child_success
+    assert logs == []
+
+
+@pytest.mark.parametrize("eval_set_success", [True, False])
+def test_runner_run_writes_success(tmp_path: Path, eval_set_success: bool) -> None:
+    spec = FlowSpec(
+        log_dir=str(tmp_path / "logs"),
+        store="none",
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+    config_file = write_config_file(spec)
+
+    with patch(
+        "inspect_flow._runner.cli.run_eval_set",
+        return_value=(eval_set_success, []),
+    ):
+        result = CliRunner().invoke(
+            runner,
+            ["run", "--file", config_file, "--base-dir", "."],
+            catch_exceptions=False,
+        )
+
+    assert result.exit_code == 0
+    assert read_data(LAST_RUN_SUCCESS_KEY) is eval_set_success
 
 
 def test_env(

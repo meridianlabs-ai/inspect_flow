@@ -92,7 +92,7 @@ def run(
     *,
     dry_run: bool = False,
     resume: bool = False,
-) -> RunResult | None:
+) -> RunResult:
     """Run an inspect_flow evaluation.
 
     Args:
@@ -102,8 +102,10 @@ def run(
         resume: If `True`, reuse the log directory from the previous run.
 
     Returns:
-        A RunResult with the success flag, eval logs, and log directory when run
-        inproc. None when run in a venv (the result lives in the subprocess).
+        A RunResult with the success flag, eval logs, and log directory. For venv
+        execution the eval logs live in the subprocess, so `logs` is empty and
+        `success` reflects the subprocess outcome. For a dry run, the success flag
+        is always `False` and the eval logs are empty.
 
     Raises:
         RuntimeError: If called from within a flow spec file being loaded.
@@ -117,14 +119,11 @@ def run(
     ensure_init(dotenv_base_dir=base_dir)
     base_dir = base_dir or Path().cwd().as_posix()
     spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions(resume=resume))
-    result = launch(
+    success, logs = launch(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
     )
-    if result is None:
-        return None
-    success, logs = result
     assert spec.log_dir
     return RunResult(success=success, logs=logs, log_dir=spec.log_dir)
 

@@ -16,6 +16,7 @@ from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.console import path
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
+from inspect_flow._util.data import LAST_RUN_SUCCESS_KEY, write_data
 from inspect_flow._util.error import set_exception_hook
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.subprocess_util import signal_ready_and_wait
@@ -100,7 +101,8 @@ def runner_run(
     mode: DisplayMode = "dry_run" if dry_run else "run"
     with create_display(mode=mode, actions=RUN_ACTIONS) as disp:
         disp.set_title("VENV Flow Spec:", path(file))
-        run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+        success, _ = run_eval_set(cfg, base_dir=base_dir, dry_run=dry_run)
+    write_data(LAST_RUN_SUCCESS_KEY, success)
 
 
 @runner.command("check")

@@ -23,13 +23,15 @@ def reset_initialized() -> None:
 def test_258_run_includes() -> None:
     spec = FlowSpec(
         includes=["defaults_flow.py"],
+        log_dir="logs",
+        log_dir_create_unique=False,
         tasks=[
             "local_eval/noop",
             FlowTask(name="local_eval/noop", model="{defaults[model][name]}"),
         ],
     )
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        mock_launch.return_value = None
+        mock_launch.return_value = (True, [])
         run(spec=spec, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_spec = mock_launch.mock_calls[0].kwargs["spec"]
@@ -50,12 +52,12 @@ def test_config() -> None:
     assert dump == expected_dump
 
 
-def test_ensure_init_loads_dotenv_from_base_dir() -> None:
+def test_ensure_init_loads_dotenv_from_base_dir(tmp_path: Path) -> None:
     """When init() is not called explicitly, _ensure_init should load .env from base_dir."""
     os.environ.pop("TEST_ENV_VAR", None)
-    spec = FlowSpec(tasks=["local_eval/noop"])
+    spec = FlowSpec(log_dir=str(tmp_path / "logs"), tasks=["local_eval/noop"])
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        mock_launch.return_value = None
+        mock_launch.return_value = (True, [])
         run(spec=spec, base_dir="./tests/config/")
     assert os.environ.get("TEST_ENV_VAR") == "test_value"
     del os.environ["TEST_ENV_VAR"]
