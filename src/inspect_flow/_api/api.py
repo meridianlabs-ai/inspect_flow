@@ -197,7 +197,7 @@ def check(
     )
     if log_dir is not None:
         spec = spec.model_copy(update={"log_dir": log_dir})
-    logs_result = launch_check(spec=spec, base_dir=base_dir)
+    _, logs_result = launch_check(spec=spec, base_dir=base_dir)
     return _to_check_result(logs_result) if logs_result is not None else None
 
 

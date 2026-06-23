@@ -39,8 +39,6 @@ def check_command(
         display.set_title("Flow Spec:", path(config_file))
         kwargs["log_dir_create_unique"] = False
         spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
-        result = launch_check(spec, base_dir=str(Path(config_file).parent))
-    # `result` is None for venv execution; in that case the child process exits
-    # with EXIT_INCOMPLETE and venv_check propagates the code via CalledProcessError.
-    if result is not None and not result.is_complete:
+        is_complete, _ = launch_check(spec, base_dir=str(Path(config_file).parent))
+    if not is_complete:
         sys.exit(EXIT_INCOMPLETE)

@@ -142,6 +142,7 @@ def test_no_log_dir_create_unique_overrides_spec() -> None:
 def test_check_command_disables_log_dir_create_unique() -> None:
     runner = CliRunner()
     with patch("inspect_flow._cli.check.launch_check") as mock_check:
+        mock_check.return_value = (True, None)
         result = runner.invoke(
             check_command,
             [CONFIG_FILE, "--set", "log_dir_create_unique=True"],

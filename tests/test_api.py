@@ -197,6 +197,7 @@ def test_check_disables_log_dir_create_unique(tmp_path: Path) -> None:
     )
 
     with patch("inspect_flow._api.api.launch_check") as mock_check:
+        mock_check.return_value = (True, None)
         check(spec=spec, base_dir="./tests/config/")
         checked_spec = mock_check.call_args.kwargs["spec"]
 

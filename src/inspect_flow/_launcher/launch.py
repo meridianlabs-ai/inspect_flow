@@ -38,12 +38,15 @@ def launch(
         return inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
 
 
-def launch_check(spec: FlowSpec, base_dir: str) -> FindLogsResult | None:
+def launch_check(spec: FlowSpec, base_dir: str) -> tuple[bool, FindLogsResult | None]:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before checking the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
 
     if spec.execution_type == "venv":
-        return venv_check(spec=spec, base_dir=base_dir)
+        # The full result lives in the subprocess; only the completeness flag is
+        # signaled back (via a per-run result file) on a clean exit.
+        return venv_check(spec=spec, base_dir=base_dir), None
     else:
-        return inproc_check(spec=spec, base_dir=base_dir)
+        result = inproc_check(spec=spec, base_dir=base_dir)
+        return result.is_complete, result

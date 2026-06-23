@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import sys
-
 import click
 import yaml
 
@@ -17,7 +15,7 @@ from inspect_flow._runner.check import check_eval_set
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.console import path
-from inspect_flow._util.constants import DEFAULT_LOG_LEVEL, EXIT_INCOMPLETE
+from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.error import set_exception_hook
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.subprocess_util import signal_ready_and_wait, write_run_result
@@ -122,8 +120,7 @@ def runner_check(
     with create_display(mode="check", actions=CHECK_ACTIONS) as disp:
         disp.set_title("VENV Flow Spec:", path(file))
         result = check_eval_set(cfg, base_dir=base_dir)
-    if not result.is_complete:
-        sys.exit(EXIT_INCOMPLETE)
+    write_run_result(result.is_complete)
 
 
 if __name__ == "__main__":
