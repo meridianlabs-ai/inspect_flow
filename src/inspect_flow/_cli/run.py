@@ -6,6 +6,7 @@ from typing_extensions import Unpack
 
 from inspect_flow._cli.json_output import (
     emit_json,
+    ensure_json_supported,
     find_logs_result_to_json,
     quiet_output,
 )
@@ -61,13 +62,11 @@ def run_command(
             raise click.UsageError("--json is only supported with --dry-run.")
         with quiet_output():
             spec = int_load_spec(config_file, options=config_options)
+            ensure_json_supported(spec)
             result = launch_dry_run(spec, base_dir=base_dir)
         assert spec.log_dir
-        emit_json(
-            find_logs_result_to_json(result, spec.log_dir)
-            if result is not None
-            else None
-        )
+        assert result is not None
+        emit_json(find_logs_result_to_json(result, spec.log_dir))
         return
     mode: DisplayMode = "dry_run" if dry_run else "run"
     with create_display(mode=mode, actions=_run_actions) as display:

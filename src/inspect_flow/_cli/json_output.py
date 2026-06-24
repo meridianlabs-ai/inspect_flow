@@ -8,6 +8,7 @@ import click
 from inspect_flow._display.display import get_display_type, set_display_type
 from inspect_flow._runner.logs import FindLogsResult
 from inspect_flow._runner.task_log import TaskLogInfo
+from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.console import console
 
 
@@ -23,6 +24,16 @@ def quiet_output() -> Iterator[None]:
     finally:
         console.quiet = prev_quiet
         set_display_type(prev_display)
+
+
+def ensure_json_supported(spec: FlowSpec) -> None:
+    """Raise if --json output is requested for an unsupported execution type."""
+    if spec.execution_type == "venv":
+        raise click.UsageError(
+            "--json is not supported with venv execution because results are "
+            "produced in a subprocess. Use the default inproc execution type "
+            "(omit --venv), or drop --json."
+        )
 
 
 def emit_json(data: Any) -> None:

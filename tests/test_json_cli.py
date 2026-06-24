@@ -80,6 +80,22 @@ def test_run_json_requires_dry_run(tmp_path: Path) -> None:
     assert "--json is only supported with --dry-run" in result.output
 
 
+def test_run_dry_run_json_rejects_venv(tmp_path: Path) -> None:
+    spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
+    result = CliRunner().invoke(
+        run_command, [spec_file, "--dry-run", "--json", "--venv"]
+    )
+    assert result.exit_code != 0
+    assert "--json is not supported with venv execution" in result.output
+
+
+def test_check_json_rejects_venv(tmp_path: Path) -> None:
+    spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
+    result = CliRunner().invoke(check_command, [spec_file, "--json", "--venv"])
+    assert result.exit_code != 0
+    assert "--json is not supported with venv execution" in result.output
+
+
 def test_store_info_json(tmp_path: Path) -> None:
     runner = CliRunner()
     runner.invoke(store_command, ["import", _STORE_LOG_DIR, "--log-level", "error"])
