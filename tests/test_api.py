@@ -5,6 +5,8 @@ from unittest.mock import patch
 
 import pytest
 from inspect_flow._api import api as api_module
+from inspect_flow._launcher.launch import CheckLaunchResult
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec, FlowTask, not_given
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, read_data
 from inspect_flow.api import RunResult, check, config, init, load_spec, run, store_get
@@ -31,7 +33,7 @@ def test_258_run_includes() -> None:
         ],
     )
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        mock_launch.return_value = (True, [])
+        mock_launch.return_value = LaunchResult(success=True, logs=[])
         run(spec=spec, base_dir="./tests/config/")
     mock_launch.assert_called_once()
     launch_spec = mock_launch.mock_calls[0].kwargs["spec"]
@@ -57,7 +59,7 @@ def test_ensure_init_loads_dotenv_from_base_dir(tmp_path: Path) -> None:
     os.environ.pop("TEST_ENV_VAR", None)
     spec = FlowSpec(log_dir=str(tmp_path / "logs"), tasks=["local_eval/noop"])
     with patch("inspect_flow._api.api.launch") as mock_launch:
-        mock_launch.return_value = (True, [])
+        mock_launch.return_value = LaunchResult(success=True, logs=[])
         run(spec=spec, base_dir="./tests/config/")
     assert os.environ.get("TEST_ENV_VAR") == "test_value"
     del os.environ["TEST_ENV_VAR"]
@@ -95,7 +97,7 @@ def test_resume(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
-        mock_run_eval_set.return_value = (True, [])
+        mock_run_eval_set.return_value = LaunchResult(success=True, logs=[])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
@@ -130,7 +132,7 @@ def test_resume_ignores_log_dir_create_unique(tmp_path: Path) -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_subprocess,
     ):
-        mock_run_eval_set.return_value = (True, [])
+        mock_run_eval_set.return_value = LaunchResult(success=True, logs=[])
         mock_subprocess.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=""
         )
@@ -197,6 +199,7 @@ def test_check_disables_log_dir_create_unique(tmp_path: Path) -> None:
     )
 
     with patch("inspect_flow._api.api.launch_check") as mock_check:
+        mock_check.return_value = CheckLaunchResult(is_complete=True, find_result=None)
         check(spec=spec, base_dir="./tests/config/")
         checked_spec = mock_check.call_args.kwargs["spec"]
 

@@ -10,6 +10,8 @@ from inspect_flow._cli.options import _options_to_overrides
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._config.load import ConfigOptions, _apply_overrides
+from inspect_flow._launcher.launch import CheckLaunchResult
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._version import __version__
 
@@ -47,7 +49,10 @@ def test_flow_version() -> None:
 def test_run_command_overrides() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
@@ -96,7 +101,10 @@ def test_run_command_overrides() -> None:
 def test_run_command_log_dir_create_unique() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         # Mock the config object
@@ -142,6 +150,7 @@ def test_no_log_dir_create_unique_overrides_spec() -> None:
 def test_check_command_disables_log_dir_create_unique() -> None:
     runner = CliRunner()
     with patch("inspect_flow._cli.check.launch_check") as mock_check:
+        mock_check.return_value = CheckLaunchResult(is_complete=True, find_result=None)
         result = runner.invoke(
             check_command,
             [CONFIG_FILE, "--set", "log_dir_create_unique=True"],
@@ -224,7 +233,10 @@ def test_config_command_overrides_envvars(monkeypatch: pytest.MonkeyPatch) -> No
 def test_run_command_dry_run() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -248,7 +260,10 @@ def test_run_command_dry_run() -> None:
 def test_run_command_args() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -278,7 +293,10 @@ def test_run_command_args() -> None:
 def test_run_command_venv() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -305,7 +323,10 @@ def test_run_command_venv() -> None:
 def test_run_command_allow_dirty() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch") as mock_run,
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -391,6 +412,55 @@ def test_417_invalid_run() -> None:
     )
 
 
+def test_run_command_exit_code_incomplete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._runner.run.eval_set", return_value=(False, [])):
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 3
+
+
+def test_run_command_exit_code_success(tmp_path: Path) -> None:
+    runner = CliRunner()
+    with patch("inspect_flow._runner.run.eval_set", return_value=(True, [])):
+        result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 0
+
+
+def test_check_command_exit_code_incomplete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    result = runner.invoke(check_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
+    assert result.exit_code == 3
+
+
+def test_check_command_exit_code_complete(tmp_path: Path) -> None:
+    runner = CliRunner()
+    run_result = runner.invoke(
+        run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)], catch_exceptions=False
+    )
+    assert run_result.exit_code == 0
+    check_result = runner.invoke(
+        check_command, [CONFIG_FILE, "--log-dir", str(tmp_path)], catch_exceptions=False
+    )
+    assert check_result.exit_code == 0
+
+
+@pytest.mark.parametrize("is_complete,expected_code", [(True, 0), (False, 3)])
+def test_check_command_venv_exit_code(
+    tmp_path: Path, is_complete: bool, expected_code: int
+) -> None:
+    runner = CliRunner()
+    with patch(
+        "inspect_flow._launcher.launch.venv_check", return_value=is_complete
+    ) as mock_venv_check:
+        result = runner.invoke(
+            check_command,
+            [CONFIG_FILE, "--log-dir", str(tmp_path), "--set", "execution_type=venv"],
+            catch_exceptions=False,
+        )
+    mock_venv_check.assert_called_once()
+    assert result.exit_code == expected_code
+
+
 def test_store_commands() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
@@ -433,9 +503,10 @@ def test_store_delete() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    result = runner.invoke(
-        store_command, ["delete", "--log-level", "error"], input="y\n"
-    )
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=True):
+        result = runner.invoke(
+            store_command, ["delete", "--log-level", "error"], input="y\n"
+        )
     assert result.exit_code == 0
     assert "Deleted store" in result.output
     result = runner.invoke(store_command, ["info", "--log-level", "error"])
@@ -455,10 +526,24 @@ def test_store_delete_abort() -> None:
     log_dir = "tests/test_logs/logs1"
     runner = CliRunner()
     runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
-    result = runner.invoke(
-        store_command, ["delete", "--log-level", "error"], input="n\n"
-    )
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=True):
+        result = runner.invoke(
+            store_command, ["delete", "--log-level", "error"], input="n\n"
+        )
     assert result.exit_code != 0
+    result = runner.invoke(store_command, ["info", "--log-level", "error"])
+    assert "2 logs" in result.output
+
+
+def test_store_delete_non_tty_requires_yes() -> None:
+    log_dir = "tests/test_logs/logs1"
+    runner = CliRunner()
+    runner.invoke(store_command, ["import", log_dir, "--log-level", "error"])
+    with patch("inspect_flow._cli.store.stdin_is_interactive", return_value=False):
+        result = runner.invoke(store_command, ["delete", "--log-level", "error"])
+    assert result.exit_code != 0
+    assert "--yes" in result.output
+    # The store must be left intact when confirmation is refused.
     result = runner.invoke(store_command, ["info", "--log-level", "error"])
     assert "2 logs" in result.output
 
@@ -514,7 +599,10 @@ def test_run_display_passed_to_eval_set(mock_eval_set: MagicMock) -> None:
 def test_run_command_resume() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -551,7 +639,10 @@ def test_run_command_resume_and_log_dir_mutually_exclusive() -> None:
 def test_run_command_multiple_store_filters() -> None:
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
     ):
         mock_config_obj = MagicMock()
@@ -589,7 +680,10 @@ def test_no_duplicate_short_flags() -> None:
 
     runner = CliRunner()
     with (
-        patch("inspect_flow._cli.run.launch"),
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ),
         patch("inspect_flow._cli.run.int_load_spec") as mock_config,
         warnings.catch_warnings(record=True) as caught,
     ):

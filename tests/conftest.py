@@ -336,7 +336,7 @@ def mock_venv_subprocess() -> Generator[MockVenvSubprocess, None, None]:
             env = mock_popen.call_args.kwargs.get("env") or {}
             result_path = env.get(RUN_RESULT_FILE_ENV)
             if result_path:
-                Path(result_path).write_text(json.dumps({"success": True}))
+                Path(result_path).write_text(json.dumps({"ok": True}))
 
         mock_process.wait.side_effect = write_success_result
         mock_process.returncode = 0

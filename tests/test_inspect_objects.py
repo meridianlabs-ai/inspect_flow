@@ -281,7 +281,7 @@ def test_559_factory_name() -> None:
         ],
     )
     result = run_eval_set(spec=(spec), base_dir=".")
-    logs = result[1]
+    logs = result.logs
     assert len(logs) == 1
     assert logs[0].eval.task == "custom_task_name"
     verify_test_logs(spec, log_dir)
@@ -302,7 +302,7 @@ def test_559_factory_name_after_dump() -> None:
     dump = model_dump(spec)
     spec = FlowSpec.model_validate(dump)
     result = run_eval_set(spec=(spec), base_dir=".")
-    logs = result[1]
+    logs = result.logs
     assert len(logs) == 1
     assert logs[0].eval.task == "custom_task_name"
     verify_test_logs(spec, log_dir)

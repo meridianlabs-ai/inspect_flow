@@ -9,7 +9,6 @@ from typing import Callable, List, Literal, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
-from inspect_ai.log import EvalLog
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 from packaging.requirements import InvalidRequirement, Requirement
@@ -28,6 +27,7 @@ from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
@@ -43,23 +43,18 @@ from inspect_flow._util.subprocess_util import (
 logger = getLogger(__name__)
 
 
-def venv_launch(
-    spec: FlowSpec, base_dir: str, dry_run: bool
-) -> tuple[bool, list[EvalLog]]:
+def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> LaunchResult:
     # The eval logs live in the subprocess; only the success flag is signaled back
     # (via a per-run result file) on a clean exit. A crash raises in _venv_spawn.
     success = _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
-    assert success is not None
-    return success, []
+    return LaunchResult(success=success, logs=[])
 
 
-def venv_check(spec: FlowSpec, base_dir: str) -> None:
-    _venv_spawn(spec, base_dir=base_dir, subcommand="check", dry_run=True)
+def venv_check(spec: FlowSpec, base_dir: str) -> bool:
+    return _venv_spawn(spec, base_dir=base_dir, subcommand="check", dry_run=True)
 
 
-def _venv_spawn(
-    spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool
-) -> bool | None:
+def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -> bool:
     action_keys = (
         list(RUN_ACTIONS.keys()) if subcommand == "run" else list(CHECK_ACTIONS.keys())
     )
@@ -114,10 +109,11 @@ def _venv_spawn(
         env[CHILD_READY_FD_ENV] = str(child_ready_w)
         env[PARENT_ACK_FD_ENV] = str(parent_ack_r)
 
-        # Per-run path (in temp_dir) the run child writes its success flag to
+        # Per-run path (in temp_dir) the child writes its result flag to: the
+        # success flag for `run`, the completeness flag for `check`. Either way an
+        # incomplete result is data in this file, not a non-zero exit.
         result_path = Path(temp_dir) / "run_result.json"
-        if subcommand == "run":
-            env[RUN_RESULT_FILE_ENV] = str(result_path)
+        env[RUN_RESULT_FILE_ENV] = str(result_path)
 
         process = subprocess.Popen(
             [str(python_path), str(run_path), subcommand, "--file", file, *args],
@@ -147,9 +143,7 @@ def _venv_spawn(
                 cmd=process.args,
             )
 
-        if subcommand == "run":
-            return read_run_result(str(result_path))
-        return None
+        return read_run_result(str(result_path))
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:

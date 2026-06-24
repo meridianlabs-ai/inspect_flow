@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import click
@@ -15,6 +16,7 @@ from inspect_flow._display.display import DisplayAction, create_display
 from inspect_flow._launcher.launch import launch_check
 from inspect_flow._runner.cli import CHECK_ACTIONS
 from inspect_flow._util.console import path
+from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _check_actions = {
     "load": DisplayAction(description="Load config"),
@@ -37,4 +39,6 @@ def check_command(
         display.set_title("Flow Spec:", path(config_file))
         kwargs["log_dir_create_unique"] = False
         spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
-        launch_check(spec, base_dir=str(Path(config_file).parent))
+        result = launch_check(spec, base_dir=str(Path(config_file).parent))
+    if not result.is_complete:
+        sys.exit(EXIT_INCOMPLETE)

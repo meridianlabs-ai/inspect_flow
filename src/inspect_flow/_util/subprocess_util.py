@@ -16,35 +16,37 @@ logger = getLogger(__name__)
 CHILD_READY_FD_ENV = "INSPECT_FLOW_CHILD_READY_FD"
 PARENT_ACK_FD_ENV = "INSPECT_FLOW_PARENT_ACK_FD"
 
-# Absolute path of a per-run file the child writes its success flag to. The
+# Absolute path of a per-run file the child writes its outcome flag to. The
 # parent creates the path and sets this before spawning the child. Using an
 # explicit per-run path (rather than a shared key) keeps concurrent runs from
 # racing and is unaffected by env changes to the child's HOME/XDG_DATA_HOME.
 RUN_RESULT_FILE_ENV = "INSPECT_FLOW_RUN_RESULT_FILE"
 
 
-def write_run_result(success: bool) -> None:
-    """Write the run success flag to the per-run result file, if one was set.
+def write_run_result(ok: bool) -> None:
+    """Write the child runner's outcome flag to the per-run result file.
 
     Called by a child runner process spawned with `RUN_RESULT_FILE_ENV`. Does
     nothing when the env var is unset (e.g. when invoked standalone).
 
     Args:
-        success: Whether the eval set completed successfully.
+        ok: The boolean outcome of the child's work — eval-set success for
+            `run`, completeness for `check`.
     """
     result_path = os.environ.get(RUN_RESULT_FILE_ENV)
     if result_path:
-        Path(result_path).write_text(json.dumps({"success": success}))
+        Path(result_path).write_text(json.dumps({"ok": ok}))
 
 
 def read_run_result(result_path: str) -> bool:
-    """Read the success flag a child runner wrote to its per-run result file.
+    """Read the outcome flag a child runner wrote to its per-run result file.
 
     Args:
         result_path: Absolute path the child was told to write to.
 
     Returns:
-        The success flag written by the child.
+        The boolean outcome written by the child (success for `run`,
+        completeness for `check`).
 
     Raises:
         RuntimeError: If the child exited without writing a result.
@@ -54,7 +56,7 @@ def read_run_result(result_path: str) -> bool:
         raise RuntimeError(
             f"venv run process exited without reporting a result at {result_path}"
         )
-    return bool(json.loads(path.read_text())["success"])
+    return bool(json.loads(path.read_text())["ok"])
 
 
 def signal_ready_and_wait() -> None:

@@ -20,6 +20,7 @@ from inspect_flow._runner.logs import (
 )
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._runner.run import (
+    LaunchResult,
     _bundle_url_output,
     _fix_prerequisite_error_message,
     _option_string,
@@ -472,7 +473,7 @@ class TestFlowRunCli:
         mock_signal: MagicMock,
         tmp_path: pytest.TempPathFactory,
     ) -> None:
-        mock_run.return_value = (True, [])
+        mock_run.return_value = LaunchResult(success=True, logs=[])
         config_data = {"tasks": ["my_task"], "log_dir": "./logs"}
         config_file = tmp_path / "flow.yaml"  # type: ignore[operator]
         config_file.write_text(yaml.dump(config_data))
