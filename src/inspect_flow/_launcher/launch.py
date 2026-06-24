@@ -2,7 +2,11 @@ from logging import getLogger
 
 from inspect_ai.log import EvalLog
 
-from inspect_flow._launcher.inproc import inproc_check, inproc_launch
+from inspect_flow._launcher.inproc import (
+    inproc_check,
+    inproc_dry_run,
+    inproc_launch,
+)
 from inspect_flow._launcher.venv import venv_check, venv_launch
 from inspect_flow._runner.logs import FindLogsResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -12,9 +16,7 @@ from inspect_flow._util.path_util import absolute_path_relative_to
 logger = getLogger(__name__)
 
 
-def launch(
-    spec: FlowSpec, base_dir: str, dry_run: bool = False
-) -> tuple[bool, list[EvalLog]]:
+def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
@@ -32,10 +34,22 @@ def launch(
                 for k, v in spec.options.bundle_url_mappings.items()
             }
 
+
+def launch(
+    spec: FlowSpec, base_dir: str, dry_run: bool = False
+) -> tuple[bool, list[EvalLog]]:
+    _prepare_launch_spec(spec, base_dir=base_dir)
     if spec.execution_type == "venv":
         return venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
     else:
         return inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
+
+
+def launch_dry_run(spec: FlowSpec, base_dir: str) -> FindLogsResult | None:
+    _prepare_launch_spec(spec, base_dir=base_dir)
+    if spec.execution_type == "venv":
+        return None
+    return inproc_dry_run(spec=spec, base_dir=base_dir)
 
 
 def launch_check(spec: FlowSpec, base_dir: str) -> FindLogsResult | None:

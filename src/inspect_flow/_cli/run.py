@@ -4,15 +4,21 @@ import click
 from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
+from inspect_flow._cli.json_output import (
+    emit_json,
+    find_logs_result_to_json,
+    quiet_output,
+)
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
     init_output,
+    json_option,
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
 from inspect_flow._display.display import DisplayAction, DisplayMode, create_display
-from inspect_flow._launcher.launch import launch
+from inspect_flow._launcher.launch import launch, launch_dry_run
 from inspect_flow._runner.cli import RUN_ACTIONS
 from inspect_flow._util.console import path
 
@@ -23,6 +29,7 @@ _run_actions = {
 
 
 @click.command("run", help="Run a spec")
+@json_option
 @click.option(
     "--dry-run",
     type=bool,
@@ -40,6 +47,7 @@ _run_actions = {
 @config_options
 def run_command(
     config_file: str,
+    output_json: bool,
     dry_run: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
@@ -47,12 +55,26 @@ def run_command(
     init_output(**kwargs)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
+    base_dir = str(Path(config_file).parent)
+    if output_json:
+        if not dry_run:
+            raise click.UsageError("--json is only supported with --dry-run.")
+        with quiet_output():
+            spec = int_load_spec(config_file, options=config_options)
+            result = launch_dry_run(spec, base_dir=base_dir)
+        assert spec.log_dir
+        emit_json(
+            find_logs_result_to_json(result, spec.log_dir)
+            if result is not None
+            else None
+        )
+        return
     mode: DisplayMode = "dry_run" if dry_run else "run"
     with create_display(mode=mode, actions=_run_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
         spec = int_load_spec(config_file, options=config_options)
         launch(
             spec,
-            base_dir=str(Path(config_file).parent),
+            base_dir=base_dir,
             dry_run=dry_run,
         )
