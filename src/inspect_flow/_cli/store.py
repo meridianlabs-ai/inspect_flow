@@ -7,9 +7,11 @@ from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
+from inspect_flow._cli.json_output import emit_json, quiet_output
 from inspect_flow._cli.options import (
     OutputOptionArgs,
     init_output,
+    json_option,
     output_options,
     store_option,
 )
@@ -307,8 +309,24 @@ def _echo_logs_tree(log_files: list[str]) -> None:
 
 
 @store_command.command("info", help="Print store information")
+@json_option
 @store_options
-def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
+def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    if output_json:
+        with quiet_output():
+            flow_store = init_store(quiet=True, **kwargs)
+            logs = flow_store.get_logs() if flow_store else set()
+        emit_json(
+            {
+                "path": flow_store.store_path,
+                "logs": len(logs),
+                "log_dirs": len({log.rsplit("/", 1)[0] for log in logs}),
+                "version": flow_store.version,
+            }
+            if flow_store
+            else None
+        )
+        return
     flow_store = init_store(quiet=True, **kwargs)
     if not flow_store:
         return
@@ -349,6 +367,7 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
 
 
 @store_command.command("list", help="List logs and log directories in the store")
+@json_option
 @store_options
 @filter_options
 @click.option(
@@ -361,12 +380,19 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
 )
 def store_list(
     format: str,
+    output_json: bool,
     filter_name: tuple[str, ...],
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     assert format in ("flat", "tree")
     log_filter = _resolve_cli_filter(filter_name, exclude_name)
+    if output_json:
+        with quiet_output():
+            flow_store = init_store(quiet=True, **kwargs)
+            logs = flow_store.get_logs(filter=log_filter) if flow_store else None
+        emit_json({"logs": sorted(logs)} if logs is not None else None)
+        return
     quiet = kwargs.get("display") == "plain"
     flow_store = init_store(quiet=quiet, **kwargs)
     if flow_store:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, requires, version
 from logging import getLogger
@@ -12,6 +13,7 @@ from inspect_ai._display.textual.app import set_flow_content
 from inspect_ai._eval.evalset import list_all_eval_logs, task_identifier
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import EvalLog
+from inspect_ai.util import DisplayType
 from inspect_ai.util._display import init_display_type
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
@@ -25,15 +27,16 @@ from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import display, get_display_type
 from inspect_flow._display.path_progress import ReadLogsProgress
 from inspect_flow._display.run_action import RunAction
-from inspect_flow._runner.instantiate import instantiate_tasks
+from inspect_flow._runner.instantiate import InstantiatedTask, instantiate_tasks
 from inspect_flow._runner.logs import (
+    FindLogsResult,
     find_existing_logs,
     get_task_ids_to_tasks,
     num_log_samples,
 )
 from inspect_flow._runner.resolve import resolve_spec
 from inspect_flow._runner.task_log import TaskLogInfo, create_task_log_display
-from inspect_flow._store.store import store_factory
+from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.after_instantiate import run_after_instantiate_hooks
 from inspect_flow._types.flow_types import (
     FlowInternal,
@@ -63,7 +66,19 @@ def _option_string(options: FlowOptions) -> str | None:
     return ", ".join(f"{k}={getattr(options, k)!r}" for k in options.model_fields_set)
 
 
-def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
+@dataclass
+class _RunContext:
+    spec: FlowSpec
+    options: FlowOptions
+    display_type: DisplayType
+    log_level: str
+    tasks: list[InstantiatedTask]
+    logs_result: FindLogsResult
+    store: FlowStoreInternal | None
+    store_config: FlowStoreConfig | None
+
+
+def _prepare_run(spec: FlowSpec, base_dir: str, dry_run: bool) -> _RunContext:
     resolved_spec = resolve_spec(spec, base_dir=base_dir)
     # 470 - eval_resolve_tasks uses the display, which sets a global that causes it to be ignored when passed to eval_set
     # so we need to initialize the display type here first
@@ -100,7 +115,33 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
         store if (store_config is not None and store_config.read) else None,
         mode="dry_run" if dry_run else "run",
     )
-    task_log_info = logs_result.task_log_info
+    return _RunContext(
+        spec=resolved_spec,
+        options=options,
+        display_type=display_type,
+        log_level=log_level,
+        tasks=tasks,
+        logs_result=logs_result,
+        store=store,
+        store_config=store_config,
+    )
+
+
+def dry_run_eval_set(spec: FlowSpec, base_dir: str) -> FindLogsResult:
+    return _prepare_run(spec, base_dir=base_dir, dry_run=True).logs_result
+
+
+def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
+    ctx = _prepare_run(spec, base_dir=base_dir, dry_run=dry_run)
+    resolved_spec = ctx.spec
+    assert resolved_spec.log_dir
+    options = ctx.options
+    display_type = ctx.display_type
+    log_level = ctx.log_level
+    tasks = ctx.tasks
+    store = ctx.store
+    store_config = ctx.store_config
+    task_log_info = ctx.logs_result.task_log_info
 
     with RunAction("evalset") as action:
         task_log = create_task_log_display(task_log_info, mode="pre-run")

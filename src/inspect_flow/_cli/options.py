@@ -63,6 +63,17 @@ def output_options(f: F) -> F:
     return f
 
 
+def json_option(f: F) -> F:
+    """Decorator that adds a ``--json`` flag for machine-readable output."""
+    return click.option(
+        "--json",
+        "output_json",
+        is_flag=True,
+        default=False,
+        help="Output results as JSON.",
+    )(f)
+
+
 def base_config_options(f: F) -> F:
     """Shared options for commands that load a flow config."""
     f = output_options(f)

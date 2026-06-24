@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from logging import getLogger
+from typing import Any
 
 import click
 import yaml
@@ -27,6 +28,8 @@ from rich.tree import Tree
 from typing_extensions import Unpack
 
 from inspect_flow._api.list_logs import list_logs
+from inspect_flow._cli.json_output import emit_json, quiet_output
+from inspect_flow._cli.options import json_option
 from inspect_flow._cli.store import (
     StoreOptionArgs,
     _resolve_cli_filter,
@@ -192,6 +195,13 @@ def _samples_str(header_result: _HeaderResult) -> str:
         return f"{valid_samples}/{header.results.total_samples}"
     total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
     return f"{valid_samples}/{total}" if total else ""
+
+
+def _total_samples(header: EvalLog) -> int | None:
+    if header.results:
+        return header.results.total_samples
+    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
+    return total or None
 
 
 @dataclass
@@ -803,6 +813,22 @@ def _chain(base: LogFilter | None, new: LogFilter) -> LogFilter:
     return combined
 
 
+def _log_entry_to_json(entry: LogEntry) -> dict[str, Any]:
+    header = entry.header
+    return {
+        "task": entry.task,
+        "log_file": entry.log_path,
+        "status": header.status,
+        "model": header.eval.model,
+        "samples": entry.header_result.num_valid_samples,
+        "total_samples": _total_samples(header),
+        "started_at": header.stats.started_at,
+        "completed_at": header.stats.completed_at,
+        "tags": list(header.tags) if header.tags else [],
+        "viewer_url": entry.viewer_url,
+    }
+
+
 @click.group("list")
 def list_command() -> None:
     """CLI command to list flow entities."""
@@ -827,6 +853,7 @@ class _MaxCountCommand(click.Command):
     cls=_MaxCountCommand,
     help="List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (--store auto).",
 )
+@json_option
 @store_options
 @filter_options
 @click.option(
@@ -919,6 +946,7 @@ class _MaxCountCommand(click.Command):
 @click.argument("path", required=False, default=None)
 def list_log(
     path: str | None,
+    output_json: bool,
     output_format: str,
     oneline: bool,
     provenance: bool,
@@ -968,6 +996,17 @@ def list_log(
         provenance=provenance,
     )
     store = kwargs.get("store") or "auto"
+    if output_json:
+        with quiet_output():
+            log_paths = [
+                path_str(p)
+                for p in list_logs(log_dir=path, store=store, since=since, until=until)
+            ]
+            entries = _process_groups(group_logs_by_dir(log_paths), options)
+            if options.max_count is not None:
+                entries = entries[: options.max_count]
+        emit_json({"logs": [_log_entry_to_json(e) for e in entries]})
+        return
     if live_interval is not None:
         _live_output(path, store, since, until, options, live_interval)
         return
