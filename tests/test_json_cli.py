@@ -8,6 +8,7 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
+from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _TASK = "tests/local_eval/src/local_eval/noop.py@noop"
 _TASK_ABS = f"{Path(_TASK.split('@')[0]).resolve()}@{_TASK.split('@')[1]}"
@@ -40,7 +41,11 @@ def test_config_json(tmp_path: Path) -> None:
 
 def test_check_json_no_logs(tmp_path: Path) -> None:
     spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
-    data = _invoke_json(check_command, [spec_file, "--json"])
+    result = CliRunner().invoke(
+        check_command, [spec_file, "--json"], catch_exceptions=False
+    )
+    assert result.exit_code == EXIT_INCOMPLETE, result.output
+    data = json.loads(result.output)
 
     assert data["summary"] == {"total": 1, "complete": 0, "incomplete": 1}
     assert data["unrecognized"] == []

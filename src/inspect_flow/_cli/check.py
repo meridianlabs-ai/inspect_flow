@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import click
@@ -22,6 +23,7 @@ from inspect_flow._display.display import DisplayAction, create_display
 from inspect_flow._launcher.launch import launch_check
 from inspect_flow._runner.cli import CHECK_ACTIONS
 from inspect_flow._util.console import path
+from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _check_actions = {
     "load": DisplayAction(description="Load config"),
@@ -50,10 +52,14 @@ def check_command(
             ensure_json_supported(spec)
             result = launch_check(spec, base_dir=base_dir)
         assert spec.log_dir
-        assert result is not None
-        emit_json(find_logs_result_to_json(result, spec.log_dir))
+        assert result.find_result is not None
+        emit_json(find_logs_result_to_json(result.find_result, spec.log_dir))
+        if not result.is_complete:
+            sys.exit(EXIT_INCOMPLETE)
         return
     with create_display(mode="check", actions=_check_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
         spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
-        launch_check(spec, base_dir=base_dir)
+        result = launch_check(spec, base_dir=base_dir)
+    if not result.is_complete:
+        sys.exit(EXIT_INCOMPLETE)

@@ -1046,7 +1046,7 @@ def test_task_failure() -> None:
         tasks=[FlowTask(name=task_file + "@noop", solver="fail_solver")],
     )
     result = run_eval_set(spec=spec, base_dir=".")
-    assert result[0] is False
+    assert result.success is False
 
 
 def test_eval_set_args(mock_eval_set: MagicMock) -> None:

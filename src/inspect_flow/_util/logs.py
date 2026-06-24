@@ -1,7 +1,7 @@
 """Utilities for working with Inspect logs"""
 
 import re
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from datetime import datetime, timezone
 from logging import getLogger
 
@@ -25,6 +25,13 @@ from inspect_flow._util.path_util import path_join
 _TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}[:\-]\d{2}[:\-]\d{2}")
 
 logger = getLogger(__name__)
+
+
+def samples_complete(samples_and_totals: Iterable[tuple[int, int | None]]) -> bool:
+    """`True` if every `(samples, total)` pair has a known total that is met."""
+    return all(
+        total is not None and samples >= total for samples, total in samples_and_totals
+    )
 
 
 def log_filename_ts(path: str) -> datetime | None:

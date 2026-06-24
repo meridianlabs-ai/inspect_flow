@@ -26,6 +26,7 @@ from inspect_flow._types.flow_types import LogFilter
 from inspect_flow._types.log_filter import resolve_log_filter
 from inspect_flow._util.console import console, flow_print, path, quantity
 from inspect_flow._util.logs import copy_all_logs
+from inspect_flow._util.terminal import stdin_is_interactive
 
 
 class ArgumentsHelpCommand(click.Command):
@@ -352,6 +353,11 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
         flow_print("Store not found at", path(store_path), format="error")
         return
     if not yes:
+        if not stdin_is_interactive():
+            raise click.UsageError(
+                f"Refusing to delete the store at {store_path} without confirmation "
+                "on a non-interactive terminal. Re-run with --yes to confirm."
+            )
         click.confirm(
             f"Are you sure you want to delete the store at {store_path}?",
             abort=True,

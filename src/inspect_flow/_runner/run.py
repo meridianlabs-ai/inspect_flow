@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, requires, version
 from logging import getLogger
+from typing import NamedTuple
 
 import click
 from inspect_ai import eval_set
@@ -52,6 +53,11 @@ from inspect_flow._util.not_given import default, default_none
 from inspect_flow._util.path_util import apply_bundle_url_mappings, cwd_relative_path
 
 logger = getLogger(__name__)
+
+
+class LaunchResult(NamedTuple):
+    success: bool
+    logs: list[EvalLog]
 
 
 def _option_string(options: FlowOptions) -> str | None:
@@ -125,9 +131,7 @@ def dry_run_eval_set(spec: FlowSpec, base_dir: str) -> FindLogsResult:
     return _prepare_run(spec, base_dir=base_dir, dry_run=True).logs_result
 
 
-def run_eval_set(
-    spec: FlowSpec, base_dir: str, dry_run: bool = False
-) -> tuple[bool, list[EvalLog]]:
+def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
     ctx = _prepare_run(spec, base_dir=base_dir, dry_run=dry_run)
     resolved_spec = ctx.spec
     assert resolved_spec.log_dir
@@ -155,7 +159,7 @@ def run_eval_set(
             action.print("Viewer:", path(print_url), copyable=True)
 
     if dry_run:
-        return False, []
+        return LaunchResult(success=False, logs=[])
 
     title = display().get_title()
     if display_type == "full":
@@ -169,8 +173,9 @@ def run_eval_set(
     eval_tasks = run_after_instantiate_hooks([t.task for t in tasks])
 
     start_time = time.time()
+    result: LaunchResult | None
     try:
-        result = eval_set(
+        success, logs = eval_set(
             tasks=eval_tasks,
             log_dir=cwd_relative_path(resolved_spec.log_dir),
             retry_attempts=default_none(options.retry_attempts),
@@ -234,6 +239,7 @@ def run_eval_set(
             retry_immediate=True,
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )
+        result = LaunchResult(success=success, logs=logs)
     except (KeyboardInterrupt, click.Abort):
         flow_print(Rule("Eval Set Interrupted"))
         result = None
@@ -256,7 +262,7 @@ def run_eval_set(
                 log_dir=resolved_spec.log_dir, recursive=False, progress=progress
             )
             headers = [log.header for log in dir_logs]
-            result = False, headers
+            result = LaunchResult(success=False, logs=headers)
 
     elapsed_time = time.time() - start_time
 
@@ -265,7 +271,7 @@ def run_eval_set(
     if store and (store_config is None or store_config.write):
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         try:
-            store.add_run_logs(result[1])
+            store.add_run_logs(result.logs)
         except NoLogsError as e:
             logger.error(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"
@@ -276,7 +282,7 @@ def run_eval_set(
 
 def _print_result(
     spec: FlowSpec,
-    result: tuple[bool, list[EvalLog]],
+    result: LaunchResult,
     elapsed_time: float,
     task_log_info: dict[str, TaskLogInfo],
     title: list[str | Text] | None,

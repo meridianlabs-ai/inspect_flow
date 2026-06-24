@@ -30,7 +30,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
 )
 from inspect_flow._util.console import quantity
-from inspect_flow._util.logs import num_valid_samples
+from inspect_flow._util.logs import num_valid_samples, samples_complete
 from inspect_flow._util.not_given import default_none
 from inspect_flow._util.path_util import path_join, path_str
 from inspect_flow._util.pydantic_util import model_dump
@@ -41,6 +41,13 @@ logger = getLogger(__name__)
 class FindLogsResult(NamedTuple):
     task_log_info: dict[str, TaskLogInfo]
     unexpected_logs: list[str]
+
+    @property
+    def is_complete(self) -> bool:
+        return samples_complete(
+            (info.log_samples, info.task_samples)
+            for info in self.task_log_info.values()
+        )
 
 
 def get_task_ids_to_tasks(

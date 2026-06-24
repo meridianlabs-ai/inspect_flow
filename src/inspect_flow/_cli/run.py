@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import click
@@ -22,6 +23,7 @@ from inspect_flow._display.display import DisplayAction, DisplayMode, create_dis
 from inspect_flow._launcher.launch import launch, launch_dry_run
 from inspect_flow._runner.cli import RUN_ACTIONS
 from inspect_flow._util.console import path
+from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _run_actions = {
     "load": DisplayAction(description="Load config"),
@@ -72,8 +74,10 @@ def run_command(
     with create_display(mode=mode, actions=_run_actions) as display:
         display.set_title("Flow Spec:", path(config_file))
         spec = int_load_spec(config_file, options=config_options)
-        launch(
+        result = launch(
             spec,
             base_dir=base_dir,
             dry_run=dry_run,
         )
+    if not dry_run and not result.success:
+        sys.exit(EXIT_INCOMPLETE)

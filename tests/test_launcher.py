@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from botocore.client import BaseClient
@@ -17,6 +17,7 @@ from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._runner.cli import runner
+from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
@@ -34,6 +35,7 @@ def test_launch_inproc() -> None:
         patch("inspect_flow._launcher.inproc.run_eval_set") as mock_run_eval_set,
         patch("subprocess.run") as mock_run,
     ):
+        mock_run_eval_set.return_value = LaunchResult(success=True, logs=[])
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="mocked output"
         )
@@ -85,9 +87,7 @@ def test_launch_venv_returns_subprocess_success(
     # the parent reads it back and returns it (with empty logs, in the child).
     def write_result() -> None:
         env = mock_venv_subprocess.popen.call_args.kwargs["env"]
-        Path(env[RUN_RESULT_FILE_ENV]).write_text(
-            json.dumps({"success": child_success})
-        )
+        Path(env[RUN_RESULT_FILE_ENV]).write_text(json.dumps({"ok": child_success}))
 
     mock_venv_subprocess.popen.return_value.wait.side_effect = write_result
 
@@ -128,7 +128,7 @@ def test_runner_run_writes_success(
 
     with patch(
         "inspect_flow._runner.cli.run_eval_set",
-        return_value=(eval_set_success, []),
+        return_value=LaunchResult(success=eval_set_success, logs=[]),
     ):
         result = CliRunner().invoke(
             runner,
@@ -138,6 +138,33 @@ def test_runner_run_writes_success(
 
     assert result.exit_code == 0
     assert read_run_result(str(result_path)) is eval_set_success
+
+
+@pytest.mark.parametrize("is_complete", [True, False])
+def test_runner_check_writes_is_complete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, is_complete: bool
+) -> None:
+    spec = FlowSpec(
+        log_dir=str(tmp_path / "logs"),
+        store="none",
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+    config_file = write_config_file(spec)
+    result_path = tmp_path / "run_result.json"
+    monkeypatch.setenv(RUN_RESULT_FILE_ENV, str(result_path))
+
+    with patch(
+        "inspect_flow._runner.cli.check_eval_set",
+        return_value=MagicMock(is_complete=is_complete),
+    ):
+        result = CliRunner().invoke(
+            runner,
+            ["check", "--file", config_file, "--base-dir", "."],
+            catch_exceptions=False,
+        )
+
+    assert result.exit_code == 0
+    assert read_run_result(str(result_path)) is is_complete
 
 
 def test_env(
@@ -168,7 +195,10 @@ def test_env_inproc(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("myenv1", raising=False)
     monkeypatch.delenv("myenv2", raising=False)
 
-    with patch("inspect_flow._launcher.inproc.run_eval_set"):
+    with patch(
+        "inspect_flow._launcher.inproc.run_eval_set",
+        return_value=LaunchResult(success=True, logs=[]),
+    ):
         launch(
             spec=FlowSpec(
                 execution_type="inproc",
