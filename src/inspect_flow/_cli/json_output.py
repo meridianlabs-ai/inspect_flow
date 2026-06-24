@@ -5,7 +5,12 @@ from typing import Any
 
 import click
 
-from inspect_flow._display.display import get_display_type, set_display_type
+from inspect_flow._display.display import (
+    get_display,
+    get_display_type,
+    set_display,
+    set_display_type,
+)
 from inspect_flow._runner.logs import FindLogsResult
 from inspect_flow._runner.task_log import TaskLogInfo
 from inspect_flow._types.flow_types import FlowSpec
@@ -15,7 +20,8 @@ from inspect_flow._util.console import console
 @contextmanager
 def quiet_output() -> Iterator[None]:
     """Suppress Rich/display output so only JSON is written to stdout."""
-    prev_display = get_display_type()
+    prev_display_type = get_display_type()
+    prev_display = get_display()
     prev_quiet = console.quiet
     set_display_type("plain")
     console.quiet = True
@@ -23,7 +29,8 @@ def quiet_output() -> Iterator[None]:
         yield
     finally:
         console.quiet = prev_quiet
-        set_display_type(prev_display)
+        set_display_type(prev_display_type)
+        set_display(prev_display)
 
 
 def ensure_json_supported(spec: FlowSpec) -> None:

@@ -8,6 +8,7 @@ from inspect_flow._cli.config import config_command
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
+from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _TASK = "tests/local_eval/src/local_eval/noop.py@noop"
 _TASK_ABS = f"{Path(_TASK.split('@')[0]).resolve()}@{_TASK.split('@')[1]}"
@@ -26,9 +27,9 @@ def _write_spec(tmp_path: Path, log_dir: str) -> str:
     return str(spec_file)
 
 
-def _invoke_json(command: Any, args: list[str]) -> Any:
+def _invoke_json(command: Any, args: list[str], expected_exit_code: int = 0) -> Any:
     result = CliRunner().invoke(command, args, catch_exceptions=False)
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == expected_exit_code, result.output
     return json.loads(result.output)
 
 
@@ -38,9 +39,23 @@ def test_config_json(tmp_path: Path) -> None:
     assert data["tasks"][0]["name"].endswith("noop.py@noop")
 
 
+def test_json_command_restores_display_state(tmp_path: Path) -> None:
+    from inspect_flow._display.display import get_display, get_display_type
+
+    prev_type = get_display_type()
+    prev_display = get_display()
+    spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
+    _invoke_json(run_command, [spec_file, "--dry-run", "--json"])
+    assert get_display_type() == prev_type
+    assert get_display() is prev_display
+
+
 def test_check_json_no_logs(tmp_path: Path) -> None:
     spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
-    data = _invoke_json(check_command, [spec_file, "--json"])
+    # An incomplete check still emits JSON but signals incompleteness via exit code.
+    data = _invoke_json(
+        check_command, [spec_file, "--json"], expected_exit_code=EXIT_INCOMPLETE
+    )
 
     assert data["summary"] == {"total": 1, "complete": 0, "incomplete": 1}
     assert data["unrecognized"] == []

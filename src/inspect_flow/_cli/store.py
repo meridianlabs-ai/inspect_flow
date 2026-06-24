@@ -3,6 +3,7 @@ from typing import Any, Literal, TypeVar
 
 import click
 from click import Context, HelpFormatter
+from inspect_ai._util.file import dirname
 from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
@@ -320,7 +321,7 @@ def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
             {
                 "path": flow_store.store_path,
                 "logs": len(logs),
-                "log_dirs": len({log.rsplit("/", 1)[0] for log in logs}),
+                "log_dirs": len({dirname(log) for log in logs}),
                 "version": flow_store.version,
             }
             if flow_store
@@ -331,7 +332,7 @@ def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     if not flow_store:
         return
     logs = flow_store.get_logs()
-    log_dirs = {log.rsplit("/", 1)[0] for log in logs}
+    log_dirs = {dirname(log) for log in logs}
     flow_print("Path:    ", path(flow_store.store_path))
     flow_print("Logs:    ", quantity(len(logs), "log"))
     flow_print("Log dirs:", quantity(len(log_dirs), "log dir"))

@@ -188,20 +188,17 @@ def _date_str(header_result: _HeaderResult) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S %z")
 
 
-def _samples_str(header_result: _HeaderResult) -> str:
-    valid_samples = header_result.num_valid_samples
-    header = header_result.header
-    if header.results:
-        return f"{valid_samples}/{header.results.total_samples}"
-    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
-    return f"{valid_samples}/{total}" if total else ""
-
-
 def _total_samples(header: EvalLog) -> int | None:
     if header.results:
         return header.results.total_samples
     total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
     return total or None
+
+
+def _samples_str(header_result: _HeaderResult) -> str:
+    valid_samples = header_result.num_valid_samples
+    total = _total_samples(header_result.header)
+    return f"{valid_samples}/{total}" if total else ""
 
 
 @dataclass
