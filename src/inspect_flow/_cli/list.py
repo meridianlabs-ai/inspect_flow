@@ -198,7 +198,7 @@ def _total_samples(header: EvalLog) -> int | None:
 def _samples_str(header_result: _HeaderResult) -> str:
     valid_samples = header_result.num_valid_samples
     total = _total_samples(header_result.header)
-    return f"{valid_samples}/{total}" if total else ""
+    return f"{valid_samples}/{total}" if total is not None else ""
 
 
 @dataclass

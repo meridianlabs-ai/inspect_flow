@@ -367,7 +367,10 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_print("Deleted store at", path(store_path), format="success")
 
 
-@store_command.command("list", help="List logs and log directories in the store")
+@store_command.command(
+    "list",
+    help="List logs and log directories in the store. With --json, the display-only --format option is ignored.",
+)
 @json_option
 @store_options
 @filter_options
