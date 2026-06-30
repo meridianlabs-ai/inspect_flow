@@ -1,6 +1,7 @@
 import json
+import sys
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from typing import Any
 
 import click
@@ -26,7 +27,8 @@ def quiet_output() -> Iterator[None]:
     set_display_type("plain")
     console.quiet = True
     try:
-        yield
+        with redirect_stdout(sys.stderr):
+            yield
     finally:
         console.quiet = prev_quiet
         set_display_type(prev_display_type)

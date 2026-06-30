@@ -10,19 +10,16 @@ from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._util.constants import EXIT_INCOMPLETE
 
-_TASK = "tests/local_eval/src/local_eval/noop.py@noop"
-_TASK_ABS = f"{Path(_TASK.split('@')[0]).resolve()}@{_TASK.split('@')[1]}"
+_NOOP_PATH = str(Path("tests/local_eval/src/local_eval/noop.py").resolve())
+_TASK_ABS = f"{_NOOP_PATH}@noop"
 _NOOP_SAMPLES = 2
 _STORE_LOG_DIR = "tests/test_logs/logs1"
 
 
-def _write_spec(tmp_path: Path, log_dir: str) -> str:
+def _write_spec(tmp_path: Path, log_dir: str, task: str = _TASK_ABS) -> str:
     spec_file = tmp_path / "flow.yaml"
     spec_file.write_text(
-        f"log_dir: {log_dir}\n"
-        "tasks:\n"
-        f"  - name: {_TASK_ABS}\n"
-        "    model: mockllm/mock-llm\n"
+        f"log_dir: {log_dir}\ntasks:\n  - name: {task}\n    model: mockllm/mock-llm\n"
     )
     return str(spec_file)
 
@@ -85,6 +82,22 @@ def test_run_dry_run_json(tmp_path: Path) -> None:
     data = _invoke_json(run_command, [spec_file, "--dry-run", "--json"])
     assert data["summary"] == {"total": 1, "complete": 0, "incomplete": 1}
     assert data["tasks"][0]["name"].endswith("noop.py@noop")
+
+
+def test_json_stdout_not_corrupted_by_task_print(tmp_path: Path) -> None:
+    spec_file = _write_spec(
+        tmp_path, str(tmp_path / "logs"), task=f"{_NOOP_PATH}@noisy_stdout"
+    )
+    result = CliRunner().invoke(
+        run_command, [spec_file, "--dry-run", "--json"], catch_exceptions=False
+    )
+    assert result.exit_code == 0, result.output
+    # The task's stdout print must not corrupt the JSON payload on stdout; it is
+    # redirected to stderr instead.
+    assert "noisy-stdout-marker" not in result.stdout
+    data = json.loads(result.stdout)
+    assert data["tasks"][0]["name"].endswith("noop.py@noisy_stdout")
+    assert "noisy-stdout-marker" in result.stderr
     assert not list(Path(tmp_path / "logs").glob("*.eval"))
 
 

@@ -24,6 +24,17 @@ def noop2() -> Task:
 
 
 @task
+def noisy_stdout() -> Task:
+    print("noisy-stdout-marker")
+    return Task(
+        dataset=[
+            Sample(id=1, input="Test sample 1"),
+            Sample(id=2, input="Test sample 2"),
+        ]
+    )
+
+
+@task
 def task_with_get_model() -> Task:
     _model = get_model()
     return Task()
