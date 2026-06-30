@@ -136,11 +136,6 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
     resolved_spec = ctx.spec
     assert resolved_spec.log_dir
     options = ctx.options
-    display_type = ctx.display_type
-    log_level = ctx.log_level
-    tasks = ctx.tasks
-    store = ctx.store
-    store_config = ctx.store_config
     task_log_info = ctx.logs_result.task_log_info
 
     with RunAction("evalset") as action:
@@ -162,15 +157,15 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
         return LaunchResult(success=False, logs=[])
 
     title = display().get_title()
-    if display_type == "full":
+    if ctx.display_type == "full":
         content = display().make_renderable()
         if content is not None:
             set_flow_content(content)
     display().stop()
 
-    update_log_level(log_level)
+    update_log_level(ctx.log_level)
 
-    eval_tasks = run_after_instantiate_hooks([t.task for t in tasks])
+    eval_tasks = run_after_instantiate_hooks([t.task for t in ctx.tasks])
 
     start_time = time.time()
     result: LaunchResult | None
@@ -196,12 +191,12 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
             tags=sequence_to_list(default_none(options.tags)),
             metadata=default_none(options.metadata),
             trace=default_none(options.trace),
-            display=default_none(display_type),
+            display=default_none(ctx.display_type),
             approval=default_none(options.approval),
             notification=default_none(options.notification),
             score=default(options.score, True),
             score_display=default_none(options.score_display),
-            log_level=default_none(log_level),
+            log_level=default_none(ctx.log_level),
             log_level_transcript=default_none(options.log_level_transcript),
             log_format=default_none(options.log_format),
             limit=default_none(options.limit),
@@ -268,10 +263,10 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
 
     _print_result(resolved_spec, result, elapsed_time, task_log_info, title)
 
-    if store and (store_config is None or store_config.write):
+    if ctx.store and (ctx.store_config is None or ctx.store_config.write):
         # Now that the logs have been created, need to add the log_dir again to ensure all logs are indexed
         try:
-            store.add_run_logs(result.logs)
+            ctx.store.add_run_logs(result.logs)
         except NoLogsError as e:
             logger.error(
                 f"No logs found in log directory: {resolved_spec.log_dir}. Cannot add to store. {e}"

@@ -20,7 +20,6 @@ from inspect_flow._util.console import console
 
 @contextmanager
 def quiet_output() -> Iterator[None]:
-    """Suppress Rich/display output so only JSON is written to stdout."""
     prev_display_type = get_display_type()
     prev_display = get_display()
     prev_quiet = console.quiet

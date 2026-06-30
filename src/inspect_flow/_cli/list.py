@@ -628,6 +628,10 @@ def _process_groups(
     return entries
 
 
+def _truncate(entries: list[LogEntry], max_count: int | None) -> list[LogEntry]:
+    return entries if max_count is None else entries[:max_count]
+
+
 def _lines_per_entry(oneline: bool) -> int:
     return 1 if oneline else 6
 
@@ -649,9 +653,9 @@ def _echo_logs(
     if options.page and stdout_is_terminal() and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
-        entries = _process_groups(dir_groups, options, progress=progress)
-        if options.max_count is not None:
-            entries = entries[: options.max_count]
+        entries = _truncate(
+            _process_groups(dir_groups, options, progress=progress), options.max_count
+        )
         if progress:
             progress.stop()
         if not entries:
@@ -766,9 +770,7 @@ def _compute_renderable(
             return Text("No logs found")
         return _build_tree(dir_entries, console.size.width, max_lines=page_lines)
 
-    entries = _process_groups(dir_groups, options)
-    if options.max_count is not None:
-        entries = entries[: options.max_count]
+    entries = _truncate(_process_groups(dir_groups, options), options.max_count)
     if not entries:
         return Text("No logs found")
     return _entries_renderable(
@@ -999,9 +1001,10 @@ def list_log(
                 path_str(p)
                 for p in list_logs(log_dir=path, store=store, since=since, until=until)
             ]
-            entries = _process_groups(group_logs_by_dir(log_paths), options)
-            if options.max_count is not None:
-                entries = entries[: options.max_count]
+            entries = _truncate(
+                _process_groups(group_logs_by_dir(log_paths), options),
+                options.max_count,
+            )
         emit_json({"logs": [_log_entry_to_json(e) for e in entries]})
         return
     if live_interval is not None:

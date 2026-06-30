@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Any, Literal, TypeVar
 
 import click
@@ -313,26 +314,24 @@ def _echo_logs_tree(log_files: list[str]) -> None:
 @json_option
 @store_options
 def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    with quiet_output() if output_json else nullcontext():
+        flow_store = init_store(quiet=True, **kwargs)
+        logs = flow_store.get_logs() if flow_store else set()
+    log_dirs = {dirname(log) for log in logs}
     if output_json:
-        with quiet_output():
-            flow_store = init_store(quiet=True, **kwargs)
-            logs = flow_store.get_logs() if flow_store else set()
         emit_json(
             {
                 "path": flow_store.store_path,
                 "logs": len(logs),
-                "log_dirs": len({dirname(log) for log in logs}),
+                "log_dirs": len(log_dirs),
                 "version": flow_store.version,
             }
             if flow_store
             else None
         )
         return
-    flow_store = init_store(quiet=True, **kwargs)
     if not flow_store:
         return
-    logs = flow_store.get_logs()
-    log_dirs = {dirname(log) for log in logs}
     flow_print("Path:    ", path(flow_store.store_path))
     flow_print("Logs:    ", quantity(len(logs), "log"))
     flow_print("Log dirs:", quantity(len(log_dirs), "log dir"))
