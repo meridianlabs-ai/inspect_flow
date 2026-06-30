@@ -5,11 +5,17 @@ import os
 import subprocess
 from logging import getLogger
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from inspect_flow._util.console import flow_print
 
 logger = getLogger(__name__)
+
+
+class SpawnResult(NamedTuple):
+    ok: bool
+    json_result: dict[str, Any] | None
+
 
 # Environment variable names for passing synchronization fd numbers to child.
 # The parent sets these before spawning the child process.
@@ -23,8 +29,8 @@ PARENT_ACK_FD_ENV = "INSPECT_FLOW_PARENT_ACK_FD"
 RUN_RESULT_FILE_ENV = "INSPECT_FLOW_RUN_RESULT_FILE"
 
 
-def write_run_result(ok: bool) -> None:
-    """Write the child runner's outcome flag to the per-run result file.
+def write_run_result(ok: bool, json_result: dict[str, Any] | None = None) -> None:
+    """Write the child runner's outcome to the per-run result file.
 
     Called by a child runner process spawned with `RUN_RESULT_FILE_ENV`. Does
     nothing when the env var is unset (e.g. when invoked standalone).
@@ -32,21 +38,23 @@ def write_run_result(ok: bool) -> None:
     Args:
         ok: The boolean outcome of the child's work — eval-set success for
             `run`, completeness for `check`.
+        json_result: The machine-readable result produced under `--json`, or
+            `None` when JSON output was not requested.
     """
     result_path = os.environ.get(RUN_RESULT_FILE_ENV)
     if result_path:
-        Path(result_path).write_text(json.dumps({"ok": ok}))
+        Path(result_path).write_text(json.dumps({"ok": ok, "json": json_result}))
 
 
-def read_run_result(result_path: str) -> bool:
-    """Read the outcome flag a child runner wrote to its per-run result file.
+def read_run_result(result_path: str) -> SpawnResult:
+    """Read the outcome a child runner wrote to its per-run result file.
 
     Args:
         result_path: Absolute path the child was told to write to.
 
     Returns:
-        The boolean outcome written by the child (success for `run`,
-        completeness for `check`).
+        The outcome flag (success for `run`, completeness for `check`) and the
+        JSON result, if any.
 
     Raises:
         RuntimeError: If the child exited without writing a result.
@@ -56,7 +64,8 @@ def read_run_result(result_path: str) -> bool:
         raise RuntimeError(
             f"venv run process exited without reporting a result at {result_path}"
         )
-    return bool(json.loads(path.read_text())["ok"])
+    data = json.loads(path.read_text())
+    return SpawnResult(ok=bool(data["ok"]), json_result=data.get("json"))
 
 
 def signal_ready_and_wait() -> None:

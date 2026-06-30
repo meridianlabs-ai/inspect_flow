@@ -5,7 +5,7 @@ import sys
 import tempfile
 from logging import getLogger
 from pathlib import Path
-from typing import Callable, List, Literal, Sequence
+from typing import Any, Callable, List, Literal, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.file import absolute_file_path
@@ -36,6 +36,7 @@ from inspect_flow._util.subprocess_util import (
     CHILD_READY_FD_ENV,
     PARENT_ACK_FD_ENV,
     RUN_RESULT_FILE_ENV,
+    SpawnResult,
     read_run_result,
     run_with_logging,
 )
@@ -46,15 +47,34 @@ logger = getLogger(__name__)
 def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> LaunchResult:
     # The eval logs live in the subprocess; only the success flag is signaled back
     # (via a per-run result file) on a clean exit. A crash raises in _venv_spawn.
-    success = _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
-    return LaunchResult(success=success, logs=[])
+    result = _venv_spawn(spec, base_dir=base_dir, subcommand="run", dry_run=dry_run)
+    return LaunchResult(success=result.ok, logs=[])
 
 
-def venv_check(spec: FlowSpec, base_dir: str) -> bool:
-    return _venv_spawn(spec, base_dir=base_dir, subcommand="check", dry_run=True)
+def venv_dry_run_json(spec: FlowSpec, base_dir: str) -> dict[str, Any] | None:
+    # The subprocess builds the JSON result and writes it to the result file.
+    return _venv_spawn(
+        spec, base_dir=base_dir, subcommand="run", dry_run=True, output_json=True
+    ).json_result
 
 
-def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -> bool:
+def venv_check(spec: FlowSpec, base_dir: str, output_json: bool = False) -> SpawnResult:
+    return _venv_spawn(
+        spec,
+        base_dir=base_dir,
+        subcommand="check",
+        dry_run=True,
+        output_json=output_json,
+    )
+
+
+def _venv_spawn(
+    spec: FlowSpec,
+    base_dir: str,
+    subcommand: str,
+    dry_run: bool,
+    output_json: bool = False,
+) -> SpawnResult:
     action_keys = (
         list(RUN_ACTIONS.keys()) if subcommand == "run" else list(CHECK_ACTIONS.keys())
     )
@@ -64,6 +84,8 @@ def _venv_spawn(spec: FlowSpec, base_dir: str, subcommand: str, dry_run: bool) -
             run_path = (Path(__file__).parents[1] / "_runner" / "cli.py").absolute()
             base_dir = absolute_file_path(base_dir)
             run_args = ["--dry-run"] if dry_run and subcommand == "run" else []
+            if output_json:
+                run_args.append("--json")
             args = [
                 "--base-dir",
                 base_dir,

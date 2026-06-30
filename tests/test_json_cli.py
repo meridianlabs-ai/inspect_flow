@@ -9,6 +9,9 @@ from inspect_flow._cli.list import list_command
 from inspect_flow._cli.run import run_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._util.constants import EXIT_INCOMPLETE
+from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV
+
+from tests.conftest import MockVenvSubprocess
 
 _NOOP_PATH = str(Path("tests/local_eval/src/local_eval/noop.py").resolve())
 _TASK_ABS = f"{_NOOP_PATH}@noop"
@@ -108,20 +111,65 @@ def test_run_json_requires_dry_run(tmp_path: Path) -> None:
     assert "--json is only supported with --dry-run" in result.output
 
 
-def test_run_dry_run_json_rejects_venv(tmp_path: Path) -> None:
+def _mock_venv_json_result(
+    mock_venv_subprocess: MockVenvSubprocess,
+    json_result: dict[str, Any],
+    *,
+    ok: bool = True,
+) -> None:
+    """Make the fake venv child write a --json result file the parent will emit."""
+
+    def write_result() -> None:
+        env = mock_venv_subprocess.popen.call_args.kwargs.get("env") or {}
+        result_path = env.get(RUN_RESULT_FILE_ENV)
+        if result_path:
+            Path(result_path).write_text(json.dumps({"ok": ok, "json": json_result}))
+
+    mock_venv_subprocess.popen.return_value.wait.side_effect = write_result
+
+
+def test_check_json_venv(
+    tmp_path: Path, mock_venv_subprocess: MockVenvSubprocess
+) -> None:
     spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
-    result = CliRunner().invoke(
-        run_command, [spec_file, "--dry-run", "--json", "--venv"]
+    payload = {"log_dir": str(tmp_path / "logs"), "tasks": [], "summary": {}}
+    _mock_venv_json_result(mock_venv_subprocess, payload, ok=True)
+
+    data = _invoke_json(check_command, [spec_file, "--json", "--venv"])
+
+    assert data == payload
+    child_args = mock_venv_subprocess.popen.call_args.args[0]
+    assert "check" in child_args
+    assert "--json" in child_args
+
+
+def test_check_json_venv_incomplete_exit_code(
+    tmp_path: Path, mock_venv_subprocess: MockVenvSubprocess
+) -> None:
+    spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
+    _mock_venv_json_result(mock_venv_subprocess, {"tasks": []}, ok=False)
+
+    _invoke_json(
+        check_command,
+        [spec_file, "--json", "--venv"],
+        expected_exit_code=EXIT_INCOMPLETE,
     )
-    assert result.exit_code != 0
-    assert "--json is not supported with venv execution" in result.output
 
 
-def test_check_json_rejects_venv(tmp_path: Path) -> None:
+def test_run_dry_run_json_venv(
+    tmp_path: Path, mock_venv_subprocess: MockVenvSubprocess
+) -> None:
     spec_file = _write_spec(tmp_path, str(tmp_path / "logs"))
-    result = CliRunner().invoke(check_command, [spec_file, "--json", "--venv"])
-    assert result.exit_code != 0
-    assert "--json is not supported with venv execution" in result.output
+    payload = {"log_dir": str(tmp_path / "logs"), "tasks": [], "summary": {}}
+    _mock_venv_json_result(mock_venv_subprocess, payload)
+
+    data = _invoke_json(run_command, [spec_file, "--dry-run", "--json", "--venv"])
+
+    assert data == payload
+    child_args = mock_venv_subprocess.popen.call_args.args[0]
+    assert "run" in child_args
+    assert "--dry-run" in child_args
+    assert "--json" in child_args
 
 
 def test_store_info_json(tmp_path: Path) -> None:
