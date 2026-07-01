@@ -50,3 +50,18 @@ def test_launch_without_handle_file(mock_eval_set: MagicMock, tmp_path: Path) ->
 
     mock_eval_set.assert_called_once()
     assert not handle_file.exists()
+
+
+def test_launch_dry_run_skips_handle_file(
+    mock_eval_set: MagicMock, tmp_path: Path
+) -> None:
+    handle_file = tmp_path / "handle.json"
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        tasks=[FlowTask(name=task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    launch(spec=spec, base_dir=".", dry_run=True, handle_file=str(handle_file))
+
+    # A dry run does no real work, so the handle would point at a log_dir that
+    # was never written and a pid that is already dead; it must not be written.
+    assert not handle_file.exists()

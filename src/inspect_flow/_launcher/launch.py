@@ -49,7 +49,7 @@ def launch(
     handle_file: str | None = None,
 ) -> LaunchResult:
     _prepare_launch_spec(spec, base_dir=base_dir)
-    if handle_file:
+    if handle_file and not dry_run:
         assert spec.log_dir
         write_run_handle(
             absolute_path_relative_to(handle_file, base_dir=base_dir), spec.log_dir
