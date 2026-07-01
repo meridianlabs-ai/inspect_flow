@@ -177,6 +177,24 @@ class TestDisplayFactory:
             set_display_type(display_type)
             assert console.no_color is True
 
+    def test_none_suppresses_flow_print(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("none")
+        assert console.quiet is True
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+            flow_print("All tasks completed", format="success")
+        assert capture.get() == ""
+
+    def test_non_none_does_not_suppress_flow_print(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("plain")
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+        assert "Log dir:" in capture.get()
+
 
 class TestFullDisplay:
     def test_context_manager_sets_and_clears_global(self) -> None:
