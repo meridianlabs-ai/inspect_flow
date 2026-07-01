@@ -60,6 +60,13 @@ def set_display_type(display_type: DisplayType) -> None:
         # clobber that transient suppression when an inner init_output() re-runs
         # mid-command.
         console.quiet = False
+    if display_type != prev_display_type:
+        # Drop any lazily-cached display so display() rebuilds it for the new
+        # type; otherwise a display() materialized under the old type (e.g. the
+        # silent NoDisplay under "none") stays cached after the type changes.
+        # set_display_type is never called while a context-managed display is
+        # active, so this only ever clears the lazy singleton.
+        set_display(None)
 
 
 def display() -> Display:

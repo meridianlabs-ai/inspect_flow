@@ -206,6 +206,13 @@ class TestDisplayFactory:
             flow_print("Log dir:", "some/path")
         assert "Log dir:" in capture.get()
 
+    def test_leaving_none_rebuilds_cached_display(self) -> None:
+        set_display(None)
+        set_display_type("none")
+        assert isinstance(display(), NoDisplay)
+        set_display_type("full")
+        assert isinstance(display(), FullDisplay)
+
     def test_non_none_transition_preserves_transient_quiet(self) -> None:
         # quiet_output() sets console.quiet transiently; a non-"none" init that
         # re-runs mid-command must not clobber it.
