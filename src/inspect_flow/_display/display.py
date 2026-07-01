@@ -44,17 +44,22 @@ def get_display_type() -> DisplayType:
 
 def set_display_type(display_type: DisplayType) -> None:
     global _display_type
+    prev_display_type = _display_type
     _display_type = display_type
     plain = display_type in _PLAIN_DISPLAY_TYPES or display_type == "none"
     console.no_color = plain
     console.highlighter = NullHighlighter() if plain else ReprHighlighter()
     if display_type == "none":
         # Fully suppress Flow's own console output (flow_print, the result
-        # summary). We only ever enable quiet here: JSON commands drive
-        # console.quiet themselves via quiet_output(), and clearing it for
-        # non-"none" types would clobber that transient suppression when an
-        # inner init_output() re-runs mid-command.
+        # summary).
         console.quiet = True
+    elif prev_display_type == "none":
+        # Leaving "none" clears the suppression it set. We only touch quiet on
+        # entering/leaving "none": JSON commands drive console.quiet themselves
+        # via quiet_output(), and clearing it on every non-"none" call would
+        # clobber that transient suppression when an inner init_output() re-runs
+        # mid-command.
+        console.quiet = False
 
 
 def display() -> Display:

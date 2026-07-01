@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from contextlib import redirect_stdout
+from typing import get_args
 
 import click
 import yaml
@@ -73,7 +74,7 @@ def _common_options(fn: click.decorators.FC) -> click.decorators.FC:
     fn = click.option(
         "--display",
         "display_type",
-        type=click.Choice(["full", "rich", "plain"]),
+        type=click.Choice(list(get_args(DisplayType))),
         default=DEFAULT_DISPLAY_TYPE,
         help="Display type.",
     )(fn)

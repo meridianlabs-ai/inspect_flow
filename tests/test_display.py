@@ -195,6 +195,27 @@ class TestDisplayFactory:
             flow_print("Log dir:", "some/path")
         assert "Log dir:" in capture.get()
 
+    def test_leaving_none_clears_quiet(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("none")
+        assert console.quiet is True
+        set_display_type("full")
+        assert console.quiet is False
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+        assert "Log dir:" in capture.get()
+
+    def test_non_none_transition_preserves_transient_quiet(self) -> None:
+        # quiet_output() sets console.quiet transiently; a non-"none" init that
+        # re-runs mid-command must not clobber it.
+        from inspect_flow._util.console import console
+
+        set_display_type("plain")
+        console.quiet = True
+        set_display_type("full")
+        assert console.quiet is True
+
 
 class TestFullDisplay:
     def test_context_manager_sets_and_clears_global(self) -> None:
