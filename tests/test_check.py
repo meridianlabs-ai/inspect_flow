@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 from inspect_flow import FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
+from inspect_flow._util.subprocess_util import SpawnResult
 from inspect_flow.api import check
 from rich.console import Console
 
@@ -109,7 +110,8 @@ def test_check_venv_returns_is_complete(tmp_path: Path, is_complete: bool) -> No
     )
 
     with patch(
-        "inspect_flow._launcher.launch.venv_check", return_value=is_complete
+        "inspect_flow._launcher.launch.venv_check",
+        return_value=SpawnResult(ok=is_complete, json_result=None),
     ) as mock_venv_check:
         result = check(spec=spec, base_dir=".")
 

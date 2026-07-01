@@ -115,6 +115,7 @@ def runner_run(
     set_display_type(display_type)
     cfg = _read_config(file)
     if output_json:
+        assert dry_run, "--json is only supported with --dry-run"
         with redirect_stdout(sys.stderr):
             find_result = dry_run_eval_set(cfg, base_dir=base_dir)
         _write_json_result(find_result, cfg)

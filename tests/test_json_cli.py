@@ -117,8 +117,7 @@ def _mock_venv_json_result(
     *,
     ok: bool = True,
 ) -> None:
-    """Make the fake venv child write a --json result file the parent will emit."""
-
+    # Make the fake venv child write a --json result file the parent will emit.
     def write_result() -> None:
         env = mock_venv_subprocess.popen.call_args.kwargs.get("env") or {}
         result_path = env.get(RUN_RESULT_FILE_ENV)
