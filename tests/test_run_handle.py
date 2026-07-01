@@ -40,6 +40,22 @@ def test_launch_writes_handle_file(mock_eval_set: MagicMock, tmp_path: Path) -> 
     assert handle["pid"] == os.getpid()
 
 
+def test_launch_resolves_handle_file_relative_to_base_dir(
+    mock_eval_set: MagicMock, tmp_path: Path
+) -> None:
+    abs_task_file = str(Path(task_file).resolve())
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        tasks=[FlowTask(name=abs_task_file + "@noop", model="mockllm/mock-llm")],
+    )
+    launch(spec=spec, base_dir=str(tmp_path), handle_file="handle.json")
+
+    handle_file = tmp_path / "handle.json"
+    assert handle_file.exists()
+    handle = json.loads(handle_file.read_text())
+    assert handle["log_dir"] == spec.log_dir
+
+
 def test_launch_without_handle_file(mock_eval_set: MagicMock, tmp_path: Path) -> None:
     handle_file = tmp_path / "handle.json"
     spec = FlowSpec(

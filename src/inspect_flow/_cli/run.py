@@ -66,8 +66,6 @@ def run_command(
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
     base_dir = str(Path(config_file).parent)
-    if handle_file is not None:
-        handle_file = absolute_file_path(handle_file)
     if output_json and not dry_run:
         raise click.UsageError("--json is only supported with --dry-run.")
     mode: DisplayMode = "dry_run" if dry_run else "run"

@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
-from inspect_ai._util.file import absolute_file_path
 from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
@@ -120,11 +119,13 @@ def test_run_command_handle_file() -> None:
         )
 
         assert result.exit_code == 0
+        # The raw value is passed through; launch() resolves it relative to
+        # base_dir, matching the run() API's documented semantics.
         mock_run.assert_called_once_with(
             mock_config_obj,
             dry_run=False,
             base_dir=CONFIG_FILE_DIR,
-            handle_file=absolute_file_path("run-handle.json"),
+            handle_file="run-handle.json",
         )
 
 
