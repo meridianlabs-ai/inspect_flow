@@ -103,7 +103,7 @@ class FlowModel(FlowBase):
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Configuration for model. Config values will be override settings on the `FlowTask` and `FlowSpec`.",
+        description="Model generation config. Highest precedence: overrides `config` on `FlowTask` and `defaults.config`.",
     )
 
     base_url: str | None | NotGiven = Field(
@@ -392,7 +392,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     config: GenerateConfig | NotGiven = Field(
         default=not_given,
-        description="Model generation config for default model (does not apply to model roles). Will override config settings on the `FlowSpec`. Will be overridden by settings on the `FlowModel`.",
+        description="Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.",
     )
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
@@ -733,7 +733,7 @@ class FlowDefaults(FlowBase):
 
     config: GenerateConfig | None | NotGiven = Field(
         default=not_given,
-        description="Default model generation options. Will be overriden by settings on the `FlowModel` and `FlowTask`.",
+        description="Default model generation config. Lowest precedence: overridden by `config` on `FlowTask` and `FlowModel`.",
     )
 
     agent: FlowAgent | None | NotGiven = Field(
@@ -870,11 +870,24 @@ class FlowStoreConfig(FlowBase):
 class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     """Top-level flow specification: the tasks to run plus how to run them.
 
-    `tasks` lists what to evaluate; per-task configuration (model, solver, scorer,
-    epochs, limits) lives on each `FlowTask`. Cross-cutting settings live in dedicated
-    fields: `defaults` (`FlowDefaults`, applied to every task), `options` (`FlowOptions`,
-    eval-set-wide options forwarded to Inspect), and `dependencies` (`FlowDependencies`,
-    for venv mode). Eval parameters are not set directly at this top level.
+    This is the root object of every flow config. Settings are grouped by scope, and
+    putting each in the right place avoids the most common configuration mistake:
+
+    - **What to evaluate** — `tasks`, a list of `FlowTask`. Per-task settings (`model`,
+      `solver`, `scorer`, `config`, `epochs`, limits) live on each `FlowTask`, not here.
+    - **Defaults across tasks** — `defaults` (`FlowDefaults`), applied to every task. A
+      value set on an individual `FlowTask` overrides the matching default.
+    - **Eval-set-wide options** — `options` (`FlowOptions`), forwarded to Inspect's
+      `eval_set()`. These apply to the whole run (retries, global limits, display,
+      scoring), not to individual tasks.
+    - **Run environment** — top-level fields on this spec: `execution_type`,
+      `python_version`, `dependencies` (venv mode), `env`, `store`, `log_dir`.
+
+    Model generation `config` can be set in several places; later entries win:
+    `defaults.config` < `FlowTask.config` < `FlowModel.config`.
+
+    Eval parameters (`model`, `solver`, limits, etc.) are not set directly on `FlowSpec`;
+    put them on `FlowTask` (or `defaults` to apply them to every task).
     """
 
     includes: Sequence[str | FlowSpec] | None | NotGiven = Field(
