@@ -2,7 +2,7 @@ import click
 from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
-from inspect_flow._cli.json_output import emit_json, quiet_output
+from inspect_flow._cli.json_output import emit_json, output_context
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
@@ -27,10 +27,9 @@ def config_command(
     init_output(**kwargs)
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
+    with output_context(output_json):
+        fconfig = int_load_spec(config_file, options=config_options)
     if output_json:
-        with quiet_output():
-            fconfig = int_load_spec(config_file, options=config_options)
         emit_json(model_dump(fconfig))
-        return
-    fconfig = int_load_spec(config_file, options=config_options)
-    print_config_yaml(fconfig, resolved=False)
+    else:
+        print_config_yaml(fconfig, resolved=False)

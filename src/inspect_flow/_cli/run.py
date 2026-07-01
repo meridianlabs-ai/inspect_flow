@@ -5,7 +5,7 @@ import click
 from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
-from inspect_flow._cli.json_output import emit_json, quiet_output
+from inspect_flow._cli.json_output import emit_json, output_context
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     config_options,
@@ -14,10 +14,9 @@ from inspect_flow._cli.options import (
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
-from inspect_flow._display.display import DisplayAction, DisplayMode, create_display
+from inspect_flow._display.display import DisplayAction, DisplayMode
 from inspect_flow._launcher.launch import launch, launch_dry_run
 from inspect_flow._runner.cli import RUN_ACTIONS
-from inspect_flow._util.console import path
 from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _run_actions = {
@@ -54,23 +53,21 @@ def run_command(
     config_options = parse_config_options(**kwargs)
     config_file = absolute_file_path(config_file)
     base_dir = str(Path(config_file).parent)
-    if output_json:
-        if not dry_run:
-            raise click.UsageError("--json is only supported with --dry-run.")
-        with quiet_output():
-            spec = int_load_spec(config_file, options=config_options)
-            result = launch_dry_run(spec, base_dir=base_dir)
-        assert result is not None
-        emit_json(result)
-        return
+    if output_json and not dry_run:
+        raise click.UsageError("--json is only supported with --dry-run.")
     mode: DisplayMode = "dry_run" if dry_run else "run"
-    with create_display(mode=mode, actions=_run_actions) as display:
-        display.set_title("Flow Spec:", path(config_file))
+    with output_context(
+        output_json, mode=mode, actions=_run_actions, config_file=config_file
+    ):
         spec = int_load_spec(config_file, options=config_options)
-        result = launch(
-            spec,
-            base_dir=base_dir,
-            dry_run=dry_run,
+        json_result = launch_dry_run(spec, base_dir=base_dir) if output_json else None
+        result = (
+            None if output_json else launch(spec, base_dir=base_dir, dry_run=dry_run)
         )
+    if output_json:
+        assert json_result is not None
+        emit_json(json_result)
+        return
+    assert result is not None
     if not dry_run and not result.success:
         sys.exit(EXIT_INCOMPLETE)

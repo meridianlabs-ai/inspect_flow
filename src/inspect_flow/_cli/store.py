@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from contextlib import nullcontext
 from typing import Any, Literal, TypeVar
 
 import click
@@ -9,7 +8,7 @@ from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
-from inspect_flow._cli.json_output import emit_json, quiet_output
+from inspect_flow._cli.json_output import emit_json, output_context, quiet_output
 from inspect_flow._cli.options import (
     OutputOptionArgs,
     init_output,
@@ -314,7 +313,7 @@ def _echo_logs_tree(log_files: list[str]) -> None:
 @json_option
 @store_options
 def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
-    with quiet_output() if output_json else nullcontext():
+    with output_context(output_json):
         flow_store = init_store(quiet=True, **kwargs)
         logs = flow_store.get_logs() if flow_store else set()
     log_dirs = {dirname(log) for log in logs}
