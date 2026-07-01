@@ -159,7 +159,7 @@ def scan(
     """
     flow_display = get_display_type()
     scout_display: Literal["rich", "plain", "log", "none"] = (
-        "rich" if flow_display == "full" else flow_display
+        "rich" if flow_display in ("full", "conversation") else flow_display
     )
 
     scanjob_args = parse_cli_args(s)

@@ -483,3 +483,29 @@ class TestFlowRunCli:
         assert result.exit_code == 0, result.output
         mock_run.assert_called_once()
         mock_signal.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "display_type", ["full", "conversation", "rich", "plain", "log", "none"]
+    )
+    @patch("inspect_flow._runner.cli.signal_ready_and_wait")
+    @patch("inspect_flow._runner.cli.run_eval_set")
+    def test_accepts_all_display_types(
+        self,
+        mock_run: MagicMock,
+        mock_signal: MagicMock,
+        display_type: str,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        # The venv child CLI must accept every display type the public CLI does,
+        # since venv launch forwards get_display_type() into the child.
+        mock_run.return_value = LaunchResult(success=True, logs=[])
+        config_data = {"tasks": ["my_task"], "log_dir": "./logs"}
+        config_file = tmp_path / "flow.yaml"  # type: ignore[operator]
+        config_file.write_text(yaml.dump(config_data))
+
+        cli_runner = CliRunner()
+        result = cli_runner.invoke(
+            runner,
+            ["run", "--display", display_type, "--file", str(config_file)],
+        )
+        assert result.exit_code == 0, result.output

@@ -18,6 +18,7 @@ from inspect_flow._display.full_actions import (
     _OutputCapture,
     _SafeRenderable,
 )
+from inspect_flow._display.no import NoDisplay
 from inspect_flow._display.plain import PlainDisplay
 from rich.console import Console, ConsoleOptions, RenderableType, RenderResult
 from rich.measure import Measurement
@@ -101,6 +102,26 @@ class TestPlainDisplay:
         d.stop()  # not started, should be a no-op
 
 
+class TestNoDisplay:
+    def test_context_manager_sets_and_clears_global(self) -> None:
+        with NoDisplay() as d:
+            assert display() is d
+        assert display() is not d
+
+    def test_produces_no_output(self, recording_console: Console) -> None:
+        d = NoDisplay()
+        d.update_action("k", DisplayAction(description="Setup", status="success"))
+        d.print("hello", action_key="a", format="error")
+        d.set_footer("footer")
+        d.set_title("My Flow")
+        assert d.get_title() is None
+        assert recording_console.export_text() == ""
+
+    def test_stop_idempotent(self) -> None:
+        d = NoDisplay()
+        d.stop()  # not started, should be a no-op
+
+
 class TestDisplayFactory:
     _prev_display_type: DisplayType
 
@@ -126,6 +147,81 @@ class TestDisplayFactory:
         set_display_type("full")
         d = create_display(mode="run", actions={})
         assert isinstance(d, FullActionsDisplay)
+
+    def test_display_returns_plain_for_log(self) -> None:
+        set_display_type("log")
+        set_display(None)
+        assert isinstance(display(), PlainDisplay)
+
+    def test_create_display_returns_plain_for_log(self) -> None:
+        set_display_type("log")
+        assert isinstance(create_display(mode="run", actions={}), PlainDisplay)
+
+    def test_display_returns_no_display_for_none(self) -> None:
+        set_display_type("none")
+        set_display(None)
+        assert isinstance(display(), NoDisplay)
+
+    def test_create_display_returns_no_display_for_none(self) -> None:
+        set_display_type("none")
+        assert isinstance(create_display(mode="run", actions={}), NoDisplay)
+
+    def test_conversation_uses_full_actions(self) -> None:
+        set_display_type("conversation")
+        assert isinstance(create_display(mode="run", actions={}), FullActionsDisplay)
+
+    def test_log_and_none_disable_color(self) -> None:
+        from inspect_flow._util.console import console
+
+        for display_type in ("log", "none"):
+            set_display_type(display_type)
+            assert console.no_color is True
+
+    def test_none_suppresses_flow_print(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("none")
+        assert console.quiet is True
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+            flow_print("All tasks completed", format="success")
+        assert capture.get() == ""
+
+    def test_non_none_does_not_suppress_flow_print(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("plain")
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+        assert "Log dir:" in capture.get()
+
+    def test_leaving_none_clears_quiet(self) -> None:
+        from inspect_flow._util.console import console, flow_print
+
+        set_display_type("none")
+        assert console.quiet is True
+        set_display_type("full")
+        assert console.quiet is False
+        with console.capture() as capture:
+            flow_print("Log dir:", "some/path")
+        assert "Log dir:" in capture.get()
+
+    def test_leaving_none_rebuilds_cached_display(self) -> None:
+        set_display(None)
+        set_display_type("none")
+        assert isinstance(display(), NoDisplay)
+        set_display_type("full")
+        assert isinstance(display(), FullDisplay)
+
+    def test_non_none_transition_preserves_transient_quiet(self) -> None:
+        # quiet_output() sets console.quiet transiently; a non-"none" init that
+        # re-runs mid-command must not clobber it.
+        from inspect_flow._util.console import console
+
+        set_display_type("plain")
+        console.quiet = True
+        set_display_type("full")
+        assert console.quiet is True
 
 
 class TestFullDisplay:
