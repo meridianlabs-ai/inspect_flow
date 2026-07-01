@@ -50,7 +50,7 @@ _run_actions = {
         resolve_path=False,
     ),
     default=None,
-    help="Write a JSON launch handle (with the run's `log_dir` and `pid`) to this file once the log directory is resolved. Lets a monitor discover a backgrounded run.",
+    help="Write a JSON launch handle (with the run's `log_dir` and `pid`) to this file once the log directory is resolved. Lets a monitor discover a backgrounded run. A relative path is resolved relative to the config file's directory, not the current working directory.",
     envvar="INSPECT_FLOW_HANDLE_FILE",
 )
 @config_options

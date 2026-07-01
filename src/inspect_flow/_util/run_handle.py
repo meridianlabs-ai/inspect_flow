@@ -12,8 +12,11 @@ def run_handle(log_dir: str) -> dict[str, Any]:
         log_dir: The (absolute) log directory the run writes to.
 
     Returns:
-        A JSON-serializable handle with the run's `log_dir` and the process
-        `pid` of the launching `flow run` command.
+        A JSON-serializable handle with the run's `log_dir` and the `pid` of
+        the launching `flow run` process. For `inproc` execution this pid runs
+        the eval directly. For `venv` execution it is the launcher, which
+        blocks while the eval runs in a child subprocess, so signaling this pid
+        stops the launcher but does not on its own cleanly terminate the eval.
     """
     return {"log_dir": log_dir, "pid": os.getpid()}
 
@@ -22,8 +25,9 @@ def write_run_handle(handle_file: str, log_dir: str) -> dict[str, Any]:
     """Write a launch handle JSON file so a run can be discovered.
 
     A coding agent (or any external monitor) that backgrounds `flow run` can
-    read this file to learn where the run is writing logs and which process to
-    signal, without having to parse the interactive display.
+    read this file to learn where the run is writing logs and the pid of the
+    launching process, without having to parse the interactive display. See
+    `run_handle` for the `pid` semantics under `inproc` vs `venv` execution.
 
     Args:
         handle_file: Path to write the handle JSON to.
