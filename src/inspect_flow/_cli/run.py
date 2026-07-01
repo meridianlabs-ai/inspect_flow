@@ -46,7 +46,6 @@ _run_actions = {
     type=click.Path(
         file_okay=True,
         dir_okay=False,
-        writable=True,
         resolve_path=False,
     ),
     default=None,
