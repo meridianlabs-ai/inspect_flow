@@ -13,6 +13,7 @@ from inspect_flow._config.load import ConfigOptions, _apply_overrides
 from inspect_flow._launcher.launch import CheckLaunchResult
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._util.subprocess_util import SpawnResult
 from inspect_flow._version import __version__
 
 CONFIG_FILE = "./tests/config/mock_flow.py"
@@ -450,7 +451,8 @@ def test_check_command_venv_exit_code(
 ) -> None:
     runner = CliRunner()
     with patch(
-        "inspect_flow._launcher.launch.venv_check", return_value=is_complete
+        "inspect_flow._launcher.launch.venv_check",
+        return_value=SpawnResult(ok=is_complete, json_result=None),
     ) as mock_venv_check:
         result = runner.invoke(
             check_command,

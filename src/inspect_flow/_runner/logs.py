@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from inspect_ai import Epochs, Task
 from inspect_ai._eval.eval import eval_resolve_tasks
@@ -48,6 +48,33 @@ class FindLogsResult(NamedTuple):
             (info.log_samples, info.task_samples)
             for info in self.task_log_info.values()
         )
+
+
+def _task_to_json(info: TaskLogInfo) -> dict[str, Any]:
+    complete = info.task_samples is not None and info.log_samples >= info.task_samples
+    return {
+        "name": info.task.name,
+        "log_file": info.eval_log.location if info.eval_log else None,
+        "samples": info.log_samples,
+        "total_samples": info.task_samples,
+        "complete": complete,
+        "duplicate_logs": list(info.duplicate_logs),
+    }
+
+
+def find_logs_result_to_json(result: FindLogsResult, log_dir: str) -> dict[str, Any]:
+    tasks = [_task_to_json(info) for info in result.task_log_info.values()]
+    complete = sum(1 for task in tasks if task["complete"])
+    return {
+        "log_dir": log_dir,
+        "tasks": tasks,
+        "unrecognized": list(result.unexpected_logs),
+        "summary": {
+            "total": len(tasks),
+            "complete": complete,
+            "incomplete": len(tasks) - complete,
+        },
+    }
 
 
 def get_task_ids_to_tasks(

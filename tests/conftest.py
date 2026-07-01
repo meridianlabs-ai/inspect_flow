@@ -67,6 +67,39 @@ def init_log_handler() -> Generator[None, None, None]:
 
 
 @pytest.fixture(autouse=True)
+def reset_display_state() -> Generator[None, None, None]:
+    # Re-sync the display/console globals after each test. Modules bind the
+    # shared console via `from ..console import console`, so they must all point
+    # at the canonical object; tests (e.g. recording_console combined with a real
+    # eval) can leave them pointing at a stale recording console, which defeats
+    # `console.quiet` suppression and leaks display output into --json stdout.
+    import sys
+
+    from inspect_flow._display import display as display_module
+    from inspect_flow._util.console import console
+
+    console_modules = (
+        "inspect_flow._display.full",
+        "inspect_flow._display.full_actions",
+        "inspect_flow._display.plain",
+        "inspect_flow._cli.store",
+        "inspect_flow._steps.run",
+        "inspect_flow._steps.context",
+        "inspect_flow._steps.step",
+    )
+    try:
+        yield
+    finally:
+        for name in console_modules:
+            module = sys.modules.get(name)
+            if module is not None and "console" in vars(module):
+                vars(module)["console"] = console
+        console.quiet = False
+        display_module.set_display(None)
+        display_module.set_display_type(display_module.DEFAULT_DISPLAY_TYPE)
+
+
+@pytest.fixture(autouse=True)
 def isolate_user_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure tests never touch real user data (store and flow data file)."""
     user_data = tmp_path / "user_data"

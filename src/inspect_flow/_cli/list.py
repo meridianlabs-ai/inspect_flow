@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from logging import getLogger
+from typing import Any
 
 import click
 import yaml
@@ -27,6 +28,8 @@ from rich.tree import Tree
 from typing_extensions import Unpack
 
 from inspect_flow._api.list_logs import list_logs
+from inspect_flow._cli.json_output import emit_json, quiet_output
+from inspect_flow._cli.options import json_option
 from inspect_flow._cli.store import (
     StoreOptionArgs,
     _resolve_cli_filter,
@@ -185,13 +188,17 @@ def _date_str(header_result: _HeaderResult) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S %z")
 
 
+def _total_samples(header: EvalLog) -> int | None:
+    if header.results:
+        return header.results.total_samples
+    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
+    return total or None
+
+
 def _samples_str(header_result: _HeaderResult) -> str:
     valid_samples = header_result.num_valid_samples
-    header = header_result.header
-    if header.results:
-        return f"{valid_samples}/{header.results.total_samples}"
-    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
-    return f"{valid_samples}/{total}" if total else ""
+    total = _total_samples(header_result.header)
+    return f"{valid_samples}/{total}" if total is not None else ""
 
 
 @dataclass
@@ -621,6 +628,10 @@ def _process_groups(
     return entries
 
 
+def _truncate(entries: list[LogEntry], max_count: int | None) -> list[LogEntry]:
+    return entries if max_count is None else entries[:max_count]
+
+
 def _lines_per_entry(oneline: bool) -> int:
     return 1 if oneline else 6
 
@@ -642,9 +653,9 @@ def _echo_logs(
     if options.page and stdout_is_terminal() and total_entries * lpe > page_size:
         _paged_output(dir_groups, page_size, options, progress=progress)
     else:
-        entries = _process_groups(dir_groups, options, progress=progress)
-        if options.max_count is not None:
-            entries = entries[: options.max_count]
+        entries = _truncate(
+            _process_groups(dir_groups, options, progress=progress), options.max_count
+        )
         if progress:
             progress.stop()
         if not entries:
@@ -759,9 +770,7 @@ def _compute_renderable(
             return Text("No logs found")
         return _build_tree(dir_entries, console.size.width, max_lines=page_lines)
 
-    entries = _process_groups(dir_groups, options)
-    if options.max_count is not None:
-        entries = entries[: options.max_count]
+    entries = _truncate(_process_groups(dir_groups, options), options.max_count)
     if not entries:
         return Text("No logs found")
     return _entries_renderable(
@@ -803,6 +812,22 @@ def _chain(base: LogFilter | None, new: LogFilter) -> LogFilter:
     return combined
 
 
+def _log_entry_to_json(entry: LogEntry) -> dict[str, Any]:
+    header = entry.header
+    return {
+        "task": entry.task,
+        "log_file": entry.log_path,
+        "status": header.status,
+        "model": header.eval.model,
+        "samples": entry.header_result.num_valid_samples,
+        "total_samples": _total_samples(header),
+        "started_at": header.stats.started_at,
+        "completed_at": header.stats.completed_at,
+        "tags": list(header.tags) if header.tags else [],
+        "viewer_url": entry.viewer_url,
+    }
+
+
 @click.group("list")
 def list_command() -> None:
     """CLI command to list flow entities."""
@@ -825,8 +850,9 @@ class _MaxCountCommand(click.Command):
 @list_command.command(
     "log",
     cls=_MaxCountCommand,
-    help="List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (--store auto).",
+    help="List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (--store auto). With --json, display-only options (--format, --oneline, --provenance, --live, --no-page) are ignored.",
 )
+@json_option
 @store_options
 @filter_options
 @click.option(
@@ -919,6 +945,7 @@ class _MaxCountCommand(click.Command):
 @click.argument("path", required=False, default=None)
 def list_log(
     path: str | None,
+    output_json: bool,
     output_format: str,
     oneline: bool,
     provenance: bool,
@@ -968,6 +995,18 @@ def list_log(
         provenance=provenance,
     )
     store = kwargs.get("store") or "auto"
+    if output_json:
+        with quiet_output():
+            log_paths = [
+                path_str(p)
+                for p in list_logs(log_dir=path, store=store, since=since, until=until)
+            ]
+            entries = _truncate(
+                _process_groups(group_logs_by_dir(log_paths), options),
+                options.max_count,
+            )
+        emit_json({"logs": [_log_entry_to_json(e) for e in entries]})
+        return
     if live_interval is not None:
         _live_output(path, store, since, until, options, live_interval)
         return

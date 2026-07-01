@@ -57,6 +57,10 @@ def display() -> Display:
     return _display
 
 
+def get_display() -> Display | None:
+    return _display
+
+
 def set_display(d: Display | None) -> None:
     global _display
     _display = d

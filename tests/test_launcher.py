@@ -137,7 +137,7 @@ def test_runner_run_writes_success(
         )
 
     assert result.exit_code == 0
-    assert read_run_result(str(result_path)) is eval_set_success
+    assert read_run_result(str(result_path)).ok is eval_set_success
 
 
 @pytest.mark.parametrize("is_complete", [True, False])
@@ -164,7 +164,7 @@ def test_runner_check_writes_is_complete(
         )
 
     assert result.exit_code == 0
-    assert read_run_result(str(result_path)) is is_complete
+    assert read_run_result(str(result_path)).ok is is_complete
 
 
 def test_env(

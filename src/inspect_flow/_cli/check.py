@@ -5,17 +5,18 @@ import click
 from inspect_ai._util.file import absolute_file_path
 from typing_extensions import Unpack
 
+from inspect_flow._cli.json_output import emit_json, output_context
 from inspect_flow._cli.options import (
     ConfigOptionArgs,
     check_options,
     init_output,
+    json_option,
     parse_config_options,
 )
 from inspect_flow._config.load import int_load_spec
-from inspect_flow._display.display import DisplayAction, create_display
+from inspect_flow._display.display import DisplayAction
 from inspect_flow._launcher.launch import launch_check
 from inspect_flow._runner.cli import CHECK_ACTIONS
-from inspect_flow._util.console import path
 from inspect_flow._util.constants import EXIT_INCOMPLETE
 
 _check_actions = {
@@ -28,17 +29,24 @@ _check_actions = {
     "check",
     help="Check a spec against existing logs (searches log directory recursively)",
 )
+@json_option
 @check_options
 def check_command(
     config_file: str,
+    output_json: bool,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     init_output(**kwargs)
     config_file = absolute_file_path(config_file)
-    with create_display(mode="check", actions=_check_actions) as display:
-        display.set_title("Flow Spec:", path(config_file))
-        kwargs["log_dir_create_unique"] = False
+    kwargs["log_dir_create_unique"] = False
+    base_dir = str(Path(config_file).parent)
+    with output_context(
+        output_json, mode="check", actions=_check_actions, config_file=config_file
+    ):
         spec = int_load_spec(config_file, options=parse_config_options(**kwargs))
-        result = launch_check(spec, base_dir=str(Path(config_file).parent))
+        result = launch_check(spec, base_dir=base_dir, output_json=output_json)
+    if output_json:
+        assert result.json_result is not None
+        emit_json(result.json_result)
     if not result.is_complete:
         sys.exit(EXIT_INCOMPLETE)

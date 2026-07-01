@@ -1,9 +1,13 @@
 from logging import getLogger
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
-from inspect_flow._launcher.inproc import inproc_check, inproc_launch
-from inspect_flow._launcher.venv import venv_check, venv_launch
-from inspect_flow._runner.logs import FindLogsResult
+from inspect_flow._launcher.inproc import (
+    inproc_check,
+    inproc_dry_run,
+    inproc_launch,
+)
+from inspect_flow._launcher.venv import venv_check, venv_dry_run_json, venv_launch
+from inspect_flow._runner.logs import FindLogsResult, find_logs_result_to_json
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
@@ -15,9 +19,10 @@ logger = getLogger(__name__)
 class CheckLaunchResult(NamedTuple):
     is_complete: bool
     find_result: FindLogsResult | None
+    json_result: dict[str, Any] | None = None
 
 
-def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
+def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before launching the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
@@ -35,23 +40,46 @@ def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult
                 for k, v in spec.options.bundle_url_mappings.items()
             }
 
+
+def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
+    _prepare_launch_spec(spec, base_dir=base_dir)
     if spec.execution_type == "venv":
         return venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
     else:
         return inproc_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
 
 
-def launch_check(spec: FlowSpec, base_dir: str) -> CheckLaunchResult:
+def launch_dry_run(spec: FlowSpec, base_dir: str) -> dict[str, Any] | None:
+    _prepare_launch_spec(spec, base_dir=base_dir)
+    assert spec.log_dir
+    if spec.execution_type == "venv":
+        return venv_dry_run_json(spec=spec, base_dir=base_dir)
+    return find_logs_result_to_json(
+        inproc_dry_run(spec=spec, base_dir=base_dir), spec.log_dir
+    )
+
+
+def launch_check(
+    spec: FlowSpec, base_dir: str, output_json: bool = False
+) -> CheckLaunchResult:
     if not spec.log_dir:
         raise ValueError("log_dir must be set before checking the flow spec")
     spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
 
     if spec.execution_type == "venv":
-        # The full result lives in the subprocess; only the completeness flag is
-        # signaled back (via a per-run result file) on a clean exit.
+        # The full result lives in the subprocess; the completeness flag (and the
+        # JSON result under --json) are signaled back via a per-run result file.
+        result = venv_check(spec=spec, base_dir=base_dir, output_json=output_json)
         return CheckLaunchResult(
-            is_complete=venv_check(spec=spec, base_dir=base_dir), find_result=None
+            is_complete=result.ok, find_result=None, json_result=result.json_result
         )
     else:
         result = inproc_check(spec=spec, base_dir=base_dir)
-        return CheckLaunchResult(is_complete=result.is_complete, find_result=result)
+        json_result = (
+            find_logs_result_to_json(result, spec.log_dir) if output_json else None
+        )
+        return CheckLaunchResult(
+            is_complete=result.is_complete,
+            find_result=result,
+            json_result=json_result,
+        )

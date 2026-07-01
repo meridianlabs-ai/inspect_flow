@@ -3,13 +3,16 @@ from typing import Any, Literal, TypeVar
 
 import click
 from click import Context, HelpFormatter
+from inspect_ai._util.file import dirname
 from rich.text import Text
 from rich.tree import Tree
 from typing_extensions import Unpack
 
+from inspect_flow._cli.json_output import emit_json, output_context, quiet_output
 from inspect_flow._cli.options import (
     OutputOptionArgs,
     init_output,
+    json_option,
     output_options,
     store_option,
 )
@@ -307,13 +310,27 @@ def _echo_logs_tree(log_files: list[str]) -> None:
 
 
 @store_command.command("info", help="Print store information")
+@json_option
 @store_options
-def store_info(**kwargs: Unpack[StoreOptionArgs]) -> None:
-    flow_store = init_store(quiet=True, **kwargs)
+def store_info(output_json: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
+    with output_context(output_json):
+        flow_store = init_store(quiet=True, **kwargs)
+        logs = flow_store.get_logs() if flow_store else set()
+    log_dirs = {dirname(log) for log in logs}
+    if output_json:
+        emit_json(
+            {
+                "path": flow_store.store_path,
+                "logs": len(logs),
+                "log_dirs": len(log_dirs),
+                "version": flow_store.version,
+            }
+            if flow_store
+            else None
+        )
+        return
     if not flow_store:
         return
-    logs = flow_store.get_logs()
-    log_dirs = {log.rsplit("/", 1)[0] for log in logs}
     flow_print("Path:    ", path(flow_store.store_path))
     flow_print("Logs:    ", quantity(len(logs), "log"))
     flow_print("Log dirs:", quantity(len(log_dirs), "log dir"))
@@ -348,7 +365,11 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
     flow_print("Deleted store at", path(store_path), format="success")
 
 
-@store_command.command("list", help="List logs and log directories in the store")
+@store_command.command(
+    "list",
+    help="List logs and log directories in the store. With --json, the display-only --format option is ignored.",
+)
+@json_option
 @store_options
 @filter_options
 @click.option(
@@ -361,12 +382,19 @@ def store_delete(yes: bool, **kwargs: Unpack[StoreOptionArgs]) -> None:
 )
 def store_list(
     format: str,
+    output_json: bool,
     filter_name: tuple[str, ...],
     exclude_name: str | None,
     **kwargs: Unpack[StoreOptionArgs],
 ) -> None:
     assert format in ("flat", "tree")
     log_filter = _resolve_cli_filter(filter_name, exclude_name)
+    if output_json:
+        with quiet_output():
+            flow_store = init_store(quiet=True, **kwargs)
+            logs = flow_store.get_logs(filter=log_filter) if flow_store else None
+        emit_json({"logs": sorted(logs)} if logs is not None else None)
+        return
     quiet = kwargs.get("display") == "plain"
     flow_store = init_store(quiet=quiet, **kwargs)
     if flow_store:
