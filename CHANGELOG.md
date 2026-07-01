@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0) (2026-07-01)
+
+
+### Features
+
+* add --json output to read-only CLI commands ([#745](https://github.com/meridianlabs-ai/inspect_flow/issues/745)) ([2981412](https://github.com/meridianlabs-ai/inspect_flow/commit/29814126922cd01e507a57da5ee36f490214decf))
+* signal incomplete runs/checks via exit code and avoid non-TTY hangs ([#744](https://github.com/meridianlabs-ai/inspect_flow/issues/744)) ([6e09d29](https://github.com/meridianlabs-ai/inspect_flow/commit/6e09d29b82bfdfc28f6ada73cf9cb0a4691d7ee3))
+* widen --display/DisplayType to Inspect's full set ([#746](https://github.com/meridianlabs-ai/inspect_flow/issues/746)) ([0f71433](https://github.com/meridianlabs-ai/inspect_flow/commit/0f71433c2d99f465f0dfdcb5e84828d62000eb85))
+
+
+### Bug Fixes
+
+* add hint when eval_set fails due to stale inspect-ai version ([#725](https://github.com/meridianlabs-ai/inspect_flow/issues/725)) ([2160174](https://github.com/meridianlabs-ai/inspect_flow/commit/21601742ec3e1de10960f2a34969de4930d347a5))
+* avoid race on flow-requirements.in for concurrent runs in same dir ([#713](https://github.com/meridianlabs-ai/inspect_flow/issues/713)) ([e68e025](https://github.com/meridianlabs-ai/inspect_flow/commit/e68e0258b60db1ba8b5d178f7ad3c0fca0bd08ee))
+* let explicit dependencies override auto-detected host pins ([#726](https://github.com/meridianlabs-ai/inspect_flow/issues/726)) ([582b87a](https://github.com/meridianlabs-ai/inspect_flow/commit/582b87a368ff92c697b31b595ebe4ffb8d0749b5))
+* return RunResult from public run() ([#742](https://github.com/meridianlabs-ai/inspect_flow/issues/742)) ([b227605](https://github.com/meridianlabs-ai/inspect_flow/commit/b227605aff0ae481d1286bdd39ae73b77f4f46af))
+
+
+### Documentation
+
+* clarify FlowSpec config grouping and generation-config precedence ([#748](https://github.com/meridianlabs-ai/inspect_flow/issues/748)) ([b9cab48](https://github.com/meridianlabs-ai/inspect_flow/commit/b9cab4816bf9b6f6ae8b8da115374d3a624cdb74))
+* expand class-level docstrings for public Flow types ([#716](https://github.com/meridianlabs-ai/inspect_flow/issues/716)) ([b5b0bb0](https://github.com/meridianlabs-ai/inspect_flow/commit/b5b0bb08969e80b160e953761143583d441c232d))
+
 ## [0.9.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.0...v0.9.1) (2026-06-17)
 
 
