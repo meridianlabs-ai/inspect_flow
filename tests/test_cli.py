@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
+from inspect_ai._util.file import absolute_file_path
 from inspect_flow._cli.check import check_command
 from inspect_flow._cli.config import config_command
 from inspect_flow._cli.main import flow
@@ -22,6 +23,7 @@ CONFIG_FILE_DIR = Path(CONFIG_FILE).parent.resolve().as_posix()
 
 COMMON_DEFAULTS = {
     "dry_run": False,
+    "handle_file": None,
 }
 
 
@@ -96,6 +98,33 @@ def test_run_command_overrides() -> None:
         # Verify that run was called with the config object and file path
         mock_run.assert_called_once_with(
             mock_config_obj, **COMMON_DEFAULTS, base_dir=CONFIG_FILE_DIR
+        )
+
+
+def test_run_command_handle_file() -> None:
+    runner = CliRunner()
+    with (
+        patch(
+            "inspect_flow._cli.run.launch",
+            return_value=LaunchResult(success=True, logs=[]),
+        ) as mock_run,
+        patch("inspect_flow._cli.run.int_load_spec") as mock_config,
+    ):
+        mock_config_obj = MagicMock()
+        mock_config.return_value = mock_config_obj
+
+        result = runner.invoke(
+            run_command,
+            [CONFIG_FILE, "--handle-file", "run-handle.json"],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
+        mock_run.assert_called_once_with(
+            mock_config_obj,
+            dry_run=False,
+            base_dir=CONFIG_FILE_DIR,
+            handle_file=absolute_file_path("run-handle.json"),
         )
 
 
