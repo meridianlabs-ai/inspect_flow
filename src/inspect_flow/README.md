@@ -83,7 +83,7 @@ The store indexes logs by task identifier so the runner can find and reuse compl
 [_display](./_display) provides a pluggable terminal display for rendering flow progress and status.
 
 [display.py](./_display/display.py) defines the `Display` ABC and manages a global singleton.
-`DisplayType = Literal["full", "rich", "plain"]` controls the display mode.
+`DisplayType = Literal["full", "conversation", "rich", "plain", "log", "none"]` controls the display mode.
 `create_display()` creates a display context with action tracking for CLI commands.
 
 Display implementations:

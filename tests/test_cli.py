@@ -598,6 +598,24 @@ def test_run_display_passed_to_eval_set(mock_eval_set: MagicMock) -> None:
     assert mock_eval_set.call_args.kwargs["display"] == "rich"
 
 
+@pytest.mark.parametrize(
+    "display", ["full", "conversation", "rich", "plain", "log", "none"]
+)
+def test_run_display_accepts_full_inspect_set(
+    display: str, mock_eval_set: MagicMock
+) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        run_command,
+        [CONFIG_FILE, "--display", display, "--log-dir-allow-dirty"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["display"] == display
+
+
 def test_run_command_resume() -> None:
     runner = CliRunner()
     with (

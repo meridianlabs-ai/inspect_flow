@@ -127,6 +127,28 @@ class TestDisplayFactory:
         d = create_display(mode="run", actions={})
         assert isinstance(d, FullActionsDisplay)
 
+    def test_display_returns_plain_for_log_and_none(self) -> None:
+        for display_type in ("log", "none"):
+            set_display_type(display_type)
+            set_display(None)
+            assert isinstance(display(), PlainDisplay)
+
+    def test_create_display_returns_plain_for_log_and_none(self) -> None:
+        for display_type in ("log", "none"):
+            set_display_type(display_type)
+            assert isinstance(create_display(mode="run", actions={}), PlainDisplay)
+
+    def test_conversation_uses_full_actions(self) -> None:
+        set_display_type("conversation")
+        assert isinstance(create_display(mode="run", actions={}), FullActionsDisplay)
+
+    def test_log_and_none_disable_color(self) -> None:
+        from inspect_flow._util.console import console
+
+        for display_type in ("log", "none"):
+            set_display_type(display_type)
+            assert console.no_color is True
+
 
 class TestFullDisplay:
     def test_context_manager_sets_and_clears_global(self) -> None:

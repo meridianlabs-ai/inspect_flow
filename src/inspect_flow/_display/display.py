@@ -13,20 +13,27 @@ from rich.text import Text
 from inspect_flow._display.action import DisplayAction
 from inspect_flow._util.console import Formats, console
 
-DisplayType = Literal["full", "rich", "plain"]
-"""Display type for flow output."""
+DisplayType = Literal["full", "conversation", "rich", "plain", "log", "none"]
+"""Display type for flow output.
+
+Matches Inspect's set of display types:
+    - "full": Full interactive display with progress bars and rich formatting.
+    - "conversation": Stream the model conversation to the terminal.
+    - "rich": Rich text formatting without interactive elements.
+    - "plain": Plain text output.
+    - "log": Flat, ANSI-free log lines.
+    - "none": No display output.
+"""
 
 DEFAULT_DISPLAY_TYPE: DisplayType = "full"
 """Default display type for flow output."""
 
 DisplayMode = Literal["run", "dry_run", "check"]
-"""Display mode for flow output.
+"""Display mode for flow output."""
 
-Options:
-    - "full": Full interactive display with progress bars and rich formatting
-    - "rich": Rich text formatting without interactive elements
-    - "plain": Plain text output
-"""
+_PLAIN_DISPLAY_TYPES: tuple[DisplayType, ...] = ("plain", "log", "none")
+"""Display types that Flow renders as flat, non-interactive plain text."""
+
 _display_type: DisplayType = DEFAULT_DISPLAY_TYPE
 _display: Display | None = None
 
@@ -38,7 +45,7 @@ def get_display_type() -> DisplayType:
 def set_display_type(display_type: DisplayType) -> None:
     global _display_type
     _display_type = display_type
-    plain = display_type == "plain"
+    plain = display_type in _PLAIN_DISPLAY_TYPES
     console.no_color = plain
     console.highlighter = NullHighlighter() if plain else ReprHighlighter()
 
@@ -46,7 +53,7 @@ def set_display_type(display_type: DisplayType) -> None:
 def display() -> Display:
     global _display
     if _display is None:
-        if _display_type == "plain":
+        if _display_type in _PLAIN_DISPLAY_TYPES:
             from inspect_flow._display.plain import PlainDisplay
 
             _display = PlainDisplay()
@@ -108,7 +115,7 @@ class Display(ABC):
 
 
 def create_display(mode: DisplayMode, actions: dict[str, DisplayAction]) -> Display:
-    if _display_type == "plain":
+    if _display_type in _PLAIN_DISPLAY_TYPES:
         from inspect_flow._display.plain import PlainDisplay
 
         return PlainDisplay()

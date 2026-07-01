@@ -53,7 +53,7 @@ def output_options(f: F) -> F:
     f = click.option(
         "--display",
         type=click.Choice(
-            ["full", "rich", "plain"],
+            ["full", "conversation", "rich", "plain", "log", "none"],
             case_sensitive=False,
         ),
         default=DEFAULT_DISPLAY_TYPE,
