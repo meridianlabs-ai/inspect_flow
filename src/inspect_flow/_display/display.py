@@ -31,7 +31,7 @@ DEFAULT_DISPLAY_TYPE: DisplayType = "full"
 DisplayMode = Literal["run", "dry_run", "check"]
 """Display mode for flow output."""
 
-_PLAIN_DISPLAY_TYPES: tuple[DisplayType, ...] = ("plain", "log", "none")
+_PLAIN_DISPLAY_TYPES: tuple[DisplayType, ...] = ("plain", "log")
 """Display types that Flow renders as flat, non-interactive plain text."""
 
 _display_type: DisplayType = DEFAULT_DISPLAY_TYPE
@@ -45,7 +45,7 @@ def get_display_type() -> DisplayType:
 def set_display_type(display_type: DisplayType) -> None:
     global _display_type
     _display_type = display_type
-    plain = display_type in _PLAIN_DISPLAY_TYPES
+    plain = display_type in _PLAIN_DISPLAY_TYPES or display_type == "none"
     console.no_color = plain
     console.highlighter = NullHighlighter() if plain else ReprHighlighter()
 
@@ -53,7 +53,11 @@ def set_display_type(display_type: DisplayType) -> None:
 def display() -> Display:
     global _display
     if _display is None:
-        if _display_type in _PLAIN_DISPLAY_TYPES:
+        if _display_type == "none":
+            from inspect_flow._display.no import NoDisplay
+
+            _display = NoDisplay()
+        elif _display_type in _PLAIN_DISPLAY_TYPES:
             from inspect_flow._display.plain import PlainDisplay
 
             _display = PlainDisplay()
@@ -115,7 +119,11 @@ class Display(ABC):
 
 
 def create_display(mode: DisplayMode, actions: dict[str, DisplayAction]) -> Display:
-    if _display_type in _PLAIN_DISPLAY_TYPES:
+    if _display_type == "none":
+        from inspect_flow._display.no import NoDisplay
+
+        return NoDisplay()
+    elif _display_type in _PLAIN_DISPLAY_TYPES:
         from inspect_flow._display.plain import PlainDisplay
 
         return PlainDisplay()
