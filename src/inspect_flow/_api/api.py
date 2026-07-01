@@ -92,6 +92,7 @@ def run(
     *,
     dry_run: bool = False,
     resume: bool = False,
+    handle_file: str | None = None,
 ) -> RunResult:
     """Run an inspect_flow evaluation.
 
@@ -100,6 +101,10 @@ def run(
         base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
         dry_run: If `True`, do not run eval, but show a count of tasks that would be run.
         resume: If `True`, reuse the log directory from the previous run.
+        handle_file: If set, write a JSON launch handle (with the run's `log_dir`
+            and `pid`) to this file once the log directory is resolved, so an
+            external monitor can discover a backgrounded run. Resolved relative
+            to `base_dir`.
 
     Returns:
         A RunResult with the success flag, eval logs, and log directory. `success`
@@ -125,6 +130,7 @@ def run(
         spec=spec,
         base_dir=base_dir,
         dry_run=dry_run,
+        handle_file=handle_file,
     )
     assert spec.log_dir
     return RunResult(success=result.success, logs=result.logs, log_dir=spec.log_dir)

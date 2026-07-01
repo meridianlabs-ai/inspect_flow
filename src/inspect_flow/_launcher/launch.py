@@ -12,6 +12,7 @@ from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.path_util import absolute_path_relative_to
+from inspect_flow._util.run_handle import write_run_handle
 
 logger = getLogger(__name__)
 
@@ -41,8 +42,18 @@ def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
             }
 
 
-def launch(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> LaunchResult:
+def launch(
+    spec: FlowSpec,
+    base_dir: str,
+    dry_run: bool = False,
+    handle_file: str | None = None,
+) -> LaunchResult:
     _prepare_launch_spec(spec, base_dir=base_dir)
+    if handle_file and not dry_run:
+        assert spec.log_dir
+        write_run_handle(
+            absolute_path_relative_to(handle_file, base_dir=base_dir), spec.log_dir
+        )
     if spec.execution_type == "venv":
         return venv_launch(spec=spec, base_dir=base_dir, dry_run=dry_run)
     else:
