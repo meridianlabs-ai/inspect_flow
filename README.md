@@ -6,7 +6,7 @@
 |--------------------------------------------------- | -------: | -------: | -------: | -------: | ---------: | --------: |
 | src/inspect\_flow/\_\_init\_\_.py                  |       10 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_api/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100.00% |           |
-| src/inspect\_flow/\_api/api.py                     |       90 |        1 |       18 |        1 |     98.15% |       197 |
+| src/inspect\_flow/\_api/api.py                     |       90 |        1 |       18 |        1 |     98.15% |       203 |
 | src/inspect\_flow/\_api/list\_logs.py              |       39 |        3 |       18 |        3 |     89.47% |18, 71, 78 |
 | src/inspect\_flow/\_cli/\_\_init\_\_.py            |        5 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/check.py                   |       29 |        0 |        4 |        0 |    100.00% |           |
@@ -16,7 +16,7 @@
 | src/inspect\_flow/\_cli/list.py                    |      605 |      152 |      210 |       40 |     71.53% |70-72, 78, 85, 94, 114-115, 171, 177, 179, 186, 194-195, 283-285, 289-\>291, 300, 302, 311, 322, 355, 368-\>371, 374-\>382, 378-\>380, 406-\>410, 422, 444-458, 466, 470, 484-491, 533, 539-543, 548-549, 564-578, 588-\>591, 598, 603, 610, 654, 659-\>661, 673-731, 747, 754-771, 775, 795, 809-812, 844, 973-974, 987-988 |
 | src/inspect\_flow/\_cli/main.py                    |       34 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/options.py                 |       81 |        0 |       16 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/run.py                     |       37 |        0 |        6 |        0 |    100.00% |           |
+| src/inspect\_flow/\_cli/run.py                     |       38 |        0 |        6 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/step.py                    |      195 |       17 |       84 |       19 |     87.10% |27, 40, 43, 53-54, 76, 85, 91-\>98, 93-\>92, 95, 102, 108, 143-\>146, 146-\>exit, 293-\>292, 298, 300, 308, 330, 332, 334, 352 |
 | src/inspect\_flow/\_cli/store.py                   |      177 |        0 |       52 |        3 |     98.69% |49-\>51, 260-\>exit, 400-\>exit |
 | src/inspect\_flow/\_config/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
@@ -36,7 +36,7 @@
 | src/inspect\_flow/\_launcher/auto\_dependencies.py |       83 |        0 |       38 |        0 |    100.00% |           |
 | src/inspect\_flow/\_launcher/freeze.py             |       47 |        6 |       16 |        0 |     87.30% |     57-62 |
 | src/inspect\_flow/\_launcher/inproc.py             |       25 |        2 |        6 |        2 |     87.10% |    26, 33 |
-| src/inspect\_flow/\_launcher/launch.py             |       42 |        1 |       14 |        1 |     96.43% |        66 |
+| src/inspect\_flow/\_launcher/launch.py             |       46 |        1 |       16 |        1 |     96.77% |        77 |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       75 |       26 |       28 |        4 |     55.34% |20-24, 87-88, 95-105, 110-\>112, 115-132 |
 | src/inspect\_flow/\_launcher/python\_version.py    |       55 |       14 |       18 |        5 |     68.49% |10, 33-40, 53-\>51, 60-61, 89-95, 117-119, 125 |
 | src/inspect\_flow/\_launcher/venv.py               |      221 |        3 |       82 |        3 |     98.02% |18, 286, 299 |
@@ -79,12 +79,13 @@
 | src/inspect\_flow/\_util/not\_given.py             |        9 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/path\_util.py             |       55 |        1 |       24 |        1 |     97.47% |        29 |
 | src/inspect\_flow/\_util/pydantic\_util.py         |       19 |        0 |        6 |        0 |    100.00% |           |
+| src/inspect\_flow/\_util/run\_handle.py            |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_util/subprocess\_util.py       |       54 |       10 |       20 |        2 |     83.78% |85-94, 151 |
 | src/inspect\_flow/\_util/terminal.py               |       12 |        6 |        0 |        0 |     50.00% |9-12, 19-20 |
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       11 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **5767** |  **357** | **1786** |  **168** | **91.99%** |           |
+| **TOTAL**                                          | **5783** |  **357** | **1788** |  **168** | **92.01%** |           |
 
 
 ## Setup coverage badge
