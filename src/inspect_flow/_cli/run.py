@@ -41,11 +41,23 @@ _run_actions = {
     help="Do not fail if the `log-dir` contains files that are not part of the eval set.",
     envvar="INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY",
 )
+@click.option(
+    "--handle-file",
+    type=click.Path(
+        file_okay=True,
+        dir_okay=False,
+        resolve_path=False,
+    ),
+    default=None,
+    help="Write a JSON launch handle (with the run's `log_dir` and `pid`) to this file once the log directory is resolved. Lets a monitor discover a backgrounded run. A relative path is resolved relative to the config file's directory, not the current working directory.",
+    envvar="INSPECT_FLOW_HANDLE_FILE",
+)
 @config_options
 def run_command(
     config_file: str,
     output_json: bool,
     dry_run: bool,
+    handle_file: str | None,
     **kwargs: Unpack[ConfigOptionArgs],
 ) -> None:
     """CLI command to run a spec."""
@@ -62,7 +74,11 @@ def run_command(
         spec = int_load_spec(config_file, options=config_options)
         json_result = launch_dry_run(spec, base_dir=base_dir) if output_json else None
         result = (
-            None if output_json else launch(spec, base_dir=base_dir, dry_run=dry_run)
+            None
+            if output_json
+            else launch(
+                spec, base_dir=base_dir, dry_run=dry_run, handle_file=handle_file
+            )
         )
     if output_json:
         assert json_result is not None
