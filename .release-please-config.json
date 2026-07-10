@@ -8,47 +8,28 @@
           "section": "Features"
         },
         {
-          "type": "feature",
-          "section": "Features"
-        },
-        {
           "type": "fix",
           "section": "Bug Fixes"
         },
         {
-          "type": "chore",
-          "section": "Miscellaneous",
-          "hidden": false
+          "type": "perf",
+          "section": "Performance Improvements"
         },
         {
-          "type": "docs",
-          "section": "Documentation",
-          "hidden": false
-        },
-        {
-          "type": "doc",
-          "section": "Documentation",
-          "hidden": false
-        },
-        {
-          "type": "style",
-          "section": "Styles",
-          "hidden": true
+          "type": "revert",
+          "section": "Reverts"
         },
         {
           "type": "refactor",
-          "section": "Code Refactoring",
-          "hidden": false
+          "section": "Code Refactoring"
         },
         {
-          "type": "perf",
-          "section": "Performance Improvements",
-          "hidden": false
+          "type": "docs",
+          "section": "Documentation"
         },
         {
-          "type": "test",
-          "section": "Tests",
-          "hidden": true
+          "type": "chore",
+          "section": "Miscellaneous"
         },
         {
           "type": "build",
@@ -58,6 +39,16 @@
         {
           "type": "ci",
           "section": "Continuous Integration",
+          "hidden": true
+        },
+        {
+          "type": "test",
+          "section": "Tests",
+          "hidden": true
+        },
+        {
+          "type": "style",
+          "section": "Styles",
           "hidden": true
         }
       ],

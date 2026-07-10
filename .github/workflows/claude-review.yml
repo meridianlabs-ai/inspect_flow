@@ -15,8 +15,10 @@ jobs:
   review:
     # Run on PR events, or on a PR comment containing @review. `@review` does
     # not collide with the dev agent's `@claude` trigger.
+    # Skip release-bot PRs (auto-generated changelog/version bumps).
     if: >
-      github.event_name == 'pull_request' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.user.login != 'meridian-release-bot[bot]') ||
       (github.event.issue.pull_request != null &&
        contains(github.event.comment.body, '@review'))
     uses: meridianlabs-ai/agents/.github/workflows/claude-review.yml@main
