@@ -90,7 +90,8 @@ spec = FlowSpec(
         ),
     ],
 )
-run(spec=spec)
+result = run(spec=spec)
+print(f"Success: {result.success}, logs written to {result.log_dir}")
 ```
 
 ## Matrix Functions
