@@ -380,6 +380,8 @@ class GenerateConfigMatrixDict(TypedDict):
     """Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Huggingface, llama-cpp-python, vLLM, and SGLang only."""
     top_logprobs: NotRequired[Sequence[int | None] | None]
     """Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only."""
+    prompt_logprobs: NotRequired[Sequence[int | None] | None]
+    """Number of log probabilities to return per prompt token (1-20). When greater than 1, top-N alternative tokens are also returned. vLLM only."""
     parallel_tool_calls: NotRequired[Sequence[bool | None] | None]
     """Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only."""
     internal_tools: NotRequired[Sequence[bool | None] | None]
@@ -388,6 +390,12 @@ class GenerateConfigMatrixDict(TypedDict):
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
     """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
+    verbosity: NotRequired[Sequence[Literal["low", "medium", "high"] | None] | None]
+    """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
+    effort: NotRequired[
+        Sequence[Literal["low", "medium", "high", "xhigh", "max"] | None] | None
+    ]
+    """Control how many tokens are used for a response, trading off between response thoroughness and token efficiency. Anthropic Claude Opus 4.5+ only (`max` only supported on 4.6 and 4.7, `xhigh` supported only on 4.7)."""
     reasoning_effort: NotRequired[
         Sequence[
             Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None
@@ -395,6 +403,8 @@ class GenerateConfigMatrixDict(TypedDict):
         | None
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
+    reasoning_mode: NotRequired[Sequence[Literal["standard", "pro"] | None] | None]
+    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only ("standard" is the default)."""
     reasoning_tokens: NotRequired[Sequence[int | None] | None]
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
