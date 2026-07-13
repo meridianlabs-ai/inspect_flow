@@ -49,7 +49,7 @@ flow step copy [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -76,7 +76,7 @@ flow step metadata [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -128,7 +128,7 @@ flow step scan [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |
 
@@ -155,6 +155,6 @@ flow step tag [OPTIONS] [PATH]...
 | `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--help` | boolean | Show this message and exit. | `False` |

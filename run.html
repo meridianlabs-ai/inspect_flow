@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -485,6 +485,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 </div>
 </div>
+<div id="machine-readable-output" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Machine-Readable Output
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Read commands support a <code>--json</code> flag that suppresses display output and writes a single JSON document to stdout, making them easy to use from scripts and coding agents:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--dry-run</span> <span class="at">--json</span>   <span class="co"># tasks that would run and logs that would be reused</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> config config.py <span class="at">--json</span>          <span class="co"># expanded configuration</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For <code>flow run</code>, <code>--json</code> is only supported together with <code>--dry-run</code>. <code>flow run</code> and <code>flow check</code> also signal an incomplete result via exit code 3, distinct from exit code 1 for errors, so scripts can branch on missing or unsuccessful tasks.</p>
+</div>
+</div>
+<div id="launch-handles" class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Launch Handles
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When a run is launched in the background (for example by a monitoring script or a coding agent), use <code>--handle-file</code> to make it discoverable:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">flow</span> run config.py <span class="at">--handle-file</span> handle.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once the log directory is resolved, Flow writes a JSON launch handle containing the run’s <code>log_dir</code> and the <code>pid</code> of the launching process. An external monitor can read this file to find where logs are being written and the process that launched the run.</p>
+</div>
+</div>
 </section>
 <section id="running-from-python" class="level2">
 <h2 class="anchored" data-anchor-id="running-from-python">Running from Python</h2>
@@ -493,28 +524,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-with-filename-file">
 <pre><strong>run.py</strong></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" data-filename="run.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> run</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> FlowSpec(</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    ],</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>run(spec<span class="op">=</span>spec)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12" data-filename="run.py"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow <span class="im">import</span> FlowSpec, FlowTask</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_flow.api <span class="im">import</span> run</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> FlowSpec(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"logs"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/gpqa_diamond"</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        FlowTask(</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"inspect_evals/mmlu_0_shot"</span>,</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>            model<span class="op">=</span><span class="st">"openai/gpt-4o"</span>,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> run(spec<span class="op">=</span>spec)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Success: </span><span class="sc">{</span>result<span class="sc">.</span>success<span class="sc">}</span><span class="ss">, logs written to </span><span class="sc">{</span>result<span class="sc">.</span>log_dir<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The <code>inspect_flow.api</code> module provides programmatic access to Flow capabilities. Key functions include:</p>
 <ul>
-<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span></strong> - Execute a Flow spec with full environment setup (equivalent to <code>flow run</code>)</li>
-<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#check">check()</a></span></strong> - Check completeness of a spec against existing logs (equivalent to <code>flow check</code>)</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#run">run()</a></span></strong> - Execute a Flow spec with full environment setup (equivalent to <code>flow run</code>). Returns a <code>RunResult</code> with the success flag, eval log headers, and log directory</li>
+<li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#check">check()</a></span></strong> - Check completeness of a spec against existing logs (equivalent to <code>flow check</code>). Returns a <code>CheckResult</code> with an <code>is_complete</code> flag and per-task completeness details</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#load_spec">load_spec()</a></span></strong> - Load a Flow configuration from a Python file into a <span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.html#flowspec">FlowSpec</a></span> object</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#config">config()</a></span></strong> - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to <code>flow config</code>)</li>
 <li><strong><span class="element-type-name ref-interlink"><a href="./reference/inspect_flow.api.html#init">init()</a></span></strong> - Initialize Flow session settings (logging, display, .env loading)</li>
@@ -573,7 +605,7 @@ Note
 <section id="viewing-results" class="level3">
 <h3 class="anchored" data-anchor-id="viewing-results">Viewing Results</h3>
 <p><strong>Using <a href="https://inspect.aisi.org.uk/log-viewer.html">Inspect View</a>:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">inspect</span> view</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Opens the Inspect AI viewer to explore evaluation logs interactively. <a href="https://inspect.aisi.org.uk/log-viewer.html">Inspect View</a> can automatically detect Flow config files in the log directory and render them in the UI, making it easier to review the spec for the evaluations.</p>
 <p>Click the Flow icon in the top right hand corner to view the Flow config.</p>
 <div class="quarto-figure quarto-figure-center">
@@ -593,10 +625,10 @@ Note
 <section id="s3-support" class="level3">
 <h3 class="anchored" data-anchor-id="s3-support">S3 Support</h3>
 <p>Store logs directly to S3:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"s3://my-bucket/experiments/baseline"</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>FlowSpec(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    log_dir<span class="op">=</span><span class="st">"s3://my-bucket/experiments/baseline"</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    tasks<span class="op">=</span>[...]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For more information on configuring an S3 bucket as a logs directory, refer to the Inspect AI <a href="https://inspect.aisi.org.uk/eval-logs.html#sec-amazon-s3">documentation</a>.</p>
 
 

@@ -480,7 +480,7 @@ flow run config.py
 | `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` | `--log-dir-create-unique` | Create new log directory with numeric suffix if exists |
 | `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY` | `--log-dir-allow-dirty` | Allow log directory to contain logs not in the eval set |
 | `INSPECT_FLOW_LOG_LEVEL` | `--log-level` | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level. |
-| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `rich` (rich formatting without live updates, default), `full` (live progress), or `plain` (simple text for CI) |
+| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `full` (live progress, default), `conversation` (stream the model conversation), `rich` (rich formatting without live updates), `plain` (simple text for CI), `log` (flat, ANSI-free log lines), or `none` (no display output) |
 | `INSPECT_FLOW_STORE` | `--store` | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
 | `INSPECT_FLOW_STORE_READ` | `--store-read` | Match existing logs from the store (default: off) |
 | `INSPECT_FLOW_STORE_WRITE` | `--store-write` | Index completed logs in the store (default: on) |
@@ -490,12 +490,13 @@ flow run config.py
 | `INSPECT_FLOW_ARG` | `--arg` | Args to pass to spec functions in the config file (can be multiple) |
 | `INSPECT_FLOW_VENV` | `--venv` | Create a virtual environment to run the Flow spec |
 | `INSPECT_FLOW_DRY_RUN` | `--dry-run` | Perform full setup and show what would run without actually running evaluations |
+| `INSPECT_FLOW_HANDLE_FILE` | `--handle-file` | Write a JSON launch handle with the run’s `log_dir` and `pid` to this file (see [Launch Handles](./run.html.md#launch-handles)) |
 
 > **TIP: TipOverride Priority**
 >
 > Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 >
-> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec).
+> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_DRY_RUN`, `INSPECT_FLOW_HANDLE_FILE`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--handle-file`, `--set`) are runtime settings for the `flow run` command and cannot be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec).
 >
 > **Execution mode**: The `execution_type` field can be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec) (as `execution_type="venv"`) or overridden at runtime with `INSPECT_FLOW_VENV` environment variable or `--venv` CLI flag.
 >

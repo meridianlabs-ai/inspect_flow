@@ -1,5 +1,39 @@
 # changelog – Inspect Flow
 
+## [0.10.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0) (2026-07-10)
+
+### Features
+
+- add –json output to read-only CLI commands ([\#745](https://github.com/meridianlabs-ai/inspect_flow/issues/745)) ([2981412](https://github.com/meridianlabs-ai/inspect_flow/commit/29814126922cd01e507a57da5ee36f490214decf))
+- emit a launch handle file for run discoverability ([\#747](https://github.com/meridianlabs-ai/inspect_flow/issues/747)) ([2c0db78](https://github.com/meridianlabs-ai/inspect_flow/commit/2c0db7808cd8cacd34e7b4a7d270352234a282bf))
+- signal incomplete runs/checks via exit code and avoid non-TTY hangs ([\#744](https://github.com/meridianlabs-ai/inspect_flow/issues/744)) ([6e09d29](https://github.com/meridianlabs-ai/inspect_flow/commit/6e09d29b82bfdfc28f6ada73cf9cb0a4691d7ee3))
+- widen –display/DisplayType to Inspect’s full set ([\#746](https://github.com/meridianlabs-ai/inspect_flow/issues/746)) ([0f71433](https://github.com/meridianlabs-ai/inspect_flow/commit/0f71433c2d99f465f0dfdcb5e84828d62000eb85))
+
+### Bug Fixes
+
+- add hint when eval_set fails due to stale inspect-ai version ([\#725](https://github.com/meridianlabs-ai/inspect_flow/issues/725)) ([2160174](https://github.com/meridianlabs-ai/inspect_flow/commit/21601742ec3e1de10960f2a34969de4930d347a5))
+- avoid race on flow-requirements.in for concurrent runs in same dir ([\#713](https://github.com/meridianlabs-ai/inspect_flow/issues/713)) ([e68e025](https://github.com/meridianlabs-ai/inspect_flow/commit/e68e0258b60db1ba8b5d178f7ad3c0fca0bd08ee))
+- let explicit dependencies override auto-detected host pins ([\#726](https://github.com/meridianlabs-ai/inspect_flow/issues/726)) ([582b87a](https://github.com/meridianlabs-ai/inspect_flow/commit/582b87a368ff92c697b31b595ebe4ffb8d0749b5))
+- return RunResult from public run() ([\#742](https://github.com/meridianlabs-ai/inspect_flow/issues/742)) ([b227605](https://github.com/meridianlabs-ai/inspect_flow/commit/b227605aff0ae481d1286bdd39ae73b77f4f46af))
+
+### Documentation
+
+- clarify FlowSpec config grouping and generation-config precedence ([\#748](https://github.com/meridianlabs-ai/inspect_flow/issues/748)) ([b9cab48](https://github.com/meridianlabs-ai/inspect_flow/commit/b9cab4816bf9b6f6ae8b8da115374d3a624cdb74))
+- expand class-level docstrings for public Flow types ([\#716](https://github.com/meridianlabs-ai/inspect_flow/issues/716)) ([b5b0bb0](https://github.com/meridianlabs-ai/inspect_flow/commit/b5b0bb08969e80b160e953761143583d441c232d))
+
+## [0.9.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.0...v0.9.1) (2026-06-17)
+
+### Bug Fixes
+
+- drive store task-identifier column by TASK_IDENTIFIER_VERSION ([\#706](https://github.com/meridianlabs-ai/inspect_flow/issues/706)) ([8173353](https://github.com/meridianlabs-ai/inspect_flow/commit/81733534441802398c103de4ecd19d60116b564d))
+- make task-identifier-version-bump test version-agnostic ([\#709](https://github.com/meridianlabs-ai/inspect_flow/issues/709)) ([2d2eeb7](https://github.com/meridianlabs-ai/inspect_flow/commit/2d2eeb7c040f636394f29f3988d2931f1b3bbcf1))
+- update inspect-ai to 0.3.240 and support new eval_set params ([\#704](https://github.com/meridianlabs-ai/inspect_flow/issues/704)) ([eebe5c5](https://github.com/meridianlabs-ai/inspect_flow/commit/eebe5c52fd2763648fa3ba82f5fe8b8206ea8736))
+
+### Documentation
+
+- add InstantiateConfig and after_instantiate to reference ([\#698](https://github.com/meridianlabs-ai/inspect_flow/issues/698)) ([17152c9](https://github.com/meridianlabs-ai/inspect_flow/commit/17152c93fd9914f6a0049b28bb48bc804a0169dd))
+- correct README to reflect inproc as the default execution mode ([\#707](https://github.com/meridianlabs-ai/inspect_flow/issues/707)) ([ede98d4](https://github.com/meridianlabs-ai/inspect_flow/commit/ede98d48d8849c25c5dfccecfa33f32c53f30089))
+
 ## [0.9.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.8.0...v0.9.0) (2026-05-19)
 
 ### Features

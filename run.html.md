@@ -105,6 +105,27 @@ Displays the expanded configuration as YAML (applies defaults, includes, and CLI
 > - **`flow check`** - Check completeness of a spec against a log directory
 > - **`flow step`** - Run [post-evaluation steps](./steps.html.md) on logs (tag, copy, promote, etc.)
 
+> **NOTE: NoteMachine-Readable Output**
+>
+> Read commands support a `--json` flag that suppresses display output and writes a single JSON document to stdout, making them easy to use from scripts and coding agents:
+>
+> ``` bash
+> flow run config.py --dry-run --json   # tasks that would run and logs that would be reused
+> flow config config.py --json          # expanded configuration
+> ```
+>
+> For `flow run`, `--json` is only supported together with `--dry-run`. `flow run` and `flow check` also signal an incomplete result via exit code 3, distinct from exit code 1 for errors, so scripts can branch on missing or unsuccessful tasks.
+
+> **NOTE: NoteLaunch Handles**
+>
+> When a run is launched in the background (for example by a monitoring script or a coding agent), use `--handle-file` to make it discoverable:
+>
+> ``` bash
+> flow run config.py --handle-file handle.json
+> ```
+>
+> Once the log directory is resolved, Flow writes a JSON launch handle containing the run’s `log_dir` and the `pid` of the launching process. An external monitor can read this file to find where logs are being written and the process that launched the run.
+
 ## Running from Python
 
 You can run Flow evaluations programmatically using the Python API:
@@ -128,13 +149,14 @@ spec = FlowSpec(
         ),
     ],
 )
-run(spec=spec)
+result = run(spec=spec)
+print(f"Success: {result.success}, logs written to {result.log_dir}")
 ```
 
 The `inspect_flow.api` module provides programmatic access to Flow capabilities. Key functions include:
 
-- **[run()](./reference/inspect_flow.api.html.md#run)** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
-- **[check()](./reference/inspect_flow.api.html.md#check)** - Check completeness of a spec against existing logs (equivalent to `flow check`)
+- **[run()](./reference/inspect_flow.api.html.md#run)** - Execute a Flow spec with full environment setup (equivalent to `flow run`). Returns a `RunResult` with the success flag, eval log headers, and log directory
+- **[check()](./reference/inspect_flow.api.html.md#check)** - Check completeness of a spec against existing logs (equivalent to `flow check`). Returns a `CheckResult` with an `is_complete` flag and per-task completeness details
 - **[load_spec()](./reference/inspect_flow.api.html.md#load_spec)** - Load a Flow configuration from a Python file into a [FlowSpec](./reference/inspect_flow.html.md#flowspec) object
 - **[config()](./reference/inspect_flow.api.html.md#config)** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
 - **[init()](./reference/inspect_flow.api.html.md#init)** - Initialize Flow session settings (logging, display, .env loading)

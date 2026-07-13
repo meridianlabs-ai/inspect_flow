@@ -12,11 +12,11 @@ flow list [OPTIONS] COMMAND [ARGS]...
 
 |  |  |
 |----|----|
-| [log](#flow-list-log) | List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (–store auto). |
+| [log](#flow-list-log) | List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (–store auto). With –json, display-only options (–format, –oneline, –provenance, –live, –no-page) are ignored. |
 
 ## flow list log
 
-List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (–store auto).
+List logs, sorted by timestamp extracted from log file name. If PATH is not provided, falls back to the default store (–store auto). With –json, display-only options (–format, –oneline, –provenance, –live, –no-page) are ignored.
 
 #### Usage
 
@@ -28,8 +28,9 @@ flow list log [OPTIONS] [PATH]
 
 | Name | Type | Description | Default |
 |----|----|----|----|
+| `--json` | boolean | Output results as JSON. | `False` |
 | `--store` | text | Path to the store directory. | None |
-| `--display` | choice (`full` \| `rich` \| `plain`) | Set the display mode (defaults to `'full'`). | `full` |
+| `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
 | `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |

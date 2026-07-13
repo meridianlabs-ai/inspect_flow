@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -43,7 +43,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -632,84 +632,90 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
+<td><code>--json</code></td>
+<td>boolean</td>
+<td>Output results as JSON.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
 <td><code>--venv</code></td>
 <td>boolean</td>
 <td>If set run the flow in a virtual environment in a temporary directory.</td>
 <td><code>False</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--resume</code></td>
 <td>boolean</td>
 <td>Resume from the previous run by reusing its log directory. Mutually exclusive with <code>--log-dir</code>.</td>
 <td><code>False</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir-create-unique</code> / <code>--no-log-dir-create-unique</code></td>
 <td>boolean</td>
 <td>If set, create a unique log directory by appending a datetime subdirectory (e.g.&nbsp;<code>2025-12-09T17-36-43</code>) under the specified <code>log_dir</code>. If not set, use the existing <code>log_dir</code> (which must be empty or have <code>log_dir_allow_dirty=True</code>).</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--store-write</code> / <code>--no-store-write</code></td>
 <td>boolean</td>
 <td>Write completed logs to the store (default: <code>--store-write</code>).</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--store-read</code> / <code>--no-store-read</code></td>
 <td>boolean</td>
 <td>Read existing logs from the store (default: <code>--no-store-read</code>).</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--store-filter</code></td>
 <td>text</td>
 <td>Log filter to apply when searching the store for existing logs. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--store</code></td>
 <td>text</td>
 <td>Path to the store directory. Will override the store specified in the config. <code>'auto'</code> for default location. <code>'none'</code> for no store.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--limit</code></td>
 <td>integer</td>
 <td>Limit the number of samples to run.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir</code></td>
 <td>directory</td>
 <td>Set the log directory. Will override the <code>log_dir</code> specified in the config.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--arg</code>, <code>-A</code></td>
 <td>text</td>
 <td>Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: <code>--arg task_min_priority=2</code> If the same key is provided multiple times, later values will override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--set</code>, <code>-s</code></td>
 <td>text</td>
 <td>Override any field in the flow config using dot notation (e.g.&nbsp;<code>field.subfield=value</code>). The path corresponds to the fields of <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span> and its nested types (<code>options</code>, <code>defaults</code>, <code>tasks</code>, etc.). Examples: <code>--set options.limit=10</code> <code>--set defaults.solver.args.tool_calls=none</code> <code>--set options.metadata={"key1": "val1", "key2": "val2"}</code> Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>

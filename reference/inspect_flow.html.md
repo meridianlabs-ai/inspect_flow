@@ -4,9 +4,9 @@
 
 ### FlowAgent
 
-Configuration for an Agent.
+Configuration for an agent: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L181)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L186)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -31,9 +31,11 @@ Type needed to differentiated solvers and agents in solver lists.
 
 ### FlowDefaults
 
-Default field values for Inspect objects. Will be overriden by more specific settings.
+Default `model`/`solver`/`agent`/`task` values applied to every task in the spec.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L680)
+A value set on an individual [FlowTask](../reference/inspect_flow.html.md#flowtask) overrides the default here. The `*_prefix` variants apply defaults by registry-name prefix. Attached via `FlowSpec(defaults=...)`.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L727)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -42,7 +44,7 @@ class FlowDefaults(FlowBase)
 #### Attributes
 
 `config` GenerateConfig \| None \| NotGiven  
-Default model generation options. Will be overriden by settings on the [FlowModel](../reference/inspect_flow.html.md#flowmodel) and [FlowTask](../reference/inspect_flow.html.md#flowtask).
+Default model generation config. Lowest precedence: overridden by `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and [FlowModel](../reference/inspect_flow.html.md#flowmodel).
 
 `agent` [FlowAgent](../reference/inspect_flow.html.md#flowagent) \| None \| NotGiven  
 Field defaults for agents.
@@ -70,9 +72,11 @@ Task defaults for task name prefixes. E.g. `{'inspect_evals/': FTask(...)}`
 
 ### FlowDependencies
 
-Configuration for flow dependencies to install in the venv.
+Dependencies to install in the per-run virtual environment.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L725)
+Only applies in venv execution mode (`execution_type="venv"`); combines an optional `dependency_file`, `additional_dependencies`, and automatic detection (`auto_detect_dependencies`).
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L776)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -98,7 +102,7 @@ Configuration for task epochs.
 
 Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L215)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L220)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -122,7 +126,7 @@ Works with [FlowTask](../reference/inspect_flow.html.md#flowtask), [FlowAgent](.
 
 Positional and keyword arguments passed to the factory at construction are collected into the `args` field and forwarded to the factory at evaluation time.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L256)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L261)
 
 ``` python
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
@@ -130,9 +134,11 @@ class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
 
 ### FlowModel
 
-Configuration for a Model.
+Configuration for a model.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L76)
+`name` is an Inspect model identifier (e.g. `"openai/gpt-4o"`); `config`, `model_args`, `base_url`, `api_key`, and `role` tune how it is created.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L77)
 
 ``` python
 class FlowModel(FlowBase)
@@ -153,7 +159,7 @@ Optional named role for model (e.g. for roles specified at the task or eval lev
 Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).
 
 `config` GenerateConfig \| None \| NotGiven  
-Configuration for model. Config values will be override settings on the [FlowTask](../reference/inspect_flow.html.md#flowtask) and [FlowSpec](../reference/inspect_flow.html.md#flowspec).
+Model generation config. Highest precedence: overrides `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and `defaults.config`.
 
 `base_url` str \| None \| NotGiven  
 Optional. Alternate base URL for model.
@@ -172,9 +178,11 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 ### FlowOptions
 
-Evaluation options.
+Eval-set-wide options forwarded to Inspect’s `eval_set`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L485)
+These apply to the whole run (retries, sandbox cleanup, global limits, display, scoring, the control channel, etc.) rather than to individual tasks — set per-task settings on [FlowTask](../reference/inspect_flow.html.md#flowtask). Attached to a spec via `FlowSpec(options=...)`.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L492)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -200,6 +208,15 @@ Sandbox environment type (or optionally a str or tuple with a shorthand spec).
 `sandbox_cleanup` bool \| None \| NotGiven  
 Cleanup sandbox environments after task completes (defaults to `True`).
 
+`checkpoint` SkipValidation\[CheckpointConfig\] \| bool \| None \| NotGiven  
+Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level `checkpoint` when set.
+
+`acp_server` bool \| int \| str \| None \| NotGiven  
+Override the original eval’s ACP server transport on retry. `True` enables a default AF_UNIX socket; an integer binds a TCP loopback port; a string is taken as a custom UNIX socket path; `None` (default) replays whatever transport (or no transport) was persisted in the original log’s `EvalConfig.acp_server`.
+
+`ctl_server` bool \| str \| None \| NotGiven  
+Control-channel server for this eval-set process. `True` or `None` (default) binds the default AF_UNIX socket; `False` disables the control endpoint; `"keep-alive"` additionally keeps the process running after the eval-set finishes so external clients (the `inspect ctl` CLI, scripted agents, TUIs) can still query state and read results — exit via `inspect ctl release` (or `POST /release`). Requires `retry_immediate=True` (the default) for the `"keep-alive"` value.
+
 `tags` Sequence\[str\] \| None \| NotGiven  
 Tags to associate with this evaluation run.
 
@@ -217,6 +234,12 @@ Tool use approval policies. Either a path to an approval policy config file or a
 
 `score` bool \| None \| NotGiven  
 Score output (defaults to `True`).
+
+`score_display` bool \| None \| NotGiven  
+Show scoring metrics in realtime (defaults to `True`).
+
+`notification` bool \| str \| None \| NotGiven  
+Enable out-of-band notifications when a human-in-the-loop interaction (`ask_user`, human approval) is posted. Pass `True` to send via the URL(s) in the `INSPECT_EVAL_NOTIFICATION` environment variable (single URL, comma-separated list, or path to an Apprise config file). Alternatively pass a path to an Apprise YAML/text config file. URLs are not accepted directly so secrets never end up in source code, shell history, process listings, or eval logs. Requires the `apprise` package.
 
 `log_level` str \| None \| NotGiven  
 Level for logging to the console: `"debug"`, `"http"`, `"sandbox"`, `"info"`, `"warning"`, `"error"`, `"critical"`, or `"notset"` (defaults to `"warning"`).
@@ -242,6 +265,9 @@ Shuffle order of samples (pass a seed to make the order deterministic).
 `retry_on_error` int \| None \| NotGiven  
 Number of times to retry samples if they encounter errors (defaults to 3).
 
+`score_on_error` bool \| None \| NotGiven  
+Score samples that error rather than failing the eval mid-run. Errors still count toward the `fail_on_error` threshold for marking the eval log as ‘error’. Only takes effect after retries (if any) are exhausted.
+
 `debug_errors` bool \| None \| NotGiven  
 Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).
 
@@ -250,6 +276,9 @@ YAML or JSON file with model prices for cost tracking.
 
 `max_samples` int \| None \| NotGiven  
 Maximum number of samples to run in parallel (default is `max_connections`).
+
+`max_dataset_memory` int \| None \| NotGiven  
+Maximum MB of dataset sample data to hold in memory per task. When exceeded, samples are paged to a temporary file on disk (defaults to `None`, which keeps all samples in memory).
 
 `max_tasks` int \| None \| NotGiven  
 Maximum number of tasks to run in parallel (defaults is 10).
@@ -301,9 +330,9 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_
 
 ### FlowScorer
 
-Configuration for a Scorer.
+Configuration for a scorer: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L129)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L134)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -325,9 +354,9 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 ### FlowSolver
 
-Configuration for a Solver.
+Configuration for a solver: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L155)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L160)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -349,9 +378,20 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 ### FlowSpec
 
-Top-level flow specification.
+Top-level flow specification: the tasks to run plus how to run them.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L814)
+This is the root object of every flow config. Settings are grouped by scope, and putting each in the right place avoids the most common configuration mistake:
+
+- **What to evaluate** — `tasks`, a list of [FlowTask](../reference/inspect_flow.html.md#flowtask). Per-task settings (`model`, `solver`, `scorer`, `config`, `epochs`, limits) live on each [FlowTask](../reference/inspect_flow.html.md#flowtask), not here.
+- **Defaults across tasks** — `defaults` ([FlowDefaults](../reference/inspect_flow.html.md#flowdefaults)), applied to every task. A value set on an individual [FlowTask](../reference/inspect_flow.html.md#flowtask) overrides the matching default.
+- **Eval-set-wide options** — `options` ([FlowOptions](../reference/inspect_flow.html.md#flowoptions)), forwarded to Inspect’s `eval_set()`. These apply to the whole run (retries, global limits, display, scoring), not to individual tasks.
+- **Run environment** — top-level fields on this spec: `execution_type`, `python_version`, `dependencies` (venv mode), `env`, `store`, `log_dir`.
+
+Model generation `config` can be set in several places; later entries win: `defaults.config` \< `FlowTask.config` \< `FlowModel.config`.
+
+Eval parameters (`model`, `solver`, limits, etc.) are not set directly on [FlowSpec](../reference/inspect_flow.html.md#flowspec); put them on [FlowTask](../reference/inspect_flow.html.md#flowtask) (or `defaults` to apply them to every task).
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L870)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -405,7 +445,7 @@ Internal state populated by the spec loader. Not intended for direct user config
 
 Store configuration with optional log filter.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L785)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L841)
 
 ``` python
 class FlowStoreConfig(FlowBase)
@@ -427,11 +467,11 @@ Whether to index completed logs in the store. Default is `True`.
 
 ### FlowTask
 
-Configuration for an evaluation task.
+Configuration for a single evaluation task.
 
-Tasks are the basis for defining and running evaluations.
+Identifies the task (`name` or `factory`) and carries its per-task settings: `model`, `solver`, `scorer`, `config` (generation config), `epochs`, `sandbox`, `approval`, and the various limits. Unset fields fall back to [FlowDefaults](../reference/inspect_flow.html.md#flowdefaults).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L329)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L334)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -461,7 +501,7 @@ Scorer or list of scorers used to evaluate model output.
 Default model for task (Optional, defaults to eval model).
 
 `config` GenerateConfig \| NotGiven  
-Model generation config for default model (does not apply to model roles). Will override config settings on the [FlowSpec](../reference/inspect_flow.html.md#flowspec). Will be overridden by settings on the [FlowModel](../reference/inspect_flow.html.md#flowmodel).
+Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
 `model_roles` ModelRolesConfig \| None \| NotGiven  
 Named roles for use in `get_model()`.
@@ -523,7 +563,7 @@ Returns: The model name if set, otherwise None.
 
 Configuration for task instantiation parallelism.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L752)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L808)
 
 ``` python
 class InstantiateConfig(FlowBase)
@@ -543,7 +583,7 @@ Maximum worker threads to use for instantiation.
 
 A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/flow_types.py#L39)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L40)
 
 ``` python
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
@@ -559,7 +599,7 @@ The decorated function receives the list of instantiated `Task` objects and may 
 
 All registered hooks fire on every run, in alphabetical order by registered name. Hooks defined in any source reachable by spec loading or task instantiation are discovered automatically — including spec files, `_flow.py` auto-includes, task modules loaded by path, and entry-point packages installed in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/after_instantiate.py#L20)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/after_instantiate.py#L20)
 
 ``` python
 def after_instantiate(func: AfterInstantiate) -> AfterInstantiate
@@ -585,7 +625,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 - `files`: List of file paths that were loaded to create the [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -598,7 +638,7 @@ The function to decorate.
 
 Decorator to register a log filter function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/log_filter.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/log_filter.py#L27)
 
 ``` python
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]
@@ -611,7 +651,7 @@ A function that takes an EvalLog and returns True to include.
 
 Decorator to register a step function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_steps/step.py#L108)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/step.py#L108)
 
 ``` python
 def step(
@@ -628,7 +668,7 @@ A function that takes a list of EvalLog objects and performs operations on them 
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -648,7 +688,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -684,7 +724,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Create a list of generate configs from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -704,11 +744,15 @@ def configs_matrix(
     num_choices: Sequence[int | None] | None = ...,
     logprobs: Sequence[bool | None] | None = ...,
     top_logprobs: Sequence[int | None] | None = ...,
+    prompt_logprobs: Sequence[int | None] | None = ...,
     parallel_tool_calls: Sequence[bool | None] | None = ...,
     internal_tools: Sequence[bool | None] | None = ...,
     max_tool_output: Sequence[int | None] | None = ...,
     cache_prompt: Sequence[Literal['auto'] | bool | None] | None = ...,
+    verbosity: Sequence[Literal['low', 'medium', 'high'] | None] | None = ...,
+    effort: Sequence[Literal['low', 'medium', 'high', 'xhigh', 'max'] | None] | None = ...,
     reasoning_effort: Sequence[Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] | None] | None = ...,
+    reasoning_mode: Sequence[Literal['standard', 'pro'] | None] | None = ...,
     reasoning_tokens: Sequence[int | None] | None = ...,
     reasoning_summary: Sequence[Literal['none', 'concise', 'detailed', 'auto'] | None] | None = ...,
     reasoning_history: Sequence[Literal['none', 'all', 'last', 'auto'] | None] | None = ...,
@@ -762,6 +806,9 @@ Return log probabilities of the output tokens. OpenAI, Grok, TogetherAI, Hugging
 `top_logprobs` Sequence\[int \| None\] \| None  
 Number of most likely tokens (0-20) to return at each token position, each with an associated log probability. OpenAI, Grok, Huggingface, vLLM, and SGLang only.
 
+`prompt_logprobs` Sequence\[int \| None\] \| None  
+Number of log probabilities to return per prompt token (1-20). When greater than 1, top-N alternative tokens are also returned. vLLM only.
+
 `parallel_tool_calls` Sequence\[bool \| None\] \| None  
 Whether to enable parallel function calling during tool use (defaults to True). OpenAI and Groq only.
 
@@ -774,8 +821,17 @@ Maximum tool output (in bytes). Defaults to 16 \* 1024.
 `cache_prompt` Sequence\[Literal\['auto'\] \| bool \| None\] \| None  
 Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.
 
+`verbosity` Sequence\[Literal\['low', 'medium', 'high'\] \| None\] \| None  
+Constrains the verbosity of the model’s response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to “medium” for OpenAI models).
+
+`effort` Sequence\[Literal\['low', 'medium', 'high', 'xhigh', 'max'\] \| None\] \| None  
+Control how many tokens are used for a response, trading off between response thoroughness and token efficiency. Anthropic Claude Opus 4.5+ only (`max` only supported on 4.6 and 4.7, `xhigh` supported only on 4.7).
+
 `reasoning_effort` Sequence\[Literal\['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'\] \| None\] \| None  
 Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details).
+
+`reasoning_mode` Sequence\[Literal\['standard', 'pro'\] \| None\] \| None  
+Reasoning mode. “pro” performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only (“standard” is the default).
 
 `reasoning_tokens` Sequence\[int \| None\] \| None  
 Maximum number of tokens to use for reasoning. Anthropic Claude models only.
@@ -796,7 +852,7 @@ Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, 
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -826,9 +882,11 @@ def configs_with(
     internal_tools: bool | None = ...,
     max_tool_output: int | None = ...,
     cache_prompt: Literal['auto'] | bool | None = ...,
+    fallback_models: Sequence[str] | None = ...,
     verbosity: Literal['low', 'medium', 'high'] | None = ...,
     effort: Literal['low', 'medium', 'high', 'xhigh', 'max'] | None = ...,
     reasoning_effort: Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] | None = ...,
+    reasoning_mode: Literal['standard', 'pro'] | None = ...,
     reasoning_tokens: int | None = ...,
     reasoning_summary: Literal['none', 'concise', 'detailed', 'auto'] | None = ...,
     reasoning_history: Literal['none', 'all', 'last', 'auto'] | None = ...,
@@ -857,7 +915,7 @@ Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt an
 Maximum number of concurrent connections to Model API (default is model specific).
 
 `adaptive_connections` bool \| int \| AdaptiveConcurrency \| None  
-Adaptive concurrency for model API connections. Defaults to enabled (`None` and `True` both resolve to `AdaptiveConcurrency()` defaults: min=4, start=20, max=100). Pass `False` to opt out (uses static concurrency). Pass an integer `N` as shorthand for `AdaptiveConcurrency(max=N)`. Pass an `AdaptiveConcurrency` to fully customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` or `batch=True` takes precedence and uses static concurrency.
+Adaptive concurrency for model API connections. Defaults to enabled (`None` and `True` both resolve to `AdaptiveConcurrency()` defaults: min=10, start=20, max=100). Pass `False` to opt out (uses static concurrency). Pass an integer `N` as shorthand for `AdaptiveConcurrency(max=N)`. Pass an `AdaptiveConcurrency` to fully customize bounds and tuning (cooldown_seconds, decrease_factor, scale_up_percent). An explicit `max_connections` or `batch=True` takes precedence and uses static concurrency.
 
 `system_message` str \| None  
 Override the default system message.
@@ -916,6 +974,9 @@ Maximum tool output (in bytes). Defaults to 16 \* 1024.
 `cache_prompt` Literal\['auto'\] \| bool \| None  
 Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.
 
+`fallback_models` Sequence\[str\] \| None  
+Fallback models tried in order when the model’s safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode).
+
 `verbosity` Literal\['low', 'medium', 'high'\] \| None  
 Constrains the verbosity of the model’s response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to “medium” for OpenAI models).
 
@@ -924,6 +985,9 @@ Control how many tokens are used for a response, trading off between response th
 
 `reasoning_effort` Literal\['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'\] \| None  
 Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details).
+
+`reasoning_mode` Literal\['standard', 'pro'\] \| None  
+Reasoning mode. “pro” performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only (“standard” is the default).
 
 `reasoning_tokens` int \| None  
 Maximum number of tokens to use for reasoning. Anthropic Claude models only.
@@ -958,7 +1022,7 @@ Merge two flow objects, with `add` values overriding `base` values.
 
 Only explicitly set fields in `add` override `base` — unset fields (defaulting to `NotGiven`) are ignored. Nested fields like `config` and `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -974,7 +1038,7 @@ The object to merge into the base. Only explicitly set fields override those in 
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -988,13 +1052,13 @@ def models_matrix(
 The model or list of models to matrix.
 
 `config` Sequence\[GenerateConfig \| NotGiven \| None\] \| None  
-Configuration for model. Config values will be override settings on the [FlowTask](../reference/inspect_flow.html.md#flowtask) and [FlowSpec](../reference/inspect_flow.html.md#flowspec).
+Model generation config. Highest precedence: overrides `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and `defaults.config`.
 
 ### models_with
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -1029,7 +1093,7 @@ Optional named role for model (e.g. for roles specified at the task or eval lev
 Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).
 
 `config` GenerateConfig \| NotGiven \| None  
-Configuration for model. Config values will be override settings on the [FlowTask](../reference/inspect_flow.html.md#flowtask) and [FlowSpec](../reference/inspect_flow.html.md#flowspec).
+Model generation config. Highest precedence: overrides `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and `defaults.config`.
 
 `base_url` str \| NotGiven \| None  
 Optional. Alternate base URL for model.
@@ -1050,7 +1114,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -1070,7 +1134,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -1102,7 +1166,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -1134,7 +1198,7 @@ Solver or list of solvers. Defaults to `generate()`, a normal call to the model.
 Default model for task (Optional, defaults to eval model).
 
 `config` Sequence\[GenerateConfig \| NotGiven\] \| None  
-Model generation config for default model (does not apply to model roles). Will override config settings on the [FlowSpec](../reference/inspect_flow.html.md#flowspec). Will be overridden by settings on the [FlowModel](../reference/inspect_flow.html.md#flowmodel).
+Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
 `model_roles` Sequence\[Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\] \| NotGiven \| None\] \| None  
 Named roles for use in `get_model()`.
@@ -1158,7 +1222,7 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/17152c93fd9914f6a0049b28bb48bc804a0169dd/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(
@@ -1217,7 +1281,7 @@ Scorer or list of scorers used to evaluate model output.
 Default model for task (Optional, defaults to eval model).
 
 `config` GenerateConfig \| NotGiven  
-Model generation config for default model (does not apply to model roles). Will override config settings on the [FlowSpec](../reference/inspect_flow.html.md#flowspec). Will be overridden by settings on the [FlowModel](../reference/inspect_flow.html.md#flowmodel).
+Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
 `model_roles` Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\] \| NotGiven \| None  
 Named roles for use in `get_model()`.

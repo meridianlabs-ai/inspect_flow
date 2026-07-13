@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -42,7 +42,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -648,7 +648,7 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 <tr class="odd">
 <td><a href="#flow-store-list">list</a></td>
-<td>List logs and log directories in the store</td>
+<td>List logs and log directories in the store. With –json, the display-only –format option is ignored.</td>
 </tr>
 </tbody>
 </table>
@@ -686,7 +686,7 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 <tr class="even">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
@@ -757,7 +757,7 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 <tr class="even">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
@@ -833,24 +833,30 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
+<td><code>--json</code></td>
+<td>boolean</td>
+<td>Output results as JSON.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
 <td><code>--store</code></td>
 <td>text</td>
 <td>Path to the store directory.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -893,7 +899,7 @@ ul.task-list li input[type="checkbox"] {
 </tr>
 <tr class="even">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
@@ -921,7 +927,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="flow-store-list" class="level2" data-toc-label="list">
 <h2 data-toc-label="list" class="anchored" data-anchor-id="flow-store-list">flow store list</h2>
-<p>List logs and log directories in the store</p>
+<p>List logs and log directories in the store. With –json, the display-only –format option is ignored.</p>
 <section id="usage-5" class="level4">
 <h4 class="anchored" data-anchor-id="usage-5">Usage</h4>
 <pre class="text"><code>flow store list [OPTIONS]</code></pre>
@@ -945,42 +951,48 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
+<td><code>--json</code></td>
+<td>boolean</td>
+<td>Output results as JSON.</td>
+<td><code>False</code></td>
+</tr>
+<tr class="even">
 <td><code>--store</code></td>
 <td>text</td>
 <td>Path to the store directory.</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--display</code></td>
-<td>choice (<code>full</code> | <code>rich</code> | <code>plain</code>)</td>
+<td>choice (<code>full</code> | <code>conversation</code> | <code>rich</code> | <code>plain</code> | <code>log</code> | <code>none</code>)</td>
 <td>Set the display mode (defaults to <code>'full'</code>).</td>
 <td><code>full</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-level</code></td>
 <td>choice (<code>debug</code> | <code>trace</code> | <code>http</code> | <code>info</code> | <code>warning</code> | <code>error</code> | <code>critical</code> | <code>notset</code>)</td>
 <td>Set the log level (defaults to <code>'warning'</code>).</td>
 <td><code>warning</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--exclude</code></td>
 <td>text</td>
 <td>Log filter. Include only logs that do NOT pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>.</td>
 <td>None</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--filter</code></td>
 <td>text</td>
 <td>Log filter. Include only logs that pass. Accepts a registered name, <code>file.py@name</code>, or a name defined in <code>_flow.py</code>. Can be used multiple times (all must pass).</td>
 <td>None</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--format</code></td>
 <td>choice (<code>flat</code> | <code>tree</code>)</td>
 <td>Output format: tree, flat</td>
 <td><code>flat</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>

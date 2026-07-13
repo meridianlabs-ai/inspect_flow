@@ -432,6 +432,14 @@ flow store list
 flow store list --format tree
 ```
 
+**JSON output:**
+
+``` bash
+flow store list --json
+```
+
+Writes the store contents as a JSON document to stdout for use in scripts (the `--format` option is ignored). See [Machine-Readable Output](./run.html.md#machine-readable-output).
+
 **Environment variables:**
 
 - `INSPECT_FLOW_STORE` - Store location (same as `--store`)
@@ -451,7 +459,7 @@ View Flow Store statistics:
 flow store info
 ```
 
-Shows the Flow Store location, number of logs, number of log directories, and Flow Store version.
+Shows the Flow Store location, number of logs, number of log directories, and Flow Store version. Add `--json` to write the statistics as JSON instead.
 
 **Environment variables:**
 
@@ -470,6 +478,8 @@ flow store delete
 ``` bash
 flow store delete -y
 ```
+
+When stdin is not an interactive terminal (e.g. in CI), the confirmation prompt cannot be shown and the command fails instead of hanging—pass `--yes`/`-y` to confirm the deletion.
 
 **Environment variables:**
 

@@ -138,7 +138,8 @@ spec = FlowSpec(
         ),
     ],
 )
-run(spec=spec)
+result = run(spec=spec)
+print(f"Success: {result.success}, logs written to {result.log_dir}")
 ```
 
 ## Matrix Functions
@@ -1068,7 +1069,7 @@ flow run config.py
 | `INSPECT_FLOW_LOG_DIR_CREATE_UNIQUE` | `--log-dir-create-unique` | Create new log directory with numeric suffix if exists |
 | `INSPECT_FLOW_LOG_DIR_ALLOW_DIRTY` | `--log-dir-allow-dirty` | Allow log directory to contain logs not in the eval set |
 | `INSPECT_FLOW_LOG_LEVEL` | `--log-level` | Inspect Flow log level. Defaults to Info. Use `options.log_level` to set the Inspect AI log level. |
-| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `rich` (rich formatting without live updates, default), `full` (live progress), or `plain` (simple text for CI) |
+| `INSPECT_FLOW_DISPLAY` | `--display` | Display mode: `full` (live progress, default), `conversation` (stream the model conversation), `rich` (rich formatting without live updates), `plain` (simple text for CI), `log` (flat, ANSI-free log lines), or `none` (no display output) |
 | `INSPECT_FLOW_STORE` | `--store` | Path to Flow Store directory. Use `auto` for default location, `none` to disable |
 | `INSPECT_FLOW_STORE_READ` | `--store-read` | Match existing logs from the store (default: off) |
 | `INSPECT_FLOW_STORE_WRITE` | `--store-write` | Index completed logs in the store (default: on) |
@@ -1078,12 +1079,13 @@ flow run config.py
 | `INSPECT_FLOW_ARG` | `--arg` | Args to pass to spec functions in the config file (can be multiple) |
 | `INSPECT_FLOW_VENV` | `--venv` | Create a virtual environment to run the Flow spec |
 | `INSPECT_FLOW_DRY_RUN` | `--dry-run` | Perform full setup and show what would run without actually running evaluations |
+| `INSPECT_FLOW_HANDLE_FILE` | `--handle-file` | Write a JSON launch handle with the run’s `log_dir` and `pid` to this file (see [Launch Handles](./run.html.md#launch-handles)) |
 
 > **TIP: TipOverride Priority**
 >
 > Setting defaults via the command line will override the defaults which in turn might be overridden by anything set explicitly.
 >
-> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_DRY_RUN`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--set`) are runtime settings for the `flow run` command and cannot be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec).
+> **Runtime-only flags**: `INSPECT_FLOW_LOG_LEVEL`, `INSPECT_FLOW_ARG`, `INSPECT_FLOW_DRY_RUN`, `INSPECT_FLOW_HANDLE_FILE`, and `INSPECT_FLOW_SET` (and their corresponding CLI flags `--log-level`, `--arg`, `--dry-run`, `--handle-file`, `--set`) are runtime settings for the `flow run` command and cannot be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec).
 >
 > **Execution mode**: The `execution_type` field can be set in [FlowSpec](./reference/inspect_flow.html.md#flowspec) (as `execution_type="venv"`) or overridden at runtime with `INSPECT_FLOW_VENV` environment variable or `--venv` CLI flag.
 >
@@ -1683,6 +1685,27 @@ Displays the expanded configuration as YAML (applies defaults, includes, and CLI
 > - **`flow check`** - Check completeness of a spec against a log directory
 > - **`flow step`** - Run [post-evaluation steps](./steps.html.md) on logs (tag, copy, promote, etc.)
 
+> **NOTE: NoteMachine-Readable Output**
+>
+> Read commands support a `--json` flag that suppresses display output and writes a single JSON document to stdout, making them easy to use from scripts and coding agents:
+>
+> ``` bash
+> flow run config.py --dry-run --json   # tasks that would run and logs that would be reused
+> flow config config.py --json          # expanded configuration
+> ```
+>
+> For `flow run`, `--json` is only supported together with `--dry-run`. `flow run` and `flow check` also signal an incomplete result via exit code 3, distinct from exit code 1 for errors, so scripts can branch on missing or unsuccessful tasks.
+
+> **NOTE: NoteLaunch Handles**
+>
+> When a run is launched in the background (for example by a monitoring script or a coding agent), use `--handle-file` to make it discoverable:
+>
+> ``` bash
+> flow run config.py --handle-file handle.json
+> ```
+>
+> Once the log directory is resolved, Flow writes a JSON launch handle containing the run’s `log_dir` and the `pid` of the launching process. An external monitor can read this file to find where logs are being written and the process that launched the run.
+
 ## Running from Python
 
 You can run Flow evaluations programmatically using the Python API:
@@ -1706,13 +1729,14 @@ spec = FlowSpec(
         ),
     ],
 )
-run(spec=spec)
+result = run(spec=spec)
+print(f"Success: {result.success}, logs written to {result.log_dir}")
 ```
 
 The `inspect_flow.api` module provides programmatic access to Flow capabilities. Key functions include:
 
-- **[run()](./reference/inspect_flow.api.html.md#run)** - Execute a Flow spec with full environment setup (equivalent to `flow run`)
-- **[check()](./reference/inspect_flow.api.html.md#check)** - Check completeness of a spec against existing logs (equivalent to `flow check`)
+- **[run()](./reference/inspect_flow.api.html.md#run)** - Execute a Flow spec with full environment setup (equivalent to `flow run`). Returns a `RunResult` with the success flag, eval log headers, and log directory
+- **[check()](./reference/inspect_flow.api.html.md#check)** - Check completeness of a spec against existing logs (equivalent to `flow check`). Returns a `CheckResult` with an `is_complete` flag and per-task completeness details
 - **[load_spec()](./reference/inspect_flow.api.html.md#load_spec)** - Load a Flow configuration from a Python file into a [FlowSpec](./reference/inspect_flow.html.md#flowspec) object
 - **[config()](./reference/inspect_flow.api.html.md#config)** - Get the expanded configuration as YAML (applies defaults, includes, overrides - equivalent to `flow config`)
 - **[init()](./reference/inspect_flow.api.html.md#init)** - Initialize Flow session settings (logging, display, .env loading)
@@ -2228,6 +2252,14 @@ flow store list
 flow store list --format tree
 ```
 
+**JSON output:**
+
+``` bash
+flow store list --json
+```
+
+Writes the store contents as a JSON document to stdout for use in scripts (the `--format` option is ignored). See [Machine-Readable Output](./run.html.md#machine-readable-output).
+
 **Environment variables:**
 
 - `INSPECT_FLOW_STORE` - Store location (same as `--store`)
@@ -2247,7 +2279,7 @@ View Flow Store statistics:
 flow store info
 ```
 
-Shows the Flow Store location, number of logs, number of log directories, and Flow Store version.
+Shows the Flow Store location, number of logs, number of log directories, and Flow Store version. Add `--json` to write the statistics as JSON instead.
 
 **Environment variables:**
 
@@ -2266,6 +2298,8 @@ flow store delete
 ``` bash
 flow store delete -y
 ```
+
+When stdin is not an interactive terminal (e.g. in CI), the confirmation prompt cannot be shown and the command fails instead of hanging—pass `--yes`/`-y` to confirm the deletion.
 
 **Environment variables:**
 
