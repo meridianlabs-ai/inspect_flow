@@ -193,6 +193,42 @@ def test_copy_overwrite(tmp_path: Path) -> None:
     assert second.location == first.location
 
 
+def test_copy_with_suffix(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    [result] = copy([log_path], dest=dest, suffix="+realigned")
+    assert Path(result.location).name == "test+realigned.eval"
+    reloaded = read_eval_log(result.location)
+    assert reloaded.eval.task == "test_task"
+    assert Path(log_path).exists()
+
+
+def test_copy_with_rename(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    [result] = copy([log_path], dest=dest, rename=lambda name: f"renamed-{name}")
+    assert Path(result.location).name == "renamed-test.eval"
+    reloaded = read_eval_log(result.location)
+    assert reloaded.eval.task == "test_task"
+
+
+def test_copy_suffix_with_source_prefix(tmp_path: Path) -> None:
+    src_dir = tmp_path / "src" / "subdir"
+    src_dir.mkdir(parents=True)
+    log_path = _make_log(src_dir)
+    dest = str(tmp_path / "dest")
+    prefix = str(tmp_path / "src")
+    [result] = copy([log_path], dest=dest, source_prefix=prefix, suffix="+v2")
+    assert result.location.endswith("subdir/test+v2.eval")
+    assert Path(result.location).exists()
+
+
+def test_copy_error_suffix_and_rename(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="suffix.*rename"):
+        copy([log_path], dest=str(tmp_path / "dest"), suffix="+a", rename=lambda n: n)
+
+
 def test_copy_via_run_step_with_source_prefix(tmp_path: Path) -> None:
     """run_step expands paths via list_eval_logs which returns file:/// URIs.
 
@@ -816,6 +852,8 @@ def test_cli_copy_help() -> None:
     assert result.exit_code == 0
     assert "--dest" in result.output
     assert "--source-prefix" in result.output
+    assert "--suffix" in result.output
+    assert "--rename" not in result.output
     assert "--args" not in result.output
     assert "--kwargs" not in result.output
 

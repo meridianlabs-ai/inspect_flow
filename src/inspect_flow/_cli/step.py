@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import collections.abc
 import inspect
 import types
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Union, cast, get_args, get_origin
 
 import click
 import griffe
@@ -182,11 +183,14 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     custom_names = {p.name for p in custom_params if p.name is not None}
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg.
-    # Skip params added as common options below or already covered by custom decorators.
+    # Skip params added as common options below, params already covered by custom
+    # decorators, and callables (Python-only, not expressible on the CLI).
     step_params = [
         p
         for p in list(sig.parameters.values())[1:]
-        if p.name not in _COMMON_OPTION_NAMES and p.name not in custom_names
+        if p.name not in _COMMON_OPTION_NAMES
+        and p.name not in custom_names
+        and not _is_callable(p.annotation)
     ]
     dict_params: set[str] = set()
     for param in step_params:
@@ -333,6 +337,15 @@ def _annotation_to_click_type(annotation: object) -> type:
     if annotation is bool:
         return bool
     return str
+
+
+def _is_callable(annotation: object) -> bool:
+    origin = get_origin(annotation)
+    if origin is collections.abc.Callable:
+        return True
+    if origin in (Union, types.UnionType):
+        return any(_is_callable(a) for a in get_args(annotation))
+    return False
 
 
 def _is_dict_of_str(annotation: object) -> bool:

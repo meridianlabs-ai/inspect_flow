@@ -71,9 +71,12 @@ Copy eval logs to a destination directory:
 ``` bash
 flow step copy logs/ --dest s3://bucket/prod/
 flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
+flow step copy logs/ --dest ./realigned/ --suffix +realigned
 ```
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
+
+Use `--suffix` to mark copies that are derivatives of the original — it is inserted before the file extension (`probe.eval` becomes `probe+realigned.eval`), so the marker travels with the file even when it is copied onward. From Python, `copy()` also accepts a `rename` function mapping the source filename to the destination filename for full control.
 
 ### [**scan**](reference/inspect_flow.api.qmd#scan)
 
