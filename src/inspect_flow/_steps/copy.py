@@ -49,7 +49,7 @@ def copy(
         logs: list of EvalLog to copy.
         dest: Destination directory (local or S3).
         source_prefix: Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.
-        suffix: Suffix inserted before the file extension of each copy (e.g. `+realigned` copies `probe.eval` to `probe+realigned.eval`). Mutually exclusive with rename.
+        suffix: Suffix inserted before the file extension of each copy (e.g. `+realigned` copies `probe.eval` to `probe+realigned.eval`). Mutually exclusive with the rename parameter (Python API only).
         rename: Function mapping source filename to destination filename. Python-only. Mutually exclusive with suffix.
         overwrite: Overwrite existing files at the destination.
         store: Optional flow store. The copied log is added to the store.

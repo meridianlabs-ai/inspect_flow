@@ -956,13 +956,19 @@ def test_cli_file_step_group_help() -> None:
 
 
 def test_cli_file_step_subcommand_help() -> None:
-    """flow step file.py step_name --help shows that step's options."""
+    """flow step file.py step_name --help shows that step's options.
+
+    file_step.py uses `from __future__ import annotations`, so this also
+    verifies that stringized annotations are resolved: --label keeps its str
+    type and the callable --transform param is excluded from the CLI.
+    """
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command
 
     result = CliRunner().invoke(step_command, [FILE_STEP_PATH, "file_step_a", "--help"])
     assert result.exit_code == 0
     assert "--label" in result.output
+    assert "--transform" not in result.output
 
 
 def test_cli_file_step_at_syntax_help() -> None:

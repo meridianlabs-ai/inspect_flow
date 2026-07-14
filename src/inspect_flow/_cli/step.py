@@ -170,7 +170,9 @@ def _parse_arg_help(doc: str) -> dict[str, str]:
 def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     """Convert a @step function into a click.Command."""
     original = getattr(func, "_step_func", func)
-    sig = inspect.signature(original)
+    # eval_str resolves stringized annotations (from __future__ import
+    # annotations) so the annotation-based checks below see real types.
+    sig = inspect.signature(original, eval_str=True)
     params: list[click.Parameter] = []
     doc = inspect.getdoc(original) or ""
     arg_help = _parse_arg_help(doc)

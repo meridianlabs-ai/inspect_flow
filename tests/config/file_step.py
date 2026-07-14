@@ -1,14 +1,25 @@
+from __future__ import annotations
+
+from typing import Callable
+
 from inspect_ai.log import EvalLog, ProvenanceData, TagsEdit, edit_eval_log
 from inspect_flow._steps.step import step
 
 
 @step
-def file_step_a(logs: list[EvalLog], label: str = "default") -> list[EvalLog]:
+def file_step_a(
+    logs: list[EvalLog],
+    label: str = "default",
+    transform: Callable[[str], str] | None = None,
+) -> list[EvalLog]:
     """A test step loaded from a file.
 
     Args:
         label: A label to apply as a tag.
+        transform: Function applied to the label before tagging. Python-only.
     """
+    if transform:
+        label = transform(label)
     edits = [TagsEdit(tags_add=[label], tags_remove=[])]
     provenance = ProvenanceData(author="test")
     return [edit_eval_log(log, edits, provenance) for log in logs]
