@@ -26,6 +26,20 @@ def file_step_a(
 
 
 @step
+def file_step_required_callable(
+    logs: list[EvalLog], transform: Callable[[str], str]
+) -> list[EvalLog]:
+    """A step with a required Python-only parameter.
+
+    Args:
+        transform: Function applied to each log's tags. Python-only.
+    """
+    edits = [TagsEdit(tags_add=[transform("tag")], tags_remove=[])]
+    provenance = ProvenanceData(author="test")
+    return [edit_eval_log(log, edits, provenance) for log in logs]
+
+
+@step
 def file_step_b(
     logs: list[EvalLog], labels: Optional[list[str]] = None
 ) -> list[EvalLog]:

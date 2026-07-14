@@ -1033,6 +1033,22 @@ def test_cli_file_step_type_checking_annotations() -> None:
     assert "--label" in result.output
 
 
+def test_cli_file_step_required_callable_errors() -> None:
+    """A step with a required Python-only param fails with a usage error.
+
+    The callable param can't be expressed on the CLI, so invoking the step
+    reports a clear error instead of crashing with a TypeError.
+    """
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command, [FILE_STEP_PATH, "file_step_required_callable", "some.eval"]
+    )
+    assert result.exit_code == 2
+    assert "Python-only parameter(s) (transform)" in result.output
+
+
 def test_cli_file_step_optional_list_option(tmp_path: Path) -> None:
     """An Optional[list[str]] param maps to a repeatable CLI option."""
     from click.testing import CliRunner

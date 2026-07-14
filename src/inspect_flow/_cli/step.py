@@ -192,12 +192,16 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg.
     # Skip params added as common options below, params already covered by custom
     # decorators, and callables (Python-only, not expressible on the CLI).
-    step_params = [
+    candidates = [
         p
         for p in list(sig.parameters.values())[1:]
-        if p.name not in _COMMON_OPTION_NAMES
-        and p.name not in custom_names
-        and not _is_callable(p.annotation)
+        if p.name not in _COMMON_OPTION_NAMES and p.name not in custom_names
+    ]
+    step_params = [p for p in candidates if not _is_callable(p.annotation)]
+    required_python_only = [
+        p.name
+        for p in candidates
+        if _is_callable(p.annotation) and p.default is inspect.Parameter.empty
     ]
     dict_params: set[str] = set()
     for param in step_params:
@@ -300,6 +304,11 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     help_text = doc.split("\n\n")[0] if doc else ""
 
     def callback(path: tuple[str, ...], **kwargs: Any) -> None:
+        if required_python_only:
+            raise click.UsageError(
+                f"Step '{name}' has required Python-only parameter(s) "
+                f"({', '.join(required_python_only)}) and cannot be run from the CLI."
+            )
         for dp in dict_params:
             if dp in kwargs:
                 kwargs[dp] = _parse_key_value_pairs(kwargs[dp])
