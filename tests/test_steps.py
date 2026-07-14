@@ -152,6 +152,23 @@ def test_relative_path_prefix_not_matching() -> None:
     assert _relative_path("/a/b/c/log.eval", "/x/y") == "log.eval"
 
 
+# --- _dest_path ---
+
+
+def test_dest_path_root_dest() -> None:
+    from inspect_flow._steps.copy import _dest_path
+
+    assert _dest_path("/", "sub", "test.eval") == "/sub/test.eval"
+    assert _dest_path("/", "", "test.eval") == "/test.eval"
+
+
+def test_dest_path_trailing_slash() -> None:
+    from inspect_flow._steps.copy import _dest_path
+
+    assert _dest_path("/a/b/", "sub", "test.eval") == "/a/b/sub/test.eval"
+    assert _dest_path("/a/b", "", "test.eval") == "/a/b/test.eval"
+
+
 # --- copy step ---
 
 

@@ -21,6 +21,10 @@ def _relative_path(location: str, source_prefix: str | None) -> str:
     return basename(location)
 
 
+def _dest_path(dest: str, rel_dir: str, name: str) -> str:
+    return dest.rstrip("/") + "/" + "/".join(p for p in (rel_dir, name) if p)
+
+
 def _dest_name(
     name: str, suffix: str | None, rename: Callable[[str], str] | None
 ) -> str:
@@ -68,7 +72,7 @@ def copy(
             rel_path = _relative_path(log.location, source_prefix)
             rel_dir, _, name = rel_path.rpartition("/")
             name = _dest_name(name, suffix, rename)
-            dest_path = "/".join(p for p in (dest.rstrip("/"), rel_dir, name) if p)
+            dest_path = _dest_path(dest, rel_dir, name)
             if not overwrite and exists(dest_path):
                 flow_print(f"Skipping (already exists): {dest_path}", format="warning")
             elif not context.dry_run:
