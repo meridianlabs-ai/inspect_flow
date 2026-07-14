@@ -399,6 +399,13 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
     task_name = flow_task.name if len(tasks) == 1 else NOT_GIVEN
 
     for task in tasks:
+        if is_set(flow_task.version) and flow_task.version != task.version:
+            raise ValueError(
+                f"Task version mismatch for '{task.name}': flow config specifies "
+                f"version {flow_task.version!r} but the loaded task has version "
+                f"{task.version!r}"
+            )
+
         if is_set(flow_task.sample_id):
             task.dataset = slice_dataset(
                 task.dataset,
@@ -447,7 +454,6 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             cost_limit=ng(flow_task.cost_limit),
             early_stopping=ng(flow_task.early_stopping),
             name=ng(task_name),
-            version=ng(flow_task.version),
             metadata=ng(flow_task.metadata),
             tags=ng(tags),
         )

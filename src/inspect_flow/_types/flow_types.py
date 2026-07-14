@@ -454,7 +454,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     version: int | str | NotGiven = Field(
         default=not_given,
-        description="Version of task (to distinguish evolutions of the task spec or breaking changes to it)",
+        description="Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.",
     )
 
     tags: Sequence[str] | None | NotGiven = Field(
