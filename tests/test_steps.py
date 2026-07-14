@@ -875,6 +875,21 @@ def test_cli_copy_help() -> None:
     assert "--kwargs" not in result.output
 
 
+def test_cli_copy_suffix_run(tmp_path: Path) -> None:
+    """flow step copy PATH --dest DEST --suffix SUFFIX copies with the suffix."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    result = CliRunner().invoke(
+        step_command, ["copy", log_path, "--dest", dest, "--suffix", "+realigned"]
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(str(tmp_path / "dest" / "test+realigned.eval"))
+    assert reloaded.eval.task == "test_task"
+
+
 # --- etag concurrency guard ---
 
 

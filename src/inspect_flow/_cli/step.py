@@ -176,7 +176,8 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
         sig = inspect.signature(original, eval_str=True)
     except NameError:
         # Annotations referencing TYPE_CHECKING-only imports can't be
-        # resolved; fall back to stringized annotations (options become str).
+        # resolved; fall back to stringized annotations. Options degrade to
+        # str, so callable params are not filtered from the CLI here.
         sig = inspect.signature(original)
     params: list[click.Parameter] = []
     doc = inspect.getdoc(original) or ""
