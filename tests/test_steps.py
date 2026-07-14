@@ -997,6 +997,40 @@ def test_cli_file_step_run(tmp_path: Path) -> None:
     assert "hello" in (reloaded.tags or [])
 
 
+def test_cli_file_step_type_checking_annotations() -> None:
+    """Steps with annotation imports guarded by TYPE_CHECKING still get a CLI.
+
+    eval_str annotation resolution raises NameError for such files; the CLI
+    falls back to the unevaluated signature instead of crashing.
+    """
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    type_checking_path = str(
+        Path(__file__).parent / "config" / "file_step_type_checking.py"
+    )
+    result = CliRunner().invoke(
+        step_command, [type_checking_path, "type_checking", "--help"]
+    )
+    assert result.exit_code == 0
+    assert "--label" in result.output
+
+
+def test_cli_file_step_optional_list_option(tmp_path: Path) -> None:
+    """An Optional[list[str]] param maps to a repeatable CLI option."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+    result = CliRunner().invoke(
+        step_command,
+        [FILE_STEP_PATH, "file_step_b", "--labels", "a", "--labels", "b", log_path],
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert {"a", "b"} <= set(reloaded.tags or [])
+
+
 def test_cli_file_step_at_syntax_run(tmp_path: Path) -> None:
     """flow step file.py@step_name PATH runs the step."""
     from click.testing import CliRunner

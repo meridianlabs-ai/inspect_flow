@@ -172,7 +172,12 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     original = getattr(func, "_step_func", func)
     # eval_str resolves stringized annotations (from __future__ import
     # annotations) so the annotation-based checks below see real types.
-    sig = inspect.signature(original, eval_str=True)
+    try:
+        sig = inspect.signature(original, eval_str=True)
+    except NameError:
+        # Annotations referencing TYPE_CHECKING-only imports can't be
+        # resolved; fall back to stringized annotations (options become str).
+        sig = inspect.signature(original)
     params: list[click.Parameter] = []
     doc = inspect.getdoc(original) or ""
     arg_help = _parse_arg_help(doc)
@@ -341,23 +346,35 @@ def _annotation_to_click_type(annotation: object) -> type:
     return str
 
 
+def _union_args(annotation: object) -> tuple[object, ...]:
+    """Members of a union annotation, or () if not a union.
+
+    Unions that accept str also return () — such params stay plain str
+    options (e.g. scan's ScannersSpec, `Sequence[...] | dict[...] | str`).
+    """
+    if get_origin(annotation) in (Union, types.UnionType):
+        args = get_args(annotation)
+        if str not in args:
+            return args
+    return ()
+
+
 def _is_callable(annotation: object) -> bool:
-    origin = get_origin(annotation)
-    if origin is collections.abc.Callable:
+    if get_origin(annotation) is collections.abc.Callable:
         return True
-    if origin in (Union, types.UnionType):
-        return any(_is_callable(a) for a in get_args(annotation))
-    return False
+    return any(_is_callable(a) for a in _union_args(annotation))
 
 
 def _is_dict_of_str(annotation: object) -> bool:
-    origin = getattr(annotation, "__origin__", None)
-    if origin is dict:
+    if get_origin(annotation) is dict:
         return True
-    if isinstance(annotation, types.UnionType):
-        args = getattr(annotation, "__args__", ())
-        return any(_is_dict_of_str(a) for a in args)
-    return False
+    return any(_is_dict_of_str(a) for a in _union_args(annotation))
+
+
+def _is_list_of_str(annotation: object) -> bool:
+    if get_origin(annotation) is list and get_args(annotation) == (str,):
+        return True
+    return any(_is_list_of_str(a) for a in _union_args(annotation))
 
 
 def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
@@ -368,17 +385,6 @@ def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
         key, value = item.split("=", 1)
         result[key] = maybe_json(value)
     return result
-
-
-def _is_list_of_str(annotation: object) -> bool:
-    origin = getattr(annotation, "__origin__", None)
-    args = getattr(annotation, "__args__", ())
-    if origin is list and args == (str,):
-        return True
-    # Handle list[str] | None
-    if isinstance(annotation, types.UnionType):
-        return any(_is_list_of_str(a) for a in args)
-    return False
 
 
 @click.group(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional
 
 from inspect_ai.log import EvalLog, ProvenanceData, TagsEdit, edit_eval_log
 from inspect_flow._steps.step import step
@@ -26,6 +26,16 @@ def file_step_a(
 
 
 @step
-def file_step_b(logs: list[EvalLog]) -> list[EvalLog]:
-    """Another test step in the same file."""
-    return logs
+def file_step_b(
+    logs: list[EvalLog], labels: Optional[list[str]] = None
+) -> list[EvalLog]:
+    """Another test step in the same file.
+
+    Args:
+        labels: Labels to apply as tags.
+    """
+    if not labels:
+        return logs
+    edits = [TagsEdit(tags_add=list(labels), tags_remove=[])]
+    provenance = ProvenanceData(author="test")
+    return [edit_eval_log(log, edits, provenance) for log in logs]
