@@ -208,7 +208,7 @@ class FlowTaskDict(TypedDict, closed=True):
     early_stopping: NotRequired[NotGiven | None]
     """Early stopping callbacks."""
     version: NotRequired[int | str | NotGiven]
-    """Version of task (to distinguish evolutions of the task spec or breaking changes to it)"""
+    """Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match."""
     tags: NotRequired[Sequence[str] | NotGiven | None]
     """Tags to associate with the task."""
     metadata: NotRequired[Mapping[str, Any] | NotGiven | None]

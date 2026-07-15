@@ -305,6 +305,33 @@ def test_factory_str() -> None:
 
 
 @task
+def versioned_task() -> Task:
+    return Task(version=2)
+
+
+def test_version_match() -> None:
+    spec = FlowSpec(tasks=[FlowTask(name="versioned_task", version=2)])
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    assert tasks[0].task.version == 2
+
+
+def test_version_mismatch_raises() -> None:
+    spec = FlowSpec(tasks=[FlowTask(name="versioned_task", version=1)])
+    with pytest.raises(ValueError) as e:
+        instantiate_tasks(spec=spec, base_dir=".")
+    assert "Task version mismatch for 'versioned_task'" in str(e.value)
+    assert "version 1" in str(e.value)
+    assert "version 2" in str(e.value)
+
+
+def test_version_not_set_preserves_loaded_version() -> None:
+    spec = FlowSpec(tasks=[FlowTask(name="versioned_task")])
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert tasks[0].task.version == 2
+
+
+@task
 def instantiate_error_task() -> Task:
     raise ValueError("Instantiation Error")
 
