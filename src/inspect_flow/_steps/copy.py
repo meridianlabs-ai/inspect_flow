@@ -1,3 +1,6 @@
+from os.path import splitext
+from typing import Callable
+
 from fsspec.core import split_protocol
 from inspect_ai._util.file import absolute_file_path, basename, copy_file, exists
 from inspect_ai.log import EvalLog
@@ -18,12 +21,29 @@ def _relative_path(location: str, source_prefix: str | None) -> str:
     return basename(location)
 
 
+def _dest_path(dest: str, rel_dir: str, name: str) -> str:
+    return dest.rstrip("/") + "/" + "/".join(p for p in (rel_dir, name) if p)
+
+
+def _dest_name(
+    name: str, suffix: str | None, rename: Callable[[str], str] | None
+) -> str:
+    if rename:
+        return rename(name)
+    if suffix:
+        stem, ext = splitext(name)
+        return f"{stem}{suffix}{ext}"
+    return name
+
+
 @step
 def copy(
     logs: list[EvalLog],
     *,
     dest: str,
     source_prefix: str | None = None,
+    suffix: str | None = None,
+    rename: Callable[[str], str] | None = None,
     overwrite: bool = False,
     store: FlowStore | str | None = None,  # noqa: ARG001 handled by @step wrapper
 ) -> list[EvalLog]:
@@ -33,20 +53,26 @@ def copy(
         logs: list of EvalLog to copy.
         dest: Destination directory (local or S3).
         source_prefix: Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.
+        suffix: Suffix inserted before the file extension of each copy (e.g. `+realigned` copies `probe.eval` to `probe+realigned.eval`). Mutually exclusive with the rename parameter (Python API only).
+        rename: Function mapping source filename to destination filename. Python-only. Mutually exclusive with suffix.
         overwrite: Overwrite existing files at the destination.
         store: Optional flow store. The copied log is added to the store.
 
     Returns:
         EvalLog at the destination location.
     """
+    if suffix and rename:
+        raise ValueError("Provide either suffix or rename, not both.")
+
     with step_context(logs) as context:
         context.write_dirty()
 
         dest_paths: list[str] = []
         for log in logs:
-            dest_path = (
-                dest.rstrip("/") + "/" + _relative_path(log.location, source_prefix)
-            )
+            rel_path = _relative_path(log.location, source_prefix)
+            rel_dir, _, name = rel_path.rpartition("/")
+            name = _dest_name(name, suffix, rename)
+            dest_path = _dest_path(dest, rel_dir, name)
             if not overwrite and exists(dest_path):
                 flow_print(f"Skipping (already exists): {dest_path}", format="warning")
             elif not context.dry_run:

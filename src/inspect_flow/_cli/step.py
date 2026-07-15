@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import collections.abc
 import inspect
 import types
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Union, cast, get_args, get_origin
 
 import click
 import griffe
@@ -169,7 +170,15 @@ def _parse_arg_help(doc: str) -> dict[str, str]:
 def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     """Convert a @step function into a click.Command."""
     original = getattr(func, "_step_func", func)
-    sig = inspect.signature(original)
+    # eval_str resolves stringized annotations (from __future__ import
+    # annotations) so the annotation-based checks below see real types.
+    try:
+        sig = inspect.signature(original, eval_str=True)
+    except NameError:
+        # Annotations referencing TYPE_CHECKING-only imports can't be
+        # resolved; fall back to stringized annotations. Options degrade to
+        # str, so callable params are not filtered from the CLI here.
+        sig = inspect.signature(original)
     params: list[click.Parameter] = []
     doc = inspect.getdoc(original) or ""
     arg_help = _parse_arg_help(doc)
@@ -182,11 +191,18 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     custom_names = {p.name for p in custom_params if p.name is not None}
 
     # Skip the first parameter (logs: list[EvalLog]) — provided via PATH arg.
-    # Skip params added as common options below or already covered by custom decorators.
-    step_params = [
+    # Skip params added as common options below, params already covered by custom
+    # decorators, and callables (Python-only, not expressible on the CLI).
+    candidates = [
         p
         for p in list(sig.parameters.values())[1:]
         if p.name not in _COMMON_OPTION_NAMES and p.name not in custom_names
+    ]
+    step_params = [p for p in candidates if not _is_callable(p.annotation)]
+    required_python_only = [
+        p.name
+        for p in candidates
+        if _is_callable(p.annotation) and p.default is inspect.Parameter.empty
     ]
     dict_params: set[str] = set()
     for param in step_params:
@@ -289,6 +305,11 @@ def _step_to_command(name: str, func: WrappedStepFunction) -> click.Command:
     help_text = doc.split("\n\n")[0] if doc else ""
 
     def callback(path: tuple[str, ...], **kwargs: Any) -> None:
+        if required_python_only:
+            raise click.UsageError(
+                f"Step '{name}' has required Python-only parameter(s) "
+                f"({', '.join(required_python_only)}) and cannot be run from the CLI."
+            )
         for dp in dict_params:
             if dp in kwargs:
                 kwargs[dp] = _parse_key_value_pairs(kwargs[dp])
@@ -335,14 +356,35 @@ def _annotation_to_click_type(annotation: object) -> type:
     return str
 
 
-def _is_dict_of_str(annotation: object) -> bool:
-    origin = getattr(annotation, "__origin__", None)
-    if origin is dict:
+def _union_args(annotation: object) -> tuple[object, ...]:
+    """Members of a union annotation, or () if not a union.
+
+    Unions that accept str also return () — such params stay plain str
+    options (e.g. scan's ScannersSpec, `Sequence[...] | dict[...] | str`).
+    """
+    if get_origin(annotation) in (Union, types.UnionType):
+        args = get_args(annotation)
+        if str not in args:
+            return args
+    return ()
+
+
+def _is_callable(annotation: object) -> bool:
+    if get_origin(annotation) is collections.abc.Callable:
         return True
-    if isinstance(annotation, types.UnionType):
-        args = getattr(annotation, "__args__", ())
-        return any(_is_dict_of_str(a) for a in args)
-    return False
+    return any(_is_callable(a) for a in _union_args(annotation))
+
+
+def _is_dict_of_str(annotation: object) -> bool:
+    if get_origin(annotation) is dict:
+        return True
+    return any(_is_dict_of_str(a) for a in _union_args(annotation))
+
+
+def _is_list_of_str(annotation: object) -> bool:
+    if get_origin(annotation) is list and get_args(annotation) == (str,):
+        return True
+    return any(_is_list_of_str(a) for a in _union_args(annotation))
 
 
 def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
@@ -353,17 +395,6 @@ def _parse_key_value_pairs(values: tuple[str, ...]) -> dict[str, Any]:
         key, value = item.split("=", 1)
         result[key] = maybe_json(value)
     return result
-
-
-def _is_list_of_str(annotation: object) -> bool:
-    origin = getattr(annotation, "__origin__", None)
-    args = getattr(annotation, "__args__", ())
-    if origin is list and args == (str,):
-        return True
-    # Handle list[str] | None
-    if isinstance(annotation, types.UnionType):
-        return any(_is_list_of_str(a) for a in args)
-    return False
 
 
 @click.group(
