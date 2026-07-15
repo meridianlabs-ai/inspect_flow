@@ -152,6 +152,23 @@ def test_relative_path_prefix_not_matching() -> None:
     assert _relative_path("/a/b/c/log.eval", "/x/y") == "log.eval"
 
 
+# --- _dest_path ---
+
+
+def test_dest_path_root_dest() -> None:
+    from inspect_flow._steps.copy import _dest_path
+
+    assert _dest_path("/", "sub", "test.eval") == "/sub/test.eval"
+    assert _dest_path("/", "", "test.eval") == "/test.eval"
+
+
+def test_dest_path_trailing_slash() -> None:
+    from inspect_flow._steps.copy import _dest_path
+
+    assert _dest_path("/a/b/", "sub", "test.eval") == "/a/b/sub/test.eval"
+    assert _dest_path("/a/b", "", "test.eval") == "/a/b/test.eval"
+
+
 # --- copy step ---
 
 
@@ -191,6 +208,42 @@ def test_copy_overwrite(tmp_path: Path) -> None:
     [first] = copy([log_path], dest=dest)
     [second] = copy([log_path], dest=dest, overwrite=True)
     assert second.location == first.location
+
+
+def test_copy_with_suffix(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    [result] = copy([log_path], dest=dest, suffix="+realigned")
+    assert Path(result.location).name == "test+realigned.eval"
+    reloaded = read_eval_log(result.location)
+    assert reloaded.eval.task == "test_task"
+    assert Path(log_path).exists()
+
+
+def test_copy_with_rename(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    [result] = copy([log_path], dest=dest, rename=lambda name: f"renamed-{name}")
+    assert Path(result.location).name == "renamed-test.eval"
+    reloaded = read_eval_log(result.location)
+    assert reloaded.eval.task == "test_task"
+
+
+def test_copy_suffix_with_source_prefix(tmp_path: Path) -> None:
+    src_dir = tmp_path / "src" / "subdir"
+    src_dir.mkdir(parents=True)
+    log_path = _make_log(src_dir)
+    dest = str(tmp_path / "dest")
+    prefix = str(tmp_path / "src")
+    [result] = copy([log_path], dest=dest, source_prefix=prefix, suffix="+v2")
+    assert result.location.endswith("subdir/test+v2.eval")
+    assert Path(result.location).exists()
+
+
+def test_copy_error_suffix_and_rename(tmp_path: Path) -> None:
+    log_path = _make_log(tmp_path)
+    with pytest.raises(ValueError, match="suffix.*rename"):
+        copy([log_path], dest=str(tmp_path / "dest"), suffix="+a", rename=lambda n: n)
 
 
 def test_copy_via_run_step_with_source_prefix(tmp_path: Path) -> None:
@@ -816,8 +869,25 @@ def test_cli_copy_help() -> None:
     assert result.exit_code == 0
     assert "--dest" in result.output
     assert "--source-prefix" in result.output
+    assert "--suffix" in result.output
+    assert "--rename" not in result.output
     assert "--args" not in result.output
     assert "--kwargs" not in result.output
+
+
+def test_cli_copy_suffix_run(tmp_path: Path) -> None:
+    """flow step copy PATH --dest DEST --suffix SUFFIX copies with the suffix."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path / "src")
+    dest = str(tmp_path / "dest")
+    result = CliRunner().invoke(
+        step_command, ["copy", log_path, "--dest", dest, "--suffix", "+realigned"]
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(str(tmp_path / "dest" / "test+realigned.eval"))
+    assert reloaded.eval.task == "test_task"
 
 
 # --- etag concurrency guard ---
@@ -918,13 +988,19 @@ def test_cli_file_step_group_help() -> None:
 
 
 def test_cli_file_step_subcommand_help() -> None:
-    """flow step file.py step_name --help shows that step's options."""
+    """flow step file.py step_name --help shows that step's options.
+
+    file_step.py uses `from __future__ import annotations`, so this also
+    verifies that stringized annotations are resolved: --label keeps its str
+    type and the callable --transform param is excluded from the CLI.
+    """
     from click.testing import CliRunner
     from inspect_flow._cli.step import step_command
 
     result = CliRunner().invoke(step_command, [FILE_STEP_PATH, "file_step_a", "--help"])
     assert result.exit_code == 0
     assert "--label" in result.output
+    assert "--transform" not in result.output
 
 
 def test_cli_file_step_at_syntax_help() -> None:
@@ -951,6 +1027,56 @@ def test_cli_file_step_run(tmp_path: Path) -> None:
     assert result.exit_code == 0
     reloaded = read_eval_log(log_path, header_only=True)
     assert "hello" in (reloaded.tags or [])
+
+
+def test_cli_file_step_type_checking_annotations() -> None:
+    """Steps with annotation imports guarded by TYPE_CHECKING still get a CLI.
+
+    eval_str annotation resolution raises NameError for such files; the CLI
+    falls back to the unevaluated signature instead of crashing.
+    """
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    type_checking_path = str(
+        Path(__file__).parent / "config" / "file_step_type_checking.py"
+    )
+    result = CliRunner().invoke(
+        step_command, [type_checking_path, "type_checking", "--help"]
+    )
+    assert result.exit_code == 0
+    assert "--label" in result.output
+
+
+def test_cli_file_step_required_callable_errors() -> None:
+    """A step with a required Python-only param fails with a usage error.
+
+    The callable param can't be expressed on the CLI, so invoking the step
+    reports a clear error instead of crashing with a TypeError.
+    """
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    result = CliRunner().invoke(
+        step_command, [FILE_STEP_PATH, "file_step_required_callable", "some.eval"]
+    )
+    assert result.exit_code == 2
+    assert "Python-only parameter(s) (transform)" in result.output
+
+
+def test_cli_file_step_optional_list_option(tmp_path: Path) -> None:
+    """An Optional[list[str]] param maps to a repeatable CLI option."""
+    from click.testing import CliRunner
+    from inspect_flow._cli.step import step_command
+
+    log_path = _make_log(tmp_path)
+    result = CliRunner().invoke(
+        step_command,
+        [FILE_STEP_PATH, "file_step_b", "--labels", "a", "--labels", "b", log_path],
+    )
+    assert result.exit_code == 0
+    reloaded = read_eval_log(log_path, header_only=True)
+    assert {"a", "b"} <= set(reloaded.tags or [])
 
 
 def test_cli_file_step_at_syntax_run(tmp_path: Path) -> None:

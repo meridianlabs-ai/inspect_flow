@@ -1,20 +1,55 @@
+from __future__ import annotations
+
+from typing import Callable, Optional
+
 from inspect_ai.log import EvalLog, ProvenanceData, TagsEdit, edit_eval_log
 from inspect_flow._steps.step import step
 
 
 @step
-def file_step_a(logs: list[EvalLog], label: str = "default") -> list[EvalLog]:
+def file_step_a(
+    logs: list[EvalLog],
+    label: str = "default",
+    transform: Callable[[str], str] | None = None,
+) -> list[EvalLog]:
     """A test step loaded from a file.
 
     Args:
         label: A label to apply as a tag.
+        transform: Function applied to the label before tagging. Python-only.
     """
+    if transform:
+        label = transform(label)
     edits = [TagsEdit(tags_add=[label], tags_remove=[])]
     provenance = ProvenanceData(author="test")
     return [edit_eval_log(log, edits, provenance) for log in logs]
 
 
 @step
-def file_step_b(logs: list[EvalLog]) -> list[EvalLog]:
-    """Another test step in the same file."""
-    return logs
+def file_step_required_callable(
+    logs: list[EvalLog], transform: Callable[[str], str]
+) -> list[EvalLog]:
+    """A step with a required Python-only parameter.
+
+    Args:
+        transform: Function applied to each log's tags. Python-only.
+    """
+    edits = [TagsEdit(tags_add=[transform("tag")], tags_remove=[])]
+    provenance = ProvenanceData(author="test")
+    return [edit_eval_log(log, edits, provenance) for log in logs]
+
+
+@step
+def file_step_b(
+    logs: list[EvalLog], labels: Optional[list[str]] = None
+) -> list[EvalLog]:
+    """Another test step in the same file.
+
+    Args:
+        labels: Labels to apply as tags.
+    """
+    if not labels:
+        return logs
+    edits = [TagsEdit(tags_add=list(labels), tags_remove=[])]
+    provenance = ProvenanceData(author="test")
+    return [edit_eval_log(log, edits, provenance) for log in logs]
