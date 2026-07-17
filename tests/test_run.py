@@ -39,6 +39,7 @@ from inspect_flow._util.logging import (
     init_flow_logging,
     update_log_level,
 )
+from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
 from packaging.version import Version
 from rich.console import Console
@@ -1239,6 +1240,33 @@ def test_eval_set_scanner_spec_dict_tuple_realized(mock_eval_set: MagicMock) -> 
                         "params": {"keyword": "flow"},
                     },
                 )
+            )
+        ),
+        tasks=[task_file + "@noop"],
+    )
+
+    run_eval_set(spec=spec, base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
+    assert isinstance(scanner_arg, ScannerConfig)
+    assert len(scanner_arg.scanners) == 1
+    assert callable(scanner_arg.scanners[0])
+
+
+def test_eval_set_scanner_spec_instances_realized(mock_eval_set: MagicMock) -> None:
+    # ScannerSpec instances (not just dicts) are realized before eval_set.
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        options=FlowOptions(
+            scanner=ScannerConfig(
+                scanners=[
+                    ScannerSpec(
+                        name="keyword_scanner",
+                        file=task_dir + "/my_scanners.py",
+                        params={"keyword": "flow"},
+                    )
+                ]
             )
         ),
         tasks=[task_file + "@noop"],

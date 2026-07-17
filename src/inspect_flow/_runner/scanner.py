@@ -3,6 +3,7 @@ from typing import Any
 
 from inspect_ai import ScannerConfig
 from inspect_ai._eval.task.scan import _realize_scanner_specs
+from inspect_scout import ScannerSpec
 
 
 def _scanner_entries(scanners: Any) -> list[Any]:
@@ -14,11 +15,12 @@ def _scanner_entries(scanners: Any) -> list[Any]:
 
 
 def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
-    """Whether the scanner config holds live `Scanner` objects (vs. `ScannerSpec` dicts)."""
+    """Whether the scanner config holds live `Scanner` objects (vs. `ScannerSpec`s)."""
     if not isinstance(scanner, ScannerConfig):
         return False
     return any(
-        not isinstance(entry, dict) for entry in _scanner_entries(scanner.scanners)
+        not isinstance(entry, (dict, ScannerSpec))
+        for entry in _scanner_entries(scanner.scanners)
     )
 
 

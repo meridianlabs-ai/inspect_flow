@@ -21,6 +21,7 @@ from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowOptions, FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
+from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
@@ -430,11 +431,16 @@ def test_live_scanner_venv_error() -> None:
     with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
         _check_spec_for_venv(spec)
 
-    # A config file path or a config of ScannerSpec dicts should not throw
+    # A config file path or a config of ScannerSpecs (dicts or instances)
+    # should not throw
     spec.options = FlowOptions(scanner="tests/config/scanners.yaml")
     _check_spec_for_venv(spec)
     spec.options = FlowOptions(
         scanner=ScannerConfig(scanners=[{"name": "keyword_scanner"}])
+    )
+    _check_spec_for_venv(spec)
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")])
     )
     _check_spec_for_venv(spec)
 
