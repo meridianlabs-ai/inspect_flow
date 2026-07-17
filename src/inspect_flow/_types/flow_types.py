@@ -30,6 +30,7 @@ from inspect_ai.util import (
     DisplayType,
     EarlyStopping,
     SandboxEnvironmentType,
+    TokenLimit,
 )
 from pydantic import BaseModel, Field, SkipValidation, model_validator
 from typing_extensions import Self, override
@@ -425,12 +426,28 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).",
     )
 
+    score_on_error: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set.",
+    )
+
+    checkpoint: SkipValidation[CheckpointConfig] | bool | None | NotGiven = Field(
+        default=not_given,
+        description="Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overridden by `options.checkpoint` when set.",
+    )
+
     message_limit: int | None | NotGiven = Field(
         default=not_given, description="Limit on total messages used for each sample."
     )
 
-    token_limit: int | None | NotGiven = Field(
-        default=not_given, description="Limit on total tokens used for each sample."
+    token_limit: int | str | TokenLimit | None | NotGiven = Field(
+        default=not_given,
+        description="Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`.",
+    )
+
+    turn_limit: int | None | NotGiven = Field(
+        default=not_given,
+        description="Limit on total turns (assistant messages) for each sample.",
     )
 
     time_limit: int | None | NotGiven = Field(
@@ -593,9 +610,9 @@ class FlowOptions(FlowBase):
         description='Format for writing log files (defaults to `"eval"`, the native high-performance format).',
     )
 
-    limit: int | None | NotGiven = Field(
+    limit: int | tuple[int, int] | None | NotGiven = Field(
         default=not_given,
-        description="Limit evaluated samples (defaults to all samples).",
+        description="Limit evaluated samples: an integer for the first `n` samples, or a `(start, end)` tuple for a range (defaults to all samples).",
     )
 
     sample_shuffle: bool | int | None | NotGiven = Field(

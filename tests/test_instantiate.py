@@ -122,6 +122,27 @@ def test_flow_epochs() -> None:
     )
 
 
+def test_task_limits_and_flags() -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name=task_name,
+                turn_limit=5,
+                token_limit="1M",
+                score_on_error=True,
+                checkpoint=True,
+            ),
+        ]
+    )
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert len(tasks) == 1
+    task = tasks[0].task
+    assert task.turn_limit == 5
+    assert task.token_limit == 1_000_000
+    assert task.score_on_error is True
+    assert task.checkpoint is not None
+
+
 def test_file_not_found() -> None:
     spec = FlowSpec(
         tasks=[

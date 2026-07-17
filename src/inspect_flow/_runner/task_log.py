@@ -8,6 +8,7 @@ from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
 from inspect_ai.log import EvalLog
 from inspect_ai.model._generate_config import GenerateConfig
+from inspect_ai.util import TokenLimit
 from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
@@ -51,7 +52,8 @@ class TaskInfo:
     approval: str | None = None
     version: int | str = 0
     message_limit: int | None = None
-    token_limit: int | None = None
+    token_limit: int | str | TokenLimit | None = None
+    turn_limit: int | None = None
     time_limit: int | None = None
     working_limit: int | None = None
     config: GenerateConfig = field(default_factory=GenerateConfig)
@@ -80,6 +82,7 @@ def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
         version=task.version,
         message_limit=task.message_limit,
         token_limit=task.token_limit,
+        turn_limit=task.turn_limit,
         time_limit=task.time_limit,
         working_limit=task.working_limit,
         config=task.config,
@@ -146,6 +149,7 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         _simple_attr("version"),
         _simple_attr("message_limit"),
         _simple_attr("token_limit"),
+        _simple_attr("turn_limit"),
         _simple_attr("time_limit"),
         _simple_attr("working_limit"),
         # GenerateConfig fields included in task_identifier

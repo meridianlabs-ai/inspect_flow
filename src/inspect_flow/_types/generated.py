@@ -17,7 +17,12 @@ from inspect_ai.model import (
 )
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
-from inspect_ai.util import AdaptiveConcurrency, SandboxEnvironmentSpec
+from inspect_ai.util import (
+    AdaptiveConcurrency,
+    CheckpointConfig,
+    SandboxEnvironmentSpec,
+    TokenLimit,
+)
 from typing_extensions import NotRequired, TypedDict
 
 from inspect_flow._types.flow_types import (
@@ -195,10 +200,16 @@ class FlowTaskDict(TypedDict, closed=True):
     """`True` to fail on first sample error (default); `False` to never fail on sample errors; Value between 0 and 1 to fail if a proportion of total samples fails. Value greater than 1 to fail eval if a count of samples fails."""
     continue_on_fail: NotRequired[bool | NotGiven | None]
     """`True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default)."""
+    score_on_error: NotRequired[bool | NotGiven | None]
+    """Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set."""
+    checkpoint: NotRequired[CheckpointConfig | bool | NotGiven | None]
+    """Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overridden by `options.checkpoint` when set."""
     message_limit: NotRequired[int | NotGiven | None]
     """Limit on total messages used for each sample."""
-    token_limit: NotRequired[int | NotGiven | None]
-    """Limit on total tokens used for each sample."""
+    token_limit: NotRequired[int | str | TokenLimit | NotGiven | None]
+    """Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`."""
+    turn_limit: NotRequired[int | NotGiven | None]
+    """Limit on total turns (assistant messages) for each sample."""
     time_limit: NotRequired[int | NotGiven | None]
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[int | NotGiven | None]
@@ -254,8 +265,10 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
     """Named roles for use in `get_model()`."""
     message_limit: NotRequired[Sequence[int | NotGiven | None] | None]
     """Limit on total messages used for each sample."""
-    token_limit: NotRequired[Sequence[int | NotGiven | None] | None]
-    """Limit on total tokens used for each sample."""
+    token_limit: NotRequired[Sequence[int | str | TokenLimit | NotGiven | None] | None]
+    """Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`."""
+    turn_limit: NotRequired[Sequence[int | NotGiven | None] | None]
+    """Limit on total turns (assistant messages) for each sample."""
     time_limit: NotRequired[Sequence[int | NotGiven | None] | None]
     """Limit on clock time (in seconds) for samples."""
     working_limit: NotRequired[Sequence[int | NotGiven | None] | None]

@@ -33,6 +33,7 @@ from inspect_flow._types.flow_types import FlowDependencies, FlowFactory, not_gi
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.pydantic_util import model_dump
 from pydantic import ValidationError
 from rich.console import Console
 
@@ -772,6 +773,11 @@ def test_matrix_task_limits() -> None:
         ),
     )
     validate_config(config, "test_matrix_task_limits.yaml")
+
+
+def test_options_limit_range_roundtrip() -> None:
+    options = FlowOptions.model_validate(model_dump(FlowOptions(limit=(1, 5))))
+    assert options.limit == (1, 5)
 
 
 def test_from_factory() -> None:
