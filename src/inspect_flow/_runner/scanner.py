@@ -10,7 +10,15 @@ def _scanner_entries(scanners: Any) -> list[Any]:
     if scanners is None:
         return []
     if isinstance(scanners, dict):
-        return list(scanners.values())
+        entries = list(scanners.values())
+        if all(isinstance(e, (dict, ScannerSpec)) or callable(e) for e in entries):
+            return entries
+        # named-scanner dict values are always scanners or specs, so anything
+        # else means a single spec dict (e.g. a YAML mapping missing its dash)
+        raise ValueError(
+            "ScannerConfig.scanners looks like a single scanner spec, not a "
+            "dict of named scanners. Wrap a single scanner in a list."
+        )
     if isinstance(scanners, Sequence) and not isinstance(scanners, str):
         return list(scanners)
     # reject bare values: they aren't valid eval_set input, and a bare
@@ -44,8 +52,9 @@ def resolve_scanner(scanner: str | ScannerConfig | None) -> ScannerConfig | None
         return scanner
     # realize per-entry so configs mixing spec-form and live scanners work too
     scanners = scanner.scanners
+    _scanner_entries(scanners)  # reject invalid shapes with a clear error
     if isinstance(scanners, dict):
         scanners = {k: _realize_entry(v) for k, v in scanners.items()}
     elif scanners is not None:
-        scanners = [_realize_entry(entry) for entry in _scanner_entries(scanners)]
+        scanners = [_realize_entry(entry) for entry in scanners]
     return scanner.model_copy(update={"scanners": scanners})

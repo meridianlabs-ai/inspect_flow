@@ -1248,14 +1248,26 @@ def test_eval_set_scanner_mixed_realized(mock_eval_set: MagicMock) -> None:
             ),
             id="spec_instances",
         ),
+        pytest.param(
+            ScannerConfig(
+                scanners={
+                    "kw": {
+                        "name": "keyword_scanner",
+                        "file": task_dir + "/my_scanners.py",
+                        "params": {"keyword": "flow"},
+                    }
+                }
+            ),
+            id="named_spec_dicts",
+        ),
     ],
 )
 def test_eval_set_scanner_realized(
     mock_eval_set: MagicMock, scanner: str | dict[str, Any] | ScannerConfig
 ) -> None:
     # Scanner spec forms (config file path, plain data as from a YAML flow
-    # config, non-list sequences, ScannerSpec instances) are realized to live
-    # Scanner objects before being passed to eval_set.
+    # config, non-list sequences, ScannerSpec instances, named-scanner dicts)
+    # are realized to live Scanner objects before being passed to eval_set.
     spec = FlowSpec.model_validate(
         {
             "log_dir": init_test_logs(),
@@ -1270,18 +1282,30 @@ def test_eval_set_scanner_realized(
     mock_eval_set.assert_called_once()
     scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
     assert isinstance(scanner_arg, ScannerConfig)
-    assert len(scanner_arg.scanners) == 1
-    assert callable(scanner_arg.scanners[0])
+    scanners = scanner_arg.scanners
+    entries = list(scanners.values()) if isinstance(scanners, dict) else scanners
+    assert len(entries) == 1
+    assert callable(entries[0])
 
 
-def test_eval_set_scanner_bare_value_error(mock_eval_set: MagicMock) -> None:
+@pytest.mark.parametrize(
+    "scanners",
+    [
+        pytest.param(ScannerSpec(name="keyword_scanner"), id="bare_spec"),
+        pytest.param(
+            {"name": "keyword_scanner", "params": {"keyword": "flow"}},
+            id="bare_spec_dict",
+        ),
+    ],
+)
+def test_eval_set_scanner_bare_value_error(
+    mock_eval_set: MagicMock, scanners: Any
+) -> None:
     # A bare scanners value (not wrapped in a sequence) is rejected with a
     # clear message rather than reaching eval_set unrealized
     spec = FlowSpec(
         log_dir=init_test_logs(),
-        options=FlowOptions(
-            scanner=ScannerConfig(scanners=ScannerSpec(name="keyword_scanner"))
-        ),
+        options=FlowOptions(scanner=ScannerConfig(scanners=scanners)),
         tasks=[task_file + "@noop"],
     )
 

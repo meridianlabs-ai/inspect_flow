@@ -432,6 +432,14 @@ def test_live_scanner_venv_error() -> None:
     with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
         _check_spec_for_venv(spec)
 
+    # A bare spec dict (e.g. a YAML mapping missing its list dash) is rejected
+    # rather than misread as a dict of named scanners
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners={"name": "keyword_scanner"})
+    )
+    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
+        _check_spec_for_venv(spec)
+
     # A live Model in the scanner config model_roles is also rejected
     spec.options = FlowOptions(
         scanner=ScannerConfig(
@@ -452,6 +460,10 @@ def test_live_scanner_venv_error() -> None:
     _check_spec_for_venv(spec)
     spec.options = FlowOptions(
         scanner=ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")])
+    )
+    _check_spec_for_venv(spec)
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}})
     )
     _check_spec_for_venv(spec)
 
