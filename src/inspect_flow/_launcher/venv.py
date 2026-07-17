@@ -176,10 +176,12 @@ def _check_spec_for_venv(spec: FlowSpec) -> None:
         raise ValueError(
             "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided a ScannerConfig containing already-instantiated Scanner objects, which can not be serialized/recreated. Fix: set options.scanner to a path to a scanner config file or run using 'inproc' execution type."
         )
-    if isinstance(scanner, ScannerConfig) and isinstance(scanner.model, Model):
-        raise ValueError(
-            "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided an already-instantiated Model object as the ScannerConfig model, which can not be serialized/recreated. Fix: use a model name string or run using 'inproc' execution type."
-        )
+    if isinstance(scanner, ScannerConfig):
+        scanner_models = [scanner.model, *(scanner.model_roles or {}).values()]
+        if any(isinstance(model, Model) for model in scanner_models):
+            raise ValueError(
+                "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which can not be serialized/recreated. Fix: use a model name string or run using 'inproc' execution type."
+            )
     for task in spec.tasks or []:
         if isinstance(task, Task):
             raise ValueError(

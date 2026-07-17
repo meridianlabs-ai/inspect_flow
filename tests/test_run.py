@@ -1226,6 +1226,33 @@ def test_eval_set_scanner_spec_dicts_realized(mock_eval_set: MagicMock) -> None:
     assert callable(scanner_arg.scanners[0])
 
 
+def test_eval_set_scanner_spec_dict_tuple_realized(mock_eval_set: MagicMock) -> None:
+    # Spec dicts in any Sequence (not just a list) are realized before eval_set.
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        options=FlowOptions(
+            scanner=ScannerConfig(
+                scanners=(
+                    {
+                        "name": "keyword_scanner",
+                        "file": task_dir + "/my_scanners.py",
+                        "params": {"keyword": "flow"},
+                    },
+                )
+            )
+        ),
+        tasks=[task_file + "@noop"],
+    )
+
+    run_eval_set(spec=spec, base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
+    assert isinstance(scanner_arg, ScannerConfig)
+    assert len(scanner_arg.scanners) == 1
+    assert callable(scanner_arg.scanners[0])
+
+
 def test_eval_set_no_scanner(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
         log_dir=init_test_logs(),

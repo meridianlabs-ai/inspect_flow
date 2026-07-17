@@ -420,6 +420,16 @@ def test_live_scanner_venv_error() -> None:
     with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
         _check_spec_for_venv(spec)
 
+    # A live Model in the scanner config model_roles is also rejected
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(
+            scanners=[{"name": "keyword_scanner"}],
+            model_roles={"grader": get_model("mockllm/model")},
+        )
+    )
+    with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
+        _check_spec_for_venv(spec)
+
     # A config file path or a config of ScannerSpec dicts should not throw
     spec.options = FlowOptions(scanner="tests/config/scanners.yaml")
     _check_spec_for_venv(spec)

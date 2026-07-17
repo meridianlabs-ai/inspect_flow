@@ -27,7 +27,10 @@ def resolve_scanner(scanner: str | ScannerConfig | None) -> ScannerConfig | None
     if isinstance(scanner, str):
         return ScannerConfig.from_file(scanner)
     if isinstance(scanner, ScannerConfig) and not has_live_scanners(scanner):
-        return scanner.model_copy(
-            update={"scanners": _realize_scanner_specs(scanner.scanners)}
-        )
+        # _realize_scanner_specs only handles list/dict, so normalize other
+        # sequences (e.g. tuples) to a list
+        scanners = scanner.scanners
+        if isinstance(scanners, Sequence) and not isinstance(scanners, str):
+            scanners = list(scanners)
+        return scanner.model_copy(update={"scanners": _realize_scanner_specs(scanners)})
     return scanner
