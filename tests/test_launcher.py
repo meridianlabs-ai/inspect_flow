@@ -421,9 +421,15 @@ def test_live_scanner_venv_error() -> None:
     with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
         _check_spec_for_venv(spec)
 
-    # A bare live scanner (not wrapped in a sequence) is also rejected
+    # A bare scanners value (not wrapped in a sequence) is rejected — live or
+    # spec-form, its serialized form is ambiguous with a dict of named scanners
     spec.options = FlowOptions(scanner=ScannerConfig(scanners=keyword_scanner()))
-    with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
+    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
+        _check_spec_for_venv(spec)
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners=ScannerSpec(name="keyword_scanner"))
+    )
+    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
         _check_spec_for_venv(spec)
 
     # A live Model in the scanner config model_roles is also rejected

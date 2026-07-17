@@ -1274,6 +1274,23 @@ def test_eval_set_scanner_realized(
     assert callable(scanner_arg.scanners[0])
 
 
+def test_eval_set_scanner_bare_value_error(mock_eval_set: MagicMock) -> None:
+    # A bare scanners value (not wrapped in a sequence) is rejected with a
+    # clear message rather than reaching eval_set unrealized
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        options=FlowOptions(
+            scanner=ScannerConfig(scanners=ScannerSpec(name="keyword_scanner"))
+        ),
+        tasks=[task_file + "@noop"],
+    )
+
+    with pytest.raises(FlowHandledError) as e:
+        run_eval_set(spec=spec, base_dir=".")
+    assert "Wrap a single scanner in a list" in str(e.value.__cause__)
+    mock_eval_set.assert_not_called()
+
+
 def test_eval_set_no_scanner(mock_eval_set: MagicMock) -> None:
     spec = FlowSpec(
         log_dir=init_test_logs(),
