@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import fields as dataclass_fields
+from datetime import timedelta
 from typing import (
     Annotated,
     Any,
@@ -92,13 +93,24 @@ def _validate_checkpoint(value: Any) -> Any:
     if isinstance(value, CheckpointConfig):
         # reject here rather than in the serializer: pydantic swallows exceptions
         # raised while serializing a union member and falls back to duck-typing
-        if value.trigger is not None and not isinstance(
-            value.trigger, (Manual, TurnInterval, TokenInterval, TimeInterval)
-        ):
-            raise ValueError(
-                f"Checkpoint trigger {value.trigger!r} cannot be used in a flow "
-                "config; use a manual, turn, time, or token trigger."
-            )
+        match value.trigger:
+            case None | Manual():
+                pass
+            case TurnInterval(every=every) | TokenInterval(every=every) if every <= 0:
+                raise ValueError(
+                    f"Checkpoint trigger interval must be positive, got {every}"
+                )
+            case TimeInterval(every=every) if every <= timedelta(0):
+                raise ValueError(
+                    f"Checkpoint trigger interval must be positive, got {every!r}"
+                )
+            case TurnInterval() | TokenInterval() | TimeInterval():
+                pass
+            case _:
+                raise ValueError(
+                    f"Checkpoint trigger {value.trigger!r} cannot be used in a flow "
+                    "config; use a manual, turn, time, or token trigger."
+                )
         return value
     if isinstance(value, bool):
         return value

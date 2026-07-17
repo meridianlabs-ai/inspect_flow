@@ -862,6 +862,20 @@ def test_checkpoint_unsupported_trigger() -> None:
         FlowOptions(checkpoint=checkpoint)
 
 
+def test_checkpoint_non_positive_interval() -> None:
+    triggers = [
+        TurnInterval(every=0),
+        TokenInterval(every=-1),
+        TimeInterval(every=timedelta(0)),
+        TimeInterval(every=timedelta(seconds=-60)),
+    ]
+    for trigger in triggers:
+        with pytest.raises(ValidationError, match="interval must be positive"):
+            FlowTask(name="t", checkpoint=CheckpointConfig(trigger=trigger))
+        with pytest.raises(ValidationError, match="interval must be positive"):
+            FlowOptions(checkpoint=CheckpointConfig(trigger=trigger))
+
+
 def test_checkpoint_invalid_string() -> None:
     with pytest.raises(ValidationError, match="Invalid checkpoint value ''"):
         FlowTask.model_validate({"name": "t", "checkpoint": ""})
