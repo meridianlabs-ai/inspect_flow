@@ -1289,20 +1289,30 @@ def test_eval_set_scanner_realized(
 
 
 @pytest.mark.parametrize(
-    "scanners",
+    ("scanners", "error"),
     [
-        pytest.param(ScannerSpec(name="keyword_scanner"), id="bare_spec"),
+        pytest.param(
+            ScannerSpec(name="keyword_scanner"),
+            "Wrap a single scanner in a list",
+            id="bare_spec",
+        ),
         pytest.param(
             {"name": "keyword_scanner", "params": {"keyword": "flow"}},
+            "dict values must be scanners",
             id="bare_spec_dict",
+        ),
+        pytest.param(
+            {"kw": None},
+            "dict values must be scanners",
+            id="named_scanner_missing_value",
         ),
     ],
 )
 def test_eval_set_scanner_bare_value_error(
-    mock_eval_set: MagicMock, scanners: Any
+    mock_eval_set: MagicMock, scanners: Any, error: str
 ) -> None:
-    # A bare scanners value (not wrapped in a sequence) is rejected with a
-    # clear message rather than reaching eval_set unrealized
+    # A bare or malformed scanners value is rejected with a clear message
+    # rather than reaching eval_set unrealized
     spec = FlowSpec(
         log_dir=init_test_logs(),
         options=FlowOptions(scanner=ScannerConfig(scanners=scanners)),
@@ -1311,7 +1321,7 @@ def test_eval_set_scanner_bare_value_error(
 
     with pytest.raises(FlowHandledError) as e:
         run_eval_set(spec=spec, base_dir=".")
-    assert "Wrap a single scanner in a list" in str(e.value.__cause__)
+    assert error in str(e.value.__cause__)
     mock_eval_set.assert_not_called()
 
 

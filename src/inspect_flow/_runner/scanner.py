@@ -6,18 +6,29 @@ from inspect_ai._eval.task.scan import _realize_scanner_specs
 from inspect_scout import ScannerSpec
 
 
+def is_scanner_spec(entry: Any) -> bool:
+    return isinstance(entry, (dict, ScannerSpec))
+
+
+def scanner_entries(scanner: str | ScannerConfig | None) -> list[Any]:
+    if not isinstance(scanner, ScannerConfig):
+        return []
+    return _scanner_entries(scanner.scanners)
+
+
 def _scanner_entries(scanners: Any) -> list[Any]:
     if scanners is None:
         return []
     if isinstance(scanners, dict):
         entries = list(scanners.values())
-        if all(isinstance(e, (dict, ScannerSpec)) or callable(e) for e in entries):
+        if all(is_scanner_spec(e) or callable(e) for e in entries):
             return entries
-        # named-scanner dict values are always scanners or specs, so anything
-        # else means a single spec dict (e.g. a YAML mapping missing its dash)
+        # anything else is a named key missing its value or a single spec
+        # dict (e.g. a YAML mapping missing its list dash)
         raise ValueError(
-            "ScannerConfig.scanners looks like a single scanner spec, not a "
-            "dict of named scanners. Wrap a single scanner in a list."
+            "ScannerConfig.scanners dict values must be scanners or scanner "
+            "specs. If this was meant as a single scanner spec, wrap it in a "
+            "list."
         )
     if isinstance(scanners, Sequence) and not isinstance(scanners, str):
         return list(scanners)
@@ -30,17 +41,8 @@ def _scanner_entries(scanners: Any) -> list[Any]:
     )
 
 
-def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
-    if not isinstance(scanner, ScannerConfig):
-        return False
-    return any(
-        not isinstance(entry, (dict, ScannerSpec))
-        for entry in _scanner_entries(scanner.scanners)
-    )
-
-
 def _realize_entry(entry: Any) -> Any:
-    if isinstance(entry, (dict, ScannerSpec)):
+    if is_scanner_spec(entry):
         return _realize_scanner_specs([entry])[0]
     return entry
 

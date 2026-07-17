@@ -437,7 +437,12 @@ def test_live_scanner_venv_error() -> None:
     spec.options = FlowOptions(
         scanner=ScannerConfig(scanners={"name": "keyword_scanner"})
     )
-    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
+    with pytest.raises(ValueError, match="dict values must be scanners"):
+        _check_spec_for_venv(spec)
+
+    # As is a named-scanner dict whose value is missing/invalid
+    spec.options = FlowOptions(scanner=ScannerConfig(scanners={"kw": None}))
+    with pytest.raises(ValueError, match="dict values must be scanners"):
         _check_spec_for_venv(spec)
 
     # A live Model in the scanner config model_roles is also rejected
