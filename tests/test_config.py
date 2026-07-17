@@ -853,6 +853,13 @@ def test_checkpoint_invalid_value() -> None:
         FlowOptions.model_validate({"checkpoint": [1, 2]})
 
 
+def test_checkpoint_invalid_string() -> None:
+    with pytest.raises(ValidationError, match="Invalid checkpoint value ''"):
+        FlowTask.model_validate({"name": "t", "checkpoint": ""})
+    with pytest.raises(ValidationError, match="tokens:500k does not exist"):
+        FlowTask.model_validate({"name": "t", "checkpoint": "tokens:500k"})
+
+
 def test_from_factory() -> None:
     config = FlowSpec(
         log_dir="example_logs",

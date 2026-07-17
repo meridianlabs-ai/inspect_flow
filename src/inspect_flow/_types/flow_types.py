@@ -21,6 +21,7 @@ from typing import (
 
 import rich.repr
 from inspect_ai import Task
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.log import EvalLog
@@ -91,7 +92,14 @@ def _validate_checkpoint(value: Any) -> Any:
     if isinstance(value, (CheckpointConfig, bool)):
         return value
     if isinstance(value, str):
-        return parse_checkpoint(value)
+        try:
+            parsed = parse_checkpoint(value)
+        except PrerequisiteError as ex:
+            # re-raise as ValueError so pydantic reports it against this field
+            raise ValueError(ex.message) from ex
+        if parsed is None:
+            raise ValueError(f"Invalid checkpoint value {value!r}")
+        return parsed
     if not isinstance(value, dict):
         raise ValueError(
             f"Invalid checkpoint value {value!r}: expected a CheckpointConfig, "
