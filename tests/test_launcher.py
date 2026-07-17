@@ -406,6 +406,20 @@ def test_live_scanner_venv_error() -> None:
         launch(spec=spec, base_dir=".")
     assert "already-instantiated Scanner objects" in str(e.value)
 
+    # Any Sequence of live scanners is rejected, not just a list
+    spec.options = FlowOptions(scanner=ScannerConfig(scanners=(keyword_scanner(),)))
+    with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
+        _check_spec_for_venv(spec)
+
+    # A live Model in the scanner config is also rejected
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(
+            scanners=[{"name": "keyword_scanner"}], model=get_model("mockllm/model")
+        )
+    )
+    with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
+        _check_spec_for_venv(spec)
+
     # A config file path or a config of ScannerSpec dicts should not throw
     spec.options = FlowOptions(scanner="tests/config/scanners.yaml")
     _check_spec_for_venv(spec)

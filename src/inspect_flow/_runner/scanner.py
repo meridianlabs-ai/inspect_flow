@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any
 
 from inspect_ai import ScannerConfig
@@ -7,8 +8,8 @@ from inspect_ai._eval.task.scan import _realize_scanner_specs
 def _scanner_entries(scanners: Any) -> list[Any]:
     if isinstance(scanners, dict):
         return list(scanners.values())
-    if isinstance(scanners, list):
-        return scanners
+    if isinstance(scanners, Sequence) and not isinstance(scanners, str):
+        return list(scanners)
     return []
 
 
