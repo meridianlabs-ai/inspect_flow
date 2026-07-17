@@ -28,9 +28,11 @@ from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
+from inspect_flow._runner.scanner import has_live_scanners
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
+from inspect_flow._util.not_given import default_none
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import (
     CHILD_READY_FD_ENV,
@@ -169,6 +171,10 @@ def _venv_spawn(
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:
+    if spec.options and has_live_scanners(default_none(spec.options.scanner)):
+        raise ValueError(
+            "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided a ScannerConfig containing already-instantiated Scanner objects, which can not be serialized/recreated. Fix: set options.scanner to a path to a scanner config file or run using 'inproc' execution type."
+        )
     for task in spec.tasks or []:
         if isinstance(task, Task):
             raise ValueError(

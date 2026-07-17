@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.client import BaseClient
 from click.testing import CliRunner
-from inspect_ai import Task
+from inspect_ai import ScannerConfig, Task
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
@@ -18,9 +18,10 @@ from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._runner.cli import runner
 from inspect_flow._runner.run import LaunchResult
-from inspect_flow._types.flow_types import FlowSolver, FlowTask
+from inspect_flow._types.flow_types import FlowOptions, FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
+from local_eval.my_scanners import keyword_scanner
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
@@ -392,6 +393,47 @@ def test_instantiated_venv_error() -> None:
         tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
     )
     _check_spec_for_venv(spec)
+
+
+def test_live_scanner_venv_error() -> None:
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        options=FlowOptions(scanner=ScannerConfig(scanners=[keyword_scanner()])),
+        tasks=["local_eval/noop"],
+    )
+    with pytest.raises(ValueError) as e:
+        launch(spec=spec, base_dir=".")
+    assert "already-instantiated Scanner objects" in str(e.value)
+
+    # A config file path or a config of ScannerSpec dicts should not throw
+    spec.options = FlowOptions(scanner="tests/config/scanners.yaml")
+    _check_spec_for_venv(spec)
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners=[{"name": "keyword_scanner"}])
+    )
+    _check_spec_for_venv(spec)
+
+
+def test_relative_scanner_path(mock_venv_subprocess: MockVenvSubprocess) -> None:
+    with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
+        spec = int_load_spec(
+            "./tests/config/e2e_test_flow.py",
+            options=ConfigOptions(overrides=["options.scanner=scanners.yaml"]),
+        )
+        spec.execution_type = "venv"
+        launch(
+            spec=spec,
+            base_dir="tests/config/",
+        )
+
+    mock_create_venv.assert_called_once()
+    spec = mock_call_arg(_create_venv, mock_create_venv, "spec")
+    assert spec.options
+    assert (
+        spec.options.scanner == Path("tests/config/scanners.yaml").resolve().as_posix()
+    )
+    mock_venv_subprocess.popen.assert_called_once()
 
 
 def test_flow_process_error(mock_venv_subprocess: MockVenvSubprocess) -> None:

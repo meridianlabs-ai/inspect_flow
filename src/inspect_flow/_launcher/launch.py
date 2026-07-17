@@ -41,6 +41,11 @@ def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
                 for k, v in spec.options.bundle_url_mappings.items()
             }
 
+    if spec.options and isinstance(spec.options.scanner, str):
+        spec.options.scanner = absolute_path_relative_to(
+            spec.options.scanner, base_dir=base_dir
+        )
+
 
 def launch(
     spec: FlowSpec,

@@ -18,7 +18,7 @@ from typing import (
 )
 
 import rich.repr
-from inspect_ai import Task
+from inspect_ai import ScannerConfig, Task
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.log import EvalLog
@@ -540,6 +540,11 @@ class FlowOptions(FlowBase):
     ctl_server: bool | str | None | NotGiven = Field(
         default=not_given,
         description='Control-channel server for this eval-set process. `True` or `None` (default) binds the default AF_UNIX socket; `False` disables the control endpoint; `"keep-alive"` additionally keeps the process running after the eval-set finishes so external clients (the `inspect ctl` CLI, scripted agents, TUIs) can still query state and read results — exit via `inspect ctl release` (or `POST /release`). Requires `retry_immediate=True` (the default) for the `"keep-alive"` value.',
+    )
+
+    scanner: str | ScannerConfig | None | NotGiven = Field(
+        default=not_given,
+        description="Scanners to run inline against each sample as the eval set runs. Either a path to a scanner config file (loaded via `ScannerConfig.from_file()`) or a `ScannerConfig`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). To scan transcripts after the run completes, use the `scan` step instead.",
     )
 
     tags: Sequence[str] | None | NotGiven = Field(
