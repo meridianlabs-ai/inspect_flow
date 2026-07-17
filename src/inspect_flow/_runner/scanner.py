@@ -11,7 +11,7 @@ def _scanner_entries(scanners: Any) -> list[Any]:
         return list(scanners.values())
     if isinstance(scanners, Sequence) and not isinstance(scanners, str):
         return list(scanners)
-    return []
+    return [] if scanners is None else [scanners]
 
 
 def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
