@@ -122,7 +122,8 @@ def _validate_checkpoint(value: Any) -> Any:
             raise ValueError(ex.message) from ex
         if parsed is None:
             raise ValueError(f"Invalid checkpoint value {value!r}")
-        return parsed
+        # recurse so parsed configs get the same trigger checks as direct construction
+        return _validate_checkpoint(parsed)
     if not isinstance(value, Mapping):
         raise ValueError(
             f"Invalid checkpoint value {value!r}: expected a CheckpointConfig, "
@@ -139,7 +140,9 @@ def _validate_checkpoint(value: Any) -> Any:
     for field in dataclass_fields(config):
         if field.name not in value:
             setattr(config, field.name, None)
-    return config
+    # recurse so parsed configs get the same trigger checks as direct construction
+    # (e.g. _TokenTriggerModel accepts a raw non-positive int `every`)
+    return _validate_checkpoint(config)
 
 
 def _serialize_checkpoint_trigger(trigger: CheckpointTrigger) -> str | dict[str, Any]:

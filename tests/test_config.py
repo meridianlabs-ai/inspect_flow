@@ -874,6 +874,12 @@ def test_checkpoint_non_positive_interval() -> None:
             FlowTask(name="t", checkpoint=CheckpointConfig(trigger=trigger))
         with pytest.raises(ValidationError, match="interval must be positive"):
             FlowOptions(checkpoint=CheckpointConfig(trigger=trigger))
+    # the mapping form must hit the same check (upstream _TokenTriggerModel
+    # accepts a raw non-positive int `every`)
+    with pytest.raises(ValidationError, match="interval must be positive"):
+        FlowTask.model_validate(
+            {"name": "t", "checkpoint": {"trigger": {"type": "token", "every": 0}}}
+        )
 
 
 def test_checkpoint_invalid_string() -> None:
