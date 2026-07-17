@@ -1178,61 +1178,24 @@ def test_eval_set_scanner_config(mock_eval_set: MagicMock) -> None:
     assert mock_eval_set.call_args.kwargs["scanner"] is scanner_config
 
 
-def test_eval_set_scanner_from_file(mock_eval_set: MagicMock) -> None:
-    spec = FlowSpec(
-        log_dir=init_test_logs(),
-        options=FlowOptions(scanner="tests/config/scanners.yaml"),
-        tasks=[task_file + "@noop"],
-    )
-
-    run_eval_set(spec=spec, base_dir=".")
-
-    mock_eval_set.assert_called_once()
-    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
-    assert isinstance(scanner_arg, ScannerConfig)
-    assert len(scanner_arg.scanners) == 1
-    assert callable(scanner_arg.scanners[0])
-
-
-def test_eval_set_scanner_spec_dicts_realized(mock_eval_set: MagicMock) -> None:
-    # A scanner config given as plain data (e.g. from a YAML flow config) is
-    # realized to live Scanner objects before being passed to eval_set.
-    spec = FlowSpec.model_validate(
-        {
-            "log_dir": init_test_logs(),
-            "options": {
-                "scanner": {
-                    "scanners": [
-                        {
-                            "name": "keyword_scanner",
-                            "file": task_dir + "/my_scanners.py",
-                            "params": {"keyword": "flow"},
-                        }
-                    ]
-                }
+@pytest.mark.parametrize(
+    "scanner",
+    [
+        pytest.param("tests/config/scanners.yaml", id="config_file"),
+        pytest.param(
+            {
+                "scanners": [
+                    {
+                        "name": "keyword_scanner",
+                        "file": task_dir + "/my_scanners.py",
+                        "params": {"keyword": "flow"},
+                    }
+                ]
             },
-            "tasks": [task_file + "@noop"],
-        },
-        extra="forbid",
-    )
-    assert spec.options
-    assert isinstance(spec.options.scanner, ScannerConfig)
-
-    run_eval_set(spec=spec, base_dir=".")
-
-    mock_eval_set.assert_called_once()
-    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
-    assert isinstance(scanner_arg, ScannerConfig)
-    assert len(scanner_arg.scanners) == 1
-    assert callable(scanner_arg.scanners[0])
-
-
-def test_eval_set_scanner_spec_dict_tuple_realized(mock_eval_set: MagicMock) -> None:
-    # Spec dicts in any Sequence (not just a list) are realized before eval_set.
-    spec = FlowSpec(
-        log_dir=init_test_logs(),
-        options=FlowOptions(
-            scanner=ScannerConfig(
+            id="spec_dicts",
+        ),
+        pytest.param(
+            ScannerConfig(
                 scanners=(
                     {
                         "name": "keyword_scanner",
@@ -1240,26 +1203,11 @@ def test_eval_set_scanner_spec_dict_tuple_realized(mock_eval_set: MagicMock) -> 
                         "params": {"keyword": "flow"},
                     },
                 )
-            )
+            ),
+            id="spec_dict_tuple",
         ),
-        tasks=[task_file + "@noop"],
-    )
-
-    run_eval_set(spec=spec, base_dir=".")
-
-    mock_eval_set.assert_called_once()
-    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
-    assert isinstance(scanner_arg, ScannerConfig)
-    assert len(scanner_arg.scanners) == 1
-    assert callable(scanner_arg.scanners[0])
-
-
-def test_eval_set_scanner_spec_instances_realized(mock_eval_set: MagicMock) -> None:
-    # ScannerSpec instances (not just dicts) are realized before eval_set.
-    spec = FlowSpec(
-        log_dir=init_test_logs(),
-        options=FlowOptions(
-            scanner=ScannerConfig(
+        pytest.param(
+            ScannerConfig(
                 scanners=[
                     ScannerSpec(
                         name="keyword_scanner",
@@ -1267,9 +1215,24 @@ def test_eval_set_scanner_spec_instances_realized(mock_eval_set: MagicMock) -> N
                         params={"keyword": "flow"},
                     )
                 ]
-            )
+            ),
+            id="spec_instances",
         ),
-        tasks=[task_file + "@noop"],
+    ],
+)
+def test_eval_set_scanner_realized(
+    mock_eval_set: MagicMock, scanner: str | dict[str, Any] | ScannerConfig
+) -> None:
+    # Scanner spec forms (config file path, plain data as from a YAML flow
+    # config, non-list sequences, ScannerSpec instances) are realized to live
+    # Scanner objects before being passed to eval_set.
+    spec = FlowSpec.model_validate(
+        {
+            "log_dir": init_test_logs(),
+            "options": {"scanner": scanner},
+            "tasks": [task_file + "@noop"],
+        },
+        extra="forbid",
     )
 
     run_eval_set(spec=spec, base_dir=".")

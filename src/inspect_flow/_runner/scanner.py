@@ -15,7 +15,6 @@ def _scanner_entries(scanners: Any) -> list[Any]:
 
 
 def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
-    """Whether the scanner config holds live `Scanner` objects (vs. `ScannerSpec`s)."""
     if not isinstance(scanner, ScannerConfig):
         return False
     return any(
@@ -25,7 +24,6 @@ def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
 
 
 def resolve_scanner(scanner: str | ScannerConfig | None) -> ScannerConfig | None:
-    """Resolve a flow scanner option to a `ScannerConfig` ready for `eval_set()`."""
     if isinstance(scanner, str):
         return ScannerConfig.from_file(scanner)
     if isinstance(scanner, ScannerConfig) and not has_live_scanners(scanner):
