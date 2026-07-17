@@ -111,7 +111,7 @@ def _validate_checkpoint(value: Any) -> Any:
         if parsed is None:
             raise ValueError(f"Invalid checkpoint value {value!r}")
         return parsed
-    if not isinstance(value, dict):
+    if not isinstance(value, Mapping):
         raise ValueError(
             f"Invalid checkpoint value {value!r}: expected a CheckpointConfig, "
             "bool, string, or mapping"
@@ -726,7 +726,7 @@ class FlowOptions(FlowBase):
 
     limit: int | tuple[int, int] | None | NotGiven = Field(
         default=not_given,
-        description="Limit evaluated samples: an integer for the first `n` samples, or a `(start, end)` tuple for a range (defaults to all samples).",
+        description="Limit evaluated samples: an integer for the first `n` samples, or a `(start, end)` tuple for a slice-style range with 0-based `start` and exclusive `end` — e.g. `(9, 20)` evaluates samples 10 through 20 (defaults to all samples).",
     )
 
     sample_shuffle: bool | int | None | NotGiven = Field(
