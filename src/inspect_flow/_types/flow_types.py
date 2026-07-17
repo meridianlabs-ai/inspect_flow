@@ -120,7 +120,8 @@ def _serialize_checkpoint_trigger(trigger: CheckpointTrigger) -> str | dict[str,
         case TokenInterval(every=every):
             return {"type": "token", "every": every}
         case TimeInterval(every=every):
-            return {"type": "time", "every": f"{every.total_seconds()}s"}
+            # :f avoids scientific notation, which _parse_duration rejects
+            return {"type": "time", "every": f"{every.total_seconds():f}s"}
         case _:
             raise ValueError(
                 f"Checkpoint trigger {trigger!r} cannot be used in a serialized flow "
@@ -642,7 +643,7 @@ class FlowOptions(FlowBase):
 
     checkpoint: FlowCheckpoint | None | NotGiven = Field(
         default=not_given,
-        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both; `False` at any level disables checkpointing.",
+        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both; `False` here or on a task disables checkpointing.",
     )
 
     acp_server: bool | int | str | None | NotGiven = Field(

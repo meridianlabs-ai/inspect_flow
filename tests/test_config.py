@@ -797,6 +797,7 @@ def test_checkpoint_roundtrip() -> None:
         ),
         CheckpointConfig(trigger=TurnInterval(every=5)),
         CheckpointConfig(trigger=TimeInterval(every=timedelta(minutes=15))),
+        CheckpointConfig(trigger=TimeInterval(every=timedelta(microseconds=10))),
         CheckpointConfig(trigger=Manual()),
         CheckpointConfig(max_consecutive_failures=2),
         True,
