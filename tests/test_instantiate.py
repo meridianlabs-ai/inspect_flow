@@ -7,6 +7,7 @@ from botocore.client import BaseClient
 from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.model import Model, get_model
+from inspect_ai.util import CheckpointConfig, TokenInterval
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -123,6 +124,7 @@ def test_flow_epochs() -> None:
 
 
 def test_task_limits_and_flags() -> None:
+    checkpoint = CheckpointConfig(trigger=TokenInterval(every=500_000))
     spec = FlowSpec(
         tasks=[
             FlowTask(
@@ -130,17 +132,18 @@ def test_task_limits_and_flags() -> None:
                 turn_limit=5,
                 token_limit="1M",
                 score_on_error=True,
-                checkpoint=True,
+                checkpoint=checkpoint,
             ),
         ]
     )
+    spec = FlowSpec.model_validate(model_dump(spec))
     tasks = instantiate_tasks(spec=spec, base_dir=".")
     assert len(tasks) == 1
     task = tasks[0].task
     assert task.turn_limit == 5
     assert task.token_limit == 1_000_000
     assert task.score_on_error is True
-    assert task.checkpoint is not None
+    assert task.checkpoint == checkpoint
 
 
 def test_file_not_found() -> None:

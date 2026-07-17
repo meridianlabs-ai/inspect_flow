@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import inspect
+from dataclasses import fields as dataclass_fields
 from typing import (
+    Annotated,
     Any,
     Callable,
     Generic,
@@ -27,12 +29,25 @@ from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
     CheckpointConfig,
+    CheckpointTrigger,
     DisplayType,
     EarlyStopping,
+    Manual,
     SandboxEnvironmentType,
+    TimeInterval,
+    TokenInterval,
     TokenLimit,
+    TurnInterval,
 )
-from pydantic import BaseModel, Field, SkipValidation, model_validator
+from inspect_ai.util._checkpoint.parse_cli import _CheckpointConfigModel
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    Field,
+    PlainSerializer,
+    SkipValidation,
+    model_validator,
+)
 from typing_extensions import Self, override
 
 from inspect_flow._util.pydantic_util import model_dump
@@ -62,6 +77,65 @@ class NotGiven(BaseModel, extra="forbid"):
 
 
 not_given = NotGiven(type="NOT_GIVEN")
+
+
+def _validate_checkpoint(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    model = _CheckpointConfigModel.model_validate(
+        {**value, "trigger": value.get("trigger") or "manual"}
+    )
+    config = model.to_dataclass()
+    # _CheckpointConfigModel targets whole-file configs and fills in defaults; flow
+    # checkpoint dicts are partial layers where an absent field means "inherit".
+    for name in ("trigger", "sandbox_paths", "retention"):
+        if value.get(name) is None:
+            setattr(config, name, None)
+    return config
+
+
+def _serialize_checkpoint_trigger(trigger: CheckpointTrigger) -> str | dict[str, Any]:
+    match trigger:
+        case Manual():
+            return "manual"
+        case TurnInterval(every=every):
+            return {"type": "turn", "every": every}
+        case TokenInterval(every=every):
+            return {"type": "token", "every": every}
+        case TimeInterval(every=every):
+            return {"type": "time", "every": f"{every.total_seconds()}s"}
+        case _:
+            raise ValueError(
+                f"Checkpoint trigger {trigger!r} cannot be used in a serialized flow "
+                "config; use a manual, turn, time, or token trigger."
+            )
+
+
+def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:
+    if isinstance(value, bool):
+        return value
+    data: dict[str, Any] = {
+        f.name: v
+        for f in dataclass_fields(value)
+        if f.name != "trigger" and (v := getattr(value, f.name)) is not None
+    }
+    if value.trigger is not None:
+        data["trigger"] = _serialize_checkpoint_trigger(value.trigger)
+    return data
+
+
+FlowCheckpoint: TypeAlias = Annotated[
+    SkipValidation[CheckpointConfig] | bool,
+    BeforeValidator(_validate_checkpoint),
+    PlainSerializer(_serialize_checkpoint),
+]
+"""`CheckpointConfig` with round-trippable (de)serialization.
+
+`CheckpointConfig` cannot be validated directly: its trigger union members are
+structurally identical dataclasses, so validating serialized data would lose the
+trigger kind. Serialize triggers in inspect's discriminated `_CheckpointConfigModel`
+form and validate through that model instead.
+"""
 
 
 class FlowBase(BaseModel, extra="forbid"):
@@ -431,9 +505,9 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set.",
     )
 
-    checkpoint: SkipValidation[CheckpointConfig] | bool | None | NotGiven = Field(
+    checkpoint: FlowCheckpoint | None | NotGiven = Field(
         default=not_given,
-        description="Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overridden by `options.checkpoint` when set.",
+        description="Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence.",
     )
 
     message_limit: int | None | NotGiven = Field(
@@ -544,9 +618,9 @@ class FlowOptions(FlowBase):
         description="Cleanup sandbox environments after task completes (defaults to `True`).",
     )
 
-    checkpoint: SkipValidation[CheckpointConfig] | bool | None | NotGiven = Field(
+    checkpoint: FlowCheckpoint | None | NotGiven = Field(
         default=not_given,
-        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level `checkpoint` when set.",
+        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both.",
     )
 
     acp_server: bool | int | str | None | NotGiven = Field(

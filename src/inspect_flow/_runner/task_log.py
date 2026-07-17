@@ -8,7 +8,6 @@ from inspect_ai import Task
 from inspect_ai._util.registry import registry_info
 from inspect_ai.log import EvalLog
 from inspect_ai.model._generate_config import GenerateConfig
-from inspect_ai.util import TokenLimit
 from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
@@ -52,7 +51,7 @@ class TaskInfo:
     approval: str | None = None
     version: int | str = 0
     message_limit: int | None = None
-    token_limit: int | str | TokenLimit | None = None
+    token_limit: int | None = None
     turn_limit: int | None = None
     time_limit: int | None = None
     working_limit: int | None = None

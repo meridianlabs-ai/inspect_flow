@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -6,6 +6,13 @@ import pytest
 from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
+from inspect_ai.util import (
+    CheckpointConfig,
+    Manual,
+    TimeInterval,
+    TokenInterval,
+    TurnInterval,
+)
 from inspect_flow import (
     FlowAgent,
     FlowModel,
@@ -778,6 +785,38 @@ def test_matrix_task_limits() -> None:
 def test_options_limit_range_roundtrip() -> None:
     options = FlowOptions.model_validate(model_dump(FlowOptions(limit=(1, 5))))
     assert options.limit == (1, 5)
+
+
+def test_checkpoint_roundtrip() -> None:
+    checkpoints = [
+        CheckpointConfig(
+            trigger=TokenInterval(every=500_000),
+            max_consecutive_failures=3,
+            retention="retain",
+        ),
+        CheckpointConfig(trigger=TurnInterval(every=5)),
+        CheckpointConfig(trigger=TimeInterval(every=timedelta(minutes=15))),
+        CheckpointConfig(trigger=Manual()),
+        CheckpointConfig(max_consecutive_failures=2),
+        True,
+        False,
+    ]
+    for checkpoint in checkpoints:
+        task = FlowTask.model_validate(
+            model_dump(FlowTask(name="t", checkpoint=checkpoint))
+        )
+        assert task.checkpoint == checkpoint
+        options = FlowOptions.model_validate(
+            model_dump(FlowOptions(checkpoint=checkpoint))
+        )
+        assert options.checkpoint == checkpoint
+
+
+def test_checkpoint_from_dict() -> None:
+    task = FlowTask.model_validate(
+        {"name": "t", "checkpoint": {"trigger": {"type": "token", "every": "500k"}}}
+    )
+    assert task.checkpoint == CheckpointConfig(trigger=TokenInterval(every=500_000))
 
 
 def test_from_factory() -> None:
