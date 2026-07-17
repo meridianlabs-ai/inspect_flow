@@ -13,6 +13,7 @@ from inspect_ai.util import (
     TokenInterval,
     TurnInterval,
 )
+from inspect_ai.util._checkpoint.config import CheckpointDisabled
 from inspect_flow import (
     FlowAgent,
     FlowModel,
@@ -831,6 +832,12 @@ def test_checkpoint_from_dict_with_explicit_nulls() -> None:
         }
     )
     assert task.checkpoint == CheckpointConfig(trigger=Manual())
+
+
+def test_checkpoint_disabled_normalizes_to_false() -> None:
+    task = FlowTask(name="t", checkpoint=CheckpointDisabled())
+    assert task.checkpoint is False
+    assert FlowTask.model_validate(model_dump(task)).checkpoint is False
 
 
 def test_checkpoint_from_string() -> None:

@@ -39,6 +39,7 @@ from inspect_ai.util import (
     TokenLimit,
     TurnInterval,
 )
+from inspect_ai.util._checkpoint.config import CheckpointDisabled
 from inspect_ai.util._checkpoint.parse_cli import (
     _CheckpointConfigModel,
     parse_checkpoint,
@@ -83,6 +84,10 @@ not_given = NotGiven(type="NOT_GIVEN")
 
 
 def _validate_checkpoint(value: Any) -> Any:
+    if isinstance(value, CheckpointDisabled):
+        # normalize inspect's veto sentinel to `False`, which round-trips as a veto
+        # (the sentinel's all-`None` fields would serialize to an enabling `{}`)
+        return False
     if isinstance(value, (CheckpointConfig, bool)):
         return value
     if isinstance(value, str):
@@ -138,7 +143,9 @@ def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:
 
 FlowCheckpoint: TypeAlias = Annotated[
     SkipValidation[CheckpointConfig] | bool,
-    BeforeValidator(_validate_checkpoint),
+    BeforeValidator(
+        _validate_checkpoint, json_schema_input_type=CheckpointConfig | bool | str
+    ),
     PlainSerializer(_serialize_checkpoint),
 ]
 """`CheckpointConfig` with round-trippable (de)serialization.
@@ -147,7 +154,9 @@ FlowCheckpoint: TypeAlias = Annotated[
 structurally identical dataclasses, so validating serialized data would lose the
 trigger kind. Serialize triggers in inspect's discriminated `_CheckpointConfigModel`
 form and validate through that model instead. Strings are parsed like the inspect
-CLI's `--checkpoint` value (e.g. `"manual"`, `"turn:5"`, `"token:500k"`).
+CLI's `--checkpoint` value (e.g. `"manual"`, `"turn:5"`, `"token:500k"`); `str`
+appears only in the JSON schema (and generated dict types) — the validator converts
+it, so the field never holds a string.
 """
 
 
