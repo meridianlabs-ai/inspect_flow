@@ -23,14 +23,21 @@ def has_live_scanners(scanner: str | ScannerConfig | None) -> bool:
     )
 
 
+def _realize_entry(entry: Any) -> Any:
+    if isinstance(entry, (dict, ScannerSpec)):
+        return _realize_scanner_specs([entry])[0]
+    return entry
+
+
 def resolve_scanner(scanner: str | ScannerConfig | None) -> ScannerConfig | None:
     if isinstance(scanner, str):
         return ScannerConfig.from_file(scanner)
-    if isinstance(scanner, ScannerConfig) and not has_live_scanners(scanner):
-        # _realize_scanner_specs only handles list/dict, so normalize other
-        # sequences (e.g. tuples) to a list
-        scanners = scanner.scanners
-        if isinstance(scanners, Sequence) and not isinstance(scanners, str):
-            scanners = list(scanners)
-        return scanner.model_copy(update={"scanners": _realize_scanner_specs(scanners)})
-    return scanner
+    if not isinstance(scanner, ScannerConfig):
+        return scanner
+    # realize per-entry so configs mixing spec-form and live scanners work too
+    scanners = scanner.scanners
+    if isinstance(scanners, dict):
+        scanners = {k: _realize_entry(v) for k, v in scanners.items()}
+    elif isinstance(scanners, Sequence) and not isinstance(scanners, str):
+        scanners = [_realize_entry(entry) for entry in scanners]
+    return scanner.model_copy(update={"scanners": scanners})

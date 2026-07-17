@@ -1165,7 +1165,8 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
 
 
 def test_eval_set_scanner_config(mock_eval_set: MagicMock) -> None:
-    scanner_config = ScannerConfig(scanners=[keyword_scanner(keyword="flow")])
+    live_scanner = keyword_scanner(keyword="flow")
+    scanner_config = ScannerConfig(scanners=[live_scanner])
     spec = FlowSpec(
         log_dir=init_test_logs(),
         options=FlowOptions(scanner=scanner_config),
@@ -1175,7 +1176,36 @@ def test_eval_set_scanner_config(mock_eval_set: MagicMock) -> None:
     run_eval_set(spec=spec, base_dir=".")
 
     mock_eval_set.assert_called_once()
-    assert mock_eval_set.call_args.kwargs["scanner"] is scanner_config
+    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
+    assert isinstance(scanner_arg, ScannerConfig)
+    assert scanner_arg.scanners[0] is live_scanner
+
+
+def test_eval_set_scanner_mixed_realized(mock_eval_set: MagicMock) -> None:
+    live_scanner = keyword_scanner(keyword="flow")
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        options=FlowOptions(
+            scanner=ScannerConfig(
+                scanners=[
+                    {
+                        "name": "keyword_scanner",
+                        "file": task_dir + "/my_scanners.py",
+                        "params": {"keyword": "flow"},
+                    },
+                    live_scanner,
+                ]
+            )
+        ),
+        tasks=[task_file + "@noop"],
+    )
+
+    run_eval_set(spec=spec, base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
+    assert callable(scanner_arg.scanners[0])
+    assert scanner_arg.scanners[1] is live_scanner
 
 
 @pytest.mark.parametrize(
