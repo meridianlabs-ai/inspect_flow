@@ -203,7 +203,7 @@ class FlowTaskDict(TypedDict, closed=True):
     score_on_error: NotRequired[bool | NotGiven | None]
     """Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set."""
     checkpoint: NotRequired[CheckpointConfig | bool | NotGiven | None]
-    """Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence."""
+    """Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence; `False` at either level disables checkpointing."""
     message_limit: NotRequired[int | NotGiven | None]
     """Limit on total messages used for each sample."""
     token_limit: NotRequired[int | str | TokenLimit | NotGiven | None]

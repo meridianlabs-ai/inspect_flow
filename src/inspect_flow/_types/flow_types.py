@@ -83,10 +83,15 @@ not_given = NotGiven(type="NOT_GIVEN")
 
 
 def _validate_checkpoint(value: Any) -> Any:
+    if isinstance(value, (CheckpointConfig, bool)):
+        return value
     if isinstance(value, str):
         return parse_checkpoint(value)
     if not isinstance(value, dict):
-        return value
+        raise ValueError(
+            f"Invalid checkpoint value {value!r}: expected a CheckpointConfig, "
+            "bool, string, or mapping"
+        )
     # an explicit null means the same as an absent key: inherit
     value = {k: v for k, v in value.items() if v is not None}
     model = _CheckpointConfigModel.model_validate(
@@ -515,7 +520,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     checkpoint: FlowCheckpoint | None | NotGiven = Field(
         default=not_given,
-        description="Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence.",
+        description="Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence; `False` at either level disables checkpointing.",
     )
 
     message_limit: int | None | NotGiven = Field(
@@ -628,7 +633,7 @@ class FlowOptions(FlowBase):
 
     checkpoint: FlowCheckpoint | None | NotGiven = Field(
         default=not_given,
-        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both.",
+        description="Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both; `False` at any level disables checkpointing.",
     )
 
     acp_server: bool | int | str | None | NotGiven = Field(

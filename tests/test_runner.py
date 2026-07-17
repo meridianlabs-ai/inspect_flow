@@ -9,6 +9,7 @@ from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalResults, EvalSpec
 from inspect_ai.model import Model, get_model
+from inspect_ai.util import TokenLimit
 from inspect_flow._display.display import set_display, set_display_type
 from inspect_flow._runner.cli import _read_config, runner
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -55,6 +56,7 @@ def _make_task(
     num_samples: int = 3,
     model: str | Model | None = None,
     epochs: int | Epochs | None = None,
+    token_limit: int | TokenLimit | None = None,
 ) -> Task:
     samples = [Sample(input=f"sample_{i}") for i in range(num_samples)]
     return Task(
@@ -62,6 +64,7 @@ def _make_task(
         name=name,
         model=model,
         epochs=epochs,
+        token_limit=token_limit,
     )
 
 
@@ -268,6 +271,17 @@ class TestUniqueTaskNames:
         assert result.model_only is False
         assert "high" in result.names[0][1].plain
         assert "low" in result.names[1][1].plain
+
+    def test_same_name_different_token_limit_type(self) -> None:
+        model = get_model("mockllm/model-a")
+        t1 = _make_task("t", model=model, token_limit=100)
+        t2 = _make_task(
+            "t", model=model, token_limit=TokenLimit(tokens=100, type="output")
+        )
+        infos = [TaskLogInfo(task=t1), TaskLogInfo(task=t2)]
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
+        assert result.model_only is False
+        assert "token_limit_type=output" in result.names[1][1].plain
 
     def test_factory_qualifiers(self) -> None:
         model = get_model("mockllm/model-a")

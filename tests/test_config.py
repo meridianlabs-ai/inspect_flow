@@ -838,6 +838,13 @@ def test_checkpoint_from_string() -> None:
     assert task.checkpoint == CheckpointConfig(trigger=TurnInterval(every=5))
 
 
+def test_checkpoint_invalid_value() -> None:
+    with pytest.raises(ValidationError):
+        FlowTask.model_validate({"name": "t", "checkpoint": 12})
+    with pytest.raises(ValidationError):
+        FlowOptions.model_validate({"checkpoint": [1, 2]})
+
+
 def test_from_factory() -> None:
     config = FlowSpec(
         log_dir="example_logs",
