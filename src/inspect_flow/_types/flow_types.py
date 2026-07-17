@@ -39,7 +39,10 @@ from inspect_ai.util import (
     TokenLimit,
     TurnInterval,
 )
-from inspect_ai.util._checkpoint.parse_cli import _CheckpointConfigModel
+from inspect_ai.util._checkpoint.parse_cli import (
+    _CheckpointConfigModel,
+    parse_checkpoint,
+)
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -80,17 +83,21 @@ not_given = NotGiven(type="NOT_GIVEN")
 
 
 def _validate_checkpoint(value: Any) -> Any:
+    if isinstance(value, str):
+        return parse_checkpoint(value)
     if not isinstance(value, dict):
         return value
+    # an explicit null means the same as an absent key: inherit
+    value = {k: v for k, v in value.items() if v is not None}
     model = _CheckpointConfigModel.model_validate(
-        {**value, "trigger": value.get("trigger") or "manual"}
+        {**value, "trigger": value.get("trigger", "manual")}
     )
     config = model.to_dataclass()
     # _CheckpointConfigModel targets whole-file configs and fills in defaults; flow
     # checkpoint dicts are partial layers where an absent field means "inherit".
-    for name in ("trigger", "sandbox_paths", "retention"):
-        if value.get(name) is None:
-            setattr(config, name, None)
+    for field in dataclass_fields(config):
+        if field.name not in value:
+            setattr(config, field.name, None)
     return config
 
 
@@ -134,7 +141,8 @@ FlowCheckpoint: TypeAlias = Annotated[
 `CheckpointConfig` cannot be validated directly: its trigger union members are
 structurally identical dataclasses, so validating serialized data would lose the
 trigger kind. Serialize triggers in inspect's discriminated `_CheckpointConfigModel`
-form and validate through that model instead.
+form and validate through that model instead. Strings are parsed like the inspect
+CLI's `--checkpoint` value (e.g. `"manual"`, `"turn:5"`, `"token:500k"`).
 """
 
 

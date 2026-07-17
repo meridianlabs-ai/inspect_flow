@@ -819,6 +819,25 @@ def test_checkpoint_from_dict() -> None:
     assert task.checkpoint == CheckpointConfig(trigger=TokenInterval(every=500_000))
 
 
+def test_checkpoint_from_dict_with_explicit_nulls() -> None:
+    task = FlowTask.model_validate(
+        {
+            "name": "t",
+            "checkpoint": {
+                "trigger": "manual",
+                "sandbox_paths": None,
+                "retention": None,
+            },
+        }
+    )
+    assert task.checkpoint == CheckpointConfig(trigger=Manual())
+
+
+def test_checkpoint_from_string() -> None:
+    task = FlowTask.model_validate({"name": "t", "checkpoint": "turn:5"})
+    assert task.checkpoint == CheckpointConfig(trigger=TurnInterval(every=5))
+
+
 def test_from_factory() -> None:
     config = FlowSpec(
         log_dir="example_logs",
