@@ -8,6 +8,7 @@ import pytest
 from botocore.client import BaseClient
 from click.testing import CliRunner
 from inspect_ai import ScannerConfig, Task
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
@@ -412,6 +413,18 @@ def test_live_scanner_venv_error() -> None:
     with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
         _check_spec_for_venv(spec)
 
+    # As are scout's (name, Scanner) tuple entries
+    spec.options = FlowOptions(
+        scanner=ScannerConfig(scanners=[("kw", keyword_scanner())])
+    )
+    with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
+        _check_spec_for_venv(spec)
+
+    # A registry-name string entry gets a shape error, not the live-object one
+    spec.options = FlowOptions(scanner=ScannerConfig(scanners=["keyword_scanner"]))
+    with pytest.raises(ValueError, match="entries must be scanners"):
+        _check_spec_for_venv(spec)
+
     # A live Model in the scanner config is also rejected
     spec.options = FlowOptions(
         scanner=ScannerConfig(
@@ -492,6 +505,18 @@ def test_relative_scanner_path(mock_venv_subprocess: MockVenvSubprocess) -> None
         spec.options.scanner == Path("tests/config/scanners.yaml").resolve().as_posix()
     )
     mock_venv_subprocess.popen.assert_called_once()
+
+
+def test_missing_scanner_path_fails_at_launch() -> None:
+    # A typo'd scanner config path fails before the venv is built
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        options=FlowOptions(scanner="no_such_scanners.yaml"),
+        tasks=["local_eval/noop"],
+    )
+    with pytest.raises(PrerequisiteError, match="does not exist"):
+        launch(spec=spec, base_dir="tests/config/")
 
 
 def test_flow_process_error(mock_venv_subprocess: MockVenvSubprocess) -> None:

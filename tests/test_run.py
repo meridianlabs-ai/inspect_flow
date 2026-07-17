@@ -1194,6 +1194,11 @@ def test_eval_set_scanner_mixed_realized(mock_eval_set: MagicMock) -> None:
                         "params": {"keyword": "flow"},
                     },
                     live_scanner,
+                    {
+                        "name": "keyword_scanner",
+                        "file": task_dir + "/my_scanners.py",
+                        "params": {"keyword": "other"},
+                    },
                 ]
             )
         ),
@@ -1206,6 +1211,7 @@ def test_eval_set_scanner_mixed_realized(mock_eval_set: MagicMock) -> None:
     scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
     assert callable(scanner_arg.scanners[0])
     assert scanner_arg.scanners[1] is live_scanner
+    assert callable(scanner_arg.scanners[2])
 
 
 @pytest.mark.parametrize(
@@ -1305,6 +1311,11 @@ def test_eval_set_scanner_realized(
             {"kw": None},
             "dict values must be scanners",
             id="named_scanner_missing_value",
+        ),
+        pytest.param(
+            ["keyword_scanner"],
+            "entries must be scanners",
+            id="registry_name_string",
         ),
     ],
 )

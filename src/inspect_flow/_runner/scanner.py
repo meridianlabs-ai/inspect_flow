@@ -31,7 +31,19 @@ def _scanner_entries(scanners: Any) -> list[Any]:
             "list."
         )
     if isinstance(scanners, Sequence) and not isinstance(scanners, str):
-        return list(scanners)
+        entries = list(scanners)
+        for entry in entries:
+            # tuples are scout's (name, Scanner) form
+            if not (
+                is_scanner_spec(entry) or callable(entry) or isinstance(entry, tuple)
+            ):
+                raise ValueError(
+                    "ScannerConfig.scanners entries must be scanners or "
+                    f"scanner specs, got {type(entry).__name__}. To reference "
+                    "a registered scanner by name, use a spec entry like "
+                    '{"name": "keyword_scanner"}.'
+                )
+        return entries
     # reject bare values: they aren't valid eval_set input, and a bare
     # ScannerSpec serializes to a dict indistinguishable from named scanners
     raise ValueError(
@@ -41,22 +53,23 @@ def _scanner_entries(scanners: Any) -> list[Any]:
     )
 
 
-def _realize_entry(entry: Any) -> Any:
-    if is_scanner_spec(entry):
-        return _realize_scanner_specs([entry])[0]
-    return entry
-
-
 def resolve_scanner(scanner: str | ScannerConfig | None) -> ScannerConfig | None:
     if isinstance(scanner, str):
         return ScannerConfig.from_file(scanner)
     if not isinstance(scanner, ScannerConfig):
         return scanner
-    # realize per-entry so configs mixing spec-form and live scanners work too
     scanners = scanner.scanners
     _scanner_entries(scanners)  # reject invalid shapes with a clear error
+    # realize spec-form entries in one batch (so a shared file: module loads
+    # only once), leaving live scanners in place
     if isinstance(scanners, dict):
-        scanners = {k: _realize_entry(v) for k, v in scanners.items()}
+        realized = _realize_scanner_specs(
+            {k: v for k, v in scanners.items() if is_scanner_spec(v)}
+        )
+        scanners = {k: realized.get(k, v) for k, v in scanners.items()}
     elif scanners is not None:
-        scanners = [_realize_entry(entry) for entry in scanners]
+        realized_iter = iter(
+            _realize_scanner_specs([e for e in scanners if is_scanner_spec(e)])
+        )
+        scanners = [next(realized_iter) if is_scanner_spec(e) else e for e in scanners]
     return scanner.model_copy(update={"scanners": scanners})
