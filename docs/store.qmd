@@ -481,7 +481,7 @@ When [log matching](#log-matching) is enabled, the Flow Store matches logs using
 
 - Task name, model, solver, scorer, and task arguments
 - Model configuration (temperature, top_p, max_tokens, seed, etc.)
-- Task limits (message_limit, token_limit, turn_limit, time_limit, working_limit)
+- Task limits (message_limit, token_limit, turn_limit, time_limit, working_limit, cost_limit)
 - Approval and sandbox settings
 
 Note that `limit`, `sample_shuffle`, retry parameters, and parallelism settings are NOT included—these are runtime parameters that don't change what you're evaluating.

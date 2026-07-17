@@ -57,6 +57,7 @@ def _make_task(
     model: str | Model | None = None,
     epochs: int | Epochs | None = None,
     token_limit: int | TokenLimit | None = None,
+    cost_limit: float | None = None,
 ) -> Task:
     samples = [Sample(input=f"sample_{i}") for i in range(num_samples)]
     return Task(
@@ -65,6 +66,7 @@ def _make_task(
         model=model,
         epochs=epochs,
         token_limit=token_limit,
+        cost_limit=cost_limit,
     )
 
 
@@ -282,6 +284,16 @@ class TestUniqueTaskNames:
         result = unique_task_names([task_log_to_task_info(i) for i in infos])
         assert result.model_only is False
         assert "token_limit_type=output" in result.names[1][1].plain
+
+    def test_same_name_different_cost_limit(self) -> None:
+        model = get_model("mockllm/model-a")
+        t1 = _make_task("t", model=model, cost_limit=0.5)
+        t2 = _make_task("t", model=model, cost_limit=1.0)
+        infos = [TaskLogInfo(task=t1), TaskLogInfo(task=t2)]
+        result = unique_task_names([task_log_to_task_info(i) for i in infos])
+        assert result.model_only is False
+        assert "cost_limit=0.5" in result.names[0][1].plain
+        assert "cost_limit=1.0" in result.names[1][1].plain
 
     def test_factory_qualifiers(self) -> None:
         model = get_model("mockllm/model-a")

@@ -89,7 +89,18 @@ def _validate_checkpoint(value: Any) -> Any:
         # normalize inspect's veto sentinel to `False`, which round-trips as a veto
         # (the sentinel's all-`None` fields would serialize to an enabling `{}`)
         return False
-    if isinstance(value, (CheckpointConfig, bool)):
+    if isinstance(value, CheckpointConfig):
+        # reject here rather than in the serializer: pydantic swallows exceptions
+        # raised while serializing a union member and falls back to duck-typing
+        if value.trigger is not None and not isinstance(
+            value.trigger, (Manual, TurnInterval, TokenInterval, TimeInterval)
+        ):
+            raise ValueError(
+                f"Checkpoint trigger {value.trigger!r} cannot be used in a flow "
+                "config; use a manual, turn, time, or token trigger."
+            )
+        return value
+    if isinstance(value, bool):
         return value
     if isinstance(value, str):
         try:
@@ -131,10 +142,8 @@ def _serialize_checkpoint_trigger(trigger: CheckpointTrigger) -> str | dict[str,
             # :f avoids scientific notation, which _parse_duration rejects
             return {"type": "time", "every": f"{every.total_seconds():f}s"}
         case _:
-            raise ValueError(
-                f"Checkpoint trigger {trigger!r} cannot be used in a serialized flow "
-                "config; use a manual, turn, time, or token trigger."
-            )
+            # unreachable: _validate_checkpoint rejects other trigger types
+            raise AssertionError(f"Unsupported checkpoint trigger: {trigger!r}")
 
 
 def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:

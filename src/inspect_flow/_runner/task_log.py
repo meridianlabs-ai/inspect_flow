@@ -56,6 +56,7 @@ class TaskInfo:
     turn_limit: int | None = None
     time_limit: int | None = None
     working_limit: int | None = None
+    cost_limit: float | None = None
     config: GenerateConfig = field(default_factory=GenerateConfig)
 
 
@@ -86,6 +87,7 @@ def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
         turn_limit=task.turn_limit,
         time_limit=task.time_limit,
         working_limit=task.working_limit,
+        cost_limit=task.cost_limit,
         config=task.config,
     )
 
@@ -154,6 +156,7 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         _simple_attr("turn_limit"),
         _simple_attr("time_limit"),
         _simple_attr("working_limit"),
+        _simple_attr("cost_limit"),
         # GenerateConfig fields included in task_identifier
         # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
         _config("temperature"),

@@ -13,6 +13,7 @@ from inspect_ai.util import (
     TokenInterval,
     TurnInterval,
 )
+from inspect_ai.util._checkpoint._triggers.types import CostInterval
 from inspect_ai.util._checkpoint.config import CheckpointDisabled
 from inspect_flow import (
     FlowAgent,
@@ -851,6 +852,14 @@ def test_checkpoint_invalid_value() -> None:
         FlowTask.model_validate({"name": "t", "checkpoint": 12})
     with pytest.raises(ValidationError):
         FlowOptions.model_validate({"checkpoint": [1, 2]})
+
+
+def test_checkpoint_unsupported_trigger() -> None:
+    checkpoint = CheckpointConfig(trigger=CostInterval(every=1.0))
+    with pytest.raises(ValidationError, match="manual, turn, time, or token"):
+        FlowTask(name="t", checkpoint=checkpoint)
+    with pytest.raises(ValidationError, match="manual, turn, time, or token"):
+        FlowOptions(checkpoint=checkpoint)
 
 
 def test_checkpoint_invalid_string() -> None:
