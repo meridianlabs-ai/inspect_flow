@@ -69,3 +69,8 @@ jobs:
     with:
       pr_number: ${{ github.event.issue.number }}
       comment_author: ${{ github.event.comment.user.login }}
+      # Without this the loop derives the human to ping from the PR's
+      # "Fixes #N" issue author — which for PRs opened by the scheduled
+      # inspect-update workflow is the machine account, so convergence would
+      # ping i-am-marvin instead of a human.
+      handoff_mention: ransomr
