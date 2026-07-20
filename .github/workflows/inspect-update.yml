@@ -68,6 +68,19 @@ jobs:
             echo "proceed=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
+          # Any still-open inspect-update PR (regardless of version) means a
+          # prior release is mid-reconciliation and hasn't advanced the marker
+          # on main yet. Proceeding now would open a second PR whose changelog
+          # range is a superset of the first, both racing to edit the same
+          # marker line — so wait for it to land first.
+          open_prs=$(gh api -X GET search/issues \
+            -f q="repo:$GITHUB_REPOSITORY is:pull-request is:open label:inspect-update" \
+            --jq .total_count)
+          if [ "$open_prs" -gt 0 ]; then
+            echo "An inspect-update PR is still open; waiting for it to land before starting $LATEST."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Keyed on the inspect-update label + version in the title, open or
           # closed, so a release that was already processed (or explicitly
           # closed as won't-do) is never re-opened. The search API requires an
