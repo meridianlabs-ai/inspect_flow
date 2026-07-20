@@ -220,14 +220,21 @@ jobs:
                - If the full upgrade cannot produce a green build because a
                  dependency has not caught up to the reconciled release (e.g.
                  inspect-scout still imports a symbol inspect-ai renamed), do
-                 NOT commit a broken lock: hold the offending package(s) back
-                 at their last working version — either add a temporary
-                 upper-bound constraint in pyproject.toml and re-lock, or
-                 upgrade selectively with `uv lock --upgrade-package <pkg>` for
-                 only the packages that work — still advance the reconciled
-                 marker, and call out the blocking dependency in the issue with
-                 @ransomr so it can be picked up once the dependency releases a
-                 fix.
+                 NOT commit a broken lock. Hold the offending package(s) back at
+                 their last working version by adding a temporary
+                 `constraint-dependencies` entry under `[tool.uv]` in
+                 pyproject.toml and re-locking (prefer this over an upper bound
+                 in `[project] dependencies`, which would ship in the published
+                 wheel's metadata and constrain downstream installs). If no
+                 released version of the lagging dependency works with the
+                 reconciled inspect-ai at all (every release still imports the
+                 renamed symbol), the only green lock is one that also keeps
+                 inspect-ai itself at its previously locked version — do that as
+                 the last resort rather than chasing an unsatisfiable "upgrade
+                 inspect-ai AND stay green". Either way, still advance the
+                 reconciled marker (it is independent of the locked version) and
+                 call out the blocking dependency in the issue with @ransomr so
+                 it can be picked up once the dependency releases a fix.
 
             5. Push the branch and open ONE PR:
                gh pr create --base main --label auto --label inspect-update ...
