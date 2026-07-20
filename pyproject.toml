@@ -91,6 +91,13 @@ managed = true
 add-bounds = "lower"
 default-groups = ["dev"]
 
+[tool.inspect_flow]
+# Newest inspect-ai release whose CHANGELOG has been reconciled against flow's
+# API surface, advanced by .github/workflows/inspect-update.yml. Independent of
+# the `inspect-ai>=` dependency floor, which is only raised when a release
+# would completely break flow on older versions.
+inspect-reconciled-version = "0.3.246"
+
 [tool.pyright]
 include = ["src", "tests", "examples"]
 reportUnknownParameterType = true
