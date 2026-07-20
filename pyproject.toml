@@ -14,7 +14,7 @@ dependencies = [
     "click>=8.2.1",
     "dateparser>=1.2.0",
     "deltalake>=0.18.0",
-    "inspect-ai>=0.3.240",
+    "inspect-ai>=0.3.246",
     "inspect-scout>=0.4.41",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
@@ -90,6 +90,13 @@ allow-direct-references = true
 managed = true
 add-bounds = "lower"
 default-groups = ["dev"]
+
+[tool.inspect_flow]
+# Newest inspect-ai release whose CHANGELOG has been reconciled against flow's
+# API surface, advanced by .github/workflows/inspect-update.yml. Independent of
+# the `inspect-ai>=` dependency floor, which is only raised when a release
+# would completely break flow on older versions.
+inspect-reconciled-version = "0.3.246"
 
 [tool.pyright]
 include = ["src", "tests", "examples"]
