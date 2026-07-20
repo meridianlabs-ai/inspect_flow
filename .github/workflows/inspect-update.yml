@@ -203,16 +203,31 @@ jobs:
                the best-effort flow changes:
                - Advance the reconciled marker in pyproject.toml:
                  [tool.inspect_flow] inspect-reconciled-version = "${{ needs.check.outputs.latest }}"
-                 then run `uv lock` so the uv-lock pre-commit/CI hook stays
-                 green.
-               - If your changes reference inspect-ai APIs introduced in these
-                 releases, also upgrade the locked version
-                 (`uv lock --upgrade-package inspect-ai` then `uv sync`) so
-                 checks run against the new release. Do NOT raise the
-                 `inspect-ai>=` dependency floor unless flow would be
-                 completely broken on older versions.
+               - Upgrade all locked dependencies (`uv lock --upgrade` then
+                 `uv sync`) so the pinned CI checks run against the reconciled
+                 inspect-ai release and the latest of everything else, rather
+                 than stale pins. Do NOT raise the `inspect-ai>=` dependency
+                 floor unless flow would be completely broken on older
+                 versions.
+               - Regenerate the generated types after the upgrade
+                 (`python src/inspect_flow/_types/type_gen.py`) and commit any
+                 changes. type_gen copies inspect-ai's type/docstring surface
+                 verbatim, so even a docstring-only upstream change makes
+                 generated.py stale; the check-type-gen CI job regenerates
+                 against the locked inspect-ai and fails if it differs.
                - Verify with `ruff format`, `ruff check --fix`, `pyright`, and
                  the relevant tests before pushing.
+               - If the full upgrade cannot produce a green build because a
+                 dependency has not caught up to the reconciled release (e.g.
+                 inspect-scout still imports a symbol inspect-ai renamed), do
+                 NOT commit a broken lock: hold the offending package(s) back
+                 at their last working version — either add a temporary
+                 upper-bound constraint in pyproject.toml and re-lock, or
+                 upgrade selectively with `uv lock --upgrade-package <pkg>` for
+                 only the packages that work — still advance the reconciled
+                 marker, and call out the blocking dependency in the issue with
+                 @ransomr so it can be picked up once the dependency releases a
+                 fix.
 
             5. Push the branch and open ONE PR:
                gh pr create --base main --label auto --label inspect-update ...
