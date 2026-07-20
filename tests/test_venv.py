@@ -290,6 +290,15 @@ def test_715_collect_auto_dependencies_exclude_packages() -> None:
     assert "inspect_evals" in excluded
 
 
+def test_cloudflare_provider_adds_no_dependencies() -> None:
+    # inspect-ai 0.3.248 renamed the "cf" provider to "cloudflare"; neither
+    # prefix requires an extra package, so nothing should be auto-detected.
+    for model in ["cf/meta/llama-3.1-8b-instruct", "cloudflare/moonshotai/kimi-k3"]:
+        spec = FlowSpec(tasks=[FlowTask(name="inspect_evals/task_name", model=model)])
+        dependencies = collect_auto_dependencies(spec)
+        assert dependencies == ["inspect_evals"]
+
+
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
