@@ -290,6 +290,18 @@ def test_715_collect_auto_dependencies_exclude_packages() -> None:
     assert "inspect_evals" in excluded
 
 
+def test_cloudflare_provider_adds_openai_dependency() -> None:
+    # inspect-ai 0.3.248 renamed the "cf" provider to "cloudflare"; both
+    # prefixes use an OpenAI-compatible API that requires the openai package.
+    for model in ["cf/meta/llama-3.1-8b-instruct", "cloudflare/moonshotai/kimi-k3"]:
+        spec = FlowSpec(tasks=[FlowTask(name="inspect_evals/task_name", model=model)])
+        dependencies = collect_auto_dependencies(spec)
+        assert dependencies == [
+            "inspect_evals",
+            _get_pip_string_with_version("openai"),
+        ]
+
+
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
