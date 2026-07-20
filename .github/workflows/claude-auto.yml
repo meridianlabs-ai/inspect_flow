@@ -69,3 +69,11 @@ jobs:
     with:
       pr_number: ${{ github.event.issue.number }}
       comment_author: ${{ github.event.comment.user.login }}
+      # Without this the loop derives the human to ping from the PR's
+      # "Fixes #N" issue author — which for PRs opened by the scheduled
+      # inspect-update workflow is the machine account, so convergence would
+      # ping i-am-marvin instead of a human. This override is intentionally
+      # blanket: it applies to EVERY @auto PR in the repo, not just scheduled
+      # ones, so a human-kickoff @auto PR pings ransomr rather than its own
+      # issue author. That is the right convergence contact for this repo.
+      handoff_mention: ransomr
