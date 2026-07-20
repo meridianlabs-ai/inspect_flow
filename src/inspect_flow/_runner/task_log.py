@@ -52,8 +52,11 @@ class TaskInfo:
     version: int | str = 0
     message_limit: int | None = None
     token_limit: int | None = None
+    token_limit_type: str | None = None
+    turn_limit: int | None = None
     time_limit: int | None = None
     working_limit: int | None = None
+    cost_limit: float | None = None
     config: GenerateConfig = field(default_factory=GenerateConfig)
 
 
@@ -80,8 +83,11 @@ def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
         version=task.version,
         message_limit=task.message_limit,
         token_limit=task.token_limit,
+        token_limit_type=task.token_limit_type,
+        turn_limit=task.turn_limit,
         time_limit=task.time_limit,
         working_limit=task.working_limit,
+        cost_limit=task.cost_limit,
         config=task.config,
     )
 
@@ -146,8 +152,11 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         _simple_attr("version"),
         _simple_attr("message_limit"),
         _simple_attr("token_limit"),
+        _simple_attr("token_limit_type"),
+        _simple_attr("turn_limit"),
         _simple_attr("time_limit"),
         _simple_attr("working_limit"),
+        _simple_attr("cost_limit"),
         # GenerateConfig fields included in task_identifier
         # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
         _config("temperature"),
