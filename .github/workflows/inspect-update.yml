@@ -121,9 +121,13 @@ jobs:
       # Direct (headless) invocation, mirroring the dev-agent invocation in
       # meridianlabs-ai/agents/.github/workflows/claude.yml. The anthropic_*
       # values are Workload Identity Federation identifiers, not secrets. The
-      # settings allow-list is the same as the dev agent's, extended with
-      # curl/WebFetch scoped to fetching the inspect_ai CHANGELOG.
+      # settings allow-list is the same as the dev agent's, extended with a
+      # WebFetch rule scoped to raw.githubusercontent.com for the CHANGELOG.
+      # The allow-list already grants arbitrary network access via python/uv,
+      # so the MARVIN_TOKEN write scope — not the tool list — is the real
+      # privilege boundary for this changelog-ingesting agent.
       - uses: anthropics/claude-code-action@v1
+        id: claude
         with:
           anthropic_federation_rule_id: fdrl_01GpNgJm9jE6ZfvcqoJYQL2Y
           anthropic_organization_id: be5d0086-bc43-45d2-9184-20ecdd647aa7
@@ -132,7 +136,7 @@ jobs:
           github_token: ${{ secrets.MARVIN_TOKEN }}
           settings: >-
             {"permissions":{"allow":["Read","Edit","Write",
-            "WebFetch(domain:raw.githubusercontent.com)","Bash(curl:*)",
+            "WebFetch(domain:raw.githubusercontent.com)",
             "Bash(pytest:*)","Bash(ruff:*)","Bash(mypy:*)","Bash(pyright:*)","Bash(pip:*)",
             "Bash(pip3:*)","Bash(uv:*)","Bash(python:*)","Bash(python3:*)",
             "Bash(gh:*)",
@@ -155,8 +159,8 @@ jobs:
 
             Read CLAUDE.md first and follow it throughout.
 
-            1. Fetch the inspect_ai changelog at the release tag, e.g.
-               curl -fsSL https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.check.outputs.latest }}/CHANGELOG.md
+            1. Fetch the inspect_ai changelog at the release tag using WebFetch:
+               https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.check.outputs.latest }}/CHANGELOG.md
                and aggregate the entries for every version newer than
                ${{ needs.check.outputs.reconciled }} up to and including
                ${{ needs.check.outputs.latest }}.
@@ -217,3 +221,39 @@ jobs:
             Open exactly one issue and one PR, no more. If you cannot complete
             the task, comment on issue #766 describing what blocked you,
             mentioning @ransomr.
+
+      # Surface agent errors the action swallows. A model API error (overload /
+      # 529, a model 404, etc.) leaves the run green at the workflow level but
+      # with no result. Detect is_error in the execution log (or a failed
+      # action step) and fail the job so the run isn't a misleading success.
+      # This runs unattended, so the warning goes to standing issue #766 — and
+      # a *partial* failure (issue opened, PR not pushed) has already dedup'd
+      # this version, so recovery needs a human to close the orphan issue.
+      - name: Surface agent errors
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          EXEC: ${{ steps.claude.outputs.execution_file }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          set -uo pipefail
+          file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
+          err=""
+          [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
+          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" = "failure" ]; then
+            err="the Claude Code step failed before producing a result (see the job logs)."
+          fi
+          [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
+          echo "::error::Claude run did not complete: $err"
+          gh issue comment 766 --repo "$REPO" --body "$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete — it errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip). If an issue or PR was already opened for this version it is now deduplicated, so close the orphan before re-running. Re-trigger via workflow_dispatch on the Inspect Update workflow; if it persists see https://status.claude.com.' "$LATEST" "$err")" || true
+          exit 1
+
+      - name: Upload execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-execution-output
+          path: /home/runner/work/_temp/claude-execution-output.json
+          if-no-files-found: ignore
