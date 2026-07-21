@@ -96,7 +96,7 @@ default-groups = ["dev"]
 # API surface, advanced by .github/workflows/inspect-update.yml. Independent of
 # the `inspect-ai>=` dependency floor, which is only raised when a release
 # would completely break flow on older versions.
-inspect-reconciled-version = "0.3.248"
+inspect-reconciled-version = "0.3.249"
 
 [tool.pyright]
 include = ["src", "tests", "examples"]

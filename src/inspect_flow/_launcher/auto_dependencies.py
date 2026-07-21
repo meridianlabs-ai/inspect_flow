@@ -40,6 +40,7 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     "cf": ["openai"],  # renamed to "cloudflare" in inspect-ai 0.3.248
     "cloudflare": ["openai"],
     "mistral": ["mistralai"],
+    "moonshot": ["openai"],  # added in inspect-ai 0.3.249
     "grok": ["xai_sdk"],
     "together": ["openai"],
     "fireworks": ["openai"],

@@ -302,6 +302,19 @@ def test_cloudflare_provider_adds_openai_dependency() -> None:
         ]
 
 
+def test_moonshot_provider_adds_openai_dependency() -> None:
+    # inspect-ai 0.3.249 added the "moonshot" provider, which uses an
+    # OpenAI-compatible API that requires the openai package.
+    spec = FlowSpec(
+        tasks=[FlowTask(name="inspect_evals/task_name", model="moonshot/kimi-k3")]
+    )
+    dependencies = collect_auto_dependencies(spec)
+    assert dependencies == [
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
+    ]
+
+
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
