@@ -9,6 +9,7 @@ from inspect_ai._cli.util import (
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import (
     absolute_file_path,
     dirname,
@@ -28,7 +29,6 @@ from inspect_scout import (
 from inspect_scout import (
     scan as scout_scan,
 )
-from inspect_scout._cli.scan import _parse_validation
 from inspect_scout._project import read_project
 from inspect_scout._scanjob import (
     merge_project_into_scanjob,
@@ -195,7 +195,24 @@ def scan(
         scans = _canonical_path(scans) if scans else path_join(log_dir, "scans")
         _write_scout_project_file(scans=scans, transcripts=log_dir)
 
-    parsed_validation = _parse_validation(validation) if validation else None
+    if validation:
+        # Deferred: importing inspect_scout._cli pulls in inspect_ai._cli internals
+        # that can break when scout and inspect-ai versions are out of sync (e.g.
+        # scout <= 0.4.44 with inspect-ai >= 0.3.248), which would make all of
+        # inspect_flow.api unimportable if done at module level.
+        try:
+            from inspect_scout._cli.scan import _parse_validation
+        except ImportError as ex:
+            raise PrerequisiteError(
+                "validation requires importing inspect_scout._cli, which failed. "
+                "This usually means the installed inspect-scout is incompatible "
+                "with the installed inspect-ai; upgrade inspect-scout to a version "
+                "compatible with the installed inspect-ai."
+            ) from ex
+
+        parsed_validation = _parse_validation(validation)
+    else:
+        parsed_validation = None
     parsed_model_args = (
         parse_cli_config(m, model_config) if (m or model_config) else None
     )
