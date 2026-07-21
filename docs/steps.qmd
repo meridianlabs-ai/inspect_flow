@@ -92,6 +92,8 @@ flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
 
 Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
 
+The `scan` step runs after the eval set completes. To instead run scanners inline against each sample *during* the run, set `scanner` on `FlowOptions` to a path to a scanner config file (or a `ScannerConfig`) — this maps to the `scanner` parameter of Inspect's `eval_set()`. The config file path is resolved relative to the config file (CLI) or `base_dir` (API), but any `file:` references *inside* the scanner config are resolved by Inspect Scout relative to the current working directory, so prefer absolute `file:` paths when running from a different directory.
+
 ## Custom Steps
 
 Define custom steps with the `@step` decorator. A step is a function that takes a `list[EvalLog]` and returns a `list[EvalLog]`:
