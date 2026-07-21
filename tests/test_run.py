@@ -1181,39 +1181,6 @@ def test_eval_set_scanner_config(mock_eval_set: MagicMock) -> None:
     assert scanner_arg.scanners[0] is live_scanner
 
 
-def test_eval_set_scanner_mixed_realized(mock_eval_set: MagicMock) -> None:
-    live_scanner = keyword_scanner(keyword="flow")
-    spec = FlowSpec(
-        log_dir=init_test_logs(),
-        options=FlowOptions(
-            scanner=ScannerConfig(
-                scanners=[
-                    {
-                        "name": "keyword_scanner",
-                        "file": task_dir + "/my_scanners.py",
-                        "params": {"keyword": "flow"},
-                    },
-                    live_scanner,
-                    {
-                        "name": "keyword_scanner",
-                        "file": task_dir + "/my_scanners.py",
-                        "params": {"keyword": "other"},
-                    },
-                ]
-            )
-        ),
-        tasks=[task_file + "@noop"],
-    )
-
-    run_eval_set(spec=spec, base_dir=".")
-
-    mock_eval_set.assert_called_once()
-    scanner_arg = mock_eval_set.call_args.kwargs["scanner"]
-    assert callable(scanner_arg.scanners[0])
-    assert scanner_arg.scanners[1] is live_scanner
-    assert callable(scanner_arg.scanners[2])
-
-
 @pytest.mark.parametrize(
     "scanner",
     [
@@ -1294,46 +1261,20 @@ def test_eval_set_scanner_realized(
     assert callable(entries[0])
 
 
-@pytest.mark.parametrize(
-    ("scanners", "error"),
-    [
-        pytest.param(
-            ScannerSpec(name="keyword_scanner"),
-            "Wrap a single scanner in a list",
-            id="bare_spec",
-        ),
-        pytest.param(
-            {"name": "keyword_scanner", "params": {"keyword": "flow"}},
-            "dict values must be scanners",
-            id="bare_spec_dict",
-        ),
-        pytest.param(
-            {"kw": None},
-            "dict values must be scanners",
-            id="named_scanner_missing_value",
-        ),
-        pytest.param(
-            ["keyword_scanner"],
-            "entries must be scanners",
-            id="registry_name_string",
-        ),
-    ],
-)
-def test_eval_set_scanner_bare_value_error(
-    mock_eval_set: MagicMock, scanners: Any, error: str
-) -> None:
-    # A bare or malformed scanners value is rejected with a clear message
-    # rather than reaching eval_set unrealized
+def test_eval_set_scanner_non_spec_passthrough(mock_eval_set: MagicMock) -> None:
+    # A ScannerConfig that isn't purely spec-form is passed through untouched;
+    # shape validation is delegated to inspect_ai / scout at scan time.
+    scanners = ["keyword_scanner"]
     spec = FlowSpec(
         log_dir=init_test_logs(),
         options=FlowOptions(scanner=ScannerConfig(scanners=scanners)),
         tasks=[task_file + "@noop"],
     )
 
-    with pytest.raises(FlowHandledError) as e:
-        run_eval_set(spec=spec, base_dir=".")
-    assert error in str(e.value.__cause__)
-    mock_eval_set.assert_not_called()
+    run_eval_set(spec=spec, base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["scanner"].scanners == scanners
 
 
 def test_eval_set_no_scanner(mock_eval_set: MagicMock) -> None:

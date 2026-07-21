@@ -172,10 +172,9 @@ def _venv_spawn(
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:
     scanner = default_none(spec.options.scanner) if spec.options else None
-    # scanner_entries also rejects malformed scanners shapes with a ValueError
     if any(not is_scanner_spec(entry) for entry in scanner_entries(scanner)):
         raise ValueError(
-            "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided a ScannerConfig containing already-instantiated Scanner objects, which can not be serialized/recreated. Fix: set options.scanner to a path to a scanner config file or run using 'inproc' execution type."
+            'In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. The provided ScannerConfig has scanners that are not serializable spec references (e.g. already-instantiated Scanner objects), which can not be serialized/recreated. Fix: set options.scanner to a path to a scanner config file, use scanner spec references (e.g. {"name": "keyword_scanner"}), or run using \'inproc\' execution type.'
         )
     if isinstance(scanner, ScannerConfig):
         scanner_models = [scanner.model, *(scanner.model_roles or {}).values()]

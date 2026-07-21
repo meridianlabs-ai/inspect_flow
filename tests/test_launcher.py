@@ -398,92 +398,58 @@ def test_instantiated_venv_error() -> None:
 
 
 def test_live_scanner_venv_error() -> None:
+    # In venv mode the spec is serialized, so only spec references (dicts /
+    # ScannerSpec instances) or a config file path survive. Anything else is
+    # rejected with a single clear message; scout owns shape validation of the
+    # spec references themselves.
+    not_serializable = "not serializable spec references"
+
     spec = FlowSpec(
         execution_type="venv",
         log_dir="logs",
         options=FlowOptions(scanner=ScannerConfig(scanners=[keyword_scanner()])),
         tasks=["local_eval/noop"],
     )
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError, match=not_serializable):
         launch(spec=spec, base_dir=".")
-    assert "already-instantiated Scanner objects" in str(e.value)
 
-    # Any Sequence of live scanners is rejected, not just a list
-    spec.options = FlowOptions(scanner=ScannerConfig(scanners=(keyword_scanner(),)))
-    with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
-        _check_spec_for_venv(spec)
+    # Every shape that carries a live Scanner (any sequence, scout's
+    # (name, Scanner) tuples, a bare scanner) is rejected the same way.
+    for scanners in (
+        (keyword_scanner(),),
+        [("kw", keyword_scanner())],
+        keyword_scanner(),
+        ["keyword_scanner"],
+    ):
+        spec.options = FlowOptions(scanner=ScannerConfig(scanners=scanners))
+        with pytest.raises(ValueError, match=not_serializable):
+            _check_spec_for_venv(spec)
 
-    # As are scout's (name, Scanner) tuple entries
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners=[("kw", keyword_scanner())])
-    )
-    with pytest.raises(ValueError, match="already-instantiated Scanner objects"):
-        _check_spec_for_venv(spec)
+    # A live Model in the scanner config (directly or via model_roles) is also
+    # rejected.
+    specs = [{"name": "keyword_scanner"}]
+    for scanner in (
+        ScannerConfig(scanners=specs, model=get_model("mockllm/model")),
+        ScannerConfig(
+            scanners=specs, model_roles={"grader": get_model("mockllm/model")}
+        ),
+    ):
+        spec.options = FlowOptions(scanner=scanner)
+        with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
+            _check_spec_for_venv(spec)
 
-    # A registry-name string entry gets a shape error, not the live-object one
-    spec.options = FlowOptions(scanner=ScannerConfig(scanners=["keyword_scanner"]))
-    with pytest.raises(ValueError, match="entries must be scanners"):
+    # A config file path, or a config whose scanners are all spec references
+    # (list or dict of dicts / ScannerSpec instances, or a bare ScannerSpec),
+    # serializes cleanly and should not throw.
+    for scanner in (
+        "tests/config/scanners.yaml",
+        ScannerConfig(scanners=[{"name": "keyword_scanner"}]),
+        ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")]),
+        ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}}),
+        ScannerConfig(scanners=ScannerSpec(name="keyword_scanner")),
+    ):
+        spec.options = FlowOptions(scanner=scanner)
         _check_spec_for_venv(spec)
-
-    # A live Model in the scanner config is also rejected
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(
-            scanners=[{"name": "keyword_scanner"}], model=get_model("mockllm/model")
-        )
-    )
-    with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
-        _check_spec_for_venv(spec)
-
-    # A bare scanners value (not wrapped in a sequence) is rejected — live or
-    # spec-form, its serialized form is ambiguous with a dict of named scanners
-    spec.options = FlowOptions(scanner=ScannerConfig(scanners=keyword_scanner()))
-    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
-        _check_spec_for_venv(spec)
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners=ScannerSpec(name="keyword_scanner"))
-    )
-    with pytest.raises(ValueError, match="Wrap a single scanner in a list"):
-        _check_spec_for_venv(spec)
-
-    # A bare spec dict (e.g. a YAML mapping missing its list dash) is rejected
-    # rather than misread as a dict of named scanners
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners={"name": "keyword_scanner"})
-    )
-    with pytest.raises(ValueError, match="dict values must be scanners"):
-        _check_spec_for_venv(spec)
-
-    # As is a named-scanner dict whose value is missing/invalid
-    spec.options = FlowOptions(scanner=ScannerConfig(scanners={"kw": None}))
-    with pytest.raises(ValueError, match="dict values must be scanners"):
-        _check_spec_for_venv(spec)
-
-    # A live Model in the scanner config model_roles is also rejected
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(
-            scanners=[{"name": "keyword_scanner"}],
-            model_roles={"grader": get_model("mockllm/model")},
-        )
-    )
-    with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
-        _check_spec_for_venv(spec)
-
-    # A config file path or a config of ScannerSpecs (dicts or instances)
-    # should not throw
-    spec.options = FlowOptions(scanner="tests/config/scanners.yaml")
-    _check_spec_for_venv(spec)
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners=[{"name": "keyword_scanner"}])
-    )
-    _check_spec_for_venv(spec)
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")])
-    )
-    _check_spec_for_venv(spec)
-    spec.options = FlowOptions(
-        scanner=ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}})
-    )
-    _check_spec_for_venv(spec)
 
 
 def test_relative_scanner_path(mock_venv_subprocess: MockVenvSubprocess) -> None:
