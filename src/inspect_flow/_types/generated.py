@@ -281,7 +281,7 @@ class GenerateConfigDict(TypedDict):
     """Model generation options."""
 
     max_retries: NotRequired[int | None]
-    """Maximum number of times to retry request, so e.g. 1 allows two attempts total (defaults to unlimited)."""
+    """Maximum number of times to retry request (defaults to unlimited)."""
     timeout: NotRequired[int | None]
     """Timeout (in seconds) for an entire request (including retries)."""
     attempt_timeout: NotRequired[int | None]
