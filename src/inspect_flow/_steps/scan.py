@@ -199,7 +199,14 @@ def scan(
         # that can break when scout and inspect-ai versions are out of sync (e.g.
         # scout <= 0.4.44 with inspect-ai >= 0.3.248), which would make all of
         # inspect_flow.api unimportable if done at module level.
-        from inspect_scout._cli.scan import _parse_validation
+        try:
+            from inspect_scout._cli.scan import _parse_validation
+        except ImportError as ex:
+            raise RuntimeError(
+                "validation requires importing inspect_scout._cli, which failed. "
+                "This usually means the installed inspect-scout is incompatible "
+                "with the installed inspect-ai; upgrade inspect-scout."
+            ) from ex
 
         parsed_validation = _parse_validation(validation)
     else:

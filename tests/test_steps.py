@@ -1248,6 +1248,24 @@ def test_scan_default_scans_absolute_when_location_is_file_uri(
     assert project == {"transcripts": str(tmp_path), "scans": expected_scans}
 
 
+def test_scan_validation_actionable_error_on_scout_import_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When inspect_scout._cli is unimportable (scout/inspect-ai version skew),
+    scan(validation=...) raises an actionable error instead of a raw ImportError."""
+    import sys
+
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+    # Setting a sys.modules entry to None makes its import raise ImportError,
+    # simulating the version skew regardless of the installed scout version.
+    monkeypatch.setitem(sys.modules, "inspect_scout._cli.scan", None)
+
+    with pytest.raises(RuntimeError, match="upgrade inspect-scout"):
+        scan([log], scanners=[], validation=("validation.yaml",))
+
+
 def test_cli_scan_help_describes_default_scans() -> None:
     """`flow step scan --help` documents the inferred --scans default."""
     from click.testing import CliRunner
