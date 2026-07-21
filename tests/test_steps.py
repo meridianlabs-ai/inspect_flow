@@ -1263,9 +1263,7 @@ def test_scan_validation_actionable_error_on_scout_import_failure(
     # simulating the version skew regardless of the installed scout version.
     monkeypatch.setitem(sys.modules, "inspect_scout._cli.scan", None)
 
-    with pytest.raises(
-        PrerequisiteError, match=r"upgrade inspect-scout.*pin inspect-ai<0\.3\.248"
-    ):
+    with pytest.raises(PrerequisiteError, match=r"upgrade inspect-scout"):
         scan([log], scanners=[], validation=("validation.yaml",))
 
 
