@@ -7,7 +7,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, List, Literal, Sequence
 
-from inspect_ai import Task
+from inspect_ai import ScannerConfig, Task
 from inspect_ai._util.file import absolute_file_path
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
@@ -28,9 +28,11 @@ from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
+from inspect_flow._runner.scanner import is_scanner_spec, scanner_entries
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.console import path
 from inspect_flow._util.logging import get_last_log_level
+from inspect_flow._util.not_given import default_none
 from inspect_flow._util.path_util import absolute_path_relative_to
 from inspect_flow._util.subprocess_util import (
     CHILD_READY_FD_ENV,
@@ -169,6 +171,17 @@ def _venv_spawn(
 
 
 def _check_spec_for_venv(spec: FlowSpec) -> None:
+    scanner = default_none(spec.options.scanner) if spec.options else None
+    if any(not is_scanner_spec(entry) for entry in scanner_entries(scanner)):
+        raise ValueError(
+            'In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. The provided ScannerConfig has scanners that are not serializable spec references (e.g. already-instantiated Scanner objects), which can not be serialized/recreated. Fix: set options.scanner to a path to a scanner config file, use scanner spec references (e.g. {"name": "keyword_scanner"}), or run using \'inproc\' execution type.'
+        )
+    if isinstance(scanner, ScannerConfig):
+        scanner_models = [scanner.model, *(scanner.model_roles or {}).values()]
+        if any(isinstance(model, Model) for model in scanner_models):
+            raise ValueError(
+                "In venv execution, Inspect Flow serializes the spec so it can be recreated inside the virtualenv process. You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which can not be serialized/recreated. Fix: use a model name string or run using 'inproc' execution type."
+            )
     for task in spec.tasks or []:
         if isinstance(task, Task):
             raise ValueError(

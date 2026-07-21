@@ -1,0 +1,5 @@
+scanners:
+  - name: keyword_scanner
+    file: tests/local_eval/src/local_eval/my_scanners.py
+    params:
+      keyword: flow

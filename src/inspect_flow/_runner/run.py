@@ -35,6 +35,7 @@ from inspect_flow._runner.logs import (
     num_log_samples,
 )
 from inspect_flow._runner.resolve import resolve_spec
+from inspect_flow._runner.scanner import resolve_scanner
 from inspect_flow._runner.task_log import TaskLogInfo, create_task_log_display
 from inspect_flow._store.store import FlowStoreInternal, store_factory
 from inspect_flow._types.after_instantiate import run_after_instantiate_hooks
@@ -188,6 +189,7 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
             acp_server=default_none(options.acp_server),
             ctl_server=default_none(options.ctl_server),
             # solver= FlowTask
+            scanner=resolve_scanner(default_none(options.scanner)),
             tags=sequence_to_list(default_none(options.tags)),
             metadata=default_none(options.metadata),
             trace=default_none(options.trace),

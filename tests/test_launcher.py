@@ -7,7 +7,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.client import BaseClient
 from click.testing import CliRunner
-from inspect_ai import Task
+from inspect_ai import ScannerConfig, Task
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
@@ -18,9 +19,11 @@ from inspect_flow._launcher.launch import launch
 from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
 from inspect_flow._runner.cli import runner
 from inspect_flow._runner.run import LaunchResult
-from inspect_flow._types.flow_types import FlowSolver, FlowTask
+from inspect_flow._types.flow_types import FlowOptions, FlowSolver, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
+from inspect_scout import ScannerSpec
+from local_eval.my_scanners import keyword_scanner
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
@@ -392,6 +395,94 @@ def test_instantiated_venv_error() -> None:
         tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
     )
     _check_spec_for_venv(spec)
+
+
+def test_live_scanner_venv_error() -> None:
+    # In venv mode the spec is serialized, so only spec references (dicts /
+    # ScannerSpec instances) or a config file path survive. Anything else is
+    # rejected with a single clear message; scout owns shape validation of the
+    # spec references themselves.
+    not_serializable = "not serializable spec references"
+
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        options=FlowOptions(scanner=ScannerConfig(scanners=[keyword_scanner()])),
+        tasks=["local_eval/noop"],
+    )
+    with pytest.raises(ValueError, match=not_serializable):
+        launch(spec=spec, base_dir=".")
+
+    # Every shape that carries a live Scanner (any sequence, scout's
+    # (name, Scanner) tuples, a bare scanner) is rejected the same way.
+    for scanners in (
+        (keyword_scanner(),),
+        [("kw", keyword_scanner())],
+        keyword_scanner(),
+        ["keyword_scanner"],
+    ):
+        spec.options = FlowOptions(scanner=ScannerConfig(scanners=scanners))
+        with pytest.raises(ValueError, match=not_serializable):
+            _check_spec_for_venv(spec)
+
+    # A live Model in the scanner config (directly or via model_roles) is also
+    # rejected.
+    specs = [{"name": "keyword_scanner"}]
+    for scanner in (
+        ScannerConfig(scanners=specs, model=get_model("mockllm/model")),
+        ScannerConfig(
+            scanners=specs, model_roles={"grader": get_model("mockllm/model")}
+        ),
+    ):
+        spec.options = FlowOptions(scanner=scanner)
+        with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
+            _check_spec_for_venv(spec)
+
+    # A config file path, or a config whose scanners are all spec references
+    # (list or dict of dicts / ScannerSpec instances, or a bare ScannerSpec),
+    # serializes cleanly and should not throw.
+    for scanner in (
+        "tests/config/scanners.yaml",
+        ScannerConfig(scanners=[{"name": "keyword_scanner"}]),
+        ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")]),
+        ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}}),
+        ScannerConfig(scanners=ScannerSpec(name="keyword_scanner")),
+    ):
+        spec.options = FlowOptions(scanner=scanner)
+        _check_spec_for_venv(spec)
+
+
+def test_relative_scanner_path(mock_venv_subprocess: MockVenvSubprocess) -> None:
+    with patch("inspect_flow._launcher.venv._create_venv") as mock_create_venv:
+        spec = int_load_spec(
+            "./tests/config/e2e_test_flow.py",
+            options=ConfigOptions(overrides=["options.scanner=scanners.yaml"]),
+        )
+        spec.execution_type = "venv"
+        launch(
+            spec=spec,
+            base_dir="tests/config/",
+        )
+
+    mock_create_venv.assert_called_once()
+    spec = mock_call_arg(_create_venv, mock_create_venv, "spec")
+    assert spec.options
+    assert (
+        spec.options.scanner == Path("tests/config/scanners.yaml").resolve().as_posix()
+    )
+    mock_venv_subprocess.popen.assert_called_once()
+
+
+def test_missing_scanner_path_fails_at_launch() -> None:
+    # A typo'd scanner config path fails before the venv is built
+    spec = FlowSpec(
+        execution_type="venv",
+        log_dir="logs",
+        options=FlowOptions(scanner="no_such_scanners.yaml"),
+        tasks=["local_eval/noop"],
+    )
+    with pytest.raises(PrerequisiteError, match="does not exist"):
+        launch(spec=spec, base_dir="tests/config/")
 
 
 def test_flow_process_error(mock_venv_subprocess: MockVenvSubprocess) -> None:

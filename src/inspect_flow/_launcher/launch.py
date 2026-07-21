@@ -1,6 +1,9 @@
 from logging import getLogger
 from typing import Any, NamedTuple
 
+from inspect_ai._util.error import PrerequisiteError
+from inspect_ai._util.file import filesystem
+
 from inspect_flow._launcher.inproc import (
     inproc_check,
     inproc_dry_run,
@@ -40,6 +43,17 @@ def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
                 absolute_path_relative_to(k, base_dir=base_dir): v
                 for k, v in spec.options.bundle_url_mappings.items()
             }
+
+    if spec.options and isinstance(spec.options.scanner, str):
+        scanner_path = absolute_path_relative_to(
+            spec.options.scanner, base_dir=base_dir
+        )
+        # fail fast on a typo'd path rather than after the venv build
+        if not filesystem(scanner_path).exists(scanner_path):
+            raise PrerequisiteError(
+                f"Scanner config file '{scanner_path}' does not exist."
+            )
+        spec.options.scanner = scanner_path
 
 
 def launch(
