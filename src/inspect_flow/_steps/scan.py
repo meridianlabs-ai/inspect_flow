@@ -9,6 +9,7 @@ from inspect_ai._cli.util import (
     parse_model_role_cli_args,
 )
 from inspect_ai._util.config import resolve_args
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai._util.file import (
     absolute_file_path,
     dirname,
@@ -202,7 +203,7 @@ def scan(
         try:
             from inspect_scout._cli.scan import _parse_validation
         except ImportError as ex:
-            raise RuntimeError(
+            raise PrerequisiteError(
                 "validation requires importing inspect_scout._cli, which failed. "
                 "This usually means the installed inspect-scout is incompatible "
                 "with the installed inspect-ai; upgrade inspect-scout."

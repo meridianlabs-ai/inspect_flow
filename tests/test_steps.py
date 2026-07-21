@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from botocore.client import BaseClient
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.log import (
     EvalConfig,
     EvalDataset,
@@ -1262,7 +1263,7 @@ def test_scan_validation_actionable_error_on_scout_import_failure(
     # simulating the version skew regardless of the installed scout version.
     monkeypatch.setitem(sys.modules, "inspect_scout._cli.scan", None)
 
-    with pytest.raises(RuntimeError, match="upgrade inspect-scout"):
+    with pytest.raises(PrerequisiteError, match="upgrade inspect-scout"):
         scan([log], scanners=[], validation=("validation.yaml",))
 
 
