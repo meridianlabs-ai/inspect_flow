@@ -544,7 +544,7 @@ class FlowOptions(FlowBase):
 
     scanner: str | ScannerConfig | None | NotGiven = Field(
         default=not_given,
-        description="Scanners to run inline against each sample as the eval set runs. Either a path to a scanner config file (loaded via `ScannerConfig.from_file()`) or a `ScannerConfig`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). To scan transcripts after the run completes, use the `scan` step instead.",
+        description="Scanners to run inline against each sample as the eval set runs. Either a path to a scanner config file (loaded via `ScannerConfig.from_file()`) or a `ScannerConfig`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). Note that `file:` references *within* a scanner config are resolved by Inspect Scout relative to the current working directory, not the config file — prefer absolute `file:` paths when running from a different directory. To scan transcripts after the run completes, use the `scan` step instead.",
     )
 
     tags: Sequence[str] | None | NotGiven = Field(
