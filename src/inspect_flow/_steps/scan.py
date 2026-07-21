@@ -206,7 +206,8 @@ def scan(
             raise PrerequisiteError(
                 "validation requires importing inspect_scout._cli, which failed. "
                 "This usually means the installed inspect-scout is incompatible "
-                "with the installed inspect-ai; upgrade inspect-scout."
+                "with the installed inspect-ai; upgrade inspect-scout to a version "
+                "compatible with the installed inspect-ai, or pin inspect-ai<0.3.248."
             ) from ex
 
         parsed_validation = _parse_validation(validation)
