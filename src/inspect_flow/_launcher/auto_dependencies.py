@@ -37,7 +37,8 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     "google": ["google-genai"],
     "hf": ["torch", "transformers", "accelerate"],
     "vllm": ["vllm"],
-    "cf": [],
+    "cf": ["openai"],  # renamed to "cloudflare" in inspect-ai 0.3.248
+    "cloudflare": ["openai"],
     "mistral": ["mistralai"],
     "grok": ["xai_sdk"],
     "together": ["openai"],

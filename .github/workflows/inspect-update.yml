@@ -1,0 +1,294 @@
+# Weekly check for new inspect-ai features to surface in flow (issue #766).
+#
+# Deterministic parts run inline: read the last-reconciled inspect-ai version
+# from [tool.inspect_flow] in pyproject.toml, compare against the latest PyPI
+# release, and dedup against existing `inspect-update` issues/PRs — no-op if
+# the latest release is already handled. Only when there is genuinely new work
+# does it invoke the dev agent (claude-code-action, headless) to read the
+# aggregated CHANGELOG entries, map them to flow surfaces, and open ONE issue
+# plus ONE `auto`-labeled PR. From there the existing machinery takes over:
+# the reviewer auto-reviews the PR on open, its summary trips the review->fix
+# loop in claude-auto.yml, and CI failures trip the CI-fix loop.
+#
+# The agent authenticates to GitHub as the machine account (MARVIN_TOKEN) so
+# the PR it opens triggers CI and the reviewer — a GITHUB_TOKEN-authored PR is
+# silently dropped by GitHub's Actions recursion guard and the loop would
+# never start. A scheduled job also cannot summon the agent via @auto (the
+# kickoff gates reject machine/bot actors), which is why claude-code-action is
+# invoked directly here: the workflow is the trigger and passes the prompt.
+
+name: Inspect Update
+
+on:
+  schedule:
+    # Mondays 18:00 UTC = 2 PM EDT / 1 PM EST (GitHub cron is UTC-only and
+    # does not observe DST). The version dedup below makes any extra or
+    # manually-dispatched run harmless.
+    - cron: "0 18 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: inspect-update
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      proceed: ${{ steps.decide.outputs.proceed }}
+      latest: ${{ steps.versions.outputs.latest }}
+      reconciled: ${{ steps.versions.outputs.reconciled }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read latest and last-reconciled inspect-ai versions
+        id: versions
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://pypi.org/pypi/inspect-ai/json | jq -r .info.version)
+          reconciled=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['tool']['inspect_flow']['inspect-reconciled-version'])")
+          echo "latest=$latest" >>"$GITHUB_OUTPUT"
+          echo "reconciled=$reconciled" >>"$GITHUB_OUTPUT"
+          echo "Latest inspect-ai release: $latest; last reconciled: $reconciled"
+
+      - name: Dedup before doing any work
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.versions.outputs.latest }}
+          RECONCILED: ${{ steps.versions.outputs.reconciled }}
+        run: |
+          set -euo pipefail
+          if [ "$LATEST" = "$RECONCILED" ] || \
+             [ "$(printf '%s\n' "$RECONCILED" "$LATEST" | sort -V | tail -n 1)" = "$RECONCILED" ]; then
+            echo "Already reconciled up to $RECONCILED; nothing to do."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Any still-open inspect-update PR (regardless of version) means a
+          # prior release is mid-reconciliation and hasn't advanced the marker
+          # on main yet. Proceeding now would open a second PR whose changelog
+          # range is a superset of the first, both racing to edit the same
+          # marker line — so wait for it to land first.
+          open_prs=$(gh api -X GET search/issues \
+            -f q="repo:$GITHUB_REPOSITORY is:pull-request is:open label:inspect-update" \
+            --jq .total_count)
+          if [ "$open_prs" -gt 0 ]; then
+            echo "An inspect-update PR is still open; waiting for it to land before starting $LATEST."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Keyed on the inspect-update label + version in the title, open or
+          # closed, so a release that was already processed (or explicitly
+          # closed as won't-do) is never re-opened. The search API requires an
+          # is:issue / is:pull-request qualifier, hence two queries.
+          count=0
+          for kind in issue pull-request; do
+            n=$(gh api -X GET search/issues \
+              -f q="repo:$GITHUB_REPOSITORY is:$kind label:inspect-update \"$LATEST\" in:title" \
+              --jq .total_count)
+            count=$((count + n))
+          done
+          if [ "$count" -gt 0 ]; then
+            echo "Found $count existing inspect-update issue(s)/PR(s) for $LATEST; nothing to do."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "inspect-ai $LATEST is unprocessed; proceeding."
+            echo "proceed=true" >>"$GITHUB_OUTPUT"
+          fi
+
+  update:
+    needs: check
+    if: needs.check.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write # required for the Anthropic WIF OIDC exchange
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Same convention the reusable dev-agent workflow uses: provision the
+      # project venv so the agent can run pytest/ruff/pyright and introspect
+      # installed inspect_ai signatures.
+      - name: Provision project environment
+        uses: ./.github/actions/claude-setup
+
+      # The label keys the dedup in the check job and opts future searches in;
+      # create it up front so `gh pr create --label` can't fail. Idempotent.
+      - name: Ensure inspect-update label exists
+        env:
+          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+        run: |
+          gh label create inspect-update --repo "$GITHUB_REPOSITORY" \
+            --description "Automated inspect-ai release reconciliation" \
+            --color 1D76DB || true
+
+      # Direct (headless) invocation, mirroring the dev-agent invocation in
+      # meridianlabs-ai/agents/.github/workflows/claude.yml. The anthropic_*
+      # values are Workload Identity Federation identifiers, not secrets. The
+      # settings allow-list is the same as the dev agent's, extended with a
+      # WebFetch rule scoped to raw.githubusercontent.com for the CHANGELOG.
+      # The allow-list already grants arbitrary network access via python/uv,
+      # so the MARVIN_TOKEN write scope — not the tool list — is the real
+      # privilege boundary for this changelog-ingesting agent.
+      - uses: anthropics/claude-code-action@v1
+        id: claude
+        with:
+          anthropic_federation_rule_id: fdrl_01GpNgJm9jE6ZfvcqoJYQL2Y
+          anthropic_organization_id: be5d0086-bc43-45d2-9184-20ecdd647aa7
+          anthropic_service_account_id: svac_01RL4wYD7ikbypwYKf4wFojv
+          anthropic_workspace_id: wrkspc_01RKCQ5DTPBatQ7kHLkaEueD
+          github_token: ${{ secrets.MARVIN_TOKEN }}
+          settings: >-
+            {"permissions":{"allow":["Read","Edit","Write",
+            "WebFetch(domain:raw.githubusercontent.com)",
+            "Bash(pytest:*)","Bash(ruff:*)","Bash(mypy:*)","Bash(pyright:*)","Bash(pip:*)",
+            "Bash(pip3:*)","Bash(uv:*)","Bash(python:*)","Bash(python3:*)",
+            "Bash(gh:*)",
+            "Bash(git fetch:*)","Bash(git merge:*)","Bash(git rebase:*)",
+            "Bash(git push:*)","Bash(git checkout:*)","Bash(git switch:*)",
+            "Bash(git branch:*)","Bash(git status:*)","Bash(git log:*)",
+            "Bash(git diff:*)","Bash(git show:*)","Bash(git rev-parse:*)",
+            "Bash(git remote:*)",
+            "Bash(git add:*)","Bash(git commit:*)","Bash(git config:*)"]}}
+          claude_args: >-
+            --model fable
+            --fallback-model default
+          prompt: |
+            You are the weekly inspect-ai reconciliation agent for inspect_flow
+            (automates issue #766). inspect-ai releases newer than
+            ${{ needs.check.outputs.reconciled }} (the last reconciled version)
+            up to ${{ needs.check.outputs.latest }} (the latest release) have
+            not been checked for new features that flow should surface. You are
+            authenticated to GitHub (gh) as the machine account i-am-marvin.
+
+            Read CLAUDE.md first and follow it throughout.
+
+            1. Fetch the inspect_ai changelog at the release tag using WebFetch:
+               https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.check.outputs.latest }}/CHANGELOG.md
+               and aggregate the entries for every version newer than
+               ${{ needs.check.outputs.reconciled }} up to and including
+               ${{ needs.check.outputs.latest }}.
+
+            2. Map those entries to flow surfaces. The types in
+               src/inspect_flow/_types (FlowTask, FlowOptions, FlowModel, ...)
+               mirror inspect_ai's Task / task_with / eval_set signatures;
+               cross-check the changelog against the installed inspect_ai
+               package by introspecting those signatures (the project venv is
+               on PATH). PR #764 (turn_limit / score_on_error / checkpoint) is
+               the canonical example of this kind of change — run
+               `gh pr diff 764` to see the expected shape, including how
+               generated types are handled.
+
+            3. Open ONE issue for the whole batch:
+               - Title must contain "inspect-ai ${{ needs.check.outputs.latest }}"
+                 (the dedup that prevents duplicate weekly runs keys on it).
+               - Label: inspect-update.
+               - Body: each new inspect feature, the flow surface it maps to
+                 (FlowTask, FlowOptions, FlowModel, ...), or why it is not
+                 applicable to flow.
+               - @mention @ransomr inline wherever a mapping is ambiguous or
+                 needs a human decision.
+
+            4. Create a branch off main named
+               inspect-update/${{ needs.check.outputs.latest }} and implement
+               the best-effort flow changes:
+               - Advance the reconciled marker in pyproject.toml:
+                 [tool.inspect_flow] inspect-reconciled-version = "${{ needs.check.outputs.latest }}"
+               - Upgrade all locked dependencies (`uv lock --upgrade` then
+                 `uv sync`) so the pinned CI checks run against the reconciled
+                 inspect-ai release and the latest of everything else, rather
+                 than stale pins. Do NOT raise the `inspect-ai>=` dependency
+                 floor unless flow would be completely broken on older
+                 versions.
+               - Regenerate the generated types after the upgrade
+                 (`python src/inspect_flow/_types/type_gen.py`) and commit any
+                 changes. type_gen copies inspect-ai's type/docstring surface
+                 verbatim, so even a docstring-only upstream change makes
+                 generated.py stale; the check-type-gen CI job regenerates
+                 against the locked inspect-ai and fails if it differs.
+               - Verify with `ruff format`, `ruff check --fix`, `pyright`, and
+                 the relevant tests before pushing.
+               - If the full upgrade cannot produce a green build because a
+                 dependency has not caught up to the reconciled release (e.g.
+                 inspect-scout still imports a symbol inspect-ai renamed), do
+                 NOT commit a broken lock. Hold the offending package(s) back at
+                 their last working version by adding a temporary
+                 `constraint-dependencies` entry under `[tool.uv]` in
+                 pyproject.toml and re-locking (prefer this over an upper bound
+                 in `[project] dependencies`, which would ship in the published
+                 wheel's metadata and constrain downstream installs). If no
+                 released version of the lagging dependency works with the
+                 reconciled inspect-ai at all (every release still imports the
+                 renamed symbol), the only green lock is one that also keeps
+                 inspect-ai itself at its previously locked version — do that as
+                 the last resort rather than chasing an unsatisfiable "upgrade
+                 inspect-ai AND stay green". Either way, still advance the
+                 reconciled marker (it is independent of the locked version) and
+                 call out the blocking dependency in the issue with @ransomr so
+                 it can be picked up once the dependency releases a fix.
+
+            5. Push the branch and open ONE PR:
+               gh pr create --base main --label auto --label inspect-update ...
+               - Conventional-commit title (per CLAUDE.md) containing
+                 "inspect-ai ${{ needs.check.outputs.latest }}".
+               - Body starts with "Fixes #<the issue you opened in step 3>".
+               - Applying the `auto` label AT CREATION is required: it opts the
+                 PR into the autonomous review/CI-fix loop, and labeling later
+                 races the auto-reviewer.
+
+            6. If no changelog entry maps to a flow change, still open the PR
+               that advances the reconciled marker (chore: title) and note in
+               the issue that no flow changes were needed.
+
+            7. Best-effort repo defaults: assign ransomr to the issue and the
+               PR, and add both to the Atlas project board if you have access
+               (skip gracefully if not permitted).
+
+            Open exactly one issue and one PR, no more. If you cannot complete
+            the task, comment on issue #766 describing what blocked you,
+            mentioning @ransomr.
+
+      # Surface agent errors the action swallows. A model API error (overload /
+      # 529, a model 404, etc.) leaves the run green at the workflow level but
+      # with no result. Detect is_error in the execution log (or a failed
+      # action step) and fail the job so the run isn't a misleading success.
+      # This runs unattended, so the warning goes to standing issue #766 — and
+      # a *partial* failure (issue opened, PR not pushed) has already dedup'd
+      # this version, so recovery needs a human to close the orphan issue.
+      - name: Surface agent errors
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          EXEC: ${{ steps.claude.outputs.execution_file }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          set -uo pipefail
+          file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
+          err=""
+          [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
+          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" = "failure" ]; then
+            err="the Claude Code step failed before producing a result (see the job logs)."
+          fi
+          [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
+          echo "::error::Claude run did not complete: $err"
+          gh issue comment 766 --repo "$REPO" --body "$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete — it errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip). If an issue or PR was already opened for this version it is now deduplicated, so close the orphan before re-running. Re-trigger via workflow_dispatch on the Inspect Update workflow; if it persists see https://status.claude.com.' "$LATEST" "$err")" || true
+          exit 1
+
+      - name: Upload execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-execution-output
+          path: /home/runner/work/_temp/claude-execution-output.json
+          if-no-files-found: ignore

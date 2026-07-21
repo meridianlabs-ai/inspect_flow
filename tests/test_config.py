@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -6,6 +6,15 @@ import pytest
 from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
+from inspect_ai.util import (
+    CheckpointConfig,
+    Manual,
+    TimeInterval,
+    TokenInterval,
+    TurnInterval,
+)
+from inspect_ai.util._checkpoint._triggers.types import CostInterval
+from inspect_ai.util._checkpoint.config import CheckpointDisabled
 from inspect_flow import (
     FlowAgent,
     FlowModel,
@@ -33,6 +42,7 @@ from inspect_flow._types.flow_types import FlowDependencies, FlowFactory, not_gi
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
+from inspect_flow._util.pydantic_util import model_dump
 from pydantic import ValidationError
 from rich.console import Console
 
@@ -772,6 +782,111 @@ def test_matrix_task_limits() -> None:
         ),
     )
     validate_config(config, "test_matrix_task_limits.yaml")
+
+
+def test_options_limit_range_roundtrip() -> None:
+    options = FlowOptions.model_validate(model_dump(FlowOptions(limit=(1, 5))))
+    assert options.limit == (1, 5)
+
+
+def test_checkpoint_roundtrip() -> None:
+    checkpoints = [
+        CheckpointConfig(
+            trigger=TokenInterval(every=500_000),
+            max_consecutive_failures=3,
+            retention="retain",
+        ),
+        CheckpointConfig(trigger=TurnInterval(every=5)),
+        CheckpointConfig(trigger=TimeInterval(every=timedelta(minutes=15))),
+        CheckpointConfig(trigger=TimeInterval(every=timedelta(microseconds=10))),
+        CheckpointConfig(trigger=Manual()),
+        CheckpointConfig(max_consecutive_failures=2),
+        True,
+        False,
+    ]
+    for checkpoint in checkpoints:
+        task = FlowTask.model_validate(
+            model_dump(FlowTask(name="t", checkpoint=checkpoint))
+        )
+        assert task.checkpoint == checkpoint
+        options = FlowOptions.model_validate(
+            model_dump(FlowOptions(checkpoint=checkpoint))
+        )
+        assert options.checkpoint == checkpoint
+
+
+def test_checkpoint_from_dict() -> None:
+    task = FlowTask.model_validate(
+        {"name": "t", "checkpoint": {"trigger": {"type": "token", "every": "500k"}}}
+    )
+    assert task.checkpoint == CheckpointConfig(trigger=TokenInterval(every=500_000))
+
+
+def test_checkpoint_from_dict_with_explicit_nulls() -> None:
+    task = FlowTask.model_validate(
+        {
+            "name": "t",
+            "checkpoint": {
+                "trigger": "manual",
+                "sandbox_paths": None,
+                "retention": None,
+            },
+        }
+    )
+    assert task.checkpoint == CheckpointConfig(trigger=Manual())
+
+
+def test_checkpoint_disabled_normalizes_to_false() -> None:
+    task = FlowTask(name="t", checkpoint=CheckpointDisabled())
+    assert task.checkpoint is False
+    assert FlowTask.model_validate(model_dump(task)).checkpoint is False
+
+
+def test_checkpoint_from_string() -> None:
+    task = FlowTask.model_validate({"name": "t", "checkpoint": "turn:5"})
+    assert task.checkpoint == CheckpointConfig(trigger=TurnInterval(every=5))
+
+
+def test_checkpoint_invalid_value() -> None:
+    with pytest.raises(ValidationError):
+        FlowTask.model_validate({"name": "t", "checkpoint": 12})
+    with pytest.raises(ValidationError):
+        FlowOptions.model_validate({"checkpoint": [1, 2]})
+
+
+def test_checkpoint_unsupported_trigger() -> None:
+    checkpoint = CheckpointConfig(trigger=CostInterval(every=1.0))
+    with pytest.raises(ValidationError, match="manual, turn, time, or token"):
+        FlowTask(name="t", checkpoint=checkpoint)
+    with pytest.raises(ValidationError, match="manual, turn, time, or token"):
+        FlowOptions(checkpoint=checkpoint)
+
+
+def test_checkpoint_non_positive_interval() -> None:
+    triggers = [
+        TurnInterval(every=0),
+        TokenInterval(every=-1),
+        TimeInterval(every=timedelta(0)),
+        TimeInterval(every=timedelta(seconds=-60)),
+    ]
+    for trigger in triggers:
+        with pytest.raises(ValidationError, match="interval must be positive"):
+            FlowTask(name="t", checkpoint=CheckpointConfig(trigger=trigger))
+        with pytest.raises(ValidationError, match="interval must be positive"):
+            FlowOptions(checkpoint=CheckpointConfig(trigger=trigger))
+    # the mapping form must hit the same check (upstream _TokenTriggerModel
+    # accepts a raw non-positive int `every`)
+    with pytest.raises(ValidationError, match="interval must be positive"):
+        FlowTask.model_validate(
+            {"name": "t", "checkpoint": {"trigger": {"type": "token", "every": 0}}}
+        )
+
+
+def test_checkpoint_invalid_string() -> None:
+    with pytest.raises(ValidationError, match="Invalid checkpoint value ''"):
+        FlowTask.model_validate({"name": "t", "checkpoint": ""})
+    with pytest.raises(ValidationError, match="tokens:500k does not exist"):
+        FlowTask.model_validate({"name": "t", "checkpoint": "tokens:500k"})
 
 
 def test_from_factory() -> None:

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import yaml
 from click.testing import CliRunner
+from inspect_ai.log import read_eval_log, write_eval_log
 from inspect_flow._cli.list import list_command
 from inspect_flow._cli.store import store_command
 from inspect_flow._steps.tag import metadata, tag
@@ -175,6 +176,18 @@ def test_list_log_tags_in_multiline(tmp_path: Path) -> None:
     assert "Tags " in result.output
     assert "golden" in result.output
     assert "draft" in result.output
+
+
+def test_list_log_limit_qualifiers(tmp_path: Path) -> None:
+    shutil.copy(_SAMPLE_LOG, tmp_path / "log1.eval")
+    log = read_eval_log(_SAMPLE_LOG)
+    log.eval.config.turn_limit = 5
+    write_eval_log(log, str(tmp_path / "log2.eval"))
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path)], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert "turn_limit=5" in result.output
 
 
 def test_list_log_provenance(tmp_path: Path) -> None:

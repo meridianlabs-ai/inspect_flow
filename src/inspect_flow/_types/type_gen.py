@@ -40,7 +40,7 @@ ADDITIONAL_IMPORTS = [
     "from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, ImageOutput, Model, ResponseSchema\n",
     "from inspect_ai.scorer import Scorer\n",
     "from inspect_ai.solver import Solver\n",
-    "from inspect_ai.util import AdaptiveConcurrency, SandboxEnvironmentSpec\n",
+    "from inspect_ai.util import AdaptiveConcurrency, CheckpointConfig, SandboxEnvironmentSpec, TokenLimit\n",
     "from inspect_ai.approval._policy import ApprovalPolicyConfig\n",
     "from inspect_flow._types.flow_types import FlowAgent, FlowEpochs, FlowExtraArgs, FlowModel, FlowScorer, FlowSolver, NotGiven\n",
 ]
@@ -50,6 +50,11 @@ STR_AS_CLASS = ["FlowTask", "FlowModel", "FlowSolver", "FlowAgent"]
 # Inspect types that are not JSON-serializable but should be included in generated types.
 # These are abstract classes/protocols from inspect_ai that Pydantic can't serialize.
 INSPECT_TYPES = ["Model", "Solver", "Agent", "Scorer", "Task"]
+
+# Inspect model types referenced via `SkipValidation`, which Pydantic inlines as a full
+# object schema rather than a `$ref`. We collapse them to an opaque reference (resolved
+# via ADDITIONAL_IMPORTS) instead of expanding their nested schema into generated types.
+OPAQUE_INLINED_TYPES = ["CheckpointConfig"]
 
 
 class InspectAwareJsonSchema(GenerateJsonSchema):
@@ -103,6 +108,7 @@ MATRIX_CLASS_FIELDS = {
         "model_roles",
         "message_limit",
         "token_limit",
+        "turn_limit",
         "time_limit",
         "working_limit",
         "cost_limit",
@@ -221,6 +227,14 @@ def _create_type(defs: Schema, title: str, base_type: Schema, type: GenType) -> 
 
 
 def _update_field_refs(field_schema: Schema, parent_list: list[Schema] | None) -> None:
+    if (
+        field_schema.get("title") in OPAQUE_INLINED_TYPES
+        and "properties" in field_schema
+    ):
+        title = field_schema["title"]
+        field_schema.clear()
+        field_schema["$ref"] = f"#/$defs/{title}"
+        return
     if "anyOf" in field_schema:
         any_of_list: list[Schema] = field_schema["anyOf"]
         for field in list(any_of_list):

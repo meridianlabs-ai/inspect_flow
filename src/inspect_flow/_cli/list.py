@@ -144,6 +144,7 @@ def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
         if header.eval.model_roles
         else None
     )
+    config = header.eval.config
     return TaskInfo(
         name=header.eval.task,
         model=header.eval.model,
@@ -151,6 +152,13 @@ def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
         model_roles=model_roles,
         solver=header.eval.solver,
         version=header.eval.task_version,
+        message_limit=config.message_limit,
+        token_limit=config.token_limit,
+        token_limit_type=config.token_limit_type,
+        turn_limit=config.turn_limit,
+        time_limit=config.time_limit,
+        working_limit=config.working_limit,
+        cost_limit=config.cost_limit,
         config=header.eval.model_generate_config,
     )
 
