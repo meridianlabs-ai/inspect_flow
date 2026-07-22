@@ -46,6 +46,10 @@ from inspect_flow._util.subprocess_util import (
 logger = getLogger(__name__)
 
 
+def _venv_python(temp_dir: str) -> str:
+    return str(Path(temp_dir) / ".venv" / "bin" / "python")
+
+
 def venv_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> LaunchResult:
     # The eval logs live in the subprocess; only the success flag is signaled back
     # (via a per-run result file) on a clean exit. A crash raises in _venv_spawn.
@@ -115,7 +119,7 @@ def _venv_spawn(
 
             action.update(info="venv created")
 
-            python_path = Path(temp_dir) / ".venv" / "bin" / "python"
+            python_path = _venv_python(temp_dir)
             file = write_config_file(spec)
 
             action.update(
@@ -140,7 +144,7 @@ def _venv_spawn(
         env[RUN_RESULT_FILE_ENV] = str(result_path)
 
         process = subprocess.Popen(
-            [str(python_path), str(run_path), subcommand, "--file", file, *args],
+            [python_path, str(run_path), subcommand, "--file", file, *args],
             env=env,
             pass_fds=(child_ready_w, parent_ack_r),
         )
@@ -254,7 +258,7 @@ def _create_venv(
 
     _uv_pip_install(dependencies, temp_dir, env)
 
-    write_flow_requirements(spec, temp_dir, env, dry_run)
+    write_flow_requirements(spec, temp_dir, env, dry_run, python=_venv_python(temp_dir))
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:

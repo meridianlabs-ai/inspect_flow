@@ -12,13 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 def write_flow_requirements(
-    spec: FlowSpec, cwd: str, env: dict[str, str], dry_run: bool
+    spec: FlowSpec, cwd: str, env: dict[str, str], dry_run: bool, python: str
 ) -> None:
     if dry_run or not spec.log_dir:
         return
-    # Freeze installed packages to flow-requirements.txt in log_dir
+    # Freeze installed packages to flow-requirements.txt in log_dir. Target the
+    # interpreter explicitly rather than letting uv discover it from cwd/PATH/
+    # VIRTUAL_ENV, which can silently record the host environment instead of the
+    # evaluation environment (e.g. under in-process embedding).
     freeze_result = run_with_logging(
-        ["uv", "pip", "freeze"],
+        ["uv", "pip", "freeze", "--python", python],
         cwd=cwd,
         env=env,
         log_output=False,  # Don't log the full freeze output
@@ -40,6 +43,8 @@ def write_flow_requirements(
                 "uv",
                 "pip",
                 "compile",
+                "--python",
+                python,
                 "--generate-hashes",
                 "--no-header",
                 "--no-annotate",

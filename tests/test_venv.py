@@ -1,8 +1,10 @@
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -1035,6 +1037,7 @@ def test_712_concurrent_flow_requirements_no_race() -> None:
                     cwd=str(cwd),
                     env=os.environ.copy(),
                     dry_run=False,
+                    python=sys.executable,
                 )
             except BaseException as e:  # noqa: BLE001
                 errors[name] = e
@@ -1054,3 +1057,106 @@ def test_712_concurrent_flow_requirements_no_race() -> None:
             assert requirements_txt.read_text() == expected
         # The temporary input files must be cleaned up.
         assert list(cwd.glob("*.in")) == []
+
+
+def test_freeze_forwards_explicit_interpreter_to_uv() -> None:
+    # write_flow_requirements must forward the interpreter it is given to both
+    # the freeze and the compile commands (a caller could pass it to one and
+    # forget the other). Behavior against a real interpreter is covered by
+    # test_freeze_targets_explicit_interpreter_not_virtual_env below.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        log_dir = Path(temp_dir) / "logs"
+        captured: list[list[str]] = []
+
+        def fake_run(
+            args: list[str], *pos: object, **kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            captured.append(args)
+            if args[:3] == ["uv", "pip", "freeze"]:
+                return subprocess.CompletedProcess(
+                    args=args, returncode=0, stdout="package-a==1.0.0\n"
+                )
+            # uv pip compile: echo back the contents of the input file.
+            requirements_in = Path(args[-1])
+            return subprocess.CompletedProcess(
+                args=args, returncode=0, stdout=requirements_in.read_text()
+            )
+
+        with patch("subprocess.run", side_effect=fake_run):
+            write_flow_requirements(
+                spec=FlowSpec(
+                    log_dir=log_dir.as_posix(),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                cwd=temp_dir,
+                env=os.environ.copy(),
+                dry_run=False,
+                python="/custom/interpreter/python",
+            )
+
+        freeze_cmd = next(c for c in captured if c[:3] == ["uv", "pip", "freeze"])
+        assert (
+            freeze_cmd[freeze_cmd.index("--python") + 1] == "/custom/interpreter/python"
+        )
+
+        compile_cmd = next(c for c in captured if c[:3] == ["uv", "pip", "compile"])
+        assert (
+            compile_cmd[compile_cmd.index("--python") + 1]
+            == "/custom/interpreter/python"
+        )
+
+
+@pytest.mark.slow
+def test_freeze_targets_explicit_interpreter_not_virtual_env() -> None:
+    # The real freeze must resolve against the explicitly-passed interpreter,
+    # not the VIRTUAL_ENV uv would otherwise discover. Point VIRTUAL_ENV (and
+    # cwd) at a fresh, empty venv and freeze the running interpreter: the
+    # recorded requirements must reflect the running interpreter, not the empty
+    # venv (which would freeze to nothing). Only the network-bound compile step
+    # is stubbed; the freeze runs for real so it actually exercises `--python`.
+    with tempfile.TemporaryDirectory() as temp_dir:
+        decoy_venv = Path(temp_dir) / "decoy"
+        subprocess.run(
+            ["uv", "venv", "--python", sys.executable, str(decoy_venv)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        cwd = Path(temp_dir) / "cwd"
+        cwd.mkdir()
+        log_dir = Path(temp_dir) / "logs"
+
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(decoy_venv)
+
+        real_run = subprocess.run
+
+        def fake_run(
+            args: list[str], *pos: Any, **kwargs: Any
+        ) -> subprocess.CompletedProcess[str]:
+            # Stub only compile (its --generate-hashes would hit the package
+            # index); let the real freeze run against the given interpreter.
+            if args[:3] == ["uv", "pip", "compile"]:
+                requirements_in = Path(args[-1])
+                return subprocess.CompletedProcess(
+                    args=args, returncode=0, stdout=requirements_in.read_text()
+                )
+            return real_run(args, *pos, **kwargs)
+
+        with patch("subprocess.run", side_effect=fake_run):
+            write_flow_requirements(
+                spec=FlowSpec(
+                    log_dir=log_dir.as_posix(),
+                    tasks=[FlowTask(name="task_name")],
+                ),
+                cwd=str(cwd),
+                env=env,
+                dry_run=False,
+                python=sys.executable,
+            )
+
+        requirements = (log_dir / "flow-requirements.txt").read_text()
+        # pydantic is installed in the running interpreter but not the empty
+        # decoy venv, so its presence proves the freeze used --python, not
+        # VIRTUAL_ENV. Dropping --python would freeze the empty venv instead.
+        assert "pydantic==" in requirements
