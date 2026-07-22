@@ -1,4 +1,5 @@
 import os
+import sys
 from logging import getLogger
 
 from inspect_flow._display.run_action import RunAction
@@ -16,7 +17,13 @@ def inproc_launch(spec: FlowSpec, base_dir: str, dry_run: bool) -> LaunchResult:
         if spec.env:
             os.environ.update(spec.env)
 
-        write_flow_requirements(spec, cwd=".", env=os.environ.copy(), dry_run=dry_run)
+        write_flow_requirements(
+            spec,
+            cwd=".",
+            env=os.environ.copy(),
+            dry_run=dry_run,
+            python=sys.executable,
+        )
     return run_eval_set(spec, base_dir=base_dir, dry_run=dry_run)
 
 
