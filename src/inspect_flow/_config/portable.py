@@ -15,6 +15,7 @@ from inspect_flow._types.flow_types import (
     FlowScorer,
     FlowSolver,
     FlowSpec,
+    FlowStoreConfig,
     FlowTask,
 )
 from inspect_flow._util.not_given import default_none, is_set
@@ -27,6 +28,7 @@ _EARLY_STOPPING_MESSAGE = "early_stopping holds live callback objects, which can
 _SCANNER_MESSAGE = 'The ScannerConfig has scanners that are not serializable spec references (e.g. already-instantiated Scanner objects), which cannot be serialized and recreated in another process. Fix: set options.scanner to a path to a scanner config file or use scanner spec references (e.g. {"name": "keyword_scanner"}).'
 _SCANNER_MODEL_MESSAGE = "You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which cannot be serialized and recreated in another process. Fix: use a model name string."
 _FACTORY_MESSAGE = "You provided a factory callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, class, or callable object). Fix: use a registry name or a module-level function."
+_FILTER_MESSAGE = "You provided a store filter callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, class, or callable object). Fix: use a registered filter name or a module-level function."
 
 
 @dataclass
@@ -110,7 +112,19 @@ def validate_portable_spec(spec: FlowSpec) -> None:
             _check_task(defaults.task, "defaults.task", violations)
         for key, template in (default_none(defaults.task_prefix) or {}).items():
             _check_task(template, f"defaults.task_prefix[{key!r}]", violations)
+        for scalar, prefix, name in (
+            (defaults.model, defaults.model_prefix, "model"),
+            (defaults.solver, defaults.solver_prefix, "solver"),
+            (defaults.agent, defaults.agent_prefix, "agent"),
+        ):
+            if is_set(scalar):
+                _check_factory(scalar.factory, f"defaults.{name}", violations)
+            for key, wrapper in (default_none(prefix) or {}).items():
+                _check_factory(
+                    wrapper.factory, f"defaults.{name}_prefix[{key!r}]", violations
+                )
     _check_scanner(spec, violations)
+    _check_store(spec, violations)
     if violations:
         raise SpecNotPortableError(violations)
 
@@ -125,18 +139,25 @@ def _entries(value: Any, path: str) -> list[tuple[str, Any]]:
     return [(path, value)]
 
 
+def _is_reconstructable(value: Any) -> bool:
+    # Mirrors callable_name in _util.pydantic_util: a non-registry callable is
+    # only reconstructable if it round-trips as `<file>@<name>`, i.e. it has a
+    # __code__, a real name (not a lambda), and is reachable as a module-level
+    # attribute (__qualname__ == __name__, ruling out nested funcs and methods).
+    if not callable(value) or is_registry_object(value):
+        return True
+    code = getattr(value, "__code__", None)
+    return (
+        code is not None
+        and value.__name__ != "<lambda>"
+        and getattr(value, "__qualname__", value.__name__) == value.__name__
+    )
+
+
 def _check_factory(factory: Any, path: str, violations: list[SpecViolation]) -> None:
     inner = factory.factory if isinstance(factory, FlowFactory) else factory
-    if not callable(inner) or is_registry_object(inner):
-        return
-    code = getattr(inner, "__code__", None)
-    if (
-        code is not None
-        and inner.__name__ != "<lambda>"
-        and getattr(inner, "__qualname__", inner.__name__) == inner.__name__
-    ):
-        return
-    violations.append(SpecViolation(f"{path}.factory", _FACTORY_MESSAGE))
+    if not _is_reconstructable(inner):
+        violations.append(SpecViolation(f"{path}.factory", _FACTORY_MESSAGE))
 
 
 def _check_task(task: FlowTask, path: str, violations: list[SpecViolation]) -> None:
@@ -186,3 +207,11 @@ def _check_scanner(spec: FlowSpec, violations: list[SpecViolation]) -> None:
                         _SCANNER_MODEL_MESSAGE,
                     )
                 )
+
+
+def _check_store(spec: FlowSpec, violations: list[SpecViolation]) -> None:
+    store = default_none(spec.store)
+    if isinstance(store, FlowStoreConfig):
+        for filter_path, entry in _entries(store.filter, "store.filter"):
+            if not _is_reconstructable(entry):
+                violations.append(SpecViolation(filter_path, _FILTER_MESSAGE))

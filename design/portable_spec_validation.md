@@ -63,13 +63,20 @@ One reusable task checker applied to every `FlowTask` at `tasks[i]`,
   generated reference — lambdas, partials, nested functions, and callable
   objects. Registry objects and module-level functions are accepted.
 
+The same `factory` check also covers the other factory-bearing defaults —
+`defaults.model` / `defaults.solver` / `defaults.agent` and their `*_prefix`
+mappings — so a non-reconstructable factory is rejected wherever it sits, not
+only after defaults are merged into a task.
+
 Spec-level checks:
 
 - `tasks[i]`: instantiated `Task` objects;
 - `options.scanner.scanners[...]`: entries that are not serializable scanner
   spec references;
 - `options.scanner.model` and `options.scanner.model_roles[key]`: live
-  `Model`.
+  `Model`;
+- `store.filter` (scalar and sequence): non-reconstructable filter callables,
+  by the same rule as factories.
 
 Known limitations: specs pulled in via `includes` are not descended into
 (validate the resolved spec, after includes are merged), and `args` /

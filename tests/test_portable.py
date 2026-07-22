@@ -5,7 +5,7 @@ from functools import partial
 import pytest
 from inspect_ai import ScannerConfig, Task
 from inspect_ai.dataset import Sample
-from inspect_ai.log import EvalSpec
+from inspect_ai.log import EvalLog, EvalSpec
 from inspect_ai.model import get_model
 from inspect_ai.scorer import SampleScore
 from inspect_ai.util import EarlyStop
@@ -18,7 +18,9 @@ from inspect_flow import (
     FlowScorer,
     FlowSolver,
     FlowSpec,
+    FlowStoreConfig,
     FlowTask,
+    log_filter,
 )
 from inspect_flow.api import (
     SpecNotPortableError,
@@ -186,6 +188,89 @@ def test_flow_factory_wrapping_bad_callable_rejected() -> None:
     violations = _violations(spec)
     assert [v.path for v in violations] == ["tasks[0].factory"]
     assert "cannot be recreated" in violations[0].message
+
+
+def test_defaults_wrapper_factories_rejected() -> None:
+    # Non-reconstructable factories in defaults.model/solver/agent and their
+    # prefix mappings also make a spec non-portable, even though the venv path
+    # would only surface them after defaults are merged into tasks.
+    cases = [
+        (
+            FlowDefaults(model=FlowModel(factory=lambda: get_model("mockllm/model"))),
+            "defaults.model.factory",
+        ),
+        (
+            FlowDefaults(solver=FlowSolver(factory=lambda: a_solver())),
+            "defaults.solver.factory",
+        ),
+        (
+            FlowDefaults(agent=FlowAgent(factory=lambda: a_agent())),
+            "defaults.agent.factory",
+        ),
+        (
+            FlowDefaults(
+                model_prefix={
+                    "openai/": FlowModel(factory=lambda: get_model("mockllm/model"))
+                }
+            ),
+            "defaults.model_prefix['openai/'].factory",
+        ),
+        (
+            FlowDefaults(
+                solver_prefix={"inspect/": FlowSolver(factory=lambda: a_solver())}
+            ),
+            "defaults.solver_prefix['inspect/'].factory",
+        ),
+        (
+            FlowDefaults(
+                agent_prefix={"inspect/": FlowAgent(factory=lambda: a_agent())}
+            ),
+            "defaults.agent_prefix['inspect/'].factory",
+        ),
+    ]
+    for defaults, path in cases:
+        violations = _violations(FlowSpec(defaults=defaults))
+        assert [v.path for v in violations] == [path]
+        assert "cannot be recreated" in violations[0].message
+
+
+def test_defaults_wrappers_reconstructable_pass() -> None:
+    validate_portable_spec(
+        FlowSpec(
+            defaults=FlowDefaults(
+                model=FlowModel(name="mockllm/model"),
+                solver=FlowSolver(name="a_solver"),
+                agent=FlowAgent(name="a_agent"),
+                model_prefix={"openai/": FlowModel(name="openai/gpt-4o")},
+            )
+        )
+    )
+
+
+@log_filter
+def _keep_all(log: EvalLog) -> bool:
+    return True
+
+
+def test_store_filter_non_reconstructable_rejected() -> None:
+    spec = FlowSpec(store=FlowStoreConfig(filter=lambda log: True))
+    violations = _violations(spec)
+    assert [v.path for v in violations] == ["store.filter"]
+    assert "cannot be recreated" in violations[0].message
+
+    spec = FlowSpec(store=FlowStoreConfig(filter=["keep_all", lambda log: True]))
+    violations = _violations(spec)
+    assert [v.path for v in violations] == ["store.filter[1]"]
+
+
+def test_store_filter_reconstructable_passes() -> None:
+    # A registered filter callable, a registry-name string, and a sequence of
+    # them all serialize to a resolvable reference.
+    validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_keep_all)))
+    validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter="keep_all")))
+    validate_portable_spec(
+        FlowSpec(store=FlowStoreConfig(filter=[_keep_all, "keep_all"]))
+    )
 
 
 def test_defaults_task_templates_rejected() -> None:
