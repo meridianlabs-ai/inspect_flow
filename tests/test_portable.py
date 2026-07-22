@@ -305,11 +305,12 @@ def _lossy_leaf_count(spec: FlowSpec) -> int:
 def test_validator_flags_every_lossy_leaf() -> None:
     # Completeness oracle. Pydantic's own dump traverses every field; any value
     # that serializes lossily (a repr, or an unresolvable callable name) must be
-    # reported by the validator, or the child process gets a corrupt spec. A new
-    # field that can carry such a value forces a failure here (add it below) or
-    # in the field-name snapshot test. This does not cover live objects that
-    # serialize to a round-trippable registry dict (Model/Scorer/Solver/Agent) —
-    # the validator rejects those as a stance, tested separately.
+    # reported by the validator, or the child process gets a corrupt spec. This
+    # catches a lossy value in any field populated below that the validator
+    # misses; the field-name snapshot test surfaces new fields to populate. This
+    # does not cover live objects that serialize to a round-trippable registry
+    # dict (Model/Scorer/Solver/Agent) — the validator rejects those as a
+    # stance, tested separately.
     bad_task = FlowTask(
         factory=lambda: Task(),
         model=FlowModel(factory=lambda: get_model("mockllm/model")),
@@ -581,6 +582,10 @@ def test_spec_fields_are_classified_for_portability() -> None:
         "path",
         "read",
         "write",
+    ]
+    assert sorted(FlowFactory.model_fields) == [
+        "args",
+        "factory",
     ]
     assert sorted(FlowOptions.model_fields) == [
         "acp_server",

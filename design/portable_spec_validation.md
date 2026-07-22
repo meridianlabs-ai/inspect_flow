@@ -83,9 +83,12 @@ Known limitations: specs pulled in via `includes` are not descended into
 `extra_args` mappings are not inspected — a live object buried in constructor
 args serializes as a lossy `repr` string rather than being rejected.
 
-A snapshot test on the field names of the spec types forces every future
-field through this classification:
-adding a field fails the test until the author either extends
-`validate_portable_spec` (live-capable field) or updates the snapshot (plain
-data). Full annotation introspection was considered and rejected as too
-fragile against inspect-ai type refactors.
+Two tests guard against future drift. A snapshot test on the field names of
+the spec types (`FlowSpec`, `FlowTask`, `FlowDefaults`, `FlowOptions`, the
+`Flow*` wrappers, and `FlowStoreConfig`) fails when a field is added, until the
+author either extends `validate_portable_spec` (live-capable field) or updates
+the snapshot (plain data). A completeness oracle dumps a fully-populated spec
+through Pydantic's own traversal and asserts every value that serializes
+lossily is reported by the validator — so a lossy value in a covered field the
+validator misses fails the test. Full annotation introspection was considered
+and rejected as too fragile against inspect-ai type refactors.
