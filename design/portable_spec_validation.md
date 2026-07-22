@@ -1,77 +1,65 @@
-# Public portable-spec validation
+# Portable-spec validation
 
-## Status
+## Problem
 
-Approved design for "Suggested PR 1" in
-[hawk_upstream_suggestions.md](hawk_upstream_suggestions.md). The intent is to
-make what Flow already does public and fix small coverage gaps — not to
-re-engineer validation.
+An in-memory `FlowSpec` may legally contain live Inspect objects — an
+instantiated `Task`, `Model`, `Scorer`, `Solver`, `Agent`, or `Scanner` — for
+in-process execution. Those objects cannot cross a YAML/JSON boundary and be
+recreated in another Python process. Flow checks this in venv execution, where
+the spec is serialized with
+[write_config_file](../src/inspect_flow/_config/write.py) and re-loaded in a
+child process, but the check was a private launcher function
+(`_check_spec_for_venv`) that:
 
-## Context
+- failed fast with a single `ValueError`, without identifying the field;
+- missed live `Model`s in `FlowTask.model_roles`, live `Scorer`s inside scorer
+  *sequences*, the `defaults.task` / `defaults.task_prefix` templates, and live
+  `early_stopping` callbacks; and
+- was unavailable to remote orchestrators, which need the same validation
+  before uploading a job and otherwise must copy the private routine.
 
-Flow only validates spec portability in venv execution, where the spec is
-serialized to YAML and re-loaded in a child process. The private
-`_check_spec_for_venv` in `_launcher/venv.py` performs that check, failing fast
-with a single `ValueError`. Remote orchestrators (METR Hawk) need the same
-validation before uploading a job, and currently copy the private routine.
+## Design
 
-Known coverage gaps in the private check:
-
-- live `Model` values in `FlowTask.model_roles`;
-- live `Scorer` instances inside a scorer *sequence* (only the scalar form is
-  checked);
-- the `defaults.task` and `defaults.task_prefix` templates (full `FlowTask`s
-  that are never walked); and
-- live `EarlyStopping` callbacks in `FlowTask.early_stopping` (a Protocol with
-  no registry/string form, so any set value is non-portable).
-
-Callable factories (`factory` fields, `FlowFactory`) remain allowed: they
-serialize via registry name or `file@attr` and are recreated in the child.
-
-## Public API
-
-New module `_config/portable.py`, exported from `inspect_flow.api`:
+[_config/portable.py](../src/inspect_flow/_config/portable.py) exposes the
+check as a public API, exported from `inspect_flow.api`:
 
 ```python
 @dataclass
 class SpecViolation:
     path: str      # e.g. "tasks[2].model_roles['grader']"
-    message: str   # neutral: what is wrong and the portable fix
+    message: str   # what is wrong and the portable alternative
 
 class SpecNotPortableError(ValueError):
     violations: list[SpecViolation]
     hint: str | None  # optional extra line appended to str()
 
-def validate_portable_spec(spec: FlowSpec) -> None:
-    """Raises SpecNotPortableError if the spec cannot be serialized and
-    recreated in another Python process. Does not expand, resolve, install,
-    or launch anything."""
+def validate_portable_spec(spec: FlowSpec) -> None: ...
 ```
 
-Behavior:
+`validate_portable_spec` walks the whole spec, collects **all** violations,
+and raises one `SpecNotPortableError`. Messages are neutral — they name the
+live object type found and the portable alternative (`FlowModel`, registry
+name, scanner spec reference). Callers with an extra escape hatch attach it
+via `hint`: venv execution re-raises with the "run using 'inproc'" advice,
+while a remote orchestrator can read `violations` and format its own message.
+Subclassing `ValueError` keeps existing callers working.
 
-- Walks the whole spec and collects **all** violations before raising one
-  `SpecNotPortableError`.
-- Messages are neutral (no "run using 'inproc'" advice); they name the live
-  object type found and the portable alternative (`FlowModel`, registry name,
-  scanner spec reference, etc.).
-- `str(error)` is a header plus one `path: message` line per violation, plus
-  `hint` when set.
-- Subclasses `ValueError` so existing callers catching `ValueError` keep
-  working.
+The function validates only serializability. It does not expand or resolve
+the spec, install dependencies, or launch anything. Factory callables remain
+allowed: they serialize via registry name or `file@attr` reference.
 
 ## Coverage
 
-One reusable task checker applied to every `FlowTask` found at `tasks[i]`,
+One reusable task checker applied to every `FlowTask` at `tasks[i]`,
 `defaults.task`, and `defaults.task_prefix[key]`:
 
-- `model`: live `Model`;
-- `model_roles[key]`: live `Model` values;
+- `model` and `model_roles[key]`: live `Model`;
 - `scorer` / `scorer[i]`: live `Scorer` (scalar and sequence);
 - `solver` / `solver[i]`: live `Solver`/`Agent` (scalar and sequence);
-- `early_stopping`: any set value.
+- `early_stopping`: any set value (`EarlyStopping` is a live-callback
+  protocol with no registry/string form).
 
-Spec-level checks (ported from the private function):
+Spec-level checks:
 
 - `tasks[i]`: instantiated `Task` objects;
 - `options.scanner.scanners[...]`: entries that are not serializable scanner
@@ -79,28 +67,9 @@ Spec-level checks (ported from the private function):
 - `options.scanner.model` and `options.scanner.model_roles[key]`: live
   `Model`.
 
-## Venv integration
-
-`_venv_spawn` calls `validate_portable_spec(spec)` and re-raises
-`SpecNotPortableError` with `hint` set to the existing "or run using 'inproc'
-execution type" advice. `_check_spec_for_venv` is deleted. Hawk calls the
-public function directly, reads `violations`, and formats its own message.
-
-## Future-field guard
-
-A snapshot test asserts the exact field-name sets of `FlowSpec`, `FlowTask`,
-`FlowDefaults`, and `FlowOptions` against hardcoded lists. Adding any new field
-fails the test with a message instructing the author to either extend
-`validate_portable_spec` (if the field can hold live objects) or add the name
-to the snapshot. This deliberately trades precision for simplicity; full
-annotation introspection was considered and rejected as too fiddly for this
-PR.
-
-## Tests
-
-- Migrate existing `_check_spec_for_venv` tests to `validate_portable_spec`.
-- New cases: each closed gap (model_roles, scorer sequences, defaults
-  templates, early_stopping); multiple violations aggregated with correct
-  paths; valid specs (including factories and scanner spec references) pass.
-- Venv-mode test that the raised error includes the inproc hint.
-- The field-name snapshot test.
+A snapshot test on the field names of `FlowSpec`, `FlowTask`, `FlowDefaults`,
+and `FlowOptions` forces every future field through this classification:
+adding a field fails the test until the author either extends
+`validate_portable_spec` (live-capable field) or updates the snapshot (plain
+data). Full annotation introspection was considered and rejected as too
+fragile against inspect-ai type refactors.
