@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.11.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.10.0...v0.11.0) (2026-07-22)
+
+
+### Features
+
+* add turn_limit, score_on_error, checkpoint to FlowTask; widen limit types ([#764](https://github.com/meridianlabs-ai/inspect_flow/issues/764)) ([083da8b](https://github.com/meridianlabs-ai/inspect_flow/commit/083da8b9b9bd2f86fe7d0959e2fd0a31ce545604))
+* support inline scanners via scanner on FlowOptions ([#765](https://github.com/meridianlabs-ai/inspect_flow/issues/765)) ([668d268](https://github.com/meridianlabs-ai/inspect_flow/commit/668d2680212b8f539cc5155a6a60db810f87d29e)), closes [#763](https://github.com/meridianlabs-ai/inspect_flow/issues/763)
+* support renaming copies in the copy step (suffix and rename params) ([#757](https://github.com/meridianlabs-ai/inspect_flow/issues/757)) ([449ce1d](https://github.com/meridianlabs-ai/inspect_flow/commit/449ce1dc1856fb4b3f63808b30b4b9150360da94))
+
+
+### Bug Fixes
+
+* reconcile with inspect-ai 0.3.248 (cloudflare provider rename) ([#770](https://github.com/meridianlabs-ai/inspect_flow/issues/770)) ([b636ead](https://github.com/meridianlabs-ai/inspect_flow/commit/b636eadac754acc7924bacb5b98f59118c4e01d1))
+* reconcile with inspect-ai 0.3.249 (scout CLI import shim, moonshot provider, regenerated types) ([#773](https://github.com/meridianlabs-ai/inspect_flow/issues/773)) ([a9d5a3b](https://github.com/meridianlabs-ai/inspect_flow/commit/a9d5a3b2373b11d0ea963bc6c32738fa135c9961))
+* select the interpreter explicitly when freezing requirements ([#775](https://github.com/meridianlabs-ai/inspect_flow/issues/775)) ([3718697](https://github.com/meridianlabs-ai/inspect_flow/commit/371869798adb2913c720fb184659979b70191c6f))
+* upgrade deps and add additional matrix fields ([#750](https://github.com/meridianlabs-ai/inspect_flow/issues/750)) ([20503c0](https://github.com/meridianlabs-ai/inspect_flow/commit/20503c0195520febe83a93ace420bebd9c8b22bf))
+* verify FlowTask.version matches loaded task version instead of overwriting ([#760](https://github.com/meridianlabs-ai/inspect_flow/issues/760)) ([15c99b2](https://github.com/meridianlabs-ai/inspect_flow/commit/15c99b2819928f7da83facf22e61a445ec156446))
+
 ## [0.10.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0) (2026-07-10)
 
 
