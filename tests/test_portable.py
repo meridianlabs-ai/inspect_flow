@@ -1,4 +1,6 @@
 import pickle
+from collections.abc import Callable
+from functools import partial
 
 import pytest
 from inspect_ai import ScannerConfig, Task
@@ -10,6 +12,7 @@ from inspect_ai.util import EarlyStop
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
+    FlowFactory,
     FlowModel,
     FlowOptions,
     FlowScorer,
@@ -102,6 +105,77 @@ def test_live_early_stopping_rejected() -> None:
     violations = _violations(spec)
     assert [v.path for v in violations] == ["tasks[0].early_stopping"]
     assert "early_stopping" in violations[0].message
+
+
+def _top_level_task_factory() -> Task:
+    return Task()
+
+
+def _returns_nested_factory() -> Callable[[], Task]:
+    def nested() -> Task:
+        return Task()
+
+    return nested
+
+
+class _CallableFactory:
+    def __call__(self) -> Task:
+        return Task()
+
+
+def test_non_reconstructable_factory_rejected() -> None:
+    # A lambda, partial, nested function, or callable object serializes to an
+    # unresolvable reference (or crashes serialization), so a spec carrying one
+    # is not portable even though it is a callable.
+    factories: list[Callable[..., Task]] = [
+        lambda: Task(),
+        partial(Task),
+        _returns_nested_factory(),
+        _CallableFactory(),
+    ]
+    for factory in factories:
+        violations = _violations(FlowSpec(tasks=[FlowTask(factory=factory)]))
+        assert [v.path for v in violations] == ["tasks[0].factory"]
+        assert "cannot be recreated" in violations[0].message
+
+
+def test_non_reconstructable_factory_in_wrappers_rejected() -> None:
+    cases = [
+        (
+            FlowTask(model=FlowModel(factory=lambda: get_model("mockllm/model"))),
+            "tasks[0].model.factory",
+        ),
+        (
+            FlowTask(
+                model_roles={"grader": FlowModel(factory=lambda: get_model("m/m"))}
+            ),
+            "tasks[0].model_roles['grader'].factory",
+        ),
+        (
+            FlowTask(scorer=[FlowScorer(factory=lambda: a_scorer())]),
+            "tasks[0].scorer[0].factory",
+        ),
+        (
+            FlowTask(solver=[FlowSolver(factory=lambda: a_solver())]),
+            "tasks[0].solver[0].factory",
+        ),
+        (
+            FlowTask(solver=FlowAgent(factory=lambda: a_agent())),
+            "tasks[0].solver.factory",
+        ),
+    ]
+    for task, path in cases:
+        violations = _violations(FlowSpec(tasks=[task]))
+        assert [v.path for v in violations] == [path]
+        assert "cannot be recreated" in violations[0].message
+
+
+def test_reconstructable_factories_pass() -> None:
+    # A registry object, a module-level function, and FlowFactory wrapping
+    # either all serialize to a resolvable reference.
+    validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=a_task)]))
+    validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=_top_level_task_factory)]))
+    validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=FlowFactory(a_task))]))
 
 
 def test_defaults_task_templates_rejected() -> None:

@@ -57,7 +57,11 @@ One reusable task checker applied to every `FlowTask` at `tasks[i]`,
 - `scorer` / `scorer[i]`: live `Scorer` (scalar and sequence);
 - `solver` / `solver[i]`: live `Solver`/`Agent` (scalar and sequence);
 - `early_stopping`: any set value (`EarlyStopping` is a live-callback
-  protocol with no registry/string form).
+  protocol with no registry/string form);
+- `factory` (on the task and on any `FlowModel`/`FlowScorer`/`FlowSolver`/
+  `FlowAgent` reached above): callables that cannot be recreated from the
+  generated reference — lambdas, partials, nested functions, and callable
+  objects. Registry objects and module-level functions are accepted.
 
 Spec-level checks:
 

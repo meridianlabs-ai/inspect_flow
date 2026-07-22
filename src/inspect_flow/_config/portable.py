@@ -3,11 +3,20 @@ from dataclasses import dataclass
 from typing import Any
 
 from inspect_ai import ScannerConfig, Task
+from inspect_ai._util.registry import is_registry_object
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
 from inspect_flow._runner.scanner import is_scanner_spec
-from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
+from inspect_flow._types.flow_types import (
+    FlowAgent,
+    FlowFactory,
+    FlowModel,
+    FlowScorer,
+    FlowSolver,
+    FlowSpec,
+    FlowTask,
+)
 from inspect_flow._util.not_given import default_none, is_set
 
 _TASK_MESSAGE = "You provided an already-instantiated Task object, which cannot be serialized and recreated in another process. Fix: use FlowTask with a registry or file task name."
@@ -17,6 +26,7 @@ _SOLVER_MESSAGE = "You provided an already-instantiated Solver or Agent object, 
 _EARLY_STOPPING_MESSAGE = "early_stopping holds live callback objects, which cannot be serialized and recreated in another process. Fix: remove early_stopping from portable specs."
 _SCANNER_MESSAGE = 'The ScannerConfig has scanners that are not serializable spec references (e.g. already-instantiated Scanner objects), which cannot be serialized and recreated in another process. Fix: set options.scanner to a path to a scanner config file or use scanner spec references (e.g. {"name": "keyword_scanner"}).'
 _SCANNER_MODEL_MESSAGE = "You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which cannot be serialized and recreated in another process. Fix: use a model name string."
+_FACTORY_MESSAGE = "You provided a factory callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, or callable object). Fix: use a registry name or a module-level function."
 
 
 @dataclass
@@ -68,11 +78,16 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     scanner it references is a spec/registry reference rather than a live
     (already-instantiated) Inspect object. Portable specs can cross a
     YAML/JSON boundary, e.g. venv execution or submission to a remote
-    orchestrator. Factory callables are allowed (they serialize as registry
-    or file references). The spec is not expanded or resolved, and nothing
-    is installed or launched. Specs pulled in via `includes` are not
-    descended into: validate a resolved spec (after includes are merged) to
-    cover them.
+    orchestrator. Factory callables are allowed only when reconstructable —
+    a registry object or a module-level function; lambdas, partials, nested
+    functions, and callable objects are rejected. The spec is not expanded
+    or resolved, and nothing is installed or launched.
+
+    Two limitations: constructor argument values (`args`, `extra_args`, and
+    the `args` of nested Flow wrappers) are not inspected, so a live object
+    buried there serializes to a lossy `repr` string rather than being
+    rejected; and specs pulled in via `includes` are not descended into.
+    Validate a resolved spec (after includes are merged) to cover includes.
 
     Args:
         spec: The flow spec to validate.
@@ -110,20 +125,43 @@ def _entries(value: Any, path: str) -> list[tuple[str, Any]]:
     return [(path, value)]
 
 
+def _check_factory(factory: Any, path: str, violations: list[SpecViolation]) -> None:
+    inner = factory.factory if isinstance(factory, FlowFactory) else factory
+    if not callable(inner) or is_registry_object(inner):
+        return
+    code = getattr(inner, "__code__", None)
+    if (
+        code is not None
+        and inner.__name__ != "<lambda>"
+        and getattr(inner, "__qualname__", inner.__name__) == inner.__name__
+    ):
+        return
+    violations.append(SpecViolation(f"{path}.factory", _FACTORY_MESSAGE))
+
+
 def _check_task(task: FlowTask, path: str, violations: list[SpecViolation]) -> None:
+    _check_factory(task.factory, path, violations)
     if isinstance(task.model, Model):
         violations.append(SpecViolation(f"{path}.model", _MODEL_MESSAGE))
+    elif isinstance(task.model, FlowModel):
+        _check_factory(task.model.factory, f"{path}.model", violations)
     for role, model in (default_none(task.model_roles) or {}).items():
         if isinstance(model, Model):
             violations.append(
                 SpecViolation(f"{path}.model_roles[{role!r}]", _MODEL_MESSAGE)
             )
+        elif isinstance(model, FlowModel):
+            _check_factory(model.factory, f"{path}.model_roles[{role!r}]", violations)
     for scorer_path, scorer in _entries(task.scorer, f"{path}.scorer"):
         if isinstance(scorer, Scorer):
             violations.append(SpecViolation(scorer_path, _SCORER_MESSAGE))
+        elif isinstance(scorer, FlowScorer):
+            _check_factory(scorer.factory, scorer_path, violations)
     for solver_path, solver in _entries(task.solver, f"{path}.solver"):
         if not isinstance(solver, (str, FlowSolver, FlowAgent)):
             violations.append(SpecViolation(solver_path, _SOLVER_MESSAGE))
+        elif isinstance(solver, (FlowSolver, FlowAgent)):
+            _check_factory(solver.factory, solver_path, violations)
     if is_set(task.early_stopping):
         violations.append(
             SpecViolation(f"{path}.early_stopping", _EARLY_STOPPING_MESSAGE)
