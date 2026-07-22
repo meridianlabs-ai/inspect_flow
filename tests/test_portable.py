@@ -172,10 +172,20 @@ def test_non_reconstructable_factory_in_wrappers_rejected() -> None:
 
 def test_reconstructable_factories_pass() -> None:
     # A registry object, a module-level function, and FlowFactory wrapping
-    # either all serialize to a resolvable reference.
+    # either (or a string registry name) all serialize to a resolvable
+    # reference.
     validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=a_task)]))
     validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=_top_level_task_factory)]))
     validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=FlowFactory(a_task))]))
+    validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=FlowFactory("a_task"))]))
+
+
+def test_flow_factory_wrapping_bad_callable_rejected() -> None:
+    # The FlowFactory is unwrapped and its inner callable checked.
+    spec = FlowSpec(tasks=[FlowTask(factory=FlowFactory(lambda: Task()))])
+    violations = _violations(spec)
+    assert [v.path for v in violations] == ["tasks[0].factory"]
+    assert "cannot be recreated" in violations[0].message
 
 
 def test_defaults_task_templates_rejected() -> None:

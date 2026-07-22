@@ -26,7 +26,7 @@ _SOLVER_MESSAGE = "You provided an already-instantiated Solver or Agent object, 
 _EARLY_STOPPING_MESSAGE = "early_stopping holds live callback objects, which cannot be serialized and recreated in another process. Fix: remove early_stopping from portable specs."
 _SCANNER_MESSAGE = 'The ScannerConfig has scanners that are not serializable spec references (e.g. already-instantiated Scanner objects), which cannot be serialized and recreated in another process. Fix: set options.scanner to a path to a scanner config file or use scanner spec references (e.g. {"name": "keyword_scanner"}).'
 _SCANNER_MODEL_MESSAGE = "You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which cannot be serialized and recreated in another process. Fix: use a model name string."
-_FACTORY_MESSAGE = "You provided a factory callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, or callable object). Fix: use a registry name or a module-level function."
+_FACTORY_MESSAGE = "You provided a factory callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, class, or callable object). Fix: use a registry name or a module-level function."
 
 
 @dataclass
