@@ -10,6 +10,8 @@ description: Public API — run, check, steps, config, store helpers.
 ### check
 ### run_step
 ### load_spec
+### dump_spec
+### load_spec_data
 ### config
 ### validate_portable_spec
 ### list_logs

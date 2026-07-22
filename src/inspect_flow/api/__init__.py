@@ -17,6 +17,7 @@ from inspect_flow._config.portable import (
     SpecViolation,
     validate_portable_spec,
 )
+from inspect_flow._config.serialize import dump_spec, load_spec_data
 from inspect_flow._display.display import DisplayType
 from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
@@ -40,9 +41,11 @@ __all__ = [
     "copy",
     "copy_all_logs",
     "delete_store",
+    "dump_spec",
     "init",
     "list_logs",
     "load_spec",
+    "load_spec_data",
     "metadata",
     "run",
     "run_step",
