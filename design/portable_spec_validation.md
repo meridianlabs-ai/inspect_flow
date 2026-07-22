@@ -78,10 +78,18 @@ Spec-level checks:
 - `store.filter` (scalar and sequence): non-reconstructable filter callables,
   by the same rule as factories.
 
+Free-form value containers — `args`, `extra_args`, `model_args`, `metadata`,
+`flow_metadata` (at every level), `FlowFactory.args`, and scanner
+`ScannerSpec.params` — are checked by dumping the container through Pydantic
+and rejecting any leaf that serializes lossily (a live object's `repr`, or an
+unresolvable callable name). Values that round-trip — JSON scalars, nested
+containers, natively-serialized types like `datetime`, registry references —
+are accepted.
+
 Known limitations: specs pulled in via `includes` are not descended into
-(validate the resolved spec, after includes are merged), and `args` /
-`extra_args` mappings are not inspected — a live object buried in constructor
-args serializes as a lossy `repr` string rather than being rejected.
+(validate the resolved spec, after includes are merged), and a value whose
+type Pydantic silently coerces on dump (e.g. a `datetime` becoming an ISO
+string) round-trips as the coerced type rather than being flagged.
 
 Two tests guard against future drift. A snapshot test on the field names of
 the spec types (`FlowSpec`, `FlowTask`, `FlowDefaults`, `FlowOptions`, the

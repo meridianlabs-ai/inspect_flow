@@ -275,6 +275,66 @@ def test_store_filter_reconstructable_passes() -> None:
     )
 
 
+def test_lossy_values_in_containers_rejected() -> None:
+    # Free-form value containers (metadata, args, scanner params, factory args)
+    # must not smuggle a live object past the check, since it serializes to a
+    # repr string and reloads as that string in the child.
+    cases = [
+        (FlowSpec(flow_metadata={"x": Task()}), "flow_metadata"),
+        (FlowSpec(options=FlowOptions(metadata={"x": Task()})), "options.metadata"),
+        (FlowSpec(tasks=[FlowTask(name="t", args={"x": Task()})]), "tasks[0].args"),
+        (
+            FlowSpec(tasks=[FlowTask(name="t", metadata={"x": Task()})]),
+            "tasks[0].metadata",
+        ),
+        (
+            FlowSpec(tasks=[FlowTask(name="t", flow_metadata={"x": Task()})]),
+            "tasks[0].flow_metadata",
+        ),
+        (
+            FlowSpec(
+                tasks=[FlowTask(model=FlowModel(name="m", flow_metadata={"x": Task()}))]
+            ),
+            "tasks[0].model.flow_metadata",
+        ),
+        (
+            FlowSpec(tasks=[FlowTask(factory=FlowFactory("reg", args={"x": Task()}))]),
+            "tasks[0].factory.args",
+        ),
+        (
+            FlowSpec(
+                options=FlowOptions(
+                    scanner=ScannerConfig(
+                        scanners=[ScannerSpec(name="kw", params={"x": Task()})]
+                    )
+                )
+            ),
+            "options.scanner.scanners[0].params",
+        ),
+    ]
+    for spec, path in cases:
+        violations = _violations(spec)
+        assert [v.path for v in violations] == [path]
+        assert "cannot be serialized" in violations[0].message
+
+
+def test_portable_values_in_containers_pass() -> None:
+    from datetime import datetime
+
+    # JSON data, natively-serialized types (datetime), and a nested structure
+    # all round-trip; only genuinely lossy leaves are rejected.
+    validate_portable_spec(
+        FlowSpec(
+            flow_metadata={
+                "n": 1,
+                "items": [1, 2, {"k": "v"}],
+                "when": datetime(2020, 1, 1),
+            },
+            tasks=[FlowTask(name="t", args={"threshold": 0.5, "labels": ["a", "b"]})],
+        )
+    )
+
+
 def _serializes_lossily(obj: Any) -> bool:
     # Independent mirror of _serialize_fallback's branches: a value that reaches
     # pydantic's dump fallback is lossy unless it becomes a registry dict (which
@@ -313,6 +373,9 @@ def test_validator_flags_every_lossy_leaf() -> None:
     # stance, tested separately.
     bad_task = FlowTask(
         factory=lambda: Task(),
+        args={"x": Task()},
+        metadata={"x": Task()},
+        flow_metadata={"x": Task()},
         model=FlowModel(factory=lambda: get_model("mockllm/model")),
         model_roles={"grader": FlowModel(factory=lambda: get_model("mockllm/model"))},
         scorer=[FlowScorer(factory=lambda: a_scorer())],
@@ -321,6 +384,13 @@ def test_validator_flags_every_lossy_leaf() -> None:
     )
     spec = FlowSpec(
         tasks=[Task(), bad_task],
+        flow_metadata={"x": Task()},
+        options=FlowOptions(
+            metadata={"x": Task()},
+            scanner=ScannerConfig(
+                scanners=[ScannerSpec(name="kw", params={"x": Task()})]
+            ),
+        ),
         defaults=FlowDefaults(
             task=FlowTask(factory=lambda: Task()),
             task_prefix={"p/": FlowTask(factory=lambda: Task())},
@@ -339,11 +409,17 @@ def test_validator_flags_every_lossy_leaf() -> None:
         [
             "tasks[0]",
             "tasks[1].factory",
+            "tasks[1].args",
+            "tasks[1].metadata",
+            "tasks[1].flow_metadata",
             "tasks[1].model.factory",
             "tasks[1].model_roles['grader'].factory",
             "tasks[1].scorer[0].factory",
             "tasks[1].solver[0].factory",
             "tasks[1].early_stopping",
+            "flow_metadata",
+            "options.metadata",
+            "options.scanner.scanners[0].params",
             "defaults.task.factory",
             "defaults.task_prefix['p/'].factory",
             "defaults.model.factory",

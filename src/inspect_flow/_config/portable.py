@@ -3,9 +3,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from inspect_ai import ScannerConfig, Task
-from inspect_ai._util.registry import is_registry_object
+from inspect_ai._util.registry import is_registry_object, registry_value
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
+from pydantic_core import to_jsonable_python
 
 from inspect_flow._runner.scanner import is_scanner_spec
 from inspect_flow._types.flow_types import (
@@ -29,6 +30,7 @@ _SCANNER_MESSAGE = 'The ScannerConfig has scanners that are not serializable spe
 _SCANNER_MODEL_MESSAGE = "You provided an already-instantiated Model object as the ScannerConfig model or in model_roles, which cannot be serialized and recreated in another process. Fix: use a model name string."
 _FACTORY_MESSAGE = "You provided a factory callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, class, or callable object). Fix: use a registry name or a module-level function."
 _FILTER_MESSAGE = "You provided a store filter callable that cannot be recreated in another process (e.g. a lambda, functools.partial, nested function, class, or callable object). Fix: use a registered filter name or a module-level function."
+_VALUES_MESSAGE = "This field contains a value that cannot be serialized and recreated in another process (e.g. a live Inspect object or a non-reconstructable callable). Fix: use only JSON-serializable data, registry references, or module-level callables."
 
 
 @dataclass
@@ -82,14 +84,18 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     YAML/JSON boundary, e.g. venv execution or submission to a remote
     orchestrator. Factory callables are allowed only when reconstructable —
     a registry object or a module-level function; lambdas, partials, nested
-    functions, and callable objects are rejected. The spec is not expanded
-    or resolved, and nothing is installed or launched.
+    functions, and callable objects are rejected. Free-form value containers
+    (`args`, `extra_args`, `metadata`, `flow_metadata`, scanner params) are
+    inspected too: any leaf that serializes lossily is rejected, while
+    JSON-serializable data, natively-serialized types, and registry
+    references are accepted. The spec is not expanded or resolved, and
+    nothing is installed or launched.
 
-    Two limitations: constructor argument values (`args`, `extra_args`, and
-    the `args` of nested Flow wrappers) are not inspected, so a live object
-    buried there serializes to a lossy `repr` string rather than being
-    rejected; and specs pulled in via `includes` are not descended into.
-    Validate a resolved spec (after includes are merged) to cover includes.
+    Two limitations: specs pulled in via `includes` are not descended into
+    (validate a resolved spec, after includes are merged, to cover them),
+    and a value whose type Pydantic silently coerces on dump (e.g. a
+    `datetime` becoming an ISO string) round-trips as the coerced type
+    rather than being flagged.
 
     Args:
         spec: The flow spec to validate.
@@ -118,11 +124,12 @@ def validate_portable_spec(spec: FlowSpec) -> None:
             (defaults.agent, defaults.agent_prefix, "agent"),
         ):
             if is_set(scalar):
-                _check_factory(scalar.factory, f"defaults.{name}", violations)
+                _check_wrapper(scalar, f"defaults.{name}", violations)
             for key, wrapper in (default_none(prefix) or {}).items():
-                _check_factory(
-                    wrapper.factory, f"defaults.{name}_prefix[{key!r}]", violations
-                )
+                _check_wrapper(wrapper, f"defaults.{name}_prefix[{key!r}]", violations)
+    _check_values(spec.flow_metadata, "flow_metadata", violations)
+    if is_set(spec.options):
+        _check_values(spec.options.metadata, "options.metadata", violations)
     _check_scanner(spec, violations)
     _check_store(spec, violations)
     if violations:
@@ -154,35 +161,68 @@ def _is_reconstructable(value: Any) -> bool:
     )
 
 
+def _round_trips(obj: Any) -> bool:
+    # Mirrors _serialize_fallback: an object that reaches the dump fallback
+    # round-trips only if it becomes a registry dict or a resolvable callable
+    # name; anything else serializes to a lossy repr.
+    value = registry_value(obj)
+    if isinstance(value, dict):
+        return True
+    if callable(value):
+        return _is_reconstructable(value)
+    return False
+
+
+def _check_values(value: Any, path: str, violations: list[SpecViolation]) -> None:
+    if not is_set(value):
+        return
+    coerced: list[Any] = []
+    to_jsonable_python(value, fallback=coerced.append)
+    if any(not _round_trips(obj) for obj in coerced):
+        violations.append(SpecViolation(path, _VALUES_MESSAGE))
+
+
 def _check_factory(factory: Any, path: str, violations: list[SpecViolation]) -> None:
     inner = factory.factory if isinstance(factory, FlowFactory) else factory
     if not _is_reconstructable(inner):
         violations.append(SpecViolation(f"{path}.factory", _FACTORY_MESSAGE))
+    if isinstance(factory, FlowFactory):
+        _check_values(factory.args, f"{path}.factory.args", violations)
+
+
+def _check_wrapper(wrapper: Any, path: str, violations: list[SpecViolation]) -> None:
+    _check_factory(wrapper.factory, path, violations)
+    for field in ("args", "model_args", "flow_metadata"):
+        _check_values(getattr(wrapper, field, None), f"{path}.{field}", violations)
 
 
 def _check_task(task: FlowTask, path: str, violations: list[SpecViolation]) -> None:
     _check_factory(task.factory, path, violations)
+    _check_values(task.args, f"{path}.args", violations)
+    _check_values(task.extra_args, f"{path}.extra_args", violations)
+    _check_values(task.metadata, f"{path}.metadata", violations)
+    _check_values(task.flow_metadata, f"{path}.flow_metadata", violations)
     if isinstance(task.model, Model):
         violations.append(SpecViolation(f"{path}.model", _MODEL_MESSAGE))
     elif isinstance(task.model, FlowModel):
-        _check_factory(task.model.factory, f"{path}.model", violations)
+        _check_wrapper(task.model, f"{path}.model", violations)
     for role, model in (default_none(task.model_roles) or {}).items():
         if isinstance(model, Model):
             violations.append(
                 SpecViolation(f"{path}.model_roles[{role!r}]", _MODEL_MESSAGE)
             )
         elif isinstance(model, FlowModel):
-            _check_factory(model.factory, f"{path}.model_roles[{role!r}]", violations)
+            _check_wrapper(model, f"{path}.model_roles[{role!r}]", violations)
     for scorer_path, scorer in _entries(task.scorer, f"{path}.scorer"):
         if isinstance(scorer, Scorer):
             violations.append(SpecViolation(scorer_path, _SCORER_MESSAGE))
         elif isinstance(scorer, FlowScorer):
-            _check_factory(scorer.factory, scorer_path, violations)
+            _check_wrapper(scorer, scorer_path, violations)
     for solver_path, solver in _entries(task.solver, f"{path}.solver"):
         if not isinstance(solver, (str, FlowSolver, FlowAgent)):
             violations.append(SpecViolation(solver_path, _SOLVER_MESSAGE))
         elif isinstance(solver, (FlowSolver, FlowAgent)):
-            _check_factory(solver.factory, solver_path, violations)
+            _check_wrapper(solver, solver_path, violations)
     if is_set(task.early_stopping):
         violations.append(
             SpecViolation(f"{path}.early_stopping", _EARLY_STOPPING_MESSAGE)
@@ -195,6 +235,13 @@ def _check_scanner(spec: FlowSpec, violations: list[SpecViolation]) -> None:
         for path, entry in _entries(scanner.scanners, "options.scanner.scanners"):
             if not is_scanner_spec(entry):
                 violations.append(SpecViolation(path, _SCANNER_MESSAGE))
+            else:
+                params = (
+                    entry.get("params")
+                    if isinstance(entry, dict)
+                    else getattr(entry, "params", None)
+                )
+                _check_values(params, f"{path}.params", violations)
         if isinstance(scanner.model, Model):
             violations.append(
                 SpecViolation("options.scanner.model", _SCANNER_MODEL_MESSAGE)
