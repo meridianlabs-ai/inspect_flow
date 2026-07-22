@@ -12,6 +12,11 @@ from inspect_flow._api.api import (
     store_get,
 )
 from inspect_flow._api.list_logs import list_logs
+from inspect_flow._config.portable import (
+    SpecNotPortableError,
+    SpecViolation,
+    validate_portable_spec,
+)
 from inspect_flow._display.display import DisplayType
 from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
@@ -27,6 +32,8 @@ __all__ = [
     "DisplayType",
     "FlowStore",
     "RunResult",
+    "SpecNotPortableError",
+    "SpecViolation",
     "StepResult",
     "check",
     "config",
@@ -43,4 +50,5 @@ __all__ = [
     "scan_step",
     "store_get",
     "tag",
+    "validate_portable_spec",
 ]
