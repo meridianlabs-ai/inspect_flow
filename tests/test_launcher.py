@@ -7,25 +7,22 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.client import BaseClient
 from click.testing import CliRunner
-from inspect_ai import ScannerConfig, Task
+from inspect_ai import Task
 from inspect_ai._util.error import PrerequisiteError
-from inspect_ai.model import get_model
 from inspect_flow import FlowSpec
 from inspect_flow._api.api import init, load_spec, run
 from inspect_flow._config.load import ConfigOptions, int_load_spec
 from inspect_flow._config.write import write_config_file
 from inspect_flow._display.display import DEFAULT_DISPLAY_TYPE
 from inspect_flow._launcher.launch import launch
-from inspect_flow._launcher.venv import _check_spec_for_venv, _create_venv
+from inspect_flow._launcher.venv import _create_venv
 from inspect_flow._runner.cli import runner
 from inspect_flow._runner.run import LaunchResult
-from inspect_flow._types.flow_types import FlowOptions, FlowSolver, FlowTask
+from inspect_flow._types.flow_types import FlowOptions, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
-from inspect_scout import ScannerSpec
-from local_eval.my_scanners import keyword_scanner
+from inspect_flow.api import SpecNotPortableError
 
-from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver
 from tests.conftest import MockVenvSubprocess, mock_call_arg
 
 CREATE_VENV_RUN_CALLS = 4
@@ -346,110 +343,14 @@ def test_no_log_dir() -> None:
     assert "log_dir must be set" in str(e.value)
 
 
-def test_instantiated_venv_error() -> None:
+def test_venv_not_portable_error() -> None:
+    # Detailed portability coverage lives in tests/test_portable.py; venv mode
+    # must surface the same error with the inproc escape hatch appended.
     spec = FlowSpec(execution_type="venv", log_dir="logs", tasks=[Task()])
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(SpecNotPortableError) as e:
         launch(spec=spec, base_dir=".")
     assert "already-instantiated Task object" in str(e.value)
-
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        tasks=[FlowTask(model=get_model("mockllm/mock-llm1"))],
-    )
-    with pytest.raises(ValueError) as e:
-        launch(spec=spec, base_dir=".")
-    assert "already-instantiated Model object" in str(e.value)
-
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        tasks=[FlowTask(scorer=a_scorer())],
-    )
-    with pytest.raises(ValueError) as e:
-        launch(spec=spec, base_dir=".")
-    assert "already-instantiated Scorer object" in str(e.value)
-
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        tasks=[FlowTask(solver=[a_solver()])],
-    )
-    with pytest.raises(ValueError) as e:
-        launch(spec=spec, base_dir=".")
-    assert "already-instantiated Solver or Agent" in str(e.value)
-
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        tasks=[FlowTask(solver=a_agent())],
-    )
-    with pytest.raises(ValueError) as e:
-        launch(spec=spec, base_dir=".")
-    assert "already-instantiated Solver or Agent" in str(e.value)
-
-    # Valid case should not throw
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        tasks=[FlowTask(solver=[FlowSolver(name="solver_name")])],
-    )
-    _check_spec_for_venv(spec)
-
-
-def test_live_scanner_venv_error() -> None:
-    # In venv mode the spec is serialized, so only spec references (dicts /
-    # ScannerSpec instances) or a config file path survive. Anything else is
-    # rejected with a single clear message; scout owns shape validation of the
-    # spec references themselves.
-    not_serializable = "not serializable spec references"
-
-    spec = FlowSpec(
-        execution_type="venv",
-        log_dir="logs",
-        options=FlowOptions(scanner=ScannerConfig(scanners=[keyword_scanner()])),
-        tasks=["local_eval/noop"],
-    )
-    with pytest.raises(ValueError, match=not_serializable):
-        launch(spec=spec, base_dir=".")
-
-    # Every shape that carries a live Scanner (any sequence, scout's
-    # (name, Scanner) tuples, a bare scanner) is rejected the same way.
-    for scanners in (
-        (keyword_scanner(),),
-        [("kw", keyword_scanner())],
-        keyword_scanner(),
-        ["keyword_scanner"],
-    ):
-        spec.options = FlowOptions(scanner=ScannerConfig(scanners=scanners))
-        with pytest.raises(ValueError, match=not_serializable):
-            _check_spec_for_venv(spec)
-
-    # A live Model in the scanner config (directly or via model_roles) is also
-    # rejected.
-    specs = [{"name": "keyword_scanner"}]
-    for scanner in (
-        ScannerConfig(scanners=specs, model=get_model("mockllm/model")),
-        ScannerConfig(
-            scanners=specs, model_roles={"grader": get_model("mockllm/model")}
-        ),
-    ):
-        spec.options = FlowOptions(scanner=scanner)
-        with pytest.raises(ValueError, match="Model object as the ScannerConfig model"):
-            _check_spec_for_venv(spec)
-
-    # A config file path, or a config whose scanners are all spec references
-    # (list or dict of dicts / ScannerSpec instances, or a bare ScannerSpec),
-    # serializes cleanly and should not throw.
-    for scanner in (
-        "tests/config/scanners.yaml",
-        ScannerConfig(scanners=[{"name": "keyword_scanner"}]),
-        ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")]),
-        ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}}),
-        ScannerConfig(scanners=ScannerSpec(name="keyword_scanner")),
-    ):
-        spec.options = FlowOptions(scanner=scanner)
-        _check_spec_for_venv(spec)
+    assert "'inproc' execution type" in str(e.value)
 
 
 def test_relative_scanner_path(mock_venv_subprocess: MockVenvSubprocess) -> None:
