@@ -1,9 +1,11 @@
 import pickle
 from collections.abc import Callable
 from functools import partial
+from typing import Any
 
 import pytest
 from inspect_ai import ScannerConfig, Task
+from inspect_ai._util.registry import is_registry_object, registry_value
 from inspect_ai.dataset import Sample
 from inspect_ai.log import EvalLog, EvalSpec
 from inspect_ai.model import get_model
@@ -273,6 +275,91 @@ def test_store_filter_reconstructable_passes() -> None:
     )
 
 
+def _serializes_lossily(obj: Any) -> bool:
+    # Independent mirror of _serialize_fallback's branches: a value that reaches
+    # pydantic's dump fallback is lossy unless it becomes a registry dict (which
+    # round-trips) or a resolvable callable name (registry object or a
+    # module-level function).
+    value = registry_value(obj)
+    if isinstance(value, dict):
+        return False
+    if callable(value):
+        code = getattr(value, "__code__", None)
+        return not (
+            is_registry_object(value)
+            or (
+                code is not None
+                and value.__name__ != "<lambda>"
+                and getattr(value, "__qualname__", value.__name__) == value.__name__
+            )
+        )
+    return True
+
+
+def _lossy_leaf_count(spec: FlowSpec) -> int:
+    coerced: list[Any] = []
+    spec.model_dump(mode="json", exclude_unset=True, fallback=coerced.append)
+    return sum(1 for obj in coerced if _serializes_lossily(obj))
+
+
+def test_validator_flags_every_lossy_leaf() -> None:
+    # Completeness oracle. Pydantic's own dump traverses every field; any value
+    # that serializes lossily (a repr, or an unresolvable callable name) must be
+    # reported by the validator, or the child process gets a corrupt spec. A new
+    # field that can carry such a value forces a failure here (add it below) or
+    # in the field-name snapshot test. This does not cover live objects that
+    # serialize to a round-trippable registry dict (Model/Scorer/Solver/Agent) —
+    # the validator rejects those as a stance, tested separately.
+    bad_task = FlowTask(
+        factory=lambda: Task(),
+        model=FlowModel(factory=lambda: get_model("mockllm/model")),
+        model_roles={"grader": FlowModel(factory=lambda: get_model("mockllm/model"))},
+        scorer=[FlowScorer(factory=lambda: a_scorer())],
+        solver=[FlowSolver(factory=lambda: a_solver())],
+        early_stopping=_LiveEarlyStopping(),
+    )
+    spec = FlowSpec(
+        tasks=[Task(), bad_task],
+        defaults=FlowDefaults(
+            task=FlowTask(factory=lambda: Task()),
+            task_prefix={"p/": FlowTask(factory=lambda: Task())},
+            model=FlowModel(factory=lambda: get_model("mockllm/model")),
+            solver=FlowSolver(factory=lambda: a_solver()),
+            agent=FlowAgent(factory=lambda: a_agent()),
+            model_prefix={"m/": FlowModel(factory=lambda: get_model("mockllm/model"))},
+            solver_prefix={"s/": FlowSolver(factory=lambda: a_solver())},
+            agent_prefix={"a/": FlowAgent(factory=lambda: a_agent())},
+        ),
+        store=FlowStoreConfig(filter=lambda log: True),
+    )
+    with pytest.raises(SpecNotPortableError) as excinfo:
+        validate_portable_spec(spec)
+    assert sorted(v.path for v in excinfo.value.violations) == sorted(
+        [
+            "tasks[0]",
+            "tasks[1].factory",
+            "tasks[1].model.factory",
+            "tasks[1].model_roles['grader'].factory",
+            "tasks[1].scorer[0].factory",
+            "tasks[1].solver[0].factory",
+            "tasks[1].early_stopping",
+            "defaults.task.factory",
+            "defaults.task_prefix['p/'].factory",
+            "defaults.model.factory",
+            "defaults.solver.factory",
+            "defaults.agent.factory",
+            "defaults.model_prefix['m/'].factory",
+            "defaults.solver_prefix['s/'].factory",
+            "defaults.agent_prefix['a/'].factory",
+            "store.filter",
+        ]
+    )
+    # Independent cross-check: pydantic coerced exactly as many lossy leaves as
+    # the validator reported violations. If a populated field serialized lossily
+    # but the validator missed it, these diverge and the test fails.
+    assert _lossy_leaf_count(spec) == len(excinfo.value.violations)
+
+
 def test_defaults_task_templates_rejected() -> None:
     # defaults.task and defaults.task_prefix were gaps in the private check
     spec = FlowSpec(
@@ -488,6 +575,12 @@ def test_spec_fields_are_classified_for_portability() -> None:
         "flow_metadata",
         "name",
         "type",
+    ]
+    assert sorted(FlowStoreConfig.model_fields) == [
+        "filter",
+        "path",
+        "read",
+        "write",
     ]
     assert sorted(FlowOptions.model_fields) == [
         "acp_server",
