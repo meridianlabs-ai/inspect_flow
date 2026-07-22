@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,7 +6,7 @@ from inspect_ai import ScannerConfig, Task
 from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 
-from inspect_flow._runner.scanner import is_scanner_spec, scanner_entries
+from inspect_flow._runner.scanner import is_scanner_spec
 from inspect_flow._types.flow_types import FlowAgent, FlowSolver, FlowSpec, FlowTask
 from inspect_flow._util.not_given import default_none, is_set
 
@@ -53,6 +53,13 @@ class SpecNotPortableError(ValueError):
             lines.append(hint)
         super().__init__("\n".join(lines))
 
+    def __reduce__(
+        self,
+    ) -> tuple[type["SpecNotPortableError"], tuple[list[SpecViolation], str | None]]:
+        # The default exception reduce replays __init__ with self.args (the
+        # rendered message), which would corrupt violations on unpickling.
+        return (type(self), (self.violations, self.hint))
+
 
 def validate_portable_spec(spec: FlowSpec) -> None:
     """Validate that a flow spec can be serialized and recreated in another process.
@@ -63,7 +70,9 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     YAML/JSON boundary, e.g. venv execution or submission to a remote
     orchestrator. Factory callables are allowed (they serialize as registry
     or file references). The spec is not expanded or resolved, and nothing
-    is installed or launched.
+    is installed or launched. Specs pulled in via `includes` are not
+    descended into: validate a resolved spec (after includes are merged) to
+    cover them.
 
     Args:
         spec: The flow spec to validate.
@@ -94,6 +103,8 @@ def validate_portable_spec(spec: FlowSpec) -> None:
 def _entries(value: Any, path: str) -> list[tuple[str, Any]]:
     if not value:
         return []
+    if isinstance(value, Mapping):
+        return [(f"{path}[{key!r}]", entry) for key, entry in value.items()]
     if isinstance(value, Sequence) and not isinstance(value, str):
         return [(f"{path}[{i}]", entry) for i, entry in enumerate(value)]
     return [(path, value)]
@@ -121,12 +132,10 @@ def _check_task(task: FlowTask, path: str, violations: list[SpecViolation]) -> N
 
 def _check_scanner(spec: FlowSpec, violations: list[SpecViolation]) -> None:
     scanner = default_none(spec.options.scanner) if spec.options else None
-    for index, entry in enumerate(scanner_entries(scanner)):
-        if not is_scanner_spec(entry):
-            violations.append(
-                SpecViolation(f"options.scanner.scanners[{index}]", _SCANNER_MESSAGE)
-            )
     if isinstance(scanner, ScannerConfig):
+        for path, entry in _entries(scanner.scanners, "options.scanner.scanners"):
+            if not is_scanner_spec(entry):
+                violations.append(SpecViolation(path, _SCANNER_MESSAGE))
         if isinstance(scanner.model, Model):
             violations.append(
                 SpecViolation("options.scanner.model", _SCANNER_MODEL_MESSAGE)

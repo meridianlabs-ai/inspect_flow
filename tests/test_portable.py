@@ -1,3 +1,5 @@
+import pickle
+
 import pytest
 from inspect_ai import ScannerConfig, Task
 from inspect_ai.dataset import Sample
@@ -6,9 +8,11 @@ from inspect_ai.model import get_model
 from inspect_ai.scorer import SampleScore
 from inspect_ai.util import EarlyStop
 from inspect_flow import (
+    FlowAgent,
     FlowDefaults,
     FlowModel,
     FlowOptions,
+    FlowScorer,
     FlowSolver,
     FlowSpec,
     FlowTask,
@@ -117,17 +121,28 @@ def test_defaults_task_templates_rejected() -> None:
 
 def test_live_scanner_rejected() -> None:
     # Every shape that carries a live Scanner (any sequence, scout's
-    # (name, Scanner) tuples, a bare scanner, bare strings) is rejected.
-    for scanners in (
-        (keyword_scanner(),),
-        [("kw", keyword_scanner())],
-        keyword_scanner(),
-        ["keyword_scanner"],
+    # (name, Scanner) tuples, a bare scanner, bare strings, dicts) is
+    # rejected, with a path matching the shape.
+    for scanners, path in (
+        ((keyword_scanner(),), "options.scanner.scanners[0]"),
+        ([("kw", keyword_scanner())], "options.scanner.scanners[0]"),
+        (keyword_scanner(), "options.scanner.scanners"),
+        (["keyword_scanner"], "options.scanner.scanners[0]"),
+        ({"kw": keyword_scanner()}, "options.scanner.scanners['kw']"),
     ):
         spec = FlowSpec(options=FlowOptions(scanner=ScannerConfig(scanners=scanners)))
         violations = _violations(spec)
-        assert violations[0].path.startswith("options.scanner.scanners[")
+        assert [v.path for v in violations] == [path]
         assert "not serializable spec references" in violations[0].message
+
+
+def test_error_pickles() -> None:
+    # Remote orchestrators may move the error across process boundaries.
+    error = SpecNotPortableError([SpecViolation("tasks[0]", "message")], hint="a hint")
+    restored = pickle.loads(pickle.dumps(error))
+    assert restored.violations == error.violations
+    assert restored.hint == error.hint
+    assert str(restored) == str(error)
 
 
 def test_live_scanner_model_rejected() -> None:
@@ -273,6 +288,37 @@ def test_spec_fields_are_classified_for_portability() -> None:
         "solver_prefix",
         "task",
         "task_prefix",
+    ]
+    assert sorted(FlowModel.model_fields) == [
+        "api_key",
+        "base_url",
+        "config",
+        "default",
+        "factory",
+        "flow_metadata",
+        "memoize",
+        "model_args",
+        "name",
+        "role",
+    ]
+    assert sorted(FlowScorer.model_fields) == [
+        "args",
+        "factory",
+        "flow_metadata",
+        "name",
+    ]
+    assert sorted(FlowSolver.model_fields) == [
+        "args",
+        "factory",
+        "flow_metadata",
+        "name",
+    ]
+    assert sorted(FlowAgent.model_fields) == [
+        "args",
+        "factory",
+        "flow_metadata",
+        "name",
+        "type",
     ]
     assert sorted(FlowOptions.model_fields) == [
         "acp_server",
