@@ -12,6 +12,7 @@ from inspect_flow._api.api import (
     store_get,
 )
 from inspect_flow._api.list_logs import list_logs
+from inspect_flow._config.model_refs import SpecModelRef, iter_model_refs
 from inspect_flow._display.display import DisplayType
 from inspect_flow._steps.copy import copy
 from inspect_flow._steps.run import run_step
@@ -27,6 +28,7 @@ __all__ = [
     "DisplayType",
     "FlowStore",
     "RunResult",
+    "SpecModelRef",
     "StepResult",
     "check",
     "config",
@@ -34,6 +36,7 @@ __all__ = [
     "copy_all_logs",
     "delete_store",
     "init",
+    "iter_model_refs",
     "list_logs",
     "load_spec",
     "metadata",

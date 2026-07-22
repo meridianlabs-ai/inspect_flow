@@ -11,6 +11,7 @@ description: Public API — run, check, steps, config, store helpers.
 ### run_step
 ### load_spec
 ### config
+### iter_model_refs
 ### list_logs
 ### store_get
 ### delete_store
@@ -22,3 +23,4 @@ description: Public API — run, check, steps, config, store helpers.
 ### FlowStore
 ### StepResult
 ### DisplayType
+### SpecModelRef
