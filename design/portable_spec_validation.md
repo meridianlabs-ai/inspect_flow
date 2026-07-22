@@ -67,8 +67,13 @@ Spec-level checks:
 - `options.scanner.model` and `options.scanner.model_roles[key]`: live
   `Model`.
 
-A snapshot test on the field names of `FlowSpec`, `FlowTask`, `FlowDefaults`,
-and `FlowOptions` forces every future field through this classification:
+Known limitations: specs pulled in via `includes` are not descended into
+(validate the resolved spec, after includes are merged), and `args` /
+`extra_args` mappings are not inspected — a live object buried in constructor
+args serializes as a lossy `repr` string rather than being rejected.
+
+A snapshot test on the field names of the spec types forces every future
+field through this classification:
 adding a field fails the test until the author either extends
 `validate_portable_spec` (live-capable field) or updates the snapshot (plain
 data). Full annotation introspection was considered and rejected as too

@@ -11,6 +11,7 @@ description: Public API — run, check, steps, config, store helpers.
 ### run_step
 ### load_spec
 ### config
+### validate_portable_spec
 ### list_logs
 ### store_get
 ### delete_store
@@ -22,3 +23,5 @@ description: Public API — run, check, steps, config, store helpers.
 ### FlowStore
 ### StepResult
 ### DisplayType
+### SpecNotPortableError
+### SpecViolation
