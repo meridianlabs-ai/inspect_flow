@@ -153,6 +153,13 @@ jobs:
             --label inspect-ai-main \
             --assignee ransomr \
             --body "$body")
+          # No `set -e`, so a transient create failure would otherwise emit
+          # needs_triage=true with an empty issue number and burn a broken
+          # agent run. Fail loudly instead.
+          if [ -z "$url" ]; then
+            echo "::error::gh issue create failed — not triggering triage."
+            exit 1
+          fi
           number=$(echo "$url" | sed 's#.*/##')
           echo "Opened $url"
           {
@@ -220,7 +227,9 @@ jobs:
       # Direct (headless) invocation, mirroring the dev-agent invocation in
       # meridianlabs-ai/agents/.github/workflows/claude.yml and inspect-update.yml.
       # The anthropic_* values are Workload Identity Federation identifiers, not
-      # secrets. The settings allow-list matches the inspect-update agent's.
+      # secrets. The settings allow-list matches the inspect-update agent's,
+      # extended with `Bash(uvx:*)` so triage can reproduce failures with a
+      # pinned tool version (e.g. `uvx ruff@latest format` for a ruff bump).
       - uses: anthropics/claude-code-action@v1
         id: claude
         with:
