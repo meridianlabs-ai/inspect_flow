@@ -7,7 +7,7 @@
 # the canary upgrades ALL dev dependencies. So "canary red" must be diagnosed,
 # not assumed to mean "inspect-ai broke us".
 #
-# Two jobs:
+# Three jobs:
 #   triage-gate — deterministic. Opens ONE tracking issue (deduped on the
 #     `inspect-ai-main` label) and, while it stays open, appends a "still
 #     failing" comment on later failures instead of piling up duplicate issues.
@@ -29,6 +29,11 @@
 #     a self-resolved break or a no-PR flake would otherwise leave the issue
 #     open forever — and a stale open issue wedges the dedup above (later
 #     failures pile onto it instead of opening a fresh, correctly-scoped one).
+#     Exception: a `hold:release` issue is deliberately left open to defer to
+#     the next inspect-ai release, and in-flux upstream changes are the ones
+#     most likely to flap green transiently — so close-on-green skips those,
+#     keeping the deferred thread (and its human context) intact until the
+#     release actually reconciles it.
 #
 # Dedup is keyed on the `inspect-ai-main` label, not the failure signature: the
 # canary has one meaning ("flow is broken against inspect-ai main"), so one open
@@ -367,13 +372,10 @@ jobs:
           path: /home/runner/work/_temp/claude-execution-output.json
           if-no-files-found: ignore
 
-  # Close the tracking issue when the canary is green again. Green is the
-  # ground-truth "flow is no longer broken" signal — more reliable than a fix
-  # PR's `Fixes #<n>` link, which fires only for causes that get a PR and only
-  # when the keyword is well-formed. Closing here resets the dedup so the next
-  # red run opens a fresh, correctly-scoped issue instead of piling onto a stale
-  # one. Only for scheduled successes; the serialized concurrency group ensures
-  # this never races a triage run on the same issue.
+  # Close the tracking issue when the canary is green again (see the header
+  # comment for why green — not a fix PR's `Fixes #<n>` link — is the
+  # authoritative close signal). Only for scheduled successes; the serialized
+  # concurrency group ensures this never races a triage run on the same issue.
   close-on-green:
     if: >
       github.event_name == 'workflow_run' &&
@@ -390,10 +392,24 @@ jobs:
       - name: Close the tracking issue if the canary is green again
         run: |
           set -uo pipefail
-          url=$(gh issue list --repo "$REPO" --state open \
-            --label inspect-ai-main --limit 1 --json url --jq '.[0].url // empty')
+          # Fail loudly on a query error so a missed close is visible rather
+          # than silently indistinguishable from "no open issue" (as triage-gate
+          # does for gh issue create). Fetch labels too so we can skip holds.
+          if ! open=$(gh issue list --repo "$REPO" --state open \
+            --label inspect-ai-main --limit 1 --json url,labels); then
+            echo "::error::gh issue list failed — cannot determine whether to close."
+            exit 1
+          fi
+          url=$(echo "$open" | jq -r '.[0].url // empty')
           if [ -z "$url" ]; then
             echo "No open canary issue — nothing to close."
+            exit 0
+          fi
+          # A hold:release issue is deliberately deferred to the next inspect-ai
+          # release; in-flux upstream changes flap green, so leave it open and
+          # keep its deferred thread intact.
+          if echo "$open" | jq -e '.[0].labels | map(.name) | index("hold:release")' >/dev/null; then
+            echo "Open issue $url carries hold:release — leaving it open."
             exit 0
           fi
           gh issue comment "$url" --repo "$REPO" \
