@@ -12,8 +12,8 @@ from inspect_flow._types.flow_types import FlowSpec, FlowTask
 from inspect_flow._util.not_given import is_set
 from inspect_flow._util.pydantic_util import (
     MODEL_DUMP_ARGS,
-    is_registry_dict,
     serialize_fallback,
+    serializes_to_registry_dict,
     survives_round_trip,
 )
 
@@ -42,9 +42,13 @@ _REGISTRY_TYPE_MESSAGES = {
 # boundary in these positions, and only these.
 _REINFLATED_FIELDS = frozenset({"args", "model_args", "extra_args"})
 
-# Guard against a self-referential value in a free-form container, which no
-# amount of descending resolves.
+# Guard against a self-referential or pathologically nested value in a
+# free-form container, which no amount of descending resolves.
 _MAX_DEPTH = 100
+
+# Stands in for a subtree pydantic refused to serialize outright, when nothing
+# reached the fallback to blame.
+_REFUSED = object()
 
 
 @dataclass
@@ -149,8 +153,13 @@ def _walk_early_stopping(
         _walk_early_stopping(child, path + segment, violations, depth + 1)
 
 
-def _lossy(value: Any, reinflated: bool) -> bool:
-    """Whether dumping this subtree coerces anything that cannot be reloaded."""
+def _offenders(value: Any, reinflated: bool) -> list[Any]:
+    """The values in this subtree that dumping coerces beyond recovery.
+
+    Returning the objects rather than a flag lets `_walk` tell "this node is
+    itself the offender" from "the loss is somewhere below me", which decides
+    whether to report here or keep descending.
+    """
     coerced: list[Any] = []
 
     def record(obj: Any) -> Any:
@@ -175,12 +184,23 @@ def _lossy(value: Any, reinflated: bool) -> bool:
             value.model_dump(**args)
         else:
             to_jsonable_python(value, fallback=record)
+        refused = False
     except Exception:
-        return True
-    return any(
-        not survives_round_trip(obj) and not (reinflated and is_registry_dict(obj))
+        # Pydantic would not serialize this at all (a cycle, undecodable bytes,
+        # excessive depth), so something here is non-portable even if nothing
+        # reached the fallback first.
+        refused = True
+    offenders = [
+        obj
         for obj in coerced
-    )
+        if not survives_round_trip(obj)
+        and not (reinflated and serializes_to_registry_dict(obj))
+    ]
+    if refused and not offenders:
+        # Attribute to a marker rather than to `value`, so the walk still
+        # descends to whichever leaf actually caused the refusal.
+        return [_REFUSED]
+    return offenders
 
 
 def _children(value: Any) -> list[tuple[str, Any]]:
@@ -222,9 +242,13 @@ def _walk(
     violations: list[SpecViolation],
     reinflated: bool = False,
     seen: frozenset[int] = frozenset(),
+    depth: int = 0,
 ) -> None:
-    before = len(violations)
-    if not _lossy(value, reinflated):
+    if depth > _MAX_DEPTH:
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    offenders = _offenders(value, reinflated)
+    if not offenders:
         return
     if id(value) in seen:
         # A cycle cannot be serialized at all; report here rather than recurse.
@@ -235,11 +259,12 @@ def _walk(
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
         return
     children = _children(value)
-    if not children:
-        if len(violations) == before:
-            # Containers and models serialize natively, so only a childless
-            # node is ever the offending value itself.
-            violations.append(SpecViolation(path.lstrip("."), _message(value)))
+    if not children or any(offender is value for offender in offenders):
+        # Either there is nowhere further to look, or this node is itself one of
+        # the values that failed to serialize -- which a container can be even
+        # when every child of it is portable (a `range`, a `memoryview`, a
+        # custom Sequence or Mapping).
+        violations.append(SpecViolation(path.lstrip("."), _message(value)))
         return
     for segment, child in children:
         # Each child is judged in its own context: a value is portable under a
@@ -250,8 +275,5 @@ def _walk(
             violations,
             reinflated or segment.lstrip(".") in _REINFLATED_FIELDS,
             seen | {id(value)},
+            depth + 1,
         )
-    if len(violations) == before:
-        # Every child was portable in its own context, so the parent's apparent
-        # lossiness was explained by a re-inflated subtree.
-        return

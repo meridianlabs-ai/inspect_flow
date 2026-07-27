@@ -3,6 +3,8 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from types import MappingProxyType
+from typing import overload
 
 import pytest
 import yaml
@@ -384,6 +386,57 @@ def test_registered_nested_function_passes() -> None:
     # Registration makes a nested function nameable even though its qualname
     # says otherwise; the registry branch must win.
     validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_nested_filter())))
+
+
+class _CustomSequence(Sequence[int]):
+    def __init__(self, items: list[int]) -> None:
+        self._items = items
+
+    @overload
+    def __getitem__(self, index: int) -> int: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[int]: ...
+
+    def __getitem__(self, index: int | slice) -> int | Sequence[int]:
+        return self._items[index]
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+
+def test_container_that_is_itself_unserializable_rejected() -> None:
+    # A container can be the offending value even though every element of it is
+    # portable: pydantic coerces the container itself to a repr string. The walk
+    # must report here rather than descend, find clean children, and go quiet.
+    values: list[object] = [
+        range(3),
+        MappingProxyType({"a": 1}),
+        memoryview(b"abc"),
+        _CustomSequence([1, 2, 3]),
+    ]
+    for value in values:
+        spec = FlowSpec(flow_metadata={"v": value})
+        assert _paths(spec) == ["flow_metadata['v']"]
+        reloaded = _reload(spec).flow_metadata
+        assert isinstance(reloaded, Mapping)
+        assert isinstance(reloaded["v"], str)
+
+
+def test_reinflation_does_not_whitelist_the_rest_of_the_container() -> None:
+    # A registry object under args is fine, but that must not excuse a
+    # non-portable sibling in the same container.
+    spec = FlowSpec(
+        tasks=[FlowTask(name="t", args={"tools": [add()], "bad": lambda: 1})]
+    )
+    assert _paths(spec) == ["tasks[0].args['bad']"]
+
+
+def test_unportable_mapping_key_rejected() -> None:
+    # Keys are not children, so a key that cannot round-trip is reported on the
+    # mapping itself rather than being missed.
+    spec = FlowSpec(flow_metadata={"s": {Task(): 1}})
+    assert _paths(spec) == ["flow_metadata['s']"]
 
 
 def test_unserializable_value_rejected() -> None:

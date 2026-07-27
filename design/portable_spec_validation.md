@@ -30,7 +30,7 @@ FlowSpec.model_validate(yaml.safe_load(config_to_yaml(spec)))
 
 Serializing is only half of it. Two kinds of value fail to come back:
 
-- **Anything reduced to text.** [_serialize_fallback](../src/inspect_flow/_util/pydantic_util.py)
+- **Anything reduced to text.** [serialize_fallback](../src/inspect_flow/_util/pydantic_util.py)
   turns an unknown object into its `repr`, which reloads as a string.
 - **A registry dict outside a re-inflated field.** A live registered `Scorer`,
   `Solver`, `Agent`, or `Model` serializes to `{type, name, params}`. Whether
@@ -55,7 +55,7 @@ a registry object, or a module-level function that `callable_name` renders as
 callable objects cannot be named again (some crash `callable_name` outright).
 
 [`survives_round_trip`](../src/inspect_flow/_util/pydantic_util.py) encodes
-exactly this, and lives beside `_serialize_fallback` so the serializer and the
+exactly this, and lives beside `serialize_fallback` so the serializer and the
 validator cannot drift apart.
 
 ## Design
@@ -78,16 +78,19 @@ def validate_portable_spec(spec: FlowSpec) -> None: ...
 
 The implementation is a generic walk rather than a list of places to look:
 
-- `_lossy(value, reinflated)` dumps a subtree through Pydantic and asks whether
-  any value that reached the fallback fails `survives_round_trip` — allowing
-  registry dicts when the subtree sits under a re-inflated field.
+- `_offenders(value, reinflated)` dumps a subtree through Pydantic and returns
+  the values that reached the fallback and fail `survives_round_trip` —
+  allowing registry dicts when the subtree sits under a re-inflated field.
 - `_children(value)` yields the addressable sub-values of a node — set fields
   of a `BaseModel`, mapping items, sequence items — with the path segment for
   each.
-- `_walk` prunes any subtree that dumps cleanly, descends into the rest, and
-  reports at a childless node. Each child is judged in *its own* context, so a
-  parent that looks lossy as a whole stays silent when every child turns out
-  to be portable where it actually sits.
+- `_walk` prunes any subtree that dumps cleanly and descends into the rest,
+  reporting when there is nowhere further to look **or** when the node is
+  itself among the offenders. That second test is what makes the two cases
+  distinguishable: a container can be the offending value even though each of
+  its children is portable (a `range`, a `memoryview`, a custom `Sequence`),
+  while a `FlowTask` whose only offender sits under a re-inflated `args` must
+  stay silent. Each child is judged in *its own* context.
 - `_walk_early_stopping` is a separate structural pass for the one rule the
   dump cannot see.
 
@@ -112,9 +115,12 @@ existing callers working.
 The function validates only portability. It does not expand or resolve the
 spec, install dependencies, or launch anything.
 
-One limitation: a value whose type Pydantic natively coerces on dump (e.g. a
+Two limitations. A value whose type Pydantic natively coerces on dump (e.g. a
 `datetime` becoming an ISO string) is reported as portable, since it reloads
-as the coerced type rather than being lost.
+as the coerced type rather than being lost. And a live registered object in
+scanner `params` is rejected even though scout would re-inflate it: that only
+holds when *every* scanner entry is a spec reference, so the stricter answer
+is the safe one for an unusual case.
 
 ## Tests
 

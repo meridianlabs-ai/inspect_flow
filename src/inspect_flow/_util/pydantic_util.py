@@ -33,7 +33,7 @@ def is_nameable_callable(value: Any) -> bool:
     )
 
 
-def is_registry_dict(obj: Any) -> bool:
+def serializes_to_registry_dict(obj: Any) -> bool:
     """Whether an object serializes to a registry dict.
 
     Such a dict only becomes the object again where the loader passes it
@@ -47,7 +47,7 @@ def survives_round_trip(obj: Any) -> bool:
 
     Serializing is only half a round trip. A callable that `callable_name`
     can name again is recreated by the loader; everything else reloads as the
-    text of its `repr` or as a plain dict. See `is_registry_dict` for the
+    text of its `repr` or as a plain dict. See `serializes_to_registry_dict` for the
     values that survive only in re-inflated positions.
     """
     return is_nameable_callable(registry_value(obj))
