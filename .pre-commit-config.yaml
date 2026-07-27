@@ -2,7 +2,8 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.6
+    # Keep in sync with the ruff version in uv.lock.
+    rev: v0.16.0
     hooks:
       # Run the linter.
       - id: ruff
