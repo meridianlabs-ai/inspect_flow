@@ -21,6 +21,14 @@
 #     release (`hold:release`), and applies `triaged` when done. Gating on the
 #     label (not "was just opened") makes triage retry-safe: an agent that dies
 #     before finishing leaves no label, so the next failure re-triages.
+#   close-on-green — the inverse of triage-gate. The tracking issue means "the
+#     canary is currently red"; a green scheduled run is the ground-truth signal
+#     that flow is no longer broken, so it closes the open issue. This is the
+#     ONLY reliable close path: a fix PR's `Fixes #<n>` link closes the issue
+#     only for causes that get a PR and only when the keyword is well-formed, so
+#     a self-resolved break or a no-PR flake would otherwise leave the issue
+#     open forever — and a stale open issue wedges the dedup above (later
+#     failures pile onto it instead of opening a fresh, correctly-scoped one).
 #
 # Dedup is keyed on the `inspect-ai-main` label, not the failure signature: the
 # canary has one meaning ("flow is broken against inspect-ai main"), so one open
@@ -295,7 +303,19 @@ jobs:
                  gh pr create --base main --label auto ...
                - Conventional-commit title per AGENTS.md (a linter/formatting or
                  dependency fix is not `feat:`/`fix:`).
-               - Body starts with "Fixes #${{ needs.triage-gate.outputs.issue_number }}".
+               - The body's FIRST LINE must be exactly
+                 `Fixes #${{ needs.triage-gate.outputs.issue_number }}` on its
+                 own line — nothing before it, no other words on that line.
+                 GitHub auto-closes the issue only when the keyword is
+                 immediately followed by the reference; prose like "Fixes the
+                 canary failure tracked in #<n>" does NOT link and will leave
+                 the issue open.
+               - After creating the PR, VERIFY the link took:
+                 `gh pr view <pr> --repo ${{ github.repository }} --json closingIssuesReferences`
+                 must list the issue. If it is empty, the keyword was malformed
+                 — edit the body with `gh pr edit` so the first line is exactly
+                 `Fixes #${{ needs.triage-gate.outputs.issue_number }}` and
+                 re-verify.
                - Applying the `auto` label AT CREATION is required: it opts the
                  PR into the autonomous review/CI-fix loop, and labeling later
                  races the auto-reviewer.
@@ -346,3 +366,36 @@ jobs:
           name: claude-execution-output
           path: /home/runner/work/_temp/claude-execution-output.json
           if-no-files-found: ignore
+
+  # Close the tracking issue when the canary is green again. Green is the
+  # ground-truth "flow is no longer broken" signal — more reliable than a fix
+  # PR's `Fixes #<n>` link, which fires only for causes that get a PR and only
+  # when the keyword is well-formed. Closing here resets the dedup so the next
+  # red run opens a fresh, correctly-scoped issue instead of piling onto a stale
+  # one. Only for scheduled successes; the serialized concurrency group ensures
+  # this never races a triage run on the same issue.
+  close-on-green:
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+      REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - name: Close the tracking issue if the canary is green again
+        run: |
+          set -uo pipefail
+          url=$(gh issue list --repo "$REPO" --state open \
+            --label inspect-ai-main --limit 1 --json url --jq '.[0].url // empty')
+          if [ -z "$url" ]; then
+            echo "No open canary issue — nothing to close."
+            exit 0
+          fi
+          gh issue comment "$url" --repo "$REPO" \
+            --body "$(printf '✅ Canary green again on %s — flow is no longer broken against inspect-ai main. Closing; the next red run opens a fresh issue.' "$RUN_URL")"
+          gh issue close "$url" --repo "$REPO" --reason completed
