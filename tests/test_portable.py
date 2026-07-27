@@ -378,8 +378,16 @@ def _serializes_lossily(obj: Any) -> bool:
 
 
 def _lossy_leaf_count(spec: FlowSpec) -> int:
+    # Mirror the field selection of the real boundary-crossing dump
+    # (MODEL_DUMP_ARGS: exclude_unset + exclude_defaults), overriding only the
+    # fallback to record coerced leaves instead of serializing them.
     coerced: list[Any] = []
-    spec.model_dump(mode="json", exclude_unset=True, fallback=coerced.append)
+    spec.model_dump(
+        mode="json",
+        exclude_unset=True,
+        exclude_defaults=True,
+        fallback=coerced.append,
+    )
     return sum(1 for obj in coerced if _serializes_lossily(obj))
 
 

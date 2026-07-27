@@ -85,11 +85,11 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     orchestrator. Factory callables are allowed only when reconstructable —
     a registry object or a module-level function; lambdas, partials, nested
     functions, and callable objects are rejected. Free-form value containers
-    (`args`, `extra_args`, `metadata`, `flow_metadata`, scanner params) are
-    inspected too: any leaf that serializes lossily is rejected, while
-    JSON-serializable data, natively-serialized types, and registry
-    references are accepted. The spec is not expanded or resolved, and
-    nothing is installed or launched.
+    (`args`, `extra_args`, `model_args`, `metadata`, `flow_metadata`,
+    `FlowFactory.args`, and scanner params) are inspected too: any leaf that
+    serializes lossily is rejected, while JSON-serializable data,
+    natively-serialized types, and registry references are accepted. The spec
+    is not expanded or resolved, and nothing is installed or launched.
 
     Two limitations: specs pulled in via `includes` are not descended into
     (validate a resolved spec, after includes are merged, to cover them),
