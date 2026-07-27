@@ -170,7 +170,7 @@ jobs:
             not been checked for new features that flow should surface. You are
             authenticated to GitHub (gh) as the machine account i-am-marvin.
 
-            Read CLAUDE.md first and follow it throughout.
+            Read AGENTS.md first and follow it throughout.
 
             1. Fetch the inspect_ai changelog at the release tag using WebFetch:
                https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.check.outputs.latest }}/CHANGELOG.md
@@ -238,7 +238,7 @@ jobs:
 
             5. Push the branch and open ONE PR:
                gh pr create --base main --label auto --label inspect-update ...
-               - Conventional-commit title (per CLAUDE.md) containing
+               - Conventional-commit title (per AGENTS.md) containing
                  "inspect-ai ${{ needs.check.outputs.latest }}".
                - Body starts with "Fixes #<the issue you opened in step 3>".
                - Applying the `auto` label AT CREATION is required: it opts the

@@ -262,7 +262,7 @@ jobs:
             ${{ env.RUN_URL }} (run id ${{ env.RUN_ID }}). You are authenticated
             to GitHub (gh) as the machine account i-am-marvin.
 
-            Read CLAUDE.md first and follow it throughout.
+            Read AGENTS.md first and follow it throughout.
 
             Context: the latest inspect-ai release on PyPI is
             ${{ steps.versions.outputs.latest }}; flow's last-reconciled version
@@ -293,7 +293,7 @@ jobs:
                `ruff check --fix`, `pyright`, and the relevant tests before
                pushing. Then open exactly ONE PR:
                  gh pr create --base main --label auto ...
-               - Conventional-commit title per CLAUDE.md (a linter/formatting or
+               - Conventional-commit title per AGENTS.md (a linter/formatting or
                  dependency fix is not `feat:`/`fix:`).
                - Body starts with "Fixes #${{ needs.triage-gate.outputs.issue_number }}".
                - Applying the `auto` label AT CREATION is required: it opts the
