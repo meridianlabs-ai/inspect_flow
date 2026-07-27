@@ -445,6 +445,31 @@ def test_unserializable_value_rejected() -> None:
     assert _paths(spec) == ["tasks[0].metadata['k']"]
 
 
+def test_unserializable_container_with_clean_children_rejected() -> None:
+    # A bytearray of undecodable bytes makes the dump raise, but its elements
+    # are ints and individually fine. Without reporting the refusal at the node,
+    # validation would pass and config_to_yaml would then throw a bare
+    # UnicodeDecodeError out of the launcher with no field path.
+    spec = FlowSpec(tasks=[FlowTask(name="t", metadata={"k": bytearray(b"\xff\xfe")})])
+    assert _paths(spec) == ["tasks[0].metadata['k']"]
+    with pytest.raises(UnicodeDecodeError):
+        config_to_yaml(spec)
+
+
+def test_pathological_nesting_reports_rather_than_recursing() -> None:
+    # Pydantic refuses a structure this deep, so it is genuinely non-portable.
+    # The depth guard has to stop the walk descending after it: without it the
+    # walk follows all 3000 levels and blows the stack (or, where the stack is
+    # deep enough, reports an unusably long path).
+    deep: dict[str, object] = {"leaf": 1}
+    for _ in range(3000):
+        deep = {"k": deep}
+    spec = FlowSpec(tasks=[FlowTask(name="t", metadata={"x": deep})])
+    paths = _paths(spec)
+    assert len(paths) == 1
+    assert paths[0].count("['k']") <= 100
+
+
 def test_cycle_reports_violation_rather_than_recursing() -> None:
     cyclic: dict[str, object] = {}
     cyclic["self"] = cyclic

@@ -111,12 +111,16 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     `includes`. The spec is not expanded or resolved, and nothing is
     installed or launched.
 
-    One limitation: a value Pydantic coerces natively on dump is reported as
-    portable, because it reloads as the coerced type rather than being lost.
-    The coercions that change what a task actually receives are `tuple` and
-    `set` to `list`, a dataclass or `BaseModel` to `dict`, and non-string
-    mapping keys to strings; `datetime`, `date`, `UUID`, `Path`, `Decimal`,
-    and `bytes` become strings, and `NaN` becomes `None`.
+    Three limitations. A value Pydantic coerces natively on dump is reported
+    as portable, because it reloads as the coerced type rather than being
+    lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes
+    `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/
+    `Path`/`Decimal`/`bytes` become strings, and `NaN` becomes `None`. A
+    nameable callable is reported as portable anywhere, but only `store.filter`
+    and the `factory` fields are resolved back from its name — in a free-form
+    container it reloads as the name string. And a live registered object in
+    scanner `params` is rejected even though scout would re-inflate it, since
+    that only holds when every scanner entry is a spec reference.
 
     Args:
         spec: The flow spec to validate.
@@ -158,7 +162,8 @@ def _offenders(value: Any, reinflated: bool) -> list[Any]:
 
     Returning the objects rather than a flag lets `_walk` tell "this node is
     itself the offender" from "the loss is somewhere below me", which decides
-    whether to report here or keep descending.
+    whether to report here or keep descending. A subtree pydantic refuses to
+    serialize at all yields the `_REFUSED` sentinel instead of a value.
     """
     coerced: list[Any] = []
 
@@ -266,6 +271,7 @@ def _walk(
         # custom Sequence or Mapping).
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
         return
+    before = len(violations)
     for segment, child in children:
         # Each child is judged in its own context: a value is portable under a
         # re-inflated field even though its parent, dumped as a whole, is not.
@@ -277,3 +283,10 @@ def _walk(
             seen | {id(value)},
             depth + 1,
         )
+    if len(violations) == before and _REFUSED in offenders:
+        # Pydantic refused this subtree and no child accounts for it, so the
+        # node itself is what cannot be serialized (a bytearray of undecodable
+        # bytes, say, whose elements are individually fine). This is deliberately
+        # limited to a refusal: applying it to every offender would report the
+        # parent of a value that is portable where it actually sits.
+        violations.append(SpecViolation(path.lstrip("."), _message(value)))

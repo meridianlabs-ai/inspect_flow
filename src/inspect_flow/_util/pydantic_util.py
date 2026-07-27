@@ -47,8 +47,8 @@ def survives_round_trip(obj: Any) -> bool:
 
     Serializing is only half a round trip. A callable that `callable_name`
     can name again is recreated by the loader; everything else reloads as the
-    text of its `repr` or as a plain dict. See `serializes_to_registry_dict` for the
-    values that survive only in re-inflated positions.
+    text of its `repr` or as a plain dict. See `serializes_to_registry_dict`
+    for the values that survive only in re-inflated positions.
     """
     return is_nameable_callable(registry_value(obj))
 

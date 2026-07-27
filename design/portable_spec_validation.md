@@ -36,12 +36,12 @@ Serializing is only half of it. Two kinds of value fail to come back:
   `Solver`, `Agent`, or `Model` serializes to `{type, name, params}`. Whether
   that round-trips depends on where it sits. The runner passes `args`,
   `model_args`, and `extra_args` through `registry_kwargs`, which turns the
-  dict back into the object — so a live object *is* portable there, and
-  `tests/local_eval/flow/local_eval_flow.py` relies on it. Anywhere else it is
-  not: a structural position (`tasks`, `model`, `scorer`, `solver`,
-  `model_roles`) fails the child's `extra="forbid"` validation outright, and
-  `metadata`/`flow_metadata` are handed to the task raw, so the dict stays a
-  dict.
+  dict back into the object — so a live object *is* portable there (as long as
+  its own registry params are), and `tests/local_eval/flow/local_eval_flow.py`
+  relies on it. Anywhere else it is not: a structural position (`tasks`,
+  `model`, `scorer`, `solver`, `model_roles`) fails the child's
+  `extra="forbid"` validation outright, and `metadata`/`flow_metadata` are
+  handed to the task raw, so the dict stays a dict.
 
 `early_stopping` is a third case, and the only rule the dump cannot see. The
 field holds a live-callback protocol with no registry or string form, so no
