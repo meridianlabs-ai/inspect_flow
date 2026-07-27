@@ -33,8 +33,8 @@ Steps operate on one log at a time. Callers pass either a file path or an `EvalL
 tag("./logs/2026-03-11/log1.eval", add=["reviewed"])
 
 # Caller passes an EvalLog — @step passes it through directly
-log = tag(log, add=["golden"])                      # returns EvalLog
-log = copy(log, dest="s3://my-org/prod/golden")     # returns destination EvalLog
+log = tag(log, add=["golden"])  # returns EvalLog
+log = copy(log, dest="s3://my-org/prod/golden")  # returns destination EvalLog
 ```
 
 To run a step across multiple logs, use `run_step` (see [_steps/run.py](../src/inspect_flow/_steps/run.py)):
@@ -142,11 +142,13 @@ Wrapping in `@step` defers all writes to the end — the log is passed in memory
 from inspect_flow import step
 from inspect_flow.api import tag, copy, run_step, store_get
 
+
 @step(header_only=False)  # required because copy needs full logs
 def promote(log: EvalLog, *, dest: str = "s3://my-org/prod/golden") -> EvalLog:
     log = tag(log, add=["golden"], reason="Promoted after QA")
     return copy(log, dest=dest)
     # @step writes all dirty logs here
+
 
 # Run across a directory
 run_step(promote, "./logs/2026-03-11/", dest="s3://my-org/prod/golden")
@@ -207,7 +209,9 @@ def qa(log: EvalLog) -> EvalLog:
     if _scores_pass(log):
         return tag(log, add=["auto_qa_passed"], reason="Automated QA: scores passed")
     else:
-        return tag(log, add=["auto_qa_failed"], reason="Automated QA: refusal or tool error")
+        return tag(
+            log, add=["auto_qa_failed"], reason="Automated QA: refusal or tool error"
+        )
 
 
 @step(header_only=False)  # required because copy needs full logs
