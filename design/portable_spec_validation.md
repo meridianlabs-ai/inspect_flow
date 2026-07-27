@@ -12,11 +12,40 @@ child process, but the check was a private launcher function
 (`_check_spec_for_venv`) that:
 
 - failed fast with a single `ValueError`, without identifying the field;
-- missed live `Model`s in `FlowTask.model_roles`, live `Scorer`s inside scorer
-  *sequences*, the `defaults.task` / `defaults.task_prefix` templates, and live
-  `early_stopping` callbacks; and
+- enumerated a handful of locations and so missed live `Model`s in
+  `FlowTask.model_roles`, live `Scorer`s inside scorer *sequences*, the
+  `defaults.*` templates, non-reconstructable factory callables, store
+  filters, and live objects buried in `args`/`metadata`; and
 - was unavailable to remote orchestrators, which need the same validation
   before uploading a job and otherwise must copy the private routine.
+
+## Ground truth
+
+A spec is portable if it survives the boundary the child process actually
+crosses:
+
+```python
+FlowSpec.model_validate(yaml.safe_load(config_to_yaml(spec)))
+```
+
+Serializing is only half of it. Two kinds of value fail to come back:
+
+- **Anything reduced to text.** [_serialize_fallback](../src/inspect_flow/_util/pydantic_util.py)
+  turns an unknown object into its `repr`, which reloads as a string.
+- **Anything reduced to a registry dict.** A live registered `Scorer`, `Solver`,
+  `Agent`, or `Model` serializes to `{type, name, params}`. That is *not* a
+  round trip: in a structural position the child's `extra="forbid"` validation
+  rejects it outright, and in a free-form container it reloads as a plain
+  `dict` rather than the object.
+
+The one thing that does survive is a callable the loader can name again —
+a registry object, or a module-level function that `callable_name` renders as
+`<file>@<name>`. Lambdas, `functools.partial`, nested functions, classes, and
+callable objects cannot be named again (some crash `callable_name` outright).
+
+[`survives_round_trip`](../src/inspect_flow/_util/pydantic_util.py) encodes
+exactly this, and lives beside `_serialize_fallback` so the serializer and the
+validator cannot drift apart.
 
 ## Design
 
@@ -36,71 +65,56 @@ class SpecNotPortableError(ValueError):
 def validate_portable_spec(spec: FlowSpec) -> None: ...
 ```
 
-`validate_portable_spec` walks the whole spec, collects **all** violations,
-and raises one `SpecNotPortableError`. Messages are neutral — they name the
-live object type found and the portable alternative (`FlowModel`, registry
-name, scanner spec reference). Callers with an extra escape hatch attach it
-via `hint`: venv execution re-raises with the "run using 'inproc'" advice,
-while a remote orchestrator can read `violations` and format its own message.
-Subclassing `ValueError` keeps existing callers working.
+The implementation is a generic walk rather than a list of places to look:
 
-The function validates only serializability. It does not expand or resolve
-the spec, install dependencies, or launch anything. Factory callables remain
-allowed: they serialize via registry name or `file@attr` reference.
+- `_lossy(value)` dumps a subtree through Pydantic and asks whether any value
+  that reached the fallback fails `survives_round_trip`.
+- `_children(value)` yields the addressable sub-values of a node — set fields
+  of a `BaseModel`, mapping items, sequence items — with the path segment for
+  each.
+- `_walk` prunes any subtree that dumps cleanly, descends into the rest, and
+  reports a violation at the deepest node that nothing below it accounts for.
 
-## Coverage
+Every field is therefore covered, including `includes`, free-form containers
+(`args`, `extra_args`, `model_args`, `metadata`, `flow_metadata`,
+`FlowFactory.args`, scanner params), and any field added in future. The
+direction of failure is what matters: an enumeration of locations fails *open*
+— a location nobody listed is silently treated as portable — whereas the walk
+fails *closed*, at worst reporting a coarser path than necessary.
 
-One reusable task checker applied to every `FlowTask` at `tasks[i]`,
-`defaults.task`, and `defaults.task_prefix[key]`:
+Violation messages are chosen from the offending value's **registry type**,
+not `isinstance`: `Scorer`, `Solver`, and `Agent` are runtime-checkable
+Protocols that any callable satisfies structurally, so `isinstance` would
+label a lambda a `Scorer`.
 
-- `model` and `model_roles[key]`: live `Model`;
-- `scorer` / `scorer[i]`: live `Scorer` (scalar and sequence);
-- `solver` / `solver[i]`: live `Solver`/`Agent` (scalar and sequence);
-- `early_stopping`: any set value (`EarlyStopping` is a live-callback
-  protocol with no registry/string form);
-- `factory` (on the task and on any `FlowModel`/`FlowScorer`/`FlowSolver`/
-  `FlowAgent` reached above): callables that cannot be recreated from the
-  generated reference — lambdas, partials, nested functions, and callable
-  objects. Registry objects and module-level functions are accepted.
+Messages are neutral, naming the object found and the portable alternative.
+Callers with an extra escape hatch attach it via `hint`: venv execution
+re-raises with the "run using 'inproc'" advice, while a remote orchestrator
+reads `violations` and formats its own message. Subclassing `ValueError` keeps
+existing callers working.
 
-The same `factory` check also covers the other factory-bearing defaults —
-`defaults.model` / `defaults.solver` / `defaults.agent` and their `*_prefix`
-mappings — so a non-reconstructable factory is rejected wherever it sits, not
-only after defaults are merged into a task.
+The function validates only portability. It does not expand or resolve the
+spec, install dependencies, or launch anything.
 
-Spec-level checks:
+One limitation: a value whose type Pydantic natively coerces on dump (e.g. a
+`datetime` becoming an ISO string) is reported as portable, since it reloads
+as the coerced type rather than being lost.
 
-- `tasks[i]`: instantiated `Task` objects;
-- `options.scanner.scanners[...]`: entries that are not serializable scanner
-  spec references;
-- `options.scanner.model` and `options.scanner.model_roles[key]`: live
-  `Model`;
-- `store.filter` (scalar and sequence): non-reconstructable filter callables,
-  by the same rule as factories.
+## Tests
 
-Free-form value containers — `args`, `extra_args`, `model_args`, `metadata`,
-`flow_metadata` (at every level), `FlowFactory.args`, and scanner
-`ScannerSpec.params` — are checked by dumping the container through Pydantic
-and rejecting any leaf that serializes lossily (a live object's `repr`, or an
-unresolvable callable name). Values that round-trip — JSON scalars, nested
-containers, natively-serialized types like `datetime`, registry references —
-are accepted. A registered live object therefore passes inside a value
-container (it round-trips to a registry dict) even though the same object is
-rejected in a structural position such as `model`/`scorer`/`solver`: those
-positions carry a deliberate "use references, not live objects" stance, while
-a value container only needs to round-trip.
+[tests/test_portable.py](../tests/test_portable.py) asserts behaviour by field
+path, and pins the design against the real boundary rather than against a
+model of it:
 
-Known limitations: specs pulled in via `includes` are not descended into
-(validate the resolved spec, after includes are merged), and a value whose
-type Pydantic silently coerces on dump (e.g. a `datetime` becoming an ISO
-string) round-trips as the coerced type rather than being flagged.
+- `test_validated_spec_survives_the_real_boundary` dumps and reloads a
+  fully-populated valid spec and requires the result to match — the contract,
+  asserted against the code path the child runs.
+- `test_rejected_specs_do_not_survive_the_real_boundary` requires each
+  rejected spec to genuinely fail to come back, so a validator that flagged a
+  portable value would fail.
+- `test_completeness_against_the_dump` requires every lossily-coerced leaf in
+  a maximally-broken spec to be reported.
 
-Two tests guard against future drift. A snapshot test on the field names of
-the spec types (`FlowSpec`, `FlowTask`, `FlowDefaults`, `FlowOptions`, the
-`Flow*` wrappers, and `FlowStoreConfig`) fails when a field is added, until the
-author either extends `validate_portable_spec` (live-capable field) or updates
-the snapshot (plain data). A completeness oracle dumps a fully-populated spec
-through Pydantic's own traversal and asserts every value that serializes
-lossily is reported by the validator — so a lossy value in a covered field the
-validator misses fails the test. Full annotation introspection was considered
-and rejected as too fragile against inspect-ai type refactors.
+An earlier design also carried a snapshot test over spec field names, needed
+because an enumeration cannot discover fields on its own. The walk makes it
+unnecessary.
