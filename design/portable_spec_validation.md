@@ -36,12 +36,16 @@ Serializing is only half of it. Two kinds of value fail to come back:
   `Solver`, `Agent`, or `Model` serializes to `{type, name, params}`. Whether
   that round-trips depends on where it sits. The runner passes `args`,
   `model_args`, and `extra_args` through `registry_kwargs`, which turns the
-  dict back into the object — so a live object *is* portable there (as long as
-  its own registry params are), and `tests/local_eval/flow/local_eval_flow.py`
-  relies on it. Anywhere else it is not: a structural position (`tasks`,
-  `model`, `scorer`, `solver`, `model_roles`) fails the child's
-  `extra="forbid"` validation outright, and `metadata`/`flow_metadata` are
-  handed to the task raw, so the dict stays a dict.
+  dict back into the object — so a live object *is* portable there, and
+  `tests/local_eval/flow/local_eval_flow.py` relies on it. Anywhere else it is
+  not: a structural position (`tasks`, `model`, `scorer`, `solver`,
+  `model_roles`) fails the child's `extra="forbid"` validation outright, and
+  `metadata`/`flow_metadata` are handed to the task raw, so the dict stays a
+  dict. Note the object comes back rebuilt from its registry *params*, which
+  inspect reduces to JSON placeholders at registration — so a non-JSON
+  constructor argument is replaced by a placeholder string rather than being
+  restored. No dump-based check can see that, since the substitution happens
+  before serialization.
 
 `early_stopping` is a third case, and the only rule the dump cannot see. The
 field holds a live-callback protocol with no registry or string form, so no
@@ -49,10 +53,16 @@ value survives — including a dataclass or `BaseModel` implementation, which
 serializes cleanly and reloads as a plain dict, silently losing the protocol.
 It gets its own small pass over the spec.
 
-The one thing that does survive is a callable the loader can name again —
-a registry object, or a module-level function that `callable_name` renders as
-`<file>@<name>`. Lambdas, `functools.partial`, nested functions, classes, and
-callable objects cannot be named again (some crash `callable_name` outright).
+The one callable that survives is a **registered** object. `callable_name`
+renders a registry object as its registry name and anything else as
+`<file>@<name>`, but every resolver of that second form — inspect's task /
+model / scorer / solver / agent loader, and
+[_types/log_filter.py](../src/inspect_flow/_types/log_filter.py) for store
+filters — imports the file and then does a *registry lookup*. So an
+undecorated function is no more portable than a lambda; it merely fails later,
+in the child, with `Task named '...' not found`. Lambdas,
+`functools.partial`, nested functions, classes, and callable objects fail the
+same way (some crash `callable_name` outright).
 
 [`survives_round_trip`](../src/inspect_flow/_util/pydantic_util.py) encodes
 exactly this, and lives beside `serialize_fallback` so the serializer and the
@@ -85,12 +95,14 @@ The implementation is a generic walk rather than a list of places to look:
   of a `BaseModel`, mapping items, sequence items — with the path segment for
   each.
 - `_walk` prunes any subtree that dumps cleanly and descends into the rest,
-  reporting when there is nowhere further to look **or** when the node is
-  itself among the offenders. That second test is what makes the two cases
-  distinguishable: a container can be the offending value even though each of
-  its children is portable (a `range`, a `memoryview`, a custom `Sequence`),
-  while a `FlowTask` whose only offender sits under a re-inflated `args` must
-  stay silent. Each child is judged in *its own* context.
+  reporting in three cases: there is nowhere further to look; the node is
+  itself among the offenders; or pydantic refused the subtree outright and no
+  child accounted for it. The second and third are what make the cases
+  distinguishable — a container can be the offending value even though each of
+  its children is portable (a `range`, a `memoryview`, a `bytearray` of
+  undecodable bytes), while a `FlowTask` whose only offender sits under a
+  re-inflated `args` must stay silent. Each child is judged in *its own*
+  context.
 - `_walk_early_stopping` is a separate structural pass for the one rule the
   dump cannot see.
 
@@ -115,12 +127,32 @@ existing callers working.
 The function validates only portability. It does not expand or resolve the
 spec, install dependencies, or launch anything.
 
-Two limitations. A value whose type Pydantic natively coerces on dump (e.g. a
-`datetime` becoming an ISO string) is reported as portable, since it reloads
-as the coerced type rather than being lost. And a live registered object in
-scanner `params` is rejected even though scout would re-inflate it: that only
-holds when *every* scanner entry is a spec reference, so the stricter answer
-is the safe one for an unusual case.
+Known limitations:
+
+- A value whose type Pydantic natively coerces on dump (e.g. a `datetime`
+  becoming an ISO string) is reported as portable, since it reloads as the
+  coerced type rather than being lost.
+- A registered callable is reported as portable anywhere, but only the
+  `factory` fields and `store.filter` resolve it back from its name; in a
+  free-form container it reloads as the name string.
+- A live registered object in scanner `params` is rejected even though scout
+  would re-inflate it: that only holds when *every* scanner entry is a spec
+  reference, so the stricter answer is the safe one for an unusual case.
+- `_offenders` dumps each subtree in isolation, which cannot apply
+  `exclude_unset`/`exclude_defaults` the way the boundary does. A non-portable
+  value in a field the boundary *excludes* can therefore be reported against
+  its nearest childless ancestor — a false positive, reachable only via a
+  pydantic model with a non-portable default inside a free-form container.
+- Conversely, what a `@computed_field` or custom `@model_serializer` emits is
+  invisible to `_children`, so a non-portable value there is missed when the
+  model has any set field. No type reachable from a `FlowSpec` in inspect-ai or
+  inspect-scout has either, so this needs a user-defined model in a free-form
+  container.
+
+The last two share one cause: `_offenders` and `_children` are separate
+traversals, so they can disagree about what the boundary actually serializes.
+Deriving both from a single root dump would close them, at the cost of
+threading recorded-object identity through the walk.
 
 ## Tests
 

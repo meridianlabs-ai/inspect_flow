@@ -23,7 +23,7 @@ _MODEL_MESSAGE = f"An already-instantiated Model object {_PREAMBLE} Fix: use Flo
 _SCORER_MESSAGE = f"An already-instantiated Scorer object {_PREAMBLE} Fix: use FlowScorer or a scorer name string."
 _AGENT_MESSAGE = f"An already-instantiated Agent object {_PREAMBLE} Fix: use FlowAgent or an agent name string."
 _SOLVER_MESSAGE = f"An already-instantiated Solver object {_PREAMBLE} Fix: use FlowSolver or a solver name string."
-_CALLABLE_MESSAGE = f"A callable that cannot be named again {_PREAMBLE} Fix: use a registry name or a module-level function (not a lambda, functools.partial, nested function, class, or callable object)."
+_CALLABLE_MESSAGE = f"A callable that cannot be named again {_PREAMBLE} The child resolves a serialized callable through the Inspect registry, so it must be a registered object (e.g. a function decorated with @task, @solver, @scorer, @agent, or @log_filter) or a registry name string. An undecorated function, lambda, functools.partial, nested function, class, or callable object cannot be resolved."
 _SCANNER_MESSAGE = f'An already-instantiated Scanner object {_PREAMBLE} Fix: set options.scanner to a path to a scanner config file, or use scanner spec references (e.g. {{"name": "keyword_scanner"}}).'
 _EARLY_STOPPING_MESSAGE = f"early_stopping holds live callback objects, which {_PREAMBLE} Fix: remove early_stopping from portable specs."
 _VALUE_MESSAGE = f"This value {_PREAMBLE} Fix: use only JSON-serializable data, registry references, or module-level callables."
@@ -101,10 +101,12 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     `FlowSpec` in a fresh process. Values that do not survive it are live
     (already-instantiated) Inspect objects such as `Task`, `Model`, `Scorer`,
     `Solver`, and `Agent` — which reload as a `repr` string or a plain dict
-    rather than the object — and callables that cannot be named again, such
-    as lambdas, `functools.partial`, nested functions, classes, and callable
-    objects. Registry references and module-level functions are portable, as
-    is any JSON-serializable data.
+    rather than the object — and callables the child cannot resolve. A
+    serialized callable is looked up in the Inspect registry, so only a
+    registered object (or a registry name string) is portable: an undecorated
+    function is not, even at module level, and neither are lambdas,
+    `functools.partial`, nested functions, classes, and callable objects. Any
+    JSON-serializable data is portable.
 
     Every field is checked, including free-form containers (`args`,
     `metadata`, `flow_metadata`, scanner params) and any spec listed in
@@ -116,11 +118,12 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes
     `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/
     `Path`/`Decimal`/`bytes` become strings, and `NaN` becomes `None`. A
-    nameable callable is reported as portable anywhere, but only `store.filter`
-    and the `factory` fields are resolved back from its name — in a free-form
-    container it reloads as the name string. And a live registered object in
-    scanner `params` is rejected even though scout would re-inflate it, since
-    that only holds when every scanner entry is a spec reference.
+    registered callable is reported as portable anywhere, but only
+    `store.filter` and the `factory` fields are resolved back from its name —
+    in a free-form container it reloads as the name string. And a live
+    registered object in scanner `params` is rejected even though scout would
+    re-inflate it, since that only holds when every scanner entry is a spec
+    reference.
 
     Args:
         spec: The flow spec to validate.
@@ -163,7 +166,8 @@ def _offenders(value: Any, reinflated: bool) -> list[Any]:
     Returning the objects rather than a flag lets `_walk` tell "this node is
     itself the offender" from "the loss is somewhere below me", which decides
     whether to report here or keep descending. A subtree pydantic refuses to
-    serialize at all yields the `_REFUSED` sentinel instead of a value.
+    serialize at all yields the `_REFUSED` sentinel, but only when nothing else
+    was recorded — a recorded value is the better explanation of the refusal.
     """
     coerced: list[Any] = []
 
@@ -203,7 +207,10 @@ def _offenders(value: Any, reinflated: bool) -> list[Any]:
     ]
     if refused and not offenders:
         # Attribute to a marker rather than to `value`, so the walk still
-        # descends to whichever leaf actually caused the refusal.
+        # descends to whichever leaf actually caused the refusal. Only when
+        # nothing was recorded: dumping a subtree in isolation cannot apply
+        # exclude_unset, so it can record a value the boundary drops, and
+        # reporting the refusal here as well would blame this node for it.
         return [_REFUSED]
     return offenders
 

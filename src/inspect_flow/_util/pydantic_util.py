@@ -16,21 +16,15 @@ def callable_name(value: Callable[..., Any]) -> str:
 def is_nameable_callable(value: Any) -> bool:
     """Whether `callable_name` can produce a reference that resolves again.
 
-    A registry object serializes to its registry name. Any other callable
-    serializes as `<file>@<name>`, which only resolves if the callable is a
-    module-level function: lambdas, nested functions, methods, classes,
-    partials, and callable objects either have no `__code__` (crashing
-    `callable_name`) or name something that cannot be imported back.
+    Only a registry object can. Every resolver that consumes `callable_name`'s
+    output finishes with a registry lookup — task/model/scorer/solver/agent
+    factories via inspect's loader, log filters via `_types.log_filter` — so
+    the `<file>@<name>` form it emits for a plain callable names the file to
+    import but then fails to find the name. An unregistered function is
+    therefore no more portable than a lambda; it just fails later, in the
+    child, with "Task named '...' not found".
     """
-    if not callable(value):
-        return False
-    if is_registry_object(value):
-        return True
-    return (
-        getattr(value, "__code__", None) is not None
-        and value.__name__ != "<lambda>"
-        and getattr(value, "__qualname__", value.__name__) == value.__name__
-    )
+    return callable(value) and is_registry_object(value)
 
 
 def serializes_to_registry_dict(obj: Any) -> bool:

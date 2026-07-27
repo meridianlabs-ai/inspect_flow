@@ -9,6 +9,7 @@ from typing import overload
 import pytest
 import yaml
 from inspect_ai import ScannerConfig, Task
+from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.dataset import Sample
 from inspect_ai.log import EvalLog, EvalSpec
 from inspect_ai.model import GenerateConfig, get_model
@@ -30,6 +31,7 @@ from inspect_flow import (
     log_filter,
 )
 from inspect_flow._config.write import config_to_yaml
+from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow.api import (
     SpecNotPortableError,
     SpecViolation,
@@ -38,7 +40,7 @@ from inspect_flow.api import (
 from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
 from local_eval.tools import add
-from pydantic import BaseModel, JsonValue, ValidationError
+from pydantic import BaseModel, Field, JsonValue, ValidationError
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver, a_task
 
@@ -194,6 +196,11 @@ def test_non_nameable_callables_rejected() -> None:
         partial(Task),
         _returns_nested_factory(),
         _CallableFactory(),
+        # An undecorated module-level function serializes to <file>@<name>, but
+        # every resolver of that form finishes with a registry lookup, so the
+        # child fails with "Task named '...' not found". See
+        # test_unregistered_factory_does_not_survive_the_real_boundary.
+        _top_level_task_factory,
     ]
     for factory in factories:
         spec = FlowSpec(tasks=[FlowTask(factory=factory)])
@@ -266,9 +273,9 @@ def test_non_nameable_callables_in_defaults_rejected() -> None:
 
 
 def test_nameable_callables_pass() -> None:
-    # A registry object, a module-level function, and FlowFactory wrapping
-    # either (or a registry-name string) all serialize to a resolvable name.
-    for factory in (a_task, _top_level_task_factory, FlowFactory(a_task)):
+    # Only a registry object serializes to a name the child can resolve --
+    # directly, wrapped in a FlowFactory, or given as a registry-name string.
+    for factory in (a_task, FlowFactory(a_task)):
         validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=factory)]))
     validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=FlowFactory("a_task"))]))
 
@@ -454,6 +461,31 @@ def test_unserializable_container_with_clean_children_rejected() -> None:
     assert _paths(spec) == ["tasks[0].metadata['k']"]
     with pytest.raises(UnicodeDecodeError):
         config_to_yaml(spec)
+
+
+class _LossyDefault(BaseModel):
+    ok: int = 0
+    bad: object = Field(default_factory=Task)
+
+
+class _UndecodableDefault(BaseModel):
+    ok: int = 0
+    bad: object = b"\xff\xfe"
+
+
+def test_refusal_is_not_blamed_on_a_node_whose_dump_overreached() -> None:
+    # Dumping a subtree in isolation cannot apply exclude_unset, so it sees
+    # values the boundary drops. Here the flow_metadata dict both records a Task
+    # (from m1's unset default) and refuses on m2's -- neither of which crosses.
+    # Reporting the refusal here as well would blame a node that round-trips.
+    spec = FlowSpec(
+        tasks=[Task()],
+        flow_metadata={"m1": _LossyDefault(ok=1), "m2": _UndecodableDefault(ok=1)},
+    )
+    assert _paths(spec) == ["tasks[0]"]
+    reloaded = _reload(spec)
+    assert isinstance(reloaded.flow_metadata, Mapping)
+    assert reloaded.flow_metadata == {"m1": {"ok": 1}, "m2": {"ok": 1}}
 
 
 def test_pathological_nesting_reports_rather_than_recursing() -> None:
@@ -741,6 +773,26 @@ def test_rejected_specs_do_not_survive_the_real_boundary() -> None:
         original, restored = offending(spec), offending(_reload(spec))
         assert type(original) is not type(restored)
         assert original != restored
+
+
+def test_unregistered_factory_does_not_survive_the_real_boundary() -> None:
+    # Serializing is not enough: the child resolves <file>@<name> through the
+    # registry, so an undecorated function reloads to a reference that cannot be
+    # instantiated. Asserted through instantiation, not just reload, because the
+    # spec re-validates fine -- it is only resolving the name that fails.
+    spec = FlowSpec(log_dir="logs", tasks=[FlowTask(factory=_top_level_task_factory)])
+    with pytest.raises(SpecNotPortableError):
+        validate_portable_spec(spec)
+    reloaded = _reload(spec)
+    with pytest.raises(PrerequisiteError, match="not found"):
+        instantiate_tasks(reloaded, base_dir=".")
+
+
+def test_registered_factory_survives_instantiation() -> None:
+    # The contrast: a registered factory resolves and instantiates in the child.
+    spec = FlowSpec(log_dir="logs", tasks=[FlowTask(factory=a_task)])
+    validate_portable_spec(spec)
+    assert instantiate_tasks(_reload(spec), base_dir=".")
 
 
 def test_completeness_against_the_dump() -> None:
