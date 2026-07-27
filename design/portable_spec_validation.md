@@ -132,9 +132,14 @@ Known limitations:
 - A value whose type Pydantic natively coerces on dump (e.g. a `datetime`
   becoming an ISO string) is reported as portable, since it reloads as the
   coerced type rather than being lost.
-- A registered callable is reported as portable anywhere, but only the
-  `factory` fields and `store.filter` resolve it back from its name; in a
-  free-form container it reloads as the name string.
+- A registered object's *name* must also be resolvable in the child. Inspect
+  qualifies names of objects defined in an installed package
+  (`local_eval/noop2`), which the child imports; a bare name from a loose
+  module (`a_task`) relies on that module already being imported, and fails in
+  a fresh process with `No tasks found`. The validator cannot tell the two
+  apart reliably, so it does not try — prefer factories from packaged code.
+  Emitting `<file>@<name>` instead would fix venv but not a remote runner,
+  where the submitting machine's paths do not exist.
 - A live registered object in scanner `params` is rejected even though scout
   would re-inflate it: that only holds when *every* scanner entry is a spec
   reference, so the stricter answer is the safe one for an unusual case.

@@ -509,6 +509,28 @@ def test_cycle_reports_violation_rather_than_recursing() -> None:
     assert _paths(spec) == ["tasks[0].metadata['x']['self']"]
 
 
+def test_registered_callable_rejected_outside_resolving_fields() -> None:
+    # Only `factory` fields and `store.filter` look a name up in the registry.
+    # Elsewhere a registered function serializes to its name and reloads as that
+    # string, so the child gets text where the parent had a callable.
+    cases = [
+        (FlowSpec(flow_metadata={"cb": a_task}), "flow_metadata['cb']"),
+        (
+            FlowSpec(tasks=[FlowTask(name="t", metadata={"cb": a_task})]),
+            "tasks[0].metadata['cb']",
+        ),
+        (
+            FlowSpec(tasks=[FlowTask(name="t", args={"cb": a_task})]),
+            "tasks[0].args['cb']",
+        ),
+    ]
+    for spec, path in cases:
+        assert _paths(spec) == [path]
+    # The contrast: the same function in a field that does resolve names.
+    validate_portable_spec(FlowSpec(tasks=[FlowTask(factory=a_task)]))
+    validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_keep_all)))
+
+
 def test_live_object_in_container_rejected_like_anywhere_else() -> None:
     # A registered object serializes to a registry dict, but the child reloads
     # that as a plain dict rather than the object, so it is not portable here

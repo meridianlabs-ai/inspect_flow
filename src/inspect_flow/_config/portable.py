@@ -42,6 +42,11 @@ _REGISTRY_TYPE_MESSAGES = {
 # boundary in these positions, and only these.
 _REINFLATED_FIELDS = frozenset({"args", "model_args", "extra_args"})
 
+# Fields whose values the runner looks up in the registry, so a callable
+# serialized as its name becomes the callable again. Everywhere else -- notably
+# `metadata`, `flow_metadata`, and the `args` bags -- the name stays a string.
+_RESOLVING_FIELDS = frozenset({"factory", "filter"})
+
 # Guard against a self-referential or pathologically nested value in a
 # free-form container, which no amount of descending resolves.
 _MAX_DEPTH = 100
@@ -118,12 +123,17 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes
     `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/
     `Path`/`Decimal`/`bytes` become strings, and `NaN` becomes `None`. A
-    registered callable is reported as portable anywhere, but only
-    `store.filter` and the `factory` fields are resolved back from its name —
-    in a free-form container it reloads as the name string. And a live
-    registered object in scanner `params` is rejected even though scout would
-    re-inflate it, since that only holds when every scanner entry is a spec
-    reference.
+    registered callable is portable only in a field the runner resolves names
+    in — the `factory` fields and `store.filter` — since elsewhere its name
+    reloads as a plain string. And a live registered object in scanner `params`
+    is rejected even though scout would re-inflate it, since that only holds
+    when every scanner entry is a spec reference.
+
+    A registered object's name must also be resolvable in the child. Inspect
+    qualifies names of objects defined in an installed package
+    (`my_pkg/my_task`), which the child can import; a bare name from a loose
+    module relies on that module already being imported and is *not* checked
+    here. Prefer factories from packaged code.
 
     Args:
         spec: The flow spec to validate.
@@ -160,7 +170,9 @@ def _walk_early_stopping(
         _walk_early_stopping(child, path + segment, violations, depth + 1)
 
 
-def _offenders(value: Any, reinflated: bool) -> list[Any]:
+def _offenders(
+    value: Any, reinflated: bool, resolving: bool
+) -> tuple[list[Any], set[int]]:
     """The values in this subtree that dumping coerces beyond recovery.
 
     Returning the objects rather than a flag lets `_walk` tell "this node is
@@ -202,17 +214,18 @@ def _offenders(value: Any, reinflated: bool) -> list[Any]:
     offenders = [
         obj
         for obj in coerced
-        if not survives_round_trip(obj)
+        if not (resolving and survives_round_trip(obj))
         and not (reinflated and serializes_to_registry_dict(obj))
     ]
+    recorded = {id(obj) for obj in coerced}
     if refused and not offenders:
         # Attribute to a marker rather than to `value`, so the walk still
         # descends to whichever leaf actually caused the refusal. Only when
         # nothing was recorded: dumping a subtree in isolation cannot apply
         # exclude_unset, so it can record a value the boundary drops, and
         # reporting the refusal here as well would blame this node for it.
-        return [_REFUSED]
-    return offenders
+        return [_REFUSED], recorded
+    return offenders, recorded
 
 
 def _children(value: Any) -> list[tuple[str, Any]]:
@@ -253,23 +266,25 @@ def _walk(
     path: str,
     violations: list[SpecViolation],
     reinflated: bool = False,
+    resolving: bool = False,
     seen: frozenset[int] = frozenset(),
     depth: int = 0,
-) -> None:
+) -> set[int]:
+    """Walk a subtree, reporting violations. Returns the ids its dump recorded."""
     if depth > _MAX_DEPTH:
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return
-    offenders = _offenders(value, reinflated)
+        return set()
+    offenders, recorded = _offenders(value, reinflated, resolving)
     if not offenders:
-        return
+        return recorded
     if id(value) in seen:
         # A cycle cannot be serialized at all; report here rather than recurse.
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return
+        return recorded
     if isinstance(value, Mapping) and any(not isinstance(key, str) for key in value):
         # Keys are not children, and a non-string key is coerced to text.
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return
+        return recorded
     children = _children(value)
     if not children or any(offender is value for offender in offenders):
         # Either there is nowhere further to look, or this node is itself one of
@@ -277,7 +292,7 @@ def _walk(
         # when every child of it is portable (a `range`, a `memoryview`, a
         # custom Sequence or Mapping).
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
-        return
+        return recorded
     before = len(violations)
     for segment, child in children:
         # Each child is judged in its own context: a value is portable under a
@@ -287,13 +302,22 @@ def _walk(
             path + segment,
             violations,
             reinflated or segment.lstrip(".") in _REINFLATED_FIELDS,
+            resolving or segment.lstrip(".") in _RESOLVING_FIELDS,
             seen | {id(value)},
             depth + 1,
         )
     if len(violations) == before and _REFUSED in offenders:
         # Pydantic refused this subtree and no child accounts for it, so the
         # node itself is what cannot be serialized (a bytearray of undecodable
-        # bytes, say, whose elements are individually fine). This is deliberately
-        # limited to a refusal: applying it to every offender would report the
-        # parent of a value that is portable where it actually sits.
+        # bytes, say, whose elements are individually fine).
+        #
+        # Deliberately limited to a refusal. Blaming the node for any offender no
+        # child's dump saw would also catch what a @computed_field emits, but it
+        # would reject specs that work: this node's dump cannot apply
+        # exclude_unset to a nested model, so it sees values the boundary drops,
+        # and a child that legitimately excused an offender (a registry object
+        # under `args`) is indistinguishable from one that never saw it. A false
+        # positive is worse than the narrow false negative -- see the limitations
+        # in the docstring.
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
+    return recorded
