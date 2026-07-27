@@ -478,6 +478,27 @@ def test_refusal_is_not_blamed_on_a_node_whose_dump_overreached() -> None:
     assert reloaded.flow_metadata == {"m1": {"ok": 1}, "m2": {"ok": 1}}
 
 
+class _ArrayLike:
+    # Stands in for a numpy array, whose __eq__ returns an array rather than a
+    # bool, so bool() of the comparison raises.
+    __hash__ = object.__hash__
+
+    def __eq__(self, other: object) -> bool:
+        raise ValueError("The truth value of an array is ambiguous")
+
+
+class _ArrayLikeDefault(BaseModel):
+    ok: int = 0
+    bad: object = Field(default_factory=_ArrayLike)
+
+
+def test_offender_with_a_misbehaving_eq_does_not_break_the_walk() -> None:
+    # The refusal check must compare by identity: an equality test against the
+    # recorded offenders lets a user value's __eq__ raise out of validation.
+    spec = FlowSpec(tasks=[Task()], flow_metadata={"m": _ArrayLikeDefault(ok=1)})
+    assert _paths(spec) == ["tasks[0]"]
+
+
 def test_pathological_nesting_reports_rather_than_recursing() -> None:
     # Pydantic refuses a structure this deep, so it is genuinely non-portable.
     # The depth guard has to stop the walk descending after it: without it the

@@ -332,10 +332,13 @@ def _walk(
             seen=seen | {id(value)},
             depth=depth + 1,
         )
-    if len(violations) == before and _REFUSED in offenders:
+    if len(violations) == before and any(o is _REFUSED for o in offenders):
         # Pydantic refused this subtree and no child accounts for it, so the node
         # itself is unserializable (a bytearray of undecodable bytes, whose
-        # elements are individually fine). Deliberately limited to a refusal:
+        # elements are individually fine). Compared by identity, as above: `in`
+        # would fall back to `==` against arbitrary user values, and one whose
+        # `__eq__` misbehaves (a numpy array's returns an array) would raise out
+        # of the membership test. Deliberately limited to a refusal:
         # generalizing it rejects working specs -- see "Rejected alternatives" in
         # design/portable_spec_validation.md.
         violations.append(SpecViolation(path.lstrip("."), _message(value)))

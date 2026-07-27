@@ -153,6 +153,16 @@ Known limitations:
 - A live registered object in scanner `params` is rejected even though scout
   would re-inflate it: that only holds when *every* scanner entry is a spec
   reference, so the stricter answer is the safe one for an unusual case.
+- The re-inflated and resolving field sets match by name, so a user-defined
+  model in a free-form container with a field called `args` (or `factory`, etc.)
+  is granted an excuse the runner never honours, and a live registered object
+  there is accepted but reloads as a registry dict. Dictionary *keys* are not
+  affected — `_children` renders them quoted, so `metadata['args']` does not
+  match — which leaves only a user model, which does not survive the boundary as
+  a model anyway. Gating each excuse on an allow-list of the flow types whose
+  fields the runner processes would close it, but inverts the failure direction:
+  a flow or scout type that gained an `args` field would then have working specs
+  rejected until someone updated the list.
 - `_offenders` dumps each subtree in isolation, which cannot apply
   `exclude_unset`/`exclude_defaults` the way the boundary does. A non-portable
   value in a field the boundary *excludes* can therefore be reported against
