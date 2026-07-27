@@ -53,7 +53,7 @@ def survives_round_trip(obj: Any) -> bool:
     return is_nameable_callable(registry_value(obj))
 
 
-def _serialize_fallback(obj: Any) -> Any:
+def serialize_fallback(obj: Any) -> Any:
     """Convert non-serializable objects to their string representation.
 
     Uses JSON format for dicts to avoid quote escaping issues in YAML output.
@@ -71,7 +71,7 @@ MODEL_DUMP_ARGS = {
     "exclude_unset": True,
     "exclude_defaults": True,
     # do not exclude_none, as for NotGiven fields they are significant
-    "fallback": _serialize_fallback,
+    "fallback": serialize_fallback,
 }
 
 

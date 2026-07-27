@@ -12,8 +12,8 @@ from inspect_flow._types.flow_types import FlowSpec, FlowTask
 from inspect_flow._util.not_given import is_set
 from inspect_flow._util.pydantic_util import (
     MODEL_DUMP_ARGS,
-    _serialize_fallback,
     is_registry_dict,
+    serialize_fallback,
     survives_round_trip,
 )
 
@@ -107,9 +107,12 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     `includes`. The spec is not expanded or resolved, and nothing is
     installed or launched.
 
-    One limitation: a value whose type Pydantic natively coerces on dump
-    (e.g. a `datetime` becoming an ISO string) is reported as portable, since
-    it reloads as the coerced type rather than being lost.
+    One limitation: a value Pydantic coerces natively on dump is reported as
+    portable, because it reloads as the coerced type rather than being lost.
+    The coercions that change what a task actually receives are `tuple` and
+    `set` to `list`, a dataclass or `BaseModel` to `dict`, and non-string
+    mapping keys to strings; `datetime`, `date`, `UUID`, `Path`, `Decimal`,
+    and `bytes` become strings, and `NaN` becomes `None`.
 
     Args:
         spec: The flow spec to validate.
@@ -156,7 +159,7 @@ def _lossy(value: Any, reinflated: bool) -> bool:
             # Serialize as the real dump would, so that pydantic keeps walking
             # into a coerced value (e.g. a registry dict) and reports what is
             # nested inside it too.
-            return _serialize_fallback(obj)
+            return serialize_fallback(obj)
         except Exception:
             # callable_name raises on callables with no __code__ (a partial or
             # callable object); the object is recorded, so it is still caught.

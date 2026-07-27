@@ -36,7 +36,7 @@ from inspect_flow.api import (
 from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
 from local_eval.tools import add
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, JsonValue, ValidationError
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver, a_task
 
@@ -503,6 +503,9 @@ def test_serializable_scanners_pass() -> None:
         ScannerConfig(scanners=[ScannerSpec(name="keyword_scanner")]),
         ScannerConfig(scanners={"kw": {"name": "keyword_scanner"}}),
         ScannerConfig(scanners=ScannerSpec(name="keyword_scanner")),
+        # A (name, spec) tuple is accepted, subject to the documented
+        # tuple-to-list coercion: it reloads as ['kw', {...}].
+        ScannerConfig(scanners=[("kw", {"name": "keyword_scanner"})]),
     ):
         validate_portable_spec(FlowSpec(options=FlowOptions(scanner=scanner)))
 
@@ -629,14 +632,15 @@ def test_rejected_specs_do_not_survive_the_real_boundary() -> None:
     # either the child cannot validate it at all, or the value it reloads is a
     # different thing (a repr string, an unresolvable name, a plain dict) than
     # the parent had. A validator that flagged a portable value would fail here.
-    cases: list[tuple[FlowSpec, Callable[[FlowSpec], object]]] = [
+    # Each case says which way it fails: the child refuses to validate it, or
+    # it loads but the offending value comes back as something else.
+    refused: list[FlowSpec] = [
+        FlowSpec(tasks=[FlowTask(scorer=a_scorer())]),
+        FlowSpec(tasks=[FlowTask(solver=a_solver())]),
+        FlowSpec(tasks=[FlowTask(model=get_model("mockllm/model"))]),
+    ]
+    degraded: list[tuple[FlowSpec, Callable[[FlowSpec], object]]] = [
         (FlowSpec(tasks=[Task()]), _first_task),
-        (FlowSpec(tasks=[FlowTask(scorer=a_scorer())]), _task_attr("scorer")),
-        (FlowSpec(tasks=[FlowTask(solver=a_solver())]), _task_attr("solver")),
-        (
-            FlowSpec(tasks=[FlowTask(model=get_model("mockllm/model"))]),
-            _task_attr("model"),
-        ),
         (FlowSpec(tasks=[FlowTask(factory=lambda: Task())]), _task_attr("factory")),
         (
             FlowSpec(tasks=[FlowTask(name="t", metadata={"x": Task()})]),
@@ -648,14 +652,17 @@ def test_rejected_specs_do_not_survive_the_real_boundary() -> None:
         ),
         (FlowSpec(store=FlowStoreConfig(filter=lambda log: True)), _store_filter),
     ]
-    for spec, offending in cases:
+    for spec in refused:
         with pytest.raises(SpecNotPortableError):
             validate_portable_spec(spec)
-        try:
-            reloaded = _reload(spec)
-        except Exception:
-            continue  # the child rejects it outright
-        assert type(offending(spec)) is not type(offending(reloaded))
+        with pytest.raises(ValidationError):
+            _reload(spec)
+    for spec, offending in degraded:
+        with pytest.raises(SpecNotPortableError):
+            validate_portable_spec(spec)
+        original, restored = offending(spec), offending(_reload(spec))
+        assert type(original) is not type(restored)
+        assert original != restored
 
 
 def test_completeness_against_the_dump() -> None:
