@@ -156,8 +156,60 @@ Known limitations:
 
 The last two share one cause: `_offenders` and `_children` are separate
 traversals, so they can disagree about what the boundary actually serializes.
-Deriving both from a single root dump would close them, at the cost of
-threading recorded-object identity through the walk.
+See "Attribute unexplained offenders to their node" below for why closing them
+is not as cheap as it looks.
+
+## Rejected alternatives
+
+Each of these has been proposed by a reviewer, tried, and rejected for a
+specific reason. Recorded so the reasoning is not relitigated.
+
+**Enumerate the locations to check** — the original design, and what
+`_check_spec_for_venv` did. Rejected because an allow-list of locations fails
+*open*: a field nobody listed is silently treated as portable. Five review
+rounds each found another missed location before the walk replaced it. If you
+are tempted to add a location-specific check, add it to the walk's inputs
+instead.
+
+**Introspect field annotations** to find live-capable fields. Rejected as
+fragile: it must unwrap unions, sequences, mappings, `SkipValidation`, and
+generics like `FlowFactory[Task]` (where `Task` appears but is allowed), and it
+breaks whenever inspect-ai refactors a type — which this repo tracks closely.
+
+**Attribute unexplained offenders to their node**, generalizing the refusal
+branch so that a `@computed_field` or custom `@model_serializer` emitting a
+non-portable value is caught. Tried twice, in two forms:
+
+- *Naively*, reporting whenever no child reported. This reintroduces the
+  original CI break: a `FlowTask` whose only offender sits under a re-inflated
+  `args` reports at `tasks[0]`, rejecting
+  `tests/local_eval/flow/local_eval_flow.py`.
+- *With recorded-object identity*, so that an offender a child's dump saw is
+  treated as excused and only an unreachable one is reported. This still fails,
+  because a node's dump cannot apply `exclude_unset`/`exclude_defaults` to a
+  nested model: the parent sees values the boundary drops, so making it
+  authoritative rejects specs that work. Reverting to it fails
+  `test_refusal_is_not_blamed_on_a_node_whose_dump_overreached` and
+  `test_live_inspect_objects_rejected`.
+
+The trade is a rare false negative (needs a user-defined model with a computed
+field in a free-form container) against a rare false positive (rejecting a spec
+that runs). False positives are worse here — two of them broke CI — so the
+refusal branch stays narrow. A complete fix needs one dump, at the root, with
+the boundary's own flags, feeding both the offender set and the traversal; that
+is a larger change than this validator and belongs with a canonical
+serialization API.
+
+**Emit `<file>@<name>` for registry objects** so a bare registry name always
+resolves in the child. Rejected because it fixes venv execution and breaks
+remote: a path from the submitting machine does not exist in a runner pod, which
+is the case this API exists for. The portable answer is a package-qualified name
+plus the dependency, which already works.
+
+**Reject bare (unqualified) registry names** in `factory` fields. Rejected as a
+policy call with false-positive risk: a bare name does resolve when its module
+is imported, so this would reject working specs. Documented as a limitation
+instead.
 
 ## Tests
 
