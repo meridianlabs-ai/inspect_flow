@@ -1,5 +1,6 @@
 import pickle
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 
@@ -10,7 +11,7 @@ from inspect_ai.dataset import Sample
 from inspect_ai.log import EvalLog, EvalSpec
 from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.scorer import SampleScore
-from inspect_ai.util import EarlyStop
+from inspect_ai.util import EarlyStop, EarlyStopping
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
@@ -34,7 +35,8 @@ from inspect_flow.api import (
 )
 from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
-from pydantic import JsonValue
+from local_eval.tools import add
+from pydantic import BaseModel, JsonValue
 
 from tests.config.inspect_objects_flow import a_agent, a_scorer, a_solver, a_task
 
@@ -49,6 +51,46 @@ def _message(spec: FlowSpec) -> str:
     with pytest.raises(SpecNotPortableError) as excinfo:
         validate_portable_spec(spec)
     return excinfo.value.violations[0].message
+
+
+_module_level_lambda = lambda log: True  # noqa: E731
+
+
+def _nested_filter() -> Callable[[EvalLog], bool]:
+    @log_filter
+    def inner(log: EvalLog) -> bool:
+        return True
+
+    return inner
+
+
+class _StopperBase:
+    """The uninteresting half of the EarlyStopping protocol."""
+
+    async def start_task(
+        self, task: EvalSpec, samples: list[Sample], epochs: int
+    ) -> str:
+        return "x"
+
+    async def schedule_sample(self, id: str | int, epoch: int) -> EarlyStop | None:
+        return None
+
+    async def complete_sample(
+        self, id: str | int, epoch: int, scores: dict[str, SampleScore]
+    ) -> None:
+        return None
+
+    async def complete_task(self) -> dict[str, JsonValue]:
+        return {}
+
+
+@dataclass
+class _DataclassStopper(_StopperBase):
+    threshold: float = 0.5
+
+
+class _ModelStopper(_StopperBase, BaseModel):
+    threshold: float = 0.5
 
 
 class _LiveEarlyStopping:
@@ -290,6 +332,71 @@ def test_lossy_values_in_containers_rejected() -> None:
     ]
     for spec, path in cases:
         assert _paths(spec) == [path]
+
+
+def test_registry_object_in_reinflated_args_passes() -> None:
+    # The runner passes args/model_args/extra_args through registry_kwargs,
+    # which turns the serialized registry dict back into the object, so a live
+    # registered object survives the boundary in these positions. This is a
+    # supported pattern -- tests/local_eval/flow/local_eval_flow.py relies on
+    # it -- and rejecting it broke the venv e2e test.
+    cases = [
+        FlowSpec(tasks=[FlowTask(name="t", args={"tools": [add()]})]),
+        FlowSpec(
+            tasks=[FlowTask(name="t", solver=FlowAgent(name="a", args={"t": add()}))]
+        ),
+        FlowSpec(
+            tasks=[
+                FlowTask(name="t", model=FlowModel(name="m", model_args={"t": add()}))
+            ]
+        ),
+        FlowSpec(
+            tasks=[
+                FlowTask(name="t", extra_args=FlowExtraArgs(solver={"tools": [add()]}))
+            ]
+        ),
+    ]
+    for spec in cases:
+        validate_portable_spec(spec)
+
+
+def test_early_stopping_rejected_even_when_natively_serializable() -> None:
+    # A dataclass or BaseModel stopper dumps cleanly but reloads as a plain
+    # dict, losing the protocol. The field has no portable form at all, so it
+    # is rejected on sight rather than by lossiness.
+    stoppers: list[EarlyStopping] = [_DataclassStopper(), _ModelStopper()]
+    for stopper in stoppers:
+        spec = FlowSpec(tasks=[FlowTask(name="t", early_stopping=stopper)])
+        assert _paths(spec) == ["tasks[0].early_stopping"]
+        # the child accepts the degraded value, which is the danger
+        reloaded = _task_attr("early_stopping")(_reload(spec))
+        assert not hasattr(reloaded, "start_task")
+
+
+def test_module_level_lambda_rejected() -> None:
+    # A lambda defined at module level has __qualname__ == __name__, so only
+    # the explicit <lambda> check rejects it.
+    spec = FlowSpec(store=FlowStoreConfig(filter=_module_level_lambda))
+    assert _paths(spec) == ["store.filter"]
+
+
+def test_registered_nested_function_passes() -> None:
+    # Registration makes a nested function nameable even though its qualname
+    # says otherwise; the registry branch must win.
+    validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_nested_filter())))
+
+
+def test_unserializable_value_rejected() -> None:
+    # Values pydantic refuses outright (the dump raises) must fail closed.
+    spec = FlowSpec(tasks=[FlowTask(name="t", metadata={"k": b"\xff\xfe"})])
+    assert _paths(spec) == ["tasks[0].metadata['k']"]
+
+
+def test_cycle_reports_violation_rather_than_recursing() -> None:
+    cyclic: dict[str, object] = {}
+    cyclic["self"] = cyclic
+    spec = FlowSpec(tasks=[FlowTask(name="t", metadata={"x": cyclic})])
+    assert _paths(spec) == ["tasks[0].metadata['x']['self']"]
 
 
 def test_live_object_in_container_rejected_like_anywhere_else() -> None:

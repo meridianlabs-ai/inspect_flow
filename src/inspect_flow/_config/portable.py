@@ -8,10 +8,12 @@ from inspect_ai.model import Model
 from pydantic import BaseModel
 from pydantic_core import to_jsonable_python
 
-from inspect_flow._types.flow_types import FlowSpec
+from inspect_flow._types.flow_types import FlowSpec, FlowTask
+from inspect_flow._util.not_given import is_set
 from inspect_flow._util.pydantic_util import (
     MODEL_DUMP_ARGS,
     _serialize_fallback,
+    is_registry_dict,
     survives_round_trip,
 )
 
@@ -22,6 +24,8 @@ _SCORER_MESSAGE = f"An already-instantiated Scorer object {_PREAMBLE} Fix: use F
 _AGENT_MESSAGE = f"An already-instantiated Agent object {_PREAMBLE} Fix: use FlowAgent or an agent name string."
 _SOLVER_MESSAGE = f"An already-instantiated Solver object {_PREAMBLE} Fix: use FlowSolver or a solver name string."
 _CALLABLE_MESSAGE = f"A callable that cannot be named again {_PREAMBLE} Fix: use a registry name or a module-level function (not a lambda, functools.partial, nested function, class, or callable object)."
+_SCANNER_MESSAGE = f'An already-instantiated Scanner object {_PREAMBLE} Fix: set options.scanner to a path to a scanner config file, or use scanner spec references (e.g. {{"name": "keyword_scanner"}}).'
+_EARLY_STOPPING_MESSAGE = f"early_stopping holds live callback objects, which {_PREAMBLE} Fix: remove early_stopping from portable specs."
 _VALUE_MESSAGE = f"This value {_PREAMBLE} Fix: use only JSON-serializable data, registry references, or module-level callables."
 
 _REGISTRY_TYPE_MESSAGES = {
@@ -30,7 +34,17 @@ _REGISTRY_TYPE_MESSAGES = {
     "scorer": _SCORER_MESSAGE,
     "agent": _AGENT_MESSAGE,
     "solver": _SOLVER_MESSAGE,
+    "scanner": _SCANNER_MESSAGE,
 }
+
+# Fields whose values the runner passes through `registry_kwargs`, which turns
+# a registry dict back into the object. A live registered object survives the
+# boundary in these positions, and only these.
+_REINFLATED_FIELDS = frozenset({"args", "model_args", "extra_args"})
+
+# Guard against a self-referential value in a free-form container, which no
+# amount of descending resolves.
+_MAX_DEPTH = 100
 
 
 @dataclass
@@ -106,12 +120,33 @@ def validate_portable_spec(spec: FlowSpec) -> None:
             problem for each one.
     """
     violations: list[SpecViolation] = []
+    _walk_early_stopping(spec, "", violations)
     _walk(spec, "", violations)
     if violations:
         raise SpecNotPortableError(violations)
 
 
-def _lossy(value: Any) -> bool:
+def _walk_early_stopping(
+    value: Any, path: str, violations: list[SpecViolation], depth: int = 0
+) -> None:
+    """Report every set `early_stopping`, wherever a FlowTask appears.
+
+    This needs its own pass because the rule is invisible to the dump: an
+    `EarlyStopping` implementation that pydantic serializes natively (a
+    dataclass or BaseModel) reloads as a plain dict, silently losing the
+    protocol, so `_walk` would prune the subtree as clean.
+    """
+    if depth > _MAX_DEPTH:
+        return
+    if isinstance(value, FlowTask) and is_set(value.early_stopping):
+        violations.append(
+            SpecViolation(f"{path}.early_stopping".lstrip("."), _EARLY_STOPPING_MESSAGE)
+        )
+    for segment, child in _children(value):
+        _walk_early_stopping(child, path + segment, violations, depth + 1)
+
+
+def _lossy(value: Any, reinflated: bool) -> bool:
     """Whether dumping this subtree coerces anything that cannot be reloaded."""
     coerced: list[Any] = []
 
@@ -129,12 +164,20 @@ def _lossy(value: Any) -> bool:
 
     try:
         if isinstance(value, BaseModel):
-            value.model_dump(**{**MODEL_DUMP_ARGS, "fallback": record})
+            args = {**MODEL_DUMP_ARGS, "fallback": record}
+            if isinstance(value, FlowTask):
+                # Owned by _walk_early_stopping; including it here would report
+                # the same stopper twice.
+                args["exclude"] = {"early_stopping"}
+            value.model_dump(**args)
         else:
             to_jsonable_python(value, fallback=record)
     except Exception:
         return True
-    return any(not survives_round_trip(obj) for obj in coerced)
+    return any(
+        not survives_round_trip(obj) and not (reinflated and is_registry_dict(obj))
+        for obj in coerced
+    )
 
 
 def _children(value: Any) -> list[tuple[str, Any]]:
@@ -142,7 +185,12 @@ def _children(value: Any) -> list[tuple[str, Any]]:
     if isinstance(value, BaseModel):
         # model_fields_set mirrors the dump's exclude_unset: an unset field is
         # not serialized, so it cannot carry a value across the boundary.
-        return [(f".{name}", getattr(value, name)) for name in value.model_fields_set]
+        names = value.model_fields_set
+        if isinstance(value, FlowTask):
+            # _walk_early_stopping owns this field; descending would report a
+            # live stopper a second time.
+            names = names - {"early_stopping"}
+        return [(f".{name}", getattr(value, name)) for name in names]
     if isinstance(value, Mapping):
         return [(f"[{key!r}]", item) for key, item in value.items()]
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
@@ -165,12 +213,42 @@ def _message(value: Any) -> str:
     return _VALUE_MESSAGE
 
 
-def _walk(value: Any, path: str, violations: list[SpecViolation]) -> None:
-    if not _lossy(value):
-        return
+def _walk(
+    value: Any,
+    path: str,
+    violations: list[SpecViolation],
+    reinflated: bool = False,
+    seen: frozenset[int] = frozenset(),
+) -> None:
     before = len(violations)
-    for segment, child in _children(value):
-        _walk(child, path + segment, violations)
+    if not _lossy(value, reinflated):
+        return
+    if id(value) in seen:
+        # A cycle cannot be serialized at all; report here rather than recurse.
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    if isinstance(value, Mapping) and any(not isinstance(key, str) for key in value):
+        # Keys are not children, and a non-string key is coerced to text.
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    children = _children(value)
+    if not children:
+        if len(violations) == before:
+            # Containers and models serialize natively, so only a childless
+            # node is ever the offending value itself.
+            violations.append(SpecViolation(path.lstrip("."), _message(value)))
+        return
+    for segment, child in children:
+        # Each child is judged in its own context: a value is portable under a
+        # re-inflated field even though its parent, dumped as a whole, is not.
+        _walk(
+            child,
+            path + segment,
+            violations,
+            reinflated or segment.lstrip(".") in _REINFLATED_FIELDS,
+            seen | {id(value)},
+        )
     if len(violations) == before:
-        # Nothing deeper accounts for it, so this node is the offending leaf.
-        violations.append(SpecViolation(path.lstrip("."), _message(value)))
+        # Every child was portable in its own context, so the parent's apparent
+        # lossiness was explained by a re-inflated subtree.
+        return

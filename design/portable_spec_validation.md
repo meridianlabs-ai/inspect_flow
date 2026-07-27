@@ -32,11 +32,22 @@ Serializing is only half of it. Two kinds of value fail to come back:
 
 - **Anything reduced to text.** [_serialize_fallback](../src/inspect_flow/_util/pydantic_util.py)
   turns an unknown object into its `repr`, which reloads as a string.
-- **Anything reduced to a registry dict.** A live registered `Scorer`, `Solver`,
-  `Agent`, or `Model` serializes to `{type, name, params}`. That is *not* a
-  round trip: in a structural position the child's `extra="forbid"` validation
-  rejects it outright, and in a free-form container it reloads as a plain
-  `dict` rather than the object.
+- **A registry dict outside a re-inflated field.** A live registered `Scorer`,
+  `Solver`, `Agent`, or `Model` serializes to `{type, name, params}`. Whether
+  that round-trips depends on where it sits. The runner passes `args`,
+  `model_args`, and `extra_args` through `registry_kwargs`, which turns the
+  dict back into the object — so a live object *is* portable there, and
+  `tests/local_eval/flow/local_eval_flow.py` relies on it. Anywhere else it is
+  not: a structural position (`tasks`, `model`, `scorer`, `solver`,
+  `model_roles`) fails the child's `extra="forbid"` validation outright, and
+  `metadata`/`flow_metadata` are handed to the task raw, so the dict stays a
+  dict.
+
+`early_stopping` is a third case, and the only rule the dump cannot see. The
+field holds a live-callback protocol with no registry or string form, so no
+value survives — including a dataclass or `BaseModel` implementation, which
+serializes cleanly and reloads as a plain dict, silently losing the protocol.
+It gets its own small pass over the spec.
 
 The one thing that does survive is a callable the loader can name again —
 a registry object, or a module-level function that `callable_name` renders as
@@ -67,13 +78,18 @@ def validate_portable_spec(spec: FlowSpec) -> None: ...
 
 The implementation is a generic walk rather than a list of places to look:
 
-- `_lossy(value)` dumps a subtree through Pydantic and asks whether any value
-  that reached the fallback fails `survives_round_trip`.
+- `_lossy(value, reinflated)` dumps a subtree through Pydantic and asks whether
+  any value that reached the fallback fails `survives_round_trip` — allowing
+  registry dicts when the subtree sits under a re-inflated field.
 - `_children(value)` yields the addressable sub-values of a node — set fields
   of a `BaseModel`, mapping items, sequence items — with the path segment for
   each.
 - `_walk` prunes any subtree that dumps cleanly, descends into the rest, and
-  reports a violation at the deepest node that nothing below it accounts for.
+  reports at a childless node. Each child is judged in *its own* context, so a
+  parent that looks lossy as a whole stays silent when every child turns out
+  to be portable where it actually sits.
+- `_walk_early_stopping` is a separate structural pass for the one rule the
+  dump cannot see.
 
 Every field is therefore covered, including `includes`, free-form containers
 (`args`, `extra_args`, `model_args`, `metadata`, `flow_metadata`,
