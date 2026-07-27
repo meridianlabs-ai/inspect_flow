@@ -84,7 +84,11 @@ Free-form value containers — `args`, `extra_args`, `model_args`, `metadata`,
 and rejecting any leaf that serializes lossily (a live object's `repr`, or an
 unresolvable callable name). Values that round-trip — JSON scalars, nested
 containers, natively-serialized types like `datetime`, registry references —
-are accepted.
+are accepted. A registered live object therefore passes inside a value
+container (it round-trips to a registry dict) even though the same object is
+rejected in a structural position such as `model`/`scorer`/`solver`: those
+positions carry a deliberate "use references, not live objects" stance, while
+a value container only needs to round-trip.
 
 Known limitations: specs pulled in via `includes` are not descended into
 (validate the resolved spec, after includes are merged), and a value whose

@@ -14,6 +14,7 @@ from inspect_ai.util import EarlyStop
 from inspect_flow import (
     FlowAgent,
     FlowDefaults,
+    FlowExtraArgs,
     FlowFactory,
     FlowModel,
     FlowOptions,
@@ -303,6 +304,26 @@ def test_lossy_values_in_containers_rejected() -> None:
         ),
         (
             FlowSpec(
+                tasks=[
+                    FlowTask(name="t", extra_args=FlowExtraArgs(model={"x": Task()}))
+                ]
+            ),
+            "tasks[0].extra_args",
+        ),
+        (
+            FlowSpec(
+                tasks=[FlowTask(scorer=[FlowScorer(name="s", args={"x": Task()})])]
+            ),
+            "tasks[0].scorer[0].args",
+        ),
+        (
+            FlowSpec(
+                tasks=[FlowTask(model=FlowModel(name="m", model_args={"x": Task()}))]
+            ),
+            "tasks[0].model.model_args",
+        ),
+        (
+            FlowSpec(
                 options=FlowOptions(
                     scanner=ScannerConfig(
                         scanners=[ScannerSpec(name="kw", params={"x": Task()})]
@@ -433,7 +454,11 @@ def test_validator_flags_every_lossy_leaf() -> None:
     )
     # Independent cross-check: pydantic coerced exactly as many lossy leaves as
     # the validator reported violations. If a populated field serialized lossily
-    # but the validator missed it, these diverge and the test fails.
+    # but the validator missed it, these diverge and the test fails. This exact
+    # equality relies on each value container above holding exactly one lossy
+    # leaf ({"x": Task()}); a container check reports the field once, so a bag
+    # with two lossy leaves would count 2 but report 1. Keep one lossy leaf per
+    # container.
     assert _lossy_leaf_count(spec) == len(excinfo.value.violations)
 
 
