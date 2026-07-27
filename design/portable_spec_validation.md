@@ -76,33 +76,43 @@ check as a public API, exported from `inspect_flow.api`:
 ```python
 @dataclass
 class SpecViolation:
-    path: str      # e.g. "tasks[2].model_roles['grader']"
-    message: str   # what is wrong and the portable alternative
+    path: str  # e.g. "tasks[2].model_roles['grader']"
+    message: str  # what is wrong and the portable alternative
+
 
 class SpecNotPortableError(ValueError):
     violations: list[SpecViolation]
     hint: str | None  # optional extra line appended to str()
+
 
 def validate_portable_spec(spec: FlowSpec) -> None: ...
 ```
 
 The implementation is a generic walk rather than a list of places to look:
 
-- `_offenders(value, reinflated)` dumps a subtree through Pydantic and returns
-  the values that reached the fallback and fail `survives_round_trip` —
-  allowing registry dicts when the subtree sits under a re-inflated field.
+- `_offenders(value, reinflated=…, resolving=…)` dumps a subtree through
+  Pydantic and returns the values that reached the fallback and cannot be
+  reloaded — allowing registry dicts under a re-inflated field, and named
+  callables in a field the runner resolves names in.
 - `_children(value)` yields the addressable sub-values of a node — set fields
   of a `BaseModel`, mapping items, sequence items — with the path segment for
   each.
-- `_walk` prunes any subtree that dumps cleanly and descends into the rest,
-  reporting in three cases: there is nowhere further to look; the node is
-  itself among the offenders; or pydantic refused the subtree outright and no
-  child accounted for it. The second and third are what make the cases
-  distinguishable — a container can be the offending value even though each of
-  its children is portable (a `range`, a `memoryview`, a `bytearray` of
-  undecodable bytes), while a `FlowTask` whose only offender sits under a
-  re-inflated `args` must stay silent. Each child is judged in *its own*
-  context.
+- `_walk` prunes any subtree that dumps cleanly and descends into the rest.
+  Its guards run fatal-and-cheap first (excessive depth), then the prune, then
+  the three cases where descending cannot help — a cycle, a mapping key that
+  cannot round-trip, and a node with no children or which is itself among the
+  offenders — then descent, then a post-descent fallback for a subtree pydantic
+  refused outright that no child accounted for. The self-offender and refusal
+  cases are what make the two situations distinguishable: a container can be
+  the offending value even though each of its children is portable (a `range`,
+  a `memoryview`, a `bytearray` of undecodable bytes), while a `FlowTask` whose
+  only offender sits under a re-inflated `args` must stay silent.
+- Each child is judged in its own context, and the two flags spread
+  differently. `registry_kwargs` recurses to any depth, so `reinflated` sticks
+  for a whole subtree; a name lookup applies only to the value in the field
+  itself, so `resolving` is replaced on entering a new field and inherited only
+  through container indexing. Otherwise `FlowFactory.args` would inherit the
+  excuse from the `factory` field it hangs off.
 - `_walk_early_stopping` is a separate structural pass for the one rule the
   dump cannot see.
 
@@ -223,8 +233,10 @@ model of it:
 - `test_rejected_specs_do_not_survive_the_real_boundary` requires each
   rejected spec to genuinely fail to come back, so a validator that flagged a
   portable value would fail.
-- `test_completeness_against_the_dump` requires every lossily-coerced leaf in
-  a maximally-broken spec to be reported.
+- `test_maximally_broken_spec_reports_every_path` snapshots one spec that
+  breaks every rule at once, so a change in how paths are attributed shows up
+  in one place. It is not self-discovering: a new live-capable field has to be
+  added to it by hand.
 
 An earlier design also carried a snapshot test over spec field names, needed
 because an enumeration cannot discover fields on its own. The walk makes it

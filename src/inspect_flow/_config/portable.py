@@ -26,7 +26,7 @@ _SOLVER_MESSAGE = f"An already-instantiated Solver object {_PREAMBLE} Fix: use F
 _CALLABLE_MESSAGE = f"A callable that cannot be named again {_PREAMBLE} The child resolves a serialized callable through the Inspect registry, so it must be a registered object (e.g. a function decorated with @task, @solver, @scorer, @agent, or @log_filter) or a registry name string. An undecorated function, lambda, functools.partial, nested function, class, or callable object cannot be resolved."
 _SCANNER_MESSAGE = f'An already-instantiated Scanner object {_PREAMBLE} Fix: set options.scanner to a path to a scanner config file, or use scanner spec references (e.g. {{"name": "keyword_scanner"}}).'
 _EARLY_STOPPING_MESSAGE = f"early_stopping holds live callback objects, which {_PREAMBLE} Fix: remove early_stopping from portable specs."
-_VALUE_MESSAGE = f"This value {_PREAMBLE} Fix: use only JSON-serializable data, registry references, or module-level callables."
+_VALUE_MESSAGE = f"This value {_PREAMBLE} Fix: use only JSON-serializable data or registry references (e.g. a function decorated with @task, @solver, @scorer, or @agent)."
 
 _REGISTRY_TYPE_MESSAGES = {
     "task": _TASK_MESSAGE,
@@ -80,6 +80,13 @@ class SpecNotPortableError(ValueError):
     def __init__(
         self, violations: list[SpecViolation], hint: str | None = None
     ) -> None:
+        """Create the error.
+
+        Args:
+            violations: Every violation found, each with its field path.
+            hint: Extra guidance appended to the rendered message, for a caller
+                with an escape hatch the validator should not assume.
+        """
         self.violations = violations
         self.hint = hint
         lines = [
@@ -114,11 +121,12 @@ def validate_portable_spec(spec: FlowSpec) -> None:
     JSON-serializable data is portable.
 
     Every field is checked, including free-form containers (`args`,
-    `metadata`, `flow_metadata`, scanner params) and any spec listed in
-    `includes`. The spec is not expanded or resolved, and nothing is
-    installed or launched.
+    `metadata`, `flow_metadata`, scanner params) and any inline `FlowSpec` in
+    `includes` — a path string there is not loaded, so an included file's
+    contents are not checked. The spec is not expanded or resolved, and nothing
+    is installed or launched.
 
-    Three limitations. A value Pydantic coerces natively on dump is reported
+    Four limitations. A value Pydantic coerces natively on dump is reported
     as portable, because it reloads as the coerced type rather than being
     lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes
     `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/
@@ -170,9 +178,7 @@ def _walk_early_stopping(
         _walk_early_stopping(child, path + segment, violations, depth + 1)
 
 
-def _offenders(
-    value: Any, reinflated: bool, resolving: bool
-) -> tuple[list[Any], set[int]]:
+def _offenders(value: Any, *, reinflated: bool, resolving: bool) -> list[Any]:
     """The values in this subtree that dumping coerces beyond recovery.
 
     Returning the objects rather than a flag lets `_walk` tell "this node is
@@ -217,15 +223,14 @@ def _offenders(
         if not (resolving and survives_round_trip(obj))
         and not (reinflated and serializes_to_registry_dict(obj))
     ]
-    recorded = {id(obj) for obj in coerced}
     if refused and not offenders:
         # Attribute to a marker rather than to `value`, so the walk still
         # descends to whichever leaf actually caused the refusal. Only when
         # nothing was recorded: dumping a subtree in isolation cannot apply
         # exclude_unset, so it can record a value the boundary drops, and
         # reporting the refusal here as well would blame this node for it.
-        return [_REFUSED], recorded
-    return offenders, recorded
+        return [_REFUSED]
+    return offenders
 
 
 def _children(value: Any) -> list[tuple[str, Any]]:
@@ -265,59 +270,72 @@ def _walk(
     value: Any,
     path: str,
     violations: list[SpecViolation],
+    *,
     reinflated: bool = False,
     resolving: bool = False,
     seen: frozenset[int] = frozenset(),
     depth: int = 0,
-) -> set[int]:
-    """Walk a subtree, reporting violations. Returns the ids its dump recorded."""
+) -> None:
+    """Report the non-portable values in a subtree, at the deepest path each.
+
+    The guards below run fatal-and-cheap first (depth), then the prune that makes
+    the walk affordable, then the three cases where descending cannot help, then
+    descent, then the post-descent fallback.
+    """
     if depth > _MAX_DEPTH:
+        # Only reached below a node that already had offenders, so reporting here
+        # without consulting _offenders again is warranted.
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return set()
-    offenders, recorded = _offenders(value, reinflated, resolving)
+        return
+    children = _children(value)
+    # `resolving` excuses a callable because the runner looks its name up, which
+    # only applies to the callable itself -- not to a model sitting in the same
+    # field, whose own `args` nobody resolves. Honour it at a leaf only.
+    offenders = _offenders(
+        value, reinflated=reinflated, resolving=resolving and not children
+    )
     if not offenders:
-        return recorded
+        return
     if id(value) in seen:
         # A cycle cannot be serialized at all; report here rather than recurse.
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return recorded
+        return
     if isinstance(value, Mapping) and any(not isinstance(key, str) for key in value):
         # Keys are not children, and a non-string key is coerced to text.
         violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
-        return recorded
-    children = _children(value)
+        return
     if not children or any(offender is value for offender in offenders):
         # Either there is nowhere further to look, or this node is itself one of
         # the values that failed to serialize -- which a container can be even
         # when every child of it is portable (a `range`, a `memoryview`, a
         # custom Sequence or Mapping).
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
-        return recorded
+        return
     before = len(violations)
     for segment, child in children:
-        # Each child is judged in its own context: a value is portable under a
-        # re-inflated field even though its parent, dumped as a whole, is not.
+        name = segment.lstrip(".")
         _walk(
             child,
             path + segment,
             violations,
-            reinflated or segment.lstrip(".") in _REINFLATED_FIELDS,
-            resolving or segment.lstrip(".") in _RESOLVING_FIELDS,
-            seen | {id(value)},
-            depth + 1,
+            # Each child is judged in its own context, and the two flags spread
+            # differently. `registry_kwargs` recurses to any depth, so anything
+            # under a re-inflated field is re-inflated too -- the flag sticks.
+            # A name lookup applies only to the value in the field itself, so
+            # entering a new field replaces `resolving`; indexing into a
+            # container keeps it. Without that, `FlowFactory.args` would inherit
+            # the excuse from the `factory` field it hangs off.
+            reinflated=reinflated or name in _REINFLATED_FIELDS,
+            resolving=(
+                name in _RESOLVING_FIELDS if segment.startswith(".") else resolving
+            ),
+            seen=seen | {id(value)},
+            depth=depth + 1,
         )
     if len(violations) == before and _REFUSED in offenders:
-        # Pydantic refused this subtree and no child accounts for it, so the
-        # node itself is what cannot be serialized (a bytearray of undecodable
-        # bytes, say, whose elements are individually fine).
-        #
-        # Deliberately limited to a refusal. Blaming the node for any offender no
-        # child's dump saw would also catch what a @computed_field emits, but it
-        # would reject specs that work: this node's dump cannot apply
-        # exclude_unset to a nested model, so it sees values the boundary drops,
-        # and a child that legitimately excused an offender (a registry object
-        # under `args`) is indistinguishable from one that never saw it. A false
-        # positive is worse than the narrow false negative -- see the limitations
-        # in the docstring.
+        # Pydantic refused this subtree and no child accounts for it, so the node
+        # itself is unserializable (a bytearray of undecodable bytes, whose
+        # elements are individually fine). Deliberately limited to a refusal:
+        # generalizing it rejects working specs -- see "Rejected alternatives" in
+        # design/portable_spec_validation.md.
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
-    return recorded

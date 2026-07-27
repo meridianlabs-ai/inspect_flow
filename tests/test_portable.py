@@ -51,13 +51,10 @@ def _paths(spec: FlowSpec) -> list[str]:
     return [v.path for v in excinfo.value.violations]
 
 
-def _message(spec: FlowSpec) -> str:
+def _first_message(spec: FlowSpec) -> str:
     with pytest.raises(SpecNotPortableError) as excinfo:
         validate_portable_spec(spec)
     return excinfo.value.violations[0].message
-
-
-_module_level_lambda = lambda log: True  # noqa: E731
 
 
 def _nested_filter() -> Callable[[EvalLog], bool]:
@@ -155,7 +152,7 @@ def test_live_inspect_objects_rejected() -> None:
         if kind:
             # The registry type, not isinstance, picks the label: Scorer/Solver/
             # Agent are Protocols that any callable satisfies structurally.
-            assert f"already-instantiated {kind} object" in _message(spec)
+            assert f"already-instantiated {kind} object" in _first_message(spec)
 
 
 def test_live_objects_in_defaults_templates_rejected() -> None:
@@ -205,7 +202,7 @@ def test_non_nameable_callables_rejected() -> None:
     for factory in factories:
         spec = FlowSpec(tasks=[FlowTask(factory=factory)])
         assert _paths(spec) == ["tasks[0].factory"]
-        assert "cannot be named again" in _message(spec)
+        assert "cannot be named again" in _first_message(spec)
 
 
 def test_non_nameable_callables_in_wrappers_rejected() -> None:
@@ -283,7 +280,7 @@ def test_nameable_callables_pass() -> None:
 # -- Free-form value containers --
 
 
-def test_lossy_values_in_containers_rejected() -> None:
+def test_unportable_values_in_containers_rejected() -> None:
     cases = [
         (FlowSpec(flow_metadata={"x": Task()}), "flow_metadata['x']"),
         (
@@ -382,16 +379,9 @@ def test_early_stopping_rejected_even_when_natively_serializable() -> None:
         assert not hasattr(reloaded, "start_task")
 
 
-def test_module_level_lambda_rejected() -> None:
-    # A lambda defined at module level has __qualname__ == __name__, so only
-    # the explicit <lambda> check rejects it.
-    spec = FlowSpec(store=FlowStoreConfig(filter=_module_level_lambda))
-    assert _paths(spec) == ["store.filter"]
-
-
 def test_registered_nested_function_passes() -> None:
-    # Registration makes a nested function nameable even though its qualname
-    # says otherwise; the registry branch must win.
+    # A nested function is rejected unless registered; registration is the only
+    # thing that matters, so the registry branch must win.
     validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_nested_filter())))
 
 
@@ -531,6 +521,45 @@ def test_registered_callable_rejected_outside_resolving_fields() -> None:
     validate_portable_spec(FlowSpec(store=FlowStoreConfig(filter=_keep_all)))
 
 
+def test_inline_included_spec_is_walked() -> None:
+    # An inline FlowSpec in `includes` is part of this spec, so it is checked. A
+    # path string is not loaded, so an included file's contents are not.
+    assert _paths(FlowSpec(includes=[FlowSpec(tasks=[Task()])])) == [
+        "includes[0].tasks[0]"
+    ]
+    validate_portable_spec(FlowSpec(includes=["some_other_spec.py"]))
+
+
+def test_registered_callable_in_flow_factory_args_rejected() -> None:
+    # `resolving` must not spread from the `factory` field into the FlowFactory
+    # hanging off it: the runner looks up the factory's name, but nobody looks up
+    # names inside its args, so a registered callable there reloads as a string.
+    spec = FlowSpec(tasks=[FlowTask(factory=FlowFactory("reg", args={"cb": a_task}))])
+    assert _paths(spec) == ["tasks[0].factory.args['cb']"]
+    reloaded = _task_attr("factory")(_reload(spec))
+    assert isinstance(reloaded, FlowFactory)
+    assert reloaded.args == {"cb": "a_task"}
+
+
+def test_reinflation_reaches_arbitrary_depth_under_args() -> None:
+    # registry_kwargs recurses, so a registry object stays portable however deep
+    # it sits under args -- even below a model that itself degrades to a dict.
+    # Only the sibling that genuinely cannot come back is reported.
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="t",
+                args={
+                    "cfg": FlowTask(
+                        name="x", scorer=a_scorer(), metadata={"bad": lambda: 1}
+                    )
+                },
+            )
+        ]
+    )
+    assert _paths(spec) == ["tasks[0].args['cfg'].metadata['bad']"]
+
+
 def test_live_object_in_container_rejected_like_anywhere_else() -> None:
     # A registered object serializes to a registry dict, but the child reloads
     # that as a plain dict rather than the object, so it is not portable here
@@ -567,7 +596,7 @@ def _keep_all(log: EvalLog) -> bool:
     return True
 
 
-def test_store_filter() -> None:
+def test_store_filter_accepts_only_registered_filters() -> None:
     assert _paths(FlowSpec(store=FlowStoreConfig(filter=lambda log: True))) == [
         "store.filter"
     ]
@@ -817,10 +846,10 @@ def test_registered_factory_survives_instantiation() -> None:
     assert instantiate_tasks(_reload(spec), base_dir=".")
 
 
-def test_completeness_against_the_dump() -> None:
-    # Completeness oracle: pydantic's own traversal decides which leaves are
-    # coerced; every one that cannot be reloaded must be reported. A new field
-    # carrying such a value fails here rather than reaching a runner.
+def test_maximally_broken_spec_reports_every_path() -> None:
+    # A snapshot of one spec that breaks every rule at once, so a change in how
+    # paths are attributed shows up in one place. Not self-discovering: a new
+    # live-capable field has to be added here by hand.
     spec = FlowSpec(
         tasks=[
             Task(),
