@@ -16,9 +16,11 @@ The goal: `@after_instantiate` works exactly like `@after_load` from the user's 
 from inspect_ai import Task
 from inspect_flow import after_instantiate
 
+
 @after_instantiate
 def shuffle(tasks: list[Task]) -> list[Task]:
     import random
+
     random.shuffle(tasks)
     return tasks
 ```
@@ -53,6 +55,7 @@ INSPECT_FLOW_AFTER_INSTANTIATE_TYPE = "after_instantiate"
 
 AfterInstantiate: TypeAlias = Callable[[list[Task]], list[Task] | None]
 
+
 def after_instantiate(func: AfterInstantiate) -> AfterInstantiate:
     """Decorator to register a function to run after tasks are instantiated.
 
@@ -78,9 +81,7 @@ In `run_eval_set`, right after `instantiate_tasks` returns:
 ```python
 tasks = instantiate_tasks(resolved_spec, base_dir=base_dir)
 
-hooks = registry_find(
-    lambda info: info.type == INSPECT_FLOW_AFTER_INSTANTIATE_TYPE
-)
+hooks = registry_find(lambda info: info.type == INSPECT_FLOW_AFTER_INSTANTIATE_TYPE)
 hooks.sort(key=lambda fn: registry_info(fn).name)  # deterministic order
 
 plain_tasks = [t.task for t in tasks]
@@ -176,11 +177,16 @@ Both work. The second is simpler and matches the existing pattern:
 ```python
 INSPECT_FLOW_AFTER_INSTANTIATE_ATTR = "_inspect_flow_after_instantiate"
 
+
 def after_instantiate(func: AfterInstantiate) -> AfterInstantiate:
     name = registry_name(func, func.__name__)
-    registry_add(func, RegistryInfo.model_construct(
-        type=INSPECT_FLOW_AFTER_INSTANTIATE_TYPE, name=name,
-    ))
+    registry_add(
+        func,
+        RegistryInfo.model_construct(
+            type=INSPECT_FLOW_AFTER_INSTANTIATE_TYPE,
+            name=name,
+        ),
+    )
     setattr(func, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR, True)  # for parent discovery
     return func
 ```
@@ -188,10 +194,7 @@ def after_instantiate(func: AfterInstantiate) -> AfterInstantiate:
 Then in `_load_spec_from_file`:
 
 ```python
-if any(
-    hasattr(v, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR)
-    for v in globals.values()
-):
+if any(hasattr(v, INSPECT_FLOW_AFTER_INSTANTIATE_ATTR) for v in globals.values()):
     state.preload_files.add(config_file)
 ```
 
@@ -202,15 +205,17 @@ Then in `expand_spec`, before returning:
 ```python
 if state.preload_files:
     internal = (
-        spec.internal
-        if isinstance(spec.internal, FlowInternal)
-        else FlowInternal()
+        spec.internal if isinstance(spec.internal, FlowInternal) else FlowInternal()
     )
-    spec = spec.model_copy(update={
-        "internal": internal.model_copy(update={
-            "preload_files": sorted(state.preload_files),
-        }),
-    })
+    spec = spec.model_copy(
+        update={
+            "internal": internal.model_copy(
+                update={
+                    "preload_files": sorted(state.preload_files),
+                }
+            ),
+        }
+    )
 ```
 
 `config_file` is absolutized in `int_load_spec`, so paths in the YAML are absolute — usable from the venv subprocess regardless of its CWD.
@@ -223,7 +228,9 @@ In the child's `run_eval_set`, before the registry scan:
 internal = resolved_spec.internal
 files = internal.preload_files if isinstance(internal, FlowInternal) else None
 for file_path in files or []:
-    execute_file_and_get_last_result(file_path, args={})  # side effect: decorators register
+    execute_file_and_get_last_result(
+        file_path, args={}
+    )  # side effect: decorators register
 ```
 
 `execute_file_and_get_last_result` already handles `sys.path` setup for local files. We use it purely for the side effect; the returned value is discarded.

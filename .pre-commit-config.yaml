@@ -2,7 +2,8 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.6
+    # Keep in sync with the ruff version in uv.lock.
+    rev: v0.16.0
     hooks:
       # Run the linter.
       - id: ruff
@@ -10,8 +11,8 @@ repos:
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/astral-sh/uv-pre-commit
-    # uv version.
-    rev: 0.8.11
+    # uv version. Keep in sync with the uv that generates uv.lock.
+    rev: 0.8.21
     hooks:
       # Update the uv lockfile
       - id: uv-lock

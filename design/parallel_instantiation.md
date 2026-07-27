@@ -12,9 +12,7 @@ Add a new field to `FlowSpec`:
 class FlowSpec(FlowBase, arbitrary_types_allowed=True):
     ...
     instantiate: (
-        Literal["serial", "by_task", "parallel"]
-        | InstantiateConfig
-        | NotGiven
+        Literal["serial", "by_task", "parallel"] | InstantiateConfig | NotGiven
     ) = Field(
         default=not_given,
         description=(
@@ -108,9 +106,13 @@ def instantiate_tasks(spec: FlowSpec, base_dir: str) -> list[InstantiatedTask]:
         action.update(info=progress)
         progress_task = progress.add_task("Instantiating", total=len(task_configs))
         if cfg.mode == "serial":
-            results = _instantiate_serial(spec, task_configs, base_dir, action, progress, progress_task)
+            results = _instantiate_serial(
+                spec, task_configs, base_dir, action, progress, progress_task
+            )
         else:
-            results = _instantiate_threaded(spec, task_configs, base_dir, cfg, action, progress, progress_task)
+            results = _instantiate_threaded(
+                spec, task_configs, base_dir, cfg, action, progress, progress_task
+            )
         action.update(info=f"Instantiated {len(results)} tasks")
     return results
 ```
@@ -171,10 +173,12 @@ No new CLI flag in v1 — `instantiate` is a spec field, set via the config file
 ```python
 from inspect_flow import FlowSpec, InstantiateConfig, run
 
-run(FlowSpec(
-    instantiate=InstantiateConfig(mode="parallel", max_threads=16),
-    tasks=[...],
-))
+run(
+    FlowSpec(
+        instantiate=InstantiateConfig(mode="parallel", max_threads=16),
+        tasks=[...],
+    )
+)
 ```
 
 ## Testing

@@ -21,7 +21,9 @@ class FlowStoreConfig(FlowBase):
     """Store configuration with optional log filter."""
 
     path: Literal["auto"] | str | None = "auto"
-    filter: SkipValidation[LogFilter] | str | None = None  # callable, registered name, or None
+    filter: SkipValidation[LogFilter] | str | None = (
+        None  # callable, registered name, or None
+    )
 ```
 
 `SkipValidation` is needed because `FlowBase` doesn't allow arbitrary types and Pydantic can't validate callables.
@@ -62,10 +64,8 @@ Usage:
 ```python
 @log_filter
 def approved_only(log: EvalLog) -> bool:
-    return (
-        "approved" in (log.eval.tags or [])
-        and log.eval.created >= "2025-01-01"
-    )
+    return "approved" in (log.eval.tags or []) and log.eval.created >= "2025-01-01"
+
 
 spec = FlowSpec(
     store=FlowStoreConfig(filter="approved_only"),
@@ -108,6 +108,7 @@ The store holds an internal filter (set at construction) used by `search_for_log
 class FlowStore(ABC):
     @abstractmethod
     def get_logs(self, filter: LogFilter | None = None) -> set[str]: ...
+
 
 class FlowStoreInternal(FlowStore):
     @abstractmethod
