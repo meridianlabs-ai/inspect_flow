@@ -1,12 +1,26 @@
-# Opens a tracking issue when the "Inspect AI Main CI" canary (which runs flow
-# against inspect-ai's git main every 3 hours) fails on a scheduled run.
+# Triages the "Inspect AI Main CI" canary (which runs flow against inspect-ai's
+# git main every 3 hours) when it fails on a scheduled run.
 #
-# The canary going red means an unreleased inspect-ai change has broken flow —
-# a heads-up that a future release will need reconciliation. Rather than let
-# that fail silently every 3 hours, this opens ONE issue and keeps it as the
-# single source of truth: while it is open, later failures just add a comment
-# with the new run link instead of piling up duplicate issues. Closing the
-# issue (once flow is fixed) lets the next failure open a fresh one.
+# The canary going red usually means an unreleased inspect-ai change has broken
+# flow — but not always: an incidental cause (a dev-tool/linter upgrade
+# reformatting code, a flake, an unrelated dependency) can trip it too, since
+# the canary upgrades ALL dev dependencies. So "canary red" must be diagnosed,
+# not assumed to mean "inspect-ai broke us".
+#
+# Two jobs:
+#   triage-gate — deterministic. Opens ONE tracking issue (deduped on the
+#     `inspect-ai-main` label) and, while it stays open, appends a "still
+#     failing" comment on later failures instead of piling up duplicate issues.
+#     Closing the issue (once flow is fixed) lets the next failure open a fresh
+#     one. Emits `needs_triage` = true only while the open issue lacks a
+#     `triaged` label.
+#   triage — runs the dev agent (headless, as the machine account) ONLY when
+#     needs_triage is true, so the 3-hourly repeats never spend a model run or
+#     open a duplicate PR. The agent root-causes the failure, then either opens
+#     an `auto`-labeled PR to fix it now or defers it to the next inspect-ai
+#     release (`hold:release`), and applies `triaged` when done. Gating on the
+#     label (not "was just opened") makes triage retry-safe: an agent that dies
+#     before finishing leaves no label, so the next failure re-triages.
 #
 # Dedup is keyed on the `inspect-ai-main` label, not the failure signature: the
 # canary has one meaning ("flow is broken against inspect-ai main"), so one open
@@ -34,7 +48,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  open-issue:
+  triage-gate:
     # Only file for failed *scheduled* canary runs (skip successes and manual
     # dispatches of the canary itself). A workflow_dispatch of THIS workflow
     # always proceeds against the supplied run_id.
@@ -47,6 +61,10 @@ jobs:
       contents: read
       actions: read
       issues: write
+    outputs:
+      issue_number: ${{ steps.issue.outputs.issue_number }}
+      issue_url: ${{ steps.issue.outputs.issue_url }}
+      needs_triage: ${{ steps.issue.outputs.needs_triage }}
     env:
       # MARVIN_TOKEN (machine account) carries the `project` scope needed to add
       # the issue to the org Atlas board; github.token cannot reach org
@@ -68,6 +86,7 @@ jobs:
           tail -n 200 failed.log > failed.tail.log || true
 
       - name: Open or update tracking issue
+        id: issue
         run: |
           set -uo pipefail
 
@@ -76,12 +95,26 @@ jobs:
             --color B60205 2>/dev/null || true
 
           existing=$(gh issue list --repo "$REPO" --state open \
-            --label inspect-ai-main --limit 1 --json number,url \
-            --jq '.[0].url // empty')
+            --label inspect-ai-main --limit 1 --json number,url,labels \
+            --jq '.[0] // empty')
 
           if [ -n "$existing" ]; then
-            echo "Existing open issue $existing — commenting instead of opening a new one."
-            gh issue comment "$existing" --repo "$REPO" --body "$(printf 'Still failing on a later run.\n\n- Failed run: %s\n- Triage run: https://github.com/%s/actions/runs/%s' "$RUN_URL" "$REPO" "$GITHUB_RUN_ID")"
+            number=$(echo "$existing" | jq -r '.number')
+            url=$(echo "$existing" | jq -r '.url')
+            echo "Existing open issue $url — commenting instead of opening a new one."
+            gh issue comment "$url" --repo "$REPO" --body "$(printf 'Still failing on a later run.\n\n- Failed run: %s\n- Triage run: https://github.com/%s/actions/runs/%s' "$RUN_URL" "$REPO" "$GITHUB_RUN_ID")"
+            # Re-triage only while the issue has not yet been triaged (retry-safe:
+            # an agent that died before labeling leaves no `triaged` label).
+            if echo "$existing" | jq -e '.labels | map(.name) | index("triaged")' >/dev/null; then
+              needs_triage=false
+            else
+              needs_triage=true
+            fi
+            {
+              echo "issue_number=$number"
+              echo "issue_url=$url"
+              echo "needs_triage=$needs_triage"
+            } >>"$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -91,7 +124,7 @@ jobs:
           body=$(cat <<EOF
           ## Summary
 
-          The [Inspect AI Main CI](.github/workflows/inspect_ai_main.yaml) canary — which installs inspect-ai from git \`main\` and runs flow against it — failed on a scheduled run. This usually means an unreleased inspect-ai change has broken flow and will need reconciliation before that release lands.
+          The [Inspect AI Main CI](.github/workflows/inspect_ai_main.yaml) canary — which installs inspect-ai from git \`main\` and runs flow against it — failed on a scheduled run. This usually means an unreleased inspect-ai change has broken flow and will need reconciliation before that release lands, but it can also be an incidental cause (a dev-tool upgrade, a flake, an unrelated dependency). The triage agent will root-cause it and either open a fix PR or defer it to the next release.
 
           ## Failing jobs
 
@@ -120,7 +153,20 @@ jobs:
             --label inspect-ai-main \
             --assignee ransomr \
             --body "$body")
+          # No `set -e`, so a transient create failure would otherwise emit
+          # needs_triage=true with an empty issue number and burn a broken
+          # agent run. Fail loudly instead.
+          if [ -z "$url" ]; then
+            echo "::error::gh issue create failed — not triggering triage."
+            exit 1
+          fi
+          number=$(echo "$url" | sed 's#.*/##')
           echo "Opened $url"
+          {
+            echo "issue_number=$number"
+            echo "issue_url=$url"
+            echo "needs_triage=true"
+          } >>"$GITHUB_OUTPUT"
 
           # Best-effort: add to the org Atlas board (needs MARVIN_TOKEN's project
           # scope). Never fail the run if the token can't reach the project.
@@ -128,3 +174,175 @@ jobs:
             echo "Could not add to Atlas board (missing project scope?) — skipping."
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
+
+  # Root-cause the failure and act on it. Runs the dev agent headless (authed as
+  # the machine account, mirroring inspect-update.yml) — a scheduled/machine job
+  # cannot summon @auto by mention/label (the kickoff gates reject bot actors),
+  # so the agent opens the `auto`-labeled PR directly and the existing loops
+  # (auto-review, review->fix, CI-fix) take it from there.
+  triage:
+    needs: triage-gate
+    if: needs.triage-gate.outputs.needs_triage == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write # required for the Anthropic WIF OIDC exchange
+      actions: read
+    env:
+      RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+      RUN_URL: ${{ github.event.workflow_run.html_url || format('https://github.com/{0}/actions/runs/{1}', github.repository, inputs.run_id) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Same convention the reusable dev-agent workflow uses: provision the
+      # project venv so the agent can run pytest/ruff/pyright and introspect
+      # installed inspect_ai signatures.
+      - name: Provision project environment
+        uses: ./.github/actions/claude-setup
+
+      - name: Ensure triage labels exist
+        env:
+          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+        run: |
+          gh label create triaged --repo "$GITHUB_REPOSITORY" \
+            --description "Canary failure has been root-caused by the triage agent" \
+            --color 0E8A16 2>/dev/null || true
+          gh label create hold:release --repo "$GITHUB_REPOSITORY" \
+            --description "Deferred until the next inspect-ai release reconciles it" \
+            --color FBCA04 2>/dev/null || true
+
+      - name: Read latest and last-reconciled inspect-ai versions
+        id: versions
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://pypi.org/pypi/inspect-ai/json | jq -r .info.version)
+          reconciled=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['tool']['inspect_flow']['inspect-reconciled-version'])")
+          echo "latest=$latest" >>"$GITHUB_OUTPUT"
+          echo "reconciled=$reconciled" >>"$GITHUB_OUTPUT"
+
+      # Direct (headless) invocation, mirroring the dev-agent invocation in
+      # meridianlabs-ai/agents/.github/workflows/claude.yml and inspect-update.yml.
+      # The anthropic_* values are Workload Identity Federation identifiers, not
+      # secrets. The settings allow-list matches the inspect-update agent's,
+      # extended with `Bash(uvx:*)` so triage can reproduce failures with a
+      # pinned tool version (e.g. `uvx ruff@latest format` for a ruff bump).
+      - uses: anthropics/claude-code-action@v1
+        id: claude
+        with:
+          anthropic_federation_rule_id: fdrl_01GpNgJm9jE6ZfvcqoJYQL2Y
+          anthropic_organization_id: be5d0086-bc43-45d2-9184-20ecdd647aa7
+          anthropic_service_account_id: svac_01RL4wYD7ikbypwYKf4wFojv
+          anthropic_workspace_id: wrkspc_01RKCQ5DTPBatQ7kHLkaEueD
+          github_token: ${{ secrets.MARVIN_TOKEN }}
+          settings: >-
+            {"permissions":{"allow":["Read","Edit","Write",
+            "WebFetch(domain:raw.githubusercontent.com)",
+            "Bash(pytest:*)","Bash(ruff:*)","Bash(mypy:*)","Bash(pyright:*)","Bash(pip:*)",
+            "Bash(pip3:*)","Bash(uv:*)","Bash(uvx:*)","Bash(python:*)","Bash(python3:*)",
+            "Bash(gh:*)",
+            "Bash(git fetch:*)","Bash(git merge:*)","Bash(git rebase:*)",
+            "Bash(git push:*)","Bash(git checkout:*)","Bash(git switch:*)",
+            "Bash(git branch:*)","Bash(git status:*)","Bash(git log:*)",
+            "Bash(git diff:*)","Bash(git show:*)","Bash(git rev-parse:*)",
+            "Bash(git remote:*)",
+            "Bash(git add:*)","Bash(git commit:*)","Bash(git config:*)"]}}
+          claude_args: >-
+            --model fable
+            --fallback-model default
+          prompt: |
+            You are the canary-triage agent for inspect_flow. The "Inspect AI
+            Main CI" canary — which upgrades all dev dependencies, installs
+            inspect-ai from git main, and runs flow's lint/type/test/type-gen
+            checks against it — failed on a scheduled run. Tracking issue:
+            #${{ needs.triage-gate.outputs.issue_number }}. Failed canary run:
+            ${{ env.RUN_URL }} (run id ${{ env.RUN_ID }}). You are authenticated
+            to GitHub (gh) as the machine account i-am-marvin.
+
+            Read CLAUDE.md first and follow it throughout.
+
+            Context: the latest inspect-ai release on PyPI is
+            ${{ steps.versions.outputs.latest }}; flow's last-reconciled version
+            (pyproject.toml [tool.inspect_flow] inspect-reconciled-version) is
+            ${{ steps.versions.outputs.reconciled }}.
+
+            1. ROOT-CAUSE the failure. Inspect the failed logs
+               (`gh run view ${{ env.RUN_ID }} --repo ${{ github.repository }} --log-failed`)
+               and reproduce locally on a clean main checkout: `uv sync --dev
+               --upgrade`, `uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git`,
+               then run the failing check(s). Determine the actual cause — do NOT
+               assume it is an inspect-ai break.
+
+            2. CLASSIFY into exactly one bucket:
+               a. INCIDENTAL (not inspect-ai): a dev-tool/linter/dependency
+                  upgrade that reformats or newly flags code, a flake, or an
+                  unrelated dependency. → fix now.
+               b. CLEAN inspect-ai reconciliation: an inspect-ai main change that
+                  is stable and can be cleanly reconciled against flow today
+                  (small, unambiguous). → fix now.
+               c. IN-FLUX / AMBIGUOUS inspect-ai change: still moving on main,
+                  risky to chase, or needs a human decision. The weekly
+                  inspect-update workflow will reconcile it properly once the
+                  version is released. → wait.
+
+            3. If FIX NOW (a or b): create a branch off main, implement the
+               smallest correct fix, and verify with `ruff format`,
+               `ruff check --fix`, `pyright`, and the relevant tests before
+               pushing. Then open exactly ONE PR:
+                 gh pr create --base main --label auto ...
+               - Conventional-commit title per CLAUDE.md (a linter/formatting or
+                 dependency fix is not `feat:`/`fix:`).
+               - Body starts with "Fixes #${{ needs.triage-gate.outputs.issue_number }}".
+               - Applying the `auto` label AT CREATION is required: it opts the
+                 PR into the autonomous review/CI-fix loop, and labeling later
+                 races the auto-reviewer.
+               Comment your root-cause analysis and the PR link on the issue.
+
+            4. If WAIT (c): comment your root-cause analysis and the rationale
+               for waiting on issue #${{ needs.triage-gate.outputs.issue_number }},
+               apply the `hold:release` label to it, @mention @ransomr, and leave
+               the issue open. Do NOT open a PR.
+
+            5. In ALL cases, apply the `triaged` label to issue
+               #${{ needs.triage-gate.outputs.issue_number }} as your final step
+               so later canary failures don't re-triage it. Open at most one PR.
+               If you cannot complete the task, comment on the issue describing
+               what blocked you, mention @ransomr, and still apply `triaged`.
+
+      # Surface agent errors the action swallows. A model API error (overload /
+      # 529, a model 404, etc.) leaves the run green at the workflow level but
+      # with no result. Detect is_error in the execution log (or a failed action
+      # step) and fail the job so the run isn't a misleading success. The warning
+      # goes to the tracking issue. Note: on a hard error the `triaged` label is
+      # not applied, so the next scheduled failure re-triages.
+      - name: Surface agent errors
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          EXEC: ${{ steps.claude.outputs.execution_file }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          ISSUE: ${{ needs.triage-gate.outputs.issue_number }}
+        run: |
+          set -uo pipefail
+          file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
+          err=""
+          [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
+          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" = "failure" ]; then
+            err="the Claude Code step failed before producing a result (see the job logs)."
+          fi
+          [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
+          echo "::error::Claude run did not complete: $err"
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$(printf '⚠️ The canary triage agent did not complete — it errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip). This issue was left untriaged, so the next scheduled canary failure will re-triage it automatically; or re-trigger now via workflow_dispatch on this workflow with the failed run id. If it persists see https://status.claude.com.' "$err")" || true
+          exit 1
+
+      - name: Upload execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-execution-output
+          path: /home/runner/work/_temp/claude-execution-output.json
+          if-no-files-found: ignore
