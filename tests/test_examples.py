@@ -68,7 +68,6 @@ def test_examples() -> None:
 
     # Skip files that require custom test setup or use direct Inspect AI objects
     skip_files = {
-        "includes.py",
         "python.py",
         "inproc_mode.py",  # Inline Task objects serialize to raw object representation
     }
