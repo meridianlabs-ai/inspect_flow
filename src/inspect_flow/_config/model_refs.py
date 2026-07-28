@@ -306,12 +306,18 @@ def _model_refs(
         # unenumerable ref so a host's "name is None -> reject" policy fires.
         yield SpecModelRef(path, None, role)
         return
-    if role is None and not isinstance(ref, str):
+    # A callable `factory` returns the Model itself, so `_create_model` returns
+    # before `get_model`, and this FlowModel's `default`, `config`, and `role`
+    # are never applied. Reporting them would name models that cannot run.
+    built_by_callable = isinstance(ref, FlowModel) and callable(_effective_factory(ref))
+    if role is None and not isinstance(ref, str) and not built_by_callable:
         # A model outside model_roles can still bind a role: FlowModel.role is
         # passed to get_model(role=...), and a live Model carries the role it
         # was created with. Only an absent mapping key falls back to it.
         role = default_none(ref.role)
     yield SpecModelRef(path, ref, role)
+    if built_by_callable:
+        return
     if isinstance(ref, FlowModel) and is_set(ref.default):
         yield SpecModelRef(f"{path}.default", ref.default, role, "default")
     if not isinstance(ref, str):

@@ -116,6 +116,27 @@ def test_from_factory_flags_names_taken_from_factory() -> None:
     assert ref.from_factory and ref.unenumerable
 
 
+def test_callable_factory_suppresses_fields_it_ignores() -> None:
+    # A callable factory returns the Model itself, so _create_model returns
+    # before get_model and this FlowModel's default/config/role are dead. They
+    # must not be reported, or a host would gate on models that cannot run.
+    fm = FlowModel(
+        factory=_module_level_model_factory,
+        default="openai/never-runs",
+        role="ignored",
+        config=GenerateConfig(fallback_models=["claude-never-runs"]),
+    )
+    assert _refs(FlowSpec(tasks=[FlowTask(model=fm)])) == [
+        ("tasks[0].model", None, None)
+    ]
+
+    # An explicit model_roles key is still the role the model is registered
+    # under (_create_model_roles keys the mapping regardless), so it survives.
+    assert _refs(FlowSpec(tasks=[FlowTask(model_roles={"grader": fm})])) == [
+        ("tasks[0].model_roles['grader']", None, "grader")
+    ]
+
+
 def test_callable_factory_with_decoy_name_has_no_name() -> None:
     # A callable factory builds the model itself; `name` is never consulted, so
     # there is no statically enumerable name to report.
@@ -476,7 +497,7 @@ def test_fallback_models_survive_json_roundtrip() -> None:
             )
         ),
     )
-    reloaded = FlowSpec.model_validate(spec.model_dump(mode="json", exclude_unset=True))
+    reloaded = FlowSpec.model_validate(model_dump(spec))
     assert _refs(reloaded) == [
         ("tasks[0].model", "openai/gpt-4o", None),
         ("tasks[0].config.fallback_models[0]", "claude-task-fb", None),
@@ -763,7 +784,7 @@ def test_no_model_shaped_value_escapes_unclassified() -> None:
 
 
 def test_spec_fields_are_classified_for_models() -> None:
-    # PR 1 (#785) deleted its equivalent of this test, because deriving
+    # #785 deleted its equivalent of this test, because deriving
     # portability from the real serializer made it unnecessary. No such oracle
     # exists for "is this field a model reference" (see the design doc), so this
     # walk is hand-written and this guard is what keeps it from silently falling
