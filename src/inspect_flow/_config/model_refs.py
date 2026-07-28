@@ -231,7 +231,7 @@ def _scanner_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
         yield SpecModelRef("options.scanner", None)
         return
     yield from _scanner_site_refs(
-        scanner.model, "options.scanner.model", splits_commas=True
+        scanner.model, "options.scanner.model", via_resolve_models=True
     )
     for role, value in (scanner.model_roles or {}).items():
         yield from _scanner_site_refs(
@@ -246,27 +246,41 @@ def _scanner_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
 
 
 def _scanner_site_refs(
-    value: object, path: str, role: str | None = None, splits_commas: bool = False
+    value: object, path: str, role: str | None = None, via_resolve_models: bool = False
 ) -> Iterator[SpecModelRef]:
     """Model refs at an `Any`-typed scanner field.
 
-    These reach `resolve_models` / `resolve_model_roles`, which accept only
-    `str | Model | None` — notably *not* a `FlowModel`, which raises at scan
-    time. Anything else is reported unenumerable rather than named, so the walk
-    never claims a model that cannot run.
+    Both fields accept only `str | Model | None` — notably *not* a `FlowModel`,
+    which raises at scan time. Anything else is reported unenumerable rather
+    than named, so the walk never claims a model that cannot run.
 
-    `splits_commas` marks the one field (`scanner.model`) that reaches
-    `resolve_models`, which strips and splits on commas (scout then keeps entry
-    `[0]`). Replicating that normalization would drift, and reporting the whole
-    string would name a model that does not exist, so it is unenumerable
-    instead. Surrounding whitespace is *not* stripped for the same reason — an
-    unstripped name errs safe, failing an allow-list rather than passing one.
-    Role values go through `resolve_model_roles`, which does not split, so a
-    comma there is genuinely one (bad) name.
+    `via_resolve_models` marks `scanner.model`, the one field handled by
+    `resolve_models`; role values go through `resolve_model_roles`. They differ
+    in both respects that matter here:
+
+    - **Commas.** `resolve_models` strips and splits on them (scout then keeps
+      entry `[0]`). Replicating that normalization would drift, and reporting
+      the whole string would name a model that does not exist, so it is
+      unenumerable instead. Surrounding whitespace is *not* stripped for the
+      same reason — an unstripped name errs safe, failing an allow-list rather
+      than passing one. `resolve_model_roles` does not split, so a comma in a
+      role value is genuinely one (bad) name.
+    - **`None`.** The scan plumbing drops a `None` `scanner.model` before it is
+      forwarded, making it indistinguishable from unset, and scout then falls
+      back to `SCOUT_SCAN_MODEL` — so it is a real absence. (Not because
+      `resolve_models` tolerates it: called directly it would return a
+      `none/none` NoModel.) `resolve_model_roles` has no such guard — it calls
+      `_set_role` on the value and raises — so `{"grader": None}` is a
+      *declared* role that cannot run, an unenumerable site rather than an
+      absent one. An absent key stays silent: only present keys are iterated.
     """
-    if splits_commas and isinstance(value, str) and "," in value:
+    if value is None:
+        if via_resolve_models:
+            return
         yield SpecModelRef(path, None, role)
-    elif value is None or isinstance(value, (str, Model)):
+    elif via_resolve_models and isinstance(value, str) and "," in value:
+        yield SpecModelRef(path, None, role)
+    elif isinstance(value, (str, Model)):
         yield from _model_refs(value, path, role)
     else:
         yield SpecModelRef(path, None, role)

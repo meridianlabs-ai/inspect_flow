@@ -310,6 +310,29 @@ def test_flow_model_at_scanner_site_is_unenumerable() -> None:
     assert all(r.unenumerable for r in iter_model_refs(spec))
 
 
+def test_none_scanner_role_is_unenumerable_but_none_model_is_absence() -> None:
+    # resolve_model_roles calls _set_role on the value, so {"grader": None} is a
+    # declared role that raises at scan time — an unusable site the host should
+    # be able to reject, not silence. resolve_models treats a None model as "no
+    # model" and falls back to the ambient one, so that really is absence.
+    spec = FlowSpec.model_validate(
+        {
+            "tasks": [],
+            "options": {
+                "scanner": {"scanners": [], "model": None, "model_roles": {"g": None}}
+            },
+        }
+    )
+    assert _refs(spec) == [("options.scanner.model_roles['g']", None, "g")]
+    assert all(r.unenumerable for r in iter_model_refs(spec))
+
+    # An absent role mapping stays silent — nothing was declared.
+    spec = FlowSpec.model_validate(
+        {"tasks": [], "options": {"scanner": {"scanners": [], "model_roles": None}}}
+    )
+    assert _refs(spec) == []
+
+
 def test_scanner_model_roles_non_str_shape_is_unenumerable() -> None:
     # Role values go through resolve_model_roles (get_model on the whole value),
     # which accepts neither lists nor comma strings.
