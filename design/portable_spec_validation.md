@@ -5,7 +5,7 @@
 An in-memory `FlowSpec` may legally contain live Inspect objects — an instantiated `Task`, `Model`, `Scorer`, `Solver`, `Agent`, or `Scanner` — for in-process execution. Those objects cannot cross a YAML/JSON boundary and be recreated in another Python process. Flow checks this in venv execution, where the spec is serialized with [write_config_file](../src/inspect_flow/_config/write.py) and re-loaded in a child process, but the check was a private launcher function (`_check_spec_for_venv`) that:
 
 - failed fast with a single `ValueError`, without identifying the field;
-- enumerated a handful of locations and so missed live `Model`s in `FlowTask.model_roles`, live `Scorer`s inside scorer *sequences*, the `defaults.*` templates, non-reconstructable factory callables, store filters, and live objects buried in `args`/`metadata`; and
+- enumerated a handful of locations and so missed live `Model`s in `FlowTask.model_roles`, live `Scorer`s inside scorer *sequences*, non-reconstructable factory callables, store filters, and live objects buried in `args`/`metadata`; and
 - was unavailable to remote orchestrators, which need the same validation before uploading a job and otherwise must copy the private routine.
 
 ## Ground truth
@@ -56,6 +56,8 @@ The implementation is a generic walk rather than a list of places to look:
 - `_walk_early_stopping` is a separate structural pass for the one rule the dump cannot see. Having no dump to prune with, it visits every *path*, so it carries the same cycle guard as `_walk` — the depth limit alone is not enough, since it bounds depth rather than breadth and a cycle through a container with two or more branches re-enters itself from each one. Like `_walk`'s, the guard tracks ancestors rather than every node visited, so a `FlowTask` reachable by two paths is still reported at both; the cost is that a heavily *shared* acyclic structure is still walked once per path. Pydantic's own dump expands the same way, so such a spec cannot be serialized at all.
 
 Every field is therefore covered, including `includes`, free-form containers (`args`, `extra_args`, `model_args`, `metadata`, `flow_metadata`, `FlowFactory.args`, scanner params), and any field added in future. The direction of failure is what matters: an enumeration of locations fails *open* — a location nobody listed is silently treated as portable — whereas the walk fails *closed*, at worst reporting a coarser path than necessary.
+
+The `defaults.*` templates are covered too, though flow's own venv path never sees them: `expand_spec` merges and clears `defaults` before `launch`, so by the time `_venv_spawn` validates, a live object declared there has already moved to the task it applies to. They matter because this is public API — a caller can hold an unexpanded spec, and expansion is internal, so `defaults.*` is where such an object still sits. Unlike `iter_model_refs`, this walk does *not* merge defaults first: portability is a property of the object the caller will serialize, and merging would drop a live object in a template that applies to no task.
 
 Violation messages are chosen from the offending value's **registry type**, not `isinstance`: `Scorer`, `Solver`, and `Agent` are runtime-checkable Protocols that any callable satisfies structurally, so `isinstance` would label a lambda a `Scorer`.
 
