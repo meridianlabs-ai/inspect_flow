@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_012b676e5f77d343_freeze_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.2">coverage.py v7.15.2</a>,
-            created at 2026-07-28 09:15 +0000
+            created at 2026-07-28 16:21 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -169,7 +169,7 @@
     <p class="run run2"><span class="n"><a id="t85" href="#t85">85</a></span><span class="t">    <span class="nam">task</span><span class="op">:</span> <span class="nam">Task</span> <span class="op">|</span> <span class="nam">FlowTask</span> <span class="op">|</span> <span class="nam">str</span><span class="op">,</span> <span class="nam">dependencies</span><span class="op">:</span> <span class="nam">set</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t86" href="#t86">86</a></span><span class="t"><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t87" href="#t87">87</a></span><span class="t">    <span class="key">assert</span> <span class="key">not</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">task</span><span class="op">,</span> <span class="nam">Task</span><span class="op">)</span><span class="op">,</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">        <span class="str">"_check_spec_for_venv should have ensured no Task instances"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">        <span class="str">"validate_portable_spec should have ensured no Task instances"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t90" href="#t90">90</a></span><span class="t">    <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">task</span><span class="op">,</span> <span class="nam">str</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t">        <span class="nam">_collect_env_model_dependencies</span><span class="op">(</span><span class="nam">dependencies</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -212,7 +212,7 @@
     <p class="run run2"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">    <span class="nam">model</span><span class="op">:</span> <span class="nam">str</span> <span class="op">|</span> <span class="nam">FlowModel</span> <span class="op">|</span> <span class="nam">Model</span> <span class="op">|</span> <span class="key">None</span><span class="op">,</span> <span class="nam">dependencies</span><span class="op">:</span> <span class="nam">set</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t"><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="key">assert</span> <span class="key">not</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">model</span><span class="op">,</span> <span class="nam">Model</span><span class="op">)</span><span class="op">,</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="str">"_check_spec_for_venv should have ensured no Model instances"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="str">"validate_portable_spec should have ensured no Model instances"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t">    <span class="nam">name</span> <span class="op">=</span> <span class="nam">model</span><span class="op">.</span><span class="nam">name</span> <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">model</span><span class="op">,</span> <span class="nam">FlowModel</span><span class="op">)</span> <span class="key">else</span> <span class="nam">model</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t134" href="#t134">134</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">name</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -244,7 +244,7 @@
     <p class="run"><span class="n"><a id="t160" href="#t160">160</a></span><span class="t">            <span class="nam">_collect_maybe_sequence_dependencies</span><span class="op">(</span><span class="nam">s</span><span class="op">,</span> <span class="nam">dependencies</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t161" href="#t161">161</a></span><span class="t">        <span class="key">return</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t162" href="#t162">162</a></span><span class="t">    <span class="key">assert</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">solver</span><span class="op">,</span> <span class="op">(</span><span class="nam">FlowSolver</span><span class="op">,</span> <span class="nam">FlowScorer</span><span class="op">,</span> <span class="nam">FlowAgent</span><span class="op">)</span><span class="op">)</span><span class="op">,</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t163" href="#t163">163</a></span><span class="t">        <span class="str">"_check_spec_for_venv should have ensured no Solver, Scorer, or Agent instances"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t163" href="#t163">163</a></span><span class="t">        <span class="str">"validate_portable_spec should have ensured no Solver, Scorer, or Agent instances"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t165" href="#t165">165</a></span><span class="t">    <span class="nam">_collect_name_dependencies</span><span class="op">(</span><span class="nam">solver</span><span class="op">.</span><span class="nam">name</span><span class="op">,</span> <span class="nam">dependencies</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -285,7 +285,7 @@
             <a class="nav" href="z_012b676e5f77d343_freeze_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.2">coverage.py v7.15.2</a>,
-            created at 2026-07-28 09:15 +0000
+            created at 2026-07-28 16:21 +0000
         </p>
     </div>
 </footer>
