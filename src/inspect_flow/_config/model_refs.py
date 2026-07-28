@@ -39,7 +39,17 @@ class SpecModelRef:
 
     Taken from the `model_roles` key, falling back to `FlowModel.role` (which is
     passed to `get_model(role=...)` at any model site); the mapping key wins when
-    both are set."""
+    both are set.
+
+    This records how the reference is *declared*, not which slot the model will
+    end up serving. So a `kind="fallback"` ref is roled only when it comes from a
+    `FlowModel`'s own `config` — that config is an argument to the same
+    `get_model` call that binds the role. A fallback declared on a `FlowTask` or
+    `defaults` `config` is always `None`: those are task/run-level generate
+    configs (`FlowTask.config` explicitly "does not apply to model roles"), and
+    no role participates at that layer. `defaults.config` shows why this cannot
+    be derived — one declaration there may serve several models in different
+    roles, or a modelless task with no role at all."""
 
     kind: Literal["model", "default", "fallback"] = "model"
     """Which kind of reference this is, and hence which namespace `name` is in.
