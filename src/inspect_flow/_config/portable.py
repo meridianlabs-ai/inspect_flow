@@ -1,0 +1,366 @@
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
+
+from inspect_ai import Task
+from inspect_ai._util.registry import is_registry_object, registry_info
+from inspect_ai.model import Model
+from pydantic import BaseModel
+from pydantic_core import to_jsonable_python
+
+from inspect_flow._types.flow_types import FlowSpec, FlowTask
+from inspect_flow._util.not_given import is_set
+from inspect_flow._util.pydantic_util import (
+    MODEL_DUMP_ARGS,
+    serialize_fallback,
+    serializes_to_registry_dict,
+    survives_round_trip,
+)
+
+_PREAMBLE = "cannot be serialized and recreated in another process."
+_TASK_MESSAGE = f"An already-instantiated Task object {_PREAMBLE} Fix: use FlowTask with a registry or file task name."
+_MODEL_MESSAGE = f"An already-instantiated Model object {_PREAMBLE} Fix: use FlowModel or a model name string."
+_SCORER_MESSAGE = f"An already-instantiated Scorer object {_PREAMBLE} Fix: use FlowScorer or a scorer name string."
+_AGENT_MESSAGE = f"An already-instantiated Agent object {_PREAMBLE} Fix: use FlowAgent or an agent name string."
+_SOLVER_MESSAGE = f"An already-instantiated Solver object {_PREAMBLE} Fix: use FlowSolver or a solver name string."
+_CALLABLE_MESSAGE = f"A callable that cannot be named again {_PREAMBLE} The child resolves a serialized callable through the Inspect registry, so it must be a registered object (e.g. a function decorated with @task, @solver, @scorer, @agent, or @log_filter) or a registry name string. An undecorated function, lambda, functools.partial, nested function, class, or callable object cannot be resolved."
+_SCANNER_MESSAGE = f'An already-instantiated Scanner object {_PREAMBLE} Fix: set options.scanner to a path to a scanner config file, or use scanner spec references (e.g. {{"name": "keyword_scanner"}}).'
+_EARLY_STOPPING_MESSAGE = f"early_stopping holds live callback objects, which {_PREAMBLE} Fix: remove early_stopping from portable specs."
+_VALUE_MESSAGE = f"This value {_PREAMBLE} Fix: use only JSON-serializable data or registry references (e.g. a function decorated with @task, @solver, @scorer, or @agent)."
+
+_REGISTRY_TYPE_MESSAGES = {
+    "task": _TASK_MESSAGE,
+    "modelapi": _MODEL_MESSAGE,
+    "scorer": _SCORER_MESSAGE,
+    "agent": _AGENT_MESSAGE,
+    "solver": _SOLVER_MESSAGE,
+    "scanner": _SCANNER_MESSAGE,
+}
+
+# Fields whose values the runner passes through `registry_kwargs`, which turns
+# a registry dict back into the object. A live registered object survives the
+# boundary in these positions, and only these.
+_REINFLATED_FIELDS = frozenset({"args", "model_args", "extra_args"})
+
+# Fields whose values the runner looks up in the registry, so a callable
+# serialized as its name becomes the callable again. Everywhere else -- notably
+# `metadata`, `flow_metadata`, and the `args` bags -- the name stays a string.
+_RESOLVING_FIELDS = frozenset({"factory", "filter"})
+
+# Guard against a self-referential or pathologically nested value in a
+# free-form container, which no amount of descending resolves.
+_MAX_DEPTH = 100
+
+# Stands in for a subtree pydantic refused to serialize outright, when nothing
+# reached the fallback to blame.
+_REFUSED = object()
+
+
+@dataclass
+class SpecViolation:
+    """A single reason a flow spec is not portable.
+
+    Attributes:
+        path: Field path of the offending value (e.g. `"tasks[2].model_roles['grader']"`).
+        message: What is wrong and the portable alternative to use.
+    """
+
+    path: str
+    message: str
+
+
+class SpecNotPortableError(ValueError):
+    """Raised when a flow spec cannot be serialized and recreated in another process.
+
+    Attributes:
+        violations: Every violation found, each with its field path.
+        hint: Optional extra guidance appended to the rendered message.
+    """
+
+    def __init__(
+        self, violations: list[SpecViolation], hint: str | None = None
+    ) -> None:
+        """Create the error.
+
+        Args:
+            violations: Every violation found, each with its field path.
+            hint: Extra guidance appended to the rendered message, for a caller
+                with an escape hatch the validator should not assume.
+        """
+        self.violations = violations
+        self.hint = hint
+        lines = [
+            "The flow spec is not portable: it cannot be serialized and recreated in another Python process."
+        ]
+        lines.extend(f"- {v.path}: {v.message}" for v in violations)
+        if hint:
+            lines.append(hint)
+        super().__init__("\n".join(lines))
+
+    def __reduce__(
+        self,
+    ) -> tuple[type["SpecNotPortableError"], tuple[list[SpecViolation], str | None]]:
+        # The default exception reduce replays __init__ with self.args (the
+        # rendered message), which would corrupt violations on unpickling.
+        return (type(self), (self.violations, self.hint))
+
+
+def validate_portable_spec(spec: FlowSpec) -> None:
+    """Validate that a flow spec can be serialized and recreated in another process.
+
+    A portable spec survives the boundary the venv runner and remote
+    orchestrators cross: dumped to YAML/JSON, then re-validated as a
+    `FlowSpec` in a fresh process. Values that do not survive it are live
+    (already-instantiated) Inspect objects such as `Task`, `Model`, `Scorer`,
+    `Solver`, and `Agent` — which reload as a `repr` string or a plain dict
+    rather than the object — and callables the child cannot resolve. A
+    serialized callable is looked up in the Inspect registry, so only a
+    registered object (or a registry name string) is portable: an undecorated
+    function is not, even at module level, and neither are lambdas,
+    `functools.partial`, nested functions, classes, and callable objects. Any
+    JSON-serializable data is portable.
+
+    Every field is checked, including free-form containers (`args`,
+    `metadata`, `flow_metadata`, scanner params) and any inline `FlowSpec` in
+    `includes` — a path string there is not loaded, so an included file's
+    contents are not checked. The spec is not expanded or resolved, and nothing
+    is installed or launched.
+
+    Four limitations. A value Pydantic coerces natively on dump is reported
+    as portable, because it reloads as the coerced type rather than being
+    lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes
+    `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/
+    `Path`/`Decimal`/`bytes` become strings, and `NaN` becomes `None`. A
+    registered callable is portable only in a field the runner resolves names
+    in — the `factory` fields and `store.filter` — since elsewhere its name
+    reloads as a plain string. And a live registered object in scanner `params`
+    is rejected even though scout would re-inflate it, since that only holds
+    when every scanner entry is a spec reference.
+
+    A registered object's name must also be resolvable in the child. Inspect
+    qualifies names of objects defined in an installed package
+    (`my_pkg/my_task`), which the child can import; a bare name from a loose
+    module relies on that module already being imported and is *not* checked
+    here. Prefer factories from packaged code.
+
+    Args:
+        spec: The flow spec to validate.
+
+    Raises:
+        SpecNotPortableError: If the spec holds values that do not survive
+            the boundary. The error's `violations` give the field path and
+            problem for each one.
+    """
+    violations: list[SpecViolation] = []
+    _walk_early_stopping(spec, "", violations)
+    _walk(spec, "", violations)
+    if violations:
+        raise SpecNotPortableError(violations)
+
+
+def _walk_early_stopping(
+    value: Any,
+    path: str,
+    violations: list[SpecViolation],
+    seen: frozenset[int] = frozenset(),
+    depth: int = 0,
+) -> None:
+    """Report every set `early_stopping`, wherever a FlowTask appears.
+
+    This needs its own pass because the rule is invisible to the dump: an
+    `EarlyStopping` implementation that pydantic serializes natively (a
+    dataclass or BaseModel) reloads as a plain dict, silently losing the
+    protocol, so `_walk` would prune the subtree as clean.
+    """
+    # This pass cannot prune, so it needs the same cycle guard `_walk` carries:
+    # the depth limit bounds depth, not breadth, and a cycle whose container has
+    # two or more branches re-enters itself from each one.
+    if depth > _MAX_DEPTH or id(value) in seen:
+        return
+    if isinstance(value, FlowTask) and is_set(value.early_stopping):
+        violations.append(
+            SpecViolation(f"{path}.early_stopping".lstrip("."), _EARLY_STOPPING_MESSAGE)
+        )
+    for segment, child in _children(value):
+        _walk_early_stopping(
+            child, path + segment, violations, seen | {id(value)}, depth + 1
+        )
+
+
+def _offenders(value: Any, *, reinflated: bool, resolving: bool) -> list[Any]:
+    """The values in this subtree that dumping coerces beyond recovery.
+
+    Returning the objects rather than a flag lets `_walk` tell "this node is
+    itself the offender" from "the loss is somewhere below me", which decides
+    whether to report here or keep descending. A subtree pydantic refuses to
+    serialize at all yields the `_REFUSED` sentinel, but only when nothing else
+    was recorded — a recorded value is the better explanation of the refusal.
+    """
+    coerced: list[Any] = []
+
+    def record(obj: Any) -> Any:
+        coerced.append(obj)
+        try:
+            # Serialize as the real dump would, so that pydantic keeps walking
+            # into a coerced value (e.g. a registry dict) and reports what is
+            # nested inside it too.
+            return serialize_fallback(obj)
+        except Exception:
+            # callable_name raises on callables with no __code__ (a partial or
+            # callable object); the object is recorded, so it is still caught.
+            return None
+
+    try:
+        if isinstance(value, BaseModel):
+            args = {**MODEL_DUMP_ARGS, "fallback": record}
+            if isinstance(value, FlowTask):
+                # Owned by _walk_early_stopping; including it here would report
+                # the same stopper twice.
+                args["exclude"] = {"early_stopping"}
+            value.model_dump(**args)
+        else:
+            to_jsonable_python(value, fallback=record)
+        refused = False
+    except Exception:
+        # Pydantic would not serialize this at all (a cycle, undecodable bytes,
+        # excessive depth), so something here is non-portable even if nothing
+        # reached the fallback first.
+        refused = True
+    offenders = [
+        obj
+        for obj in coerced
+        if not (resolving and survives_round_trip(obj))
+        and not (reinflated and serializes_to_registry_dict(obj))
+    ]
+    if refused and not offenders:
+        # Attribute to a marker rather than to `value`, so the walk still
+        # descends to whichever leaf actually caused the refusal. Only when
+        # nothing was recorded: dumping a subtree in isolation cannot apply
+        # exclude_unset, so it can record a value the boundary drops, and
+        # reporting the refusal here as well would blame this node for it.
+        return [_REFUSED]
+    return offenders
+
+
+def _children(value: Any) -> list[tuple[str, Any]]:
+    """The addressable sub-values of a node, with the path segment for each."""
+    if isinstance(value, BaseModel):
+        # model_fields_set mirrors the dump's exclude_unset: an unset field is
+        # not serialized, so it cannot carry a value across the boundary.
+        names = value.model_fields_set
+        if isinstance(value, FlowTask):
+            # _walk_early_stopping owns this field; descending would report a
+            # live stopper a second time.
+            names = names - {"early_stopping"}
+        # Declaration order first, then any extra fields, so that sibling
+        # violations render in a stable order rather than set-iteration order,
+        # which varies with the hash seed.
+        declared = [name for name in type(value).model_fields if name in names]
+        extra = sorted(names - set(declared))
+        return [(f".{name}", getattr(value, name)) for name in declared + extra]
+    if isinstance(value, Mapping):
+        return [(f"[{key!r}]", item) for key, item in value.items()]
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return [(f"[{index}]", item) for index, item in enumerate(value)]
+    return []
+
+
+def _message(value: Any) -> str:
+    # The registry's own type is the discriminator: Scorer/Solver/Agent are
+    # runtime-checkable Protocols that any callable satisfies structurally, so
+    # isinstance would label a lambda a Scorer.
+    if is_registry_object(value):
+        return _REGISTRY_TYPE_MESSAGES.get(registry_info(value).type, _VALUE_MESSAGE)
+    if isinstance(value, Task):
+        return _TASK_MESSAGE
+    if isinstance(value, Model):
+        return _MODEL_MESSAGE
+    if callable(value):
+        return _CALLABLE_MESSAGE
+    return _VALUE_MESSAGE
+
+
+def _walk(
+    value: Any,
+    path: str,
+    violations: list[SpecViolation],
+    *,
+    reinflated: bool = False,
+    resolving: bool = False,
+    seen: frozenset[int] = frozenset(),
+    depth: int = 0,
+) -> None:
+    """Report the non-portable values in a subtree, at the deepest path each.
+
+    The guards below run fatal-and-cheap first (depth), then the prune that makes
+    the walk affordable, then the three cases where descending cannot help, then
+    descent, then the post-descent fallback.
+    """
+    if depth > _MAX_DEPTH:
+        # Only reached below a node that already had offenders, so reporting here
+        # without consulting _offenders again is warranted.
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    children = _children(value)
+    # `resolving` excuses a callable because the runner looks its name up, which
+    # only applies to the callable itself -- not to a model sitting in the same
+    # field, whose own `args` nobody resolves. Honour it at a leaf only.
+    offenders = _offenders(
+        value, reinflated=reinflated, resolving=resolving and not children
+    )
+    if not offenders:
+        return
+    if id(value) in seen:
+        # A cycle cannot be serialized at all; report here rather than recurse.
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    if isinstance(value, Mapping) and any(not isinstance(key, str) for key in value):
+        # Keys are not children, and a non-string key is coerced to text.
+        violations.append(SpecViolation(path.lstrip("."), _VALUE_MESSAGE))
+        return
+    if not children or any(offender is value for offender in offenders):
+        # Either there is nowhere further to look, or this node is itself one of
+        # the values that failed to serialize -- which a container can be even
+        # when every child of it is portable (a `range`, a `memoryview`, a
+        # custom Sequence or Mapping).
+        violations.append(SpecViolation(path.lstrip("."), _message(value)))
+        return
+    before = len(violations)
+    # Only a field of one of flow's own types earns an excuse below, since it is
+    # flow's runner that re-inflates and looks up those fields. A foreign model
+    # that happens to declare one of the same names -- `ScannerConfig.model_args`
+    # and `ScannerConfig.filter` both do -- gets no excuse: nothing passes them
+    # through `registry_kwargs` or a registry lookup. Keyed on the declaring
+    # module rather than a list of types, so a type added to `_types` later is
+    # covered without anyone remembering to update this.
+    excused = type(value).__module__.startswith("inspect_flow._types")
+    for segment, child in children:
+        name = segment.lstrip(".") if excused else ""
+        _walk(
+            child,
+            path + segment,
+            violations,
+            # Each child is judged in its own context, and the two flags spread
+            # differently. `registry_kwargs` recurses to any depth, so anything
+            # under a re-inflated field is re-inflated too -- the flag sticks.
+            # A name lookup applies only to the value in the field itself, so
+            # entering a new field replaces `resolving`; indexing into a
+            # container keeps it. Without that, `FlowFactory.args` would inherit
+            # the excuse from the `factory` field it hangs off.
+            reinflated=reinflated or name in _REINFLATED_FIELDS,
+            resolving=(
+                name in _RESOLVING_FIELDS if segment.startswith(".") else resolving
+            ),
+            seen=seen | {id(value)},
+            depth=depth + 1,
+        )
+    if len(violations) == before and any(o is _REFUSED for o in offenders):
+        # Pydantic refused this subtree and no child accounts for it, so the node
+        # itself is unserializable (a bytearray of undecodable bytes, whose
+        # elements are individually fine). Compared by identity, as above: `in`
+        # would fall back to `==` against arbitrary user values, and one whose
+        # `__eq__` misbehaves (a numpy array's returns an array) would raise out
+        # of the membership test. Deliberately limited to a refusal:
+        # generalizing it rejects working specs -- see "Rejected alternatives" in
+        # design/portable_spec_validation.md.
+        violations.append(SpecViolation(path.lstrip("."), _message(value)))

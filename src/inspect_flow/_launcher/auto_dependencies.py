@@ -85,7 +85,7 @@ def _collect_task_dependencies(
     task: Task | FlowTask | str, dependencies: set[str]
 ) -> None:
     assert not isinstance(task, Task), (
-        "_check_spec_for_venv should have ensured no Task instances"
+        "validate_portable_spec should have ensured no Task instances"
     )
     if isinstance(task, str):
         _collect_env_model_dependencies(dependencies)
@@ -128,7 +128,7 @@ def _collect_model_dependencies(
     model: str | FlowModel | Model | None, dependencies: set[str]
 ) -> None:
     assert not isinstance(model, Model), (
-        "_check_spec_for_venv should have ensured no Model instances"
+        "validate_portable_spec should have ensured no Model instances"
     )
     name = model.name if isinstance(model, FlowModel) else model
     if not name:
@@ -160,7 +160,7 @@ def _collect_maybe_sequence_dependencies(
             _collect_maybe_sequence_dependencies(s, dependencies)
         return
     assert isinstance(solver, (FlowSolver, FlowScorer, FlowAgent)), (
-        "_check_spec_for_venv should have ensured no Solver, Scorer, or Agent instances"
+        "validate_portable_spec should have ensured no Solver, Scorer, or Agent instances"
     )
     _collect_name_dependencies(solver.name, dependencies)
 
