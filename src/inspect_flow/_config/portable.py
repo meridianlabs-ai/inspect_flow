@@ -159,7 +159,11 @@ def validate_portable_spec(spec: FlowSpec) -> None:
 
 
 def _walk_early_stopping(
-    value: Any, path: str, violations: list[SpecViolation], depth: int = 0
+    value: Any,
+    path: str,
+    violations: list[SpecViolation],
+    seen: frozenset[int] = frozenset(),
+    depth: int = 0,
 ) -> None:
     """Report every set `early_stopping`, wherever a FlowTask appears.
 
@@ -168,14 +172,19 @@ def _walk_early_stopping(
     dataclass or BaseModel) reloads as a plain dict, silently losing the
     protocol, so `_walk` would prune the subtree as clean.
     """
-    if depth > _MAX_DEPTH:
+    # This pass cannot prune, so it needs the same cycle guard `_walk` carries:
+    # the depth limit bounds depth, not breadth, and a cycle whose container has
+    # two or more branches re-enters itself from each one.
+    if depth > _MAX_DEPTH or id(value) in seen:
         return
     if isinstance(value, FlowTask) and is_set(value.early_stopping):
         violations.append(
             SpecViolation(f"{path}.early_stopping".lstrip("."), _EARLY_STOPPING_MESSAGE)
         )
     for segment, child in _children(value):
-        _walk_early_stopping(child, path + segment, violations, depth + 1)
+        _walk_early_stopping(
+            child, path + segment, violations, seen | {id(value)}, depth + 1
+        )
 
 
 def _offenders(value: Any, *, reinflated: bool, resolving: bool) -> list[Any]:
@@ -243,7 +252,12 @@ def _children(value: Any) -> list[tuple[str, Any]]:
             # _walk_early_stopping owns this field; descending would report a
             # live stopper a second time.
             names = names - {"early_stopping"}
-        return [(f".{name}", getattr(value, name)) for name in names]
+        # Declaration order first, then any extra fields, so that sibling
+        # violations render in a stable order rather than set-iteration order,
+        # which varies with the hash seed.
+        declared = [name for name in type(value).model_fields if name in names]
+        extra = sorted(names - set(declared))
+        return [(f".{name}", getattr(value, name)) for name in declared + extra]
     if isinstance(value, Mapping):
         return [(f"[{key!r}]", item) for key, item in value.items()]
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
@@ -312,8 +326,16 @@ def _walk(
         violations.append(SpecViolation(path.lstrip("."), _message(value)))
         return
     before = len(violations)
+    # Only a field of one of flow's own types earns an excuse below, since it is
+    # flow's runner that re-inflates and looks up those fields. A foreign model
+    # that happens to declare one of the same names -- `ScannerConfig.model_args`
+    # and `ScannerConfig.filter` both do -- gets no excuse: nothing passes them
+    # through `registry_kwargs` or a registry lookup. Keyed on the declaring
+    # module rather than a list of types, so a type added to `_types` later is
+    # covered without anyone remembering to update this.
+    excused = type(value).__module__.startswith("inspect_flow._types")
     for segment, child in children:
-        name = segment.lstrip(".")
+        name = segment.lstrip(".") if excused else ""
         _walk(
             child,
             path + segment,

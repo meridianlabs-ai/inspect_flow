@@ -520,6 +520,23 @@ def test_cycle_reports_violation_rather_than_recursing() -> None:
     assert _paths(spec) == ["tasks[0].metadata['x']['self']"]
 
 
+def test_branching_cycle_reports_violation_rather_than_recursing() -> None:
+    # Both passes need the cycle guard, not just the depth limit: depth bounds
+    # how deep a branch goes, not how many there are, so a cycle reached from
+    # two branches re-enters itself from each and fans out exponentially. The
+    # early-stopping pass has no dump to prune with, so it feels this first --
+    # and it runs before _walk, so without the guard `launch` hangs rather than
+    # failing fast on a cycle.
+    cyclic: dict[str, object] = {}
+    cyclic["a"] = cyclic
+    cyclic["b"] = cyclic
+    spec = FlowSpec(tasks=[FlowTask(name="t", metadata={"x": cyclic})])
+    assert sorted(_paths(spec)) == [
+        "tasks[0].metadata['x']['a']",
+        "tasks[0].metadata['x']['b']",
+    ]
+
+
 def test_registered_callable_rejected_outside_resolving_fields() -> None:
     # Only `factory` fields and `store.filter` look a name up in the registry.
     # Elsewhere a registered function serializes to its name and reloads as that
@@ -673,6 +690,57 @@ def test_live_scanners_rejected() -> None:
             )
         )
     ) == ["options.scanner.scanners[0].params['x']"]
+
+
+def test_live_object_in_scanner_model_args_rejected() -> None:
+    # ScannerConfig declares `model_args` and `filter`, the same names flow uses
+    # for its re-inflated and resolving fields -- but nothing passes a scanner's
+    # model args through registry_kwargs, so a live registered object there
+    # reloads in the child as a plain {type, name, params} dict. The excuse is
+    # earned by the declaring type, not by the field name.
+    spec = FlowSpec(
+        options=FlowOptions(
+            scanner=ScannerConfig(scanners=["keyword_scanner"], model_args={"x": add()})
+        )
+    )
+    assert _paths(spec) == ["options.scanner.model_args['x']"]
+    options = _reload(spec).options
+    assert isinstance(options, FlowOptions)
+    scanner = options.scanner
+    assert isinstance(scanner, ScannerConfig)
+    assert scanner.model_args == {
+        "x": {"type": "tool", "name": "local_eval/add", "params": {}}
+    }
+
+
+def test_sibling_violations_are_reported_in_declaration_order() -> None:
+    # model_fields_set is a set, so rendering straight from it would order
+    # sibling violations by hash seed and vary the error text between runs.
+    # Five offending siblings, so a set-ordered implementation has under a 1%
+    # chance of landing in declaration order and passing this by luck.
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                factory=lambda: Task(),
+                solver=a_solver(),
+                scorer=a_scorer(),
+                model=get_model("mockllm/model"),
+                model_roles={"g": get_model("mockllm/model")},
+            )
+        ]
+    )
+    offending = {
+        "factory": "",
+        "solver": "",
+        "scorer": "",
+        "model": "",
+        "model_roles": "['g']",
+    }
+    assert _paths(spec) == [
+        f"tasks[0].{name}{offending[name]}"
+        for name in FlowTask.model_fields
+        if name in offending
+    ]
 
 
 def test_serializable_scanners_pass() -> None:
