@@ -16,6 +16,7 @@ from inspect_flow import (
     FlowSpec,
     FlowTask,
 )
+from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._util.pydantic_util import model_dump
 from inspect_flow.api import SpecModelRef, iter_model_refs, load_spec
 from pydantic import BaseModel
@@ -118,20 +119,25 @@ def test_from_factory_flags_names_taken_from_factory() -> None:
 
 def test_callable_factory_suppresses_fields_it_ignores() -> None:
     # A callable factory returns the Model itself, so _create_model returns
-    # before get_model and this FlowModel's default/config/role are dead. They
-    # must not be reported, or a host would gate on models that cannot run.
+    # before get_model and this FlowModel's default/role are dead — reporting
+    # them would gate on models that cannot run. Its config is NOT dead:
+    # apply_defaults hoists it into the task-level config, which governs
+    # generation, so the fallback surfaces there (and only there).
     fm = FlowModel(
         factory=_module_level_model_factory,
         default="openai/never-runs",
         role="ignored",
-        config=GenerateConfig(fallback_models=["claude-never-runs"]),
+        config=GenerateConfig(fallback_models=["claude-runs-via-task-config"]),
     )
     assert _refs(FlowSpec(tasks=[FlowTask(model=fm)])) == [
-        ("tasks[0].model", None, None)
+        ("tasks[0].model", None, None),
+        ("tasks[0].config.fallback_models[0]", "claude-runs-via-task-config", None),
     ]
 
     # An explicit model_roles key is still the role the model is registered
     # under (_create_model_roles keys the mapping regardless), so it survives.
+    # Role-model configs are not hoisted (only the default model's config is),
+    # so no fallback ref appears here.
     assert _refs(FlowSpec(tasks=[FlowTask(model_roles={"grader": fm})])) == [
         ("tasks[0].model_roles['grader']", None, "grader")
     ]
@@ -206,22 +212,66 @@ def test_live_model_name_is_qualified() -> None:
     ]
 
 
-def test_defaults_model_and_prefix() -> None:
+def test_defaults_merge_into_tasks_before_iteration() -> None:
+    # Defaults are partial templates, not declarations: iteration happens on
+    # the apply_defaults-merged spec, so their values are reported at the tasks
+    # they actually land on — with the merged role and .default fallback.
     spec = FlowSpec(
+        tasks=[
+            FlowTask(name="t", model="openai/gpt-4o"),
+            FlowTask(name="u", model="anthropic/claude-3-5-sonnet"),
+        ],
         defaults=FlowDefaults(
-            model=FlowModel(name="openai/gpt-4o", default="openai/gpt-4o-mini"),
-            model_prefix={"anthropic/": FlowModel(name="anthropic/claude-3-5-sonnet")},
-        )
+            model=FlowModel(default="openai/gpt-4o-mini"),
+            model_prefix={"anthropic/": FlowModel(role="special")},
+        ),
     )
     assert _refs(spec) == [
-        ("defaults.model", "openai/gpt-4o", None),
-        ("defaults.model.default", "openai/gpt-4o-mini", None),
-        ("defaults.model_prefix['anthropic/']", "anthropic/claude-3-5-sonnet", None),
+        ("tasks[0].model", "openai/gpt-4o", None),
+        ("tasks[0].model.default", "openai/gpt-4o-mini", None),
+        ("tasks[1].model", "anthropic/claude-3-5-sonnet", "special"),
+        ("tasks[1].model.default", "openai/gpt-4o-mini", "special"),
     ]
 
 
-def test_defaults_task_templates() -> None:
+def test_defaults_model_name_shadowed_by_task_name() -> None:
+    # A task's explicit model name wins over the defaults template's name; the
+    # template name must not surface anywhere (it never runs for this task).
     spec = FlowSpec(
+        tasks=[FlowTask(name="t", model="openai/explicit")],
+        defaults=FlowDefaults(model=FlowModel(name="openai/from-defaults")),
+    )
+    assert _refs(spec) == [("tasks[0].model", "openai/explicit", None)]
+
+
+def test_defaults_model_does_not_attach_to_modelless_task() -> None:
+    # apply_defaults merges defaults.model only into an *existing* task.model;
+    # a modelless task stays modelless (the ambient INSPECT_EVAL_MODEL applies
+    # at run time), so no phantom ref is invented for it.
+    spec = FlowSpec(
+        tasks=[FlowTask(name="t")],
+        defaults=FlowDefaults(model=FlowModel(name="openai/from-defaults")),
+    )
+    assert _refs(spec) == []
+
+
+def test_defaults_on_taskless_spec_yield_nothing() -> None:
+    # A defaults template with no task to land on configures nothing that
+    # runs, so it produces no references.
+    spec = FlowSpec(
+        defaults=FlowDefaults(
+            model=FlowModel(name="openai/gpt-4o", default="openai/gpt-4o-mini"),
+            task=FlowTask(model_roles={"grader": "anthropic/claude-3-5-sonnet"}),
+        )
+    )
+    assert _refs(spec) == []
+
+
+def test_defaults_task_templates_merge_per_task() -> None:
+    # defaults.task applies to every task; task_prefix only to name matches.
+    # Bare-string tasks get the merged template too.
+    spec = FlowSpec(
+        tasks=["inspect_evals/mmlu", FlowTask(name="other/thing")],
         defaults=FlowDefaults(
             task=FlowTask(model="openai/gpt-4o"),
             task_prefix={
@@ -229,15 +279,12 @@ def test_defaults_task_templates() -> None:
                     model_roles={"grader": "anthropic/claude-3-5-sonnet"}
                 )
             },
-        )
+        ),
     )
     assert _refs(spec) == [
-        ("defaults.task.model", "openai/gpt-4o", None),
-        (
-            "defaults.task_prefix['inspect_evals/'].model_roles['grader']",
-            "anthropic/claude-3-5-sonnet",
-            "grader",
-        ),
+        ("tasks[0].model", "openai/gpt-4o", None),
+        ("tasks[0].model_roles['grader']", "anthropic/claude-3-5-sonnet", "grader"),
+        ("tasks[1].model", "openai/gpt-4o", None),
     ]
 
 
@@ -427,13 +474,25 @@ def test_flow_model_config_fallback_inherits_role() -> None:
     ]
 
 
-def test_defaults_config_fallback_models() -> None:
+def test_defaults_config_fallback_models_merge_per_task() -> None:
+    # defaults.config merges into each task's config, so its fallbacks are
+    # reported once per task they govern — and never for a taskless spec.
     spec = FlowSpec(
-        defaults=FlowDefaults(config=GenerateConfig(fallback_models=["claude-fb"]))
+        tasks=[FlowTask(name="a"), FlowTask(name="b")],
+        defaults=FlowDefaults(config=GenerateConfig(fallback_models=["claude-fb"])),
     )
     assert _refs(spec) == [
-        ("defaults.config.fallback_models[0]", "claude-fb", None),
+        ("tasks[0].config.fallback_models[0]", "claude-fb", None),
+        ("tasks[1].config.fallback_models[0]", "claude-fb", None),
     ]
+    assert (
+        _refs(
+            FlowSpec(
+                defaults=FlowDefaults(config=GenerateConfig(fallback_models=["x"]))
+            )
+        )
+        == []
+    )
 
 
 def test_scanner_generate_config_fallback_models() -> None:
@@ -470,9 +529,13 @@ def test_live_model_config_fallback_models() -> None:
             )
         ]
     )
+    # apply_defaults hoists the default model's config into task.config, so
+    # the same fallback appears at both post-merge locations. Same name, so a
+    # name-set consumer is unaffected.
     assert _refs(spec) == [
         ("tasks[0].model", "mockllm/model", None),
         ("tasks[0].model.config.fallback_models[0]", "claude-fb", None),
+        ("tasks[0].config.fallback_models[0]", "claude-fb", None),
     ]
 
 
@@ -510,17 +573,19 @@ def test_fallback_models_survive_json_roundtrip() -> None:
     ]
 
 
-def test_document_order_across_whole_spec() -> None:
+def test_stable_order_across_whole_spec() -> None:
+    # Tasks first, then options. (Defaults merge into tasks, so a default
+    # model surfaces in the task leg, not a leg of its own.)
     spec = FlowSpec(
-        tasks=[FlowTask(model="a/task-model")],
-        defaults=FlowDefaults(model=FlowModel(name="a/default-model")),
+        tasks=[FlowTask(name="t"), FlowTask(model="a/task-model")],
+        defaults=FlowDefaults(task=FlowTask(model="a/default-model")),
         options=FlowOptions(
             scanner=ScannerConfig(scanners=["keyword_scanner"], model="a/scanner-model")
         ),
     )
     assert [r.name for r in iter_model_refs(spec)] == [
-        "a/task-model",
         "a/default-model",
+        "a/task-model",
         "a/scanner-model",
     ]
 
@@ -546,23 +611,36 @@ def test_hawk_style_consumption() -> None:
     assert len(flow_models) == 1
 
 
-def test_nameless_flow_model_declares_no_model() -> None:
+def test_defaults_field_templates_merge_rather_than_surface() -> None:
     # The documented defaults pattern (examples/flow_defaults.py): a FlowModel
-    # carrying only field defaults names no model at all. It must not look like
-    # an unenumerable model, or a host rejecting those would reject the pattern
-    # Flow's own docs teach.
+    # carrying only field defaults is a partial template, not a declaration.
+    # Iteration happens after apply_defaults, so the template's fields land on
+    # each task's (named) model instead of surfacing as a nameless ref a host
+    # might mistakenly reject.
     spec = FlowSpec(
+        tasks=[FlowTask(name="t", model="openai/gpt-4o")],
         defaults=FlowDefaults(
             model=FlowModel(model_args={"arg": "foo"}),
             model_prefix={"openai/": FlowModel(config=GenerateConfig(temperature=1))},
-        )
+        ),
     )
-    refs = list(iter_model_refs(spec))
-    assert [(r.path, r.name) for r in refs] == [
-        ("defaults.model", None),
-        ("defaults.model_prefix['openai/']", None),
-    ]
-    assert [r.unenumerable for r in refs] == [False, False]
+    (ref,) = iter_model_refs(spec)
+    assert (ref.path, ref.name, ref.unenumerable) == (
+        "tasks[0].model",
+        "openai/gpt-4o",
+        False,
+    )
+    assert isinstance(ref.ref, FlowModel)
+    assert ref.ref.model_args == {"arg": "foo"}
+
+
+def test_nameless_task_model_is_not_unenumerable() -> None:
+    # A task-level FlowModel with neither name nor factory declares no model;
+    # instantiation rejects it ("Model name is required") rather than running
+    # anything, so it is nameless but not unenumerable — nothing binds.
+    spec = FlowSpec(tasks=[FlowTask(model=FlowModel(model_args={"a": 1}))])
+    (ref,) = iter_model_refs(spec)
+    assert (ref.name, ref.unenumerable) == (None, False)
 
 
 def test_unenumerable_marks_only_bound_but_unknowable_models() -> None:
@@ -590,13 +668,13 @@ def test_unenumerable_marks_only_bound_but_unknowable_models() -> None:
     assert not ref.unenumerable
 
 
-def test_includes_are_not_descended_but_are_flagged() -> None:
-    # An unresolved spec must not under-report silently.
+def test_unexpanded_includes_raise() -> None:
+    # Includes reference other spec files, which cannot be read here, so an
+    # unresolved spec is rejected eagerly (not on first iteration) rather than
+    # silently under-reporting.
     spec = FlowSpec(includes=[FlowSpec(tasks=[FlowTask(model="openai/gpt-4o")])])
-    refs = list(iter_model_refs(spec))
-    assert [(r.path, r.name, r.unenumerable) for r in refs] == [
-        ("includes[0]", None, True)
-    ]
+    with pytest.raises(ValueError, match="unexpanded includes"):
+        iter_model_refs(spec)
 
 
 def test_kind_discriminates_reference_namespaces() -> None:
@@ -617,6 +695,8 @@ def test_kind_discriminates_reference_namespaces() -> None:
         ("tasks[0].model", "model"),
         ("tasks[0].model.default", "default"),
         ("tasks[0].model.config.fallback_models[0]", "fallback"),
+        # apply_defaults hoists the model's config into task.config too.
+        ("tasks[0].config.fallback_models[0]", "fallback"),
     ]
     # The Inspect-namespaced subset a host authorizes by `provider/model`.
     assert {r.name for r in iter_model_refs(spec) if r.kind != "fallback"} == {
@@ -764,7 +844,11 @@ def test_no_model_shaped_value_escapes_unclassified() -> None:
         ),
     )
     walked = {r.path for r in iter_model_refs(spec)}
-    candidates = {c.lstrip(".") for c in _model_candidates(spec, "", False)}
+    # iter_model_refs walks the defaults-merged spec, so the oracle must
+    # traverse the same shape or its paths would name pre-merge locations.
+    candidates = {
+        c.lstrip(".") for c in _model_candidates(apply_defaults(spec), "", False)
+    }
     assert candidates - walked == {
         # Free-form constructor args and model-construction kwargs are both
         # documented scope exclusions. The second is why a generic walk cannot
@@ -792,6 +876,11 @@ def test_spec_fields_are_classified_for_models() -> None:
     #
     # If this test fails, you added or renamed a field on a spec type. Decide
     # whether the field can carry a model reference:
+    #
+    # FlowDefaults is deliberately NOT pinned: iteration happens on the
+    # apply_defaults-merged spec, so a new defaults field is defaults.py's
+    # concern — the walk and the runner share that exact merge code, and a
+    # field apply_defaults ignores does nothing at runtime either.
     #   - if it can, extend iter_model_refs in
     #     src/inspect_flow/_config/model_refs.py (and the coverage list in
     #     design/model_reference_introspection.md), then update the snapshot;
@@ -848,17 +937,6 @@ def test_spec_fields_are_classified_for_models() -> None:
         "turn_limit",
         "version",
         "working_limit",
-    ]
-    assert sorted(FlowDefaults.model_fields) == [
-        "agent",
-        "agent_prefix",
-        "config",
-        "model",
-        "model_prefix",
-        "solver",
-        "solver_prefix",
-        "task",
-        "task_prefix",
     ]
     assert sorted(FlowModel.model_fields) == [
         "api_key",

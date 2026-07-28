@@ -5,6 +5,7 @@ from typing import Literal
 from inspect_ai import ScannerConfig, Task
 from inspect_ai.model import GenerateConfig, Model
 
+from inspect_flow._config.defaults import apply_defaults
 from inspect_flow._types.flow_types import (
     FlowFactory,
     FlowModel,
@@ -44,12 +45,10 @@ class SpecModelRef:
     This records how the reference is *declared*, not which slot the model will
     end up serving. So a `kind="fallback"` ref is roled only when it comes from a
     `FlowModel`'s own `config` — that config is an argument to the same
-    `get_model` call that binds the role. A fallback declared on a `FlowTask` or
-    `defaults` `config` is always `None`: those are task/run-level generate
-    configs (`FlowTask.config` explicitly "does not apply to model roles"), and
-    no role participates at that layer. `defaults.config` shows why this cannot
-    be derived — one declaration there may serve several models in different
-    roles, or a modelless task with no role at all."""
+    `get_model` call that binds the role. A fallback in a `FlowTask.config` is
+    always `None`: that is a task-level generate config (its field description
+    says it "does not apply to model roles"), so no role participates at that
+    layer — the task's `model_roles` models generate with it too."""
 
     kind: Literal["model", "default", "fallback"] = "model"
     """Which kind of reference this is, and hence which namespace `name` is in.
@@ -73,8 +72,9 @@ class SpecModelRef:
 
         `None` has two causes, distinguished by `unenumerable`: either a model
         binds here but its name cannot be known statically, or the reference
-        declares no model at all (a `FlowModel` carrying only field defaults,
-        as in `defaults.model`). Key policy on `unenumerable` rather than on
+        declares no model at all (a `FlowModel` with neither `name` nor
+        `factory` — after defaults merging that is a misconfigured task, which
+        instantiation rejects). Key policy on `unenumerable` rather than on
         this — and note `unenumerable` is not by itself sufficient: a *string*
         `factory` is enumerable but its name is a factory id, so a host feeding
         `name` to a model lookup should check `from_factory` too.
@@ -119,8 +119,9 @@ class SpecModelRef:
 
         `True` for a model site this walk cannot read (`ref is None`) and for a
         `FlowModel` built by a callable `factory`. `False` when `name` is `None`
-        merely because the reference declares no model — a `FlowModel` carrying
-        only field defaults, which is the documented `defaults.model` pattern.
+        merely because the reference declares no model — a `FlowModel` with
+        neither `name` nor `factory`, which instantiation rejects rather than
+        running anything.
 
         This is the signal for "I cannot name the model", and a host that
         cannot allow what it cannot name should reject specs where this is
@@ -148,27 +149,31 @@ def _effective_factory(model: FlowModel) -> Callable[..., Model] | str | None:
 
 
 def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
-    """Yield the model references declared in a flow spec.
+    """Yield the model references a flow spec will run with.
 
-    Order is stable: `includes`, then tasks, then `defaults`, then `options`.
+    Defaults are merged before iterating (`apply_defaults` is applied to a
+    copy; it is idempotent, so an already-resolved spec is unchanged). Every
+    ref therefore points at the task or scanner the model actually applies
+    to, with concrete merged values — a model declared in `defaults.model`
+    appears at `tasks[i].model` for each task it lands on, never at a
+    `defaults.*` path. Consumers do not have to reason about defaults, which
+    are partial templates rather than declarations in their own right.
 
-    Walks the whole spec — task `model` and `model_roles` (whether a task is a
-    `FlowTask` or an already-instantiated `Task`), `defaults.model` and
-    `defaults.model_prefix`, the `defaults.task` / `defaults.task_prefix`
-    templates, and `options.scanner` — and yields one `SpecModelRef` per
-    reference. A `FlowModel`'s `default` fallback is yielded as its own
-    reference at `<path>.default`: it is a declared reference naming a distinct
-    model, enumerated because the field is still in the schema even though Flow
-    does not currently bind it (issue #778, which will likely remove the field —
-    this handling retires with it). Likewise every
-    `GenerateConfig.fallback_models` entry (on a task, model, `defaults.config`,
-    or scanner) is yielded at `<config>.fallback_models[i]`, because those models
-    handle requests after a classifier refusal.
+    Order is stable: tasks, then `options`. Sites walked: each task's `model`
+    and `model_roles` (whether a `FlowTask` or an already-instantiated
+    `Task`), and `options.scanner`. A `FlowModel`'s `default` fallback is
+    yielded as its own reference at `<path>.default`: it is a declared
+    reference naming a distinct model, enumerated because the field is still
+    in the schema even though Flow does not currently bind it (issue #778,
+    which will likely remove the field — this handling retires with it).
+    Likewise every `GenerateConfig.fallback_models` entry (on a task, model,
+    or scanner) is yielded at `<config>.fallback_models[i]`, because those
+    models handle requests after a classifier refusal.
 
-    Nothing is resolved, instantiated, expanded, or installed. Specs pulled in
-    via `includes` are not descended into — iterate a resolved spec (the loader
-    clears `includes` once merged); an unresolved spec yields one unenumerable
-    ref per include rather than silently under-reporting.
+    Nothing is instantiated, installed, or read from disk — which is why a
+    spec whose `includes` have not been expanded is rejected: includes
+    reference other spec files, and enumerating around them would silently
+    under-report. `load_spec` expands and clears them.
 
     **This will not find every model a run may use.** It reads the model
     reference fields Flow declares in its own schema; it does not execute
@@ -200,28 +205,32 @@ def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
     over what this yields.
 
     Args:
-        spec: The flow spec to introspect.
+        spec: The flow spec to introspect. Refs report paths and merged values
+            from the defaults-applied spec, not the literal input object.
 
-    Yields:
-        Each model reference with its field path and binding role.
+    Returns:
+        An iterator of model references, each with its field path and binding
+        role.
+
+    Raises:
+        ValueError: If the spec has unexpanded `includes`.
     """
-    for index, _ in enumerate(spec.includes or []):
-        # Includes are expanded at load time (the loader clears this field), so
-        # a spec that still has them is unresolved and under-reports.
-        yield SpecModelRef(f"includes[{index}]", None)
+    if default_none(spec.includes):
+        raise ValueError(
+            "Spec has unexpanded includes, which reference other spec files "
+            "that cannot be read here; enumerating around them would silently "
+            "under-report. Load the spec first (load_spec expands and clears "
+            "includes)."
+        )
+    return _resolved_spec_refs(apply_defaults(spec))
+
+
+def _resolved_spec_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
     for index, task in enumerate(spec.tasks or []):
+        # Post-merge every task is a FlowTask or live Task (apply_defaults
+        # converts bare strings); the isinstance narrows for typing only.
         if isinstance(task, (FlowTask, Task)):
             yield from _task_model_refs(task, f"tasks[{index}]")
-    defaults = default_none(spec.defaults)
-    if defaults:
-        yield from _fallback_model_refs(defaults.config, "defaults.config")
-        yield from _model_refs(defaults.model, "defaults.model")
-        for key, model in (default_none(defaults.model_prefix) or {}).items():
-            yield from _model_refs(model, f"defaults.model_prefix[{key!r}]")
-        if is_set(defaults.task):
-            yield from _task_model_refs(defaults.task, "defaults.task")
-        for key, template in (default_none(defaults.task_prefix) or {}).items():
-            yield from _task_model_refs(template, f"defaults.task_prefix[{key!r}]")
     yield from _scanner_model_refs(spec)
 
 
@@ -317,8 +326,11 @@ def _model_refs(
         yield SpecModelRef(path, None, role)
         return
     # A callable `factory` returns the Model itself, so `_create_model` returns
-    # before `get_model`, and this FlowModel's `default`, `config`, and `role`
-    # are never applied. Reporting them would name models that cannot run.
+    # before `get_model`, and this FlowModel's `default` and `role` are never
+    # applied — reporting them would name models (or bind roles) that cannot
+    # run. Its `config` is different: `apply_defaults` hoists it into the
+    # task-level config, which does govern generation, so its fallbacks are
+    # reported there by the task walk rather than at this dead model path.
     built_by_callable = isinstance(ref, FlowModel) and callable(_effective_factory(ref))
     if role is None and not isinstance(ref, str) and not built_by_callable:
         # A model outside model_roles can still bind a role: FlowModel.role is
