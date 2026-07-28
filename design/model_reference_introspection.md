@@ -2,7 +2,7 @@
 
 ## Problem
 
-A multi-tenant host needs the set of models a `FlowSpec` **declares**. Not to
+Platforms like METR's Hawk need the set of models a `FlowSpec` **declares**. Not to
 enforce model access — the model gateway authorizes every call at request time,
 so an unpermitted model fails there regardless of what a static walk returned —
 but to:
@@ -70,15 +70,14 @@ skipped a live schema field would be under-reporting.
 [_config/model_refs.py](../src/inspect_flow/_config/model_refs.py) exposes
 `iter_model_refs(spec)` and the `SpecModelRef` result type, both exported from
 `inspect_flow.api`. The signature and per-field semantics live in the module's
-docstrings rather than being restated here — a copy of them in this file has
-already drifted from the code twice.
+docstrings rather than being restated here.
 
 `iter_model_refs` walks the spec's declared model fields and yields one
-`SpecModelRef` per reference, in a stable order (`includes`, then tasks, then
+`SpecModelRef` (a new type) per reference, in a stable order (`includes`, then tasks, then
 `defaults`, then `options`). It does not resolve, instantiate, expand, or install
 anything, and it does not descend into `includes` (iterate a resolved spec).
 Named after the sibling result type `SpecViolation` (portable-spec validation,
-PR 1 / #785): the `Spec` prefix marks it as an introspection result over a spec,
+#785): the `Spec` prefix marks it as an introspection result over a spec,
 not a spec type like `FlowModel`.
 
 `SpecModelRef` is an API-boundary type — returned by one helper and consumed by
@@ -86,9 +85,6 @@ hosts — not a core Flow type. It never crosses the wire: the host recomputes t
 enumeration locally at each point that holds the spec (CLI, API, runner).
 
 ### `SpecModelRef` is deliberately unhashable
-
-This one reversed twice under review, so the reasoning is recorded here rather
-than left to a code comment.
 
 `ref` may be a `FlowModel`, which is mutable. Any hash derived from it goes stale
 the moment the spec is edited, so a ref inserted into a set becomes unfindable —
@@ -355,14 +351,14 @@ ride on inspect-ai types (`ScannerConfig`, `GenerateConfig`) and are deliberatel
 outside the snapshot — pinning an external type's fields would be fragile against
 inspect-ai refactors, the same reason full annotation introspection was rejected.
 
-### Why not derive coverage generically, as PR 1 does
+### Why not derive coverage generically
 
-The sibling `validate_portable_spec` (PR 1 / #785) deliberately does *not* use an
+The sibling `validate_portable_spec` (#785) deliberately does *not* use an
 allow-list of locations — it walks the real serialization boundary, on the
 argument that an allow-list fails open. It tried the snapshot approach used here
 and deleted it. So why not follow?
 
-Because PR 1 has an **oracle** and this does not. "Can this be serialized?" is
+Because #785 has an **oracle** and this does not. "Can this be serialized?" is
 answered by running pydantic's own serializer and recording what hits the
 fallback — a check that already encodes the entire schema, executes, and is free.
 Re-deriving it by hand would be re-implementing pydantic. There is no comparable
@@ -386,7 +382,7 @@ of *which field a value sits in* and of `_create_model`'s behaviour, present
 nowhere in the data. A generic walk would recover 40–80% of paths while inventing
 a false one — strictly worse than a hand walk with a drift guard.
 
-For accuracy about the sibling: PR 1's walk is not purely value-blind either. It
+For accuracy about the sibling: #785's walk is not purely value-blind either. It
 carries its own field-name sets (`_REINFLATED_FIELDS`, `_RESOLVING_FIELDS`) and a
 separate structural pass for `early_stopping`. The distinction between the two
 approaches is a gradient, not a dichotomy — the decisive difference is the
@@ -394,7 +390,7 @@ oracle, not blindness.
 
 **What this costs, honestly.** The snapshot guard covers Flow-owned types only.
 If inspect-ai adds a model-bearing field to `ScannerConfig` or `GenerateConfig`,
-this walk silently under-reports and no test fails — whereas PR 1's technique
+this walk silently under-reports and no test fails — whereas #785's technique
 would catch the analogous change automatically. That is a real advantage of the
 generic approach, and this repo tracks inspect-ai closely enough (weekly canary,
 routine reconcile PRs) for the risk to be live rather than theoretical. Pinning
