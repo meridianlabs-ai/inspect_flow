@@ -12,6 +12,7 @@ from inspect_flow._api.api import (
     store_get,
 )
 from inspect_flow._api.list_logs import list_logs
+from inspect_flow._config.model_refs import SpecModelRef, iter_model_refs
 from inspect_flow._config.portable import (
     SpecNotPortableError,
     SpecViolation,
@@ -33,6 +34,7 @@ __all__ = [
     "DisplayType",
     "FlowStore",
     "RunResult",
+    "SpecModelRef",
     "SpecNotPortableError",
     "SpecViolation",
     "StepResult",
@@ -43,6 +45,7 @@ __all__ = [
     "delete_store",
     "dump_spec",
     "init",
+    "iter_model_refs",
     "list_logs",
     "load_spec",
     "load_spec_data",
