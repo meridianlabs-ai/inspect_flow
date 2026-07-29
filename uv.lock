@@ -1915,7 +1915,7 @@ requires-dist = [
     { name = "packaging", specifier = ">=21.0" },
     { name = "panflute", marker = "extra == 'doc'" },
     { name = "pyarrow", specifier = ">=17.0.0" },
-    { name = "pydantic", specifier = ">=2.11.2" },
+    { name = "pydantic", specifier = ">=2.12" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyyaml", marker = "extra == 'doc'" },
     { name = "quarto-cli", marker = "extra == 'doc'", specifier = ">=1.9.36" },
