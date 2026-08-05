@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.11.0...v0.12.0) (2026-08-04)
+
+
+### Features
+
+* public model-reference introspection (iter_model_refs) ([#784](https://github.com/meridianlabs-ai/inspect_flow/issues/784)) ([dc20def](https://github.com/meridianlabs-ai/inspect_flow/commit/dc20def3efd14bea31e51e34c5ce016050070752))
+* public validate_portable_spec API ([#785](https://github.com/meridianlabs-ai/inspect_flow/issues/785)) ([64e10bc](https://github.com/meridianlabs-ai/inspect_flow/commit/64e10bc0c43431e99dcd2412f6f7921091a813f1))
+
 ## [0.11.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.10.0...v0.11.0) (2026-07-22)
 
 
