@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,12 +16,14 @@ from inspect_flow._config.load import (
 from inspect_flow._config.write import config_to_yaml
 from inspect_flow._display.display import DisplayType, set_display_type
 from inspect_flow._launcher.launch import launch, launch_check
+from inspect_flow._runner.eval_set import eval_set_for_spec
 from inspect_flow._runner.logs import FindLogsResult
 from inspect_flow._store.store import FlowStore, store_factory
 from inspect_flow._types.flow_types import FlowSpec, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.logging import init_flow_logging
 from inspect_flow._util.module_util import is_loading_spec
+from inspect_flow._util.path_util import absolute_path_relative_to
 
 _initialized = False
 
@@ -134,6 +137,47 @@ def run(
     )
     assert spec.log_dir
     return RunResult(success=result.success, logs=result.logs, log_dir=spec.log_dir)
+
+
+def eval_set(
+    spec: FlowSpec,
+    base_dir: str | None = None,
+) -> tuple[bool, list[EvalLog]]:
+    """Make the `eval_set()` call defined by a flow spec.
+
+    Resolves the spec, instantiates its tasks, and makes a single `inspect_ai.eval_set()` call, returning its result. Unlike `run()`, this is the bare spec -> `eval_set()` path: no flow.yaml is written, no store is consulted, and no log directory scanning or result display occurs. This also makes it the appropriate entry point for external runners that intercept at the `eval_set()` boundary (e.g. eval-set capture).
+
+    Note that the spec's `execution_type` is not honored: the eval set always runs in the calling process (environment isolation is a `run()` concern).
+
+    Args:
+        spec: The flow spec configuration.
+        base_dir: The base directory for resolving relative paths. Defaults to the current working directory.
+
+    Returns:
+        Tuple of bool (whether all tasks completed successfully) and a list of `EvalLog` headers.
+
+    Raises:
+        RuntimeError: If called from within a flow spec file being loaded.
+    """
+    if is_loading_spec():
+        raise RuntimeError(
+            "eval_set() cannot be called from within a flow spec file. "
+            "Return the FlowSpec object instead and let the CLI handle execution. "
+            "Or execute the file directly using python."
+        )
+    ensure_init(dotenv_base_dir=base_dir)
+    base_dir = base_dir or Path().cwd().as_posix()
+    spec = expand_spec(spec, base_dir=base_dir, options=ConfigOptions())
+    if not spec.log_dir:
+        raise ValueError("log_dir must be set before running the flow spec")
+    spec.log_dir = absolute_path_relative_to(spec.log_dir, base_dir=base_dir)
+    if spec.options and spec.options.bundle_dir:
+        spec.options.bundle_dir = absolute_path_relative_to(
+            spec.options.bundle_dir, base_dir=base_dir
+        )
+    if spec.env:
+        os.environ.update(spec.env)
+    return eval_set_for_spec(spec, base_dir=base_dir)
 
 
 @dataclass

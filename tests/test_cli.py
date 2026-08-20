@@ -445,14 +445,14 @@ def test_417_invalid_run() -> None:
 
 def test_run_command_exit_code_incomplete(tmp_path: Path) -> None:
     runner = CliRunner()
-    with patch("inspect_flow._runner.run.eval_set", return_value=(False, [])):
+    with patch("inspect_flow._runner.eval_set.inspect_eval_set", return_value=(False, [])):
         result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
     assert result.exit_code == 3
 
 
 def test_run_command_exit_code_success(tmp_path: Path) -> None:
     runner = CliRunner()
-    with patch("inspect_flow._runner.run.eval_set", return_value=(True, [])):
+    with patch("inspect_flow._runner.eval_set.inspect_eval_set", return_value=(True, [])):
         result = runner.invoke(run_command, [CONFIG_FILE, "--log-dir", str(tmp_path)])
     assert result.exit_code == 0
 

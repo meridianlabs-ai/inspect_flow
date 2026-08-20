@@ -128,9 +128,9 @@ def test_bridge_loads_hook_file_into_registry() -> None:
             preload_files=[str(Path(config_dir) / "after_instantiate_flow.py")]
         ),
     )
-    from inspect_flow._runner.run import _load_preload_files
+    from inspect_flow._runner.eval_set import load_preload_files
 
-    _load_preload_files(spec)
+    load_preload_files(spec)
     hooks = registered_after_instantiate_hooks()
     assert len(hooks) == 1
     assert hooks[0].__name__ == "reverse_tasks"

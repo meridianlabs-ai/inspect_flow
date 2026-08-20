@@ -1432,7 +1432,7 @@ def test_log_copy_store_read_off_by_default(tmp_path: Path) -> None:
     spec.log_dir = log_dir2
     spec.store = FlowStoreConfig(path=store_dir)  # read=False by default
 
-    with patch("inspect_flow._runner.run.eval_set") as mock:
+    with patch("inspect_flow._runner.eval_set.inspect_eval_set") as mock:
         mock.return_value = (True, [])
         run_eval_set(spec=spec, base_dir=".")
 
@@ -1584,7 +1584,7 @@ def test_log_copy_s3(recording_console: Console, mock_s3: BaseClient) -> None:
     log_dir2 = log_dir + "_2"
     spec.log_dir = log_dir2
 
-    with patch("inspect_flow._runner.run.eval_set") as mock:
+    with patch("inspect_flow._runner.eval_set.inspect_eval_set") as mock:
         mock.return_value = (True, [])
         run_eval_set(spec=spec, base_dir=".")
     verify_test_logs(spec, log_dir2)
@@ -1695,7 +1695,7 @@ def test_store_write_on_keyboard_interrupt() -> None:
         raise KeyboardInterrupt()
 
     with patch(
-        "inspect_flow._runner.run.eval_set", side_effect=eval_set_then_interrupt
+        "inspect_flow._runner.eval_set.inspect_eval_set", side_effect=eval_set_then_interrupt
     ):
         run_eval_set(spec=spec, base_dir=".")
 

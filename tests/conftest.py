@@ -283,7 +283,7 @@ def skip_if_no_docker(func: F) -> F:
 @pytest.fixture
 def mock_eval_set() -> Generator[MagicMock, None, None]:
     """Mock eval_set with a valid return value for tests that don't run real evaluations."""
-    with patch("inspect_flow._runner.run.eval_set") as mock:
+    with patch("inspect_flow._runner.eval_set.inspect_eval_set") as mock:
         mock.return_value = (True, [])
         yield mock
 
