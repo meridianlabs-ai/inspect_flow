@@ -47,11 +47,11 @@ class ArgumentsHelpCommand(click.Command):
         self.format_usage(ctx, formatter)
         self.format_help_text(ctx, formatter)
         if self.arguments_help:
-            self.format_arguments(formatter)
+            self._format_arguments(formatter)
         self.format_options(ctx, formatter)
         self.format_epilog(ctx, formatter)
 
-    def format_arguments(self, formatter: HelpFormatter) -> None:
+    def _format_arguments(self, formatter: HelpFormatter) -> None:
         with formatter.section("Arguments"):
             formatter.write_dl(list(self.arguments_help.items()))
 
