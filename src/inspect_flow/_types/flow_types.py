@@ -181,7 +181,8 @@ def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:
     data: dict[str, Any] = {
         f.name: v
         for f in dataclass_fields(value)
-        if f.name != "trigger" and (v := getattr(value, f.name)) is not None
+        if f.name not in ("trigger", "sandbox_paths")
+        and (v := getattr(value, f.name)) is not None
     }
     if value.sandbox_paths is not None:
         data["sandbox_paths"] = {
