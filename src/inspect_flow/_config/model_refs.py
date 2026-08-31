@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -13,6 +13,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
+from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.not_given import default_none, is_set
 
 
@@ -321,7 +322,7 @@ def _model_and_role_refs(
         # indexed path — reporting the list as a single unenumerable ref would
         # make list-bound roles loadable but unauthorizable for hosts that
         # reject the unenumerable.
-        if isinstance(value, Sequence) and not isinstance(value, str):
+        if is_sequence(value):
             for index, element in enumerate(value):
                 yield from _model_refs(element, f"{role_path}[{index}]", role)
         else:

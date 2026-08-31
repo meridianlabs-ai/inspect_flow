@@ -18,6 +18,7 @@ from inspect_flow._types.flow_types import (
     NotGiven,
     not_given,
 )
+from inspect_flow._util.list_util import is_sequence
 
 _T = TypeVar("_T", bound=BaseModel)
 
@@ -109,7 +110,7 @@ def _apply_model_roles_defaults(
 ) -> ModelRolesConfig:
     roles: dict[str, str | FlowModel | Model | list[str | FlowModel | Model]] = {}
     for role, value in model_roles.items():
-        if isinstance(value, Sequence) and not isinstance(value, str):
+        if is_sequence(value):
             roles[role] = [_apply_role_model_defaults(m, spec) for m in value]
         else:
             roles[role] = _apply_role_model_defaults(value, spec)

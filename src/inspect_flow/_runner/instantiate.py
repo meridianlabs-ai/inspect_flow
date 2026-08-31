@@ -41,7 +41,7 @@ from inspect_flow._types.flow_types import (
     ModelRolesConfig,
     NotGiven,
 )
-from inspect_flow._util.list_util import sequence_to_list
+from inspect_flow._util.list_util import is_sequence, sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 from inspect_flow._util.pydantic_util import callable_name
 
@@ -281,7 +281,7 @@ def _create_role_model(task: FlowTask, model: str | FlowModel | Model) -> str | 
 def _create_model_roles(task: FlowTask, model_roles: ModelRolesConfig) -> ModelRoles:
     roles: dict[str, str | Model | list[str | Model]] = {}
     for role, value in model_roles.items():
-        if isinstance(value, Sequence) and not isinstance(value, str):
+        if is_sequence(value):
             roles[role] = [_create_role_model(task, m) for m in value]
         else:
             roles[role] = _create_role_model(task, value)

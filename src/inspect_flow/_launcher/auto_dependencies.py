@@ -26,6 +26,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
+from inspect_flow._util.list_util import is_sequence
 
 logger = getLogger(__name__)
 
@@ -101,7 +102,7 @@ def _collect_task_dependencies(
         _collect_model_dependencies(task.model, dependencies)
     if task.model_roles:
         for model_role in task.model_roles.values():
-            if isinstance(model_role, Sequence) and not isinstance(model_role, str):
+            if is_sequence(model_role):
                 for model in model_role:
                     _collect_model_dependencies(model, dependencies)
             else:
