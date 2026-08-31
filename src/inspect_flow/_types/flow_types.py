@@ -62,7 +62,10 @@ from inspect_flow._util.pydantic_util import model_dump
 CreateArgs: TypeAlias = Mapping[str, Any]
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
 """A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it."""
-ModelRolesConfig: TypeAlias = Mapping[str, "FlowModel | str | Model"]
+ModelRolesConfig: TypeAlias = Mapping[
+    str,
+    "FlowModel | str | Model | Annotated[Sequence[FlowModel | str | Model], Field(min_length=1)]",
+]
 
 
 class NotGiven(BaseModel, extra="forbid"):
@@ -552,7 +555,7 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
 
     model_roles: ModelRolesConfig | None | NotGiven = Field(
         default=not_given,
-        description="Named roles for use in `get_model()`.",
+        description="Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`.",
     )
 
     sandbox: SandboxEnvironmentType | None | NotGiven = Field(

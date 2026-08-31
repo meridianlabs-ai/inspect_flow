@@ -36,6 +36,33 @@ def test_round_trip_preserves_spec():
     assert load_spec_data(data) == spec
 
 
+def test_round_trip_preserves_list_valued_model_role_order():
+    # author order is canonical on the wire: inspect-ai's task_identifier
+    # derives identity from declaration order, so sorting would silently
+    # change which store entries a spec reuses
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="mod/task",
+                model_roles={"grader": ["openai/b", FlowModel(name="openai/a")]},
+            )
+        ]
+    )
+    data = json.loads(json.dumps(dump_spec(spec)))
+    assert data["tasks"][0]["model_roles"]["grader"] == [
+        "openai/b",
+        {"name": "openai/a"},
+    ]
+    assert load_spec_data(data) == spec
+
+
+def test_load_rejects_empty_model_role_list():
+    # inspect-ai's resolve_model_roles rejects an empty list at eval time;
+    # reject it at the load boundary instead of after launch
+    with pytest.raises(ValidationError):
+        load_spec_data({"tasks": [{"name": "mod/task", "model_roles": {"grader": []}}]})
+
+
 def test_dump_omits_unset_fields():
     assert dump_spec(FlowSpec(log_dir="logs")) == {"log_dir": "logs"}
 

@@ -284,3 +284,18 @@ FlowTask(
     }
 )
 ```
+
+A role can also bind to a list of models, in which case model-graded scorers grade with each model and resolve the final grade by majority vote:
+
+``` python
+FlowTask(
+    name="majority_vote_task",
+    model_roles={
+        "grader": [
+            "openai/gpt-5",
+            "anthropic/claude-3-5-sonnet",
+            "google/gemini-2.5-pro",
+        ],
+    }
+)
+```

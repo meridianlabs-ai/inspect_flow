@@ -1,3 +1,4 @@
+import json
 import logging
 import shutil
 import sys
@@ -39,6 +40,7 @@ from inspect_flow._util.logging import (
     init_flow_logging,
     update_log_level,
 )
+from inspect_flow.api import dump_spec, load_spec_data
 from inspect_scout import ScannerSpec
 from local_eval.my_scanners import keyword_scanner
 from packaging.version import Version
@@ -866,6 +868,48 @@ def test_default_model_roles(mock_eval_set: MagicMock) -> None:
     assert isinstance(tasks_arg[0], Task)
     assert tasks_arg[0].model_roles.keys() == default_model_roles.keys()
     assert tasks_arg[1].model_roles.keys() == task_model_roles.keys()
+
+
+def test_list_valued_model_roles(mock_eval_set: MagicMock) -> None:
+    spec = FlowSpec(
+        log_dir=init_test_logs(),
+        defaults=FlowDefaults(
+            model_prefix={
+                "mockllm/": FlowModel(
+                    config=GenerateConfig(system_message="Prefix Default")
+                )
+            },
+        ),
+        tasks=[
+            FlowTask(
+                name=task_file + "@task_with_model_roles",
+                model=FlowModel(name="mockllm/mock-llm"),
+                model_roles={
+                    "mark": [
+                        "mockllm/mock-mark1",
+                        FlowModel(name="mockllm/mock-mark2"),
+                    ],
+                    "conartist": ["mockllm/mock-conartist"],
+                },
+            )
+        ],
+    )
+    spec = load_spec_data(json.loads(json.dumps(dump_spec(spec))))
+
+    run_eval_set(spec=spec, base_dir=".")
+
+    mock_eval_set.assert_called_once()
+    tasks_arg = mock_eval_set.call_args.kwargs["tasks"]
+    assert len(tasks_arg) == 1
+    mark = tasks_arg[0].model_roles["mark"]
+    assert [str(m) for m in mark] == ["mockllm/mock-mark1", "mockllm/mock-mark2"]
+    # model defaults are applied per element, so the prefix default reaches the
+    # FlowModel element inside the list
+    assert mark[1].config.system_message == "Prefix Default"
+    # inspect-ai collapses a single-element list to the scalar shape
+    conartist = tasks_arg[0].model_roles["conartist"]
+    assert isinstance(conartist, Model)
+    assert str(conartist) == "mockllm/mock-conartist"
 
 
 def test_logs_allow_dirty(mock_eval_set: MagicMock) -> None:
