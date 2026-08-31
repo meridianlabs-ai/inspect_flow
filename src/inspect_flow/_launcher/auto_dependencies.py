@@ -101,7 +101,11 @@ def _collect_task_dependencies(
         _collect_model_dependencies(task.model, dependencies)
     if task.model_roles:
         for model_role in task.model_roles.values():
-            _collect_model_dependencies(model_role, dependencies)
+            if isinstance(model_role, Sequence) and not isinstance(model_role, str):
+                for model in model_role:
+                    _collect_model_dependencies(model, dependencies)
+            else:
+                _collect_model_dependencies(model_role, dependencies)
     if not task.model and not task.model_roles:
         _collect_env_model_dependencies(dependencies)
 

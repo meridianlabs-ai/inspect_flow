@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -161,7 +161,10 @@ def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
 
     Order is stable: tasks, then `options`. Sites walked: each task's `model`
     and `model_roles` (whether a `FlowTask` or an already-instantiated
-    `Task`), and `options.scanner`. A `FlowModel`'s `default` fallback is
+    `Task`), and `options.scanner`. A list-valued task role (one role bound to
+    several models) yields one ref per element, at an indexed path
+    (`tasks[0].model_roles['grader'][0]`), each carrying the role — so a role
+    may map to several refs. A `FlowModel`'s `default` fallback is
     yielded as its own reference at `<path>.default`: it is a declared
     reference naming a distinct model, enumerated because the field is still
     in the schema even though Flow does not currently bind it (issue #778,
@@ -312,7 +315,17 @@ def _model_and_role_refs(
 ) -> Iterator[SpecModelRef]:
     yield from _model_refs(model, f"{path}.model")
     for role, value in (default_none(model_roles) or {}).items():
-        yield from _model_refs(value, f"{path}.model_roles[{role!r}]", role)
+        role_path = f"{path}.model_roles[{role!r}]"
+        # A list value binds one role to several models (majority-vote
+        # grading), so one role maps to several refs, one per element at an
+        # indexed path — reporting the list as a single unenumerable ref would
+        # make list-bound roles loadable but unauthorizable for hosts that
+        # reject the unenumerable.
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            for index, element in enumerate(value):
+                yield from _model_refs(element, f"{role_path}[{index}]", role)
+        else:
+            yield from _model_refs(value, role_path, role)
 
 
 def _model_refs(

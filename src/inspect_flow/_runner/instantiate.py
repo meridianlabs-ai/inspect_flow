@@ -15,7 +15,7 @@ from inspect_ai._util.registry import (
     registry_lookup,
 )
 from inspect_ai.agent import Agent
-from inspect_ai.model import Model, get_model
+from inspect_ai.model import Model, ModelRoles, get_model
 from inspect_ai.model._model import init_active_model, resolve_models
 from inspect_ai.scorer import Scorer
 from inspect_ai.scorer._scorer import ScorerSpec
@@ -45,7 +45,6 @@ from inspect_flow._util.list_util import sequence_to_list
 from inspect_flow._util.not_given import default, default_none, is_set
 from inspect_flow._util.pydantic_util import callable_name
 
-ModelRoles: TypeAlias = dict[str, str | Model]
 SingleSolver: TypeAlias = Solver | Agent | list[Solver]
 TaskSpec: TypeAlias = str | FlowTask | Task
 
@@ -273,12 +272,19 @@ def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     )
 
 
+def _create_role_model(task: FlowTask, model: str | FlowModel | Model) -> str | Model:
+    if isinstance(model, FlowModel):
+        return _create_model(task=task, model=model)
+    return model
+
+
 def _create_model_roles(task: FlowTask, model_roles: ModelRolesConfig) -> ModelRoles:
-    roles = {}
-    for role, model in model_roles.items():
-        if isinstance(model, FlowModel):
-            model = _create_model(task=task, model=model)
-        roles[role] = model
+    roles: dict[str, str | Model | list[str | Model]] = {}
+    for role, value in model_roles.items():
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            roles[role] = [_create_role_model(task, m) for m in value]
+        else:
+            roles[role] = _create_role_model(task, value)
     return roles
 
 

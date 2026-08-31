@@ -1,4 +1,4 @@
-from typing import Any, Sequence, TypeAlias, TypeVar
+from typing import Any, Sequence, TypeVar
 
 from inspect_ai import Task
 from inspect_ai.agent import Agent
@@ -18,8 +18,6 @@ from inspect_flow._types.flow_types import (
     NotGiven,
     not_given,
 )
-
-ModelRoles: TypeAlias = dict[str, str | Model]
 
 _T = TypeVar("_T", bound=BaseModel)
 
@@ -98,14 +96,23 @@ def _apply_model_defaults(
     return _merge_defaults(model, defaults.model, defaults.model_prefix)
 
 
+def _apply_role_model_defaults(
+    model: str | FlowModel | Model, spec: FlowSpec
+) -> str | FlowModel | Model:
+    if isinstance(model, FlowModel):
+        return _apply_model_defaults(model=model, spec=spec)
+    return model
+
+
 def _apply_model_roles_defaults(
     model_roles: ModelRolesConfig, spec: FlowSpec
 ) -> ModelRolesConfig:
-    roles = {}
-    for role, model in model_roles.items():
-        if isinstance(model, FlowModel):
-            model = _apply_model_defaults(model=model, spec=spec)
-        roles[role] = model
+    roles: dict[str, str | FlowModel | Model | list[str | FlowModel | Model]] = {}
+    for role, value in model_roles.items():
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            roles[role] = [_apply_role_model_defaults(m, spec) for m in value]
+        else:
+            roles[role] = _apply_role_model_defaults(value, spec)
     return roles
 
 

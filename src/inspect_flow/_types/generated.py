@@ -189,8 +189,12 @@ class FlowTaskDict(TypedDict, closed=True):
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[GenerateConfig | NotGiven]
     """Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`."""
-    model_roles: NotRequired[Mapping[str, FlowModel | str | Model] | NotGiven | None]
-    """Named roles for use in `get_model()`."""
+    model_roles: NotRequired[
+        Mapping[str, FlowModel | str | Model | Sequence[FlowModel | str | Model]]
+        | NotGiven
+        | None
+    ]
+    """Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`."""
     sandbox: NotRequired[
         str | tuple[str, str] | SandboxEnvironmentSpec | NotGiven | None
     ]
@@ -263,9 +267,14 @@ class FlowTaskMatrixDict(TypedDict, closed=True):
     config: NotRequired[Sequence[GenerateConfig | NotGiven] | None]
     """Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`."""
     model_roles: NotRequired[
-        Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None
+        Sequence[
+            Mapping[str, FlowModel | str | Model | Sequence[FlowModel | str | Model]]
+            | NotGiven
+            | None
+        ]
+        | None
     ]
-    """Named roles for use in `get_model()`."""
+    """Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`."""
     message_limit: NotRequired[Sequence[int | NotGiven | None] | None]
     """Limit on total messages used for each sample."""
     token_limit: NotRequired[Sequence[int | str | TokenLimit | NotGiven | None] | None]

@@ -317,6 +317,26 @@ def test_moonshot_provider_adds_openai_dependency() -> None:
     ]
 
 
+def test_auto_dependency_list_valued_model_role() -> None:
+    # a list-valued role binds several models to one role; every element's
+    # provider package must be collected
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="inspect_evals/task_name",
+                model_roles={
+                    "grader": ["groq/model-a", FlowModel(name="google/gemini-1")]
+                },
+            )
+        ]
+    )
+    assert collect_auto_dependencies(spec) == [
+        _get_pip_string_with_version("google-genai"),
+        _get_pip_string_with_version("groq"),
+        "inspect_evals",
+    ]
+
+
 def test_no_auto_dependency() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:
