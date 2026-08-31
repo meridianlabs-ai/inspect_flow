@@ -1129,6 +1129,19 @@ def test_scan_default_scans_errors_on_mixed_dirs(tmp_path: Path) -> None:
         scan([log1, log2], scanners=[])
 
 
+def test_scan_rejects_list_valued_model_role(tmp_path: Path) -> None:
+    """A model role mapping to a list of models is not supported by scan."""
+    from unittest.mock import patch
+
+    from inspect_flow._steps.scan import scan
+
+    log = read_eval_log(_make_log(tmp_path))
+
+    with patch("inspect_flow._steps.scan.scout_scan"):
+        with pytest.raises(PrerequisiteError, match="list of models"):
+            scan([log], scanners=[], model_role=("grader=mockllm/a,mockllm/b",))
+
+
 def test_scan_writes_scout_project_file(tmp_path: Path) -> None:
     """`scan` writes a scout.yaml in the parent of the scans dir with
     `transcripts` set to the log dir and `scans` set to the scans dir."""

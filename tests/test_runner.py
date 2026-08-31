@@ -261,6 +261,22 @@ class TestUniqueTaskNames:
         assert "mockllm/model-b" in result.names[1][1].plain
         assert result.model_only is True
 
+    def test_same_name_different_list_valued_model_roles(self) -> None:
+        model = get_model("mockllm/model-a")
+        t1 = task_with(
+            _make_task("t", model=model),
+            model_roles={"grader": ["mockllm/a", "mockllm/b"]},
+        )
+        t2 = task_with(
+            _make_task("t", model=model),
+            model_roles={"grader": ["mockllm/a", "mockllm/c"]},
+        )
+        task_infos = [task_log_to_task_info(TaskLogInfo(task=t)) for t in (t1, t2)]
+        assert task_infos[0].model_roles == {"grader": "mockllm/a,mockllm/b"}
+        result = unique_task_names(task_infos)
+        assert "grader=mockllm/a,mockllm/b" in result.names[0][1].plain
+        assert "grader=mockllm/a,mockllm/c" in result.names[1][1].plain
+
     def test_same_name_same_model_different_args(self) -> None:
         model = get_model("mockllm/model-a")
         t1 = _make_task("t", model=model)
