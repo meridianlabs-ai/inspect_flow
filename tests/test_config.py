@@ -7,8 +7,11 @@ from botocore.client import BaseClient
 from inspect_ai._util.logger import LogHandlerVar
 from inspect_ai.model import CachePolicy, GenerateConfig
 from inspect_ai.util import (
+    ArchiveSnapshots,
     CheckpointConfig,
     Manual,
+    ResticSnapshots,
+    SandboxSnapshotConfig,
     TimeInterval,
     TokenInterval,
     TurnInterval,
@@ -801,6 +804,16 @@ def test_checkpoint_roundtrip() -> None:
         CheckpointConfig(trigger=TimeInterval(every=timedelta(microseconds=10))),
         CheckpointConfig(trigger=Manual()),
         CheckpointConfig(max_consecutive_failures=2),
+        CheckpointConfig(
+            trigger=Manual(),
+            sandbox_paths={
+                "default": ["/home/user"],
+                "archived": SandboxSnapshotConfig(
+                    paths=["/etc"], strategy=ArchiveSnapshots()
+                ),
+                "restic": SandboxSnapshotConfig(strategy=ResticSnapshots()),
+            },
+        ),
         True,
         False,
     ]

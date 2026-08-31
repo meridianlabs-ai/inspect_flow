@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
+from inspect_ai.log import HeadlineMetric
 from inspect_ai.model import (
     BatchConfig,
     CachePolicy,
@@ -182,6 +183,8 @@ class FlowTaskDict(TypedDict, closed=True):
         | None
     ]
     """Scorer or list of scorers used to evaluate model output."""
+    headline_metric: NotRequired[HeadlineMetric | str | NotGiven | None]
+    """Which score/metric best summarises this task (e.g. for a leaderboard or log listing). A `str` names the scorer, as `"<scorer>"` or `"<scorer>.<score>"` to address one value of a scorer returning a dict of scores. Pass a `HeadlineMetric` to also name the `metric` or `reducer`. Unset fields resolve by convention, so `HeadlineMetric(metric="accuracy")` takes that metric from the first score reporting it; the default is the first metric of the first score."""
     model: NotRequired[str | FlowModel | Model | NotGiven | None]
     """Default model for task (Optional, defaults to eval model)."""
     config: NotRequired[GenerateConfig | NotGiven]
@@ -327,7 +330,7 @@ class GenerateConfigDict(TypedDict):
     max_tool_output: NotRequired[int | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Literal["auto"] | bool | None]
-    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic and Bedrock Converse (Claude and Nova) only."""
     fallback_models: NotRequired[Sequence[str] | None]
     """Fallback models tried in order when the model's safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode)."""
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
@@ -402,7 +405,7 @@ class GenerateConfigMatrixDict(TypedDict):
     max_tool_output: NotRequired[Sequence[int | None] | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
-    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic and Bedrock Converse (Claude and Nova) only."""
     verbosity: NotRequired[Sequence[Literal["low", "medium", "high"] | None] | None]
     """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
     effort: NotRequired[

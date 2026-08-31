@@ -18,7 +18,7 @@ from inspect_ai._util.file import (
     local_path,
 )
 from inspect_ai.log import EvalLog
-from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig
+from inspect_ai.model import BatchConfig, CachePolicy, GenerateConfig, Model
 from inspect_scout import (
     ScanJob,
     ScanJobConfig,
@@ -216,7 +216,16 @@ def scan(
     parsed_model_args = (
         parse_cli_config(m, model_config) if (m or model_config) else None
     )
-    parsed_model_roles = parse_model_role_cli_args(model_role) if model_role else None
+    parsed_model_roles: dict[str, str | Model] | None = None
+    if model_role:
+        parsed_model_roles = {}
+        for role, value in parse_model_role_cli_args(model_role).items():
+            if not isinstance(value, (str, Model)):
+                raise PrerequisiteError(
+                    f"Model role '{role}' maps to a list of models, which is not "
+                    "supported by scan."
+                )
+            parsed_model_roles[role] = value
 
     cache_config: bool | CachePolicy | None
     if isinstance(cache, str):

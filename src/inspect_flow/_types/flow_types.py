@@ -25,7 +25,7 @@ from inspect_ai import ScannerConfig, Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.log import EvalLog
+from inspect_ai.log import EvalLog, HeadlineMetric
 from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
@@ -36,6 +36,7 @@ from inspect_ai.util import (
     EarlyStopping,
     Manual,
     SandboxEnvironmentType,
+    SandboxSnapshotConfig,
     TimeInterval,
     TokenInterval,
     TokenLimit,
@@ -161,6 +162,19 @@ def _serialize_checkpoint_trigger(trigger: CheckpointTrigger) -> str | dict[str,
             raise AssertionError(f"Unsupported checkpoint trigger: {trigger!r}")
 
 
+def _serialize_sandbox_snapshot(value: list[str] | SandboxSnapshotConfig) -> Any:
+    if isinstance(value, SandboxSnapshotConfig):
+        # emit _SandboxSnapshotModel's form: strategy is a literal name, not the
+        # strategy dataclass (which would not validate on the round-trip)
+        snapshot: dict[str, Any] = {}
+        if value.paths is not None:
+            snapshot["paths"] = value.paths
+        if value.strategy is not None:
+            snapshot["strategy"] = value.strategy.name
+        return snapshot
+    return value
+
+
 def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:
     if isinstance(value, bool):
         return value
@@ -169,6 +183,11 @@ def _serialize_checkpoint(value: CheckpointConfig | bool) -> Any:
         for f in dataclass_fields(value)
         if f.name != "trigger" and (v := getattr(value, f.name)) is not None
     }
+    if value.sandbox_paths is not None:
+        data["sandbox_paths"] = {
+            sandbox: _serialize_sandbox_snapshot(snapshot)
+            for sandbox, snapshot in value.sandbox_paths.items()
+        }
     if value.trigger is not None:
         data["trigger"] = _serialize_checkpoint_trigger(value.trigger)
     return data
@@ -515,6 +534,11 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Scorer or list of scorers used to evaluate model output.",
     )
 
+    headline_metric: HeadlineMetric | str | None | NotGiven = Field(
+        default=not_given,
+        description='Which score/metric best summarises this task (e.g. for a leaderboard or log listing). A `str` names the scorer, as `"<scorer>"` or `"<scorer>.<score>"` to address one value of a scorer returning a dict of scores. Pass a `HeadlineMetric` to also name the `metric` or `reducer`. Unset fields resolve by convention, so `HeadlineMetric(metric="accuracy")` takes that metric from the first score reporting it; the default is the first metric of the first score.',
+    )
+
     model: str | FlowModel | Model | None | NotGiven = Field(
         default=not_given,
         description="Default model for task (Optional, defaults to eval model).",
@@ -671,6 +695,11 @@ class FlowOptions(FlowBase):
     sandbox_cleanup: bool | None | NotGiven = Field(
         default=not_given,
         description="Cleanup sandbox environments after task completes (defaults to `True`).",
+    )
+
+    sandbox_prebuilt: bool | None | NotGiven = Field(
+        default=not_given,
+        description="Treat sandbox images as prebuilt, skipping builds and failing at task startup when an image is missing (defaults to `False`).",
     )
 
     checkpoint: FlowCheckpoint | None | NotGiven = Field(
