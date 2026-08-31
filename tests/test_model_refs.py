@@ -468,8 +468,10 @@ def test_none_scanner_role_is_unenumerable_but_none_model_is_absence() -> None:
 
 
 def test_scanner_model_roles_non_str_shape_is_unenumerable() -> None:
-    # Role values go through resolve_model_roles (get_model on the whole value),
-    # which accepts neither lists nor comma strings.
+    # Unlike task roles, a list at a scanner role stays a single unenumerable
+    # ref rather than enumerating per element: scanner role values are forwarded
+    # to scout's scan(), which rejects lists (see the design doc's scanner
+    # section), so naming the elements would claim models that cannot run.
     spec = FlowSpec.model_validate(
         {
             "tasks": [],
@@ -479,6 +481,7 @@ def test_scanner_model_roles_non_str_shape_is_unenumerable() -> None:
         }
     )
     assert _refs(spec) == [("options.scanner.model_roles['grader']", None, "grader")]
+    assert all(r.unenumerable for r in iter_model_refs(spec))
 
 
 def test_scanner_as_file_path_is_unenumerable() -> None:
