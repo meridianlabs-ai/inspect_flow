@@ -250,8 +250,12 @@ jobs:
                the issue that no flow changes were needed.
 
             7. Best-effort repo defaults: assign ransomr to the issue and the
-               PR, and add both to the Atlas project board if you have access
-               (skip gracefully if not permitted).
+               PR, and add the ISSUE (only — never the PR) to the Atlas
+               project board if you have access (skip gracefully if not
+               permitted). The board's model is track-the-issue, link-the-PR:
+               the PR reaches the board through its Fixes ref / Development
+               link on the issue's card, and a separate PR card is an
+               untracked duplicate nothing reconciles.
 
             Open exactly one issue and one PR, no more. If you cannot complete
             the task, comment on issue #766 describing what blocked you,
