@@ -6,6 +6,7 @@ import pytest
 from botocore.client import BaseClient
 from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
+from inspect_ai.log import HeadlineMetric
 from inspect_ai.model import Model, get_model
 from inspect_ai.util import CheckpointConfig, TokenInterval
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -133,6 +134,7 @@ def test_task_limits_and_flags() -> None:
                 token_limit="1M",
                 score_on_error=True,
                 checkpoint=checkpoint,
+                headline_metric="accuracy_scorer",
             ),
         ]
     )
@@ -144,6 +146,7 @@ def test_task_limits_and_flags() -> None:
     assert task.token_limit == 1_000_000
     assert task.score_on_error is True
     assert task.checkpoint == checkpoint
+    assert task.headline_metric == HeadlineMetric(scorer="accuracy_scorer")
 
 
 def test_file_not_found() -> None:

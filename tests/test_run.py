@@ -1103,6 +1103,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             score_display=False,
             score_on_error=True,
             max_dataset_memory=128,
+            sandbox_prebuilt=True,
             checkpoint=True,
             acp_server=8080,
             ctl_server="keep-alive",
@@ -1159,6 +1160,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["score_display"] == spec.options.score_display
     assert call_args.kwargs["score_on_error"] == spec.options.score_on_error
     assert call_args.kwargs["max_dataset_memory"] == spec.options.max_dataset_memory
+    assert call_args.kwargs["sandbox_prebuilt"] == spec.options.sandbox_prebuilt
     assert call_args.kwargs["checkpoint"] == spec.options.checkpoint
     assert call_args.kwargs["acp_server"] == spec.options.acp_server
     assert call_args.kwargs["ctl_server"] == spec.options.ctl_server

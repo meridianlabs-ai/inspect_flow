@@ -439,6 +439,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             # cleanup= Not Supported
             scorer=scorer,
             # metrics= Not Supported
+            headline_metric=ng(flow_task.headline_metric),
             model=model,
             config=ng(flow_task.config),
             model_roles=model_roles,

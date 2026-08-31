@@ -185,6 +185,7 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
             # task_args= FlowTask
             sandbox=default_none(options.sandbox),
             sandbox_cleanup=default_none(options.sandbox_cleanup),
+            sandbox_prebuilt=default_none(options.sandbox_prebuilt),
             checkpoint=default_none(options.checkpoint),
             acp_server=default_none(options.acp_server),
             ctl_server=default_none(options.ctl_server),

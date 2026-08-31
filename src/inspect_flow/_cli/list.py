@@ -140,7 +140,10 @@ def _read_headers(
 
 def _eval_log_to_task_info(header: EvalLog) -> TaskInfo:
     model_roles = (
-        {k: v.model for k, v in header.eval.model_roles.items()}
+        {
+            k: v.model if not isinstance(v, list) else ",".join(m.model for m in v)
+            for k, v in header.eval.model_roles.items()
+        }
         if header.eval.model_roles
         else None
     )

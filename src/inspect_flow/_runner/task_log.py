@@ -74,7 +74,10 @@ def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
         model=str(task.model) if task.model else None,
         args=flow_args if isinstance(flow_args, dict) else None,
         model_roles=(
-            {k: str(v) for k, v in task.model_roles.items()}
+            {
+                k: ",".join(str(m) for m in v) if isinstance(v, list) else str(v)
+                for k, v in task.model_roles.items()
+            }
             if task.model_roles
             else None
         ),
