@@ -65,6 +65,7 @@ headline the release notes:
 | --- | --- |
 | `feat:` | a user-facing feature — bumps the minor version |
 | `fix:` | a user-facing bug fix — bumps the patch version |
+| `feat!:` / `BREAKING CHANGE:` footer | bumps the minor version (pre-1.0 policy) and is called out in the release notes |
 | `perf:`, `revert:` | appear in the release notes (no bump on their own) |
 | `docs:`, `refactor:`, `chore:`, `build:`, `ci:`, `test:`, `style:` | hidden from the release notes |
 
