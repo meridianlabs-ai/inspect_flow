@@ -54,7 +54,8 @@
           "section": "Styles",
           "hidden": true
         }
-      ]
+      ],
+      "bump-minor-pre-major": true
     }
   }
 }
