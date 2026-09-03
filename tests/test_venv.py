@@ -9,8 +9,17 @@ from unittest.mock import patch
 
 import pytest
 from botocore.client import BaseClient
+from inspect_ai import ScannerConfig
+from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
-from inspect_flow import FlowDependencies, FlowModel, FlowSolver, FlowSpec, FlowTask
+from inspect_flow import (
+    FlowDependencies,
+    FlowModel,
+    FlowOptions,
+    FlowSolver,
+    FlowSpec,
+    FlowTask,
+)
 from inspect_flow._display.run_action import RunAction
 from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import (
@@ -334,6 +343,88 @@ def test_auto_dependency_list_valued_model_role() -> None:
         _get_pip_string_with_version("google-genai"),
         _get_pip_string_with_version("groq"),
         "inspect_evals",
+    ]
+
+
+def test_779_auto_dependency_inline_scanner_models() -> None:
+    # options.scanner runs inside the venv, so its model and role providers
+    # must be installed alongside the task providers
+    spec = FlowSpec(
+        tasks=[FlowTask(name="inspect_evals/task_name", model="openai/gpt-4o")],
+        options=FlowOptions(
+            scanner=ScannerConfig(
+                scanners=["scanner_name"],
+                model="google/gemini-2.5-pro",
+                model_roles={"grader": "groq/model-a"},
+            )
+        ),
+    )
+    assert collect_auto_dependencies(spec) == [
+        _get_pip_string_with_version("google-genai"),
+        _get_pip_string_with_version("groq"),
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
+    ]
+
+
+def test_779_auto_dependency_flow_model_default() -> None:
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="inspect_evals/task_name",
+                model=FlowModel(name="openai/gpt-4o", default="anthropic/claude-x"),
+            )
+        ]
+    )
+    assert collect_auto_dependencies(spec) == [
+        _get_pip_string_with_version("anthropic"),
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
+    ]
+
+
+def test_779_flow_model_string_factory_is_the_model_id() -> None:
+    # a string factory is passed to get_model(model=...) and wins over name
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="inspect_evals/task_name",
+                model=FlowModel(name="anthropic/claude-x", factory="openai/gpt-4o"),
+            )
+        ]
+    )
+    assert collect_auto_dependencies(spec) == [
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
+    ]
+
+
+def test_779_fallback_models_do_not_add_providers() -> None:
+    # fallback_models are provider-native ids; a slash in one is part of the
+    # id (e.g. an OpenRouter model), not an inspect provider prefix
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="inspect_evals/task_name",
+                model="openai/gpt-4o",
+                config=GenerateConfig(fallback_models=["meta-llama/llama-3"]),
+            )
+        ]
+    )
+    assert collect_auto_dependencies(spec) == [
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
+    ]
+
+
+def test_779_scanner_file_path_adds_nothing() -> None:
+    spec = FlowSpec(
+        tasks=[FlowTask(name="inspect_evals/task_name", model="openai/gpt-4o")],
+        options=FlowOptions(scanner="scanner.yaml"),
+    )
+    assert collect_auto_dependencies(spec) == [
+        "inspect_evals",
+        _get_pip_string_with_version("openai"),
     ]
 
 
