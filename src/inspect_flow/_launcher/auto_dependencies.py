@@ -9,24 +9,22 @@ from inspect_ai._util.registry import (
     registry_package_name,
 )
 from inspect_ai.agent import Agent
-from inspect_ai.model import Model
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import SandboxEnvironmentType
 from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from packaging.utils import canonicalize_name
 
+from inspect_flow._config.model_refs import iter_model_refs
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
-    FlowModel,
     FlowScorer,
     FlowSolver,
     FlowSpec,
     FlowTask,
     NotGiven,
 )
-from inspect_flow._util.list_util import is_sequence
 
 logger = getLogger(__name__)
 
@@ -66,6 +64,10 @@ def collect_auto_dependencies(
 
     for task in spec.tasks or []:
         _collect_task_dependencies(task, result)
+    for ref in iter_model_refs(spec):
+        # fallback_models are provider-native ids, so they name no provider
+        if ref.name and ref.kind != "fallback":
+            _collect_model_dependencies(ref.name, result)
 
     # An explicit pin must win over the auto-detected host version of the same
     # package, so drop any package the user named directly. Its version
@@ -98,15 +100,6 @@ def _collect_task_dependencies(
     _collect_sandbox_dependencies(task.sandbox, dependencies)
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
-    if task.model:
-        _collect_model_dependencies(task.model, dependencies)
-    if task.model_roles:
-        for model_role in task.model_roles.values():
-            if is_sequence(model_role):
-                for model in model_role:
-                    _collect_model_dependencies(model, dependencies)
-            else:
-                _collect_model_dependencies(model_role, dependencies)
     if not task.model and not task.model_roles:
         _collect_env_model_dependencies(dependencies)
 
@@ -129,15 +122,7 @@ def _collect_name_dependencies(
         dependencies.add(split[0])
 
 
-def _collect_model_dependencies(
-    model: str | FlowModel | Model | None, dependencies: set[str]
-) -> None:
-    assert not isinstance(model, Model), (
-        "validate_portable_spec should have ensured no Model instances"
-    )
-    name = model.name if isinstance(model, FlowModel) else model
-    if not name:
-        return
+def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
         dependencies.update(_MODEL_PROVIDERS.get(split[0], [split[0]]))
