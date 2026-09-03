@@ -687,8 +687,11 @@ def test_load_rejects_removed_model_default(tmp_path: Path) -> None:
     )
     with pytest.raises(FlowHandledError) as e:
         load_spec(str(config))
-    assert isinstance(e.value.__cause__, ValidationError)
-    assert "Extra inputs are not permitted" in str(e.value.__cause__)
+    cause = e.value.__cause__
+    assert isinstance(cause, ValidationError)
+    assert ("extra_forbidden", ("FlowModel", "default")) in [
+        (err["type"], err["loc"][-2:]) for err in cause.errors()
+    ]
 
 
 def test_load_no_spec() -> None:
