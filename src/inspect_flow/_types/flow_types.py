@@ -246,12 +246,7 @@ class FlowModel(FlowBase):
 
     role: str | None | NotGiven = Field(
         default=not_given,
-        description="Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified.",
-    )
-
-    default: str | None | NotGiven = Field(
-        default=not_given,
-        description="Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).",
+        description="Optional named role for model (e.g. for roles specified at the task or eval level).",
     )
 
     config: GenerateConfig | None | NotGiven = Field(

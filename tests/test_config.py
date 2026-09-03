@@ -674,6 +674,23 @@ def test_load_invalid() -> None:
     assert isinstance(e.value.__cause__, ValidationError)
 
 
+def test_load_rejects_removed_model_default(tmp_path: Path) -> None:
+    # FlowModel.default never took effect and was removed (#778); FlowBase
+    # forbids extra fields, so a spec still declaring it fails validation.
+    config = tmp_path / "flow.yml"
+    config.write_text(
+        "tasks:\n"
+        "  - name: t\n"
+        "    model:\n"
+        "      name: openai/gpt-4o\n"
+        "      default: openai/gpt-4o-mini\n"
+    )
+    with pytest.raises(FlowHandledError) as e:
+        load_spec(str(config))
+    assert isinstance(e.value.__cause__, ValidationError)
+    assert "Extra inputs are not permitted" in str(e.value.__cause__)
+
+
 def test_load_no_spec() -> None:
     config_path = str(Path(config_dir) / "dirty_repo_flow.py")
     with pytest.raises(ValueError):

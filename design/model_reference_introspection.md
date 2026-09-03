@@ -11,23 +11,18 @@ Platforms like METR's Hawk need the set of models a `FlowSpec` **declares**. Not
 Those declarations are spread across the spec:
 
 - a `FlowTask`'s `model` and `model_roles`;
-- a `FlowModel`'s `name` and its `default` fallback;
 - `defaults.model` and `defaults.model_prefix`;
 - the `defaults.task` / `defaults.task_prefix` templates (each a `FlowTask` with its own `model` / `model_roles`);
 - `options.scanner.model` and `options.scanner.model_roles` (the scanner runs a model too); and
 - every `GenerateConfig.fallback_models` entry — note these are provider-native ids with no `provider/` prefix, so a host cannot compare them against the qualified names it authorizes without normalizing first.
 
-Reproducing that walk outside Flow fails in a specific way. It is not that hosts are careless — it is that a hand-written port is correct against the schema it was written for, and silently becomes incomplete as that schema grows. Hawk's integration carries a private port (`_iter_model_refs` + `_model_ref_to_names` + `_iter_flow_models` in `hawk/core/flow_config.py`): an early version missed `model_roles`, so grader models skipped every check; a later pass found `FlowModel.default` missing too; and `fallback_models` was never walked at all. `options.scanner` is the purest case — added in 0.11.0, after the version Hawk pins, so its port has no way to know the site exists. Nothing on the host's side detects any of this.
+Reproducing that walk outside Flow fails in a specific way. It is not that hosts are careless — it is that a hand-written port is correct against the schema it was written for, and silently becomes incomplete as that schema grows. Hawk's integration carries a private port (`_iter_model_refs` + `_model_ref_to_names` + `_iter_flow_models` in `hawk/core/flow_config.py`): an early version missed `model_roles`, so grader models skipped every check; a later pass found `FlowModel.default` (since removed in #778) missing too; and `fallback_models` was never walked at all. `options.scanner` is the purest case — added in 0.11.0, after the version Hawk pins, so its port has no way to know the site exists. Nothing on the host's side detects any of this.
 
 A miss is not an authorization bypass, for the reason above; it costs a deferred, harder-to-diagnose failure and a less precise log ACL. Neither justifies treating this as a security boundary, and treating it as one leads to chasing an unbounded set of ways a model can reach the runner (see Scope below).
 
-## The `.default` fallback
+## The former `.default` fallback
 
-`FlowModel.default` is a fully-qualified model name (e.g. `"openai/gpt-4o"`) that Flow passes to `get_model(default=...)`, documented as the fallback used when the named model or role is not found. A single `FlowModel` can therefore *declare* two different models — its `name` and its `default` — so the two are surfaced as distinct references and a host applies identical policy to each.
-
-Note that `default` does not currently take effect: a `FlowModel` with a `default` and no `name` raises `ValueError: Model name is required`, and when `name` is set Inspect resolves `default` only if `model is None`, which Flow never passes (issue #778). It is enumerated anyway, because the field is still in the schema and still user-facing: a spec can set it, so a host enumerating declared model references should see it. Over-counting a declared reference is the safe direction, and an enumeration API should not encode a bug as an omission.
-
-The likely resolution of #778 is to **remove** the field rather than make it work. When that lands, this handling retires with it — drop the `<path>.default` ref, the `"default"` variant of `kind`, and this section. Deliberately not done ahead of time: the field exists today, the snapshot test pins it, and a walk that skipped a live schema field would be under-reporting.
+`FlowModel.default` was documented as the fallback used when the named model or role was not found, but Flow always passed a name to `get_model`, so Inspect never read it. It was removed in #778. While it existed, this API enumerated it as its own `kind="default"` ref at `<path>.default`; that ref and `kind` variant retired with the field.
 
 ## Design
 
@@ -60,8 +55,6 @@ Reporting `name` while a `factory` decides the real model would let a caller dec
 
 Note `FlowModel` is the odd one out here: on every other Flow type a string `factory` is a *registry reference*, but `_create_model` passes it to `get_model(model=...)`, and inspect has no model-factory registry (only `modelapi` providers) — so for a model it is the model id, and anything not shaped `provider/model` raises. A factory-derived name is therefore genuinely enumerable. `from_factory` reports one anyway, so a host with its own no-factories policy can act on it without re-deriving this rule.
 
-A `FlowModel`'s `default` is *not* folded into its `name`; it is emitted as its own `SpecModelRef` at `<path>.default` so a host counts it without special-casing.
-
 ## Coverage
 
 One reusable model+roles walker applied to every task at `tasks[i]` (whether a `FlowTask` or an already-instantiated `Task`, whose `model` / `model_roles` resolve to live `Model`s that must still be counted). `defaults.task` / `task_prefix` templates and `defaults.model` / `model_prefix` need no walker of their own: they are merged into the tasks before iteration.
@@ -84,19 +77,17 @@ An unrecognized shape yields an unenumerable ref instead. That includes a comma-
 
 **`unenumerable`, not `name is None`, is the signal for "I cannot name this".** `name` is `None` for two unrelated reasons: a model binds but cannot be named (an unreadable site, or a callable `factory`), or the reference declares no model at all — post-merge that means a task-level `FlowModel` with neither `name` nor `factory`, a misconfigured spec that instantiation rejects ("Model name is required") rather than running anything. Only the first is something a host must refuse; `unenumerable` separates the two, and keeps the factory-precedence rule inside this API instead of pushing it back onto every caller. (Before iteration moved to the merged spec, the nameless case was also produced by perfectly ordinary `defaults.model` field templates, which is what made this distinction load-bearing; merging now dissolves those before the walk.)
 
-For every `FlowModel` encountered above with a set `default`, an additional `SpecModelRef` is emitted at `<path>.default` (`ref` is the fallback name string), inheriting the same `role`.
-
 Generation-config fallbacks:
 
 - every `GenerateConfig.fallback_models[i]` entry, at `<config>.fallback_models[i]`, inheriting the owning model's `role`.
 
-`GenerateConfig.fallback_models` names real models that handle requests after a classifier refusal, so — like `FlowModel.default` — each is a distinct model that runs and must be counted. Config is walked wherever it appears post-merge: `FlowTask` and live `Task` `config`, `FlowModel` and live `Model` `config` (at every model site above), and `options.scanner.generate_config`; `defaults.config` merges into each task's config before iteration. Note `apply_defaults` also hoists the default model's own config into the task config, so a fallback declared on `FlowModel.config` is reported at both merged locations — same name, two paths — and a fallback on a *callable-factory* model surfaces only at the task path, which is the one place it genuinely still applies (the model-level config is dead there, but the hoisted task-level copy governs generation).
+`GenerateConfig.fallback_models` names real models that handle requests after a classifier refusal, so each is a distinct model that runs and must be counted. Config is walked wherever it appears post-merge: `FlowTask` and live `Task` `config`, `FlowModel` and live `Model` `config` (at every model site above), and `options.scanner.generate_config`; `defaults.config` merges into each task's config before iteration. Note `apply_defaults` also hoists the default model's own config into the task config, so a fallback declared on `FlowModel.config` is reported at both merged locations — same name, two paths — and a fallback on a *callable-factory* model surfaces only at the task path, which is the one place it genuinely still applies (the model-level config is dead there, but the hoisted task-level copy governs generation).
 
 `GenerateConfig`-typed fields reload from a YAML/JSON wire spec as `GenerateConfig`, but `ScannerConfig.generate_config` is typed `Any` and survives the round-trip as a plain mapping. The walk therefore reads `fallback_models` from either a `GenerateConfig` or a mapping, so a scanner's fallback models are counted on the serialized path (the one a remote host actually submits) as well as in-process.
 
 ### How Hawk collapses onto this
 
-- `flow_model_names(spec)` → `{r.name for r in iter_model_refs(spec) if r.name and r.kind != "fallback"}` (the `.default` refs supply the fallback names; `kind == "fallback"` entries are provider-native ids in a different namespace, so they are filtered out rather than authorized as Inspect references);
+- `flow_model_names(spec)` → `{r.name for r in iter_model_refs(spec) if r.name and r.kind != "fallback"}` (`kind == "fallback"` entries are provider-native ids in a different namespace, so they are filtered out rather than authorized as Inspect references);
 - `enforce_model_guardrails(spec)` → iterate the refs whose `ref` is a `FlowModel`;
 - `options.scanner` models are now covered for free, closing a gap the private port had — for *enumeration*. Not for api-key scrubbing: a scanner model site yields a `str` or `Model`, never a `FlowModel`, so `ScannerConfig.model_args` (the same back door Hawk closes on `FlowModel.model_args`) still needs its own check.
 - List-valued task roles relax two invariants a host might have assumed: one path no longer maps to at most one model within a role (elements are indexed under the same `model_roles[role]` prefix), and one role no longer maps to one ref (each element carries the same `role`). Set-of-names collapsing — `{r.name for r in refs}`, what `flow_model_names` computes — is unaffected.

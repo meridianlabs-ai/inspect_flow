@@ -367,22 +367,6 @@ def test_779_auto_dependency_inline_scanner_models() -> None:
     ]
 
 
-def test_779_auto_dependency_flow_model_default() -> None:
-    spec = FlowSpec(
-        tasks=[
-            FlowTask(
-                name="inspect_evals/task_name",
-                model=FlowModel(name="openai/gpt-4o", default="anthropic/claude-x"),
-            )
-        ]
-    )
-    assert collect_auto_dependencies(spec) == [
-        _get_pip_string_with_version("anthropic"),
-        "inspect_evals",
-        _get_pip_string_with_version("openai"),
-    ]
-
-
 def test_779_flow_model_string_factory_is_the_model_id() -> None:
     # a string factory is passed to get_model(model=...) and wins over name
     spec = FlowSpec(

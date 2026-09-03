@@ -97,9 +97,7 @@ class FlowModelDict(TypedDict, closed=True):
     factory: NotRequired[FlowFactoryModel | str | NotGiven | None]
     """Factory function to create the model instance."""
     role: NotRequired[str | NotGiven | None]
-    """Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn't been externally specified."""
-    default: NotRequired[str | NotGiven | None]
-    """Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`)."""
+    """Optional named role for model (e.g. for roles specified at the task or eval level)."""
     config: NotRequired[GenerateConfig | NotGiven | None]
     """Model generation config. Highest precedence: overrides `config` on `FlowTask` and `defaults.config`."""
     base_url: NotRequired[str | NotGiven | None]
