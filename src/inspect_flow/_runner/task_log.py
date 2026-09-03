@@ -161,7 +161,8 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         _simple_attr("working_limit"),
         _simple_attr("cost_limit"),
         # GenerateConfig fields included in task_identifier
-        # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
+        # (all except max_connections, batch, timeout, attempt_timeout,
+        # stream_idle_timeout, max_retries)
         _config("temperature"),
         _config("top_p"),
         _config("max_tokens"),
