@@ -14,7 +14,7 @@ from inspect_flow._types.flow_types import (
     NotGiven,
 )
 from inspect_flow._util.list_util import is_sequence
-from inspect_flow._util.not_given import default_none, is_set
+from inspect_flow._util.not_given import default_none
 
 
 # Not `frozen=True`: that generates a `__hash__`, and `ref` may be a mutable
@@ -51,14 +51,13 @@ class SpecModelRef:
     says it "does not apply to model roles"), so no role participates at that
     layer — the task's `model_roles` models generate with it too."""
 
-    kind: Literal["model", "default", "fallback"] = "model"
+    kind: Literal["model", "fallback"] = "model"
     """Which kind of reference this is, and hence which namespace `name` is in.
 
-    `"model"` and `"default"` (a `FlowModel.default`) are Inspect
-    `provider/model` references. `"fallback"` is a `GenerateConfig.fallback_models`
-    entry, which is a provider-native id with no provider prefix. A host
-    comparing or authorizing names across both must branch on this rather than
-    parse `path`."""
+    `"model"` is an Inspect `provider/model` reference. `"fallback"` is a
+    `GenerateConfig.fallback_models` entry, which is a provider-native id with
+    no provider prefix. A host comparing or authorizing names across both must
+    branch on this rather than parse `path`."""
 
     @property
     def name(self) -> str | None:
@@ -165,14 +164,9 @@ def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
     `Task`), and `options.scanner`. A list-valued task role (one role bound to
     several models) yields one ref per element, at an indexed path
     (`tasks[0].model_roles['grader'][0]`), each carrying the role — so a role
-    may map to several refs. A `FlowModel`'s `default` fallback is
-    yielded as its own reference at `<path>.default`: it is a declared
-    reference naming a distinct model, enumerated because the field is still
-    in the schema even though Flow does not currently bind it (issue #778,
-    which will likely remove the field — this handling retires with it).
-    Likewise every `GenerateConfig.fallback_models` entry (on a task, model,
-    or scanner) is yielded at `<config>.fallback_models[i]`, because those
-    models handle requests after a classifier refusal.
+    may map to several refs. Every `GenerateConfig.fallback_models` entry (on
+    a task, model, or scanner) is yielded at `<config>.fallback_models[i]`,
+    because those models handle requests after a classifier refusal.
 
     Nothing is instantiated, installed, or read from disk — which is why a
     spec whose `includes` have not been expanded is rejected: includes
@@ -340,11 +334,11 @@ def _model_refs(
         yield SpecModelRef(path, None, role)
         return
     # A callable `factory` returns the Model itself, so `_create_model` returns
-    # before `get_model`, and this FlowModel's `default` and `role` are never
-    # applied — reporting them would name models (or bind roles) that cannot
-    # run. Its `config` is different: `apply_defaults` hoists it into the
-    # task-level config, which does govern generation, so its fallbacks are
-    # reported there by the task walk rather than at this dead model path.
+    # before `get_model`, and this FlowModel's `role` is never applied —
+    # reporting it would bind a role that cannot run. Its `config` is
+    # different: `apply_defaults` hoists it into the task-level config, which
+    # does govern generation, so its fallbacks are reported there by the task
+    # walk rather than at this dead model path.
     built_by_callable = isinstance(ref, FlowModel) and callable(_effective_factory(ref))
     if role is None and not isinstance(ref, str) and not built_by_callable:
         # A model outside model_roles can still bind a role: FlowModel.role is
@@ -354,8 +348,6 @@ def _model_refs(
     yield SpecModelRef(path, ref, role)
     if built_by_callable:
         return
-    if isinstance(ref, FlowModel) and is_set(ref.default):
-        yield SpecModelRef(f"{path}.default", ref.default, role, "default")
     if not isinstance(ref, str):
         yield from _fallback_model_refs(ref.config, f"{path}.config", role)
 

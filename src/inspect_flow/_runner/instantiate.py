@@ -263,7 +263,6 @@ def _create_model(task: FlowTask, model: FlowModel | Model) -> Model:
     return get_model(
         model=result.name,
         role=default_none(model.role),
-        default=default_none(model.default),
         config=model.config or GenerateConfig(),
         base_url=default_none(model.base_url),
         api_key=default_none(model.api_key),
