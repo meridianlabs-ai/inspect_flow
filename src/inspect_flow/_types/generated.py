@@ -296,6 +296,8 @@ class GenerateConfigDict(TypedDict):
     """Timeout (in seconds) for an entire request (including retries)."""
     attempt_timeout: NotRequired[int | None]
     """Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries)."""
+    stream_idle_timeout: NotRequired[int | None]
+    """Timeout (in seconds) on silence within a streaming response — if a streaming attempt delivers no chunk for this long, the attempt is abandoned and retried according to max_retries. Setting it requests streaming (like on_stream); it has no effect on calls that do not stream."""
     max_connections: NotRequired[int | None]
     """Maximum number of concurrent connections to Model API (default is model specific)."""
     adaptive_connections: NotRequired[bool | int | AdaptiveConcurrency | None]

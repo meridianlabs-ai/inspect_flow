@@ -160,8 +160,9 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         _simple_attr("time_limit"),
         _simple_attr("working_limit"),
         _simple_attr("cost_limit"),
-        # GenerateConfig fields included in task_identifier
-        # (all except max_connections, batch, timeout, attempt_timeout, max_retries)
+        # Subset of GenerateConfig fields that affect task_identifier; see
+        # GENERATE_CONFIG_FIELDS_TO_EXCLUDE in inspect_ai._eval.evalset for
+        # the fields inspect excludes
         _config("temperature"),
         _config("top_p"),
         _config("max_tokens"),
@@ -180,7 +181,6 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
             lambda info: getattr(info.config, "system_message", None),
             lambda v: "system_message=...",
         ),
-        _config("cache_prompt"),
         _config("reasoning_effort"),
         _config("reasoning_tokens"),
         _config("effort"),
