@@ -351,7 +351,7 @@ class GenerateConfigDict(TypedDict):
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_mode: NotRequired[Literal["standard", "pro"] | None]
-    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only ("standard" is the default)."""
+    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6 models only ("standard" is the default; GPT-6 does not support "pro")."""
     reasoning_tokens: NotRequired[int | None]
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
@@ -429,7 +429,7 @@ class GenerateConfigMatrixDict(TypedDict):
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_mode: NotRequired[Sequence[Literal["standard", "pro"] | None] | None]
-    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only ("standard" is the default)."""
+    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6 models only ("standard" is the default; GPT-6 does not support "pro")."""
     reasoning_tokens: NotRequired[Sequence[int | None] | None]
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
