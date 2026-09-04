@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.13.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.12.0...v0.13.0) (2026-09-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* `FlowModel.default` is removed. A config that declares `default` under a model now fails validation at load; delete the key, it never had any effect. `SpecModelRef.kind` no longer includes `"default"`.
+
+### Features
+
+* add headline_metric and sandbox_prebuilt, reconcile with inspect-ai 0.3.261 ([#804](https://github.com/meridianlabs-ai/inspect_flow/issues/804)) ([3169439](https://github.com/meridianlabs-ai/inspect_flow/commit/3169439eb3e2b81a49159d757a481b59f7d61ce3))
+* support list-valued model roles in FlowTask.model_roles ([#808](https://github.com/meridianlabs-ai/inspect_flow/issues/808)) ([e471403](https://github.com/meridianlabs-ai/inspect_flow/commit/e47140374db14b9e644405b950816b488270741d))
+
+
+### Bug Fixes
+
+* detect venv providers from every declared model reference ([#779](https://github.com/meridianlabs-ai/inspect_flow/issues/779)) ([#809](https://github.com/meridianlabs-ai/inspect_flow/issues/809)) ([9560e61](https://github.com/meridianlabs-ai/inspect_flow/commit/9560e6188606c9fb8c08d61a2efe63f5fada53a9))
+* remove non-functional FlowModel.default field ([#778](https://github.com/meridianlabs-ai/inspect_flow/issues/778)) ([#810](https://github.com/meridianlabs-ai/inspect_flow/issues/810)) ([1207a4a](https://github.com/meridianlabs-ai/inspect_flow/commit/1207a4a995df661a251df072cf6fac15d923f478))
+
 ## [0.12.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.11.0...v0.12.0) (2026-08-04)
 
 
