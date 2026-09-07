@@ -76,6 +76,7 @@ def test_task_with_get_model(mock_eval_set: MagicMock) -> None:
     assert isinstance(tasks_arg[0], Task)
     # verify default values
     assert call_args.kwargs["retry_on_error"] == 3
+    assert call_args.kwargs["incomplete_action"] == "retry"
     assert call_args.kwargs["max_tasks"] == 10
 
 
@@ -1126,6 +1127,8 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             continue_on_fail=True,
             retry_on_error=5,
             debug_errors=True,
+            incomplete_action="error",
+            incomplete_max=0.25,
             model_cost_config="mock_cost_config",
             max_samples=20,
             max_tasks=15,
@@ -1183,6 +1186,8 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["continue_on_fail"] == spec.options.continue_on_fail
     assert call_args.kwargs["retry_on_error"] == spec.options.retry_on_error
     assert call_args.kwargs["debug_errors"] == spec.options.debug_errors
+    assert call_args.kwargs["incomplete_action"] == spec.options.incomplete_action
+    assert call_args.kwargs["incomplete_max"] == spec.options.incomplete_max
     assert call_args.kwargs["model_cost_config"] == spec.options.model_cost_config
     assert call_args.kwargs["max_samples"] == spec.options.max_samples
     assert call_args.kwargs["max_tasks"] == spec.options.max_tasks
