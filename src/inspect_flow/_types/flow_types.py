@@ -25,7 +25,7 @@ from inspect_ai import ScannerConfig, Task
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
-from inspect_ai.log import EvalLog, HeadlineMetric
+from inspect_ai.log import EvalLog, HeadlineMetric, IncompleteAction
 from inspect_ai.model import GenerateConfig, Model, ModelCost
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
@@ -805,6 +805,16 @@ class FlowOptions(FlowBase):
     debug_errors: bool | None | NotGiven = Field(
         default=not_given,
         description="Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).",
+    )
+
+    incomplete_action: IncompleteAction | None | NotGiven = Field(
+        default=not_given,
+        description='Disposition applied when recovering a crashed log from a previous execution, for samples that were in progress at crash. `"retry"` (default) re-runs them; `"error"` resolves them as operator terminations — if that leaves every expected sample final, the recovered log finalizes as `status="success"`, the task classifies as complete, and nothing re-runs.',
+    )
+
+    incomplete_max: int | float | None | NotGiven = Field(
+        default=not_given,
+        description='Safety threshold for `incomplete_action="error"` (count if >= 1, or proportion of expected samples if strictly less than 1, so `1.0` means one sample, not 100%): when more than this many samples are in progress, fall back to the default recover-and-retry behavior. Has no effect (a warning is logged) with `incomplete_action="retry"`.',
     )
 
     model_cost_config: str | dict[str, ModelCost] | None | NotGiven = Field(

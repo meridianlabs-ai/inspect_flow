@@ -14,7 +14,7 @@ dependencies = [
     "click>=8.2.1",
     "dateparser>=1.2.0",
     "deltalake>=0.18.0",
-    "inspect-ai>=0.3.261",
+    "inspect-ai>=0.3.262",
     "inspect-scout>=0.4.41",
     "packaging>=21.0",
     "pyarrow>=17.0.0",
@@ -96,7 +96,7 @@ default-groups = ["dev"]
 # API surface, advanced by .github/workflows/inspect-update.yml. Independent of
 # the `inspect-ai>=` dependency floor, which is only raised when a release
 # would completely break flow on older versions.
-inspect-reconciled-version = "0.3.261"
+inspect-reconciled-version = "0.3.263"
 
 [tool.pyright]
 include = ["src", "tests", "examples"]

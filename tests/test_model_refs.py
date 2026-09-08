@@ -1044,6 +1044,8 @@ def test_spec_fields_are_classified_for_models() -> None:
         "embed_viewer",
         "eval_set_id",
         "fail_on_error",
+        "incomplete_action",
+        "incomplete_max",
         "limit",
         "log_buffer",
         "log_dir_allow_dirty",
