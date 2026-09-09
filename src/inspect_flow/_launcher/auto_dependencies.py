@@ -1,4 +1,5 @@
 import os
+from functools import cache
 from importlib.metadata import packages_distributions
 from logging import getLogger
 from typing import Any, Callable, Collection, Sequence
@@ -73,13 +74,14 @@ def collect_auto_dependencies(
     spec: FlowSpec, exclude_packages: Collection[str] = ()
 ) -> list[str]:
     result = set()
+    distribution_map = cache(packages_distributions)
 
     for task in spec.tasks or []:
-        _collect_task_dependencies(task, result)
+        _collect_task_dependencies(task, result, distribution_map)
     for ref in iter_model_refs(spec):
         # fallback_models are provider-native ids, so they name no provider
         if ref.name and ref.kind != "fallback":
-            _collect_model_dependencies(ref.name, result)
+            _collect_model_dependencies(ref.name, result, distribution_map)
 
     # An explicit pin must win over the auto-detected host version of the same
     # package, so drop any package the user named directly. Its version
@@ -97,13 +99,15 @@ def collect_auto_dependencies(
 
 
 def _collect_task_dependencies(
-    task: Task | FlowTask | str, dependencies: set[str]
+    task: Task | FlowTask | str,
+    dependencies: set[str],
+    distribution_map: Callable[[], dict[str, list[str]]],
 ) -> None:
     assert not isinstance(task, Task), (
         "validate_portable_spec should have ensured no Task instances"
     )
     if isinstance(task, str):
-        _collect_env_model_dependencies(dependencies)
+        _collect_env_model_dependencies(dependencies, distribution_map)
         return _collect_name_dependencies(task, dependencies)
 
     _collect_name_dependencies(_effective_name(task.name, task.factory), dependencies)
@@ -113,14 +117,15 @@ def _collect_task_dependencies(
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
     if not task.model and not task.model_roles:
-        _collect_env_model_dependencies(dependencies)
+        _collect_env_model_dependencies(dependencies, distribution_map)
 
 
 def _collect_env_model_dependencies(
     dependencies: set[str],
+    distribution_map: Callable[[], dict[str, list[str]]],
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
-        _collect_model_dependencies(env_model, dependencies)
+        _collect_model_dependencies(env_model, dependencies, distribution_map)
 
 
 def _effective_name(
@@ -147,7 +152,11 @@ def _collect_name_dependencies(
         dependencies.add(split[0])
 
 
-def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
+def _collect_model_dependencies(
+    name: str,
+    dependencies: set[str],
+    distribution_map: Callable[[], dict[str, list[str]]],
+) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
         provider = split[0]
@@ -157,9 +166,12 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
             )
         )
         if entries:
-            package = registry_package_name(registry_info(entries[0]).name)
+            entry = entries[0]
+            package = registry_package_name(registry_info(entry).name)
+            if not package:
+                package = entry.__module__.split(".", maxsplit=1)[0]
             if package and package != "inspect_ai":
-                distributions = packages_distributions().get(package, [])
+                distributions = distribution_map().get(package, [])
                 if len(distributions) == 1:
                     dependencies.add(distributions[0])
                     return

@@ -1,9 +1,14 @@
+import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+from collections.abc import Generator
 from functools import partial
+from importlib import import_module
+from importlib.metadata import packages_distributions
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -18,7 +23,7 @@ from inspect_ai._util.registry import (
     registry_find,
     registry_info,
 )
-from inspect_ai.model import GenerateConfig
+from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowDependencies,
@@ -410,36 +415,93 @@ def test_818_registered_model_provider_dependencies(
     assert collect_auto_dependencies(spec) == [expected]
 
 
-@pytest.mark.parametrize("provider_name", ["acme-models", "custom-acme"])
-@pytest.mark.parametrize("editable", [False, True])
-def test_824_model_provider_distribution(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    provider_name: str,
-    editable: bool,
-) -> None:
-    dist_info = tmp_path / "acme_models-1.0.dist-info"
-    dist_info.mkdir()
+@pytest.fixture
+def acme_distribution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Generator[Path, None, None]:
+    site_packages = tmp_path / "site-packages"
+    dist_info = site_packages / "acme_models-1.0.dist-info"
+    dist_info.mkdir(parents=True)
     (dist_info / "METADATA").write_text(
         "Metadata-Version: 2.1\nName: acme-models\nVersion: 1.0\n"
     )
     (dist_info / "top_level.txt").write_text("acme\n")
-    expected = "acme-models==1.0"
-    if editable:
-        (dist_info / "direct_url.json").write_text(
-            '{"url": "file:///local/acme-models", "dir_info": {"editable": true}}'
-        )
-        expected = "-e /local/acme-models"
-    monkeypatch.syspath_prepend(str(tmp_path))
+    shutil.copytree(
+        Path(__file__).parent / "model_providers" / "acme", site_packages / "acme"
+    )
+    monkeypatch.syspath_prepend(str(site_packages))
+    yield dist_info
+    for name in ("acme.installed", "acme.editable", "acme"):
+        sys.modules.pop(name, None)
 
-    def provider() -> None:
-        pass
 
-    registry_add(provider, RegistryInfo(type="modelapi", name=f"acme/{provider_name}"))
+@pytest.mark.parametrize("provider_name", ["acme-models", "custom-acme"])
+def test_824_model_provider_distribution(
+    acme_distribution: Path, provider_name: str
+) -> None:
+    import_module("acme.installed")
     spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
 
-    assert collect_auto_dependencies(spec) == [expected]
+    assert get_model(f"{provider_name}/example").name == "example"
+    assert collect_auto_dependencies(spec) == ["acme-models==1.0"]
     assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
+
+
+def test_824_editable_model_provider_distribution(
+    acme_distribution: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = tmp_path / "acme-models"
+    project.mkdir()
+    shutil.move(str(acme_distribution.parent / "acme"), str(project / "acme"))
+    monkeypatch.syspath_prepend(str(project))
+    (acme_distribution / "direct_url.json").write_text(
+        json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
+    )
+    # Inspect checks editable metadata using the import name, so differing
+    # distribution names can leave a resolvable provider without a namespace.
+    import_module("acme.editable")
+    assert get_model("editable-acme/example").name == "example"
+    spec = FlowSpec(tasks=[FlowTask(model="editable-acme/example")])
+
+    assert collect_auto_dependencies(spec) == [f"-e {project}"]
+    assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
+
+
+def test_824_model_distribution_map_reused_per_collection(
+    acme_distribution: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import_module("acme.installed")
+    monkeypatch.setenv("INSPECT_EVAL_MODEL", "custom-acme/default")
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                model=f"acme-models/example-{i}",
+                model_roles={"grader": f"custom-acme/grader-{i}"},
+            )
+            for i in range(100)
+        ]
+        + [FlowTask() for _ in range(100)]
+    )
+    with patch(
+        "inspect_flow._launcher.auto_dependencies.packages_distributions",
+        wraps=packages_distributions,
+    ) as distribution_map:
+        assert collect_auto_dependencies(spec) == ["acme-models==1.0"]
+        assert distribution_map.call_count == 1
+
+        (acme_distribution / "top_level.txt").write_text("other_namespace\n")
+        assert collect_auto_dependencies(spec) == ["acme-models==1.0", "custom-acme"]
+        assert distribution_map.call_count == 2
+
+
+def test_824_builtin_models_do_not_scan_distributions() -> None:
+    spec = FlowSpec(tasks=[FlowTask(model="openai/example")])
+    with patch(
+        "inspect_flow._launcher.auto_dependencies.packages_distributions",
+        wraps=packages_distributions,
+    ) as distribution_map:
+        assert collect_auto_dependencies(spec) == [get_pip_string("openai")]
+        distribution_map.assert_not_called()
 
 
 def test_824_model_provider_ambiguous_distribution(
