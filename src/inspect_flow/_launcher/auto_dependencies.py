@@ -54,6 +54,14 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     "transformer_lens": ["transformer_lens"],
     "hf-inference-providers": ["openai"],
     "mockllm": [],
+    "openai-api": ["openai"],
+    "openai-api-completions": ["openai"],
+    # Starts a local vllm server when no endpoint is configured, like "vllm"
+    "vllm-completions": ["vllm"],
+    "deepseek": ["openai"],
+    "sagemaker": ["openai"],  # boto3/aioboto3 ship with inspect-ai
+    "nnterp": ["nnterp"],
+    "none": [],
 }
 
 
