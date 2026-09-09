@@ -1,11 +1,37 @@
 # Copy to .github/workflows/claude-review.yml in any Meridian repo to add the
-# read-only reviewer. Auto-reviews PRs when they open and on demand via an
-# @review comment. Independent of the dev agent (claude.yml) — different
-# trigger, different (lower) permissions.
+# read-only reviewer. Auto-reviews PRs when they open (drafts are skipped
+# until marked ready for review; release-please PRs are skipped too, gated in
+# the reusable workflow) and on demand via an @review comment.
+# Independent of the dev agent (claude.yml) — different trigger, different
+# (lower) permissions.
+#
+# Caveat: auto-review-on-open (the pull_request trigger) only fires where this
+# file exists in the PR's merge ref (base or head branch) — GitHub resolves
+# pull_request-family workflows from the PR's branches, not the default
+# branch; a PR that adds or edits the file fires from its own copy, which the
+# token exchange's workflow validation then stops. On a pristine-base
+# mirror like the inspect_ai fork, PRs target a base that lacks this workflow,
+# so pull_request never fires; only the @review comment path works there, and
+# auto-review is instead driven by the dev agent posting @review on PR open.
+#
+# Caveat: PRs from forks are skipped by auto-review. GitHub issues no OIDC
+# token and only a read-only GITHUB_TOKEN to pull_request runs from forks, so
+# the job — which requests id-token: write for WIF auth — fails at startup;
+# the same-repo gate below is an ergonomic skip, not the security boundary.
+# A maintainer can still review a fork PR with an @review comment, the same
+# trust decision made explicitly — the reusable's trig check enforces it
+# (fork-head @review requires a commenter with write access, checked before
+# checkout).
 
 name: Review
 
 on:
+  # pull_request (NOT pull_request_target — attempted 2026-08-26, reverted:
+  # Anthropic's token exchange rejects prt-shaped OIDC subjects, "Invalid
+  # OIDC token"; see design/architecture.md → auto-review tradeoffs).
+  # Consequence: PRs that EDIT the reviewer's own files skip auto-review
+  # (server-side workflow validation) and need a manual top-level @review
+  # comment, which resolves the workflow from the default branch.
   pull_request:
     types: [opened, reopened, ready_for_review]
   issue_comment:
@@ -13,23 +39,54 @@ on:
 
 jobs:
   review:
-    # Run on PR events, or on a PR comment containing @review. `@review` does
-    # not collide with the dev agent's `@claude` trigger.
-    # Skip release-bot PRs (auto-generated changelog/version bumps).
-    # Skip draft PRs (auto-reviewed when marked Ready for review; an explicit
-    # `@review` comment still works on a draft).
+    # Run on PR events (skipping drafts — they get reviewed via
+    # ready_for_review when marked ready — and fork PRs, which get no OIDC
+    # token so the run would die at startup on id-token: write; the
+    # full_name check, not head.repo.fork, keeps same-repo PRs working on
+    # repos that are themselves forks), or on a PR comment containing @review. An explicit
+    # @review still works on a draft, and on a fork PR when the commenter has
+    # write access (see the header). `@review` does not collide with the dev
+    # agent's `@claude` trigger.
+    # The two comment gates exclude the reviewer's own comments: reviewing
+    # files that contain the trigger token makes it routine for the review
+    # summary's prose to mention that token, which passes this cheap
+    # substring gate and spawns a Review run whose newest-wins concurrency
+    # CANCELS the very run that posted the summary, before it posts the
+    # verdict marker; the loop then never engages (observed: agents#36
+    # round 2, 2026-08-31 — a backticked mention; agents#20 round 2,
+    # 2026-08-27 — a bare mention followed by '/'). The reusable's
+    # word-boundary trig gate rejects both shapes, so the spawned run only
+    # ever no-ops — but its concurrency entry does the damage the moment
+    # the job starts, so it must not start at all. Hence two exclusions:
+    # a backticked token (mirrors the word-boundary gate's deliberate
+    # blindness to backticked mentions; deterministic) and the
+    # claude-review-comment marker the reviewer is prompted to stamp on
+    # every top-level comment it posts (covers bare non-word-boundary
+    # mentions like agents#20's; prompt-driven). Cost: a comment carrying
+    # either alongside a genuine bare trigger is wrongly skipped — rare,
+    # recoverable by re-commenting the bare token alone.
     if: >
       (github.event_name == 'pull_request' &&
        github.event.pull_request.draft != true &&
-       github.event.pull_request.user.login != 'meridian-release-bot[bot]') ||
+       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event.issue.pull_request != null &&
-       contains(github.event.comment.body, '@review'))
+       contains(github.event.comment.body, '@review') &&
+       !contains(github.event.comment.body, '`@review`') &&
+       !contains(github.event.comment.body, '<!-- claude-review-comment -->')) ||
+      (github.event.issue.pull_request == null &&
+       contains(github.event.issue.labels.*.name, 'External') &&
+       contains(github.event.comment.body, '@review') &&
+       !contains(github.event.comment.body, '`@review`') &&
+       !contains(github.event.comment.body, '<!-- claude-review-comment -->'))
     uses: meridianlabs-ai/agents/.github/workflows/claude-review.yml@main
     # Machine-account PAT for the deterministic ack/stage steps only (eyes
     # reaction + board stage); never handed to the review agent, which stays
     # read-only. Absent -> those steps no-op.
     secrets:
       MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
+      # codex engine (design/codex-engine.md in the agents repo):
+      # consumed only on items labeled engine:codex; optional.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     permissions:
       contents: read
       pull-requests: write
