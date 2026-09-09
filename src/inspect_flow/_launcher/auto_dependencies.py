@@ -5,6 +5,7 @@ from importlib.machinery import all_suffixes
 from importlib.metadata import distributions
 from inspect import getclosurevars, getmodule, isfunction, unwrap
 from logging import getLogger
+from types import ModuleType
 from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
@@ -83,19 +84,18 @@ def collect_auto_dependencies(
 ) -> list[str]:
     result = set()
     model_distribution = cache(_model_provider_distribution)
+    exclude = {canonicalize_name(p) for p in exclude_packages}
 
     for task in spec.tasks or []:
-        _collect_task_dependencies(task, result, model_distribution)
+        _collect_task_dependencies(task, result, model_distribution, exclude)
     for ref in iter_model_refs(spec):
         # fallback_models are provider-native ids, so they name no provider
         if ref.name and ref.kind != "fallback":
-            _collect_model_dependencies(ref.name, result, model_distribution)
+            _collect_model_dependencies(ref.name, result, model_distribution, exclude)
 
     # An explicit pin must win over the auto-detected host version of the same
     # package, so drop any package the user named directly. Its version
     # requirement (and whatever uv resolves from it) then governs instead.
-    exclude = {canonicalize_name(p) for p in exclude_packages}
-
     # inspect_ai is already included by inspect-flow
     return sorted(
         {
@@ -109,13 +109,14 @@ def collect_auto_dependencies(
 def _collect_task_dependencies(
     task: Task | FlowTask | str,
     dependencies: set[str],
-    model_distribution: Callable[[Callable[..., Any]], str | None],
+    model_distribution: Callable[[Callable[..., Any] | ModuleType], str | None],
+    exclude: Collection[str],
 ) -> None:
     assert not isinstance(task, Task), (
         "validate_portable_spec should have ensured no Task instances"
     )
     if isinstance(task, str):
-        _collect_env_model_dependencies(dependencies, model_distribution)
+        _collect_env_model_dependencies(dependencies, model_distribution, exclude)
         return _collect_name_dependencies(task, dependencies)
 
     _collect_name_dependencies(_effective_name(task.name, task.factory), dependencies)
@@ -125,15 +126,16 @@ def _collect_task_dependencies(
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
     if not task.model and not task.model_roles:
-        _collect_env_model_dependencies(dependencies, model_distribution)
+        _collect_env_model_dependencies(dependencies, model_distribution, exclude)
 
 
 def _collect_env_model_dependencies(
     dependencies: set[str],
-    model_distribution: Callable[[Callable[..., Any]], str | None],
+    model_distribution: Callable[[Callable[..., Any] | ModuleType], str | None],
+    exclude: Collection[str],
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
-        _collect_model_dependencies(env_model, dependencies, model_distribution)
+        _collect_model_dependencies(env_model, dependencies, model_distribution, exclude)
 
 
 def _effective_name(
@@ -163,11 +165,16 @@ def _collect_name_dependencies(
 def _collect_model_dependencies(
     name: str,
     dependencies: set[str],
-    model_distribution: Callable[[Callable[..., Any]], str | None],
+    model_distribution: Callable[[Callable[..., Any] | ModuleType], str | None],
+    exclude: Collection[str],
 ) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
         provider = split[0]
+        # An explicit provider version must resolve its own implementation
+        # dependencies instead of inheriting the host's implementation pin.
+        if canonicalize_name(provider) in exclude:
+            return
         entries = registry_find(
             lambda info: (
                 info.type == "modelapi" and registry_unqualified_name(info) == provider
@@ -176,21 +183,33 @@ def _collect_model_dependencies(
         if entries:
             assert callable(entries[0])
             if distribution := model_distribution(entries[0]):
-                dependencies.add(distribution)
-                # A plugin can register a class defined in another distribution.
+                # A plugin can register a class from another distribution even
+                # when imported from a checkout without distribution metadata.
+                registration = None
                 if canonicalize_name(provider) != canonicalize_name(distribution):
-                    dependencies.update(
-                        dist.metadata["Name"] for dist in distributions(name=provider)
-                    )
+                    module = sys.modules.get(provider.replace("-", "_"))
+                    if module is not None:
+                        registration = model_distribution(module) or provider
+                    elif any(distributions(name=provider)):
+                        registration = provider
+                if registration and canonicalize_name(registration) in exclude:
+                    return
+                dependencies.add(distribution)
+                if registration:
+                    dependencies.add(registration)
                 return
         # Keep the provider-name fallback when distribution ownership is unknown
         # or ambiguous. Built-ins still need the SDK dependencies from the table.
         dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
 
 
-def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
-    entry = _model_provider_object(entry)
-    if entry.__module__.split(".", maxsplit=1)[0] == "inspect_ai":
+def _model_provider_distribution(
+    entry: Callable[..., Any] | ModuleType,
+) -> str | None:
+    if not isinstance(entry, ModuleType):
+        entry = _model_provider_object(entry)
+    module = getmodule(entry)
+    if not module or module.__name__.split(".", maxsplit=1)[0] == "inspect_ai":
         return None
     # Inspect can trust an exact name without a manifest or an editable project
     # root containing the module. Editable ownership needs an actual import path.
@@ -201,7 +220,6 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
 
     # .pth-only editable installs can omit import metadata and use a different
     # distribution name. Their declared import paths can still establish ownership.
-    module = getmodule(entry)
     module_file = getattr(module, "__file__", None)
     if not module_file:
         return None
@@ -214,7 +232,7 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
             continue
         for path in distribution.files or []:
             if path.suffix == ".py" and _editable_finder_matches(
-                entry.__module__, source, str(distribution.locate_file(path))
+                module.__name__, source, str(distribution.locate_file(path))
             ):
                 matches.add(name)
             if path.suffix != ".pth":
@@ -229,7 +247,7 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
                     continue
                 root = str(distribution.locate_file(line))
                 if _module_path_matches(
-                    source, os.path.join(root, *entry.__module__.split("."))
+                    source, os.path.join(root, *module.__name__.split("."))
                 ):
                     matches.add(name)
     return next(iter(matches)) if len(matches) == 1 else None

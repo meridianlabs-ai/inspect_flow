@@ -471,7 +471,8 @@ def test_824_model_provider_distribution(
     assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
 
 
-def test_824_model_provider_registration_distribution(acme_distribution: Path) -> None:
+@pytest.fixture
+def registered_acme_distribution(acme_distribution: Path) -> Path:
     for name in ("acme_core", "registered_acme"):
         dist_info = acme_distribution.parent / f"{name}-1.0.dist-info"
         dist_info.mkdir()
@@ -484,14 +485,105 @@ def test_824_model_provider_registration_distribution(acme_distribution: Path) -
             Path(__file__).parent / "model_providers" / f"{name}.py",
             acme_distribution.parent / f"{name}.py",
         )
+    return acme_distribution.parent / "registered_acme-1.0.dist-info"
+
+
+@pytest.mark.parametrize("registration", ["installed", "source", "implementation"])
+def test_824_model_provider_registration_distribution(
+    registered_acme_distribution: Path, registration: str
+) -> None:
+    expected = ["acme-core==1.0"]
+    if registration == "installed":
+        expected.append("registered-acme==1.0")
+    else:
+        shutil.rmtree(registered_acme_distribution)
+        if registration == "source":
+            expected.append("registered-acme")
+        else:
+            core = registered_acme_distribution.parent / "acme_core-1.0.dist-info"
+            (core / "top_level.txt").write_text("acme_core\nregistered_acme\n")
+            (core / "RECORD").write_text("acme_core.py,,\nregistered_acme.py,,\n")
     import_module("registered_acme")
     spec = FlowSpec(tasks=[FlowTask(model="registered-acme/example")])
 
     assert get_model("registered-acme/example", memoize=False).name == "example"
-    assert collect_auto_dependencies(spec) == ["acme-core==1.0", "registered-acme==1.0"]
-    assert collect_auto_dependencies(spec, exclude_packages=["REGISTERED_Acme"]) == [
+    assert collect_auto_dependencies(spec) == expected
+    assert collect_auto_dependencies(spec, exclude_packages=["REGISTERED_Acme"]) == []
+
+
+@pytest.mark.parametrize("model_source", ["model", "role", "env", "string_task"])
+def test_824_explicit_provider_overrides_host_implementation(
+    registered_acme_distribution: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    model_source: str,
+) -> None:
+    import_module("registered_acme")
+    model = "registered-acme/example"
+    task = FlowTask(name="task_name")
+    if model_source == "model":
+        task.model = model
+    elif model_source == "role":
+        task.model_roles = {"grader": model}
+    else:
+        monkeypatch.setenv("INSPECT_EVAL_MODEL", model)
+    spec = FlowSpec(
+        tasks=[task],
+        dependencies=FlowDependencies(
+            additional_dependencies=["REGISTERED_Acme==2.0"],
+        ),
+    )
+    if model_source == "string_task":
+        spec.tasks = ["task_name"]
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+        _create_venv(
+            spec=spec,
+            base_dir=".",
+            temp_dir=str(tmp_path),
+            env=os.environ.copy(),
+            dry_run=False,
+            action=_test_action,
+        )
+
+    args = mock_run.call_args.args[0]
+    assert args[:4] == ["uv", "pip", "install", "REGISTERED_Acme==2.0"]
+    assert "registered-acme==1.0" not in args
+    assert "acme-core==1.0" not in args
+
+
+def test_824_provider_override_preserves_independent_dependencies(
+    registered_acme_distribution: Path,
+) -> None:
+    import_module("registered_acme")
+    spec = FlowSpec(
+        tasks=[FlowTask(name="acme-core/task", model="registered-acme/example")]
+    )
+
+    assert collect_auto_dependencies(spec, exclude_packages=["registered-acme"]) == [
         "acme-core==1.0"
     ]
+    assert collect_auto_dependencies(spec, exclude_packages=["acme-core"]) == [
+        "registered-acme==1.0"
+    ]
+
+
+def test_824_registration_distribution_override(
+    registered_acme_distribution: Path,
+) -> None:
+    renamed = registered_acme_distribution.with_name("registered_plugin-1.0.dist-info")
+    registered_acme_distribution.rename(renamed)
+    (renamed / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: registered-plugin\nVersion: 1.0\n"
+    )
+    import_module("registered_acme")
+    spec = FlowSpec(tasks=[FlowTask(model="registered-acme/example")])
+
+    assert collect_auto_dependencies(spec) == ["acme-core==1.0", "registered-plugin==1.0"]
+    assert collect_auto_dependencies(spec, exclude_packages=["REGISTERED_Plugin"]) == []
 
 
 @pytest.mark.parametrize(
