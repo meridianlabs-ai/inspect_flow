@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi providers
 import pytest
 from botocore.client import BaseClient
 from inspect_ai import ScannerConfig
+from inspect_ai._util.registry import registry_find, registry_info
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
@@ -21,7 +23,10 @@ from inspect_flow import (
     FlowTask,
 )
 from inspect_flow._display.run_action import RunAction
-from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
+from inspect_flow._launcher.auto_dependencies import (
+    _MODEL_PROVIDERS,
+    collect_auto_dependencies,
+)
 from inspect_flow._launcher.freeze import (
     _deduplicate_freeze_requirements,
     write_flow_requirements,
@@ -324,6 +329,42 @@ def test_moonshot_provider_adds_openai_dependency() -> None:
         "inspect_evals",
         _get_pip_string_with_version("openai"),
     ]
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("openai-api/xai/grok-4-0709", ["openai"]),
+        ("openai-api-completions/xai/grok-4-0709", ["openai"]),
+        ("deepseek/deepseek-chat", ["openai"]),
+        ("sagemaker/my-endpoint", ["openai"]),
+        ("vllm-completions/meta-llama/Llama-3.1-8B", ["vllm"]),
+        ("nnterp/gpt2", ["nnterp"]),
+        ("none/none", []),
+    ],
+)
+def test_819_builtin_provider_dependencies(model: str, expected: list[str]) -> None:
+    # Built-in providers with no table entry fell through to "the prefix is the
+    # PyPI package", requiring nonexistent or unrelated distributions.
+    spec = FlowSpec(tasks=[FlowTask(name="inspect_evals/task_name", model=model)])
+    assert collect_auto_dependencies(spec) == [
+        "inspect_evals",
+        *[_get_pip_string_with_version(dep) for dep in expected],
+    ]
+
+
+def test_819_model_providers_cover_inspect_ai_registry() -> None:
+    # Every built-in @modelapi provider must have a table entry so a new
+    # provider cannot silently fall through to the "prefix is a PyPI package"
+    # guess. Legacy aliases like "cf" may remain in the table.
+    entries = registry_find(lambda info: info.type == "modelapi")
+    builtin = {
+        registry_info(e).name.removeprefix("inspect_ai/")
+        for e in entries
+        if registry_info(e).name.startswith("inspect_ai/")
+    }
+    assert builtin
+    assert builtin <= _MODEL_PROVIDERS.keys()
 
 
 def test_auto_dependency_list_valued_model_role() -> None:
