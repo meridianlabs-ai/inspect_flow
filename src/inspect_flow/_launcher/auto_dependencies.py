@@ -168,6 +168,7 @@ def _collect_model_dependencies(
             )
         )
         if entries:
+            assert callable(entries[0])
             package = _model_provider_package(entries[0])
             if package and package != "inspect_ai":
                 distributions = distribution_map().get(package, [])

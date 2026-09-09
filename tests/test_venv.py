@@ -499,7 +499,8 @@ def test_824_editable_model_provider_distribution(
         == []
     )
     assert editable.instances == []
-    assert get_model("editable-acme/example").name == "example"
+    # Each parameter imports a fresh provider class, so bypass cached models.
+    assert get_model("editable-acme/example", memoize=False).name == "example"
     assert len(editable.instances) == 1
 
 
