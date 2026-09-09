@@ -1,6 +1,6 @@
 import os
 from logging import getLogger
-from typing import Collection, Sequence
+from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.registry import (
@@ -19,6 +19,7 @@ from inspect_flow._config.model_refs import iter_model_refs
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
+    FlowFactory,
     FlowScorer,
     FlowSolver,
     FlowSpec,
@@ -94,7 +95,7 @@ def _collect_task_dependencies(
         _collect_env_model_dependencies(dependencies)
         return _collect_name_dependencies(task, dependencies)
 
-    _collect_name_dependencies(task.name, dependencies)
+    _collect_name_dependencies(_effective_ref(task.name, task.factory), dependencies)
     _collect_maybe_sequence_dependencies(task.scorer, dependencies)
     _collect_maybe_sequence_dependencies(task.solver, dependencies)
     _collect_sandbox_dependencies(task.sandbox, dependencies)
@@ -109,6 +110,21 @@ def _collect_env_model_dependencies(
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
         _collect_model_dependencies(env_model, dependencies)
+
+
+def _effective_ref(
+    name: str | None | NotGiven,
+    factory: FlowFactory[Any] | Callable[..., Any] | str | None | NotGiven,
+) -> str | None | NotGiven:
+    # Mirrors _call_factory: a string factory wins over name, and a callable
+    # factory leaves nothing static to install.
+    if isinstance(factory, FlowFactory):
+        factory = factory.factory
+    if isinstance(factory, str):
+        return factory
+    if callable(factory):
+        return None
+    return name
 
 
 def _collect_name_dependencies(
@@ -152,7 +168,9 @@ def _collect_maybe_sequence_dependencies(
     assert isinstance(solver, (FlowSolver, FlowScorer, FlowAgent)), (
         "validate_portable_spec should have ensured no Solver, Scorer, or Agent instances"
     )
-    _collect_name_dependencies(solver.name, dependencies)
+    _collect_name_dependencies(
+        _effective_ref(solver.name, solver.factory), dependencies
+    )
 
 
 def _collect_sandbox_dependencies(

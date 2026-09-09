@@ -14,6 +14,7 @@ from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowDependencies,
+    FlowFactory,
     FlowModel,
     FlowOptions,
     FlowSolver,
@@ -381,6 +382,27 @@ def test_779_flow_model_string_factory_is_the_model_id() -> None:
         "inspect_evals",
         _get_pip_string_with_version("openai"),
     ]
+
+
+def test_820_string_factory_adds_registry_package() -> None:
+    # the runner resolves a string factory before name, so the package it
+    # references must be installed, whether given bare or via FlowFactory
+    for factory in ["inspect_evals/gsm8k", FlowFactory("inspect_evals/gsm8k")]:
+        spec = FlowSpec(
+            tasks=[
+                FlowTask(
+                    name="other_pkg/task_name",
+                    factory=factory,
+                    model="openai/gpt-4o",
+                    solver=FlowSolver(factory="my_solvers/react_plus"),
+                )
+            ]
+        )
+        assert collect_auto_dependencies(spec) == [
+            "inspect_evals",
+            "my_solvers",
+            _get_pip_string_with_version("openai"),
+        ]
 
 
 def test_779_fallback_models_do_not_add_providers() -> None:
