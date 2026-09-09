@@ -12,6 +12,7 @@ from inspect_flow._types.flow_types import (
     FlowSpec,
     FlowTask,
     NotGiven,
+    R,
 )
 from inspect_flow._util.list_util import is_sequence
 from inspect_flow._util.not_given import default_none
@@ -93,10 +94,8 @@ class SpecModelRef:
             return self.ref
         if isinstance(self.ref, Model):
             return str(self.ref)
-        factory = _effective_factory(self.ref)
-        if factory is not None:
-            return factory if isinstance(factory, str) else None
-        return default_none(self.ref.name)
+        ref = effective_ref(self.ref.name, self.ref.factory)
+        return ref if isinstance(ref, str) else None
 
     @property
     def from_factory(self) -> bool:
@@ -110,7 +109,8 @@ class SpecModelRef:
         unwrap `FlowFactory` and re-derive the precedence rule.
         """
         return (
-            isinstance(self.ref, FlowModel) and _effective_factory(self.ref) is not None
+            isinstance(self.ref, FlowModel)
+            and effective_factory(self.ref.factory) is not None
         )
 
     @property
@@ -138,14 +138,25 @@ class SpecModelRef:
         if self.ref is None:
             return True
         if isinstance(self.ref, FlowModel):
-            return callable(_effective_factory(self.ref))
+            return callable(effective_factory(self.ref.factory))
         return False
 
 
-def _effective_factory(model: FlowModel) -> Callable[..., Model] | str | None:
-    """The factory that decides the model, unwrapped from any `FlowFactory`."""
-    factory = default_none(model.factory)
+def effective_factory(
+    factory: FlowFactory[R] | Callable[..., R] | str | None | NotGiven,
+) -> Callable[..., R] | str | None:
+    """The factory that decides the object, unwrapped from any `FlowFactory`."""
+    factory = default_none(factory)
     return factory.factory if isinstance(factory, FlowFactory) else factory
+
+
+def effective_ref(
+    name: str | None | NotGiven,
+    factory: FlowFactory[R] | Callable[..., R] | str | None | NotGiven,
+) -> Callable[..., R] | str | None:
+    """What the runner resolves at this site: the factory if given, else `name`."""
+    factory = effective_factory(factory)
+    return default_none(name) if factory is None else factory
 
 
 def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]:
@@ -339,7 +350,9 @@ def _model_refs(
     # different: `apply_defaults` hoists it into the task-level config, which
     # does govern generation, so its fallbacks are reported there by the task
     # walk rather than at this dead model path.
-    built_by_callable = isinstance(ref, FlowModel) and callable(_effective_factory(ref))
+    built_by_callable = isinstance(ref, FlowModel) and callable(
+        effective_factory(ref.factory)
+    )
     if role is None and not isinstance(ref, str) and not built_by_callable:
         # A model outside model_roles can still bind a role: FlowModel.role is
         # passed to get_model(role=...), and a live Model carries the role it

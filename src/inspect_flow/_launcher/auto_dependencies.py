@@ -15,7 +15,7 @@ from inspect_ai.util import SandboxEnvironmentType
 from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from packaging.utils import canonicalize_name
 
-from inspect_flow._config.model_refs import iter_model_refs
+from inspect_flow._config.model_refs import effective_ref, iter_model_refs
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -26,6 +26,7 @@ from inspect_flow._types.flow_types import (
     FlowTask,
     NotGiven,
 )
+from inspect_flow._util.pydantic_util import callable_name, is_nameable_callable
 
 logger = getLogger(__name__)
 
@@ -95,7 +96,7 @@ def _collect_task_dependencies(
         _collect_env_model_dependencies(dependencies)
         return _collect_name_dependencies(task, dependencies)
 
-    _collect_name_dependencies(_effective_ref(task.name, task.factory), dependencies)
+    _collect_name_dependencies(_effective_name(task.name, task.factory), dependencies)
     _collect_maybe_sequence_dependencies(task.scorer, dependencies)
     _collect_maybe_sequence_dependencies(task.solver, dependencies)
     _collect_sandbox_dependencies(task.sandbox, dependencies)
@@ -112,19 +113,17 @@ def _collect_env_model_dependencies(
         _collect_model_dependencies(env_model, dependencies)
 
 
-def _effective_ref(
+def _effective_name(
     name: str | None | NotGiven,
     factory: FlowFactory[Any] | Callable[..., Any] | str | None | NotGiven,
-) -> str | None | NotGiven:
-    # Mirrors _call_factory: a string factory wins over name, and a callable
-    # factory leaves nothing static to install.
-    if isinstance(factory, FlowFactory):
-        factory = factory.factory
-    if isinstance(factory, str):
-        return factory
-    if callable(factory):
-        return None
-    return name
+) -> str | None:
+    # A registry callable is serialized as its pkg/name and resolved in the
+    # child through the registry, so its package is knowable; no other callable
+    # can be installed statically.
+    ref = effective_ref(name, factory)
+    if callable(ref):
+        return callable_name(ref) if is_nameable_callable(ref) else None
+    return ref
 
 
 def _collect_name_dependencies(
@@ -169,7 +168,7 @@ def _collect_maybe_sequence_dependencies(
         "validate_portable_spec should have ensured no Solver, Scorer, or Agent instances"
     )
     _collect_name_dependencies(
-        _effective_ref(solver.name, solver.factory), dependencies
+        _effective_name(solver.name, solver.factory), dependencies
     )
 
 
