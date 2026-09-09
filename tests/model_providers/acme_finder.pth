@@ -1,0 +1,1 @@
+import acme_finder; acme_finder.install()

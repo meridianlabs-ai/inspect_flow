@@ -1,5 +1,7 @@
 import os
+import sys
 from functools import cache
+from importlib.machinery import all_suffixes
 from importlib.metadata import distributions
 from inspect import getclosurevars, getmodule, isfunction, unwrap
 from logging import getLogger
@@ -175,6 +177,11 @@ def _collect_model_dependencies(
             assert callable(entries[0])
             if distribution := model_distribution(entries[0]):
                 dependencies.add(distribution)
+                # A plugin can register a class defined in another distribution.
+                if canonicalize_name(provider) != canonicalize_name(distribution):
+                    dependencies.update(
+                        dist.metadata["Name"] for dist in distributions(name=provider)
+                    )
                 return
         # Keep the provider-name fallback when distribution ownership is unknown
         # or ambiguous. Built-ins still need the SDK dependencies from the table.
@@ -198,7 +205,7 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
     module_file = getattr(module, "__file__", None)
     if not module_file:
         return None
-    source = os.path.realpath(module_file)
+    source = os.path.normcase(os.path.abspath(module_file))
     matches = set[str]()
     for distribution in distributions():
         name = distribution.metadata["Name"]
@@ -206,20 +213,57 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
         if not (direct_url and direct_url.dir_info and direct_url.dir_info.editable):
             continue
         for path in distribution.files or []:
+            if path.suffix == ".py" and _editable_finder_matches(
+                entry.__module__, source, str(distribution.locate_file(path))
+            ):
+                matches.add(name)
             if path.suffix != ".pth":
                 continue
             try:
                 lines = path.read_text().splitlines()
-            except OSError:
+            except (OSError, UnicodeError):
                 continue
             for line in lines:
                 line = line.rstrip()
                 if not line or line.startswith(("#", "import ", "import\t")):
                     continue
-                root = os.path.realpath(str(distribution.locate_file(line)))
-                if source.startswith(root.rstrip(os.sep) + os.sep):
+                root = str(distribution.locate_file(line))
+                if _module_path_matches(
+                    source, os.path.join(root, *entry.__module__.split("."))
+                ):
                     matches.add(name)
     return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _module_path_matches(source: str, path: str) -> bool:
+    # Keep the import path: strict editables can symlink files outside this tree.
+    return any(
+        source == os.path.normcase(os.path.abspath(candidate + suffix))
+        for candidate in (path, os.path.join(path, "__init__"))
+        for suffix in all_suffixes()
+    )
+
+
+def _editable_finder_matches(module_name: str, source: str, path: str) -> bool:
+    path = os.path.normcase(os.path.abspath(path))
+    for finder in sys.meta_path:
+        module = getmodule(finder)
+        module_file = getattr(module, "__file__", None)
+        if not module_file or os.path.normcase(os.path.abspath(module_file)) != path:
+            continue
+        # Setuptools finders are already installed when the provider is imported;
+        # inspect their mappings without executing their .pth statements again.
+        mapping = getattr(module, "MAPPING", {})
+        if not isinstance(mapping, dict):
+            continue
+        for name, root in mapping.items():
+            if not isinstance(name, str) or not isinstance(root, str):
+                continue
+            if module_name == name or module_name.startswith(name + "."):
+                relative = module_name[len(name) :].split(".")[1:]
+                if _module_path_matches(source, os.path.join(root, *relative)):
+                    return True
+    return False
 
 
 def _model_provider_object(entry: Callable[..., Any]) -> Callable[..., Any]:
