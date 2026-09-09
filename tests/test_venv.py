@@ -12,7 +12,12 @@ import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi 
 import pytest
 from botocore.client import BaseClient
 from inspect_ai import ScannerConfig
-from inspect_ai._util.registry import registry_find, registry_info
+from inspect_ai._util.registry import (
+    RegistryInfo,
+    registry_add,
+    registry_find,
+    registry_info,
+)
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
@@ -371,6 +376,56 @@ def test_819_model_providers_cover_inspect_ai_registry() -> None:
     }
     assert builtin
     assert builtin <= _MODEL_PROVIDERS.keys()
+
+
+@pytest.mark.parametrize(
+    ("info", "model", "expected"),
+    [
+        (
+            RegistryInfo(type="modelapi", name="my_package/custom-provider"),
+            "custom-provider/some-model",
+            "my_package",
+        ),
+        (
+            RegistryInfo(type="modelapi", name="local-provider"),
+            "local-provider/some-model",
+            "local-provider",
+        ),
+        (
+            RegistryInfo(type="task", name="other_package/task-provider"),
+            "task-provider/some-model",
+            "task-provider",
+        ),
+    ],
+)
+def test_818_registered_model_provider_dependencies(
+    info: RegistryInfo, model: str, expected: str
+) -> None:
+    def provider() -> None:
+        pass
+
+    registry_add(provider, info)
+    spec = FlowSpec(tasks=[FlowTask(model=model)])
+
+    assert collect_auto_dependencies(spec) == [expected]
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("cf/some-model", ["openai"]),
+        ("unknown-provider/some-model", ["unknown-provider"]),
+        ("bare-model", []),
+    ],
+)
+def test_818_model_provider_dependency_fallbacks(
+    model: str, expected: list[str]
+) -> None:
+    spec = FlowSpec(tasks=[FlowTask(model=model)])
+
+    assert collect_auto_dependencies(spec) == [
+        get_pip_string(package) for package in expected
+    ]
 
 
 def test_auto_dependency_list_valued_model_role() -> None:

@@ -7,6 +7,7 @@ from inspect_ai._util.registry import (
     registry_find,
     registry_info,
     registry_package_name,
+    registry_unqualified_name,
 )
 from inspect_ai.agent import Agent
 from inspect_ai.scorer import Scorer
@@ -148,7 +149,19 @@ def _collect_name_dependencies(
 def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
-        dependencies.update(_MODEL_PROVIDERS.get(split[0], [split[0]]))
+        provider = split[0]
+        entries = registry_find(
+            lambda info: (
+                info.type == "modelapi" and registry_unqualified_name(info) == provider
+            )
+        )
+        if entries:
+            package = registry_package_name(registry_info(entries[0]).name)
+            if package and package != "inspect_ai":
+                dependencies.add(package)
+                return
+        # Built-in providers still need the SDK dependencies from the table.
+        dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
 
 
 def _collect_maybe_sequence_dependencies(
