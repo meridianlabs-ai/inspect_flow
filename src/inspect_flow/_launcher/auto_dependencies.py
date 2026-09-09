@@ -1,6 +1,6 @@
 import os
 from logging import getLogger
-from typing import Collection, Sequence
+from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.registry import (
@@ -15,16 +15,18 @@ from inspect_ai.util import SandboxEnvironmentType
 from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from packaging.utils import canonicalize_name
 
-from inspect_flow._config.model_refs import iter_model_refs
+from inspect_flow._config.model_refs import effective_ref, iter_model_refs
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
+    FlowFactory,
     FlowScorer,
     FlowSolver,
     FlowSpec,
     FlowTask,
     NotGiven,
 )
+from inspect_flow._util.pydantic_util import callable_name, is_nameable_callable
 
 logger = getLogger(__name__)
 
@@ -102,7 +104,7 @@ def _collect_task_dependencies(
         _collect_env_model_dependencies(dependencies)
         return _collect_name_dependencies(task, dependencies)
 
-    _collect_name_dependencies(task.name, dependencies)
+    _collect_name_dependencies(_effective_name(task.name, task.factory), dependencies)
     _collect_maybe_sequence_dependencies(task.scorer, dependencies)
     _collect_maybe_sequence_dependencies(task.solver, dependencies)
     _collect_sandbox_dependencies(task.sandbox, dependencies)
@@ -117,6 +119,19 @@ def _collect_env_model_dependencies(
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
         _collect_model_dependencies(env_model, dependencies)
+
+
+def _effective_name(
+    name: str | None | NotGiven,
+    factory: FlowFactory[Any] | Callable[..., Any] | str | None | NotGiven,
+) -> str | None:
+    # A registry callable is serialized as its pkg/name and resolved in the
+    # child through the registry, so its package is knowable; no other callable
+    # can be installed statically.
+    ref = effective_ref(name, factory)
+    if callable(ref):
+        return callable_name(ref) if is_nameable_callable(ref) else None
+    return ref
 
 
 def _collect_name_dependencies(
@@ -160,7 +175,9 @@ def _collect_maybe_sequence_dependencies(
     assert isinstance(solver, (FlowSolver, FlowScorer, FlowAgent)), (
         "validate_portable_spec should have ensured no Solver, Scorer, or Agent instances"
     )
-    _collect_name_dependencies(solver.name, dependencies)
+    _collect_name_dependencies(
+        _effective_name(solver.name, solver.factory), dependencies
+    )
 
 
 def _collect_sandbox_dependencies(

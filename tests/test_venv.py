@@ -3,6 +3,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from functools import partial
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -16,6 +17,7 @@ from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowDependencies,
+    FlowFactory,
     FlowModel,
     FlowOptions,
     FlowSolver,
@@ -31,8 +33,12 @@ from inspect_flow._launcher.freeze import (
     _deduplicate_freeze_requirements,
     write_flow_requirements,
 )
-from inspect_flow._launcher.pip_string import _get_pip_string_with_version
+from inspect_flow._launcher.pip_string import (
+    _get_pip_string_with_version,
+    get_pip_string,
+)
 from inspect_flow._launcher.venv import _create_venv, venv_launch
+from local_eval.noop import noop
 from rich.console import Console
 
 _test_action = RunAction("test")
@@ -422,6 +428,58 @@ def test_779_flow_model_string_factory_is_the_model_id() -> None:
         "inspect_evals",
         _get_pip_string_with_version("openai"),
     ]
+
+
+def test_820_string_factory_adds_registry_package() -> None:
+    # the runner resolves a string factory before name, so the package it
+    # references must be installed, whether given bare or via FlowFactory
+    for factory in ["inspect_evals/gsm8k", FlowFactory("inspect_evals/gsm8k")]:
+        spec = FlowSpec(
+            tasks=[
+                FlowTask(
+                    name="other_pkg/task_name",
+                    factory=factory,
+                    model="openai/gpt-4o",
+                    solver=FlowSolver(factory="my_solvers/react_plus"),
+                )
+            ]
+        )
+        assert collect_auto_dependencies(spec) == [
+            "inspect_evals",
+            "my_solvers",
+            _get_pip_string_with_version("openai"),
+        ]
+
+
+def test_820_registry_callable_factory_adds_its_package() -> None:
+    # a registry callable is serialized as its pkg/name and resolved in the
+    # child through the registry, so its package must be installed; name is
+    # never resolved when a callable factory is given
+    for factory in [noop, FlowFactory(noop)]:
+        spec = FlowSpec(
+            tasks=[
+                FlowTask(
+                    name="other_pkg/task_name", factory=factory, model="openai/gpt-4o"
+                )
+            ]
+        )
+        assert collect_auto_dependencies(spec) == [
+            get_pip_string("local_eval"),
+            _get_pip_string_with_version("openai"),
+        ]
+
+
+def test_820_unregistered_callable_factory_adds_nothing() -> None:
+    # a partial has no registry entry (and no __code__), so there is nothing
+    # static to install, and its name is never resolved either
+    spec = FlowSpec(
+        tasks=[
+            FlowTask(
+                name="other_pkg/task_name", factory=partial(noop), model="openai/gpt-4o"
+            )
+        ]
+    )
+    assert collect_auto_dependencies(spec) == [_get_pip_string_with_version("openai")]
 
 
 def test_779_fallback_models_do_not_add_providers() -> None:
