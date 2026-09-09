@@ -384,7 +384,7 @@ def test_819_model_providers_cover_inspect_ai_registry() -> None:
         (
             RegistryInfo(type="modelapi", name="my_package/custom-provider"),
             "custom-provider/some-model",
-            "my_package",
+            "custom-provider",
         ),
         (
             RegistryInfo(type="modelapi", name="local-provider"),
@@ -408,6 +408,59 @@ def test_818_registered_model_provider_dependencies(
     spec = FlowSpec(tasks=[FlowTask(model=model)])
 
     assert collect_auto_dependencies(spec) == [expected]
+
+
+@pytest.mark.parametrize("provider_name", ["acme-models", "custom-acme"])
+@pytest.mark.parametrize("editable", [False, True])
+def test_824_model_provider_distribution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    provider_name: str,
+    editable: bool,
+) -> None:
+    dist_info = tmp_path / "acme_models-1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: acme-models\nVersion: 1.0\n"
+    )
+    (dist_info / "top_level.txt").write_text("acme\n")
+    expected = "acme-models==1.0"
+    if editable:
+        (dist_info / "direct_url.json").write_text(
+            '{"url": "file:///local/acme-models", "dir_info": {"editable": true}}'
+        )
+        expected = "-e /local/acme-models"
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    def provider() -> None:
+        pass
+
+    registry_add(provider, RegistryInfo(type="modelapi", name=f"acme/{provider_name}"))
+    spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
+
+    assert collect_auto_dependencies(spec) == [expected]
+    assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
+
+
+def test_824_model_provider_ambiguous_distribution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for package in ("acme-models", "other-acme"):
+        dist_info = tmp_path / f"{package.replace('-', '_')}-1.0.dist-info"
+        dist_info.mkdir()
+        (dist_info / "METADATA").write_text(
+            f"Metadata-Version: 2.1\nName: {package}\nVersion: 1.0\n"
+        )
+        (dist_info / "top_level.txt").write_text("acme\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    def provider() -> None:
+        pass
+
+    registry_add(provider, RegistryInfo(type="modelapi", name="acme/custom-acme"))
+    spec = FlowSpec(tasks=[FlowTask(model="custom-acme/example")])
+
+    assert collect_auto_dependencies(spec) == ["custom-acme"]
 
 
 @pytest.mark.parametrize(

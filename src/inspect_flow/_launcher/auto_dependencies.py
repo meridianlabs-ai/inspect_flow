@@ -1,4 +1,5 @@
 import os
+from importlib.metadata import packages_distributions
 from logging import getLogger
 from typing import Any, Callable, Collection, Sequence
 
@@ -158,9 +159,12 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
         if entries:
             package = registry_package_name(registry_info(entries[0]).name)
             if package and package != "inspect_ai":
-                dependencies.add(package)
-                return
-        # Built-in providers still need the SDK dependencies from the table.
+                distributions = packages_distributions().get(package, [])
+                if len(distributions) == 1:
+                    dependencies.add(distributions[0])
+                    return
+        # Keep the provider-name fallback when distribution ownership is unknown
+        # or ambiguous. Built-ins still need the SDK dependencies from the table.
         dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
 
 
