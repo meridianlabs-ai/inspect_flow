@@ -7,6 +7,7 @@ from inspect_ai._util.entrypoints import ensure_entry_points
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
+    registry_lookup,
     registry_package_name,
     registry_unqualified_name,
 )
@@ -153,8 +154,6 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
         return
     provider = split[0]
     package = _registered_provider_package(provider)
-    # Built-in providers register under inspect_ai, which is already installed;
-    # the table names the SDKs they actually need.
     if package is None or package == "inspect_ai":
         dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
     else:
@@ -162,6 +161,9 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
 
 
 def _registered_provider_package(provider: str) -> str | None:
+    # Only current built-ins can bypass loading third-party entry points.
+    if registry_lookup("modelapi", f"inspect_ai/{provider}") is not None:
+        return "inspect_ai"
     # get_model matches providers by unqualified name so they can be used from
     # the command line without a package prefix; mirror that here.
     # A provider module loaded by file path registers without a package prefix

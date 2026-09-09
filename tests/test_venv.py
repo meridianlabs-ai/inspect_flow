@@ -374,6 +374,35 @@ def test_819_model_providers_cover_inspect_ai_registry() -> None:
     assert builtin <= _MODEL_PROVIDERS.keys()
 
 
+def test_826_builtin_providers_do_not_load_entry_points() -> None:
+    # Other tests load entry points, so check launcher imports in a fresh process.
+    subprocess.run(
+        [sys.executable, "tests/fixtures/builtin_model_dependencies.py"], check=True
+    )
+
+
+@pytest.mark.parametrize(
+    ("registered_name", "expected_package"),
+    [
+        ("cf_compat/cf", "cf_compat"),
+        ("inspect_ai/future_provider", "future_provider"),
+    ],
+)
+def test_827_registered_provider_dependencies(
+    registered_name: str, expected_package: str
+) -> None:
+    # Keep synthetic registrations out of the registry used by other tests.
+    subprocess.run(
+        [
+            sys.executable,
+            "tests/fixtures/registered_model_dependencies.py",
+            registered_name,
+            expected_package,
+        ],
+        check=True,
+    )
+
+
 def test_818_registered_provider_resolves_to_its_package() -> None:
     # A third-party @modelapi provider is registered under its package, so the
     # registry names the dependency rather than the "prefix is a PyPI package"
