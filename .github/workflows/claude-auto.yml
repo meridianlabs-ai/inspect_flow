@@ -43,15 +43,18 @@ jobs:
       actions: read
     secrets:
       MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
+      # codex engine (design/codex-engine.md in the agents repo):
+      # consumed only on items labeled engine:codex; optional.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
       head_branch: ${{ github.event.workflow_run.head_branch }}
       pr_number: ${{ github.event.workflow_run.pull_requests[0].number }}
       ci_run_id: ${{ github.event.workflow_run.id }}
 
-  # Review -> fix / handoff. Fire only on the reviewer's marked summary comment
-  # on a PR. Cheap gate here (it's a PR, author is the reviewer, body has the
-  # marker); the reusable workflow does the rest (same-repo, `auto` label, round
-  # cap). Adjust the reviewer login if yours differs from claude[bot].
+  # Review -> fix / handoff. The marker is a cheap router (it's forgeable — only
+  # the reviewer posts it in practice); the reusable workflow does the authoritative
+  # gating (comment author == reviewer, same-repo, `auto` label, round cap), so
+  # the security boundary is there, not here.
   review-fix:
     if: >-
       github.event_name == 'issue_comment' &&
@@ -66,6 +69,9 @@ jobs:
       actions: read
     secrets:
       MARVIN_TOKEN: ${{ secrets.MARVIN_TOKEN }}
+      # codex engine (design/codex-engine.md in the agents repo):
+      # consumed only on items labeled engine:codex; optional.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
       pr_number: ${{ github.event.issue.number }}
       comment_author: ${{ github.event.comment.user.login }}
