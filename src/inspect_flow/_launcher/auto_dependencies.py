@@ -185,10 +185,12 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
     entry = _model_provider_object(entry)
     if entry.__module__.split(".", maxsplit=1)[0] == "inspect_ai":
         return None
-    # Inspect trusts exact import-name matches without verifying ownership when
-    # the distribution has no file manifest.
+    # Inspect can trust an exact name without a manifest or an editable project
+    # root containing the module. Editable ownership needs an actual import path.
     if (distribution := get_distribution_for_object(entry)) and distribution.files:
-        return distribution.metadata["Name"]
+        direct_url = get_distribution_direct_url(distribution)
+        if not (direct_url and direct_url.dir_info and direct_url.dir_info.editable):
+            return distribution.metadata["Name"]
 
     # .pth-only editable installs can omit import metadata and use a different
     # distribution name. Their declared import paths can still establish ownership.
@@ -204,9 +206,13 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
         if not (direct_url and direct_url.dir_info and direct_url.dir_info.editable):
             continue
         for path in distribution.files or []:
-            if path.suffix != ".pth" or not os.path.isfile(str(path.locate())):
+            if path.suffix != ".pth":
                 continue
-            for line in path.read_text().splitlines():
+            try:
+                lines = path.read_text().splitlines()
+            except OSError:
+                continue
+            for line in lines:
                 line = line.rstrip()
                 if not line or line.startswith(("#", "import ", "import\t")):
                     continue

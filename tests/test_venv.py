@@ -11,7 +11,7 @@ from importlib import import_module
 from importlib.metadata import distribution, packages_distributions
 from pathlib import Path
 from site import addsitedir
-from typing import Any
+from typing import IO, Any
 from unittest.mock import patch
 
 import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi providers
@@ -509,16 +509,7 @@ def test_824_editable_model_provider_distribution(
     project = tmp_path / distribution_name
     project.mkdir()
     shutil.move(str(acme_distribution.parent / "acme"), str(project / "acme"))
-    (acme_distribution.parent / "acme.pth").write_text(f"{project}\n")
-    (acme_distribution / "direct_url.json").write_text(
-        json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
-    )
-    (acme_distribution / "RECORD").write_text(
-        "acme.pth,,\n"
-        f"{acme_distribution.name}/METADATA,,\n"
-        f"{acme_distribution.name}/direct_url.json,,\n"
-        f"{acme_distribution.name}/RECORD,,\n"
-    )
+    _make_editable_distribution(acme_distribution, project, project)
     if not top_level:
         (acme_distribution / "top_level.txt").unlink()
         assert "acme" not in packages_distributions()
@@ -550,6 +541,88 @@ def test_824_editable_model_provider_distribution(
     assert get_model(f"{provider_name}/example", memoize=False).name == "example"
     assert len(editable.instances) == 1
     assert bool(editable.factory_calls) == (provider_name == "lazy-acme")
+
+
+def _make_editable_distribution(
+    dist_info: Path, project: Path, import_path: Path
+) -> None:
+    pth_name = f"{dist_info.name}.pth"
+    (dist_info.parent / pth_name).write_text(f"{import_path}\n")
+    (dist_info / "direct_url.json").write_text(
+        json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
+    )
+    (dist_info / "RECORD").write_text(
+        f"{pth_name},,\n"
+        f"{dist_info.name}/METADATA,,\n"
+        f"{dist_info.name}/direct_url.json,,\n"
+        f"{dist_info.name}/RECORD,,\n"
+    )
+
+
+@pytest.fixture
+def editable_acme_project(acme_distribution: Path, tmp_path: Path) -> Path:
+    project = tmp_path / "repo" / "models"
+    project.mkdir(parents=True)
+    shutil.move(str(acme_distribution.parent / "acme"), str(project / "acme"))
+    _make_editable_distribution(acme_distribution, project, project)
+    addsitedir(str(acme_distribution.parent))
+    return project
+
+
+@pytest.mark.parametrize("provider_name", ["acme-models", "editable-acme", "lazy-acme"])
+def test_824_editable_model_provider_overlapping_project_roots(
+    acme_distribution: Path, editable_acme_project: Path, provider_name: str
+) -> None:
+    unrelated = acme_distribution.parent / "acme-9.0.dist-info"
+    unrelated.mkdir()
+    (unrelated / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: acme\nVersion: 9.0\n"
+    )
+    (unrelated / "top_level.txt").write_text("acme\n")
+    other_source = editable_acme_project.parent / "other-src"
+    other_source.mkdir()
+    _make_editable_distribution(unrelated, editable_acme_project.parent, other_source)
+    addsitedir(str(acme_distribution.parent))
+    import_module("acme.editable")
+    spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
+
+    assert get_model(f"{provider_name}/example", memoize=False).name == "example"
+    assert collect_auto_dependencies(spec) == [f"-e {editable_acme_project}"]
+    assert collect_auto_dependencies(spec, exclude_packages=["acme"]) == [
+        f"-e {editable_acme_project}"
+    ]
+
+
+@pytest.mark.parametrize("provider_name", ["acme-models", "editable-acme"])
+@pytest.mark.parametrize("read_error", [PermissionError, FileNotFoundError])
+def test_824_model_provider_unreadable_pth(
+    acme_distribution: Path,
+    editable_acme_project: Path,
+    provider_name: str,
+    read_error: type[OSError],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (acme_distribution / "top_level.txt").unlink()
+    unrelated = acme_distribution.parent / "unrelated-1.0.dist-info"
+    unrelated.mkdir()
+    (unrelated / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: unrelated\nVersion: 1.0\n"
+    )
+    _make_editable_distribution(unrelated, editable_acme_project.parent, unrelated)
+    unreadable = unrelated.parent / f"{unrelated.name}.pth"
+    open_file = Path.open
+
+    def open_with_error(path: Path, *args: Any, **kwargs: Any) -> IO[Any]:
+        if path == unreadable:
+            raise read_error(str(path))
+        return open_file(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", open_with_error)
+    import_module("acme.editable")
+    spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
+
+    assert get_model(f"{provider_name}/example", memoize=False).name == "example"
+    assert collect_auto_dependencies(spec) == [f"-e {editable_acme_project}"]
 
 
 def test_824_model_distribution_refreshed_per_collection(
