@@ -8,7 +8,7 @@ import threading
 from collections.abc import Generator
 from functools import partial
 from importlib import import_module
-from importlib.metadata import packages_distributions
+from importlib.metadata import distribution, packages_distributions
 from pathlib import Path
 from site import addsitedir
 from typing import Any
@@ -460,6 +460,28 @@ def test_824_model_provider_distribution(
     assert get_model(f"{provider_name}/example").name == "example"
     assert collect_auto_dependencies(spec) == ["acme-models==1.0"]
     assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
+
+
+@pytest.mark.parametrize(
+    ("provider_name", "expected"),
+    [("acme-models", "acme-models==1.0"), ("custom-acme", "custom-acme")],
+)
+def test_824_model_provider_without_ownership_manifest(
+    acme_distribution: Path, provider_name: str, expected: str
+) -> None:
+    unrelated = acme_distribution.parent / "acme-9.0.dist-info"
+    unrelated.mkdir()
+    (unrelated / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: acme\nVersion: 9.0\n"
+    )
+    (unrelated / "top_level.txt").write_text("acme\n")
+    assert distribution("acme").files is None
+    import_module("acme.installed")
+    spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
+
+    assert get_model(f"{provider_name}/example", memoize=False).name == "example"
+    assert collect_auto_dependencies(spec) == [expected]
+    assert collect_auto_dependencies(spec, exclude_packages=["acme"]) == [expected]
 
 
 @pytest.mark.parametrize(

@@ -6,7 +6,10 @@ from logging import getLogger
 from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
-from inspect_ai._util.package import get_distribution_for_object
+from inspect_ai._util.package import (
+    get_distribution_direct_url,
+    get_distribution_for_object,
+)
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -22,7 +25,7 @@ from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from packaging.utils import canonicalize_name
 
 from inspect_flow._config.model_refs import effective_ref, iter_model_refs
-from inspect_flow._launcher.pip_string import _get_package_direct_url, get_pip_string
+from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowFactory,
@@ -182,7 +185,9 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
     entry = _model_provider_object(entry)
     if entry.__module__.split(".", maxsplit=1)[0] == "inspect_ai":
         return None
-    if distribution := get_distribution_for_object(entry):
+    # Inspect trusts exact import-name matches without verifying ownership when
+    # the distribution has no file manifest.
+    if (distribution := get_distribution_for_object(entry)) and distribution.files:
         return distribution.metadata["Name"]
 
     # .pth-only editable installs can omit import metadata and use a different
@@ -195,7 +200,7 @@ def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
     matches = set[str]()
     for distribution in distributions():
         name = distribution.metadata["Name"]
-        direct_url = _get_package_direct_url(name)
+        direct_url = get_distribution_direct_url(distribution)
         if not (direct_url and direct_url.dir_info and direct_url.dir_info.editable):
             continue
         for path in distribution.files or []:
