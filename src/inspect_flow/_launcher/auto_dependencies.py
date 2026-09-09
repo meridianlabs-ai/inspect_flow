@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
+from inspect_ai._util.entrypoints import ensure_entry_points
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -163,14 +164,17 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
 def _registered_provider_package(provider: str) -> str | None:
     # get_model matches providers by unqualified name so they can be used from
     # the command line without a package prefix; mirror that here.
+    # A provider module loaded by file path registers without a package prefix
+    # and would satisfy registry_find before it loads entry points, so load them
+    # up front and prefer the package-qualified entry, which names the dependency.
+    ensure_entry_points()
     entries = registry_find(
         lambda info: (
             info.type == "modelapi" and registry_unqualified_name(info) == provider
         )
     )
-    if not entries:
-        return None
-    return registry_package_name(registry_info(entries[0]).name)
+    packages = (registry_package_name(registry_info(e).name) for e in entries)
+    return next((p for p in packages if p), None)
 
 
 def _collect_maybe_sequence_dependencies(

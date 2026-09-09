@@ -12,6 +12,7 @@ import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi 
 import pytest
 from botocore.client import BaseClient
 from inspect_ai import ScannerConfig
+from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
 from inspect_ai.model import GenerateConfig
 from inspect_ai.util import SandboxEnvironmentSpec
@@ -377,6 +378,9 @@ def test_818_registered_provider_resolves_to_its_package() -> None:
     # A third-party @modelapi provider is registered under its package, so the
     # registry names the dependency rather than the "prefix is a PyPI package"
     # guess, which would require a nonexistent "local_eval_provider" package.
+    # Loading the module by path (as a task file would be) registers the same
+    # provider again without a package; the qualified entry must still win.
+    load_module(Path("tests/local_eval/src/local_eval/my_provider.py"))
     spec = FlowSpec(tasks=[FlowTask(model="local_eval_provider/some-model")])
     assert collect_auto_dependencies(spec) == [get_pip_string("local_eval")]
 
