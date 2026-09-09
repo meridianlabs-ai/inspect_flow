@@ -373,6 +373,14 @@ def test_819_model_providers_cover_inspect_ai_registry() -> None:
     assert builtin <= _MODEL_PROVIDERS.keys()
 
 
+def test_818_registered_provider_resolves_to_its_package() -> None:
+    # A third-party @modelapi provider is registered under its package, so the
+    # registry names the dependency rather than the "prefix is a PyPI package"
+    # guess, which would require a nonexistent "local_eval_provider" package.
+    spec = FlowSpec(tasks=[FlowTask(model="local_eval_provider/some-model")])
+    assert collect_auto_dependencies(spec) == [get_pip_string("local_eval")]
+
+
 def test_auto_dependency_list_valued_model_role() -> None:
     # a list-valued role binds several models to one role; every element's
     # provider package must be collected
