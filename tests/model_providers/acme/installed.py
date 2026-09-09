@@ -1,12 +1,12 @@
 from inspect_ai.model import modelapi
-from inspect_ai.model._providers.mockllm import MockLLMAPI
+from inspect_ai.model._providers.mockllm import MockLLM
 
 
 @modelapi(name="acme-models")
-class AcmeAPI(MockLLMAPI):
+class AcmeAPI(MockLLM):
     pass
 
 
 @modelapi(name="custom-acme")
-class CustomAcmeAPI(MockLLMAPI):
+class CustomAcmeAPI(MockLLM):
     pass

@@ -2,7 +2,7 @@ import os
 from functools import cache
 from importlib.metadata import packages_distributions
 from logging import getLogger
-from typing import Any, Callable, Collection, Sequence
+from typing import Any, Callable, Collection, Mapping, Sequence
 
 from inspect_ai import Task
 from inspect_ai._util.registry import (
@@ -101,7 +101,7 @@ def collect_auto_dependencies(
 def _collect_task_dependencies(
     task: Task | FlowTask | str,
     dependencies: set[str],
-    distribution_map: Callable[[], dict[str, list[str]]],
+    distribution_map: Callable[[], Mapping[str, list[str]]],
 ) -> None:
     assert not isinstance(task, Task), (
         "validate_portable_spec should have ensured no Task instances"
@@ -122,7 +122,7 @@ def _collect_task_dependencies(
 
 def _collect_env_model_dependencies(
     dependencies: set[str],
-    distribution_map: Callable[[], dict[str, list[str]]],
+    distribution_map: Callable[[], Mapping[str, list[str]]],
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
         _collect_model_dependencies(env_model, dependencies, distribution_map)
@@ -155,7 +155,7 @@ def _collect_name_dependencies(
 def _collect_model_dependencies(
     name: str,
     dependencies: set[str],
-    distribution_map: Callable[[], dict[str, list[str]]],
+    distribution_map: Callable[[], Mapping[str, list[str]]],
 ) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
