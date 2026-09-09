@@ -81,6 +81,7 @@ In virtual environment mode, Flow automatically discovers and installs dependenc
 - **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
   - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Factories: `FlowTask(factory="inspect_evals/mmlu")` (or `factory=FlowFactory("inspect_evals/mmlu")`) infers the same package. A registry-decorated callable factory (e.g. `factory=mmlu`) infers the package of its registry name. When both `name` and `factory` are given, `factory` decides the package, matching how the runner resolves the object
   - Note: Package inference only works with Flow types (`FlowTask`, `FlowModel`, etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
