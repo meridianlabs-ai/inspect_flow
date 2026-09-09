@@ -10,6 +10,7 @@ from functools import partial
 from importlib import import_module
 from importlib.metadata import packages_distributions
 from pathlib import Path
+from site import addsitedir
 from typing import Any
 from unittest.mock import patch
 
@@ -19,6 +20,7 @@ from botocore.client import BaseClient
 from inspect_ai import ScannerConfig
 from inspect_ai._util.registry import (
     RegistryInfo,
+    _registry,
     registry_add,
     registry_find,
     registry_info,
@@ -431,6 +433,9 @@ def acme_distribution(
     )
     monkeypatch.syspath_prepend(str(site_packages))
     yield dist_info
+    for key in list(_registry):
+        if key.startswith("modelapi:acme/") or key == "modelapi:editable-acme":
+            del _registry[key]
     for name in ("acme.installed", "acme.editable", "acme"):
         sys.modules.pop(name, None)
 
@@ -447,24 +452,55 @@ def test_824_model_provider_distribution(
     assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
 
 
+@pytest.mark.parametrize(
+    ("distribution_name", "top_level"), [("acme-models", True), ("acme", False)]
+)
 def test_824_editable_model_provider_distribution(
-    acme_distribution: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    acme_distribution: Path,
+    tmp_path: Path,
+    distribution_name: str,
+    top_level: bool,
 ) -> None:
-    project = tmp_path / "acme-models"
+    acme_distribution = acme_distribution.rename(
+        acme_distribution.with_name(
+            f"{distribution_name.replace('-', '_')}-1.0.dist-info"
+        )
+    )
+    (acme_distribution / "METADATA").write_text(
+        f"Metadata-Version: 2.1\nName: {distribution_name}\nVersion: 1.0\n"
+    )
+    project = tmp_path / distribution_name
     project.mkdir()
     shutil.move(str(acme_distribution.parent / "acme"), str(project / "acme"))
-    monkeypatch.syspath_prepend(str(project))
+    (acme_distribution.parent / "acme.pth").write_text(f"{project}\n")
     (acme_distribution / "direct_url.json").write_text(
         json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
     )
+    if not top_level:
+        (acme_distribution / "top_level.txt").unlink()
+        (acme_distribution / "RECORD").write_text(
+            "acme.pth,,\n"
+            f"{acme_distribution.name}/METADATA,,\n"
+            f"{acme_distribution.name}/direct_url.json,,\n"
+            f"{acme_distribution.name}/RECORD,,\n"
+        )
+        assert "acme" not in packages_distributions()
+    addsitedir(str(acme_distribution.parent))
     # Inspect checks editable metadata using the import name, so differing
     # distribution names can leave a resolvable provider without a namespace.
-    import_module("acme.editable")
-    assert get_model("editable-acme/example").name == "example"
+    editable = import_module("acme.editable")
     spec = FlowSpec(tasks=[FlowTask(model="editable-acme/example")])
 
     assert collect_auto_dependencies(spec) == [f"-e {project}"]
-    assert collect_auto_dependencies(spec, exclude_packages=["ACME_Models"]) == []
+    assert (
+        collect_auto_dependencies(
+            spec, exclude_packages=[distribution_name.upper().replace("-", "_")]
+        )
+        == []
+    )
+    assert editable.instances == []
+    assert get_model("editable-acme/example").name == "example"
+    assert len(editable.instances) == 1
 
 
 def test_824_model_distribution_map_reused_per_collection(

@@ -1,6 +1,7 @@
 import os
 from functools import cache
 from importlib.metadata import packages_distributions
+from inspect import getclosurevars, isfunction, unwrap
 from logging import getLogger
 from typing import Any, Callable, Collection, Mapping, Sequence
 
@@ -12,6 +13,7 @@ from inspect_ai._util.registry import (
     registry_unqualified_name,
 )
 from inspect_ai.agent import Agent
+from inspect_ai.model import ModelAPI
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import SandboxEnvironmentType
@@ -19,7 +21,7 @@ from inspect_ai.util._sandbox.registry import registry_match_sandboxenv
 from packaging.utils import canonicalize_name
 
 from inspect_flow._config.model_refs import effective_ref, iter_model_refs
-from inspect_flow._launcher.pip_string import get_pip_string
+from inspect_flow._launcher.pip_string import _get_package_direct_url, get_pip_string
 from inspect_flow._types.flow_types import (
     FlowAgent,
     FlowFactory,
@@ -166,18 +168,44 @@ def _collect_model_dependencies(
             )
         )
         if entries:
-            entry = entries[0]
-            package = registry_package_name(registry_info(entry).name)
-            if not package:
-                package = entry.__module__.split(".", maxsplit=1)[0]
+            package = _model_provider_package(entries[0])
             if package and package != "inspect_ai":
                 distributions = distribution_map().get(package, [])
                 if len(distributions) == 1:
                     dependencies.add(distributions[0])
                     return
+                # Some editable wheels record only a .pth file and metadata,
+                # so packages_distributions() cannot infer their import name.
+                if not distributions:
+                    direct_url = _get_package_direct_url(package)
+                    if (
+                        direct_url
+                        and direct_url.dir_info
+                        and direct_url.dir_info.editable
+                    ):
+                        dependencies.add(package)
+                        return
         # Keep the provider-name fallback when distribution ownership is unknown
         # or ambiguous. Built-ins still need the SDK dependencies from the table.
         dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
+
+
+def _model_provider_package(entry: Callable[..., Any]) -> str:
+    if package := registry_package_name(registry_info(entry).name):
+        return package
+    entry = unwrap(entry)
+    # Inspect's modelapi wrapper closes over the original provider class without
+    # copying its module. Recover that class without running its constructor.
+    if isfunction(entry):
+        entry = next(
+            (
+                value
+                for value in getclosurevars(entry).nonlocals.values()
+                if isinstance(value, type) and issubclass(value, ModelAPI)
+            ),
+            entry,
+        )
+    return entry.__module__.split(".", maxsplit=1)[0]
 
 
 def _collect_maybe_sequence_dependencies(
