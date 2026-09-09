@@ -152,13 +152,11 @@ def _collect_model_dependencies(name: str, dependencies: set[str]) -> None:
     if len(split) != 2:
         return
     provider = split[0]
+    if provider in _MODEL_PROVIDERS:
+        dependencies.update(_MODEL_PROVIDERS[provider])
+        return
     package = _registered_provider_package(provider)
-    # Built-in providers register under inspect_ai, which is already installed;
-    # the table names the SDKs they actually need.
-    if package is None or package == "inspect_ai":
-        dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
-    else:
-        dependencies.add(package)
+    dependencies.add(package or provider)
 
 
 def _registered_provider_package(provider: str) -> str | None:
