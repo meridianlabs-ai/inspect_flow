@@ -1,11 +1,12 @@
 import os
 from functools import cache
-from importlib.metadata import packages_distributions
-from inspect import getclosurevars, isfunction, unwrap
+from importlib.metadata import distributions
+from inspect import getclosurevars, getmodule, isfunction, unwrap
 from logging import getLogger
-from typing import Any, Callable, Collection, Mapping, Sequence
+from typing import Any, Callable, Collection, Sequence
 
 from inspect_ai import Task
+from inspect_ai._util.package import get_distribution_for_object
 from inspect_ai._util.registry import (
     registry_find,
     registry_info,
@@ -76,14 +77,14 @@ def collect_auto_dependencies(
     spec: FlowSpec, exclude_packages: Collection[str] = ()
 ) -> list[str]:
     result = set()
-    distribution_map = cache(packages_distributions)
+    model_distribution = cache(_model_provider_distribution)
 
     for task in spec.tasks or []:
-        _collect_task_dependencies(task, result, distribution_map)
+        _collect_task_dependencies(task, result, model_distribution)
     for ref in iter_model_refs(spec):
         # fallback_models are provider-native ids, so they name no provider
         if ref.name and ref.kind != "fallback":
-            _collect_model_dependencies(ref.name, result, distribution_map)
+            _collect_model_dependencies(ref.name, result, model_distribution)
 
     # An explicit pin must win over the auto-detected host version of the same
     # package, so drop any package the user named directly. Its version
@@ -103,13 +104,13 @@ def collect_auto_dependencies(
 def _collect_task_dependencies(
     task: Task | FlowTask | str,
     dependencies: set[str],
-    distribution_map: Callable[[], Mapping[str, list[str]]],
+    model_distribution: Callable[[Callable[..., Any]], str | None],
 ) -> None:
     assert not isinstance(task, Task), (
         "validate_portable_spec should have ensured no Task instances"
     )
     if isinstance(task, str):
-        _collect_env_model_dependencies(dependencies, distribution_map)
+        _collect_env_model_dependencies(dependencies, model_distribution)
         return _collect_name_dependencies(task, dependencies)
 
     _collect_name_dependencies(_effective_name(task.name, task.factory), dependencies)
@@ -119,15 +120,15 @@ def _collect_task_dependencies(
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
     if not task.model and not task.model_roles:
-        _collect_env_model_dependencies(dependencies, distribution_map)
+        _collect_env_model_dependencies(dependencies, model_distribution)
 
 
 def _collect_env_model_dependencies(
     dependencies: set[str],
-    distribution_map: Callable[[], Mapping[str, list[str]]],
+    model_distribution: Callable[[Callable[..., Any]], str | None],
 ) -> None:
     if env_model := os.getenv("INSPECT_EVAL_MODEL"):
-        _collect_model_dependencies(env_model, dependencies, distribution_map)
+        _collect_model_dependencies(env_model, dependencies, model_distribution)
 
 
 def _effective_name(
@@ -157,7 +158,7 @@ def _collect_name_dependencies(
 def _collect_model_dependencies(
     name: str,
     dependencies: set[str],
-    distribution_map: Callable[[], Mapping[str, list[str]]],
+    model_distribution: Callable[[Callable[..., Any]], str | None],
 ) -> None:
     split = name.split("/", maxsplit=1)
     if len(split) == 2:
@@ -169,44 +170,62 @@ def _collect_model_dependencies(
         )
         if entries:
             assert callable(entries[0])
-            package = _model_provider_package(entries[0])
-            if package and package != "inspect_ai":
-                distributions = distribution_map().get(package, [])
-                if len(distributions) == 1:
-                    dependencies.add(distributions[0])
-                    return
-                # Some editable wheels record only a .pth file and metadata,
-                # so packages_distributions() cannot infer their import name.
-                if not distributions:
-                    direct_url = _get_package_direct_url(package)
-                    if (
-                        direct_url
-                        and direct_url.dir_info
-                        and direct_url.dir_info.editable
-                    ):
-                        dependencies.add(package)
-                        return
+            if distribution := model_distribution(entries[0]):
+                dependencies.add(distribution)
+                return
         # Keep the provider-name fallback when distribution ownership is unknown
         # or ambiguous. Built-ins still need the SDK dependencies from the table.
         dependencies.update(_MODEL_PROVIDERS.get(provider, [provider]))
 
 
-def _model_provider_package(entry: Callable[..., Any]) -> str:
-    if package := registry_package_name(registry_info(entry).name):
-        return package
+def _model_provider_distribution(entry: Callable[..., Any]) -> str | None:
+    entry = _model_provider_object(entry)
+    if entry.__module__.split(".", maxsplit=1)[0] == "inspect_ai":
+        return None
+    if distribution := get_distribution_for_object(entry):
+        return distribution.metadata["Name"]
+
+    # .pth-only editable installs can omit import metadata and use a different
+    # distribution name. Their declared import paths can still establish ownership.
+    module = getmodule(entry)
+    module_file = getattr(module, "__file__", None)
+    if not module_file:
+        return None
+    source = os.path.realpath(module_file)
+    matches = set[str]()
+    for distribution in distributions():
+        name = distribution.metadata["Name"]
+        direct_url = _get_package_direct_url(name)
+        if not (direct_url and direct_url.dir_info and direct_url.dir_info.editable):
+            continue
+        for path in distribution.files or []:
+            if path.suffix != ".pth" or not os.path.isfile(str(path.locate())):
+                continue
+            for line in path.read_text().splitlines():
+                line = line.rstrip()
+                if not line or line.startswith(("#", "import ", "import\t")):
+                    continue
+                root = os.path.realpath(str(distribution.locate_file(line)))
+                if source.startswith(root.rstrip(os.sep) + os.sep):
+                    matches.add(name)
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _model_provider_object(entry: Callable[..., Any]) -> Callable[..., Any]:
     entry = unwrap(entry)
-    # Inspect's modelapi wrapper closes over the original provider class without
-    # copying its module. Recover that class without running its constructor.
-    if isfunction(entry):
+    # Inspect's wrapper closes over the class or lazy factory without copying its
+    # module. Recover that object without constructing a model or calling a factory.
+    if isfunction(entry) and entry.__module__ == "inspect_ai.model._registry":
         entry = next(
             (
                 value
                 for value in getclosurevars(entry).nonlocals.values()
-                if isinstance(value, type) and issubclass(value, ModelAPI)
+                if isfunction(value)
+                or (isinstance(value, type) and issubclass(value, ModelAPI))
             ),
             entry,
         )
-    return entry.__module__.split(".", maxsplit=1)[0]
+    return entry
 
 
 def _collect_maybe_sequence_dependencies(

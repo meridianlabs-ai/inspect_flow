@@ -431,10 +431,20 @@ def acme_distribution(
     shutil.copytree(
         Path(__file__).parent / "model_providers" / "acme", site_packages / "acme"
     )
+    (dist_info / "RECORD").write_text(
+        "acme/__init__.py,,\nacme/installed.py,,\nacme/editable.py,,\n"
+        f"{dist_info.name}/METADATA,,\n"
+        f"{dist_info.name}/top_level.txt,,\n"
+        f"{dist_info.name}/RECORD,,\n"
+    )
     monkeypatch.syspath_prepend(str(site_packages))
     yield dist_info
     for key in list(_registry):
-        if key.startswith("modelapi:acme/") or key == "modelapi:editable-acme":
+        if key.startswith("modelapi:acme/") or key in (
+            "modelapi:editable-acme",
+            "modelapi:acme-models",
+            "modelapi:lazy-acme",
+        ):
             del _registry[key]
     for name in ("acme.installed", "acme.editable", "acme"):
         sys.modules.pop(name, None)
@@ -453,13 +463,18 @@ def test_824_model_provider_distribution(
 
 
 @pytest.mark.parametrize(
-    ("distribution_name", "top_level"), [("acme-models", True), ("acme", False)]
+    ("distribution_name", "top_level"),
+    [("acme-models", True), ("acme", False), ("acme-models", False)],
 )
+@pytest.mark.parametrize("provider_name", ["editable-acme", "acme-models", "lazy-acme"])
+@pytest.mark.parametrize("conflicting_distribution", [False, True])
 def test_824_editable_model_provider_distribution(
     acme_distribution: Path,
     tmp_path: Path,
     distribution_name: str,
     top_level: bool,
+    provider_name: str,
+    conflicting_distribution: bool,
 ) -> None:
     acme_distribution = acme_distribution.rename(
         acme_distribution.with_name(
@@ -476,20 +491,29 @@ def test_824_editable_model_provider_distribution(
     (acme_distribution / "direct_url.json").write_text(
         json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
     )
+    (acme_distribution / "RECORD").write_text(
+        "acme.pth,,\n"
+        f"{acme_distribution.name}/METADATA,,\n"
+        f"{acme_distribution.name}/direct_url.json,,\n"
+        f"{acme_distribution.name}/RECORD,,\n"
+    )
     if not top_level:
         (acme_distribution / "top_level.txt").unlink()
-        (acme_distribution / "RECORD").write_text(
-            "acme.pth,,\n"
-            f"{acme_distribution.name}/METADATA,,\n"
-            f"{acme_distribution.name}/direct_url.json,,\n"
-            f"{acme_distribution.name}/RECORD,,\n"
-        )
         assert "acme" not in packages_distributions()
+    if conflicting_distribution:
+        other_dist_info = acme_distribution.parent / "other_acme-2.0.dist-info"
+        other_dist_info.mkdir()
+        (other_dist_info / "METADATA").write_text(
+            "Metadata-Version: 2.1\nName: other-acme\nVersion: 2.0\n"
+        )
+        (other_dist_info / "top_level.txt").write_text("acme\n")
+        if not top_level:
+            assert packages_distributions()["acme"] == ["other-acme"]
     addsitedir(str(acme_distribution.parent))
     # Inspect checks editable metadata using the import name, so differing
     # distribution names can leave a resolvable provider without a namespace.
     editable = import_module("acme.editable")
-    spec = FlowSpec(tasks=[FlowTask(model="editable-acme/example")])
+    spec = FlowSpec(tasks=[FlowTask(model=f"{provider_name}/example")])
 
     assert collect_auto_dependencies(spec) == [f"-e {project}"]
     assert (
@@ -499,12 +523,14 @@ def test_824_editable_model_provider_distribution(
         == []
     )
     assert editable.instances == []
+    assert editable.factory_calls == []
     # Each parameter imports a fresh provider class, so bypass cached models.
-    assert get_model("editable-acme/example", memoize=False).name == "example"
+    assert get_model(f"{provider_name}/example", memoize=False).name == "example"
     assert len(editable.instances) == 1
+    assert bool(editable.factory_calls) == (provider_name == "lazy-acme")
 
 
-def test_824_model_distribution_map_reused_per_collection(
+def test_824_model_distribution_refreshed_per_collection(
     acme_distribution: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import_module("acme.installed")
@@ -519,32 +545,24 @@ def test_824_model_distribution_map_reused_per_collection(
         ]
         + [FlowTask() for _ in range(100)]
     )
-    with patch(
-        "inspect_flow._launcher.auto_dependencies.packages_distributions",
-        wraps=packages_distributions,
-    ) as distribution_map:
-        assert collect_auto_dependencies(spec) == ["acme-models==1.0"]
-        assert distribution_map.call_count == 1
+    assert collect_auto_dependencies(spec) == ["acme-models==1.0"]
 
-        (acme_distribution / "top_level.txt").write_text("other_namespace\n")
-        assert collect_auto_dependencies(spec) == ["acme-models==1.0", "custom-acme"]
-        assert distribution_map.call_count == 2
+    shutil.rmtree(acme_distribution)
+    assert collect_auto_dependencies(spec) == ["acme-models", "custom-acme"]
 
 
 def test_824_builtin_models_do_not_scan_distributions() -> None:
     spec = FlowSpec(tasks=[FlowTask(model="openai/example")])
-    with patch(
-        "inspect_flow._launcher.auto_dependencies.packages_distributions",
-        wraps=packages_distributions,
-    ) as distribution_map:
+    with patch("inspect_flow._launcher.auto_dependencies.distributions") as scan:
         assert collect_auto_dependencies(spec) == [get_pip_string("openai")]
-        distribution_map.assert_not_called()
+        scan.assert_not_called()
 
 
-def test_824_model_provider_ambiguous_distribution(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("packages", [["other-acme"], ["acme-models", "other-acme"]])
+def test_824_model_provider_unowned_distribution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, packages: list[str]
 ) -> None:
-    for package in ("acme-models", "other-acme"):
+    for package in packages:
         dist_info = tmp_path / f"{package.replace('-', '_')}-1.0.dist-info"
         dist_info.mkdir()
         (dist_info / "METADATA").write_text(
