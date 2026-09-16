@@ -1,21 +1,47 @@
 # Weekly check for new inspect-ai features to surface in flow (issue #766).
 #
-# Deterministic parts run inline: read the last-reconciled inspect-ai version
-# from [tool.inspect_flow] in pyproject.toml, compare against the latest PyPI
-# release, and dedup against existing `inspect-update` issues/PRs — no-op if
-# the latest release is already handled. Only when there is genuinely new work
-# does it invoke the dev agent (claude-code-action, headless) to read the
-# aggregated CHANGELOG entries, map them to flow surfaces, and open ONE issue
-# plus ONE `auto`-labeled PR. From there the existing machinery takes over:
-# the reviewer auto-reviews the PR on open, its summary trips the review->fix
-# loop in claude-auto.yml, and CI failures trip the CI-fix loop.
+# Three jobs, split so that no job that runs the agent holds a write
+# credential (credential separation, Phase 2; the landing shape is
+# meridianlabs-ai/agents design/architecture.md → "Landing job"):
 #
-# The agent authenticates to GitHub as the machine account (MARVIN_TOKEN) so
-# the PR it opens triggers CI and the reviewer — a GITHUB_TOKEN-authored PR is
-# silently dropped by GitHub's Actions recursion guard and the loop would
-# never start. A scheduled job also cannot summon the agent via @auto (the
-# kickoff gates reject machine/bot actors), which is why claude-code-action is
-# invoked directly here: the workflow is the trigger and passes the prompt.
+#   gate  (trusted)   read the last-reconciled inspect-ai version from
+#                     [tool.inspect_flow] in pyproject.toml, compare against
+#                     the latest PyPI release, dedup against existing
+#                     `inspect-update` issues/PRs — no-op if the latest release
+#                     is already handled. Only when there is genuinely new work:
+#                     mint a one-hour GitHub App token (issues + org projects)
+#                     and open ONE issue for the release, assigned and on the
+#                     Atlas board, so its number is known before any untrusted
+#                     content is read.
+#   agent (untrusted) checkout + project venv, then the dev agent
+#                     (claude-code-action, headless) with the job token ONLY
+#                     (contents: read, no gh writes, no push): it reads the
+#                     aggregated CHANGELOG entries, maps them to flow surfaces,
+#                     commits the flow changes locally, and writes the issue
+#                     comment and PR text as files. `emit-landing` packages the
+#                     commits and a manifest describing what to post.
+#   land  (trusted)   a fresh runner that checks out nothing: mints an App
+#                     token for this repo (contents + pull requests + issues),
+#                     validates the manifest, pushes the branch, opens the
+#                     `auto`-labeled PR whose body says `Fixes #<issue>`, posts
+#                     the agent's mapping on the issue, and reports any agent
+#                     error there.
+#
+# The App token (meridian-marvin[bot]) is what makes the PR trigger CI and the
+# reviewer: a GITHUB_TOKEN-authored PR is silently dropped by GitHub's Actions
+# recursion guard and the loop would never start. From the PR the existing
+# machinery takes over: the reviewer auto-reviews it on open, its summary trips
+# the review->fix loop in claude-auto.yml, and CI failures trip the CI-fix
+# loop. A scheduled job also cannot summon the agent via @auto (the kickoff
+# gates reject machine/bot actors), which is why claude-code-action is invoked
+# directly here: the workflow is the trigger and passes the prompt.
+#
+# Partial-failure mode: the issue is opened BEFORE the agent runs, so a run
+# that fails afterwards (a model API error, no commits, a refused manifest)
+# leaves an `inspect-update` issue whose title names the release, and the
+# dedup below treats that release as claimed — open or closed — until the
+# issue is retitled or deleted. The land job says so in its error report on
+# that issue, which is assigned to ransomr.
 
 name: Inspect Update
 
@@ -32,7 +58,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check:
+  gate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,6 +67,13 @@ jobs:
       proceed: ${{ steps.decide.outputs.proceed }}
       latest: ${{ steps.versions.outputs.latest }}
       reconciled: ${{ steps.versions.outputs.reconciled }}
+      issue: ${{ steps.issue.outputs.number }}
+      # The release branch lives under the issue's own namespace
+      # (`inspect-update/<issue>/`, delimiter-terminated), which is what the
+      # land job pins the manifest's branch to: a prefix of the bare version
+      # (`inspect-update/0.3.1`) would also match `inspect-update/0.3.10`, and a
+      # tampered artifact could steer the push at another release's branch.
+      branch: inspect-update/${{ steps.issue.outputs.number }}/${{ steps.versions.outputs.latest }}
     steps:
       - uses: actions/checkout@v4
 
@@ -100,20 +133,105 @@ jobs:
             echo "proceed=true" >>"$GITHUB_OUTPUT"
           fi
 
-  update:
-    needs: check
-    if: needs.check.outputs.proceed == 'true'
+      # One-hour installation token scoped to this repo and to what this job
+      # writes: the label and the issue (issues) and the Atlas board (org
+      # projects). Revoked by the action's post step at job end. `schedule`
+      # events carry no `repository` payload, so the repo is named literally.
+      - name: Mint the App token
+        id: mint
+        if: steps.decide.outputs.proceed == 'true'
+        uses: actions/create-github-app-token@v2
+        with:
+          # `app-id` takes the App ID or the Client ID; the action has no client-id input.
+          app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
+          owner: meridianlabs-ai
+          repositories: inspect_flow
+          permission-issues: write
+          permission-organization-projects: write
+
+      # The label keys the dedup above and opts future searches in; create it
+      # before the issue below and the PR label in `land` need it. Idempotent.
+      - name: Ensure inspect-update label exists
+        if: steps.decide.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: |
+          gh label create inspect-update --repo "$GITHUB_REPOSITORY" \
+            --description "Automated inspect-ai release reconciliation" \
+            --color 1D76DB || true
+
+      # The release's issue, opened deterministically so its number is known
+      # to the agent job (for the comment) and the land job (for `Fixes #`
+      # and the error report) before any untrusted content is read. The
+      # agent's changelog mapping arrives later as a comment, posted by the
+      # land job. Assignee and board add are repo defaults (track the issue,
+      # link the PR); the board add is best-effort.
+      - name: Open the release issue
+        id: issue
+        if: steps.decide.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          LATEST: ${{ steps.versions.outputs.latest }}
+          RECONCILED: ${{ steps.versions.outputs.reconciled }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PROJECT: PVT_kwDOC7YMCM4BU68p
+        run: |
+          set -euo pipefail
+          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below and opens one pull request that advances the reconciled marker (it links here with a Fixes line).\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
+            "$RECONCILED" "$LATEST" "$RUN_URL")
+          url=$(gh issue create --repo "$REPO" \
+            --title "inspect-ai $LATEST: surface new features in flow" \
+            --label inspect-update --assignee ransomr --body "$body")
+          number="${url##*/}"
+          [[ "$number" =~ ^[0-9]+$ ]] || { echo "::error::gh issue create returned '$url'."; exit 1; }
+          echo "number=$number" >>"$GITHUB_OUTPUT"
+          echo "Opened issue #$number for inspect-ai $LATEST ($url)."
+          # Best-effort from here: the issue exists and its number is out, so
+          # nothing below may fail the gate (that would skip the agent and the
+          # land job while the issue already claims the release).
+          node=$(gh api "repos/$REPO/issues/$number" --jq '.node_id' 2>/dev/null || true)
+          # shellcheck disable=SC2016 # GraphQL variables, not shell expansions
+          if [ -n "$node" ] && gh api graphql \
+               -f query='mutation($p:ID!,$c:ID!){addProjectV2ItemById(input:{projectId:$p,contentId:$c}){item{id}}}' \
+               -f p="$PROJECT" -f c="$node" --silent; then
+            echo "Added #$number to the Atlas board."
+          else
+            echo "::warning::Could not add #$number to the Atlas board."
+          fi
+
+  agent:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
+    # Job token only, and read-only: this job references no secret. The agent
+    # ingests the upstream CHANGELOG and runs uv/python on the checkout, so
+    # nothing it can reach may write to GitHub; every write happens in `land`
+    # from the validated manifest. id-token is the Anthropic WIF OIDC exchange.
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      id-token: write # required for the Anthropic WIF OIDC exchange
-      actions: read
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - uses: meridianlabs-ai/agents/.github/actions/assert-no-persisted-credential@main
+
+      # The branch the land job pushes to (its name is pinned there by
+      # `branch-prefix`), and the SHA the landing manifest is anchored to:
+      # commits above it are the run's landable work.
+      - name: Start the release branch
+        id: base
+        env:
+          BRANCH: ${{ needs.gate.outputs.branch }}
+          OUT: ${{ runner.temp }}/agent-out
+        run: |
+          set -euo pipefail
+          git checkout --quiet -b "$BRANCH"
+          mkdir -p "$OUT"
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
 
       # Same convention the reusable dev-agent workflow uses: provision the
       # project venv so the agent can run pytest/ruff/pyright and introspect
@@ -121,32 +239,27 @@ jobs:
       - name: Provision project environment
         uses: ./.github/actions/claude-setup
 
-      # The label keys the dedup in the check job and opts future searches in;
-      # create it up front so `gh pr create --label` can't fail. Idempotent.
-      - name: Ensure inspect-update label exists
-        env:
-          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
-        run: |
-          gh label create inspect-update --repo "$GITHUB_REPOSITORY" \
-            --description "Automated inspect-ai release reconciliation" \
-            --color 1D76DB || true
-
       # Direct (headless) invocation, mirroring the dev-agent invocation in
       # meridianlabs-ai/agents/.github/workflows/claude.yml. The anthropic_*
       # values are Workload Identity Federation identifiers, not secrets. The
-      # settings allow-list is the same as the dev agent's, extended with a
-      # WebFetch rule scoped to raw.githubusercontent.com for the CHANGELOG.
-      # The allow-list already grants arbitrary network access via python/uv,
-      # so the MARVIN_TOKEN write scope — not the tool list — is the real
-      # privilege boundary for this changelog-ingesting agent.
+      # settings allow-list is the dev agent's minus `git push`, extended with
+      # a WebFetch rule scoped to raw.githubusercontent.com for the CHANGELOG.
+      # The job token is passed explicitly so the action does not mint its own
+      # App token: `gh` here can read (the canonical PR diff) and nothing else.
+      # Commits carry the App's bot identity, since the App token pushes them.
       - uses: anthropics/claude-code-action@v1
         id: claude
+        env:
+          GIT_AUTHOR_NAME: meridian-marvin[bot]
+          GIT_AUTHOR_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: meridian-marvin[bot]
+          GIT_COMMITTER_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
         with:
           anthropic_federation_rule_id: fdrl_01GpNgJm9jE6ZfvcqoJYQL2Y
           anthropic_organization_id: be5d0086-bc43-45d2-9184-20ecdd647aa7
           anthropic_service_account_id: svac_01RL4wYD7ikbypwYKf4wFojv
           anthropic_workspace_id: wrkspc_01RKCQ5DTPBatQ7kHLkaEueD
-          github_token: ${{ secrets.MARVIN_TOKEN }}
+          github_token: ${{ github.token }}
           settings: >-
             {"permissions":{"allow":["Read","Edit","Write",
             "WebFetch(domain:raw.githubusercontent.com)",
@@ -154,7 +267,7 @@ jobs:
             "Bash(pip3:*)","Bash(uv:*)","Bash(python:*)","Bash(python3:*)",
             "Bash(gh:*)",
             "Bash(git fetch:*)","Bash(git merge:*)","Bash(git rebase:*)",
-            "Bash(git push:*)","Bash(git checkout:*)","Bash(git switch:*)",
+            "Bash(git checkout:*)","Bash(git switch:*)",
             "Bash(git branch:*)","Bash(git status:*)","Bash(git log:*)",
             "Bash(git diff:*)","Bash(git show:*)","Bash(git rev-parse:*)",
             "Bash(git remote:*)",
@@ -162,21 +275,31 @@ jobs:
           claude_args: >-
             --model fable
             --fallback-model default
+            --add-dir ${{ runner.temp }}/agent-out
           prompt: |
             You are the weekly inspect-ai reconciliation agent for inspect_flow
             (automates issue #766). inspect-ai releases newer than
-            ${{ needs.check.outputs.reconciled }} (the last reconciled version)
-            up to ${{ needs.check.outputs.latest }} (the latest release) have
-            not been checked for new features that flow should surface. You are
-            authenticated to GitHub (gh) as the machine account i-am-marvin.
+            ${{ needs.gate.outputs.reconciled }} (the last reconciled version)
+            up to ${{ needs.gate.outputs.latest }} (the latest release) have
+            not been checked for new features that flow should surface.
+
+            Your GitHub token is read-only: `gh` works for reads, but you
+            cannot push, open a PR, comment or label, and must not try. Your
+            work lands after this job ends: a trusted job pushes the commits
+            you make on the current branch
+            (${{ needs.gate.outputs.branch }}, already checked out) and opens
+            the PR, and posts the files you write under
+            ${{ runner.temp }}/agent-out (call it OUT below). Issue
+            #${{ needs.gate.outputs.issue }} already exists for this release;
+            your mapping is posted there as a comment.
 
             Read AGENTS.md first and follow it throughout.
 
             1. Fetch the inspect_ai changelog at the release tag using WebFetch:
-               https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.check.outputs.latest }}/CHANGELOG.md
+               https://raw.githubusercontent.com/UKGovernmentBEIS/inspect_ai/v${{ needs.gate.outputs.latest }}/CHANGELOG.md
                and aggregate the entries for every version newer than
-               ${{ needs.check.outputs.reconciled }} up to and including
-               ${{ needs.check.outputs.latest }}.
+               ${{ needs.gate.outputs.reconciled }} up to and including
+               ${{ needs.gate.outputs.latest }}.
 
             2. Map those entries to flow surfaces. The types in
                src/inspect_flow/_types (FlowTask, FlowOptions, FlowModel, ...)
@@ -188,21 +311,18 @@ jobs:
                `gh pr diff 764` to see the expected shape, including how
                generated types are handled.
 
-            3. Open ONE issue for the whole batch:
-               - Title must contain "inspect-ai ${{ needs.check.outputs.latest }}"
-                 (the dedup that prevents duplicate weekly runs keys on it).
-               - Label: inspect-update.
-               - Body: each new inspect feature, the flow surface it maps to
-                 (FlowTask, FlowOptions, FlowModel, ...), or why it is not
-                 applicable to flow.
-               - @mention @ransomr inline wherever a mapping is ambiguous or
-                 needs a human decision.
+            3. Write the mapping to OUT/issue-comment.md (Markdown; it is
+               posted as a comment on issue #${{ needs.gate.outputs.issue }}):
+               each new inspect feature, the flow surface it maps to
+               (FlowTask, FlowOptions, FlowModel, ...), or why it is not
+               applicable to flow. @mention @ransomr inline wherever a
+               mapping is ambiguous or needs a human decision.
 
-            4. Create a branch off main named
-               inspect-update/${{ needs.check.outputs.latest }} and implement
-               the best-effort flow changes:
+            4. On the current branch, implement the best-effort flow changes
+               and commit them (git add / git commit; never push, never
+               switch branches):
                - Advance the reconciled marker in pyproject.toml:
-                 [tool.inspect_flow] inspect-reconciled-version = "${{ needs.check.outputs.latest }}"
+                 [tool.inspect_flow] inspect-reconciled-version = "${{ needs.gate.outputs.latest }}"
                - Upgrade all locked dependencies (`uv lock --upgrade` then
                  `uv sync`) so the pinned CI checks run against the reconciled
                  inspect-ai release and the latest of everything else, rather
@@ -216,7 +336,7 @@ jobs:
                  generated.py stale; the check-type-gen CI job regenerates
                  against the locked inspect-ai and fails if it differs.
                - Verify with `ruff format`, `ruff check --fix`, `pyright`, and
-                 the relevant tests before pushing.
+                 the relevant tests before committing.
                - If the full upgrade cannot produce a green build because a
                  dependency has not caught up to the reconciled release (e.g.
                  inspect-scout still imports a symbol inspect-ai renamed), do
@@ -233,66 +353,217 @@ jobs:
                  the last resort rather than chasing an unsatisfiable "upgrade
                  inspect-ai AND stay green". Either way, still advance the
                  reconciled marker (it is independent of the locked version) and
-                 call out the blocking dependency in the issue with @ransomr so
-                 it can be picked up once the dependency releases a fix.
+                 call out the blocking dependency in OUT/issue-comment.md with
+                 @ransomr so it can be picked up once the dependency releases a
+                 fix.
 
-            5. Push the branch and open ONE PR:
-               gh pr create --base main --label auto --label inspect-update ...
-               - Conventional-commit title (per AGENTS.md) containing
-                 "inspect-ai ${{ needs.check.outputs.latest }}".
-               - Body starts with "Fixes #<the issue you opened in step 3>".
-               - Applying the `auto` label AT CREATION is required: it opts the
-                 PR into the autonomous review/CI-fix loop, and labeling later
-                 races the auto-reviewer.
+            5. Describe the PR:
+               - OUT/pr-title.txt: one line, a conventional-commit title (per
+                 AGENTS.md) containing "inspect-ai ${{ needs.gate.outputs.latest }}".
+               - OUT/pr-body.md: what changed and why. The
+                 "Fixes #${{ needs.gate.outputs.issue }}" line is added for
+                 you; do not write it.
 
-            6. If no changelog entry maps to a flow change, still open the PR
-               that advances the reconciled marker (chore: title) and note in
-               the issue that no flow changes were needed.
+            6. If no changelog entry maps to a flow change, still commit the
+               marker advance (chore: title) and say in OUT/issue-comment.md
+               that no flow changes were needed.
 
-            7. Best-effort repo defaults: assign ransomr to the issue and the
-               PR, and add the ISSUE (only — never the PR) to the Atlas
-               project board if you have access (skip gracefully if not
-               permitted). The board's model is track-the-issue, link-the-PR:
-               the PR reaches the board through its Fixes ref / Development
-               link on the issue's card, and a separate PR card is an
-               untracked duplicate nothing reconciles.
+            If you cannot complete the task, say what blocked you in
+            OUT/issue-comment.md.
 
-            Open exactly one issue and one PR, no more. If you cannot complete
-            the task, comment on issue #766 describing what blocked you,
-            mentioning @ransomr.
+      # Served-model table, cost, duration and turn count to the job summary
+      # (no transcript is uploaded as an artifact). Its fallback/refusal note,
+      # if any, travels to the land job as the manifest's
+      # provenance_comment_file. Best-effort, always exits 0.
+      - name: Model provenance
+        id: provenance
+        if: always()
+        uses: meridianlabs-ai/agents/.github/actions/model-provenance@main
+        with:
+          exec-file: ${{ steps.claude.outputs.execution_file }}
+          requested: fable
 
       # Surface agent errors the action swallows. A model API error (overload /
       # 529, a model 404, etc.) leaves the run green at the workflow level but
-      # with no result. Detect is_error in the execution log (or a failed
-      # action step) and fail the job so the run isn't a misleading success.
-      # This runs unattended, so the warning goes to standing issue #766 — and
-      # a *partial* failure (issue opened, PR not pushed) has already dedup'd
-      # this version, so recovery needs a human to close the orphan issue.
+      # with no result. This job cannot post: the message becomes the
+      # manifest's `error` (fail_run true) and the land job posts it on the
+      # release issue and fails the run after everything else landed. Exits 0
+      # on every path: the red X is the land job's.
       - name: Surface agent errors
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
-          REPO: ${{ github.repository }}
           EXEC: ${{ steps.claude.outputs.execution_file }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
-          LATEST: ${{ needs.check.outputs.latest }}
+          ERROR_FILE: ${{ runner.temp }}/agent-error.md
         run: |
           set -uo pipefail
           file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
           err=""
           [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
-          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" = "failure" ]; then
-            err="the Claude Code step failed before producing a result (see the job logs)."
+          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" != "success" ]; then
+            err="the Claude Code step ended with outcome '$CLAUDE_OUTCOME' before producing a result (see the job logs)."
           fi
           [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
           echo "::error::Claude run did not complete: $err"
-          gh issue comment 766 --repo "$REPO" --body "$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete — it errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip). If an issue or PR was already opened for this version it is now deduplicated, so close the orphan before re-running. Re-trigger via workflow_dispatch on the Inspect Update workflow; if it persists see https://status.claude.com.' "$LATEST" "$err")" || true
-          exit 1
+          printf 'The reconciliation agent errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip); if it persists see https://status.claude.com.\n' "$err" >"$ERROR_FILE"
 
-      - name: Upload execution log
+      # Everything the land job pushes and posts, as ONE JSON object for
+      # emit-landing's manifest-extra (schema: agents
+      # .github/actions/emit-landing/README.md). The agent's files are DATA:
+      # they are copied (capped under the validator's 64 KiB file limit) and
+      # referenced by name, never interpolated into a command. Fields:
+      #   pr        — open the PR for the branch when HEAD moved past the start
+      #               SHA; title from OUT/pr-title.txt (first line, control
+      #               characters stripped, forced to name the release since the
+      #               dedup keys on it), body = "Fixes #<issue>" + OUT/pr-body.md,
+      #               labels auto + inspect-update, issue for the "Opened" link
+      #   comments  — OUT/issue-comment.md on the release issue
+      #   provenance_comment_file — the model-provenance note, if any
+      #   error     — the Surface step's message and/or the missing outputs,
+      #               fail_run true; posted on the PR (or the issue) by `land`,
+      #               whose own failure note on the issue carries the recovery
+      #               steps
+      - name: Compose landing manifest
         if: always()
-        uses: actions/upload-artifact@v4
+        env:
+          DIR: ${{ runner.temp }}/landing
+          OUT: ${{ runner.temp }}/agent-out
+          EXTRA: ${{ runner.temp }}/landing-extra.json
+          START: ${{ steps.base.outputs.sha }}
+          LATEST: ${{ needs.gate.outputs.latest }}
+          ISSUE: ${{ needs.gate.outputs.issue }}
+          PROV_NOTE: ${{ steps.provenance.outputs.note }}
+          ERROR_FILE: ${{ runner.temp }}/agent-error.md
+        run: |
+          set -euo pipefail
+          mkdir -p "$DIR"
+          extra='{}'
+          err=""
+          tip=$(git rev-parse HEAD 2>/dev/null || echo "$START")
+          if [ -n "$START" ] && [ "$tip" != "$START" ]; then
+            title=$( { head -n1 "$OUT/pr-title.txt" 2>/dev/null || true; } | tr -d '\000-\037\177' | head -c 200)
+            [ -n "$title" ] || title="chore: reconcile inspect-ai $LATEST"
+            case "$title" in *"inspect-ai $LATEST"*) ;; *) title="$title (inspect-ai $LATEST)" ;; esac
+            { printf 'Fixes #%s\n\n' "$ISSUE"; head -c 60000 "$OUT/pr-body.md" 2>/dev/null || true; } >"$DIR/pr-body.md"
+            extra=$(jq -c --arg t "$title" --argjson n "$ISSUE" \
+              '.pr = {open: true, title: $t, body_file: "pr-body.md", labels: ["auto", "inspect-update"], issue: $n}' <<<"$extra")
+          else
+            err="The agent made no commits, so no branch was pushed and no PR was opened."
+          fi
+          if [ -s "$OUT/issue-comment.md" ]; then
+            head -c 60000 "$OUT/issue-comment.md" >"$DIR/issue-comment.md"
+            extra=$(jq -c --argjson n "$ISSUE" '.comments = [{number: $n, body_file: "issue-comment.md"}]' <<<"$extra")
+          else
+            err="${err:+$err }The agent left no changelog mapping (issue-comment.md)."
+          fi
+          if [ -n "${PROV_NOTE:-}" ]; then
+            printf '%s\n' "$PROV_NOTE" >"$DIR/prov.md"
+            extra=$(jq -c '.provenance_comment_file = "prov.md"' <<<"$extra")
+          fi
+          if [ -s "$ERROR_FILE" ]; then
+            err=$(printf '%s%s' "$(cat "$ERROR_FILE")" "${err:+$(printf '\n\n%s' "$err")}")
+          fi
+          if [ -n "$err" ]; then
+            msg=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete.\n\n%s' "$LATEST" "$err")
+            extra=$(jq -c --arg msg "$msg" '.error = {message: $msg, fail_run: true}' <<<"$extra")
+          fi
+          printf '%s\n' "$extra" >"$EXTRA"
+          echo "landing: $(jq -c 'if .error then .error.message = "<\(.error.message | length) chars>" else . end' <<<"$extra")"
+
+      # Last, always: package the commits above the start SHA and the manifest
+      # for the land job. This action holds no token.
+      - name: Emit landing manifest
+        if: always()
+        uses: meridianlabs-ai/agents/.github/actions/emit-landing@main
         with:
-          name: claude-execution-output
-          path: /home/runner/work/_temp/claude-execution-output.json
-          if-no-files-found: ignore
+          start-sha: ${{ steps.base.outputs.sha }}
+          branch: ${{ needs.gate.outputs.branch }}
+          # The SAME value the land job gets: the validator pins the
+          # manifest's issue_number to it, and it is where the final report
+          # goes when the manifest never validated.
+          issue-number: ${{ needs.gate.outputs.issue }}
+          manifest-extra: ${{ runner.temp }}/landing-extra.json
+
+  # TRUSTED, last: a fresh runner that checks out nothing and installs
+  # nothing. Runs whatever the agent job did (always()), so an agent failure
+  # is reported on the release issue instead of dying in the log; skipped when
+  # the gate found nothing to do or failed before opening the issue.
+  land:
+    needs: [gate, agent]
+    if: always() && needs.gate.result == 'success' && needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # fetch the start SHA (land's read token)
+      actions: read # artifact download
+    steps:
+      # Scoped to this repo and to this job's writes: the push (contents), the
+      # PR and its labels (pull requests), the issue comment, the "Opened"
+      # link and the error report (issues). The push and the PR come from
+      # meridian-marvin[bot], so CI and the reviewer trigger as they did for
+      # the machine account.
+      - name: Mint the App token
+        id: mint
+        uses: actions/create-github-app-token@v2
+        with:
+          # `app-id` takes the App ID or the Client ID; the action has no client-id input.
+          app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
+          owner: meridianlabs-ai
+          repositories: inspect_flow
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - name: Land
+        id: land
+        uses: meridianlabs-ai/agents/.github/actions/land@main
+        with:
+          token: ${{ steps.mint.outputs.token }}
+          # The manifest creates no issues (the gate opened the release's).
+          allowed-issue-repos: ""
+          # The same value emit-landing got above (a gate output, computed
+          # before any untrusted code ran): the validator pins the manifest's
+          # issue_number to it, and it is the trusted target for the final
+          # report when the manifest never validated.
+          issue-number: ${{ needs.gate.outputs.issue }}
+          # No PR names a head ref to pin the branch to, so the release
+          # issue's namespace (see the gate's `branch` output) is the pin: the
+          # manifest's branch must start with `inspect-update/<issue>/`, and
+          # the trailing delimiter keeps another issue's branches out of it.
+          branch-prefix: inspect-update/${{ needs.gate.outputs.issue }}/
+
+      # Repo default the manifest cannot express: assign the PR like the
+      # issue. Best-effort; runs whenever the land step got as far as a PR.
+      - name: Assign the PR
+        if: always() && steps.land.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.land.outputs.pr_number }}
+        run: |
+          gh pr edit "$PR" --repo "$REPO" --add-assignee ransomr \
+            || echo "::warning::Could not assign ransomr to #$PR."
+
+      # Deterministic failure report on the RELEASE ISSUE (the gate's trusted
+      # number), whatever failed: the agent job, a missing or refused
+      # artifact, the push, the PR, a lost post, or the manifest's own error
+      # (the land composite fails the run for that after everything else
+      # landed). The composite reports on the PR once one exists and knows
+      # nothing about the dedup, so the recovery steps live here. Nothing
+      # from the agent job is interpolated into this body.
+      - name: Report the failure on the release issue
+        if: always() && steps.mint.outcome == 'success' && steps.land.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.gate.outputs.issue }}
+          LATEST: ${{ needs.gate.outputs.latest }}
+          AGENT_RESULT: ${{ needs.agent.result }}
+          LAND_OUTCOME: ${{ steps.land.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
+            "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
+            || echo "::error::Could not post the failure report on #$ISSUE."
