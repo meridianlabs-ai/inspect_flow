@@ -563,7 +563,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. Then re-trigger via workflow_dispatch on the Inspect Update workflow; if a branch or PR was already pushed for this release, close or delete it first.\n' \
+          body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
             "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
             || echo "::error::Could not post the failure report on #$ISSUE."
