@@ -79,16 +79,35 @@ jobs:
       issue_url: ${{ steps.issue.outputs.issue_url }}
       needs_triage: ${{ steps.issue.outputs.needs_triage }}
     env:
-      # MARVIN_TOKEN (machine account) carries the `project` scope needed to add
-      # the issue to the org Atlas board; github.token cannot reach org
-      # projects. Fall back to github.token so issue create/comment still work
-      # where MARVIN_TOKEN is unavailable (the board step is best-effort).
-      GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+      # `secrets` is not available in a step `if`; the client id is not secret.
+      MARVIN_APP_CLIENT_ID: ${{ secrets.MARVIN_APP_CLIENT_ID }}
       REPO: ${{ github.repository }}
       RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
       RUN_URL: ${{ github.event.workflow_run.html_url || format('https://github.com/{0}/actions/runs/{1}', github.repository, inputs.run_id) }}
     steps:
+      # A short-lived meridian-marvin app token, scoped to this repo, carries
+      # the org-projects permission needed to add the issue to the Atlas board;
+      # github.token cannot reach org projects. actions:read is for `gh run
+      # view` on the failed canary run. Each step below falls back to
+      # github.token where the app secrets are absent, so issue create/comment
+      # still work (the board step is best-effort). The `steps` context is not
+      # available in job-level `env`, hence the per-step GH_TOKEN.
+      - name: Mint app token
+        id: mint
+        if: env.MARVIN_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
+          owner: meridianlabs-ai
+          repositories: inspect_flow
+          permission-actions: read
+          permission-issues: write
+          permission-organization-projects: write
+
       - name: Collect failure context
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token || github.token }}
         run: |
           set -uo pipefail
           gh run view "$RUN_ID" --repo "$REPO" \
@@ -181,11 +200,13 @@ jobs:
             echo "needs_triage=true"
           } >>"$GITHUB_OUTPUT"
 
-          # Best-effort: add to the org Atlas board (needs MARVIN_TOKEN's project
-          # scope). Never fail the run if the token can't reach the project.
+          # Best-effort: add to the org Atlas board (needs the app token's
+          # org-projects permission). Never fail the run if the token can't
+          # reach the project.
           gh project item-add 1 --owner meridianlabs-ai --url "$url" || \
             echo "Could not add to Atlas board (missing project scope?) — skipping."
         env:
+          GH_TOKEN: ${{ steps.mint.outputs.token || github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
 
   # Root-cause the failure and act on it. Runs the dev agent headless (authed as
@@ -385,11 +406,26 @@ jobs:
     permissions:
       issues: write
     env:
-      GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
+      MARVIN_APP_CLIENT_ID: ${{ secrets.MARVIN_APP_CLIENT_ID }}
       REPO: ${{ github.repository }}
       RUN_URL: ${{ github.event.workflow_run.html_url }}
     steps:
+      # Comment and close as meridian-marvin[bot], matching the gate's posts;
+      # github.token does the same job where the app secrets are absent.
+      - name: Mint app token
+        id: mint
+        if: env.MARVIN_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
+          owner: meridianlabs-ai
+          repositories: inspect_flow
+          permission-issues: write
+
       - name: Close the tracking issue if the canary is green again
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token || github.token }}
         run: |
           set -uo pipefail
           # Fail loudly on a query error so a missed close is visible rather
