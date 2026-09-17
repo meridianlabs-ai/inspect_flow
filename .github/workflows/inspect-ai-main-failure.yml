@@ -579,7 +579,9 @@ jobs:
       # analysis) leaves no label, so the next failure re-triages, as before.
       # `hold:release` marks the WAIT classification (the agent job's `defer`
       # output, true only for the literal `wait`), which close-on-green
-      # respects.
+      # respects. Both labels go in ONE mutation: a `triaged` that landed
+      # without its `hold:release` would stop re-triage while close-on-green
+      # closes the deliberately deferred issue on the next green run.
       - name: Apply the triage labels
         id: labels
         if: always() && steps.mint.outcome == 'success' && (steps.land.outcome == 'success' || steps.land.outputs.pr_number != '')
@@ -590,24 +592,25 @@ jobs:
           DEFER: ${{ needs.triage-agent.outputs.defer }}
         run: |
           set -euo pipefail
-          labels=(triaged)
+          labels=triaged
           if [ "$DEFER" = "true" ]; then
-            labels+=(hold:release)
+            labels="hold:release,triaged"
           fi
-          for lbl in "${labels[@]}"; do
-            gh issue edit "$ISSUE" --repo "$REPO" --add-label "$lbl"
-            echo "Applied '$lbl' to #$ISSUE."
-          done
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label "$labels"
+          echo "Applied '$labels' to #$ISSUE."
 
       # Deterministic failure report on the TRACKING ISSUE (the gate's trusted
       # number), whatever failed: the agent job, a missing or refused
       # artifact, the push, the PR, a lost post, or the manifest's own error
       # (the land composite fails the run for that after everything else
-      # landed). The composite reports on the PR once one exists and knows
-      # nothing about the `triaged` gating, so the recovery steps live here.
-      # Nothing from the agent job is interpolated into this body.
+      # landed), or the label step above. The composite reports on the PR once
+      # one exists and knows nothing about the labels, so the recovery steps
+      # live here and say which labels actually landed: the label step is one
+      # mutation, so either every label it planned is on the issue or none is.
+      # Nothing from the agent job but its one-of-two `defer` value reaches
+      # this body, and only as a branch condition.
       - name: Report the failure on the tracking issue
-        if: always() && steps.mint.outcome == 'success' && steps.land.outcome != 'success'
+        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome != 'success' || steps.labels.outcome != 'success')
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           REPO: ${{ github.repository }}
@@ -615,16 +618,31 @@ jobs:
           AGENT_RESULT: ${{ needs.triage-agent.result }}
           LAND_OUTCOME: ${{ steps.land.outcome }}
           LABELS_OUTCOME: ${{ steps.labels.outcome }}
+          PR_NUMBER: ${{ steps.land.outputs.pr_number }}
+          DEFER: ${{ needs.triage-agent.outputs.defer }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          if [ "$LABELS_OUTCOME" = "success" ]; then
-            tail="A pull request was opened before the failure, so this issue was marked triaged; check the PR and the run log."
-          else
-            tail="This issue was left untriaged, so the next scheduled canary failure will re-triage it automatically; or re-trigger now via workflow_dispatch on this workflow with the failed run id."
-          fi
-          body=$(printf '⚠️ The canary triage run did not complete (agent job: %s; landing: %s). Details: %s\n\n%s\n' \
-            "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$tail")
+          pr=""
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] && pr=" Pull request #$PR_NUMBER was opened before the failure."
+          case "$LABELS_OUTCOME" in
+            success)
+              tail="${pr# } This issue was marked triaged; check the PR and the run log." ;;
+            failure)
+              tail="The triage labels could NOT be applied, so this issue carries neither \`triaged\` nor \`hold:release\` from this run.$pr"
+              if [ -n "$pr" ]; then
+                tail="$tail Add \`triaged\` by hand, or the next scheduled canary failure opens a duplicate PR."
+              else
+                tail="$tail The next scheduled canary failure will re-triage it; to keep this run's result instead, add \`triaged\` by hand."
+              fi
+              if [ "$DEFER" = "true" ]; then
+                tail="$tail The agent deferred this to the next inspect-ai release: add \`hold:release\` by hand too, or close-on-green closes this issue on the next green run."
+              fi ;;
+            *)
+              tail="This issue was left untriaged, so the next scheduled canary failure will re-triage it automatically; or re-trigger now via workflow_dispatch on this workflow with the failed run id." ;;
+          esac
+          body=$(printf '⚠️ The canary triage run did not complete (agent job: %s; landing: %s; labels: %s). Details: %s\n\n%s\n' \
+            "$AGENT_RESULT" "$LAND_OUTCOME" "$LABELS_OUTCOME" "$RUN_URL" "$tail")
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
             || echo "::error::Could not post the failure report on #$ISSUE."
 
