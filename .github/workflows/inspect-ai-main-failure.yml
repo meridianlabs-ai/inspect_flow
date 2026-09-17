@@ -7,20 +7,29 @@
 # the canary upgrades ALL dev dependencies. So "canary red" must be diagnosed,
 # not assumed to mean "inspect-ai broke us".
 #
-# Three jobs:
-#   triage-gate — deterministic. Opens ONE tracking issue (deduped on the
-#     `inspect-ai-main` label) and, while it stays open, appends a "still
-#     failing" comment on later failures instead of piling up duplicate issues.
-#     Closing the issue (once flow is fixed) lets the next failure open a fresh
-#     one. Emits `needs_triage` = true only while the open issue lacks a
-#     `triaged` label.
-#   triage — runs the dev agent (headless, as the machine account) ONLY when
-#     needs_triage is true, so the 3-hourly repeats never spend a model run or
-#     open a duplicate PR. The agent root-causes the failure, then either opens
-#     an `auto`-labeled PR to fix it now or defers it to the next inspect-ai
-#     release (`hold:release`), and applies `triaged` when done. Gating on the
-#     label (not "was just opened") makes triage retry-safe: an agent that dies
-#     before finishing leaves no label, so the next failure re-triages.
+# Four jobs, split so that no job that runs the agent holds a write credential
+# (credential separation, Phase 2; the landing shape is meridianlabs-ai/agents
+# design/architecture.md → "Landing job"):
+#   triage-gate — deterministic (trusted). Mints a one-hour GitHub App token,
+#     opens ONE tracking issue (deduped on the `inspect-ai-main` label) and,
+#     while it stays open, appends a "still failing" comment on later failures
+#     instead of piling up duplicate issues. Closing the issue (once flow is
+#     fixed) lets the next failure open a fresh one. Emits `needs_triage` =
+#     true only while the open issue lacks a `triaged` label.
+#   triage-agent — runs the dev agent (headless, job token ONLY: read-only, no
+#     gh writes, no push) ONLY when needs_triage is true, so the 3-hourly
+#     repeats never spend a model run or open a duplicate PR. The agent
+#     root-causes the failure, then either commits a fix locally or classifies
+#     it as deferred to the next inspect-ai release, and writes its analysis
+#     and PR text as files. `emit-landing` packages the commits and a manifest
+#     describing what to post.
+#   triage-land — trusted, a fresh runner that checks out nothing: mints an
+#     App token for this repo, validates the manifest, pushes the branch, opens
+#     the `auto`-labeled PR whose body says `Fixes #<issue>`, posts the analysis
+#     on the issue, applies `hold:release` for a deferral and `triaged` when
+#     done, and reports any agent error there. Gating on the label (not "was
+#     just opened") makes triage retry-safe: an agent that dies before
+#     finishing leaves no label, so the next failure re-triages.
 #   close-on-green — the inverse of triage-gate. The tracking issue means "the
 #     canary is currently red"; a green scheduled run is the ground-truth signal
 #     that flow is no longer broken, so it closes the open issue. This is the
@@ -78,6 +87,11 @@ jobs:
       issue_number: ${{ steps.issue.outputs.issue_number }}
       issue_url: ${{ steps.issue.outputs.issue_url }}
       needs_triage: ${{ steps.issue.outputs.needs_triage }}
+      # The fix branch lives under the tracking issue's own namespace
+      # (`inspect-ai-main/<issue>/`, delimiter-terminated), which is what the
+      # land job pins the manifest's branch to; the run id keeps a re-triage
+      # (an agent that died before finishing) off an earlier run's branch.
+      branch: inspect-ai-main/${{ steps.issue.outputs.issue_number }}/${{ github.run_id }}
     env:
       # `secrets` is not available in a step `if`; the client id is not secret.
       MARVIN_APP_CLIENT_ID: ${{ secrets.MARVIN_APP_CLIENT_ID }}
@@ -116,6 +130,20 @@ jobs:
           # Keep the last 200 lines of failed-step output — failures are near
           # the end and the issue body must stay readable.
           tail -n 200 failed.log > failed.tail.log || true
+
+      # The labels triage-land records the agent's outcome with. Created here,
+      # before any untrusted content is read: the agent job holds no write
+      # token. Idempotent.
+      - name: Ensure triage labels exist
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token || github.token }}
+        run: |
+          gh label create triaged --repo "$REPO" \
+            --description "Canary failure has been root-caused by the triage agent" \
+            --color 0E8A16 2>/dev/null || true
+          gh label create hold:release --repo "$REPO" \
+            --description "Deferred until the next inspect-ai release reconciles it" \
+            --color FBCA04 2>/dev/null || true
 
       - name: Open or update tracking issue
         id: issue
@@ -209,21 +237,27 @@ jobs:
           GH_TOKEN: ${{ steps.mint.outputs.token || github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
 
-  # Root-cause the failure and act on it. Runs the dev agent headless (authed as
-  # the machine account, mirroring inspect-update.yml) — a scheduled/machine job
-  # cannot summon @auto by mention/label (the kickoff gates reject bot actors),
-  # so the agent opens the `auto`-labeled PR directly and the existing loops
-  # (auto-review, review->fix, CI-fix) take it from there.
-  triage:
+  # Root-cause the failure. UNTRUSTED: job token only, read-only, and this job
+  # references no secret. The agent reads the failed run's logs (third-party
+  # input shaped by whatever the tests exercised) and runs uv/python on the
+  # checkout, so nothing it can reach may write to GitHub: it commits the fix
+  # locally and writes its analysis, PR text and classification as files;
+  # every write happens in triage-land from the validated manifest. A
+  # scheduled/machine job cannot summon @auto by mention/label (the kickoff
+  # gates reject bot actors), which is why claude-code-action is invoked
+  # directly with the prompt; the `auto` label on the landed PR hands it to the
+  # existing loops (auto-review, review->fix, CI-fix). actions:read is for
+  # `gh run view --log-failed`; id-token is the Anthropic WIF OIDC exchange.
+  triage-agent:
     needs: triage-gate
     if: needs.triage-gate.outputs.needs_triage == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      id-token: write # required for the Anthropic WIF OIDC exchange
+      contents: read
       actions: read
+      id-token: write
+    outputs:
+      defer: ${{ steps.manifest.outputs.defer }}
     env:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
       RUN_URL: ${{ github.event.workflow_run.html_url || format('https://github.com/{0}/actions/runs/{1}', github.repository, inputs.run_id) }}
@@ -231,23 +265,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - uses: meridianlabs-ai/agents/.github/actions/assert-no-persisted-credential@main
+
+      # The branch the land job pushes to (its name is pinned there by
+      # `branch-prefix`), and the SHA the landing manifest is anchored to:
+      # commits above it are the run's landable work.
+      - name: Start the fix branch
+        id: base
+        env:
+          BRANCH: ${{ needs.triage-gate.outputs.branch }}
+          OUT: ${{ runner.temp }}/agent-out
+        run: |
+          set -euo pipefail
+          git checkout --quiet -b "$BRANCH"
+          mkdir -p "$OUT"
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
 
       # Same convention the reusable dev-agent workflow uses: provision the
       # project venv so the agent can run pytest/ruff/pyright and introspect
       # installed inspect_ai signatures.
       - name: Provision project environment
         uses: ./.github/actions/claude-setup
-
-      - name: Ensure triage labels exist
-        env:
-          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
-        run: |
-          gh label create triaged --repo "$GITHUB_REPOSITORY" \
-            --description "Canary failure has been root-caused by the triage agent" \
-            --color 0E8A16 2>/dev/null || true
-          gh label create hold:release --repo "$GITHUB_REPOSITORY" \
-            --description "Deferred until the next inspect-ai release reconciles it" \
-            --color FBCA04 2>/dev/null || true
 
       - name: Read latest and last-reconciled inspect-ai versions
         id: versions
@@ -263,15 +302,24 @@ jobs:
       # The anthropic_* values are Workload Identity Federation identifiers, not
       # secrets. The settings allow-list matches the inspect-update agent's,
       # extended with `Bash(uvx:*)` so triage can reproduce failures with a
-      # pinned tool version (e.g. `uvx ruff@latest format` for a ruff bump).
+      # pinned tool version (e.g. `uvx ruff@latest format` for a ruff bump); no
+      # `git push`. The job token is passed explicitly so the action does not
+      # mint its own App token: `gh` here can read (the failed run's logs) and
+      # nothing else. Commits carry the App's bot identity, since the App token
+      # pushes them.
       - uses: anthropics/claude-code-action@v1
         id: claude
+        env:
+          GIT_AUTHOR_NAME: meridian-marvin[bot]
+          GIT_AUTHOR_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: meridian-marvin[bot]
+          GIT_COMMITTER_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
         with:
           anthropic_federation_rule_id: fdrl_01GpNgJm9jE6ZfvcqoJYQL2Y
           anthropic_organization_id: be5d0086-bc43-45d2-9184-20ecdd647aa7
           anthropic_service_account_id: svac_01RL4wYD7ikbypwYKf4wFojv
           anthropic_workspace_id: wrkspc_01RKCQ5DTPBatQ7kHLkaEueD
-          github_token: ${{ secrets.MARVIN_TOKEN }}
+          github_token: ${{ github.token }}
           settings: >-
             {"permissions":{"allow":["Read","Edit","Write",
             "WebFetch(domain:raw.githubusercontent.com)",
@@ -279,7 +327,7 @@ jobs:
             "Bash(pip3:*)","Bash(uv:*)","Bash(uvx:*)","Bash(python:*)","Bash(python3:*)",
             "Bash(gh:*)",
             "Bash(git fetch:*)","Bash(git merge:*)","Bash(git rebase:*)",
-            "Bash(git push:*)","Bash(git checkout:*)","Bash(git switch:*)",
+            "Bash(git checkout:*)","Bash(git switch:*)",
             "Bash(git branch:*)","Bash(git status:*)","Bash(git log:*)",
             "Bash(git diff:*)","Bash(git show:*)","Bash(git rev-parse:*)",
             "Bash(git remote:*)",
@@ -287,14 +335,23 @@ jobs:
           claude_args: >-
             --model fable
             --fallback-model default
+            --add-dir ${{ runner.temp }}/agent-out
           prompt: |
             You are the canary-triage agent for inspect_flow. The "Inspect AI
             Main CI" canary — which upgrades all dev dependencies, installs
             inspect-ai from git main, and runs flow's lint/type/test/type-gen
             checks against it — failed on a scheduled run. Tracking issue:
             #${{ needs.triage-gate.outputs.issue_number }}. Failed canary run:
-            ${{ env.RUN_URL }} (run id ${{ env.RUN_ID }}). You are authenticated
-            to GitHub (gh) as the machine account i-am-marvin.
+            ${{ env.RUN_URL }} (run id ${{ env.RUN_ID }}).
+
+            Your GitHub token is read-only: `gh` works for reads (the failed
+            run's logs, issues, PRs), but you cannot push, open a PR, comment
+            or label, and must not try. Your work lands after this job ends: a
+            trusted job pushes the commits you make on the current branch
+            (${{ needs.triage-gate.outputs.branch }}, already checked out) and
+            opens the PR, posts the files you write under
+            ${{ runner.temp }}/agent-out (call it OUT below), and applies the
+            labels.
 
             Read AGENTS.md first and follow it throughout.
 
@@ -305,7 +362,7 @@ jobs:
 
             1. ROOT-CAUSE the failure. Inspect the failed logs
                (`gh run view ${{ env.RUN_ID }} --repo ${{ github.repository }} --log-failed`)
-               and reproduce locally on a clean main checkout: `uv sync --dev
+               and reproduce locally on the current checkout: `uv sync --dev
                --upgrade`, `uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git`,
                then run the failing check(s). Determine the actual cause — do NOT
                assume it is an inspect-ai break.
@@ -322,76 +379,254 @@ jobs:
                   inspect-update workflow will reconcile it properly once the
                   version is released. → wait.
 
-            3. If FIX NOW (a or b): create a branch off main, implement the
-               smallest correct fix, and verify with `ruff format`,
-               `ruff check --fix`, `pyright`, and the relevant tests before
-               pushing. Then open exactly ONE PR:
-                 gh pr create --base main --label auto ...
-               - Conventional-commit title per AGENTS.md (a linter/formatting or
-                 dependency fix is not `feat:`/`fix:`).
-               - The body's FIRST LINE must be exactly
-                 `Fixes #${{ needs.triage-gate.outputs.issue_number }}` on its
-                 own line — nothing before it, no other words on that line.
-                 GitHub auto-closes the issue only when the keyword is
-                 immediately followed by the reference; prose like "Fixes the
-                 canary failure tracked in #<n>" does NOT link and will leave
-                 the issue open.
-               - After creating the PR, VERIFY the link took:
-                 `gh pr view <pr> --repo ${{ github.repository }} --json closingIssuesReferences`
-                 must list the issue. If it is empty, the keyword was malformed
-                 — edit the body with `gh pr edit` so the first line is exactly
-                 `Fixes #${{ needs.triage-gate.outputs.issue_number }}` and
-                 re-verify.
-               - Applying the `auto` label AT CREATION is required: it opts the
-                 PR into the autonomous review/CI-fix loop, and labeling later
-                 races the auto-reviewer.
-               Comment your root-cause analysis and the PR link on the issue.
+            3. If FIX NOW (a or b): on the current branch, implement the
+               smallest correct fix, verify it with `ruff format`,
+               `ruff check --fix`, `pyright`, and the relevant tests, and
+               commit it (git add / git commit; never push, never switch
+               branches). Exactly ONE PR is opened for you from those
+               commits, labeled `auto` (which opts it into the autonomous
+               review/CI-fix loop) and linked to the tracking issue. Describe
+               it:
+               - OUT/pr-title.txt: one line, a conventional-commit title per
+                 AGENTS.md (a linter/formatting or dependency fix is not
+                 `feat:`/`fix:`).
+               - OUT/pr-body.md: what changed and why. The
+                 "Fixes #${{ needs.triage-gate.outputs.issue_number }}" line is
+                 added for you; do not write it.
 
-            4. If WAIT (c): comment your root-cause analysis and the rationale
-               for waiting on issue #${{ needs.triage-gate.outputs.issue_number }},
-               apply the `hold:release` label to it, @mention @ransomr, and leave
-               the issue open. Do NOT open a PR.
+            4. If WAIT (c): make no commits. Write the single word `wait` to
+               OUT/classification.txt; the `hold:release` label is applied to
+               the issue for you and it stays open. @mention @ransomr in your
+               analysis (below).
 
-            5. In ALL cases, apply the `triaged` label to issue
-               #${{ needs.triage-gate.outputs.issue_number }} as your final step
-               so later canary failures don't re-triage it. Open at most one PR.
-               If you cannot complete the task, comment on the issue describing
-               what blocked you, mention @ransomr, and still apply `triaged`.
+            5. In ALL cases, write your root-cause analysis to
+               OUT/issue-comment.md (Markdown; it is posted as a comment on
+               issue #${{ needs.triage-gate.outputs.issue_number }}), with
+               the rationale for waiting in the WAIT case. The `triaged`
+               label is applied for you once your work has landed, so later
+               canary failures don't re-triage it. If you cannot complete the
+               task, say what blocked you in OUT/issue-comment.md and mention
+               @ransomr.
+
+      # Served-model table, cost, duration and turn count to the job summary
+      # (no transcript is uploaded as an artifact). Its fallback/refusal note,
+      # if any, travels to the land job as the manifest's
+      # provenance_comment_file. Best-effort, always exits 0.
+      - name: Model provenance
+        id: provenance
+        if: always()
+        uses: meridianlabs-ai/agents/.github/actions/model-provenance@main
+        with:
+          exec-file: ${{ steps.claude.outputs.execution_file }}
+          requested: fable
 
       # Surface agent errors the action swallows. A model API error (overload /
       # 529, a model 404, etc.) leaves the run green at the workflow level but
-      # with no result. Detect is_error in the execution log (or a failed action
-      # step) and fail the job so the run isn't a misleading success. The warning
-      # goes to the tracking issue. Note: on a hard error the `triaged` label is
-      # not applied, so the next scheduled failure re-triages.
+      # with no result. This job cannot post: the message becomes the
+      # manifest's `error` (fail_run true) and the land job posts it on the
+      # tracking issue and fails the run after everything else landed. Exits 0
+      # on every path: the red X is the land job's.
       - name: Surface agent errors
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.MARVIN_TOKEN || github.token }}
-          REPO: ${{ github.repository }}
           EXEC: ${{ steps.claude.outputs.execution_file }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
-          ISSUE: ${{ needs.triage-gate.outputs.issue_number }}
+          ERROR_FILE: ${{ runner.temp }}/agent-error.md
         run: |
           set -uo pipefail
           file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
           err=""
           [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
-          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" = "failure" ]; then
-            err="the Claude Code step failed before producing a result (see the job logs)."
+          if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" != "success" ]; then
+            err="the Claude Code step ended with outcome '$CLAUDE_OUTCOME' before producing a result (see the job logs)."
           fi
           [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
           echo "::error::Claude run did not complete: $err"
-          gh issue comment "$ISSUE" --repo "$REPO" --body "$(printf '⚠️ The canary triage agent did not complete — it errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip). This issue was left untriaged, so the next scheduled canary failure will re-triage it automatically; or re-trigger now via workflow_dispatch on this workflow with the failed run id. If it persists see https://status.claude.com.' "$err")" || true
-          exit 1
+          printf 'The canary triage agent errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip); if it persists see https://status.claude.com.\n' "$err" >"$ERROR_FILE"
 
-      - name: Upload execution log
+      # Everything the land job pushes and posts, as ONE JSON object for
+      # emit-landing's manifest-extra (schema: agents
+      # .github/actions/emit-landing/README.md). The agent's files are DATA:
+      # they are copied (capped under the validator's 64 KiB file limit) and
+      # referenced by name, never interpolated into a command. Fields:
+      #   pr        — open the PR for the branch when HEAD moved past the start
+      #               SHA; title from OUT/pr-title.txt (first line, control
+      #               characters stripped), body = "Fixes #<issue>" +
+      #               OUT/pr-body.md, label auto, issue for the "Opened" link
+      #   comments  — OUT/issue-comment.md on the tracking issue
+      #   provenance_comment_file — the model-provenance note, if any
+      #   error     — the Surface step's message and/or the missing analysis,
+      #               fail_run true; posted on the PR (or the issue) by `land`
+      # The labels the manifest cannot express (`triaged`, `hold:release` on
+      # the tracking issue) are applied by triage-land from this job's `defer`
+      # output, which is true only when OUT/classification.txt says `wait`.
+      - name: Compose landing manifest
+        id: manifest
         if: always()
-        uses: actions/upload-artifact@v4
+        env:
+          DIR: ${{ runner.temp }}/landing
+          OUT: ${{ runner.temp }}/agent-out
+          EXTRA: ${{ runner.temp }}/landing-extra.json
+          START: ${{ steps.base.outputs.sha }}
+          ISSUE: ${{ needs.triage-gate.outputs.issue_number }}
+          PROV_NOTE: ${{ steps.provenance.outputs.note }}
+          ERROR_FILE: ${{ runner.temp }}/agent-error.md
+        run: |
+          set -euo pipefail
+          mkdir -p "$DIR"
+          extra='{}'
+          err=""
+          tip=$(git rev-parse HEAD 2>/dev/null || echo "$START")
+          if [ -n "$START" ] && [ "$tip" != "$START" ]; then
+            title=$( { head -n1 "$OUT/pr-title.txt" 2>/dev/null || true; } | tr -d '\000-\037\177' | head -c 200)
+            [ -n "$title" ] || title="chore: fix the inspect-ai main canary failure (#$ISSUE)"
+            { printf 'Fixes #%s\n\n' "$ISSUE"; head -c 60000 "$OUT/pr-body.md" 2>/dev/null || true; } >"$DIR/pr-body.md"
+            extra=$(jq -c --arg t "$title" --argjson n "$ISSUE" \
+              '.pr = {open: true, title: $t, body_file: "pr-body.md", labels: ["auto"], issue: $n}' <<<"$extra")
+          fi
+          defer=false
+          if [ "$( { head -n1 "$OUT/classification.txt" 2>/dev/null || true; } | tr -d '[:space:]')" = "wait" ]; then
+            defer=true
+          fi
+          echo "defer=$defer" >>"$GITHUB_OUTPUT"
+          if [ -s "$OUT/issue-comment.md" ]; then
+            head -c 60000 "$OUT/issue-comment.md" >"$DIR/issue-comment.md"
+            extra=$(jq -c --argjson n "$ISSUE" '.comments = [{number: $n, body_file: "issue-comment.md"}]' <<<"$extra")
+          else
+            err="The agent left no root-cause analysis (issue-comment.md)."
+          fi
+          if [ -n "${PROV_NOTE:-}" ]; then
+            printf '%s\n' "$PROV_NOTE" >"$DIR/prov.md"
+            extra=$(jq -c '.provenance_comment_file = "prov.md"' <<<"$extra")
+          fi
+          if [ -s "$ERROR_FILE" ]; then
+            err=$(printf '%s%s' "$(cat "$ERROR_FILE")" "${err:+$(printf '\n\n%s' "$err")}")
+          fi
+          if [ -n "$err" ]; then
+            msg=$(printf '⚠️ The canary triage agent did not complete.\n\n%s' "$err")
+            extra=$(jq -c --arg msg "$msg" '.error = {message: $msg, fail_run: true}' <<<"$extra")
+          fi
+          printf '%s\n' "$extra" >"$EXTRA"
+          echo "landing: defer=$defer $(jq -c 'if .error then .error.message = "<\(.error.message | length) chars>" else . end' <<<"$extra")"
+
+      # Last, always: package the commits above the start SHA and the manifest
+      # for the land job. This action holds no token.
+      - name: Emit landing manifest
+        if: always()
+        uses: meridianlabs-ai/agents/.github/actions/emit-landing@main
         with:
-          name: claude-execution-output
-          path: /home/runner/work/_temp/claude-execution-output.json
-          if-no-files-found: ignore
+          start-sha: ${{ steps.base.outputs.sha }}
+          branch: ${{ needs.triage-gate.outputs.branch }}
+          # The SAME value the land job gets: the validator pins the
+          # manifest's issue_number to it, and it is where the final report
+          # goes when the manifest never validated.
+          issue-number: ${{ needs.triage-gate.outputs.issue_number }}
+          manifest-extra: ${{ runner.temp }}/landing-extra.json
+
+  # TRUSTED, last: a fresh runner that checks out nothing and installs
+  # nothing. Runs whatever the agent job did (always()), so an agent failure
+  # is reported on the tracking issue instead of dying in the log; skipped
+  # when the gate found nothing to triage or failed before naming the issue.
+  triage-land:
+    needs: [triage-gate, triage-agent]
+    if: always() && needs.triage-gate.result == 'success' && needs.triage-gate.outputs.needs_triage == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # fetch the start SHA (land's read token)
+      actions: read # artifact download
+    steps:
+      # Scoped to this repo and to this job's writes: the push (contents), the
+      # PR and its label (pull requests), the analysis comment, the "Opened"
+      # link, the issue labels and the error report (issues). The push and the
+      # PR come from meridian-marvin[bot], so CI and the reviewer trigger as
+      # they did for the machine account.
+      - name: Mint the App token
+        id: mint
+        uses: actions/create-github-app-token@v2
+        with:
+          # `app-id` takes the App ID or the Client ID; the action has no client-id input.
+          app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
+          owner: meridianlabs-ai
+          repositories: inspect_flow
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - name: Land
+        id: land
+        uses: meridianlabs-ai/agents/.github/actions/land@main
+        with:
+          token: ${{ steps.mint.outputs.token }}
+          # The manifest creates no issues (the gate owns the tracking issue).
+          allowed-issue-repos: ""
+          # The same value emit-landing got above (a gate output, computed
+          # before any untrusted code ran): the validator pins the manifest's
+          # issue_number to it, and it is the trusted target for the final
+          # report when the manifest never validated.
+          issue-number: ${{ needs.triage-gate.outputs.issue_number }}
+          # No PR names a head ref to pin the branch to, so the tracking
+          # issue's namespace (see the gate's `branch` output) is the pin: the
+          # manifest's branch must start with `inspect-ai-main/<issue>/`, and
+          # the trailing delimiter keeps another issue's branches out of it.
+          branch-prefix: inspect-ai-main/${{ needs.triage-gate.outputs.issue_number }}/
+
+      # The issue labels the manifest cannot express, applied deterministically
+      # once the agent's work has landed. `triaged` keeps later canary failures
+      # from re-triaging; it is applied when the landing succeeded, or when a PR
+      # was opened even though a later step failed (re-triaging would open a
+      # duplicate PR). An agent that died before finishing (manifest error, no
+      # analysis) leaves no label, so the next failure re-triages, as before.
+      # `hold:release` marks the WAIT classification (the agent job's `defer`
+      # output, true only for the literal `wait`), which close-on-green
+      # respects.
+      - name: Apply the triage labels
+        id: labels
+        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome == 'success' || steps.land.outputs.pr_number != '')
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.triage-gate.outputs.issue_number }}
+          DEFER: ${{ needs.triage-agent.outputs.defer }}
+        run: |
+          set -euo pipefail
+          labels=(triaged)
+          if [ "$DEFER" = "true" ]; then
+            labels+=(hold:release)
+          fi
+          for lbl in "${labels[@]}"; do
+            gh issue edit "$ISSUE" --repo "$REPO" --add-label "$lbl"
+            echo "Applied '$lbl' to #$ISSUE."
+          done
+
+      # Deterministic failure report on the TRACKING ISSUE (the gate's trusted
+      # number), whatever failed: the agent job, a missing or refused
+      # artifact, the push, the PR, a lost post, or the manifest's own error
+      # (the land composite fails the run for that after everything else
+      # landed). The composite reports on the PR once one exists and knows
+      # nothing about the `triaged` gating, so the recovery steps live here.
+      # Nothing from the agent job is interpolated into this body.
+      - name: Report the failure on the tracking issue
+        if: always() && steps.mint.outcome == 'success' && steps.land.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.triage-gate.outputs.issue_number }}
+          AGENT_RESULT: ${{ needs.triage-agent.result }}
+          LAND_OUTCOME: ${{ steps.land.outcome }}
+          LABELS_OUTCOME: ${{ steps.labels.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          if [ "$LABELS_OUTCOME" = "success" ]; then
+            tail="A pull request was opened before the failure, so this issue was marked triaged; check the PR and the run log."
+          else
+            tail="This issue was left untriaged, so the next scheduled canary failure will re-triage it automatically; or re-trigger now via workflow_dispatch on this workflow with the failed run id."
+          fi
+          body=$(printf '⚠️ The canary triage run did not complete (agent job: %s; landing: %s). Details: %s\n\n%s\n' \
+            "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$tail")
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
+            || echo "::error::Could not post the failure report on #$ISSUE."
 
   # Close the tracking issue when the canary is green again (see the header
   # comment for why green — not a fix PR's `Fixes #<n>` link — is the
