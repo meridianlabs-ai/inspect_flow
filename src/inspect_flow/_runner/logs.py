@@ -85,7 +85,7 @@ def get_task_ids_to_tasks(
 
     options = spec.options or FlowOptions()
 
-    resolved_tasks, _ = eval_resolve_tasks(
+    resolved_tasks, *_ = eval_resolve_tasks(
         tasks=[t.task for t in tasks],
         task_args=dict(),
         models=[get_model("none")],

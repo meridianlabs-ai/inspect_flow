@@ -8,6 +8,7 @@ from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.log import HeadlineMetric
 from inspect_ai.model import Model, get_model
+from inspect_ai.scorer._reducer.registry import reducer_log_name
 from inspect_ai.util import CheckpointConfig, TokenInterval
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
@@ -119,9 +120,7 @@ def test_flow_epochs() -> None:
     assert len(tasks) == 1
     assert tasks[0].task.epochs == 3
     assert tasks[0].task.epochs_reducer
-    assert (
-        tasks[0].task.epochs_reducer[0].__qualname__ == "median_score.<locals>.reduce"
-    )
+    assert reducer_log_name(tasks[0].task.epochs_reducer[0]) == "median"
 
 
 def test_task_limits_and_flags() -> None:
