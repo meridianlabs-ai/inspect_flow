@@ -342,6 +342,8 @@ class GenerateConfigDict(TypedDict):
     """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic and Bedrock Converse (Claude and Nova) only."""
     fallback_models: NotRequired[Sequence[str] | None]
     """Fallback models tried in order when the model's safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode)."""
+    fail_on_refusal: NotRequired[bool | None]
+    """Raise a `ModelRefusalError` (failing the sample) when the model returns `stop_reason="content_filter"`. Defaults to False."""
     verbosity: NotRequired[Literal["low", "medium", "high"] | None]
     """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
     effort: NotRequired[Literal["low", "medium", "high", "xhigh", "max"] | None]
@@ -351,7 +353,7 @@ class GenerateConfigDict(TypedDict):
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_mode: NotRequired[Literal["standard", "pro"] | None]
-    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6 models only ("standard" is the default; GPT-6 does not support "pro")."""
+    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only ("standard" is the default)."""
     reasoning_tokens: NotRequired[int | None]
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
@@ -429,7 +431,7 @@ class GenerateConfigMatrixDict(TypedDict):
     ]
     """Constrains effort on reasoning. Defaults vary by provider and model and not all models support all values (please consult provider documentation for details)."""
     reasoning_mode: NotRequired[Sequence[Literal["standard", "pro"] | None] | None]
-    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6 models only ("standard" is the default; GPT-6 does not support "pro")."""
+    """Reasoning mode. "pro" performs more model work for greater reliability on difficult tasks, at higher latency and token usage. OpenAI GPT-5.6+ models only ("standard" is the default)."""
     reasoning_tokens: NotRequired[Sequence[int | None] | None]
     """Maximum number of tokens to use for reasoning. Anthropic Claude models only."""
     reasoning_summary: NotRequired[
