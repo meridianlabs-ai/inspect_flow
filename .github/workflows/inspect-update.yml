@@ -460,8 +460,8 @@ jobs:
       #               characters stripped, forced to name the release since the
       #               dedup keys on it), body = "Fixes #<issue>" + OUT/pr-body.md,
       #               labels auto + inspect-update, issue for the "Opened" link
-      #   comments  — OUT/issue-comment.md on the release issue, followed by
-      #               the Surface step's denial warning when there is one
+      #   comments  — the Surface step's denial warning, if any, then
+      #               OUT/issue-comment.md, on the release issue
       #   provenance_comment_file — the model-provenance note, if any
       #   error     — the Surface step's message and/or the missing outputs,
       #               fail_run true; posted on the PR (or the issue) by `land`,
@@ -495,16 +495,22 @@ jobs:
           else
             err="The agent made no commits, so no branch was pushed and no PR was opened."
           fi
+          # The denial warning goes first and the mapping gets the rest of the
+          # 60,000 bytes: land posts at most that many, so a warning after a
+          # full-size mapping would be cut off.
+          comment="$DIR/issue-comment.md"
+          [ -s "$WARN_FILE" ] && cat "$WARN_FILE" >"$comment"
           if [ -s "$OUT/issue-comment.md" ]; then
-            head -c 60000 "$OUT/issue-comment.md" >"$DIR/issue-comment.md"
+            budget=60000
+            if [ -s "$comment" ]; then
+              printf '\n\n' >>"$comment"
+              budget=$((60000 - $(wc -c <"$comment")))
+            fi
+            head -c "$budget" "$OUT/issue-comment.md" >>"$comment"
           else
             err="${err:+$err }The agent left no changelog mapping (issue-comment.md)."
           fi
-          if [ -s "$WARN_FILE" ]; then
-            [ -s "$DIR/issue-comment.md" ] && printf '\n\n' >>"$DIR/issue-comment.md"
-            cat "$WARN_FILE" >>"$DIR/issue-comment.md"
-          fi
-          if [ -s "$DIR/issue-comment.md" ]; then
+          if [ -s "$comment" ]; then
             extra=$(jq -c --argjson n "$ISSUE" '.comments = [{number: $n, body_file: "issue-comment.md"}]' <<<"$extra")
           fi
           if [ -n "${PROV_NOTE:-}" ]; then

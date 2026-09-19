@@ -161,10 +161,45 @@ def test_denials_with_commits_only_warn(tmp_path: Path, repo: Path) -> None:
     assert "error" not in extra
     assert extra["pr"]["open"] is True
     comment = (Path(env["DIR"]) / "issue-comment.md").read_text()
-    assert comment.startswith(
-        "## Mapping\n\nAll done.\n\n\n⚠️ 2 tool call(s) were refused"
-    )
+    assert comment.startswith("⚠️ 2 tool call(s) were refused")
     assert "    Bash: git commit -m" in comment
+    assert comment.endswith("\n\n## Mapping\n\nAll done.\n")
+
+
+def _denied_commands(command: str) -> dict[str, Any]:
+    denials = [
+        {
+            "tool_name": "Bash",
+            "tool_use_id": f"toolu_{i}",
+            "tool_input": {"command": command},
+        }
+        for i in range(10)
+    ]
+    return {**DENIED_RESULT, "permission_denials": denials}
+
+
+@pytest.mark.parametrize("command", ["x" * 300, "界" * 300])
+def test_denial_warning_fits_the_posting_budget_before_a_full_mapping(
+    tmp_path: Path, repo: Path, command: str
+) -> None:
+    """land posts at most 60,000 bytes of a comment, so a warning appended after a
+    full-size mapping would be cut off (or, with multibyte inputs, the file would
+    exceed the manifest's 64 KiB cap and nothing would land)."""
+    env = _env(tmp_path, repo, _denied_commands(command))
+    (Path(env["OUT"]) / "issue-comment.md").write_bytes(b"# Mapping\n" + b"m" * 60000)
+    _commit(repo)
+    _run_step("Surface agent errors", repo, env)
+    _run_step("Compose landing manifest", repo, env)
+
+    extra = json.loads(Path(env["EXTRA"]).read_text())
+    assert "error" not in extra
+    assert extra["comments"] == [{"number": 836, "body_file": "issue-comment.md"}]
+    comment = (Path(env["DIR"]) / "issue-comment.md").read_bytes()
+    assert len(comment) <= 60000
+    text = comment.decode()
+    assert text.startswith("⚠️ 10 tool call(s) were refused")
+    assert text.count(f"    Bash: {command[:200]}\n") == 10
+    assert "\n\n# Mapping\nmmm" in text
 
 
 def test_denials_warning_posts_without_agent_comment(
