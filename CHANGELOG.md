@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.0...v0.13.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* support latest inspect_ai version ([#838](https://github.com/meridianlabs-ai/inspect_flow/issues/838)) ([191eea2](https://github.com/meridianlabs-ai/inspect_flow/commit/191eea2c564561979aa4391600ab26095fc57171))
+
 ## [0.13.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.12.0...v0.13.0) (2026-09-09)
 
 
