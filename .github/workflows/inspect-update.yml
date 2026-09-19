@@ -319,8 +319,19 @@ jobs:
                mapping is ambiguous or needs a human decision.
 
             4. On the current branch, implement the best-effort flow changes
-               and commit them (git add / git commit; never push, never
-               switch branches):
+               and commit them (never push, never switch branches). Write
+               OUT/pr-title.txt and OUT/pr-body.md (step 5) BEFORE your first
+               commit attempt, so a refused commit still leaves a legible
+               landing directory; revise them afterwards if the work changes.
+               Commit with exactly this shape, which is what the tool
+               allow-list matches: `git add -A` (or `git add <paths>`) as one
+               Bash command, then `git commit -m "<one-line message>"` as a
+               separate Bash command. No heredoc message, no `$(...)`, no
+               `&&`-chained commands, no `cd`. A refused command fails
+               silently in this environment (nobody is there to approve it):
+               if the same command is refused twice, stop retrying and write
+               what was refused into OUT/issue-comment.md instead of
+               summarising the work as done.
                - Advance the reconciled marker in pyproject.toml:
                  [tool.inspect_flow] inspect-reconciled-version = "${{ needs.gate.outputs.latest }}"
                - Upgrade all locked dependencies (`uv lock --upgrade` then
@@ -385,27 +396,59 @@ jobs:
 
       # Surface agent errors the action swallows. A model API error (overload /
       # 529, a model 404, etc.) leaves the run green at the workflow level but
-      # with no result. This job cannot post: the message becomes the
-      # manifest's `error` (fail_run true) and the land job posts it on the
-      # release issue and fails the run after everything else landed. Exits 0
-      # on every path: the red X is the land job's.
+      # with no result. Refused tool calls are the other silent failure: in an
+      # unattended run a call the allow-list rejects fails back to the model,
+      # which may give up and summarise as if done (run 35446410455: 11
+      # denials, no commits, `is_error` false). The result record's
+      # `permission_denials` carries each refused tool's input; denials with
+      # no commit are an error naming them, denials with commits a warning
+      # (work may still have been lost) on the issue comment. This job cannot
+      # post: the message becomes the manifest's `error` (fail_run true) and
+      # the land job posts it on the release issue and fails the run after
+      # everything else landed. Exits 0 on every path: the red X is the land
+      # job's.
       - name: Surface agent errors
         if: always()
         env:
           EXEC: ${{ steps.claude.outputs.execution_file }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          START: ${{ steps.base.outputs.sha }}
           ERROR_FILE: ${{ runner.temp }}/agent-error.md
+          WARN_FILE: ${{ runner.temp }}/agent-warning.md
         run: |
           set -uo pipefail
           file="${EXEC:-/home/runner/work/_temp/claude-execution-output.json}"
           err=""
-          [ -f "$file" ] && err=$(jq -r '(if type=="array" then . else .messages end) | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
+          denials=0
+          refused=""
+          if [ -f "$file" ]; then
+            msgs='(if type=="array" then . else .messages end)'
+            err=$(jq -r "$msgs"' | map(select(.type=="result" and .is_error==true)) | last | .result // empty' "$file" 2>/dev/null || true)
+            result="$msgs"' | map(select(.type=="result")) | last // {}'
+            denials=$(jq -r "$result"' | .permission_denials_count // (.permission_denials | length) // 0' "$file" 2>/dev/null || echo 0)
+            refused=$(jq -r "$result"' | (.permission_denials // [])[:10][] | "\(.tool_name // "?"): \(((.tool_input // {}) | (.command? // tojson)) | tostring | gsub("\\s+"; " ") | .[:200])"' "$file" 2>/dev/null | sed 's/^/    /' || true)
+          fi
           if [ -z "$err" ] && [ "$CLAUDE_OUTCOME" != "success" ]; then
             err="the Claude Code step ended with outcome '$CLAUDE_OUTCOME' before producing a result (see the job logs)."
           fi
-          [ -z "$err" ] && { echo "No agent error detected."; exit 0; }
-          echo "::error::Claude run did not complete: $err"
-          printf 'The reconciliation agent errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip); if it persists see https://status.claude.com.\n' "$err" >"$ERROR_FILE"
+          if [ -n "$err" ]; then
+            echo "::error::Claude run did not complete: $err"
+            printf 'The reconciliation agent errored before finishing:\n\n> %s\n\nUsually transient (model API capacity/overload or a model-availability blip); if it persists see https://status.claude.com.\n' "$err" >"$ERROR_FILE"
+          fi
+          if [ "$denials" -gt 0 ] 2>/dev/null; then
+            tip=$(git rev-parse HEAD 2>/dev/null || echo "$START")
+            note="$denials tool call(s) were refused by the permission allow-list. A refused call fails back to the model with nobody to approve it, so work may have been lost. Refused (first 10, one line each):"
+            if [ -n "$START" ] && [ "$tip" != "$START" ]; then
+              echo "::warning::$note"
+              printf '%s\n' "$refused"
+              printf '⚠️ %s\n\n%s\n' "$note" "$refused" >"$WARN_FILE"
+            else
+              echo "::error::No commit landed and $note"
+              printf '%s\n' "$refused"
+              printf 'No commit landed and %s\n\n%s\n' "$note" "$refused" >>"$ERROR_FILE"
+            fi
+          fi
+          [ -s "$ERROR_FILE" ] || echo "No agent error detected."
 
       # Everything the land job pushes and posts, as ONE JSON object for
       # emit-landing's manifest-extra (schema: agents
@@ -417,7 +460,8 @@ jobs:
       #               characters stripped, forced to name the release since the
       #               dedup keys on it), body = "Fixes #<issue>" + OUT/pr-body.md,
       #               labels auto + inspect-update, issue for the "Opened" link
-      #   comments  — OUT/issue-comment.md on the release issue
+      #   comments  — OUT/issue-comment.md on the release issue, followed by
+      #               the Surface step's denial warning when there is one
       #   provenance_comment_file — the model-provenance note, if any
       #   error     — the Surface step's message and/or the missing outputs,
       #               fail_run true; posted on the PR (or the issue) by `land`,
@@ -434,6 +478,7 @@ jobs:
           ISSUE: ${{ needs.gate.outputs.issue }}
           PROV_NOTE: ${{ steps.provenance.outputs.note }}
           ERROR_FILE: ${{ runner.temp }}/agent-error.md
+          WARN_FILE: ${{ runner.temp }}/agent-warning.md
         run: |
           set -euo pipefail
           mkdir -p "$DIR"
@@ -452,9 +497,15 @@ jobs:
           fi
           if [ -s "$OUT/issue-comment.md" ]; then
             head -c 60000 "$OUT/issue-comment.md" >"$DIR/issue-comment.md"
-            extra=$(jq -c --argjson n "$ISSUE" '.comments = [{number: $n, body_file: "issue-comment.md"}]' <<<"$extra")
           else
             err="${err:+$err }The agent left no changelog mapping (issue-comment.md)."
+          fi
+          if [ -s "$WARN_FILE" ]; then
+            [ -s "$DIR/issue-comment.md" ] && printf '\n\n' >>"$DIR/issue-comment.md"
+            cat "$WARN_FILE" >>"$DIR/issue-comment.md"
+          fi
+          if [ -s "$DIR/issue-comment.md" ]; then
+            extra=$(jq -c --argjson n "$ISSUE" '.comments = [{number: $n, body_file: "issue-comment.md"}]' <<<"$extra")
           fi
           if [ -n "${PROV_NOTE:-}" ]; then
             printf '%s\n' "$PROV_NOTE" >"$DIR/prov.md"
