@@ -2,7 +2,6 @@
   "release-type": "python",
   "packages": {
     ".": {
-      "release-as": "0.13.1",
       "changelog-sections": [
         {
           "type": "feat",
