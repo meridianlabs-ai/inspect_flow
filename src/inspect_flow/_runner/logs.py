@@ -92,6 +92,7 @@ def get_task_ids_to_tasks(
         model_roles=None,
         config=GenerateConfig(),
         approval=default_none(options.approval),
+        review=default_none(options.review),
         sandbox=default_none(options.sandbox),
         sample_shuffle=default_none(options.sample_shuffle),
     )

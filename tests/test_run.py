@@ -15,6 +15,7 @@ from inspect_ai._util.logger import LogHandler, LogHandlerVar, _logHandler
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig, ApproverPolicyConfig
 from inspect_ai.model import GenerateConfig, Model, ModelName, ModelOutput
+from inspect_ai.review._policy import ReviewerPolicyConfig, ReviewPolicyConfig
 from inspect_ai.solver import Generate, Solver, TaskState, solver
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
@@ -1117,6 +1118,9 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
                     )
                 ]
             ),
+            review=ReviewPolicyConfig(
+                reviewers=[ReviewerPolicyConfig(name="human", tools="*")]
+            ),
             score=False,
             log_level="debug",
             log_level_transcript="info",
@@ -1176,6 +1180,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["trace"] == spec.options.trace
     assert call_args.kwargs["display"] == spec.options.display
     assert call_args.kwargs["approval"] == spec.options.approval
+    assert call_args.kwargs["review"] == spec.options.review
     assert call_args.kwargs["score"] == spec.options.score
     assert call_args.kwargs["log_level"] == spec.options.log_level
     assert call_args.kwargs["log_level_transcript"] == spec.options.log_level_transcript

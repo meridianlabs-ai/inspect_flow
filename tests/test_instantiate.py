@@ -8,6 +8,7 @@ from inspect_ai import Task, task
 from inspect_ai.agent import Agent, AgentState, agent
 from inspect_ai.log import HeadlineMetric
 from inspect_ai.model import Model, get_model
+from inspect_ai.review._policy import ReviewerPolicyConfig, ReviewPolicyConfig
 from inspect_ai.scorer._reducer.registry import reducer_log_name
 from inspect_ai.util import CheckpointConfig, TokenInterval
 from inspect_flow._runner.instantiate import instantiate_tasks
@@ -125,6 +126,9 @@ def test_flow_epochs() -> None:
 
 def test_task_limits_and_flags() -> None:
     checkpoint = CheckpointConfig(trigger=TokenInterval(every=500_000))
+    review = ReviewPolicyConfig(
+        reviewers=[ReviewerPolicyConfig(name="human", tools="*")]
+    )
     spec = FlowSpec(
         tasks=[
             FlowTask(
@@ -133,6 +137,7 @@ def test_task_limits_and_flags() -> None:
                 token_limit="1M",
                 score_on_error=True,
                 checkpoint=checkpoint,
+                review=review,
                 headline_metric="accuracy_scorer",
             ),
         ]
@@ -145,6 +150,8 @@ def test_task_limits_and_flags() -> None:
     assert task.token_limit == 1_000_000
     assert task.score_on_error is True
     assert task.checkpoint == checkpoint
+    assert task.review is not None
+    assert [policy.tools for policy in task.review] == ["*"]
     assert task.headline_metric == HeadlineMetric(scorer="accuracy_scorer")
 
 

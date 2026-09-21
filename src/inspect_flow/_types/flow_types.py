@@ -27,6 +27,7 @@ from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
 from inspect_ai.log import EvalLog, HeadlineMetric, IncompleteAction
 from inspect_ai.model import GenerateConfig, Model, ModelCost
+from inspect_ai.review._policy import ReviewPolicyConfig
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
@@ -563,6 +564,11 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.",
     )
 
+    review: str | ReviewPolicyConfig | None | NotGiven = Field(
+        default=not_given,
+        description="Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy.",
+    )
+
     epochs: int | FlowEpochs | None | NotGiven = Field(
         default=not_given,
         description='Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)',
@@ -741,6 +747,11 @@ class FlowOptions(FlowBase):
     approval: str | ApprovalPolicyConfig | None | NotGiven = Field(
         default=not_given,
         description="Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.",
+    )
+
+    review: str | ReviewPolicyConfig | None | NotGiven = Field(
+        default=not_given,
+        description="Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Overrides any task-level `review`. Defaults to no review policy.",
     )
 
     score: bool | None | NotGiven = Field(

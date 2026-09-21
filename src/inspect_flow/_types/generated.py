@@ -16,6 +16,7 @@ from inspect_ai.model import (
     Model,
     ResponseSchema,
 )
+from inspect_ai.review._policy import ReviewPolicyConfig
 from inspect_ai.scorer import Scorer
 from inspect_ai.solver import Solver
 from inspect_ai.util import (
@@ -199,6 +200,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Sandbox environment type (or optionally a str or tuple with a shorthand spec)"""
     approval: NotRequired[str | ApprovalPolicyConfig | NotGiven | None]
     """Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy."""
+    review: NotRequired[str | ReviewPolicyConfig | NotGiven | None]
+    """Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy."""
     epochs: NotRequired[int | FlowEpochs | NotGiven | None]
     """Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)"""
     fail_on_error: NotRequired[bool | float | NotGiven | None]
