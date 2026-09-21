@@ -101,14 +101,21 @@ jobs:
             echo "proceed=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
+          # Both checks read the list endpoints, never the search API: under
+          # the job token a search returns different results than it does for
+          # a user (2026-09-21, runs 35611948106 and 35614947712: an open
+          # labelled *issue* was counted by `is:pull-request is:open`, and the
+          # gate refused until it was closed), and the search index lags the
+          # repository besides. `--paginate` emits one JSON array per page;
+          # `jq -s 'add'` joins them. A failed call fails the step (pipefail).
+          #
           # Any still-open inspect-update PR (regardless of version) means a
           # prior release is mid-reconciliation and hasn't advanced the marker
           # on main yet. Proceeding now would open a second PR whose changelog
           # range is a superset of the first, both racing to edit the same
           # marker line — so wait for it to land first.
-          open_prs=$(gh api -X GET search/issues \
-            -f q="repo:$GITHUB_REPOSITORY is:pull-request is:open label:inspect-update" \
-            --jq .total_count)
+          open_prs=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --paginate \
+            | jq -s 'add | map(select(any(.labels[]; .name == "inspect-update"))) | length')
           if [ "$open_prs" -gt 0 ]; then
             echo "An inspect-update PR is still open; waiting for it to land before starting $LATEST."
             echo "proceed=false" >>"$GITHUB_OUTPUT"
@@ -116,15 +123,13 @@ jobs:
           fi
           # Keyed on the inspect-update label + version in the title, open or
           # closed, so a release that was already processed (or explicitly
-          # closed as won't-do) is never re-opened. The search API requires an
-          # is:issue / is:pull-request qualifier, hence two queries.
-          count=0
-          for kind in issue pull-request; do
-            n=$(gh api -X GET search/issues \
-              -f q="repo:$GITHUB_REPOSITORY is:$kind label:inspect-update \"$LATEST\" in:title" \
-              --jq .total_count)
-            count=$((count + n))
-          done
+          # closed as won't-do) is never re-opened. The issues endpoint lists
+          # PRs too. The version has to match as a whole token (0.3.266 is not
+          # 0.3.2660), with its dots taken literally.
+          count=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=all&labels=inspect-update&per_page=100" --paginate \
+            | jq -s --arg v "$LATEST" 'add
+                | map(select(.title | test("(^|[^0-9.])" + ($v | gsub("\\."; "\\.")) + "([^0-9.]|$)")))
+                | length')
           if [ "$count" -gt 0 ]; then
             echo "Found $count existing inspect-update issue(s)/PR(s) for $LATEST; nothing to do."
             echo "proceed=false" >>"$GITHUB_OUTPUT"
