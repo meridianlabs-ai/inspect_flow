@@ -450,6 +450,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             model_roles=model_roles,
             sandbox=ng(flow_task.sandbox),
             approval=ng(flow_task.approval),
+            review=ng(flow_task.review),
             epochs=ng(epochs),
             fail_on_error=ng(flow_task.fail_on_error),
             continue_on_fail=ng(flow_task.continue_on_fail),

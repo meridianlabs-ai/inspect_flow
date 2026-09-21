@@ -196,6 +196,7 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
             trace=default_none(options.trace),
             display=default_none(ctx.display_type),
             approval=default_none(options.approval),
+            review=default_none(options.review),
             notification=default_none(options.notification),
             score=default(options.score, True),
             score_display=default_none(options.score_display),

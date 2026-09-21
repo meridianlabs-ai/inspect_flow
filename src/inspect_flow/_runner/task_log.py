@@ -49,6 +49,7 @@ class TaskInfo:
     model_roles: dict[str, str] | None = None
     solver: str | None = None
     approval: str | None = None
+    review: str | None = None
     version: int | str = 0
     message_limit: int | None = None
     token_limit: int | None = None
@@ -83,6 +84,7 @@ def task_log_to_task_info(info: TaskLogInfo) -> TaskInfo:
         ),
         solver=solver_ri.name if solver_ri else None,
         approval=str(task.approval) if task.approval else None,
+        review=str(task.review) if task.review else None,
         version=task.version,
         message_limit=task.message_limit,
         token_limit=task.token_limit,
@@ -148,9 +150,10 @@ def _task_fields(infos: list[TaskInfo]) -> list[_TaskField]:
         *_dict_fields([info.args for info in infos], _arg),
         # Model Roles
         *_dict_fields([info.model_roles for info in infos], _model_role),
-        # Solver and Approval
+        # Solver, Approval, and Review
         _simple_attr("solver"),
         _simple_attr("approval"),
+        _simple_attr("review"),
         # Task-level fields in task_identifier
         _simple_attr("version"),
         _simple_attr("message_limit"),
