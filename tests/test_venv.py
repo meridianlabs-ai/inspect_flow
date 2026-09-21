@@ -344,6 +344,7 @@ def test_moonshot_provider_adds_openai_dependency() -> None:
         ("openai-api/xai/grok-4-0709", ["openai"]),
         ("openai-api-completions/xai/grok-4-0709", ["openai"]),
         ("deepseek/deepseek-chat", ["openai"]),
+        ("meta/muse-spark-1.3", ["openai"]),
         ("sagemaker/my-endpoint", ["openai"]),
         ("vllm-completions/meta-llama/Llama-3.1-8B", ["vllm"]),
         ("nnterp/gpt2", ["nnterp"]),
