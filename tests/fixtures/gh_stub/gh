@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Stands in for `gh api` in tests/test_workflows.py: logs each call to
+# GH_STUB_LOG, then serves the page(s) in GH_STUB_PULLS or GH_STUB_ISSUES by
+# endpoint, or fails like a 5xx when GH_STUB_FAIL is set.
+printf '%s\n' "$*" >>"$GH_STUB_LOG"
+if [ -n "${GH_STUB_FAIL:-}" ]; then
+  echo "gh: HTTP 502: Bad Gateway" >&2
+  exit 1
+fi
+case "$*" in
+  *"/pulls?"*) cat "$GH_STUB_PULLS" ;;
+  *"/issues?"*) cat "$GH_STUB_ISSUES" ;;
+  *) echo "unexpected gh call: $*" >&2; exit 2 ;;
+esac

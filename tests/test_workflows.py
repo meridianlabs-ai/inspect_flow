@@ -5,6 +5,12 @@ are run with bash against a fixture execution file shaped like the result
 record claude-code-action writes (a `permission_denials` list of
 `{tool_name, tool_use_id, tool_input}`), so a refused commit is reported on
 the release issue instead of passing as a silent success (run 35446410455).
+
+The `gate` job's "Dedup before doing any work" step is run against a stub `gh`
+(tests/fixtures/gh_stub/gh) that serves canned list-endpoint pages: the gate
+must decide from `repos/*/pulls` and `repos/*/issues`, never from the search
+API, whose results under the job token differ from a user's (runs 35611948106
+and 35614947712 refused on an open labelled issue counted as a pull request).
 """
 
 import json
@@ -17,6 +23,7 @@ import pytest
 import yaml
 
 WORKFLOW = Path(__file__).parent.parent / ".github/workflows/inspect-update.yml"
+GH_STUB = Path(__file__).parent / "fixtures/gh_stub"
 
 HEREDOC_COMMIT = "git commit -m \"$(cat <<'EOF'\nfix: upgrade lock\nEOF\n)\""
 
@@ -46,12 +53,10 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _agent_steps() -> dict[str, dict[str, Any]]:
+def _steps(job: str) -> dict[str, dict[str, Any]]:
     workflow = yaml.safe_load(WORKFLOW.read_text())
     return {
-        step["name"]: step
-        for step in workflow["jobs"]["agent"]["steps"]
-        if "name" in step
+        step["name"]: step for step in workflow["jobs"][job]["steps"] if "name" in step
     }
 
 
@@ -65,7 +70,7 @@ def _prompt() -> str:
 
 def _run_step(name: str, cwd: Path, env: dict[str, str]) -> str:
     result = subprocess.run(
-        ["bash", "-c", _agent_steps()[name]["run"]],
+        ["bash", "-c", _steps("agent")[name]["run"]],
         cwd=cwd,
         env={"PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin", **env},
         capture_output=True,
@@ -255,3 +260,165 @@ def test_prompt_says_how_to_commit() -> None:
     assert "No heredoc message, no `$(...)`, no" in prompt
     assert "if the same command is refused twice, stop retrying" in prompt
     assert "OUT/pr-title.txt and OUT/pr-body.md (step 5) BEFORE your first" in prompt
+
+
+GATE_STEP = "Dedup before doing any work"
+
+
+def _pr(number: int, *labels: str) -> dict[str, Any]:
+    return {"number": number, "labels": [{"name": name} for name in labels]}
+
+
+def _issue(number: int, title: str, pr: bool = False) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "number": number,
+        "title": title,
+        "labels": [{"name": "inspect-update"}],
+    }
+    if pr:
+        entry["pull_request"] = {"url": f"https://api.github.com/pulls/{number}"}
+    return entry
+
+
+def _run_gate(
+    tmp_path: Path,
+    pulls: list[list[dict[str, Any]]],
+    issues: list[list[dict[str, Any]]],
+    latest: str = "0.3.266",
+    reconciled: str = "0.3.265",
+    fail: bool = False,
+) -> tuple[subprocess.CompletedProcess[str], dict[str, str], list[str]]:
+    """Run the gate's dedup step against the stub gh; return the process, the
+    step outputs and the gh calls it made. `--paginate` prints one array per
+    page, so multi-page fixtures are concatenated documents."""
+    pulls_file = tmp_path / "pulls.json"
+    issues_file = tmp_path / "issues.json"
+    pulls_file.write_text("\n".join(json.dumps(page) for page in pulls))
+    issues_file.write_text("\n".join(json.dumps(page) for page in issues))
+    output = tmp_path / "github-output"
+    output.touch()
+    log = tmp_path / "gh-calls.log"
+    env = {
+        "PATH": f"{GH_STUB}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+        "GITHUB_OUTPUT": str(output),
+        "GITHUB_REPOSITORY": "meridianlabs-ai/inspect_flow",
+        "LATEST": latest,
+        "RECONCILED": reconciled,
+        "GH_STUB_LOG": str(log),
+        "GH_STUB_PULLS": str(pulls_file),
+        "GH_STUB_ISSUES": str(issues_file),
+        **({"GH_STUB_FAIL": "1"} if fail else {}),
+    }
+    result = subprocess.run(
+        ["bash", "-c", _steps("gate")[GATE_STEP]["run"]],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    outputs = dict(
+        line.split("=", 1) for line in output.read_text().splitlines() if line
+    )
+    calls = log.read_text().splitlines() if log.exists() else []
+    return result, outputs, calls
+
+
+def test_gate_decides_from_the_list_endpoints_not_search() -> None:
+    run = _steps("gate")[GATE_STEP]["run"]
+    assert "search/issues" not in run
+    assert "pulls?state=open" in run
+    assert "issues?state=all&labels=inspect-update" in run
+    # The version is matched as a whole token, dots taken literally.
+    assert "(^|[^0-9.])" in run and "([^0-9.]|$)" in run
+    assert 'gsub("\\\\."; "\\\\.")' in run
+
+
+def test_gate_proceeds_past_an_open_labelled_issue(tmp_path: Path) -> None:
+    """The failure of 2026-09-21: an open `inspect-update` issue for an earlier
+    attempt (no version in its title) and an unrelated open PR must not read
+    as a PR still in flight or as the release already claimed."""
+    result, outputs, calls = _run_gate(
+        tmp_path,
+        pulls=[[_pr(840, "auto")]],
+        issues=[
+            [
+                _issue(836, "Superseded reconciliation attempt of 2026-09-19"),
+                _issue(
+                    812, "inspect-ai 0.3.265: surface new features in flow", pr=True
+                ),
+            ]
+        ],
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"proceed": "true"}
+    assert "inspect-ai 0.3.266 is unprocessed; proceeding." in result.stdout
+    assert [c.split()[1] for c in calls] == [
+        "repos/meridianlabs-ai/inspect_flow/pulls?state=open&per_page=100",
+        "repos/meridianlabs-ai/inspect_flow/issues?state=all&labels=inspect-update&per_page=100",
+    ]
+    assert all("--paginate" in c and "search" not in c for c in calls)
+
+
+def test_gate_waits_for_an_open_inspect_update_pr(tmp_path: Path) -> None:
+    result, outputs, calls = _run_gate(
+        tmp_path,
+        pulls=[[_pr(840, "auto")], [_pr(842, "auto", "inspect-update")]],
+        issues=[[]],
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"proceed": "false"}
+    assert "An inspect-update PR is still open; waiting" in result.stdout
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("title", "proceed"),
+    [
+        ("inspect-ai 0.3.266: surface new features in flow", "false"),
+        ("chore: reconcile inspect-ai 0.3.266", "false"),
+        ("0.3.266", "false"),
+        ("inspect-ai 0.3.2660: surface new features in flow", "true"),
+        ("inspect-ai 10.3.266: surface new features in flow", "true"),
+        ("inspect-ai 0.3.266.1: surface new features in flow", "true"),
+        ("inspect-ai 0x3x266: surface new features in flow", "true"),
+    ],
+)
+def test_gate_matches_the_claimed_version_as_a_whole_token(
+    tmp_path: Path, title: str, proceed: str
+) -> None:
+    result, outputs, _ = _run_gate(
+        tmp_path,
+        pulls=[[]],
+        issues=[
+            [_issue(700, "inspect-ai 0.3.200: older")],
+            [_issue(843, title, pr=True)],
+        ],
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"proceed": proceed}
+    if proceed == "false":
+        assert (
+            "Found 1 existing inspect-update issue(s)/PR(s) for 0.3.266"
+            in result.stdout
+        )
+
+
+def test_gate_fails_loudly_when_gh_fails(tmp_path: Path) -> None:
+    result, outputs, _ = _run_gate(tmp_path, pulls=[[]], issues=[[]], fail=True)
+
+    assert result.returncode != 0
+    assert "HTTP 502" in result.stderr
+    assert outputs == {}
+
+
+def test_gate_skips_gh_when_already_reconciled(tmp_path: Path) -> None:
+    result, outputs, calls = _run_gate(
+        tmp_path, pulls=[[]], issues=[[]], latest="0.3.266", reconciled="0.3.266"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"proceed": "false"}
+    assert calls == []
