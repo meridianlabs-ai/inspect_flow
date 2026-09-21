@@ -64,6 +64,7 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     # Starts a local vllm server when no endpoint is configured, like "vllm"
     "vllm-completions": ["vllm"],
     "deepseek": ["openai"],
+    "meta": ["openai"],  # added in inspect-ai 0.3.267
     "sagemaker": ["openai"],  # boto3/aioboto3 ship with inspect-ai
     "nnterp": ["nnterp"],
     "none": [],
