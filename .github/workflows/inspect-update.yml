@@ -210,6 +210,8 @@ jobs:
     needs: gate
     if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
+    # Agent runs restore caches, never save them (meridianlabs-ai/agents: design/agent-cache-scope.md).
+    cache-mode: read
     # Job token only, and read-only: this job references no secret. The agent
     # ingests the upstream CHANGELOG and runs uv/python on the checkout, so
     # nothing it can reach may write to GitHub; every write happens in `land`
