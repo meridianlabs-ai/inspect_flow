@@ -236,7 +236,10 @@ jobs:
           set -euo pipefail
           git checkout --quiet -b "$BRANCH"
           mkdir -p "$OUT"
-          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+          sha=$(git rev-parse HEAD)
+          [ "$sha" = "$GITHUB_SHA" ] \
+            || { echo "::error::The release branch starts at $sha, but the land job pins the run's start to github.sha ($GITHUB_SHA); the checkout must be at github.sha."; exit 1; }
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
 
       # Same convention the reusable dev-agent workflow uses: provision the
       # project venv so the agent can run pytest/ruff/pyright and introspect
@@ -593,6 +596,13 @@ jobs:
           # manifest's branch must start with `inspect-update/<issue>/`, and
           # the trailing delimiter keeps another issue's branches out of it.
           branch-prefix: inspect-update/${{ needs.gate.outputs.issue }}/
+          # The run's start as trusted context records it: github.sha comes
+          # from the event payload, and the agent job's `base` step fails
+          # unless its checkout is at exactly this commit. The validator
+          # refuses a manifest that carries commits unless its start_sha
+          # equals this, so the agent job cannot name another start and land
+          # history the run never began from (agents#137, finding 4628444).
+          start-sha: ${{ github.sha }}
 
       # Repo default the manifest cannot express: assign the PR like the
       # issue. Best-effort; runs whenever the land step got as far as a PR.
