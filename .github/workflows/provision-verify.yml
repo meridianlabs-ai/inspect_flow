@@ -1,0 +1,101 @@
+# SCRATCH (not for main): verifies the `provision` recipe the agent stubs set
+# (meridianlabs-ai/agents design/executed-paths-residual.md, plan step 2) the
+# way the reusable workflows' codex job runs it: create the codex user, run
+# the recipe as codex with provision-fallback, reset the codex home, then run
+# the discovered tools and this repo's checks as codex under codex-action's
+# launch shape (`sudo -u codex -H` with sudo's reset environment).
+name: provision verify (scratch)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [executed-paths-step2-provision-verify]
+
+permissions:
+  contents: read
+
+jobs:
+  recipe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Every reusable-workflow call in the stubs must carry the same recipe;
+      # that recipe is what the next steps run.
+      - name: Read the stubs' recipe
+        id: fx
+        run: |
+          set -euo pipefail
+          recipes=$(for f in claude claude-auto claude-review; do
+            yq -o=json '[.jobs[] | select(.uses) | {"file": "'"$f"'", "uses": .uses, "provision": .with.provision}]' ".github/workflows/$f.yml"
+          done | jq -s add)
+          jq . <<<"$recipes"
+          [ "$(jq length <<<"$recipes")" = 5 ] || { echo "::error::expected 5 reusable-workflow calls"; exit 1; }
+          [ "$(jq '[.[].provision] | unique | length' <<<"$recipes")" = 1 ] || { echo "::error::the stubs' recipes differ"; exit 1; }
+          recipe=$(jq -r '.[0].provision // ""' <<<"$recipes")
+          [ -n "$recipe" ] || { echo "::error::no recipe set"; exit 1; }
+          { echo "recipe<<RECIPE_EOF"; printf '%s\n' "$recipe"; echo "RECIPE_EOF"; } >>"$GITHUB_OUTPUT"
+          echo "lock=$(sha256sum <uv.lock)" >>"$GITHUB_OUTPUT"
+
+      - name: Create codex user
+        uses: meridianlabs-ai/agents/.github/actions/create-codex-user@main
+
+      - name: Provision project environment (as the codex user)
+        id: setup
+        timeout-minutes: 10
+        uses: meridianlabs-ai/agents/.github/actions/provision-fallback@main
+        with:
+          user: codex
+          recipe: ${{ steps.fx.outputs.recipe }}
+
+      - name: Reset codex home
+        uses: meridianlabs-ai/agents/.github/actions/create-codex-user@main
+        with:
+          mode: reset-home
+
+      - name: Discovered tools run as codex
+        env:
+          BIN: ${{ steps.setup.outputs.bin }}
+        run: |
+          set -euo pipefail
+          echo "bin: $BIN"
+          tools=""
+          IFS=: read -r -a dirs <<<"$BIN"
+          for t in pytest ruff mypy pyright python3 node pnpm npm; do
+            for d in "${dirs[@]}"; do
+              [ -x "$d/$t" ] && { tools="$tools$t=$d/$t "; break; }
+            done
+          done
+          echo "discovered: ${tools:-none}"
+          for t in pytest ruff pyright python3; do
+            case " $tools" in *" $t="*) ;; *) echo "::error::$t not discovered"; exit 1 ;; esac
+          done
+          for kv in $tools; do
+            sudo -u codex -H -- "${kv#*=}" --version
+          done
+
+      - name: Python 3.11 and the locked dev group
+        env:
+          LOCK_BEFORE: ${{ steps.fx.outputs.lock }}
+        run: |
+          set -euo pipefail
+          v=$(sudo -u codex -H -- .venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+          [ "$v" = 3.11 ] || { echo "::error::expected Python 3.11 in the venv, got $v"; exit 1; }
+          [ "$(sha256sum <uv.lock)" = "$LOCK_BEFORE" ] || { echo "::error::uv sync changed uv.lock"; exit 1; }
+          sudo -u codex -H -- .venv/bin/python -c 'import inspect_flow, local_eval; print(inspect_flow.__file__)'
+          echo "Python $v, uv.lock unchanged"
+
+      # What the agent runs to verify a change: `make check` (without the
+      # rewrites) and `make test`.
+      - name: ruff and pyright as codex
+        run: |
+          set -euo pipefail
+          sudo -u codex -H -- .venv/bin/ruff check
+          sudo -u codex -H -- .venv/bin/ruff format --check
+          sudo -u codex -H -- .venv/bin/pyright
+
+      - name: pytest as codex
+        run: sudo -u codex -H -- .venv/bin/pytest -q
