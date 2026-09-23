@@ -15,6 +15,9 @@ and 35614947712 refused on an open labelled issue counted as a pull request).
 The PR labels each composer writes (here and in inspect-ai-main-failure.yml)
 must be exactly the `allowed-pr-labels` its `land` step pins, so a manifest
 rewritten after the composer cannot add another label (#847).
+
+Every job that runs the agent restores the Actions cache but never saves it
+(meridianlabs-ai/agents design/agent-cache-scope.md).
 """
 
 import json
@@ -458,3 +461,19 @@ def test_land_allows_only_the_labels_the_composer_writes(
     )
     labels = json.loads(Path(env["EXTRA"]).read_text())["pr"]["labels"]
     assert json.loads(land["with"]["allowed-pr-labels"]) == labels
+
+
+def test_agent_jobs_only_read_the_actions_cache() -> None:
+    agent_jobs = {
+        (path.name, name): job.get("cache-mode")
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        if any(
+            step.get("uses", "").startswith("anthropics/claude-code-action")
+            for step in job.get("steps", [])
+        )
+    }
+    assert agent_jobs == {
+        ("inspect-update.yml", "agent"): "read",
+        ("inspect-ai-main-failure.yml", "triage-agent"): "read",
+    }

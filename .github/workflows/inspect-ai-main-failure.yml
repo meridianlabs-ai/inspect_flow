@@ -252,6 +252,8 @@ jobs:
     needs: triage-gate
     if: needs.triage-gate.outputs.needs_triage == 'true'
     runs-on: ubuntu-latest
+    # Agent runs restore caches, never save them (meridianlabs-ai/agents: design/agent-cache-scope.md).
+    cache-mode: read
     permissions:
       contents: read
       actions: read
