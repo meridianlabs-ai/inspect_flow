@@ -472,7 +472,8 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
         (path.name, name): job.get("cache-mode")
         for path in WORKFLOWS.glob("*.yml")
         for name, job in yaml.safe_load(path.read_text())["jobs"].items()
-        if any(
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+        or any(
             step.get("uses", "").startswith("anthropics/claude-code-action")
             for step in job.get("steps", [])
         )
@@ -480,6 +481,11 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
     assert agent_jobs == {
         ("inspect-update.yml", "agent"): "read",
         ("inspect-ai-main-failure.yml", "triage-agent"): "read",
+        ("claude.yml", "claude"): "read",
+        ("claude.yml", "claude-auto"): "read",
+        ("claude-auto.yml", "ci-fix"): "read",
+        ("claude-auto.yml", "review-fix"): "read",
+        ("claude-review.yml", "review"): "read",
     }
 
 
