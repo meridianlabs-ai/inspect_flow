@@ -18,6 +18,13 @@ rewritten after the composer cannot add another label (#847).
 
 Every job that runs the agent restores the Actions cache but never saves it
 (meridianlabs-ai/agents design/agent-cache-scope.md).
+
+The `land` job's "Route protected changes to the maintainer" step is run
+against a local origin and a bundle built like emit-landing's: commits that
+change a protected path (run 35921391185: pyproject.toml and uv.lock, which
+the shared land action refuses to push) become a maintainer handoff whose
+kept bundle applies from the handoff comment's own commands, while other
+commits are left to land as before.
 """
 
 import json
@@ -295,6 +302,7 @@ def _run_gate(
     latest: str = "0.3.266",
     reconciled: str = "0.3.265",
     fail: bool = False,
+    handoffs: list[dict[str, Any]] | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], dict[str, str], list[str]]:
     """Run the gate's dedup step against the stub gh; return the process, the
     step outputs and the gh calls it made. `--paginate` prints one array per
@@ -303,6 +311,8 @@ def _run_gate(
     issues_file = tmp_path / "issues.json"
     pulls_file.write_text("\n".join(json.dumps(page) for page in pulls))
     issues_file.write_text("\n".join(json.dumps(page) for page in issues))
+    handoffs_file = tmp_path / "handoffs.json"
+    handoffs_file.write_text(json.dumps(handoffs or []))
     output = tmp_path / "github-output"
     output.touch()
     log = tmp_path / "gh-calls.log"
@@ -315,6 +325,7 @@ def _run_gate(
         "GH_STUB_LOG": str(log),
         "GH_STUB_PULLS": str(pulls_file),
         "GH_STUB_ISSUES": str(issues_file),
+        "GH_STUB_HANDOFFS": str(handoffs_file),
         **({"GH_STUB_FAIL": "1"} if fail else {}),
     }
     result = subprocess.run(
@@ -363,6 +374,7 @@ def test_gate_proceeds_past_an_open_labelled_issue(tmp_path: Path) -> None:
     assert "inspect-ai 0.3.266 is unprocessed; proceeding." in result.stdout
     assert [c.split()[1] for c in calls] == [
         "repos/meridianlabs-ai/inspect_flow/pulls?state=open&per_page=100",
+        "repos/meridianlabs-ai/inspect_flow/issues?state=open&labels=inspect-update,maintainer-handoff&per_page=100",
         "repos/meridianlabs-ai/inspect_flow/issues?state=all&labels=inspect-update&per_page=100",
     ]
     assert all("--paginate" in c and "search" not in c for c in calls)
@@ -412,6 +424,37 @@ def test_gate_matches_the_claimed_version_as_a_whole_token(
             "Found 1 existing inspect-update issue(s)/PR(s) for 0.3.266"
             in result.stdout
         )
+
+
+def test_gate_waits_for_an_open_maintainer_handoff(tmp_path: Path) -> None:
+    """A release handed to the maintainer has not advanced the marker on main,
+    so a newer release would reconcile a superset of it: wait for the
+    maintainer's PR to close the handoff issue (a PR carrying both labels is
+    the open-PR rule's, not this one's)."""
+    result, outputs, calls = _run_gate(
+        tmp_path,
+        pulls=[[]],
+        issues=[[]],
+        latest="0.3.269",
+        reconciled="0.3.266",
+        handoffs=[_issue(852, "inspect-ai 0.3.268: surface new features in flow")],
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"proceed": "false"}
+    assert "maintainer handoff is still open; waiting" in result.stdout
+    assert len(calls) == 2
+
+    (tmp_path / "pr").mkdir()
+    result, outputs, _ = _run_gate(
+        tmp_path / "pr",
+        pulls=[[]],
+        issues=[[]],
+        latest="0.3.269",
+        reconciled="0.3.266",
+        handoffs=[_issue(853, "chore: reconcile inspect-ai 0.3.268", pr=True)],
+    )
+    assert outputs == {"proceed": "true"}
 
 
 def test_gate_fails_loudly_when_gh_fails(tmp_path: Path) -> None:
@@ -477,3 +520,403 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
         ("inspect-update.yml", "agent"): "read",
         ("inspect-ai-main-failure.yml", "triage-agent"): "read",
     }
+
+
+ROUTE_STEP = "Route protected changes to the maintainer"
+LAND_ACTIONS = "_actions/meridianlabs-ai/agents/main/.github/actions/land"
+
+# Stands in for the land action's lib.sh: the same two names the route step
+# reads, with a protected list shaped like the real one.
+STUB_LIB = """PROTECTED_PATHSPECS=(.github ':(glob)**/pyproject.toml' ':(glob)**/uv.lock')
+protected_reach() { :; }
+"""
+
+
+def _land_steps() -> dict[str, dict[str, Any]]:
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    return {s["id"]: s for s in workflow["jobs"]["land"]["steps"] if "id" in s}
+
+
+def _write(repo: Path, files: dict[str, str]) -> None:
+    for name, text in files.items():
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / name).write_text(text)
+    _git(repo, "add", "-A")
+    _commit(repo, "agent work")
+
+
+class Landing:
+    """A local origin at `start`, an agent clone with commits above it, and the
+    landing directory emit-landing and the composer would upload for them."""
+
+    def __init__(self, tmp_path: Path) -> None:
+        self.tmp = tmp_path
+        self.origin = tmp_path / "origin"
+        self.origin.mkdir()
+        _git(self.origin, "init", "-q", "-b", "main")
+        _write(
+            self.origin, {"pyproject.toml": "[tool.inspect_flow]\n", "uv.lock": "a\n"}
+        )
+        self.start = _git(self.origin, "rev-parse", "HEAD")
+        self.agent = tmp_path / "agent"
+        _git(tmp_path, "clone", "-q", str(self.origin), str(self.agent))
+        self.src = tmp_path / "runner/temp/route/src"
+        self.route = tmp_path / "runner/temp/route"
+        self.workspace = tmp_path / "runner/work/inspect_flow"
+        self.workspace.mkdir(parents=True)
+        lib = tmp_path / "runner/work" / LAND_ACTIONS / "lib.sh"
+        lib.parent.mkdir(parents=True)
+        lib.write_text(STUB_LIB)
+        self.lib = lib
+        self.output = tmp_path / "github-output"
+
+    def emit(self, start: str | None = None, head: str | None = None) -> None:
+        self.src.mkdir(parents=True)
+        tip = _git(self.agent, "rev-parse", "HEAD")
+        has_bundle = tip != self.start
+        if has_bundle:
+            _git(
+                self.agent,
+                "bundle",
+                "create",
+                "-q",
+                str(self.src / "commits.bundle"),
+                f"{self.start}..HEAD",
+            )
+        (self.src / "pr-body.md").write_text("Fixes #852\n\nAgent PR body.\n")
+        (self.src / "issue-comment.md").write_text("## Mapping\n")
+        manifest = {
+            "comments": [{"number": 852, "body_file": "issue-comment.md"}],
+            "schema": 1,
+            "repo": "meridianlabs-ai/inspect_flow",
+            "run_id": 35921391185,
+            "branch": "inspect-update/852/0.3.268",
+            "start_sha": start or self.start,
+            "head_sha": head or tip,
+            "has_bundle": has_bundle,
+            "pr_number": None,
+            "issue_number": 852,
+        }
+        if has_bundle:
+            manifest["pr"] = {
+                "open": True,
+                "title": "chore: reconcile inspect-ai 0.3.268",
+                "body_file": "pr-body.md",
+                "labels": ["inspect-update"],
+                "issue": 852,
+            }
+        (self.src / "manifest.json").write_text(json.dumps(manifest))
+
+    def run(self) -> tuple[subprocess.CompletedProcess[str], dict[str, str]]:
+        self.output.write_text("")
+        env = {
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(self.tmp),
+            "GITHUB_OUTPUT": str(self.output),
+            "RUNNER_WORKSPACE": str(self.workspace),
+            "SRC": str(self.src),
+            "ROUTE": str(self.route),
+            "START": self.start,
+            "ISSUE": "852",
+            "LATEST": "0.3.268",
+            "BRANCH": "inspect-update/852/0.3.268",
+            "REPO": "meridianlabs-ai/inspect_flow",
+            "RUN_ID": "35921391185",
+            "RUN_URL": "https://github.com/meridianlabs-ai/inspect_flow/actions/runs/35921391185",
+            "URL": str(self.origin),
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+        }
+        result = subprocess.run(
+            ["bash", "-c", _land_steps()["route"]["run"]],
+            cwd=self.tmp,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        outputs = dict(
+            line.split("=", 1) for line in self.output.read_text().splitlines()
+        )
+        return result, outputs
+
+
+@pytest.fixture
+def landing(tmp_path: Path) -> Landing:
+    return Landing(tmp_path)
+
+
+def _handoff_commands(comment: str, kept: Path) -> str:
+    block = comment.split("### Inspect and apply", 1)[1].split("```sh\n", 1)[1]
+    return block.split("```", 1)[0].replace("/tmp/inspect-update-852", str(kept))
+
+
+def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None:
+    """Run 35921391185's shape: the marker advance and the lock upgrade (plus a
+    source change) must not reach `land` as a push, and the kept commits must
+    apply from the handoff comment's own commands."""
+    _write(
+        landing.agent,
+        {
+            "pyproject.toml": '[tool.inspect_flow]\ninspect-reconciled-version = "0.3.268"\n',
+            "uv.lock": "b\n",
+            "src/inspect_flow/x.py": "x = 1\n",
+        },
+    )
+    head = _git(landing.agent, "rev-parse", "HEAD")
+    landing.emit()
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"bundle": "true", "route": "handoff"}
+    kept = landing.route / "handoff"
+    assert sorted(f.name for f in kept.iterdir()) == [
+        "changes.patch",
+        "commits.bundle",
+        "pr-body.md",
+        "pr-title.txt",
+    ]
+    staged = landing.route / "landing"
+    assert not (staged / "commits.bundle").exists()
+    manifest = json.loads((staged / "manifest.json").read_text())
+    assert "pr" not in manifest
+    assert manifest["has_bundle"] is False
+    assert manifest["head_sha"] == manifest["start_sha"] == landing.start
+    assert manifest["comments"] == [
+        {"number": 852, "body_file": "issue-comment.md"},
+        {"number": 852, "body_file": "maintainer-handoff.md"},
+    ]
+    assert (staged / "issue-comment.md").read_text() == "## Mapping\n"
+
+    comment = (staged / "maintainer-handoff.md").read_text()
+    assert comment.startswith("@ransomr: **maintainer review needed.**")
+    assert "not a failed run" in comment
+    assert (
+        "Protected, and the reason this needs you: `pyproject.toml`, `uv.lock`."
+        in comment
+    )
+    assert "| `src/inspect_flow/x.py` | 1 | 0 |" in comment
+    assert (
+        "gh run download 35921391185 --repo meridianlabs-ai/inspect_flow "
+        "--name inspect-update-handoff" in comment
+    )
+    assert "`Fixes #852`" in comment and "`inspect-update` label" in comment
+    assert "`maintainer-handoff` label" in comment
+    assert "@auto" not in comment and "@review" not in comment
+
+    # The maintainer's side: a clone of origin, the comment's commands verbatim
+    # (the download directory aside), ends on the agent's tip.
+    maintainer = landing.tmp / "maintainer"
+    _git(landing.tmp, "clone", "-q", str(landing.origin), str(maintainer))
+    subprocess.run(
+        ["bash", "-euo", "pipefail", "-c", _handoff_commands(comment, kept)],
+        cwd=maintainer,
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(landing.tmp),
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+        },
+        capture_output=True,
+        check=True,
+    )
+    assert _git(maintainer, "rev-parse", "HEAD") == head
+    assert _git(maintainer, "branch", "--show-current") == "inspect-update/852/0.3.268"
+    # The patch is the same change, for review or `git am`.
+    _git(maintainer, "checkout", "-q", "-b", "am", landing.start)
+    _git(
+        maintainer,
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "am",
+        "-q",
+        str(kept / "changes.patch"),
+    )
+    assert _git(maintainer, "rev-parse", "HEAD^{tree}") == _git(
+        maintainer, "rev-parse", f"{head}^{{tree}}"
+    )
+
+
+def test_unprotected_changes_land_as_before(landing: Landing) -> None:
+    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+    landing.emit()
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"bundle": "true"}
+    assert "No protected path changed" in result.stdout
+    assert (landing.route / "handoff/commits.bundle").exists()
+    assert not (landing.route / "landing").exists()
+
+
+def test_no_commits_route_nothing(landing: Landing) -> None:
+    landing.emit()
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {}
+    assert "carries no commits" in result.stdout
+    assert not (landing.route / "handoff").exists()
+
+
+@pytest.mark.parametrize("field", ["start", "head"])
+def test_commits_not_from_the_run_start_are_left_to_land(
+    landing: Landing, field: str
+) -> None:
+    """A manifest naming another start, or a bundle whose tip is not its
+    head_sha, is not the run's work: `land` gets it unchanged and refuses it."""
+    _write(landing.agent, {"uv.lock": "b\n"})
+    other = _git(landing.agent, "rev-parse", "HEAD")
+    _write(landing.agent, {"uv.lock": "c\n"})
+    if field == "start":
+        landing.emit(start=other)
+    else:
+        landing.emit(head=other)
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {}
+    assert not (landing.route / "landing").exists()
+
+
+def test_a_corrupt_bundle_fails_the_step_without_routing(landing: Landing) -> None:
+    _write(landing.agent, {"uv.lock": "b\n"})
+    landing.emit()
+    (landing.src / "commits.bundle").write_bytes(b"not a bundle")
+
+    result, outputs = landing.run()
+
+    assert result.returncode != 0
+    assert outputs == {}
+
+
+def test_an_unreadable_protected_list_fails_closed_to_the_maintainer(
+    landing: Landing,
+) -> None:
+    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+    landing.emit()
+    landing.lib.unlink()
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"bundle": "true", "route": "handoff"}
+    assert "treating every changed path as protected" in result.stdout
+
+
+def test_agent_chosen_path_names_are_not_rendered(landing: Landing) -> None:
+    _write(
+        landing.agent,
+        {
+            "uv.lock": "b\n",
+            "src/@auto `x`.py": "x = 1\n",
+            "a/@review/pyproject.toml": "",
+        },
+    )
+    landing.emit()
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs["route"] == "handoff"
+    comment = (landing.route / "landing/maintainer-handoff.md").read_text()
+    assert "`uv.lock`, 1 path(s) with other characters (see the patch)" in comment
+    assert "| 2 more (see the patch) | | |" in comment
+    assert "@auto" not in comment and "@review" not in comment
+
+
+def test_land_gets_the_staged_landing_only_after_the_commits_are_kept() -> None:
+    steps = _land_steps()
+    assert steps["keep"]["if"] == "steps.route.outputs.bundle == 'true'"
+    assert steps["keep"]["with"]["name"] == "inspect-update-handoff"
+    assert steps["keep"]["with"]["retention-days"] == 90
+    assert steps["stage"]["if"] == (
+        "steps.route.outputs.route == 'handoff' && steps.keep.outcome == 'success'"
+    )
+    assert steps["land"]["with"]["artifact-name"] == (
+        "${{ steps.stage.outcome == 'success' && 'landing-handoff' || 'landing' }}"
+    )
+    # The shared guard is still what decides a push: land keeps its trusted
+    # start and pins, whichever artifact it gets.
+    assert steps["land"]["uses"] == "meridianlabs-ai/agents/.github/actions/land@main"
+    assert steps["land"]["with"]["start-sha"] == "${{ github.sha }}"
+    assert steps["land"]["with"]["allowed-pr-labels"] == '["inspect-update"]'
+
+
+def _run_land_step(
+    name: str, tmp_path: Path, env: dict[str, str], fail: bool = False
+) -> tuple[subprocess.CompletedProcess[str], str]:
+    log = tmp_path / "gh-calls.log"
+    result = subprocess.run(
+        ["bash", "-c", _steps("land")[name]["run"]],
+        cwd=tmp_path,
+        env={
+            "PATH": f"{GH_STUB}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "GH_STUB_LOG": str(log),
+            "REPO": "meridianlabs-ai/inspect_flow",
+            "ISSUE": "852",
+            **({"GH_STUB_FAIL": "1"} if fail else {}),
+            **env,
+        },
+        capture_output=True,
+        text=True,
+    )
+    return result, log.read_text() if log.exists() else ""
+
+
+def test_the_handoff_labels_the_issue(tmp_path: Path) -> None:
+    result, calls = _run_land_step(
+        "Hold newer releases for the maintainer", tmp_path, {}
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert calls.splitlines()[0].startswith(
+        "label create maintainer-handoff --repo meridianlabs-ai/inspect_flow"
+    )
+    assert calls.splitlines()[-1] == (
+        "issue edit 852 --repo meridianlabs-ai/inspect_flow --add-label maintainer-handoff"
+    )
+
+
+def test_a_failed_handoff_label_fails_the_run(tmp_path: Path) -> None:
+    result, _ = _run_land_step(
+        "Hold newer releases for the maintainer", tmp_path, {}, fail=True
+    )
+
+    assert result.returncode == 1
+    assert "::error::Could not label #852 maintainer-handoff" in result.stdout
+
+
+@pytest.mark.parametrize("kept", ["true", ""])
+def test_failure_report_names_the_kept_commits(tmp_path: Path, kept: str) -> None:
+    result, calls = _run_land_step(
+        "Report the failure on the release issue",
+        tmp_path,
+        {
+            "LATEST": "0.3.268",
+            "AGENT_RESULT": "success",
+            "LAND_OUTCOME": "failure",
+            "RUN_URL": "https://github.com/x/runs/1",
+            "RUN_ID": "35921391185",
+            "KEPT": kept,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert calls.startswith("issue comment 852 --repo meridianlabs-ai/inspect_flow")
+    assert "until this issue is retitled or deleted" in calls
+    line = (
+        "kept for 90 days as the `inspect-update-handoff` artifact of this run "
+        "(`gh run download 35921391185 --repo meridianlabs-ai/inspect_flow "
+        "--name inspect-update-handoff`)"
+    )
+    assert (line in calls) == bool(kept)
+
+
+def test_the_agent_is_told_protected_commits_go_to_the_maintainer() -> None:
+    prompt = _prompt()
+    assert "are never\npushed by automation" in prompt
+    assert "hands them to the\nmaintainer" in prompt
