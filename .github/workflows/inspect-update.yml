@@ -27,7 +27,8 @@
 #                     configuration such as pyproject.toml and uv.lock — which
 #                     the marker advance and the lock upgrade always change —
 #                     workflows, agent instructions), they are a MAINTAINER
-#                     HANDOFF: kept as the `inspect-update-handoff` artifact,
+#                     HANDOFF: kept as the `inspect-update-handoff-<attempt>`
+#                     artifact,
 #                     described on the release issue for ransomr to inspect,
 #                     apply and open the PR from his own worktree, and the
 #                     issue is labelled `maintainer-handoff`; nothing is pushed.
@@ -655,6 +656,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
           URL: ${{ github.server_url }}/${{ github.repository }}.git
           GIT_CONFIG_GLOBAL: /dev/null
           GIT_TOKEN: ${{ github.token }}
@@ -751,8 +753,8 @@ jobs:
             printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. Nothing was pushed and no PR was opened. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
             printf '### What changed\n\n%s commit(s) from `%s` to `%s`. Protected, and the reason this needs you: %s.\n\n' "$commits" "$START" "$head" "$names"
             printf '| File | + | − |\n|---|--:|--:|\n%s\n' "$table"
-            printf '### Retrieve\n\nThe `inspect-update-handoff` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$RUN_ID" "$RUN_URL"
-            printf '```sh\ngh run download %s --repo %s --name inspect-update-handoff --dir %s\n```\n\n' "$RUN_ID" "$REPO" "$dir"
+            printf '### Retrieve\n\nThe `%s` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$ARTIFACT" "$RUN_ID" "$RUN_URL"
+            printf '```sh\ngh run download %s --repo %s --name %s --dir %s\n```\n\n' "$RUN_ID" "$REPO" "$ARTIFACT" "$dir"
             printf '### Inspect and apply\n\nIn a worktree of %s that you control, before running anything from these commits:\n\n' "$REPO"
             printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch -c %s %s\ngit rebase origin/main\n```\n\n' \
               "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref"
@@ -767,18 +769,20 @@ jobs:
 
       # Kept for the maintainer, whichever way the run lands: the handoff
       # comment points here, and a failure report names it when the push or
-      # anything after it failed. Re-runs of the job replace it (overwrite).
+      # anything after it failed. Named per attempt and never overwritten:
+      # upload-artifact's overwrite deletes the old artifact before the new
+      # upload, so a re-run of this job would put the archive an earlier
+      # attempt's comment points to at risk.
       - name: Keep the commits for the maintainer
         id: keep
         if: steps.route.outputs.bundle == 'true'
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: inspect-update-handoff
+          name: inspect-update-handoff-${{ github.run_attempt }}
           path: ${{ runner.temp }}/route/handoff
           retention-days: 90
           if-no-files-found: error
-          overwrite: true
 
       # Only once the commits are kept: the handoff then goes to `land` as
       # this artifact, which it validates like any landing (nothing to push,
@@ -790,11 +794,10 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: landing-handoff
+          name: landing-handoff-${{ github.run_attempt }}
           path: ${{ runner.temp }}/route/landing
           retention-days: 1
           if-no-files-found: error
-          overwrite: true
 
       - name: Land
         id: land
@@ -814,7 +817,7 @@ jobs:
           # the trailing delimiter keeps another issue's branches out of it.
           branch-prefix: inspect-update/${{ needs.gate.outputs.issue }}/
           # A maintainer handoff lands the staged copy (see Route above).
-          artifact-name: ${{ steps.stage.outcome == 'success' && 'landing-handoff' || 'landing' }}
+          artifact-name: ${{ steps.stage.outcome == 'success' && format('landing-handoff-{0}', github.run_attempt) || 'landing' }}
           # The run's start as trusted context records it: github.sha comes
           # from the event payload, and the agent job's `base` step fails
           # unless its checkout is at exactly this commit. The validator
@@ -829,8 +832,9 @@ jobs:
       # The handoff's hold on newer releases (the gate's dedup waits while an
       # open inspect-update issue carries this label). After Land, whatever
       # it did: the commits are kept and the release is the maintainer's
-      # either way. A failure here fails the run.
+      # either way. A failure here fails the run and is reported on the issue.
       - name: Hold newer releases for the maintainer
+        id: hold
         if: always() && steps.stage.outcome == 'success' && steps.mint.outcome == 'success'
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
@@ -857,13 +861,14 @@ jobs:
 
       # Deterministic failure report on the RELEASE ISSUE (the gate's trusted
       # number), whatever failed: the agent job, a missing or refused
-      # artifact, the push, the PR, a lost post, or the manifest's own error
+      # artifact, the push, the PR, a lost post, the manifest's own error
       # (the land composite fails the run for that after everything else
-      # landed). The composite reports on the PR once one exists and knows
-      # nothing about the dedup, so the recovery steps live here. Nothing
-      # from the agent job is interpolated into this body.
+      # landed), or the handoff's hold label. The composite reports on the PR
+      # once one exists and knows nothing about the dedup, so the recovery
+      # steps live here. Nothing from the agent job is interpolated into this
+      # body.
       - name: Report the failure on the release issue
-        if: always() && steps.mint.outcome == 'success' && steps.land.outcome != 'success'
+        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome != 'success' || steps.hold.outcome == 'failure')
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           REPO: ${{ github.repository }}
@@ -871,16 +876,29 @@ jobs:
           LATEST: ${{ needs.gate.outputs.latest }}
           AGENT_RESULT: ${{ needs.agent.result }}
           LAND_OUTCOME: ${{ steps.land.outcome }}
+          HOLD_OUTCOME: ${{ steps.hold.outcome }}
+          HANDOFF: ${{ steps.stage.outcome == 'success' && 'true' || '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_ID: ${{ github.run_id }}
           KEPT: ${{ steps.keep.outcome == 'success' && 'true' || '' }}
+          ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
         run: |
           set -uo pipefail
-          body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
-            "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
-          # shellcheck disable=SC2016 # Markdown backticks, not an expansion
+          if [ "$LAND_OUTCOME" != "success" ]; then
+            body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
+              "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
+          else
+            body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s handed its commits to the maintainer, but a step after the landing failed. Details: %s' "$LATEST" "$RUN_URL")
+          fi
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          if [ -n "$HANDOFF" ] && [ "$HOLD_OUTCOME" = "failure" ]; then
+            body+=$(printf '\n\nThe `maintainer-handoff` label could not be added to this issue, so the weekly run will start newer releases (whose changelog range contains this one) before this handoff lands. Add it by hand: `gh issue edit %s --repo %s --add-label maintainer-handoff`.' "$ISSUE" "$REPO")
+          elif [ -n "$HANDOFF" ]; then
+            body+=$(printf '\n\nThis run is a maintainer handoff and this issue carries the `maintainer-handoff` label: while the issue is open the weekly run starts no release, retitled or not. To finish it, apply the kept commits below from your own worktree as the handoff comment on this issue describes (if it was not posted: verify `commits.bundle`, fetch its `HEAD`, read every line, and open your own PR labelled `inspect-update` with `Fixes #%s`). To abandon this attempt and dispatch afresh instead, remove the `maintainer-handoff` label as well as retitling or deleting this issue.' "$ISSUE")
+          fi
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
           if [ -n "$KEPT" ]; then
-            body+=$(printf '\n\nThe agent'"'"'s commits are not lost: they are kept for 90 days as the `inspect-update-handoff` artifact of this run (`gh run download %s --repo %s --name inspect-update-handoff`), as `commits.bundle` and `changes.patch`.' "$RUN_ID" "$REPO")
+            body+=$(printf '\n\nThe agent'"'"'s commits are not lost: they are kept for 90 days as the `%s` artifact of this run (`gh run download %s --repo %s --name %s`), as `commits.bundle` and `changes.patch`.' "$ARTIFACT" "$RUN_ID" "$REPO" "$ARTIFACT")
           fi
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
             || echo "::error::Could not post the failure report on #$ISSUE."
