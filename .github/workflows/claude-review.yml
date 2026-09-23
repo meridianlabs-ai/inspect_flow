@@ -134,3 +134,12 @@ jobs:
       issues: read
       id-token: write
       actions: read
+    with:
+      # The provisioning recipe (agents design/executed-paths-residual.md):
+      # bash run as the unprivileged agent user in the checkout. Codex runs use
+      # it now; Claude runs keep ./.github/actions/claude-setup until they move
+      # to an agent user and take this recipe instead. Same install as
+      # claude-setup: Python 3.11 and `uv sync --dev`.
+      provision: |
+        uv venv --python 3.11
+        uv sync --dev

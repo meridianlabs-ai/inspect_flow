@@ -49,6 +49,14 @@ jobs:
       # consumed only on items labeled engine:codex; optional.
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
+      # The provisioning recipe (agents design/executed-paths-residual.md):
+      # bash run as the unprivileged agent user in the checkout. Codex runs use
+      # it now; Claude runs keep ./.github/actions/claude-setup until they move
+      # to an agent user and take this recipe instead. Same install as
+      # claude-setup: Python 3.11 and `uv sync --dev`.
+      provision: |
+        uv venv --python 3.11
+        uv sync --dev
       head_branch: ${{ github.event.workflow_run.head_branch }}
       pr_number: ${{ github.event.workflow_run.pull_requests[0].number }}
       ci_run_id: ${{ github.event.workflow_run.id }}
@@ -76,6 +84,10 @@ jobs:
       # consumed only on items labeled engine:codex; optional.
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
+      # Same provisioning recipe as the job above.
+      provision: |
+        uv venv --python 3.11
+        uv sync --dev
       pr_number: ${{ github.event.issue.number }}
       comment_author: ${{ github.event.comment.user.login }}
       # Without this the loop derives the human to ping from the PR's
