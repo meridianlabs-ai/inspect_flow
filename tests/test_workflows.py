@@ -23,8 +23,10 @@ The `land` job's "Route protected changes to the maintainer" step is run
 against a local origin and a bundle built like emit-landing's: commits that
 change a protected path (run 35921391185: pyproject.toml and uv.lock, which
 the shared land action refuses to push) become a maintainer handoff whose
-kept bundle applies from the handoff comment's own commands, while other
-commits are left to land as before.
+kept bundle applies from the handoff comment's own commands onto the draft
+PR's branch, while other commits are left to land as before. The "Open the
+maintainer's draft PR" step pushes that branch with a placeholder note and none
+of the agent's objects, and a re-run adopts the branch and PR it made.
 
 Every call of the agents repo's reusable workflows sets the `provision` recipe
 the agent user runs in place of claude-setup, with claude-setup's Python
@@ -662,6 +664,7 @@ class Landing:
             ),
             "URL": str(self.origin),
             "GIT_CONFIG_GLOBAL": "/dev/null",
+            "PLACEHOLDER": _placeholder(),
         }
         result = subprocess.run(
             ["bash", "-c", _land_steps()["route"]["run"]],
@@ -674,6 +677,66 @@ class Landing:
             line.split("=", 1) for line in self.output.read_text().splitlines()
         )
         return result, outputs
+
+    def draft(
+        self, head: str, pulls: list[dict[str, Any]] | None = None, fail_on: str = ""
+    ) -> tuple[subprocess.CompletedProcess[str], dict[str, str], list[str]]:
+        """Run the draft PR step against the local origin and the stub gh; return
+        the process, the step outputs and the gh calls it made."""
+        step = _land_steps()["draft"]
+        pulls_file = self.tmp / "pulls.json"
+        pulls_file.write_text(json.dumps(pulls or []))
+        log = self.tmp / "gh-calls.log"
+        log.unlink(missing_ok=True)
+        self.output.write_text("")
+        env = {
+            "PATH": f"{GH_STUB}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(self.tmp),
+            "GITHUB_OUTPUT": str(self.output),
+            "RUNNER_TEMP": str(self.route.parent),
+            "GH_STUB_LOG": str(log),
+            "GH_STUB_PULLS": str(pulls_file),
+            "GH_STUB_PR_URL": DRAFT_URL,
+            **({"GH_STUB_FAIL_ON": fail_on} if fail_on else {}),
+            "PLACEHOLDER": _placeholder(),
+            "REPO": "meridianlabs-ai/inspect_flow",
+            "ISSUE": "852",
+            "LATEST": "0.3.268",
+            "BRANCH": "inspect-update/852/0.3.268",
+            "START": self.start,
+            "HEAD": head,
+            "RUN_ID": "35921391185",
+            "RUN_URL": "https://github.com/meridianlabs-ai/inspect_flow/actions/runs/35921391185",
+            "ARTIFACT": "inspect-update-handoff-1",
+            "WORK": str(self.route.parent / "draft"),
+            "URL": str(self.origin),
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            **{
+                k: v
+                for k, v in step["env"].items()
+                if k.startswith(("GIT_AUTHOR_", "GIT_COMMITTER_"))
+            },
+        }
+        result = subprocess.run(
+            ["bash", "-c", step["run"]],
+            cwd=self.tmp,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        outputs = dict(
+            line.split("=", 1) for line in self.output.read_text().splitlines()
+        )
+        return result, outputs, log.read_text().splitlines() if log.exists() else []
+
+
+DRAFT_URL = "https://github.com/meridianlabs-ai/inspect_flow/pull/901"
+DRAFT_BRANCH = "inspect-update/852/0.3.268"
+
+
+def _placeholder() -> str:
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    return workflow["jobs"]["land"]["env"]["PLACEHOLDER"]
 
 
 @pytest.fixture
@@ -704,7 +767,7 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     result, outputs = landing.run()
 
     assert result.returncode == 0, result.stderr
-    assert outputs == {"bundle": "true", "route": "handoff"}
+    assert outputs == {"bundle": "true", "route": "handoff", "head": head}
     kept = landing.route / "handoff"
     assert sorted(f.name for f in kept.iterdir()) == [
         "changes.patch",
@@ -736,12 +799,16 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
         "gh run download 35921391185 --repo meridianlabs-ai/inspect_flow "
         "--name inspect-update-handoff-1 --dir" in comment
     )
-    assert "`Fixes #852`" in comment and "`inspect-update` label" in comment
+    assert "`Fixes #852`" in comment and "labelled `inspect-update`" in comment
+    assert "draft PR from `inspect-update/852/0.3.268`" in comment
     assert "`maintainer-handoff` label" in comment
     assert "@auto" not in comment and "@review" not in comment
 
-    # The maintainer's side: a clone of origin, the comment's commands verbatim
-    # (the download directory aside), ends on the agent's tip.
+    # The maintainer's side: on the draft PR's branch in a clone of origin, the
+    # comment's commands verbatim (the download directory aside) give the
+    # agent's tree without the placeholder.
+    draft, _, _ = landing.draft(head)
+    assert draft.returncode == 0, draft.stderr
     maintainer = landing.tmp / "maintainer"
     _git(landing.tmp, "clone", "-q", str(landing.origin), str(maintainer))
     subprocess.run(
@@ -751,12 +818,20 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
             "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
             "HOME": str(landing.tmp),
             "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_AUTHOR_NAME": "m",
+            "GIT_AUTHOR_EMAIL": "m@m",
+            "GIT_COMMITTER_NAME": "m",
+            "GIT_COMMITTER_EMAIL": "m@m",
         },
         capture_output=True,
         check=True,
     )
-    assert _git(maintainer, "rev-parse", "HEAD") == head
-    assert _git(maintainer, "branch", "--show-current") == "inspect-update/852/0.3.268"
+    assert _git(maintainer, "branch", "--show-current") == DRAFT_BRANCH
+    assert _git(maintainer, "rev-parse", "HEAD^{tree}") == _git(
+        maintainer, "rev-parse", f"{head}^{{tree}}"
+    )
+    assert _git(maintainer, "merge-base", "--is-ancestor", head, "HEAD") == ""
+    assert _placeholder() not in _git(maintainer, "ls-files").split()
     # The patch is the same change, for review or `git am`.
     _git(maintainer, "checkout", "-q", "-b", "am", landing.start)
     _git(
@@ -840,7 +915,11 @@ def test_an_unreadable_protected_list_fails_closed_to_the_maintainer(
     result, outputs = landing.run()
 
     assert result.returncode == 0, result.stderr
-    assert outputs == {"bundle": "true", "route": "handoff"}
+    assert outputs == {
+        "bundle": "true",
+        "route": "handoff",
+        "head": _git(landing.agent, "rev-parse", "HEAD"),
+    }
     assert "treating every changed path as protected" in result.stdout
 
 
@@ -951,7 +1030,7 @@ def test_a_rerun_never_replaces_an_earlier_attempts_kept_commits(
     comments = []
     for attempt in (1, 2):
         result, outputs = landing.run(attempt)
-        assert outputs == {"bundle": "true", "route": "handoff"}, result.stderr
+        assert outputs["route"] == "handoff", result.stderr
         comments.append((landing.route / "landing/maintainer-handoff.md").read_text())
 
     assert _attempt_name(keep, 1) == "inspect-update-handoff-1"
@@ -975,7 +1054,13 @@ def _selected(condition: str, context: dict[str, str]) -> bool:
 
 
 def _report(
-    tmp_path: Path, land: str, hold: str = "", handoff: str = "", kept: str = ""
+    tmp_path: Path,
+    land: str,
+    hold: str = "",
+    handoff: str = "",
+    kept: str = "",
+    draft: str = "",
+    draft_pr: str = "",
 ) -> tuple[bool, str]:
     """Whether the report step runs for these outcomes, and what it posts."""
     selected = _selected(
@@ -984,6 +1069,7 @@ def _report(
             "steps.mint.outcome": "success",
             "steps.land.outcome": land,
             "steps.hold.outcome": hold,
+            "steps.draft.outcome": draft,
         },
     )
     result, calls = _run_land_step(
@@ -994,6 +1080,9 @@ def _report(
             "AGENT_RESULT": "success",
             "LAND_OUTCOME": land,
             "HOLD_OUTCOME": hold,
+            "DRAFT_OUTCOME": draft,
+            "DRAFT_PR": draft_pr,
+            "BRANCH": DRAFT_BRANCH,
             "HANDOFF": handoff,
             "RUN_URL": "https://github.com/x/runs/1",
             "RUN_ID": "35921391185",
@@ -1041,9 +1130,13 @@ def test_a_failed_hold_label_is_reported_after_a_successful_landing(
     assert "`inspect-update-handoff-1` artifact" in body
 
 
-@pytest.mark.parametrize("hold", ["success", ""])
-def test_a_clean_landing_posts_no_failure_report(tmp_path: Path, hold: str) -> None:
-    selected, _ = _report(tmp_path, land="success", hold=hold, handoff="true")
+@pytest.mark.parametrize(("hold", "draft"), [("success", "success"), ("", "")])
+def test_a_clean_landing_posts_no_failure_report(
+    tmp_path: Path, hold: str, draft: str
+) -> None:
+    selected, _ = _report(
+        tmp_path, land="success", hold=hold, handoff="true", draft=draft
+    )
     assert not selected
 
 
@@ -1054,13 +1147,20 @@ def test_handoff_failure_recovery_clears_the_hold_as_well_as_the_claim(
     clears the version claim but not the hold, so the report says to remove the
     label too, and the gate proceeds only once both are done."""
     selected, body = _report(
-        tmp_path, land="failure", hold="success", handoff="true", kept="true"
+        tmp_path,
+        land="failure",
+        hold="success",
+        handoff="true",
+        kept="true",
+        draft="success",
+        draft_pr=DRAFT_URL,
     )
     assert selected
     assert "retitled or not" in body
+    assert f"add it to the draft PR {DRAFT_URL}, or open your own PR" in body
     assert (
         "remove the `maintainer-handoff` label as well as retitling or deleting "
-        "this issue" in body
+        "this issue, and close the draft PR if one was opened" in body
     )
 
     retitled = _issue(852, "Abandoned reconciliation attempt")
@@ -1084,3 +1184,200 @@ def test_the_agent_is_told_protected_commits_go_to_the_maintainer() -> None:
     prompt = _prompt()
     assert "are never\npushed by automation" in prompt
     assert "hands them to the\nmaintainer" in prompt
+
+
+def _handoff(landing: Landing) -> str:
+    """Route run 35921391185's shape to a handoff; return the verified tip."""
+    _write(landing.agent, {"uv.lock": "b\n", "src/inspect_flow/x.py": "x = 1\n"})
+    landing.emit()
+    result, outputs = landing.run()
+    assert outputs["route"] == "handoff", result.stderr
+    return outputs["head"]
+
+
+def _origin_branch(landing: Landing) -> str:
+    return _git(
+        landing.origin,
+        "for-each-ref",
+        "--format=%(objectname)",
+        f"refs/heads/{DRAFT_BRANCH}",
+    )
+
+
+def test_the_draft_pr_carries_only_the_placeholder(landing: Landing) -> None:
+    """The branch the draft PR needs is github.sha plus the placeholder note: no
+    object of the agent's commits (the protected uv.lock above all) reaches
+    origin, and the note and PR body name the kept artifact and run, from
+    trusted values only."""
+    head = _handoff(landing)
+
+    result, outputs, calls = landing.draft(head)
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"pr": DRAFT_URL}
+    tip = _origin_branch(landing)
+    assert _git(landing.origin, "rev-parse", f"{tip}^") == landing.start
+    assert _git(landing.origin, "diff", "--name-status", landing.start, tip) == (
+        f"A\t{_placeholder()}"
+    )
+    lock = _git(landing.agent, "rev-parse", f"{head}:uv.lock")
+    for obj in (head, lock):
+        missing = subprocess.run(
+            ["git", "cat-file", "-e", obj], cwd=landing.origin, capture_output=True
+        )
+        assert missing.returncode != 0, f"{obj} reached origin"
+    assert _git(landing.origin, "log", "-1", "--format=%an", tip) == (
+        "meridian-marvin[bot]"
+    )
+
+    note = _git(landing.origin, "show", f"{tip}:{_placeholder()}")
+    body = (landing.route.parent / "draft-body.md").read_text()
+    for text in (note, body):
+        assert "`inspect-update-handoff-1` artifact of [run 35921391185]" in text
+        assert f"`{landing.start}..{head}`" in text or (
+            f"from `{landing.start}` to `{head}`" in text
+        )
+        assert "Agent PR body" not in text and "chore: reconcile" not in text
+        for trigger in ("@auto", "@review", "@claude"):
+            assert trigger not in text
+    assert "**Delete this file before merging**" in note
+    assert body.startswith("Fixes #852\n\n**Maintainer handoff, not mergeable as is.**")
+
+    assert calls[0].split()[:2] == [
+        "api",
+        "repos/meridianlabs-ai/inspect_flow/pulls?state=all&head=meridianlabs-ai:"
+        f"{DRAFT_BRANCH}&per_page=100",
+    ]
+    assert calls[1].startswith(
+        "pr create --draft --repo meridianlabs-ai/inspect_flow --base main "
+        f"--head {DRAFT_BRANCH} --title chore: reconcile inspect-ai 0.3.268 "
+        "(maintainer handoff) --body-file "
+    )
+    assert calls[2:] == [
+        f"pr edit {DRAFT_URL} --repo meridianlabs-ai/inspect_flow "
+        "--add-label inspect-update --add-assignee ransomr"
+    ]
+
+
+@pytest.mark.parametrize(("state", "edited"), [("open", True), ("closed", False)])
+def test_a_rerun_adopts_the_pr_from_the_branch(
+    landing: Landing, state: str, edited: bool
+) -> None:
+    """One handoff PR per release: an attempt that finds a PR from the branch,
+    open or closed, pushes nothing and opens nothing; an open one is labelled
+    and assigned again (an earlier attempt may have failed there)."""
+    head = _handoff(landing)
+    other = {"html_url": f"{DRAFT_URL}0", "state": "closed"}
+    pr = {"html_url": DRAFT_URL, "state": state}
+
+    result, outputs, calls = landing.draft(head, pulls=[other, pr])
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"pr": DRAFT_URL if state == "open" else f"{DRAFT_URL}0"}
+    assert f"Adopting {outputs['pr']} ({state})" in result.stdout
+    assert _origin_branch(landing) == ""
+    assert not any(c.startswith("pr create") for c in calls)
+    assert any(c.startswith(f"pr edit {DRAFT_URL} ") for c in calls) == edited
+
+
+def test_a_partial_failure_is_reported_and_the_rerun_adopts_the_branch(
+    tmp_path: Path, landing: Landing
+) -> None:
+    head = _handoff(landing)
+
+    failed, outputs, _ = landing.draft(head, fail_on="pr create")
+
+    assert failed.returncode != 0
+    assert outputs == {}
+    pushed = _origin_branch(landing)
+    assert pushed != ""
+    (tmp_path / "report").mkdir()
+    selected, body = _report(
+        tmp_path / "report",
+        land="success",
+        hold="success",
+        handoff="true",
+        draft="failure",
+    )
+    assert selected
+    assert "handed its commits to the maintainer, but a step after" in body
+    assert "The draft PR for this handoff could not be opened" in body
+    assert f"adopts the branch `{DRAFT_BRANCH}`" in body
+    assert (
+        "`gh pr create --draft --repo meridianlabs-ai/inspect_flow --base main "
+        f'--head {DRAFT_BRANCH} --title "chore: reconcile inspect-ai 0.3.268 '
+        '(maintainer handoff)" --body "Fixes #852"`' in body
+    )
+
+    result, outputs, calls = landing.draft(head)
+
+    assert result.returncode == 0, result.stderr
+    assert outputs == {"pr": DRAFT_URL}
+    assert f"Adopting the branch {DRAFT_BRANCH} already on origin" in result.stdout
+    assert _origin_branch(landing) == pushed
+    assert [c.split()[:2] for c in calls[1:]] == [["pr", "create"], ["pr", "edit"]]
+
+
+def test_a_failed_label_after_the_draft_is_opened_fails_the_step(
+    landing: Landing,
+) -> None:
+    head = _handoff(landing)
+
+    result, outputs, _ = landing.draft(head, fail_on="pr edit")
+
+    assert result.returncode != 0
+    assert outputs == {"pr": DRAFT_URL}
+
+
+@pytest.mark.parametrize("head", ["", "HEAD", "a" * 39])
+def test_the_draft_is_composed_only_from_expected_values(
+    landing: Landing, head: str
+) -> None:
+    _handoff(landing)
+
+    result, outputs, calls = landing.draft(head)
+
+    assert result.returncode != 0
+    assert "Refusing to compose the draft PR" in result.stdout
+    assert outputs == {} and calls == []
+    assert _origin_branch(landing) == ""
+
+
+def test_only_a_staged_handoff_opens_a_draft_pr() -> None:
+    """Unprotected commits land as before (land opens their PR) and a run with
+    no commits or an unverified bundle has nothing to hand off."""
+    condition = _land_steps()["draft"]["if"]
+    context = {"steps.mint.outcome": "success"}
+    assert _selected(condition, {**context, "steps.stage.outcome": "success"})
+    for stage in ("", "failure"):
+        assert not _selected(condition, {**context, "steps.stage.outcome": stage})
+
+
+def test_no_maintainer_handoff_placeholder_in_the_tree() -> None:
+    """The draft PR of a maintainer handoff holds only this note until the
+    maintainer adds the reviewed commits; failing here, in the required py-test
+    checks, keeps that PR from merging with the note still in it."""
+    placeholder = WORKFLOWS.parent.parent / _placeholder()
+    assert not placeholder.exists(), (
+        f"Delete {placeholder.name}: it is the maintainer handoff's placeholder."
+    )
+
+
+def test_a_draft_opened_without_its_label_is_reported(tmp_path: Path) -> None:
+    selected, body = _report(
+        tmp_path,
+        land="success",
+        hold="success",
+        handoff="true",
+        draft="failure",
+        draft_pr=DRAFT_URL,
+    )
+
+    assert selected
+    assert "could not be opened" not in body
+    assert (
+        f"The draft PR for this handoff, {DRAFT_URL}, was opened, but its "
+        "`inspect-update` label or assignee could not be added: `gh pr edit "
+        f"{DRAFT_URL} --repo meridianlabs-ai/inspect_flow --add-label "
+        "inspect-update --add-assignee ransomr`." in body
+    )
