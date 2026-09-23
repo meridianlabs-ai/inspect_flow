@@ -25,6 +25,10 @@ change a protected path (run 35921391185: pyproject.toml and uv.lock, which
 the shared land action refuses to push) become a maintainer handoff whose
 kept bundle applies from the handoff comment's own commands, while other
 commits are left to land as before.
+
+Every call of the agents repo's reusable workflows sets the `provision` recipe
+the agent user runs in place of claude-setup, with claude-setup's Python
+(meridianlabs-ai/agents design/executed-paths-residual.md).
 """
 
 import json
@@ -512,7 +516,8 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
         (path.name, name): job.get("cache-mode")
         for path in WORKFLOWS.glob("*.yml")
         for name, job in yaml.safe_load(path.read_text())["jobs"].items()
-        if any(
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+        or any(
             step.get("uses", "").startswith("anthropics/claude-code-action")
             for step in job.get("steps", [])
         )
@@ -520,6 +525,32 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
     assert agent_jobs == {
         ("inspect-update.yml", "agent"): "read",
         ("inspect-ai-main-failure.yml", "triage-agent"): "read",
+        ("claude.yml", "claude"): "read",
+        ("claude.yml", "claude-auto"): "read",
+        ("claude-auto.yml", "ci-fix"): "read",
+        ("claude-auto.yml", "review-fix"): "read",
+        ("claude-review.yml", "review"): "read",
+    }
+
+
+def test_agent_stubs_provision_like_claude_setup() -> None:
+    claude_setup = yaml.safe_load(
+        (WORKFLOWS.parent / "actions/claude-setup/action.yaml").read_text()
+    )
+    python = claude_setup["runs"]["steps"][0]["with"]["python-version"]
+    recipe = f"uv venv --python {python}\nuv sync --dev\n"
+    stub_calls = {
+        (path.name, name): job.get("with", {}).get("provision")
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+    }
+    assert stub_calls == {
+        ("claude.yml", "claude"): recipe,
+        ("claude.yml", "claude-auto"): recipe,
+        ("claude-auto.yml", "ci-fix"): recipe,
+        ("claude-auto.yml", "review-fix"): recipe,
+        ("claude-review.yml", "review"): recipe,
     }
 
 
