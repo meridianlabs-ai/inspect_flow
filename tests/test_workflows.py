@@ -11,6 +11,10 @@ The `gate` job's "Dedup before doing any work" step is run against a stub `gh`
 must decide from `repos/*/pulls` and `repos/*/issues`, never from the search
 API, whose results under the job token differ from a user's (runs 35611948106
 and 35614947712 refused on an open labelled issue counted as a pull request).
+
+The PR labels each composer writes (here and in inspect-ai-main-failure.yml)
+must be exactly the `allowed-pr-labels` its `land` step pins, so a manifest
+rewritten after the composer cannot add another label (#847).
 """
 
 import json
@@ -22,7 +26,8 @@ from typing import Any
 import pytest
 import yaml
 
-WORKFLOW = Path(__file__).parent.parent / ".github/workflows/inspect-update.yml"
+WORKFLOWS = Path(__file__).parent.parent / ".github/workflows"
+WORKFLOW = WORKFLOWS / "inspect-update.yml"
 GH_STUB = Path(__file__).parent / "fixtures/gh_stub"
 
 HEREDOC_COMMIT = "git commit -m \"$(cat <<'EOF'\nfix: upgrade lock\nEOF\n)\""
@@ -53,8 +58,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _steps(job: str) -> dict[str, dict[str, Any]]:
-    workflow = yaml.safe_load(WORKFLOW.read_text())
+def _steps(job: str, path: Path = WORKFLOW) -> dict[str, dict[str, Any]]:
+    workflow = yaml.safe_load(path.read_text())
     return {
         step["name"]: step for step in workflow["jobs"][job]["steps"] if "name" in step
     }
@@ -422,3 +427,34 @@ def test_gate_skips_gh_when_already_reconciled(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert outputs == {"proceed": "false"}
     assert calls == []
+
+
+@pytest.mark.parametrize(
+    ("workflow", "agent_job", "land_job"),
+    [
+        ("inspect-update.yml", "agent", "land"),
+        ("inspect-ai-main-failure.yml", "triage-agent", "triage-land"),
+    ],
+)
+def test_land_allows_only_the_labels_the_composer_writes(
+    tmp_path: Path, repo: Path, workflow: str, agent_job: str, land_job: str
+) -> None:
+    compose = _steps(agent_job, WORKFLOWS / workflow)["Compose landing manifest"]
+    land = _steps(land_job, WORKFLOWS / workflow)["Land"]
+    env = _env(tmp_path, repo, {"type": "result", "subtype": "success"})
+    _commit(repo)
+    output = tmp_path / "github-output"
+    output.touch()
+    subprocess.run(
+        ["bash", "-c", compose["run"]],
+        cwd=repo,
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "GITHUB_OUTPUT": str(output),
+            **env,
+        },
+        capture_output=True,
+        check=True,
+    )
+    labels = json.loads(Path(env["EXTRA"]).read_text())["pr"]["labels"]
+    assert json.loads(land["with"]["allowed-pr-labels"]) == labels

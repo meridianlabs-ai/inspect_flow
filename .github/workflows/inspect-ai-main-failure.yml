@@ -580,6 +580,9 @@ jobs:
           # equals this, so the agent job cannot name another start and land
           # history the run never began from (agents#137, finding 4628444).
           start-sha: ${{ github.sha }}
+          # The labels the agent job's composer puts on the PR, pinned so a
+          # manifest rewritten after it cannot add others (agents#132).
+          allowed-pr-labels: '["auto"]'
 
       # The issue labels the manifest cannot express, applied deterministically
       # once the agent's work has landed. `triaged` keeps later canary failures
