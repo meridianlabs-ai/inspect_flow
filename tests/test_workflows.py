@@ -790,6 +790,8 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     comment = (staged / "maintainer-handoff.md").read_text()
     assert comment.startswith("@ransomr: **maintainer review needed.**")
     assert "not a failed run" in comment
+    assert "None of these commits was pushed" in comment
+    assert "no PR was opened" not in comment
     assert (
         "Protected, and the reason this needs you: `pyproject.toml`, `uv.lock`."
         in comment

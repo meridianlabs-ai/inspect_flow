@@ -759,7 +759,7 @@ jobs:
           ref="refs/inspect-update/$ISSUE"
           # shellcheck disable=SC2016 # Markdown and commands for the maintainer, not expansions
           {
-            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. Nothing was pushed and no PR was opened. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
+            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. None of these commits was pushed: a later step of this run opens (or adopts) the draft PR for this release, whose branch holds only a placeholder when this run creates it, and reports any failure on this issue. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
             printf '### What changed\n\n%s commit(s) from `%s` to `%s`. Protected, and the reason this needs you: %s.\n\n' "$commits" "$START" "$head" "$names"
             printf '| File | + | − |\n|---|--:|--:|\n%s\n' "$table"
             printf '### Retrieve\n\nThe `%s` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$ARTIFACT" "$RUN_ID" "$RUN_URL"
