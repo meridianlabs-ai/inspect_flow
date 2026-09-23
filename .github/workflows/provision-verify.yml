@@ -102,7 +102,16 @@ jobs:
           as_codex ruff format --check
           as_codex pyright
 
+      # Ubuntu's sudoers sets use_pty, so under sudo the tests see a
+      # terminal; rich then takes the runner's TERM=dumb as an 80-column
+      # console whatever COLUMNS says (run 35921783069: eight wrapping
+      # failures). The agent's own processes get no pty from sudo, so the
+      # tests run with TERM unset, as they do in CI.
       - name: pytest as codex
         env:
           BIN: ${{ steps.setup.outputs.bin }}
-        run: sudo -u codex -H -- env PATH="$BIN:/usr/local/bin:/usr/bin:/bin" pytest -q
+        run: |
+          set -euo pipefail
+          echo "runner: TERM=${TERM-<unset>}"
+          sudo -u codex -H -- sh -c 'echo "under sudo: TERM=${TERM-<unset>} tty=$(tty)"'
+          sudo -u codex -H -- env -u TERM PATH="$BIN:/usr/local/bin:/usr/bin:/bin" pytest -q
