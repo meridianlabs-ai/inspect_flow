@@ -278,7 +278,7 @@ jobs:
             "Bash(git remote:*)",
             "Bash(git add:*)","Bash(git commit:*)","Bash(git config:*)"]}}
           claude_args: >-
-            --model fable
+            --model opus
             --fallback-model default
             --add-dir ${{ runner.temp }}/agent-out
           prompt: |
@@ -397,7 +397,7 @@ jobs:
         uses: meridianlabs-ai/agents/.github/actions/model-provenance@main
         with:
           exec-file: ${{ steps.claude.outputs.execution_file }}
-          requested: fable
+          requested: opus
 
       # Surface agent errors the action swallows. A model API error (overload /
       # 529, a model 404, etc.) leaves the run green at the workflow level but
