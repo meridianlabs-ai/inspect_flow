@@ -89,13 +89,20 @@ jobs:
           echo "Python $v, uv.lock unchanged"
 
       # What the agent runs to verify a change: `make check` (without the
-      # rewrites) and `make test`.
+      # rewrites) and `make test`, with the composite's `bin` as the PATH
+      # prefix (the Claude launcher's shape, design step 5). pyright needs
+      # the venv's python on PATH to resolve imports.
       - name: ruff and pyright as codex
+        env:
+          BIN: ${{ steps.setup.outputs.bin }}
         run: |
           set -euo pipefail
-          sudo -u codex -H -- .venv/bin/ruff check
-          sudo -u codex -H -- .venv/bin/ruff format --check
-          sudo -u codex -H -- .venv/bin/pyright
+          as_codex() { sudo -u codex -H -- env PATH="$BIN:/usr/local/bin:/usr/bin:/bin" "$@"; }
+          as_codex ruff check
+          as_codex ruff format --check
+          as_codex pyright
 
       - name: pytest as codex
-        run: sudo -u codex -H -- .venv/bin/pytest -q
+        env:
+          BIN: ${{ steps.setup.outputs.bin }}
+        run: sudo -u codex -H -- env PATH="$BIN:/usr/local/bin:/usr/bin:/bin" pytest -q
