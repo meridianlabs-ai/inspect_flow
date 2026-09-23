@@ -21,27 +21,40 @@
 #                     comment and PR text as files. `emit-landing` packages the
 #                     commits and a manifest describing what to post.
 #   land  (trusted)   a fresh runner that checks out nothing: mints an App
-#                     token for this repo (contents + pull requests + issues),
-#                     validates the manifest, pushes the branch, opens the
-#                     `auto`-labeled PR whose body says `Fixes #<issue>`, posts
-#                     the agent's mapping on the issue, and reports any agent
-#                     error there.
+#                     token for this repo (contents + pull requests + issues)
+#                     and routes the commits. When they change a path the
+#                     shared land action refuses to push (build and dependency
+#                     configuration such as pyproject.toml and uv.lock — which
+#                     the marker advance and the lock upgrade always change —
+#                     workflows, agent instructions), they are a MAINTAINER
+#                     HANDOFF: kept as the `inspect-update-handoff-<attempt>`
+#                     artifact,
+#                     described on the release issue for ransomr to inspect,
+#                     apply and open the PR from his own worktree, and the
+#                     issue is labelled `maintainer-handoff`; nothing is pushed.
+#                     Otherwise land validates the manifest, pushes the branch
+#                     and opens the `inspect-update` PR whose body says
+#                     `Fixes #<issue>`. Either way it posts the agent's mapping
+#                     on the issue and reports any agent error there.
 #
-# The App token (meridian-marvin[bot]) is what makes the PR trigger CI and the
-# reviewer: a GITHUB_TOKEN-authored PR is silently dropped by GitHub's Actions
-# recursion guard and the loop would never start. From the PR the existing
-# machinery takes over: the reviewer auto-reviews it on open, its summary trips
-# the review->fix loop in claude-auto.yml, and CI failures trip the CI-fix
-# loop. A scheduled job also cannot summon the agent via @auto (the kickoff
-# gates reject machine/bot actors), which is why claude-code-action is invoked
-# directly here: the workflow is the trigger and passes the prompt.
+# The App token (meridian-marvin[bot]) is what makes an automated PR trigger
+# CI: a GITHUB_TOKEN-authored PR is silently dropped by GitHub's Actions
+# recursion guard. Such a PR is assigned to ransomr and waits for his review
+# like any other; it gets no `auto` label (the Orca review workflow replaced
+# that loop). A scheduled job also cannot summon the agent via @auto (the
+# kickoff gates reject machine/bot actors), which is why claude-code-action is
+# invoked directly here: the workflow is the trigger and passes the prompt.
 #
 # Partial-failure mode: the issue is opened BEFORE the agent runs, so a run
 # that fails afterwards (a model API error, no commits, a refused manifest)
 # leaves an `inspect-update` issue whose title names the release, and the
 # dedup below treats that release as claimed — open or closed — until the
 # issue is retitled or deleted. The land job says so in its error report on
-# that issue, which is assigned to ransomr.
+# that issue, which is assigned to ransomr. A handoff is not a failure: the
+# release stays claimed by the title, and while the labelled issue is open
+# the gate starts no newer release (its changelog range would contain this
+# one, and the marker on main has not advanced); the maintainer's PR closes
+# the issue with its `Fixes` line.
 
 name: Inspect Update
 
@@ -121,6 +134,16 @@ jobs:
             echo "proceed=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
+          # The same holds for a release handed to the maintainer (the land
+          # job labels its issue `maintainer-handoff`): until the maintainer's
+          # PR closes that issue, the marker on main has not advanced.
+          handoffs=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&labels=inspect-update,maintainer-handoff&per_page=100" --paginate \
+            | jq -s 'add | map(select(has("pull_request") | not)) | length')
+          if [ "$handoffs" -gt 0 ]; then
+            echo "An inspect-update maintainer handoff is still open; waiting for its PR to land before starting $LATEST."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Keyed on the inspect-update label + version in the title, open or
           # closed, so a release that was already processed (or explicitly
           # closed as won't-do) is never re-opened. The issues endpoint lists
@@ -184,7 +207,7 @@ jobs:
           PROJECT: PVT_kwDOC7YMCM4BU68p
         run: |
           set -euo pipefail
-          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below and opens one pull request that advances the reconciled marker (it links here with a Fixes line).\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
+          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below. Automation never pushes commits that change build or dependency configuration, and advancing the reconciled marker and upgrading the lock always do: such commits are handed to the maintainer here for review, and the maintainer opens the pull request (it links here with a Fixes line).\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
             "$RECONCILED" "$LATEST" "$RUN_URL")
           url=$(gh issue create --repo "$REPO" \
             --title "inspect-ai $LATEST: surface new features in flow" \
@@ -301,7 +324,13 @@ jobs:
             the PR, and posts the files you write under
             ${{ runner.temp }}/agent-out (call it OUT below). Issue
             #${{ needs.gate.outputs.issue }} already exists for this release;
-            your mapping is posted there as a comment.
+            your mapping is posted there as a comment. Commits that change
+            build or dependency configuration (pyproject.toml, uv.lock — the
+            marker advance and the lock upgrade below always do) are never
+            pushed by automation: the trusted job hands them to the
+            maintainer on that issue instead of opening the PR, and the
+            maintainer opens it with your PR text. Commit them and write
+            every file below exactly as described all the same.
 
             Read AGENTS.md first and follow it throughout.
 
@@ -469,7 +498,9 @@ jobs:
       #               SHA; title from OUT/pr-title.txt (first line, control
       #               characters stripped, forced to name the release since the
       #               dedup keys on it), body = "Fixes #<issue>" + OUT/pr-body.md,
-      #               labels auto + inspect-update, issue for the "Opened" link
+      #               label inspect-update, issue for the "Opened" link; the
+      #               land job drops it when the commits are a maintainer
+      #               handoff
       #   comments  — the Surface step's denial warning, if any, then
       #               OUT/issue-comment.md, on the release issue
       #   provenance_comment_file — the model-provenance note, if any
@@ -501,7 +532,7 @@ jobs:
             case "$title" in *"inspect-ai $LATEST"*) ;; *) title="$title (inspect-ai $LATEST)" ;; esac
             { printf 'Fixes #%s\n\n' "$ISSUE"; head -c 60000 "$OUT/pr-body.md" 2>/dev/null || true; } >"$DIR/pr-body.md"
             extra=$(jq -c --arg t "$title" --argjson n "$ISSUE" \
-              '.pr = {open: true, title: $t, body_file: "pr-body.md", labels: ["auto", "inspect-update"], issue: $n}' <<<"$extra")
+              '.pr = {open: true, title: $t, body_file: "pr-body.md", labels: ["inspect-update"], issue: $n}' <<<"$extra")
           else
             err="The agent made no commits, so no branch was pushed and no PR was opened."
           fi
@@ -581,6 +612,193 @@ jobs:
           permission-pull-requests: write
           permission-issues: write
 
+      # Route the commits before `land` sees them. The shared land action
+      # refuses to push a bundle that changes a path later automated runs
+      # execute or load (its lib.sh PROTECTED_PATHSPECS: build and dependency
+      # configuration, workflows, agent instructions), and that guard stays
+      # the boundary: this step only decides, from the same list, whether the
+      # run is a MAINTAINER HANDOFF instead of a push. Reads only: the
+      # artifact is data, materialized in an empty bare repo like land's own
+      # fetch step (no checkout, no hooks, nothing of it executed). Outputs:
+      #   bundle=true   the bundle verified (tip = the manifest's head_sha,
+      #                 descending from github.sha): ROUTE/handoff holds it,
+      #                 the same commits as changes.patch, and the agent's PR
+      #                 title and body, whichever way the run lands
+      #   route=handoff it changes a protected path (or the list could not be
+      #                 read or walked: fail closed to a human): ROUTE/landing
+      #                 is the landing without the commits and the PR, plus
+      #                 maintainer-handoff.md composed here from trusted
+      #                 values and the bundle's own paths (only names in a
+      #                 plain character set are shown; nothing else of the
+      #                 agent's text)
+      # Anything else — no commits, a start other than github.sha, a bundle
+      # that does not verify — leaves both unset, and `land` gets the
+      # original landing to refuse or land exactly as before.
+      - name: Download the landing artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: landing
+          path: ${{ runner.temp }}/route/src
+
+      - name: Route protected changes to the maintainer
+        id: route
+        if: steps.download.outcome == 'success'
+        continue-on-error: true
+        env:
+          SRC: ${{ runner.temp }}/route/src
+          ROUTE: ${{ runner.temp }}/route
+          START: ${{ github.sha }}
+          ISSUE: ${{ needs.gate.outputs.issue }}
+          LATEST: ${{ needs.gate.outputs.latest }}
+          BRANCH: ${{ needs.gate.outputs.branch }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
+          URL: ${{ github.server_url }}/${{ github.repository }}.git
+          GIT_CONFIG_GLOBAL: /dev/null
+          GIT_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: "3"
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: ""
+          GIT_CONFIG_KEY_1: credential.${{ github.server_url }}.helper
+          GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$GIT_TOKEN"; }; f'
+          GIT_CONFIG_KEY_2: core.hooksPath
+          GIT_CONFIG_VALUE_2: ${{ runner.temp }}/no-hooks
+        run: |
+          set -euo pipefail
+          m="$SRC/manifest.json"
+          if [ "$(jq -r --arg s "$START" '.has_bundle == true and .start_sha == $s' "$m")" != true ]; then
+            echo "The landing carries no commits from $START; nothing to route."
+            exit 0
+          fi
+          head=$(jq -r '.head_sha' "$m")
+          [[ "$head" =~ ^[0-9a-f]{40}$ ]] || { echo "::warning::head_sha '$head' is not a SHA; leaving the landing to land."; exit 0; }
+          work="$ROUTE/repo"
+          rm -rf "$work"
+          git init --quiet --bare "$work"
+          cd "$work"
+          git fetch --quiet --no-tags "$URL" "$START"
+          git bundle verify --quiet "$SRC/commits.bundle"
+          git fetch --quiet --no-tags "$SRC/commits.bundle" HEAD
+          [ "$(git rev-parse FETCH_HEAD)" = "$head" ] || { echo "::warning::The bundle's tip is not head_sha $head; leaving the landing to land."; exit 0; }
+          git merge-base --is-ancestor "$START" "$head" || { echo "::warning::$head does not descend from $START; leaving the landing to land."; exit 0; }
+
+          keep="$ROUTE/handoff"
+          mkdir -p "$keep"
+          cp "$SRC/commits.bundle" "$keep/"
+          git format-patch --quiet --stdout "$START..$head" >"$keep/changes.patch"
+          if [ "$(jq -r '.pr.open == true' "$m")" = true ]; then
+            jq -r '.pr.title // ""' "$m" >"$keep/pr-title.txt"
+            [ ! -f "$SRC/pr-body.md" ] || [ -L "$SRC/pr-body.md" ] || cp "$SRC/pr-body.md" "$keep/"
+          fi
+          echo "bundle=true" >>"$GITHUB_OUTPUT"
+
+          # The same list and link/import walk the land action checks with,
+          # from its own copy (downloaded at job setup with the Land step).
+          lib="${RUNNER_WORKSPACE%/*}/_actions/meridianlabs-ai/agents/main/.github/actions/land/lib.sh"
+          protected_paths() {
+            [ -f "$lib" ] || { echo "::warning::The land action's lib.sh is not at $lib." >&2; return 1; }
+            # shellcheck source=/dev/null
+            . "$lib" || return 1
+            local rev p
+            local -a reach=()
+            for rev in "$START" "$head"; do
+              protected_reach "$rev" "${PROTECTED_PATHSPECS[@]}" >"$ROUTE/reach" || return 1
+              while IFS= read -r -d '' p; do reach+=(":(literal)$p"); done <"$ROUTE/reach"
+            done
+            git diff -z --name-only --no-renames "$START" "$head" -- "${PROTECTED_PATHSPECS[@]}" ${reach[@]+"${reach[@]}"}
+          }
+          if ! protected_paths >"$ROUTE/protected"; then
+            echo "::warning::Could not list the protected paths; treating every changed path as protected."
+            git diff -z --name-only --no-renames "$START" "$head" >"$ROUTE/protected"
+          fi
+          if [ ! -s "$ROUTE/protected" ]; then
+            echo "No protected path changed between $START and $head; landing as usual."
+            exit 0
+          fi
+
+          # Paths are agent-chosen: shown only in a plain character set.
+          plain() { [[ "$1" =~ ^[A-Za-z0-9._/+-]{1,200}$ ]]; }
+          names=""
+          odd=0
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          while IFS= read -r -d '' p; do
+            if plain "$p"; then names+=$(printf '%s`%s`' "${names:+, }" "$p"); else odd=$((odd + 1)); fi
+          done <"$ROUTE/protected"
+          [ "$odd" -eq 0 ] || names+="${names:+, }$odd path(s) with other characters (see the patch)"
+          git diff -z --numstat --no-renames "$START" "$head" >"$ROUTE/numstat"
+          table=""
+          rows=0
+          more=0
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          while IFS= read -r -d '' rec; do
+            add="${rec%%$'\t'*}"; rest="${rec#*$'\t'}"; del="${rest%%$'\t'*}"; p="${rest#*$'\t'}"
+            if [ "$rows" -ge 50 ] || ! plain "$p"; then more=$((more + 1)); continue; fi
+            table+=$(printf '| `%s` | %s | %s |\n' "$p" "$add" "$del")$'\n'
+            rows=$((rows + 1))
+          done <"$ROUTE/numstat"
+          [ "$more" -eq 0 ] || table+="| $more more (see the patch) | | |"$'\n'
+          commits=$(git rev-list --count "$START..$head")
+
+          land="$ROUTE/landing"
+          mkdir -p "$land"
+          find "$SRC" -maxdepth 1 -type f ! -name commits.bundle ! -name manifest.json -exec cp {} "$land/" \;
+          dir="/tmp/inspect-update-$ISSUE"
+          ref="refs/inspect-update/$ISSUE"
+          # shellcheck disable=SC2016 # Markdown and commands for the maintainer, not expansions
+          {
+            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. Nothing was pushed and no PR was opened. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
+            printf '### What changed\n\n%s commit(s) from `%s` to `%s`. Protected, and the reason this needs you: %s.\n\n' "$commits" "$START" "$head" "$names"
+            printf '| File | + | − |\n|---|--:|--:|\n%s\n' "$table"
+            printf '### Retrieve\n\nThe `%s` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$ARTIFACT" "$RUN_ID" "$RUN_URL"
+            printf '```sh\ngh run download %s --repo %s --name %s --dir %s\n```\n\n' "$RUN_ID" "$REPO" "$ARTIFACT" "$dir"
+            printf '### Inspect and apply\n\nIn a worktree of %s that you control, before running anything from these commits:\n\n' "$REPO"
+            printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch -c %s %s\ngit rebase origin/main\n```\n\n' \
+              "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref"
+            printf 'Read every line: the lock decides what `uv sync` installs, and pyproject.toml what the build runs. If the rebase conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
+            printf '### Tests and review\n\n`uv sync --frozen`, `make check`, `pytest`, and `python src/inspect_flow/_types/type_gen.py` leaving no diff (the check-type-gen CI job), then review it as you would any lock upgrade.\n\n'
+            printf '### PR\n\nOpen it yourself with the `inspect-update` label and `Fixes #%s` in the body (the agent'"'"'s draft is `pr-body.md`), so merging it closes this issue. Until then this issue carries the `maintainer-handoff` label and the weekly run starts no newer release; inspect-ai %s stays claimed by this issue'"'"'s title either way.\n' "$ISSUE" "$LATEST"
+          } >"$land/maintainer-handoff.md"
+          jq --argjson n "$ISSUE" 'del(.pr) | .has_bundle = false | .head_sha = .start_sha
+            | .comments = ((.comments // []) + [{number: $n, body_file: "maintainer-handoff.md"}])' "$m" >"$land/manifest.json"
+          echo "route=handoff" >>"$GITHUB_OUTPUT"
+          echo "Maintainer handoff: $commits commit(s) change protected paths; land gets the landing without them."
+
+      # Kept for the maintainer, whichever way the run lands: the handoff
+      # comment points here, and a failure report names it when the push or
+      # anything after it failed. Named per attempt and never overwritten:
+      # upload-artifact's overwrite deletes the old artifact before the new
+      # upload, so a re-run of this job would put the archive an earlier
+      # attempt's comment points to at risk.
+      - name: Keep the commits for the maintainer
+        id: keep
+        if: steps.route.outputs.bundle == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspect-update-handoff-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/route/handoff
+          retention-days: 90
+          if-no-files-found: error
+
+      # Only once the commits are kept: the handoff then goes to `land` as
+      # this artifact, which it validates like any landing (nothing to push,
+      # no PR; the agent's comments, the handoff comment, provenance and any
+      # error are posted on the release issue).
+      - name: Stage the landing without the protected commits
+        id: stage
+        if: steps.route.outputs.route == 'handoff' && steps.keep.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-handoff-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/route/landing
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Land
         id: land
         uses: meridianlabs-ai/agents/.github/actions/land@main
@@ -598,6 +816,8 @@ jobs:
           # manifest's branch must start with `inspect-update/<issue>/`, and
           # the trailing delimiter keeps another issue's branches out of it.
           branch-prefix: inspect-update/${{ needs.gate.outputs.issue }}/
+          # A maintainer handoff lands the staged copy (see Route above).
+          artifact-name: ${{ steps.stage.outcome == 'success' && format('landing-handoff-{0}', github.run_attempt) || 'landing' }}
           # The run's start as trusted context records it: github.sha comes
           # from the event payload, and the agent job's `base` step fails
           # unless its checkout is at exactly this commit. The validator
@@ -607,7 +827,25 @@ jobs:
           start-sha: ${{ github.sha }}
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
-          allowed-pr-labels: '["auto","inspect-update"]'
+          allowed-pr-labels: '["inspect-update"]'
+
+      # The handoff's hold on newer releases (the gate's dedup waits while an
+      # open inspect-update issue carries this label). After Land, whatever
+      # it did: the commits are kept and the release is the maintainer's
+      # either way. A failure here fails the run and is reported on the issue.
+      - name: Hold newer releases for the maintainer
+        id: hold
+        if: always() && steps.stage.outcome == 'success' && steps.mint.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.gate.outputs.issue }}
+        run: |
+          gh label create maintainer-handoff --repo "$REPO" \
+            --description "inspect-update commits waiting for the maintainer's PR" \
+            --color D93F0B || true
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label maintainer-handoff \
+            || { echo "::error::Could not label #$ISSUE maintainer-handoff; add the label by hand so the weekly run waits for the handoff."; exit 1; }
 
       # Repo default the manifest cannot express: assign the PR like the
       # issue. Best-effort; runs whenever the land step got as far as a PR.
@@ -623,13 +861,14 @@ jobs:
 
       # Deterministic failure report on the RELEASE ISSUE (the gate's trusted
       # number), whatever failed: the agent job, a missing or refused
-      # artifact, the push, the PR, a lost post, or the manifest's own error
+      # artifact, the push, the PR, a lost post, the manifest's own error
       # (the land composite fails the run for that after everything else
-      # landed). The composite reports on the PR once one exists and knows
-      # nothing about the dedup, so the recovery steps live here. Nothing
-      # from the agent job is interpolated into this body.
+      # landed), or the handoff's hold label. The composite reports on the PR
+      # once one exists and knows nothing about the dedup, so the recovery
+      # steps live here. Nothing from the agent job is interpolated into this
+      # body.
       - name: Report the failure on the release issue
-        if: always() && steps.mint.outcome == 'success' && steps.land.outcome != 'success'
+        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome != 'success' || steps.hold.outcome == 'failure')
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           REPO: ${{ github.repository }}
@@ -637,10 +876,29 @@ jobs:
           LATEST: ${{ needs.gate.outputs.latest }}
           AGENT_RESULT: ${{ needs.agent.result }}
           LAND_OUTCOME: ${{ steps.land.outcome }}
+          HOLD_OUTCOME: ${{ steps.hold.outcome }}
+          HANDOFF: ${{ steps.stage.outcome == 'success' && 'true' || '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+          KEPT: ${{ steps.keep.outcome == 'success' && 'true' || '' }}
+          ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
         run: |
           set -uo pipefail
-          body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
-            "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
+          if [ "$LAND_OUTCOME" != "success" ]; then
+            body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
+              "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
+          else
+            body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s handed its commits to the maintainer, but a step after the landing failed. Details: %s' "$LATEST" "$RUN_URL")
+          fi
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          if [ -n "$HANDOFF" ] && [ "$HOLD_OUTCOME" = "failure" ]; then
+            body+=$(printf '\n\nThe `maintainer-handoff` label could not be added to this issue, so the weekly run will start newer releases (whose changelog range contains this one) before this handoff lands. Add it by hand: `gh issue edit %s --repo %s --add-label maintainer-handoff`.' "$ISSUE" "$REPO")
+          elif [ -n "$HANDOFF" ]; then
+            body+=$(printf '\n\nThis run is a maintainer handoff and this issue carries the `maintainer-handoff` label: while the issue is open the weekly run starts no release, retitled or not. To finish it, apply the kept commits below from your own worktree as the handoff comment on this issue describes (if it was not posted: verify `commits.bundle`, fetch its `HEAD`, read every line, and open your own PR labelled `inspect-update` with `Fixes #%s`). To abandon this attempt and dispatch afresh instead, remove the `maintainer-handoff` label as well as retitling or deleting this issue.' "$ISSUE")
+          fi
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          if [ -n "$KEPT" ]; then
+            body+=$(printf '\n\nThe agent'"'"'s commits are not lost: they are kept for 90 days as the `%s` artifact of this run (`gh run download %s --repo %s --name %s`), as `commits.bundle` and `changes.patch`.' "$ARTIFACT" "$RUN_ID" "$REPO" "$ARTIFACT")
+          fi
           gh issue comment "$ISSUE" --repo "$REPO" --body "$body" \
             || echo "::error::Could not post the failure report on #$ISSUE."
