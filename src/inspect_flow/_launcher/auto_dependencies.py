@@ -65,6 +65,7 @@ _MODEL_PROVIDERS: dict[str, list[str]] = {
     "vllm-completions": ["vllm"],
     "deepseek": ["openai"],
     "meta": ["openai"],  # added in inspect-ai 0.3.267
+    "litellm-proxy": ["openai"],  # added after inspect-ai 0.3.268
     "sagemaker": ["openai"],  # boto3/aioboto3 ship with inspect-ai
     "nnterp": ["nnterp"],
     "none": [],
