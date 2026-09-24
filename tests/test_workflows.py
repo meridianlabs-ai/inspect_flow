@@ -1492,35 +1492,29 @@ REQUIRED_CHECKS = {
 }
 
 
-def _runs_checkout_code(job: dict[str, Any]) -> bool:
-    return any(
-        "run" in step or step.get("uses", "").startswith("./")
-        for step in job.get("steps", [])
-    )
-
-
 def _writes(permissions: dict[str, str]) -> set[str]:
     return {scope for scope, level in permissions.items() if level == "write"}
 
 
 def test_build_jobs_that_run_the_checkout_hold_no_write_permission() -> None:
     """An agent may land pyproject.toml and uv.lock (the tier-2 opt-in), and
-    Build runs them on its PRs: no job that runs anything from the checkout
-    holds a write permission or leaves the job token in .git/config."""
+    Build runs them on its PRs: no job with a checkout holds a write permission
+    or leaves the job token in .git/config, and the one writer checks out
+    nothing and runs no action but the artifact download."""
     workflow = yaml.safe_load(BUILD.read_text())
     assert workflow["permissions"] == {"contents": "read"}
     writers = {}
     for name, job in workflow["jobs"].items():
         permissions = job.get("permissions", workflow["permissions"])
-        checkouts = [
-            s for s in job["steps"] if s.get("uses", "").startswith("actions/checkout@")
-        ]
-        if _runs_checkout_code(job):
+        uses = [s["uses"].split("@")[0] for s in job["steps"] if "uses" in s]
+        if "actions/checkout" in uses or any(u.startswith("./") for u in uses):
             assert not _writes(permissions), name
-            for checkout in checkouts:
-                assert checkout["with"]["persist-credentials"] is False, name
+            for step in job["steps"]:
+                if step.get("uses", "").startswith("actions/checkout@"):
+                    assert step["with"]["persist-credentials"] is False, name
         elif _writes(permissions):
             writers[name] = _writes(permissions)
+            assert uses == ["actions/download-artifact"], name
     assert writers == {"coverage": {"contents"}}
 
 
@@ -1536,14 +1530,29 @@ def test_build_keeps_the_required_check_names() -> None:
     assert checks == REQUIRED_CHECKS
 
 
+MAIN_PUSH = "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+DATA_BRANCH = "python-coverage-comment-action-data"
+
+
 def test_coverage_writes_run_nothing_from_the_pr() -> None:
-    """py-test computes the coverage comment read-only and stores it; the
-    workflow_run workflow posts it without a checkout, and main's data branch
-    is written by a job that runs only the coverage action."""
+    """py-test runs the coverage action read-only, where the measured sources
+    and the coverage configuration are, and stores what it would write; the
+    workflow_run workflow posts the comment without a checkout, and the
+    `coverage` job pushes the data branch's bundled commits."""
     build = yaml.safe_load(BUILD.read_text())
     py_test = {s.get("id", s.get("name")): s for s in build["jobs"]["py-test"]["steps"]}
+    order = list(py_test)
     assert py_test["coverage_comment"]["if"] == (
-        "matrix.python-version == '3.10' && github.event_name == 'pull_request'"
+        "matrix.python-version == '3.10' && (github.event_name == 'pull_request' "
+        f"|| ({MAIN_PUSH}))"
+    )
+    for name in ("Keep the coverage data push local", "Bundle the coverage data"):
+        assert py_test[name]["if"] == f"matrix.python-version == '3.10' && {MAIN_PUSH}"
+    assert (
+        order.index("Keep the coverage data push local")
+        < order.index("coverage_comment")
+        < order.index("Bundle the coverage data")
+        < order.index("Store the coverage data")
     )
     stored = py_test["Store the coverage comment"]["with"]
     assert stored["name"] == "python-coverage-comment-action"
@@ -1551,17 +1560,14 @@ def test_coverage_writes_run_nothing_from_the_pr() -> None:
 
     coverage = build["jobs"]["coverage"]
     assert coverage["needs"] == "py-test"
-    assert coverage["if"] == (
-        "github.event_name == 'push' && github.ref == 'refs/heads/main'"
-    )
-    assert [s["uses"].split("@")[0] for s in coverage["steps"]] == [
-        "actions/checkout",
-        "actions/download-artifact",
-        "py-cov-action/python-coverage-comment-action",
-    ]
+    assert coverage["if"] == MAIN_PUSH
+    download = coverage["steps"][0]
+    assert download["uses"].startswith("actions/download-artifact@")
     assert (
-        coverage["steps"][1]["with"]["name"]
-        == (py_test["Store the coverage data"]["with"]["name"])
+        download["with"]["name"] == py_test["Store the coverage data"]["with"]["name"]
+    )
+    assert (
+        download["with"]["path"] == py_test["Store the coverage data"]["with"]["path"]
     )
 
     comment = yaml.safe_load((WORKFLOWS / "coverage-comment.yml").read_text())
@@ -1573,6 +1579,167 @@ def test_coverage_writes_run_nothing_from_the_pr() -> None:
     (step,) = job["steps"]
     assert step["uses"].startswith("py-cov-action/python-coverage-comment-action@")
     assert step["with"]["GITHUB_PR_RUN_ID"] == "${{ github.event.workflow_run.id }}"
+
+
+def _build_step(job: str, name: str) -> dict[str, Any]:
+    return _steps(job, BUILD)[name]
+
+
+def _step_env(step: dict[str, Any], **values: str) -> dict[str, str]:
+    """The step's own env with its expressions replaced by test values."""
+    env = {
+        key: re.sub(r"\$\{\{ github.server_url \}\}", "https://github.com", str(v))
+        for key, v in step.get("env", {}).items()
+    }
+    return {
+        "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+        **{k: v for k, v in env.items() if "${{" not in v},
+        **values,
+    }
+
+
+class CoverageData:
+    """A local origin with main (and optionally the data branch), py-test's
+    checkout of main, and the directories the two coverage jobs use."""
+
+    def __init__(self, tmp_path: Path, data_branch: bool) -> None:
+        self.tmp = tmp_path
+        self.origin = tmp_path / "origin.git"
+        _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(self.origin))
+        seed = tmp_path / "seed"
+        _git(tmp_path, "clone", "-q", str(self.origin), str(seed))
+        _write(seed, {"pyproject.toml": "[project]\n"})
+        _git(seed, "push", "-q", "origin", "HEAD:main")
+        if data_branch:
+            _git(seed, "switch", "-q", "--orphan", DATA_BRANCH)
+            _write(seed, {"data.json": '{"coverage": 90}'})
+            _git(seed, "push", "-q", "origin", DATA_BRANCH)
+        self.workspace = tmp_path / "workspace"
+        _git(tmp_path, "clone", "-q", str(self.origin), str(self.workspace))
+        self.out = tmp_path / "runner/temp/coverage-data"
+
+    def origin_tip(self) -> str:
+        return _git(
+            self.origin,
+            "for-each-ref",
+            "--format=%(objectname)",
+            f"refs/heads/{DATA_BRANCH}",
+        )
+
+    def py_test(self, files: dict[str, str] | None) -> None:
+        """py-test's steps around the coverage action on a push to main; the
+        action's save mode, as its storage module does it, in between (no
+        commit when the data did not change)."""
+        env = {
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(self.tmp),
+        }
+        local = _build_step("py-test", "Keep the coverage data push local")
+        subprocess.run(
+            ["bash", "-c", local["run"]], cwd=self.workspace, env=env, check=True
+        )
+        if files is not None:
+            ws = self.workspace
+            if self.origin_tip():
+                _git(ws, "fetch", "-q", "origin", DATA_BRANCH)
+                _git(ws, "switch", "-q", DATA_BRANCH)
+            else:
+                _git(ws, "switch", "-q", "--orphan", DATA_BRANCH)
+            _write(ws, files)
+            _git(ws, "push", "-q", "origin", DATA_BRANCH)
+            _git(ws, "switch", "-q", "main")
+        bundle = _build_step("py-test", "Bundle the coverage data")
+        subprocess.run(
+            ["bash", "-c", bundle["run"]],
+            cwd=self.workspace,
+            env={**env, **_step_env(bundle, OUT=str(self.out))},
+            check=True,
+        )
+
+    def push(self, cwd: Path) -> subprocess.CompletedProcess[str]:
+        step = _build_step("coverage", "Push the coverage data")
+        return subprocess.run(
+            ["bash", "-c", step["run"]],
+            cwd=cwd,
+            env=_step_env(
+                step,
+                HOME=str(self.tmp),
+                IN=str(self.out),
+                WORK=str(self.tmp / "runner/temp/coverage-repo"),
+                URL=str(self.origin),
+                GIT_TOKEN="unused",
+                GIT_CONFIG_VALUE_2=str(self.tmp / "no-hooks"),
+            ),
+            capture_output=True,
+            text=True,
+        )
+
+
+@pytest.mark.parametrize("data_branch", [True, False], ids=["existing", "new"])
+def test_coverage_data_reaches_the_data_branch_as_data(
+    tmp_path: Path, data_branch: bool
+) -> None:
+    """The action's push from py-test stays on the runner; the writer, which
+    has no checkout, fast-forwards origin's data branch to exactly what the
+    action committed, and runs nothing it carries (a coverage plugin in the
+    data, a hostile configuration where it runs)."""
+    data = CoverageData(tmp_path, data_branch)
+    before = data.origin_tip()
+    data.py_test(
+        {
+            "data.json": '{"coverage": 95}',
+            "pyproject.toml": '[tool.coverage.run]\nplugins = ["probe"]\n',
+            "probe.py": "open('/dev/null')\n",
+        }
+    )
+    assert data.origin_tip() == before
+    assert sorted(f.name for f in data.out.iterdir()) == ["base", "data.bundle"]
+    committed = _git(
+        data.workspace / ".git/coverage-data-push", "rev-parse", DATA_BRANCH
+    )
+
+    hostile = tmp_path / "hostile"
+    (hostile / ".git/hooks").mkdir(parents=True)
+    (hostile / "pyproject.toml").write_text(
+        '[tool.coverage.run]\nplugins = ["probe"]\n'
+    )
+    marker = tmp_path / "ran"
+    (hostile / "probe.py").write_text(f"open({str(marker)!r}, 'w')\n")
+    result = data.push(hostile)
+
+    assert result.returncode == 0, result.stderr
+    assert data.origin_tip() == committed
+    if before:
+        assert _git(data.origin, "merge-base", "--is-ancestor", before, committed) == ""
+    assert not marker.exists()
+
+
+def test_unchanged_coverage_data_pushes_nothing(tmp_path: Path) -> None:
+    data = CoverageData(tmp_path, data_branch=True)
+    before = data.origin_tip()
+    data.py_test(None)
+    assert sorted(f.name for f in data.out.iterdir()) == ["base"]
+
+    result = data.push(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+    assert "No new coverage data to push." in result.stdout
+    assert data.origin_tip() == before
+
+
+def test_coverage_data_is_never_forced_over_a_moved_branch(tmp_path: Path) -> None:
+    data = CoverageData(tmp_path, data_branch=True)
+    data.py_test({"data.json": '{"coverage": 95}'})
+    other = tmp_path / "other"
+    _git(tmp_path, "clone", "-q", "-b", DATA_BRANCH, str(data.origin), str(other))
+    _write(other, {"data.json": '{"coverage": 96}'})
+    _git(other, "push", "-q", "origin", DATA_BRANCH)
+    moved = data.origin_tip()
+
+    result = data.push(tmp_path)
+
+    assert result.returncode != 0
+    assert data.origin_tip() == moved
 
 
 def _check_lock(tmp_path: Path, lock: str) -> subprocess.CompletedProcess[str]:
