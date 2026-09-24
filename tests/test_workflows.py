@@ -28,6 +28,10 @@ PR's branch, while other commits are left to land as before. The "Open the
 maintainer's draft PR" step pushes that branch with a placeholder note and none
 of the agent's objects, and a re-run adopts the branch and PR it made.
 
+Both scheduled agent workflows hand the PR land opens to the maintainer: the
+"Hand the PR to the maintainer" step makes it a draft assigned to ransomr, and
+neither carries the `auto` label (#859 sat labelled `auto`, never reviewed).
+
 Every call of the agents repo's reusable workflows sets the `provision` recipe
 the agent user runs in place of claude-setup, with claude-setup's Python
 (meridianlabs-ai/agents design/executed-paths-residual.md).
@@ -1383,3 +1387,86 @@ def test_a_draft_opened_without_its_label_is_reported(tmp_path: Path) -> None:
         f"{DRAFT_URL} --repo meridianlabs-ai/inspect_flow --add-label "
         "inspect-update --add-assignee ransomr`." in body
     )
+
+
+HAND_OFF_STEP = "Hand the PR to the maintainer"
+HAND_OFF_JOBS = [
+    ("inspect-update.yml", "land"),
+    ("inspect-ai-main-failure.yml", "triage-land"),
+]
+
+
+def _run_hand_off(
+    tmp_path: Path, workflow: str, job: str, env: dict[str, str]
+) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    log = tmp_path / "gh-calls.log"
+    result = subprocess.run(
+        ["bash", "-c", _steps(job, WORKFLOWS / workflow)[HAND_OFF_STEP]["run"]],
+        cwd=tmp_path,
+        env={
+            "PATH": f"{GH_STUB}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "GH_STUB_LOG": str(log),
+            "REPO": "meridianlabs-ai/inspect_flow",
+            "PR": "859",
+            **env,
+        },
+        capture_output=True,
+        text=True,
+    )
+    return result, log.read_text().splitlines() if log.exists() else []
+
+
+@pytest.mark.parametrize(("workflow", "job"), HAND_OFF_JOBS)
+def test_the_landed_pr_becomes_a_draft_assigned_to_the_maintainer(
+    tmp_path: Path, workflow: str, job: str
+) -> None:
+    """The agents behind these PRs read third-party text (a failed run's logs,
+    inspect-ai's changelog), so their PRs wait as drafts for ransomr's review
+    and never carry the `auto` label (#859)."""
+    result, calls = _run_hand_off(tmp_path, workflow, job, {})
+
+    assert result.returncode == 0, result.stderr
+    assert calls == [
+        "pr view 859 --repo meridianlabs-ai/inspect_flow --json isDraft --jq .isDraft",
+        "pr ready 859 --repo meridianlabs-ai/inspect_flow --undo",
+        "pr edit 859 --repo meridianlabs-ai/inspect_flow --add-assignee ransomr",
+    ]
+    steps = _steps(job, WORKFLOWS / workflow)
+    names = list(steps)
+    assert names.index(HAND_OFF_STEP) > names.index("Land")
+    assert "steps.land.outputs.pr_number != ''" in steps[HAND_OFF_STEP]["if"]
+    assert "auto" not in json.loads(steps["Land"]["with"]["allowed-pr-labels"])
+
+
+@pytest.mark.parametrize(("workflow", "job"), HAND_OFF_JOBS)
+def test_a_draft_pr_is_only_assigned(tmp_path: Path, workflow: str, job: str) -> None:
+    result, calls = _run_hand_off(tmp_path, workflow, job, {"GH_STUB_IS_DRAFT": "true"})
+
+    assert result.returncode == 0, result.stderr
+    assert not any(c.startswith("pr ready") for c in calls)
+    assert calls[-1] == (
+        "pr edit 859 --repo meridianlabs-ai/inspect_flow --add-assignee ransomr"
+    )
+
+
+@pytest.mark.parametrize(("workflow", "job"), HAND_OFF_JOBS)
+def test_a_failed_hand_off_warns_and_still_assigns(
+    tmp_path: Path, workflow: str, job: str
+) -> None:
+    result, calls = _run_hand_off(
+        tmp_path, workflow, job, {"GH_STUB_FAIL_ON": "pr ready"}
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "::warning::Could not convert #859 to a draft" in result.stdout
+    assert calls[-1].startswith("pr edit 859")
+
+
+@pytest.mark.parametrize(("workflow", "job"), HAND_OFF_JOBS)
+def test_the_hand_off_refuses_an_unexpected_pr_number(
+    tmp_path: Path, workflow: str, job: str
+) -> None:
+    result, calls = _run_hand_off(tmp_path, workflow, job, {"PR": "859; true"})
+
+    assert result.returncode == 1
+    assert calls == []

@@ -37,14 +37,16 @@
 #                     placeholder note, and he adds the reviewed commits to it.
 #                     Otherwise land validates the manifest, pushes the branch
 #                     and opens the `inspect-update` PR whose body says
-#                     `Fixes #<issue>`. Either way it posts the agent's mapping
+#                     `Fixes #<issue>`, then makes it a draft assigned to
+#                     ransomr. Either way it posts the agent's mapping
 #                     on the issue and reports any agent error there.
 #
 # The App token (meridian-marvin[bot]) is what makes an automated PR trigger
 # CI: a GITHUB_TOKEN-authored PR is silently dropped by GitHub's Actions
-# recursion guard. Such a PR is assigned to ransomr and waits for his review
-# like any other; it gets no `auto` label (the Orca review workflow replaced
-# that loop). A scheduled job also cannot summon the agent via @auto (the
+# recursion guard. Such a PR is a draft assigned to ransomr and waits for his
+# review; it gets no `auto` label (the Orca review workflow replaced that
+# loop). The agent read third-party changelog text, so its PR is reviewed as
+# untrusted before any agent acts on it (decision: Ransom, 2026-09-24). A scheduled job also cannot summon the agent via @auto (the
 # kickoff gates reject machine/bot actors), which is why claude-code-action is
 # invoked directly here: the workflow is the trigger and passes the prompt.
 #
@@ -945,15 +947,24 @@ jobs:
             gh pr edit "$pr" --repo "$REPO" --add-label inspect-update --add-assignee ransomr
           fi
 
-      # Repo default the manifest cannot express: assign the PR like the
-      # issue. Best-effort; runs whenever the land step got as far as a PR.
-      - name: Assign the PR
+      # What the manifest cannot express: the PR is a draft, assigned like the
+      # issue. land cannot open a draft, so this converts the PR it opened (or
+      # adopted) right after. Best-effort; runs whenever the land step got as
+      # far as a PR, and the issue's own assignment reaches ransomr regardless.
+      - name: Hand the PR to the maintainer
         if: always() && steps.land.outputs.pr_number != ''
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           REPO: ${{ github.repository }}
           PR: ${{ steps.land.outputs.pr_number }}
         run: |
+          set -uo pipefail
+          [[ "$PR" =~ ^[0-9]+$ ]] || { echo "::error::land reported PR '$PR'."; exit 1; }
+          draft=$(gh pr view "$PR" --repo "$REPO" --json isDraft --jq .isDraft) || draft=""
+          if [ "$draft" != "true" ]; then
+            gh pr ready "$PR" --repo "$REPO" --undo \
+              || echo "::warning::Could not convert #$PR to a draft: gh pr ready $PR --repo $REPO --undo"
+          fi
           gh pr edit "$PR" --repo "$REPO" --add-assignee ransomr \
             || echo "::warning::Could not assign ransomr to #$PR."
 

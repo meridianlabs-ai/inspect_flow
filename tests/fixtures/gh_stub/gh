@@ -2,8 +2,9 @@
 # Stands in for `gh` in tests/test_workflows.py: logs each call to
 # GH_STUB_LOG, then serves the page(s) in GH_STUB_PULLS, GH_STUB_HANDOFFS or
 # GH_STUB_ISSUES by endpoint, accepts label/issue/PR writes (a created PR is
-# GH_STUB_PR_URL), or fails like a 5xx when GH_STUB_FAIL is set or the call
-# contains GH_STUB_FAIL_ON.
+# GH_STUB_PR_URL), answers a PR's isDraft with GH_STUB_IS_DRAFT (default
+# false), or fails like a 5xx when GH_STUB_FAIL is set or the call contains
+# GH_STUB_FAIL_ON.
 printf '%s\n' "$*" >>"$GH_STUB_LOG"
 if [ -n "${GH_STUB_FAIL:-}" ] || { [ -n "${GH_STUB_FAIL_ON:-}" ] && [[ "$*" == *"$GH_STUB_FAIL_ON"* ]]; }; then
   echo "gh: HTTP 502: Bad Gateway" >&2
@@ -14,6 +15,8 @@ case "$*" in
   *"labels=inspect-update,maintainer-handoff"*) cat "${GH_STUB_HANDOFFS:-/dev/stdin}" <<<'[]' ;;
   *"/issues?"*) cat "$GH_STUB_ISSUES" ;;
   "pr create "*) echo "$GH_STUB_PR_URL" ;;
+  "pr view "*"--json isDraft"*) echo "${GH_STUB_IS_DRAFT:-false}" ;;
+  "pr ready "*) ;;
   "label create "* | "issue edit "* | "issue comment "* | "pr edit "*) ;;
   *) echo "unexpected gh call: $*" >&2; exit 2 ;;
 esac
