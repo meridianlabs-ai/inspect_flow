@@ -22,11 +22,14 @@
 #                     commits and a manifest describing what to post.
 #   land  (trusted)   a fresh runner that checks out nothing: mints an App
 #                     token for this repo (contents + pull requests + issues)
-#                     and routes the commits. When they change a path the
-#                     shared land action refuses to push (build and dependency
-#                     configuration such as pyproject.toml and uv.lock — which
-#                     the marker advance and the lock upgrade always change —
-#                     workflows, agent instructions), they are a MAINTAINER
+#                     and routes the commits. Land runs with
+#                     `allow-build-config`, so build and dependency
+#                     configuration (pyproject.toml and uv.lock, which the
+#                     marker advance and the lock upgrade always change) is
+#                     pushed like any other file. When the commits change a
+#                     path the shared land action still refuses to push (its
+#                     tier 1: workflows and the rest of `.github/`, agent
+#                     instructions and settings), they are a MAINTAINER
 #                     HANDOFF: kept as the `inspect-update-handoff-<attempt>`
 #                     artifact,
 #                     described on the release issue for ransomr to inspect
@@ -96,6 +99,22 @@ jobs:
       # tampered artifact could steer the push at another release's branch.
       branch: inspect-update/${{ steps.issue.outputs.number }}/${{ steps.versions.outputs.latest }}
     steps:
+      # A dispatch runs this workflow from the ref the dispatcher picks, and
+      # the agent job provisions and runs its agent as the runner on that
+      # ref's checkout, holding the WIF id-token. Land may push build and
+      # dependency configuration (allow-build-config), so a dispatch runs only
+      # from the default branch, as the automated triggers do; any other ref
+      # fails here, loudly, and every job a dispatch can start needs this
+      # one. A re-run keeps the original event and ref, so the same check
+      # refuses a re-run of such a dispatch.
+      - name: Refuse a dispatch from another branch
+        if: github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          REF: ${{ github.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          echo "::error::Refusing a workflow_dispatch from $REF: this workflow runs only from the default branch ($DEFAULT). Dispatch it from $DEFAULT."
+          exit 1
       - uses: actions/checkout@v4
 
       - name: Read latest and last-reconciled inspect-ai versions
@@ -143,8 +162,9 @@ jobs:
             exit 0
           fi
           # The same holds for a release handed to the maintainer (the land
-          # job labels its issue `maintainer-handoff`): until the maintainer's
-          # PR closes that issue, the marker on main has not advanced.
+          # job labels its issue `maintainer-handoff` when the commits change
+          # a path land refuses to push): until the maintainer's PR closes
+          # that issue, the marker on main has not advanced.
           handoffs=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&labels=inspect-update,maintainer-handoff&per_page=100" --paginate \
             | jq -s 'add | map(select(has("pull_request") | not)) | length')
           if [ "$handoffs" -gt 0 ]; then
@@ -215,7 +235,7 @@ jobs:
           PROJECT: PVT_kwDOC7YMCM4BU68p
         run: |
           set -euo pipefail
-          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below. Automation never pushes commits that change build or dependency configuration, and advancing the reconciled marker and upgrading the lock always do: such commits are handed to the maintainer here for review, with a draft pull request that links here with a Fixes line and holds only a placeholder until the maintainer adds them.\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
+          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below, and its commits (the reconciled marker, the lock upgrade and any flow changes) are opened as a pull request that links here with a Fixes line. Automation never pushes commits that change workflows or agent instructions and settings: such commits are handed to the maintainer here for review instead, with a draft pull request that holds only a placeholder until the maintainer adds them.\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
             "$RECONCILED" "$LATEST" "$RUN_URL")
           url=$(gh issue create --repo "$REPO" \
             --title "inspect-ai $LATEST: surface new features in flow" \
@@ -332,13 +352,15 @@ jobs:
             the PR, and posts the files you write under
             ${{ runner.temp }}/agent-out (call it OUT below). Issue
             #${{ needs.gate.outputs.issue }} already exists for this release;
-            your mapping is posted there as a comment. Commits that change
-            build or dependency configuration (pyproject.toml, uv.lock — the
-            marker advance and the lock upgrade below always do) are never
-            pushed by automation: the trusted job hands them to the
-            maintainer on that issue instead of opening the PR, and the
-            maintainer opens it with your PR text. Commit them and write
-            every file below exactly as described all the same.
+            your mapping is posted there as a comment. The marker advance and
+            the lock upgrade below change pyproject.toml and uv.lock; those
+            are pushed like your other commits. Commits that change anything
+            under .github/ or agent instructions and settings (AGENTS.md,
+            CLAUDE.md, .claude/, .mcp.json) are never pushed by automation:
+            the trusted job hands them to the maintainer on that issue
+            instead of opening the PR, and the maintainer opens it with your
+            PR text. Commit them and write every file below exactly as
+            described all the same.
 
             Read AGENTS.md first and follow it throughout.
 
@@ -626,10 +648,12 @@ jobs:
 
       # Route the commits before `land` sees them. The shared land action
       # refuses to push a bundle that changes a path later automated runs
-      # execute or load (its lib.sh PROTECTED_PATHSPECS: build and dependency
-      # configuration, workflows, agent instructions), and that guard stays
-      # the boundary: this step only decides, from the same list, whether the
-      # run is a MAINTAINER HANDOFF instead of a push. Reads only: the
+      # execute or load; with `allow-build-config` (below) that is its
+      # lib.sh TIER1_PATHSPECS (`.github/`, agent instructions and settings)
+      # and what they reach, while build and dependency configuration
+      # (TIER2_PATHSPECS) lands. That guard stays the boundary: this step
+      # only decides, from the same list, whether the run is a MAINTAINER
+      # HANDOFF instead of a push. Reads only: the
       # artifact is data, materialized in an empty bare repo like land's own
       # fetch step (no checkout, no hooks, nothing of it executed). Outputs:
       #   bundle=true   the bundle verified (tip = the manifest's head_sha,
@@ -708,20 +732,23 @@ jobs:
           fi
           echo "bundle=true" >>"$GITHUB_OUTPUT"
 
-          # The same list and link/import walk the land action checks with,
-          # from its own copy (downloaded at job setup with the Land step).
+          # The same list and link/import walk the land action checks with
+          # under `allow-build-config` (tier 1 alone), from its own copy
+          # (downloaded at job setup with the Land step).
           lib="${RUNNER_WORKSPACE%/*}/_actions/meridianlabs-ai/agents/main/.github/actions/land/lib.sh"
           protected_paths() {
             [ -f "$lib" ] || { echo "::warning::The land action's lib.sh is not at $lib." >&2; return 1; }
             # shellcheck source=/dev/null
             . "$lib" || return 1
+            [ "$(declare -p TIER1_PATHSPECS 2>/dev/null)" != "" ] && [ "${#TIER1_PATHSPECS[@]}" -gt 0 ] \
+              || { echo "::warning::The land action's lib.sh defines no TIER1_PATHSPECS." >&2; return 1; }
             local rev p
             local -a reach=()
             for rev in "$START" "$head"; do
-              protected_reach "$rev" "${PROTECTED_PATHSPECS[@]}" >"$ROUTE/reach" || return 1
+              protected_reach "$rev" "${TIER1_PATHSPECS[@]}" >"$ROUTE/reach" || return 1
               while IFS= read -r -d '' p; do reach+=(":(literal)$p"); done <"$ROUTE/reach"
             done
-            git diff -z --name-only --no-renames "$START" "$head" -- "${PROTECTED_PATHSPECS[@]}" ${reach[@]+"${reach[@]}"}
+            git diff -z --name-only --no-renames "$START" "$head" -- "${TIER1_PATHSPECS[@]}" ${reach[@]+"${reach[@]}"}
           }
           if ! protected_paths >"$ROUTE/protected"; then
             echo "::warning::Could not list the protected paths; treating every changed path as protected."
@@ -762,7 +789,7 @@ jobs:
           ref="refs/inspect-update/$ISSUE"
           # shellcheck disable=SC2016 # Markdown and commands for the maintainer, not expansions
           {
-            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. None of these commits was pushed: a later step of this run opens (or adopts) the draft PR for this release, whose branch holds only a placeholder when this run creates it, and reports any failure on this issue. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
+            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change workflows or agent instructions and settings, which automation never pushes: a maintainer reads them before any automated run executes or loads them. None of these commits was pushed: a later step of this run opens (or adopts) the draft PR for this release, whose branch holds only a placeholder when this run creates it, and reports any failure on this issue. This is not a failed run: the marker advance and the lock upgrade alone open a normal PR, so the paths below are what needs you.\n\n' "$LATEST"
             printf '### What changed\n\n%s commit(s) from `%s` to `%s`. Protected, and the reason this needs you: %s.\n\n' "$commits" "$START" "$head" "$names"
             printf '| File | + | − |\n|---|--:|--:|\n%s\n' "$table"
             printf '### Retrieve\n\nThe `%s` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$ARTIFACT" "$RUN_ID" "$RUN_URL"
@@ -770,8 +797,8 @@ jobs:
             printf '### Inspect and apply\n\nThis run also opens a draft PR from `%s`, labelled `inspect-update` and linked here with `Fixes #%s`. Its branch holds only a placeholder, `%s`, and none of these commits. On that branch, in a worktree of %s that you control, before running anything from these commits:\n\n' "$BRANCH" "$ISSUE" "$PLACEHOLDER" "$REPO"
             printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch %s\ngit merge --no-edit %s\ngit rm -q %s\ngit commit -q -m "chore: remove the maintainer handoff placeholder"\ngit merge --no-edit origin/main\n```\n\n' \
               "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref" "$PLACEHOLDER"
-            printf 'Read every line: the lock decides what `uv sync` installs, and pyproject.toml what the build runs. If the merge of `origin/main` conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
-            printf '### Tests and review\n\n`uv sync --frozen`, `make check`, `pytest`, and `python src/inspect_flow/_types/type_gen.py` leaving no diff (the check-type-gen CI job), then review it as you would any lock upgrade.\n\n'
+            printf 'Read every line: workflows run with this repository'"'"'s secrets and tokens, and agent instructions and settings steer every later agent run. If the merge of `origin/main` conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
+            printf '### Tests and review\n\n`uv sync --frozen`, `make check`, `pytest`, and `python src/inspect_flow/_types/type_gen.py` leaving no diff (the check-type-gen CI job), then review it as you would any workflow change.\n\n'
             printf '### PR\n\nPush the branch once the tests pass, retitle the draft PR and replace its body with the agent'"'"'s `pr-title.txt` and `pr-body.md` (keep `Fixes #%s`, so merging it closes this issue), then mark it ready. The placeholder fails the required `py-test` checks until it is deleted. If this run reports that the draft PR was not opened, follow the recovery it gives. Until this issue is closed it carries the `maintainer-handoff` label and the weekly run starts no newer release; inspect-ai %s stays claimed by this issue'"'"'s title either way.\n' "$ISSUE" "$LATEST"
           } >"$land/maintainer-handoff.md"
           jq --argjson n "$ISSUE" 'del(.pr) | .has_bundle = false | .head_sha = .start_sha
@@ -838,6 +865,22 @@ jobs:
           # equals this, so the agent job cannot name another start and land
           # history the run never began from (agents#137, finding 4628444).
           start-sha: ${{ github.sha }}
+          # Build and dependency configuration (land's tier 2) lands: the
+          # marker advance and the lock upgrade are this workflow's own work.
+          # No automated job runs code from the branches pushed here as the
+          # runner with more than the read-only job token: the reusable
+          # workflows' agents provision and run as unprivileged users (agents
+          # step 5); this workflow and inspect-ai-main-failure.yml start from
+          # github.sha on the default branch on their automated triggers and
+          # on a dispatch from the default branch, and their gates refuse a
+          # dispatch from any other branch; Build runs read-only
+          # (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
+          # tier-2 opt-in). Accepted residual (Ransom, 2026-09-24): a branch
+          # cut before that guard carries the unguarded workflow file, so a
+          # deliberate dispatch on such a stale branch after it gains tier-2
+          # commits would still run them as the runner. Tier 1 (.github/,
+          # agent instructions and settings) is refused either way.
+          allow-build-config: "true"
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
           allowed-pr-labels: '["inspect-update"]'
@@ -928,7 +971,7 @@ jobs:
               cd "$WORK"
               git fetch --quiet --no-tags "$URL" "$START"
               # shellcheck disable=SC2016 # Markdown backticks, not expansions
-              blob=$(printf '# Maintainer handoff: inspect-ai %s\n\nA placeholder, so that the draft PR for #%s has a diff. **Delete this file before merging**: while it is in the tree, `tests/test_workflows.py` fails the required `py-test` checks.\n\nThe reconciliation'"'"'s commits, `%s..%s`, are not on this branch: they change build or dependency configuration, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s). Review them and add them to this branch from a worktree you control, as the handoff comment on #%s describes.\n' \
+              blob=$(printf '# Maintainer handoff: inspect-ai %s\n\nA placeholder, so that the draft PR for #%s has a diff. **Delete this file before merging**: while it is in the tree, `tests/test_workflows.py` fails the required `py-test` checks.\n\nThe reconciliation'"'"'s commits, `%s..%s`, are not on this branch: they change workflows or agent instructions and settings, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s). Review them and add them to this branch from a worktree you control, as the handoff comment on #%s describes.\n' \
                 "$LATEST" "$ISSUE" "$START" "$HEAD" "$ARTIFACT" "$RUN_ID" "$RUN_URL" "$ISSUE" | git hash-object -w --stdin)
               export GIT_INDEX_FILE="$WORK/placeholder-index"
               git read-tree "$START"
@@ -941,7 +984,7 @@ jobs:
               exit 1
             fi
             # shellcheck disable=SC2016 # Markdown backticks, not expansions
-            printf 'Fixes #%s\n\n**Maintainer handoff, not mergeable as is.** This branch holds only `%s`, a placeholder: the reconciliation'"'"'s commits change build or dependency configuration, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s) (`commits.bundle`, and the same commits as `changes.patch`), from `%s` to `%s`.\n\nReview them and add them to this branch from a worktree you control, as the handoff comment on #%s describes; delete the placeholder, which fails the required `py-test` checks while it exists; replace this title and body with the agent'"'"'s `pr-title.txt` and `pr-body.md`, keeping the `Fixes` line; then mark the PR ready.\n' \
+            printf 'Fixes #%s\n\n**Maintainer handoff, not mergeable as is.** This branch holds only `%s`, a placeholder: the reconciliation'"'"'s commits change workflows or agent instructions and settings, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s) (`commits.bundle`, and the same commits as `changes.patch`), from `%s` to `%s`.\n\nReview them and add them to this branch from a worktree you control, as the handoff comment on #%s describes; delete the placeholder, which fails the required `py-test` checks while it exists; replace this title and body with the agent'"'"'s `pr-title.txt` and `pr-body.md`, keeping the `Fixes` line; then mark the PR ready.\n' \
               "$ISSUE" "$PLACEHOLDER" "$ARTIFACT" "$RUN_ID" "$RUN_URL" "$START" "$HEAD" "$ISSUE" >"$RUNNER_TEMP/draft-body.md"
             pr=$(gh pr create --draft --repo "$REPO" --base main --head "$BRANCH" \
               --title "$title" --body-file "$RUNNER_TEMP/draft-body.md")

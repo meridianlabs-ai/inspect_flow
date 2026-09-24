@@ -21,12 +21,19 @@ Every job that runs the agent restores the Actions cache but never saves it
 
 The `land` job's "Route protected changes to the maintainer" step is run
 against a local origin and a bundle built like emit-landing's: commits that
-change a protected path (run 35921391185: pyproject.toml and uv.lock, which
-the shared land action refuses to push) become a maintainer handoff whose
-kept bundle applies from the handoff comment's own commands onto the draft
-PR's branch, while other commits are left to land as before. The "Open the
-maintainer's draft PR" step pushes that branch with a placeholder note and none
-of the agent's objects, and a re-run adopts the branch and PR it made.
+change a path the shared land action still refuses to push under
+`allow-build-config` (its tier 1: `.github/`, agent instructions and settings)
+become a maintainer handoff whose kept bundle applies from the handoff
+comment's own commands onto the draft PR's branch, while other commits,
+pyproject.toml and uv.lock among them (run 35921391185's shape, a handoff
+before the opt-in), are left to land. The "Open the maintainer's draft PR"
+step pushes that branch with a placeholder note and none of the agent's
+objects, and a re-run adopts the branch and PR it made.
+
+Both direct `land` callers and the dev-agent and @auto stubs opt in to land's
+tier 2 (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
+tier-2 opt-in), which Build allows by running every job that runs the
+checkout read-only, and by checking uv.lock's package sources first.
 
 Both scheduled agent workflows have land open their PRs as drafts assigned to
 ransomr (agents#175's `pr-draft` and `pr-assignees`), and neither carries the
@@ -41,6 +48,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -560,12 +568,113 @@ def test_agent_stubs_provision_like_claude_setup() -> None:
     }
 
 
+def test_landing_workflows_opt_in_to_build_config() -> None:
+    """Every land job that pushes agent commits here lands build and dependency
+    configuration (the tier-2 opt-in); the reviewer's land job pushes no bundle
+    and takes no such input."""
+    stub_calls = {
+        (path.name, name): (
+            job["uses"].split("/")[-1],
+            job.get("with", {}).get("allow_build_config"),
+        )
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+    }
+    assert stub_calls == {
+        ("claude.yml", "claude"): ("claude.yml@main", True),
+        ("claude.yml", "claude-auto"): ("claude.yml@main", True),
+        ("claude-auto.yml", "ci-fix"): ("claude-auto.yml@main", True),
+        ("claude-auto.yml", "review-fix"): ("claude-auto-review.yml@main", True),
+        ("claude-review.yml", "review"): ("claude-review.yml@main", None),
+    }
+    land_steps = {
+        (path.name, name): step["with"].get("allow-build-config")
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        for step in job.get("steps", [])
+        if step.get("uses", "").startswith(
+            "meridianlabs-ai/agents/.github/actions/land@"
+        )
+    }
+    assert land_steps == {
+        ("inspect-update.yml", "land"): "true",
+        ("inspect-ai-main-failure.yml", "triage-land"): "true",
+    }
+
+
+DISPATCH_GUARD = "Refuse a dispatch from another branch"
+
+
+def _needs(job: dict[str, Any]) -> list[str]:
+    needs = job.get("needs", [])
+    return [needs] if isinstance(needs, str) else needs
+
+
+@pytest.mark.parametrize(
+    ("workflow", "gate"),
+    [("inspect-update.yml", "gate"), ("inspect-ai-main-failure.yml", "triage-gate")],
+)
+def test_a_dispatch_runs_only_from_the_default_branch(workflow: str, gate: str) -> None:
+    """Both direct workflows opt in to land's tier 2 and run their agent as the
+    runner on the dispatched ref's checkout: the gate's first step fails a
+    dispatch from any other branch, loudly, and no job a dispatch can start
+    runs without the gate succeeding."""
+    document = yaml.safe_load((WORKFLOWS / workflow).read_text())
+    assert "workflow_dispatch" in document[True]
+    jobs = document["jobs"]
+    assert "needs" not in jobs[gate]
+    guard = jobs[gate]["steps"][0]
+    assert guard["name"] == DISPATCH_GUARD
+    assert guard["if"] == (
+        "github.event_name == 'workflow_dispatch' && github.ref != "
+        "format('refs/heads/{0}', github.event.repository.default_branch)"
+    )
+    result = subprocess.run(
+        ["bash", "-c", guard["run"]],
+        env={
+            "PATH": "/usr/bin:/bin",
+            "REF": "refs/heads/claude/issue-1",
+            "DEFAULT": "main",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert (
+        "::error::Refusing a workflow_dispatch from refs/heads/claude/issue-1"
+        in result.stdout
+    )
+
+    agent_jobs = [
+        name
+        for name, job in jobs.items()
+        if any(
+            step.get("uses", "").startswith("anthropics/claude-code-action")
+            for step in job["steps"]
+        )
+    ]
+    assert agent_jobs
+    for name in agent_jobs:
+        assert gate in _needs(jobs[name]), name
+    for name, job in jobs.items():
+        if name == gate:
+            continue
+        if gate in _needs(job):
+            if "always()" in job.get("if", ""):
+                assert f"needs.{gate}.result == 'success'" in job["if"], name
+        else:
+            # close-on-green: a workflow_run-only job, which no dispatch starts.
+            assert job["if"].startswith("github.event_name == 'workflow_run'"), name
+
+
 ROUTE_STEP = "Route protected changes to the maintainer"
 LAND_ACTIONS = "_actions/meridianlabs-ai/agents/main/.github/actions/land"
 
-# Stands in for the land action's lib.sh: the same two names the route step
-# reads, with a protected list shaped like the real one.
-STUB_LIB = """PROTECTED_PATHSPECS=(.github ':(glob)**/pyproject.toml' ':(glob)**/uv.lock')
+# Stands in for the land action's lib.sh: the names the route step reads,
+# with tier lists shaped like the real ones.
+STUB_LIB = """TIER1_PATHSPECS=(.github ':(glob)**/AGENTS.md' ':(glob)**/CLAUDE.md')
+TIER2_PATHSPECS=(':(glob)**/pyproject.toml' ':(glob)**/uv.lock')
 protected_reach() { :; }
 """
 
@@ -754,14 +863,15 @@ def _handoff_commands(comment: str, kept: Path) -> str:
 
 
 def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None:
-    """Run 35921391185's shape: the marker advance and the lock upgrade (plus a
-    source change) must not reach `land` as a push, and the kept commits must
-    apply from the handoff comment's own commands."""
+    """A reconciliation that also changes agent instructions must not reach
+    `land` as a push, and the kept commits must apply from the handoff comment's
+    own commands."""
     _write(
         landing.agent,
         {
             "pyproject.toml": '[tool.inspect_flow]\ninspect-reconciled-version = "0.3.268"\n',
             "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
             "src/inspect_flow/x.py": "x = 1\n",
         },
     )
@@ -794,13 +904,13 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     comment = (staged / "maintainer-handoff.md").read_text()
     assert comment.startswith("@ransomr: **maintainer review needed.**")
     assert "not a failed run" in comment
+    assert "change workflows or agent instructions and settings" in comment
+    assert "build or dependency" not in comment
     assert "None of these commits was pushed" in comment
     assert "no PR was opened" not in comment
-    assert (
-        "Protected, and the reason this needs you: `pyproject.toml`, `uv.lock`."
-        in comment
-    )
+    assert "Protected, and the reason this needs you: `AGENTS.md`." in comment
     assert "| `src/inspect_flow/x.py` | 1 | 0 |" in comment
+    assert "| `uv.lock` | 1 | 1 |" in comment
     assert (
         "gh run download 35921391185 --repo meridianlabs-ai/inspect_flow "
         "--name inspect-update-handoff-1 --dir" in comment
@@ -855,8 +965,24 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     )
 
 
-def test_unprotected_changes_land_as_before(landing: Landing) -> None:
-    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+@pytest.mark.parametrize(
+    "files",
+    [
+        {"src/inspect_flow/x.py": "x = 1\n"},
+        # Run 35921391185's shape, a handoff before the tier-2 opt-in: the
+        # marker advance and the lock upgrade, plus a source change.
+        {
+            "pyproject.toml": '[tool.inspect_flow]\ninspect-reconciled-version = "0.3.268"\n',
+            "uv.lock": "b\n",
+            "src/inspect_flow/x.py": "x = 1\n",
+        },
+    ],
+    ids=["source", "build-config"],
+)
+def test_unprotected_changes_land_as_before(
+    landing: Landing, files: dict[str, str]
+) -> None:
+    _write(landing.agent, files)
     landing.emit()
 
     result, outputs = landing.run()
@@ -929,13 +1055,32 @@ def test_an_unreadable_protected_list_fails_closed_to_the_maintainer(
     assert "treating every changed path as protected" in result.stdout
 
 
+def test_a_lib_without_the_tier_split_fails_closed_to_the_maintainer(
+    landing: Landing,
+) -> None:
+    """land's lib.sh before the tier split named one PROTECTED_PATHSPECS list;
+    a lib without TIER1_PATHSPECS is not read as "nothing protected"."""
+    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+    landing.emit()
+    landing.lib.write_text(
+        "PROTECTED_PATHSPECS=(.github ':(glob)**/uv.lock')\nprotected_reach() { :; }\n"
+    )
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs["route"] == "handoff"
+    assert "defines no TIER1_PATHSPECS" in result.stderr
+    assert "treating every changed path as protected" in result.stdout
+
+
 def test_agent_chosen_path_names_are_not_rendered(landing: Landing) -> None:
     _write(
         landing.agent,
         {
-            "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
             "src/@auto `x`.py": "x = 1\n",
-            "a/@review/pyproject.toml": "",
+            "a/@review/AGENTS.md": "",
         },
     )
     landing.emit()
@@ -945,7 +1090,7 @@ def test_agent_chosen_path_names_are_not_rendered(landing: Landing) -> None:
     assert result.returncode == 0, result.stderr
     assert outputs["route"] == "handoff"
     comment = (landing.route / "landing/maintainer-handoff.md").read_text()
-    assert "`uv.lock`, 1 path(s) with other characters (see the patch)" in comment
+    assert "`AGENTS.md`, 1 path(s) with other characters (see the patch)" in comment
     assert "| 2 more (see the patch) | | |" in comment
     assert "@auto" not in comment and "@review" not in comment
 
@@ -1031,7 +1176,7 @@ def test_a_rerun_never_replaces_an_earlier_attempts_kept_commits(
     report = _steps("land")["Report the failure on the release issue"]["env"]
     assert keep == steps["route"]["env"]["ARTIFACT"] == report["ARTIFACT"]
 
-    _write(landing.agent, {"uv.lock": "b\n"})
+    _write(landing.agent, {"AGENTS.md": "# Agents\n"})
     landing.emit()
     comments = []
     for attempt in (1, 2):
@@ -1189,15 +1334,30 @@ def test_handoff_failure_recovery_clears_the_hold_as_well_as_the_claim(
     assert decisions == {"retitled": "false", "recovered": "true"}
 
 
-def test_the_agent_is_told_protected_commits_go_to_the_maintainer() -> None:
-    prompt = _prompt()
-    assert "are never\npushed by automation" in prompt
-    assert "hands them to the\nmaintainer" in prompt
+def test_the_agent_is_told_which_commits_go_to_the_maintainer() -> None:
+    prompt = " ".join(_prompt().split())
+    assert (
+        "The marker advance and the lock upgrade below change pyproject.toml and "
+        "uv.lock; those are pushed like your other commits." in prompt
+    )
+    assert (
+        "Commits that change anything under .github/ or agent instructions and "
+        "settings (AGENTS.md, CLAUDE.md, .claude/, .mcp.json) are never pushed by "
+        "automation: the trusted job hands them to the maintainer" in prompt
+    )
 
 
 def _handoff(landing: Landing) -> str:
-    """Route run 35921391185's shape to a handoff; return the verified tip."""
-    _write(landing.agent, {"uv.lock": "b\n", "src/inspect_flow/x.py": "x = 1\n"})
+    """Route a reconciliation that changes AGENTS.md to a handoff; return the
+    verified tip."""
+    _write(
+        landing.agent,
+        {
+            "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
+            "src/inspect_flow/x.py": "x = 1\n",
+        },
+    )
     landing.emit()
     result, outputs = landing.run()
     assert outputs["route"] == "handoff", result.stderr
@@ -1215,7 +1375,7 @@ def _origin_branch(landing: Landing) -> str:
 
 def test_the_draft_pr_carries_only_the_placeholder(landing: Landing) -> None:
     """The branch the draft PR needs is github.sha plus the placeholder note: no
-    object of the agent's commits (the protected uv.lock above all) reaches
+    object of the agent's commits (the protected AGENTS.md above all) reaches
     origin, and the note and PR body name the kept artifact and run, from
     trusted values only."""
     head = _handoff(landing)
@@ -1229,8 +1389,8 @@ def test_the_draft_pr_carries_only_the_placeholder(landing: Landing) -> None:
     assert _git(landing.origin, "diff", "--name-status", landing.start, tip) == (
         f"A\t{_placeholder()}"
     )
-    lock = _git(landing.agent, "rev-parse", f"{head}:uv.lock")
-    for obj in (head, lock):
+    agents = _git(landing.agent, "rev-parse", f"{head}:AGENTS.md")
+    for obj in (head, agents):
         missing = subprocess.run(
             ["git", "cat-file", "-e", obj], cwd=landing.origin, capture_output=True
         )
@@ -1432,3 +1592,336 @@ def test_a_canary_pr_whose_assignee_did_not_take_is_still_triaged() -> None:
     assert _selected(steps["Apply the triage labels"]["if"], context)
     context["steps.labels.outcome"] = "success"
     assert _selected(steps["Report the failure on the tracking issue"]["if"], context)
+
+
+BUILD = WORKFLOWS / "build.yaml"
+LOCK_STEP = "Check uv.lock package sources"
+
+# The `main rules` ruleset's required checks from build.yaml (the other one,
+# `lint / lint`, is pr-title-lint.yml's).
+REQUIRED_CHECKS = {
+    f"{job} ({python})"
+    for job in ("py-ruff", "py-type", "py-test", "py-build", "check-type-gen")
+    for python in ("3.10", "3.11")
+}
+
+
+def _writes(permissions: dict[str, str]) -> set[str]:
+    return {scope for scope, level in permissions.items() if level == "write"}
+
+
+def test_build_jobs_that_run_the_checkout_hold_no_write_permission() -> None:
+    """An agent may land pyproject.toml and uv.lock (the tier-2 opt-in), and
+    Build runs them on its PRs: no job with a checkout holds a write permission
+    or leaves the job token in .git/config, and the one writer checks out
+    nothing and runs no action but the artifact download."""
+    workflow = yaml.safe_load(BUILD.read_text())
+    assert workflow["permissions"] == {"contents": "read"}
+    writers = {}
+    for name, job in workflow["jobs"].items():
+        permissions = job.get("permissions", workflow["permissions"])
+        uses = [s["uses"].split("@")[0] for s in job["steps"] if "uses" in s]
+        if "actions/checkout" in uses or any(u.startswith("./") for u in uses):
+            assert not _writes(permissions), name
+            for step in job["steps"]:
+                if step.get("uses", "").startswith("actions/checkout@"):
+                    assert step["with"]["persist-credentials"] is False, name
+        elif _writes(permissions):
+            writers[name] = _writes(permissions)
+            assert uses == ["actions/download-artifact"], name
+    assert writers == {"coverage": {"contents"}}
+
+
+def test_build_keeps_the_required_check_names() -> None:
+    workflow = yaml.safe_load(BUILD.read_text())
+    checks = {
+        f"{name} ({python})"
+        for name, job in workflow["jobs"].items()
+        for python in job.get("strategy", {})
+        .get("matrix", {})
+        .get("python-version", [])
+    }
+    assert checks == REQUIRED_CHECKS
+
+
+MAIN_PUSH = "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+DATA_BRANCH = "python-coverage-comment-action-data"
+
+
+def test_coverage_writes_run_nothing_from_the_pr() -> None:
+    """py-test runs the coverage action read-only, where the measured sources
+    and the coverage configuration are, and stores what it would write; the
+    workflow_run workflow posts the comment without a checkout, and the
+    `coverage` job pushes the data branch's bundled commits."""
+    build = yaml.safe_load(BUILD.read_text())
+    py_test = {s.get("id", s.get("name")): s for s in build["jobs"]["py-test"]["steps"]}
+    order = list(py_test)
+    assert py_test["coverage_comment"]["if"] == (
+        "matrix.python-version == '3.10' && (github.event_name == 'pull_request' "
+        f"|| ({MAIN_PUSH}))"
+    )
+    for name in ("Keep the coverage data push local", "Bundle the coverage data"):
+        assert py_test[name]["if"] == f"matrix.python-version == '3.10' && {MAIN_PUSH}"
+    assert (
+        order.index("Keep the coverage data push local")
+        < order.index("coverage_comment")
+        < order.index("Bundle the coverage data")
+        < order.index("Store the coverage data")
+    )
+    stored = py_test["Store the coverage comment"]["with"]
+    assert stored["name"] == "python-coverage-comment-action"
+    assert stored["path"] == "python-coverage-comment-action.txt"
+
+    coverage = build["jobs"]["coverage"]
+    assert coverage["needs"] == "py-test"
+    assert coverage["if"] == MAIN_PUSH
+    download = coverage["steps"][0]
+    assert download["uses"].startswith("actions/download-artifact@")
+    assert (
+        download["with"]["name"] == py_test["Store the coverage data"]["with"]["name"]
+    )
+    assert (
+        download["with"]["path"] == py_test["Store the coverage data"]["with"]["path"]
+    )
+
+    comment = yaml.safe_load((WORKFLOWS / "coverage-comment.yml").read_text())
+    assert comment[True]["workflow_run"]["workflows"] == [build["name"]]
+    assert comment["permissions"] == {}
+    (job,) = comment["jobs"].values()
+    assert "head_repository.full_name == github.repository" in job["if"]
+    assert _writes(job["permissions"]) == {"pull-requests"}
+    (step,) = job["steps"]
+    assert step["uses"].startswith("py-cov-action/python-coverage-comment-action@")
+    assert step["with"]["GITHUB_PR_RUN_ID"] == "${{ github.event.workflow_run.id }}"
+
+
+def _build_step(job: str, name: str) -> dict[str, Any]:
+    return _steps(job, BUILD)[name]
+
+
+def _step_env(step: dict[str, Any], **values: str) -> dict[str, str]:
+    """The step's own env with its expressions replaced by test values."""
+    env = {
+        key: re.sub(r"\$\{\{ github.server_url \}\}", "https://github.com", str(v))
+        for key, v in step.get("env", {}).items()
+    }
+    return {
+        "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+        **{k: v for k, v in env.items() if "${{" not in v},
+        **values,
+    }
+
+
+class CoverageData:
+    """A local origin with main (and optionally the data branch), py-test's
+    checkout of main, and the directories the two coverage jobs use."""
+
+    def __init__(self, tmp_path: Path, data_branch: bool) -> None:
+        self.tmp = tmp_path
+        self.origin = tmp_path / "origin.git"
+        _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(self.origin))
+        seed = tmp_path / "seed"
+        _git(tmp_path, "clone", "-q", str(self.origin), str(seed))
+        _write(seed, {"pyproject.toml": "[project]\n"})
+        _git(seed, "push", "-q", "origin", "HEAD:main")
+        if data_branch:
+            _git(seed, "switch", "-q", "--orphan", DATA_BRANCH)
+            _write(seed, {"data.json": '{"coverage": 90}'})
+            _git(seed, "push", "-q", "origin", DATA_BRANCH)
+        self.workspace = tmp_path / "workspace"
+        _git(tmp_path, "clone", "-q", str(self.origin), str(self.workspace))
+        self.out = tmp_path / "runner/temp/coverage-data"
+
+    def origin_tip(self) -> str:
+        return _git(
+            self.origin,
+            "for-each-ref",
+            "--format=%(objectname)",
+            f"refs/heads/{DATA_BRANCH}",
+        )
+
+    def py_test(self, files: dict[str, str] | None) -> None:
+        """py-test's steps around the coverage action on a push to main; the
+        action's save mode, as its storage module does it, in between (no
+        commit when the data did not change)."""
+        env = {
+            "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+            "HOME": str(self.tmp),
+        }
+        local = _build_step("py-test", "Keep the coverage data push local")
+        subprocess.run(
+            ["bash", "-c", local["run"]], cwd=self.workspace, env=env, check=True
+        )
+        if files is not None:
+            ws = self.workspace
+            if self.origin_tip():
+                _git(ws, "fetch", "-q", "origin", DATA_BRANCH)
+                _git(ws, "switch", "-q", DATA_BRANCH)
+            else:
+                _git(ws, "switch", "-q", "--orphan", DATA_BRANCH)
+            _write(ws, files)
+            _git(ws, "push", "-q", "origin", DATA_BRANCH)
+            _git(ws, "switch", "-q", "main")
+        bundle = _build_step("py-test", "Bundle the coverage data")
+        subprocess.run(
+            ["bash", "-c", bundle["run"]],
+            cwd=self.workspace,
+            env={**env, **_step_env(bundle, OUT=str(self.out))},
+            check=True,
+        )
+
+    def push(self, cwd: Path) -> subprocess.CompletedProcess[str]:
+        step = _build_step("coverage", "Push the coverage data")
+        return subprocess.run(
+            ["bash", "-c", step["run"]],
+            cwd=cwd,
+            env=_step_env(
+                step,
+                HOME=str(self.tmp),
+                IN=str(self.out),
+                WORK=str(self.tmp / "runner/temp/coverage-repo"),
+                URL=str(self.origin),
+                GIT_TOKEN="unused",
+                GIT_CONFIG_VALUE_2=str(self.tmp / "no-hooks"),
+            ),
+            capture_output=True,
+            text=True,
+        )
+
+
+@pytest.mark.parametrize("data_branch", [True, False], ids=["existing", "new"])
+def test_coverage_data_reaches_the_data_branch_as_data(
+    tmp_path: Path, data_branch: bool
+) -> None:
+    """The action's push from py-test stays on the runner; the writer, which
+    has no checkout, fast-forwards origin's data branch to exactly what the
+    action committed, and runs nothing it carries (a coverage plugin in the
+    data, a hostile configuration where it runs)."""
+    data = CoverageData(tmp_path, data_branch)
+    before = data.origin_tip()
+    data.py_test(
+        {
+            "data.json": '{"coverage": 95}',
+            "pyproject.toml": '[tool.coverage.run]\nplugins = ["probe"]\n',
+            "probe.py": "open('/dev/null')\n",
+        }
+    )
+    assert data.origin_tip() == before
+    assert sorted(f.name for f in data.out.iterdir()) == ["base", "data.bundle"]
+    committed = _git(
+        data.workspace / ".git/coverage-data-push", "rev-parse", DATA_BRANCH
+    )
+
+    hostile = tmp_path / "hostile"
+    (hostile / ".git/hooks").mkdir(parents=True)
+    (hostile / "pyproject.toml").write_text(
+        '[tool.coverage.run]\nplugins = ["probe"]\n'
+    )
+    marker = tmp_path / "ran"
+    (hostile / "probe.py").write_text(f"open({str(marker)!r}, 'w')\n")
+    result = data.push(hostile)
+
+    assert result.returncode == 0, result.stderr
+    assert data.origin_tip() == committed
+    if before:
+        assert _git(data.origin, "merge-base", "--is-ancestor", before, committed) == ""
+    assert not marker.exists()
+
+
+def test_unchanged_coverage_data_pushes_nothing(tmp_path: Path) -> None:
+    data = CoverageData(tmp_path, data_branch=True)
+    before = data.origin_tip()
+    data.py_test(None)
+    assert sorted(f.name for f in data.out.iterdir()) == ["base"]
+
+    result = data.push(tmp_path)
+
+    assert result.returncode == 0, result.stderr
+    assert "No new coverage data to push." in result.stdout
+    assert data.origin_tip() == before
+
+
+def test_coverage_data_is_never_forced_over_a_moved_branch(tmp_path: Path) -> None:
+    data = CoverageData(tmp_path, data_branch=True)
+    data.py_test({"data.json": '{"coverage": 95}'})
+    other = tmp_path / "other"
+    _git(tmp_path, "clone", "-q", "-b", DATA_BRANCH, str(data.origin), str(other))
+    _write(other, {"data.json": '{"coverage": 96}'})
+    _git(other, "push", "-q", "origin", DATA_BRANCH)
+    moved = data.origin_tip()
+
+    result = data.push(tmp_path)
+
+    assert result.returncode != 0
+    assert data.origin_tip() == moved
+
+
+def _check_lock(tmp_path: Path, lock: str) -> subprocess.CompletedProcess[str]:
+    steps = {
+        s.get("name"): s
+        for s in yaml.safe_load(BUILD.read_text())["jobs"]["py-build"]["steps"]
+    }
+    step = steps[LOCK_STEP]
+    assert step["shell"] == "python3 {0}"
+    (tmp_path / "uv.lock").write_text(lock)
+    return subprocess.run(
+        [sys.executable, "-c", step["run"]],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_lock_source_check_runs_before_the_checkout_code() -> None:
+    steps = yaml.safe_load(BUILD.read_text())["jobs"]["py-build"]["steps"]
+    assert steps[0]["uses"].startswith("actions/checkout@")
+    assert steps[1]["name"] == LOCK_STEP
+
+
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="the check uses tomllib")
+def test_lock_source_check_passes_this_repository(tmp_path: Path) -> None:
+    lock = (WORKFLOWS.parent.parent / "uv.lock").read_text()
+
+    result = _check_lock(tmp_path, lock)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+PYPI_PACKAGE = """
+[[package]]
+name = "six"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/six-1.17.0.tar.gz", hash = "sha256:ff" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4f" },
+]
+"""
+
+
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="the check uses tomllib")
+@pytest.mark.parametrize(
+    "package",
+    [
+        'source = { registry = "https://example.com/simple" }',
+        'source = { git = "https://github.com/x/y?rev=main#abc" }',
+        'source = { url = "https://example.com/y-1.0.tar.gz" }',
+        'source = { path = "vendor/y-1.0.whl" }',
+        'source = { directory = "vendor/y" }',
+        'source = { editable = "vendor/y" }',
+        'source = { virtual = "." }',
+        "",
+        'source = { registry = "https://pypi.org/simple" }\n'
+        'wheels = [{ url = "https://example.com/y-1.0-py3-none-any.whl", hash = "sha256:00" }]',
+        'source = { registry = "https://pypi.org/simple" }\n'
+        'sdist = { path = "y-1.0.tar.gz", hash = "sha256:00" }',
+    ],
+)
+def test_lock_source_check_refuses_other_sources(tmp_path: Path, package: str) -> None:
+    lock = f'version = 1\n{PYPI_PACKAGE}\n[[package]]\nname = "y"\nversion = "1.0"\n{package}\n'
+
+    result = _check_lock(tmp_path, lock)
+
+    assert result.returncode == 1
+    assert result.stdout.count("::error file=uv.lock::y 1.0: ") == 1, result.stdout
+    assert "six" not in result.stdout

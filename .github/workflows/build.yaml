@@ -10,11 +10,14 @@ on:
       - "release/**"
   workflow_dispatch:
 
+# Read-only for every job that runs code from the checkout: an agent may land
+# build and dependency configuration (pyproject.toml, uv.lock; the tier-2
+# opt-in, meridianlabs-ai/agents design/executed-paths-residual.md), and these
+# jobs run it. The coverage writes happen where no checkout code runs: the PR
+# comment from coverage-comment.yml (workflow_run), the data branch from the
+# `coverage` job below.
 permissions:
-  contents: write
-  pull-requests: write
-  # contents: write - Store coverage data in the repository (in a data branch)
-  # pull-requests: write - Post coverage comments on PRs
+  contents: read
 
 jobs:
   py-ruff:
@@ -24,6 +27,8 @@ jobs:
         python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
@@ -41,6 +46,8 @@ jobs:
         python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
@@ -49,6 +56,9 @@ jobs:
 
   py-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # the coverage action reads the PR diff
     strategy:
       matrix:
         python-version: [ "3.10", "3.11" ]
@@ -56,6 +66,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
@@ -63,13 +74,6 @@ jobs:
         timeout-minutes: 10
         run: uv run pytest --cov --cov-report=term --cov-report=xml --cov-branch
           --runslow
-      - name: Coverage comment
-        if: matrix.python-version == '3.10'
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_GREEN: 95
-          MINIMUM_ORANGE: 90
       - name: Ensure no files modified during tests
         run: |
           if [[ $(git status --porcelain) != "" ]]
@@ -79,6 +83,124 @@ jobs:
             git diff
             exit 1
           fi
+      # The coverage action runs here, where the measured sources (the
+      # generated _version.py too) and the project's coverage configuration
+      # are, with this job's read-only token. Its writes become data that
+      # jobs running nothing from the checkout publish (the action's
+      # documented two-workflow split for the PR comment; the data branch
+      # below).
+      # On main the action's save mode commits the coverage data to its data
+      # branch and pushes with `git push origin`; the push goes to a local
+      # bare repository instead (a path relative to the workspace, which the
+      # action's container mounts as its working directory), and the
+      # `coverage` job pushes the new commits.
+      - name: Keep the coverage data push local
+        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git init --quiet --bare .git/coverage-data-push
+          git remote set-url --push origin .git/coverage-data-push
+      # On a PR it cannot post the comment, so it writes it to a file, which
+      # coverage-comment.yml posts.
+      - name: Coverage comment
+        id: coverage_comment
+        if: matrix.python-version == '3.10' && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 95
+          MINIMUM_ORANGE: 90
+      - name: Store the coverage comment
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          # coverage-comment.yml's action reads these default names.
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt
+      # The data branch's tip on origin, and a bundle of the commits the
+      # action pushed on top of it (none when the data did not change).
+      - name: Bundle the coverage data
+        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          BRANCH: python-coverage-comment-action-data
+          OUT: ${{ runner.temp }}/coverage-data
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          base=$(git ls-remote --heads origin "refs/heads/$BRANCH" | cut -f1)
+          printf '%s\n' "$base" >"$OUT/base"
+          push=.git/coverage-data-push
+          if ! git -C "$push" rev-parse --quiet --verify "refs/heads/$BRANCH" >/dev/null; then
+            echo "The coverage action pushed nothing (no change in the coverage data)."
+            exit 0
+          fi
+          if [ -n "$base" ] && [ "$(git -C "$push" rev-parse "refs/heads/$BRANCH")" = "$base" ]; then
+            echo "The data branch is already at $base."
+            exit 0
+          fi
+          git -C "$push" bundle create "$OUT/data.bundle" "refs/heads/$BRANCH" ${base:+"^$base"}
+      - name: Store the coverage data
+        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: ${{ runner.temp }}/coverage-data
+          if-no-files-found: error
+
+  # Main's coverage data, on the action's data branch: pushes the commits
+  # py-test bundled, as a fast-forward of that branch only. No checkout and
+  # nothing from py-test is run here: the bundle is read as git data in an
+  # empty bare repository, with no hooks and no user configuration.
+  coverage:
+    needs: py-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+          path: ${{ runner.temp }}/coverage-data
+      - name: Push the coverage data
+        env:
+          BRANCH: python-coverage-comment-action-data
+          IN: ${{ runner.temp }}/coverage-data
+          WORK: ${{ runner.temp }}/coverage-repo
+          URL: ${{ github.server_url }}/${{ github.repository }}.git
+          GIT_CONFIG_GLOBAL: /dev/null
+          GIT_CONFIG_NOSYSTEM: "1"
+          GIT_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: "3"
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: ""
+          GIT_CONFIG_KEY_1: credential.${{ github.server_url }}.helper
+          GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$GIT_TOKEN"; }; f'
+          GIT_CONFIG_KEY_2: core.hooksPath
+          GIT_CONFIG_VALUE_2: ${{ runner.temp }}/no-hooks
+        run: |
+          set -euo pipefail
+          if [ ! -f "$IN/data.bundle" ]; then
+            echo "No new coverage data to push."
+            exit 0
+          fi
+          base=$(head -n1 "$IN/base")
+          rm -rf "$WORK"
+          git init --quiet --bare "$WORK"
+          cd "$WORK"
+          if [ -n "$base" ]; then
+            [[ "$base" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Unexpected data branch base '$base'."; exit 1; }
+            git fetch --quiet --no-tags "$URL" "refs/heads/$BRANCH"
+          fi
+          git bundle verify --quiet "$IN/data.bundle"
+          git fetch --quiet --no-tags "$IN/data.bundle" "refs/heads/$BRANCH"
+          tip=$(git rev-parse FETCH_HEAD)
+          if [ -n "$base" ]; then
+            git merge-base --is-ancestor "$base" "$tip" \
+              || { echo "::error::The bundled coverage data ($tip) does not descend from the data branch's tip $base."; exit 1; }
+          fi
+          # Not forced: the push fails if the branch moved since py-test read it.
+          git push --quiet "$URL" "$tip:refs/heads/$BRANCH"
+          echo "Pushed $BRANCH: ${base:-(new branch)} -> $tip."
 
   py-build:
     runs-on: ubuntu-latest
@@ -87,6 +209,43 @@ jobs:
         python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      # uv installs what uv.lock names, from where it names it. An agent may
+      # land uv.lock (tier 2) but not this check (.github/, tier 1). The
+      # runner's own Python reads the lock before anything from the checkout
+      # runs, here in a required check.
+      - name: Check uv.lock package sources
+        shell: python3 {0}
+        run: |
+          import sys
+          import tomllib
+
+          SOURCES = [
+              {"registry": "https://pypi.org/simple"},
+              {"editable": "."},
+              {"editable": "tests/local_eval"},
+          ]
+          FILES = "https://files.pythonhosted.org/"
+
+          with open("uv.lock", "rb") as f:
+              lock = tomllib.load(f)
+          bad = []
+          for package in lock.get("package", []):
+              name = f"{package.get('name')} {package.get('version', '')}".strip()
+              if package.get("source") not in SOURCES:
+                  bad.append(f"{name}: source {package.get('source')}")
+              for artifact in [package.get("sdist", {}), *package.get("wheels", [])]:
+                  if artifact and not str(artifact.get("url", "")).startswith(FILES):
+                      bad.append(f"{name}: artifact {artifact}")
+          for line in bad:
+              print(f"::error file=uv.lock::{line}")
+          if bad:
+              sys.exit(
+                  f"uv.lock names a source other than PyPI or this repository's "
+                  f"editable packages ({len(bad)} entries above)."
+              )
+          print(f"uv.lock: {len(lock.get('package', []))} packages, all from PyPI or editable here.")
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -109,6 +268,8 @@ jobs:
         python-version: [ "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
