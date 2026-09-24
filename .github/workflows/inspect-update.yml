@@ -40,16 +40,19 @@
 #                     placeholder note, and he adds the reviewed commits to it.
 #                     Otherwise land validates the manifest, pushes the branch
 #                     and opens the `inspect-update` PR whose body says
-#                     `Fixes #<issue>`. Either way it posts the agent's mapping
-#                     on the issue and reports any agent error there.
+#                     `Fixes #<issue>` as a draft assigned to ransomr.
+#                     Either way it posts the agent's mapping on the issue
+#                     and reports any agent error there.
 #
 # The App token (meridian-marvin[bot]) is what makes an automated PR trigger
 # CI: a GITHUB_TOKEN-authored PR is silently dropped by GitHub's Actions
-# recursion guard. Such a PR is assigned to ransomr and waits for his review
-# like any other; it gets no `auto` label (the Orca review workflow replaced
-# that loop). A scheduled job also cannot summon the agent via @auto (the
-# kickoff gates reject machine/bot actors), which is why claude-code-action is
-# invoked directly here: the workflow is the trigger and passes the prompt.
+# recursion guard. Such a PR is a draft assigned to ransomr and waits for his
+# review; it gets no `auto` label (the Orca review workflow replaced that
+# loop). The agent read third-party changelog text, so its PR is reviewed as
+# untrusted before any agent acts on it (decision: Ransom, 2026-09-24). A
+# scheduled job also cannot summon the agent via @auto (the kickoff gates
+# reject machine/bot actors), which is why claude-code-action is invoked
+# directly here: the workflow is the trigger and passes the prompt.
 #
 # Partial-failure mode: the issue is opened BEFORE the agent runs, so a run
 # that fails afterwards (a model API error, no commits, a refused manifest)
@@ -626,10 +629,10 @@ jobs:
       PLACEHOLDER: INSPECT_UPDATE_HANDOFF.md
     steps:
       # Scoped to this repo and to this job's writes: the push (contents), the
-      # PR and its labels (pull requests), the issue comment, the "Opened"
-      # link and the error report (issues). The push and the PR come from
-      # meridian-marvin[bot], so CI and the reviewer trigger as they did for
-      # the machine account.
+      # PR, its labels and assignee (pull requests), the issue comment, the
+      # "Opened" link and the error report (issues). The push and the PR come
+      # from meridian-marvin[bot], so CI triggers as it did for the machine
+      # account.
       - name: Mint the App token
         id: mint
         uses: actions/create-github-app-token@v2
@@ -881,6 +884,11 @@ jobs:
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
           allowed-pr-labels: '["inspect-update"]'
+          # Opened as a draft and assigned to ransomr, like the issue
+          # (agents#175). The caller's decision, so these are land inputs,
+          # not manifest keys.
+          pr-draft: "true"
+          pr-assignees: ransomr
 
       # The handoff's hold on newer releases (the gate's dedup waits while an
       # open inspect-update issue carries this label). After Land, whatever
@@ -988,21 +996,10 @@ jobs:
             gh pr edit "$pr" --repo "$REPO" --add-label inspect-update --add-assignee ransomr
           fi
 
-      # Repo default the manifest cannot express: assign the PR like the
-      # issue. Best-effort; runs whenever the land step got as far as a PR.
-      - name: Assign the PR
-        if: always() && steps.land.outputs.pr_number != ''
-        env:
-          GH_TOKEN: ${{ steps.mint.outputs.token }}
-          REPO: ${{ github.repository }}
-          PR: ${{ steps.land.outputs.pr_number }}
-        run: |
-          gh pr edit "$PR" --repo "$REPO" --add-assignee ransomr \
-            || echo "::warning::Could not assign ransomr to #$PR."
-
       # Deterministic failure report on the RELEASE ISSUE (the gate's trusted
       # number), whatever failed: the agent job, a missing or refused
-      # artifact, the push, the PR, a lost post, the manifest's own error
+      # artifact, the push, the PR, its assignee or a lost post (the PR
+      # stands; land names the failure on it), the manifest's own error
       # (the land composite fails the run for that after everything else
       # landed), the handoff's hold label or its draft PR. The composite
       # reports on the PR once one exists and knows nothing about the dedup,
@@ -1020,6 +1017,7 @@ jobs:
           HOLD_OUTCOME: ${{ steps.hold.outcome }}
           DRAFT_OUTCOME: ${{ steps.draft.outcome }}
           DRAFT_PR: ${{ steps.draft.outputs.pr }}
+          PR_NUMBER: ${{ steps.land.outputs.pr_number }}
           BRANCH: ${{ needs.gate.outputs.branch }}
           HANDOFF: ${{ steps.stage.outcome == 'success' && 'true' || '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -1028,7 +1026,10 @@ jobs:
           ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
         run: |
           set -uo pipefail
-          if [ "$LAND_OUTCOME" != "success" ]; then
+          if [ "$LAND_OUTCOME" != "success" ] && [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s opened #%s, but a landing step after it failed (agent job: %s; landing: %s). Details: %s\n\nThe note on #%s names what failed, such as its assignee or a comment that did not post: finish that by hand and review the PR as usual. To abandon it instead, close #%s and remove its inspect-update label, then retitle or delete this issue (the weekly dedup treats inspect-ai %s as claimed until then) and re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
+              "$LATEST" "$PR_NUMBER" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$PR_NUMBER" "$PR_NUMBER" "$LATEST")
+          elif [ "$LAND_OUTCOME" != "success" ]; then
             body=$(printf '⚠️ The weekly inspect-update run for inspect-ai %s did not complete (agent job: %s; landing: %s). Details: %s\n\nBecause this issue names the release, the weekly dedup treats inspect-ai %s as claimed, open or closed, until this issue is retitled or deleted. If a PR was opened for this release, close it and remove its inspect-update label; closing the PR or deleting its branch alone does not clear the dedup. Then re-trigger via workflow_dispatch on the Inspect Update workflow.\n' \
               "$LATEST" "$AGENT_RESULT" "$LAND_OUTCOME" "$RUN_URL" "$LATEST")
           else
