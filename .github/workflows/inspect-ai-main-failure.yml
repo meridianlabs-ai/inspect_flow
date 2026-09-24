@@ -25,10 +25,10 @@
 #     describing what to post.
 #   triage-land — trusted, a fresh runner that checks out nothing: mints an
 #     App token for this repo, validates the manifest, pushes the branch, opens
-#     the PR whose body says `Fixes #<issue>` and makes it a draft assigned to
-#     ransomr, posts the analysis on the issue, applies `hold:release` for a
-#     deferral and `triaged` when done, and reports any agent error there. Gating on the label (not "was
-#     just opened") makes triage retry-safe: an agent that dies before
+#     the PR whose body says `Fixes #<issue>` as a draft assigned to ransomr,
+#     posts the analysis on the issue, applies `hold:release` for a
+#     deferral and `triaged` when done, and reports any agent error there.
+#     Gating on the label (not "was just opened") makes triage retry-safe: an agent that dies before
 #     finishing leaves no label, so the next failure re-triages.
 #   close-on-green — the inverse of triage-gate. The tracking issue means "the
 #     canary is currently red"; a green scheduled run is the ground-truth signal
@@ -587,28 +587,11 @@ jobs:
           # The labels the agent job's composer puts on the PR (none), pinned
           # so a manifest rewritten after it cannot add any (agents#132).
           allowed-pr-labels: '[]'
-
-      # The PR goes to the maintainer, not to an agent loop: a draft, assigned
-      # to ransomr, with no `auto` label. land cannot open a draft, so this
-      # converts the PR it opened (or adopted) right after. Best-effort like
-      # the assignment in inspect-update.yml: the tracking issue is assigned to
-      # ransomr at creation, so the PR reaches him even when this step fails.
-      - name: Hand the PR to the maintainer
-        if: always() && steps.mint.outcome == 'success' && steps.land.outputs.pr_number != ''
-        env:
-          GH_TOKEN: ${{ steps.mint.outputs.token }}
-          REPO: ${{ github.repository }}
-          PR: ${{ steps.land.outputs.pr_number }}
-        run: |
-          set -uo pipefail
-          [[ "$PR" =~ ^[0-9]+$ ]] || { echo "::error::land reported PR '$PR'."; exit 1; }
-          draft=$(gh pr view "$PR" --repo "$REPO" --json isDraft --jq .isDraft) || draft=""
-          if [ "$draft" != "true" ]; then
-            gh pr ready "$PR" --repo "$REPO" --undo \
-              || echo "::warning::Could not convert #$PR to a draft: gh pr ready $PR --repo $REPO --undo"
-          fi
-          gh pr edit "$PR" --repo "$REPO" --add-assignee ransomr \
-            || echo "::warning::Could not assign ransomr to #$PR."
+          # The PR goes to the maintainer, not to an agent loop: opened as a
+          # draft and assigned to ransomr (agents#175). The caller's decision,
+          # so these are land inputs, not manifest keys.
+          pr-draft: "true"
+          pr-assignees: ransomr
 
       # The issue labels the manifest cannot express, applied deterministically
       # once the agent's work has landed. `triaged` keeps later canary failures

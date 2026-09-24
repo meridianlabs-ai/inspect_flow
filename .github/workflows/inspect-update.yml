@@ -37,8 +37,7 @@
 #                     placeholder note, and he adds the reviewed commits to it.
 #                     Otherwise land validates the manifest, pushes the branch
 #                     and opens the `inspect-update` PR whose body says
-#                     `Fixes #<issue>`, then makes it a draft assigned to
-#                     ransomr. Either way it posts the agent's mapping
+#                     `Fixes #<issue>` as a draft assigned to ransomr. Either way it posts the agent's mapping
 #                     on the issue and reports any agent error there.
 #
 # The App token (meridian-marvin[bot]) is what makes an automated PR trigger
@@ -840,6 +839,11 @@ jobs:
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
           allowed-pr-labels: '["inspect-update"]'
+          # Opened as a draft and assigned to ransomr, like the issue
+          # (agents#175). The caller's decision, so these are land inputs,
+          # not manifest keys.
+          pr-draft: "true"
+          pr-assignees: ransomr
 
       # The handoff's hold on newer releases (the gate's dedup waits while an
       # open inspect-update issue carries this label). After Land, whatever
@@ -946,27 +950,6 @@ jobs:
           if [ "$state" = open ]; then
             gh pr edit "$pr" --repo "$REPO" --add-label inspect-update --add-assignee ransomr
           fi
-
-      # What the manifest cannot express: the PR is a draft, assigned like the
-      # issue. land cannot open a draft, so this converts the PR it opened (or
-      # adopted) right after. Best-effort; runs whenever the land step got as
-      # far as a PR, and the issue's own assignment reaches ransomr regardless.
-      - name: Hand the PR to the maintainer
-        if: always() && steps.land.outputs.pr_number != ''
-        env:
-          GH_TOKEN: ${{ steps.mint.outputs.token }}
-          REPO: ${{ github.repository }}
-          PR: ${{ steps.land.outputs.pr_number }}
-        run: |
-          set -uo pipefail
-          [[ "$PR" =~ ^[0-9]+$ ]] || { echo "::error::land reported PR '$PR'."; exit 1; }
-          draft=$(gh pr view "$PR" --repo "$REPO" --json isDraft --jq .isDraft) || draft=""
-          if [ "$draft" != "true" ]; then
-            gh pr ready "$PR" --repo "$REPO" --undo \
-              || echo "::warning::Could not convert #$PR to a draft: gh pr ready $PR --repo $REPO --undo"
-          fi
-          gh pr edit "$PR" --repo "$REPO" --add-assignee ransomr \
-            || echo "::warning::Could not assign ransomr to #$PR."
 
       # Deterministic failure report on the RELEASE ISSUE (the gate's trusted
       # number), whatever failed: the agent job, a missing or refused
