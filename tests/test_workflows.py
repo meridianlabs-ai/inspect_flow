@@ -599,6 +599,71 @@ def test_landing_workflows_opt_in_to_build_config() -> None:
     }
 
 
+DISPATCH_GUARD = "Refuse a dispatch from another branch"
+
+
+def _needs(job: dict[str, Any]) -> list[str]:
+    needs = job.get("needs", [])
+    return [needs] if isinstance(needs, str) else needs
+
+
+@pytest.mark.parametrize(
+    ("workflow", "gate"),
+    [("inspect-update.yml", "gate"), ("inspect-ai-main-failure.yml", "triage-gate")],
+)
+def test_a_dispatch_runs_only_from_the_default_branch(workflow: str, gate: str) -> None:
+    """Both direct workflows opt in to land's tier 2 and run their agent as the
+    runner on the dispatched ref's checkout: the gate's first step fails a
+    dispatch from any other branch, loudly, and no job a dispatch can start
+    runs without the gate succeeding."""
+    document = yaml.safe_load((WORKFLOWS / workflow).read_text())
+    assert "workflow_dispatch" in document[True]
+    jobs = document["jobs"]
+    assert "needs" not in jobs[gate]
+    guard = jobs[gate]["steps"][0]
+    assert guard["name"] == DISPATCH_GUARD
+    assert guard["if"] == (
+        "github.event_name == 'workflow_dispatch' && github.ref != "
+        "format('refs/heads/{0}', github.event.repository.default_branch)"
+    )
+    result = subprocess.run(
+        ["bash", "-c", guard["run"]],
+        env={
+            "PATH": "/usr/bin:/bin",
+            "REF": "refs/heads/claude/issue-1",
+            "DEFAULT": "main",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert (
+        "::error::Refusing a workflow_dispatch from refs/heads/claude/issue-1"
+        in result.stdout
+    )
+
+    agent_jobs = [
+        name
+        for name, job in jobs.items()
+        if any(
+            step.get("uses", "").startswith("anthropics/claude-code-action")
+            for step in job["steps"]
+        )
+    ]
+    assert agent_jobs
+    for name in agent_jobs:
+        assert gate in _needs(jobs[name]), name
+    for name, job in jobs.items():
+        if name == gate:
+            continue
+        if gate in _needs(job):
+            if "always()" in job.get("if", ""):
+                assert f"needs.{gate}.result == 'success'" in job["if"], name
+        else:
+            # close-on-green: a workflow_run-only job, which no dispatch starts.
+            assert job["if"].startswith("github.event_name == 'workflow_run'"), name
+
+
 ROUTE_STEP = "Route protected changes to the maintainer"
 LAND_ACTIONS = "_actions/meridianlabs-ai/agents/main/.github/actions/land"
 

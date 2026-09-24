@@ -96,6 +96,22 @@ jobs:
       # tampered artifact could steer the push at another release's branch.
       branch: inspect-update/${{ steps.issue.outputs.number }}/${{ steps.versions.outputs.latest }}
     steps:
+      # A dispatch runs this workflow from the ref the dispatcher picks, and
+      # the agent job provisions and runs its agent as the runner on that
+      # ref's checkout, holding the WIF id-token. Land may push build and
+      # dependency configuration (allow-build-config), so a dispatch runs only
+      # from the default branch, as the automated triggers do; any other ref
+      # fails here, loudly, and every job a dispatch can start needs this
+      # one. A re-run keeps the original event and ref, so the same check
+      # refuses a re-run of such a dispatch.
+      - name: Refuse a dispatch from another branch
+        if: github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          REF: ${{ github.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          echo "::error::Refusing a workflow_dispatch from $REF: this workflow runs only from the default branch ($DEFAULT). Dispatch it from $DEFAULT."
+          exit 1
       - uses: actions/checkout@v4
 
       - name: Read latest and last-reconciled inspect-ai versions
@@ -851,11 +867,16 @@ jobs:
           # No automated job runs code from the branches pushed here as the
           # runner with more than the read-only job token: the reusable
           # workflows' agents provision and run as unprivileged users (agents
-          # step 5), this workflow and inspect-ai-main-failure.yml start from
-          # github.sha on the default branch, and Build runs read-only
+          # step 5); this workflow and inspect-ai-main-failure.yml start from
+          # github.sha on the default branch on their automated triggers and
+          # on a dispatch from the default branch, and their gates refuse a
+          # dispatch from any other branch; Build runs read-only
           # (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
-          # tier-2 opt-in). Tier 1 (.github/, agent instructions and settings)
-          # is refused either way.
+          # tier-2 opt-in). Accepted residual (Ransom, 2026-09-24): a branch
+          # cut before that guard carries the unguarded workflow file, so a
+          # deliberate dispatch on such a stale branch after it gains tier-2
+          # commits would still run them as the runner. Tier 1 (.github/,
+          # agent instructions and settings) is refused either way.
           allow-build-config: "true"
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
