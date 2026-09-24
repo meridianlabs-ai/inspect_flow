@@ -29,9 +29,12 @@
 #                     workflows, agent instructions), they are a MAINTAINER
 #                     HANDOFF: kept as the `inspect-update-handoff-<attempt>`
 #                     artifact,
-#                     described on the release issue for ransomr to inspect,
-#                     apply and open the PR from his own worktree, and the
-#                     issue is labelled `maintainer-handoff`; nothing is pushed.
+#                     described on the release issue for ransomr to inspect
+#                     and apply from his own worktree, and the issue is
+#                     labelled `maintainer-handoff`. None of the commits is
+#                     pushed: the run opens a DRAFT PR (`Fixes #<issue>`, so
+#                     it is his on the Orca board) whose branch holds only a
+#                     placeholder note, and he adds the reviewed commits to it.
 #                     Otherwise land validates the manifest, pushes the branch
 #                     and opens the `inspect-update` PR whose body says
 #                     `Fixes #<issue>`. Either way it posts the agent's mapping
@@ -54,7 +57,9 @@
 # release stays claimed by the title, and while the labelled issue is open
 # the gate starts no newer release (its changelog range would contain this
 # one, and the marker on main has not advanced); the maintainer's PR closes
-# the issue with its `Fixes` line.
+# the issue with its `Fixes` line. A failed draft PR is reported on the issue
+# with its recovery (a re-run adopts the branch and PR rather than repeating
+# them).
 
 name: Inspect Update
 
@@ -207,7 +212,7 @@ jobs:
           PROJECT: PVT_kwDOC7YMCM4BU68p
         run: |
           set -euo pipefail
-          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below. Automation never pushes commits that change build or dependency configuration, and advancing the reconciled marker and upgrading the lock always do: such commits are handed to the maintainer here for review, and the maintainer opens the pull request (it links here with a Fixes line).\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
+          body=$(printf 'Weekly inspect-ai reconciliation (#766) for the releases after %s up to and including %s.\n\nThe reconciliation agent maps the new changelog entries to flow surfaces in a comment below. Automation never pushes commits that change build or dependency configuration, and advancing the reconciled marker and upgrading the lock always do: such commits are handed to the maintainer here for review, with a draft pull request that links here with a Fixes line and holds only a placeholder until the maintainer adds them.\n\nThis issue was opened by the [workflow run](%s) before the agent ran, so the release counts as claimed by the weekly dedup, open or closed, until this issue is retitled or deleted.\n' \
             "$RECONCILED" "$LATEST" "$RUN_URL")
           url=$(gh issue create --repo "$REPO" \
             --title "inspect-ai $LATEST: surface new features in flow" \
@@ -593,6 +598,10 @@ jobs:
     permissions:
       contents: read # fetch the start SHA (land's read token)
       actions: read # artifact download
+    env:
+      # The only file on a handoff's draft PR branch; tests/test_workflows.py
+      # fails the required py-test checks while it is in the tree.
+      PLACEHOLDER: INSPECT_UPDATE_HANDOFF.md
     steps:
       # Scoped to this repo and to this job's writes: the push (contents), the
       # PR and its labels (pull requests), the issue comment, the "Opened"
@@ -630,7 +639,7 @@ jobs:
       #                 maintainer-handoff.md composed here from trusted
       #                 values and the bundle's own paths (only names in a
       #                 plain character set are shown; nothing else of the
-      #                 agent's text)
+      #                 agent's text); head=<the verified tip> for the draft PR
       # Anything else — no commits, a start other than github.sha, a bundle
       # that does not verify — leaves both unset, and `land` gets the
       # original landing to refuse or land exactly as before.
@@ -750,21 +759,22 @@ jobs:
           ref="refs/inspect-update/$ISSUE"
           # shellcheck disable=SC2016 # Markdown and commands for the maintainer, not expansions
           {
-            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. Nothing was pushed and no PR was opened. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
+            printf '@ransomr: **maintainer review needed.** The reconciliation for inspect-ai %s is ready, but its commits change build or dependency configuration, which automation never pushes: a maintainer reads them before any automated run executes them. None of these commits was pushed: a later step of this run opens (or adopts) the draft PR for this release, whose branch holds only a placeholder when this run creates it, and reports any failure on this issue. This is the expected path for the weekly marker advance and lock upgrade, not a failed run.\n\n' "$LATEST"
             printf '### What changed\n\n%s commit(s) from `%s` to `%s`. Protected, and the reason this needs you: %s.\n\n' "$commits" "$START" "$head" "$names"
             printf '| File | + | − |\n|---|--:|--:|\n%s\n' "$table"
             printf '### Retrieve\n\nThe `%s` artifact of [run %s](%s), kept for 90 days: `commits.bundle`, the same commits as `changes.patch`, and the agent'"'"'s `pr-title.txt` and `pr-body.md`.\n\n' "$ARTIFACT" "$RUN_ID" "$RUN_URL"
             printf '```sh\ngh run download %s --repo %s --name %s --dir %s\n```\n\n' "$RUN_ID" "$REPO" "$ARTIFACT" "$dir"
-            printf '### Inspect and apply\n\nIn a worktree of %s that you control, before running anything from these commits:\n\n' "$REPO"
-            printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch -c %s %s\ngit rebase origin/main\n```\n\n' \
-              "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref"
-            printf 'Read every line: the lock decides what `uv sync` installs, and pyproject.toml what the build runs. If the rebase conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
+            printf '### Inspect and apply\n\nThis run also opens a draft PR from `%s`, labelled `inspect-update` and linked here with `Fixes #%s`. Its branch holds only a placeholder, `%s`, and none of these commits. On that branch, in a worktree of %s that you control, before running anything from these commits:\n\n' "$BRANCH" "$ISSUE" "$PLACEHOLDER" "$REPO"
+            printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch %s\ngit merge --no-edit %s\ngit rm -q %s\ngit commit -q -m "chore: remove the maintainer handoff placeholder"\ngit merge --no-edit origin/main\n```\n\n' \
+              "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref" "$PLACEHOLDER"
+            printf 'Read every line: the lock decides what `uv sync` installs, and pyproject.toml what the build runs. If the merge of `origin/main` conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
             printf '### Tests and review\n\n`uv sync --frozen`, `make check`, `pytest`, and `python src/inspect_flow/_types/type_gen.py` leaving no diff (the check-type-gen CI job), then review it as you would any lock upgrade.\n\n'
-            printf '### PR\n\nOpen it yourself with the `inspect-update` label and `Fixes #%s` in the body (the agent'"'"'s draft is `pr-body.md`), so merging it closes this issue. Until then this issue carries the `maintainer-handoff` label and the weekly run starts no newer release; inspect-ai %s stays claimed by this issue'"'"'s title either way.\n' "$ISSUE" "$LATEST"
+            printf '### PR\n\nPush the branch once the tests pass, retitle the draft PR and replace its body with the agent'"'"'s `pr-title.txt` and `pr-body.md` (keep `Fixes #%s`, so merging it closes this issue), then mark it ready. The placeholder fails the required `py-test` checks until it is deleted. If this run reports that the draft PR was not opened, follow the recovery it gives. Until this issue is closed it carries the `maintainer-handoff` label and the weekly run starts no newer release; inspect-ai %s stays claimed by this issue'"'"'s title either way.\n' "$ISSUE" "$LATEST"
           } >"$land/maintainer-handoff.md"
           jq --argjson n "$ISSUE" 'del(.pr) | .has_bundle = false | .head_sha = .start_sha
             | .comments = ((.comments // []) + [{number: $n, body_file: "maintainer-handoff.md"}])' "$m" >"$land/manifest.json"
           echo "route=handoff" >>"$GITHUB_OUTPUT"
+          echo "head=$head" >>"$GITHUB_OUTPUT"
           echo "Maintainer handoff: $commits commit(s) change protected paths; land gets the landing without them."
 
       # Kept for the maintainer, whichever way the run lands: the handoff
@@ -847,6 +857,94 @@ jobs:
           gh issue edit "$ISSUE" --repo "$REPO" --add-label maintainer-handoff \
             || { echo "::error::Could not label #$ISSUE maintainer-handoff; add the label by hand so the weekly run waits for the handoff."; exit 1; }
 
+      # The handoff as a DRAFT PR, so it shows on the maintainer's Orca board
+      # (an App-authored PR whose `Fixes` issue is assigned to ransomr is
+      # his). A PR needs a branch diff and automation never pushes the kept
+      # commits, so the branch is ONE commit on github.sha adding
+      # $PLACEHOLDER, a note composed here from trusted values only, in a
+      # fresh bare repo that never fetched the bundle: none of the agent's
+      # objects can reach the push. The maintainer adds the reviewed commits
+      # and deletes the note; until then the PR is a draft and the
+      # placeholder test fails the required py-test checks. Idempotent for a
+      # re-run: a PR from the branch, in any state, is adopted rather than
+      # duplicated (labelled and assigned again while open), and an existing
+      # branch is never pushed to.
+      - name: Open the maintainer's draft PR
+        id: draft
+        if: always() && steps.stage.outcome == 'success' && steps.mint.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.gate.outputs.issue }}
+          LATEST: ${{ needs.gate.outputs.latest }}
+          BRANCH: ${{ needs.gate.outputs.branch }}
+          START: ${{ github.sha }}
+          HEAD: ${{ steps.route.outputs.head }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARTIFACT: inspect-update-handoff-${{ github.run_attempt }}
+          WORK: ${{ runner.temp }}/draft
+          URL: ${{ github.server_url }}/${{ github.repository }}.git
+          GIT_AUTHOR_NAME: meridian-marvin[bot]
+          GIT_AUTHOR_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: meridian-marvin[bot]
+          GIT_COMMITTER_EMAIL: 330132053+meridian-marvin[bot]@users.noreply.github.com
+          GIT_CONFIG_GLOBAL: /dev/null
+          GIT_TOKEN: ${{ steps.mint.outputs.token }}
+          GIT_CONFIG_COUNT: "3"
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: ""
+          GIT_CONFIG_KEY_1: credential.${{ github.server_url }}.helper
+          GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$GIT_TOKEN"; }; f'
+          GIT_CONFIG_KEY_2: core.hooksPath
+          GIT_CONFIG_VALUE_2: ${{ runner.temp }}/no-hooks
+        run: |
+          set -euo pipefail
+          [[ "$ISSUE" =~ ^[0-9]+$ && "$HEAD" =~ ^[0-9a-f]{40}$ && "$START" =~ ^[0-9a-f]{40}$ && "$LATEST" =~ ^[0-9A-Za-z.+-]+$ && "$BRANCH" == "inspect-update/$ISSUE/$LATEST" ]] \
+            || { echo "::error::Refusing to compose the draft PR from unexpected values (issue '$ISSUE', head '$HEAD', release '$LATEST')."; exit 1; }
+          title="chore: reconcile inspect-ai $LATEST (maintainer handoff)"
+          prs=$(gh api "repos/$REPO/pulls?state=all&head=${REPO%%/*}:$BRANCH&per_page=100" --paginate \
+            | jq -s 'add | sort_by(.state != "open")')
+          pr=$(jq -r '.[0].html_url // empty' <<<"$prs")
+          state=$(jq -r '.[0].state // empty' <<<"$prs")
+          if [ -n "$pr" ]; then
+            echo "Adopting $pr ($state) for $BRANCH; nothing pushed, no PR opened."
+          else
+            rc=0
+            git ls-remote --exit-code --heads "$URL" "refs/heads/$BRANCH" >/dev/null || rc=$?
+            if [ "$rc" -eq 0 ]; then
+              echo "Adopting the branch $BRANCH already on origin; nothing pushed."
+            elif [ "$rc" -eq 2 ]; then
+              rm -rf "$WORK"
+              git init --quiet --bare "$WORK"
+              cd "$WORK"
+              git fetch --quiet --no-tags "$URL" "$START"
+              # shellcheck disable=SC2016 # Markdown backticks, not expansions
+              blob=$(printf '# Maintainer handoff: inspect-ai %s\n\nA placeholder, so that the draft PR for #%s has a diff. **Delete this file before merging**: while it is in the tree, `tests/test_workflows.py` fails the required `py-test` checks.\n\nThe reconciliation'"'"'s commits, `%s..%s`, are not on this branch: they change build or dependency configuration, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s). Review them and add them to this branch from a worktree you control, as the handoff comment on #%s describes.\n' \
+                "$LATEST" "$ISSUE" "$START" "$HEAD" "$ARTIFACT" "$RUN_ID" "$RUN_URL" "$ISSUE" | git hash-object -w --stdin)
+              export GIT_INDEX_FILE="$WORK/placeholder-index"
+              git read-tree "$START"
+              git update-index --add --cacheinfo "100644,$blob,$PLACEHOLDER"
+              commit=$(git commit-tree "$(git write-tree)" -p "$START" -m "chore: placeholder for the inspect-ai $LATEST maintainer handoff (#$ISSUE)")
+              git push --quiet "$URL" "$commit:refs/heads/$BRANCH"
+              echo "Pushed $BRANCH: $START plus $PLACEHOLDER only."
+            else
+              echo "::error::Could not read whether $BRANCH is on origin (git ls-remote exit $rc)."
+              exit 1
+            fi
+            # shellcheck disable=SC2016 # Markdown backticks, not expansions
+            printf 'Fixes #%s\n\n**Maintainer handoff, not mergeable as is.** This branch holds only `%s`, a placeholder: the reconciliation'"'"'s commits change build or dependency configuration, which automation never pushes. They are kept for 90 days as the `%s` artifact of [run %s](%s) (`commits.bundle`, and the same commits as `changes.patch`), from `%s` to `%s`.\n\nReview them and add them to this branch from a worktree you control, as the handoff comment on #%s describes; delete the placeholder, which fails the required `py-test` checks while it exists; replace this title and body with the agent'"'"'s `pr-title.txt` and `pr-body.md`, keeping the `Fixes` line; then mark the PR ready.\n' \
+              "$ISSUE" "$PLACEHOLDER" "$ARTIFACT" "$RUN_ID" "$RUN_URL" "$START" "$HEAD" "$ISSUE" >"$RUNNER_TEMP/draft-body.md"
+            pr=$(gh pr create --draft --repo "$REPO" --base main --head "$BRANCH" \
+              --title "$title" --body-file "$RUNNER_TEMP/draft-body.md")
+            state=open
+            echo "Opened the draft PR $pr."
+          fi
+          echo "pr=$pr" >>"$GITHUB_OUTPUT"
+          if [ "$state" = open ]; then
+            gh pr edit "$pr" --repo "$REPO" --add-label inspect-update --add-assignee ransomr
+          fi
+
       # Repo default the manifest cannot express: assign the PR like the
       # issue. Best-effort; runs whenever the land step got as far as a PR.
       - name: Assign the PR
@@ -863,12 +961,12 @@ jobs:
       # number), whatever failed: the agent job, a missing or refused
       # artifact, the push, the PR, a lost post, the manifest's own error
       # (the land composite fails the run for that after everything else
-      # landed), or the handoff's hold label. The composite reports on the PR
-      # once one exists and knows nothing about the dedup, so the recovery
-      # steps live here. Nothing from the agent job is interpolated into this
+      # landed), the handoff's hold label or its draft PR. The composite
+      # reports on the PR once one exists and knows nothing about the dedup,
+      # so the recovery steps live here. Nothing from the agent job is interpolated into this
       # body.
       - name: Report the failure on the release issue
-        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome != 'success' || steps.hold.outcome == 'failure')
+        if: always() && steps.mint.outcome == 'success' && (steps.land.outcome != 'success' || steps.hold.outcome == 'failure' || steps.draft.outcome == 'failure')
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
           REPO: ${{ github.repository }}
@@ -877,6 +975,9 @@ jobs:
           AGENT_RESULT: ${{ needs.agent.result }}
           LAND_OUTCOME: ${{ steps.land.outcome }}
           HOLD_OUTCOME: ${{ steps.hold.outcome }}
+          DRAFT_OUTCOME: ${{ steps.draft.outcome }}
+          DRAFT_PR: ${{ steps.draft.outputs.pr }}
+          BRANCH: ${{ needs.gate.outputs.branch }}
           HANDOFF: ${{ steps.stage.outcome == 'success' && 'true' || '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_ID: ${{ github.run_id }}
@@ -894,7 +995,14 @@ jobs:
           if [ -n "$HANDOFF" ] && [ "$HOLD_OUTCOME" = "failure" ]; then
             body+=$(printf '\n\nThe `maintainer-handoff` label could not be added to this issue, so the weekly run will start newer releases (whose changelog range contains this one) before this handoff lands. Add it by hand: `gh issue edit %s --repo %s --add-label maintainer-handoff`.' "$ISSUE" "$REPO")
           elif [ -n "$HANDOFF" ]; then
-            body+=$(printf '\n\nThis run is a maintainer handoff and this issue carries the `maintainer-handoff` label: while the issue is open the weekly run starts no release, retitled or not. To finish it, apply the kept commits below from your own worktree as the handoff comment on this issue describes (if it was not posted: verify `commits.bundle`, fetch its `HEAD`, read every line, and open your own PR labelled `inspect-update` with `Fixes #%s`). To abandon this attempt and dispatch afresh instead, remove the `maintainer-handoff` label as well as retitling or deleting this issue.' "$ISSUE")
+            body+=$(printf '\n\nThis run is a maintainer handoff and this issue carries the `maintainer-handoff` label: while the issue is open the weekly run starts no release, retitled or not. To finish it, apply the kept commits below from your own worktree as the handoff comment on this issue describes (if it was not posted: verify `commits.bundle`, fetch its `HEAD`, read every line, and add it to the draft PR%s, or open your own PR labelled `inspect-update` with `Fixes #%s`). To abandon this attempt and dispatch afresh instead, remove the `maintainer-handoff` label as well as retitling or deleting this issue, and close the draft PR if one was opened.' "${DRAFT_PR:+ $DRAFT_PR}" "$ISSUE")
+          fi
+          # shellcheck disable=SC2016 # Markdown backticks, not expansions
+          if [ -n "$HANDOFF" ] && [ "$DRAFT_OUTCOME" = "failure" ] && [ -n "$DRAFT_PR" ]; then
+            body+=$(printf '\n\nThe draft PR for this handoff, %s, was opened, but its `inspect-update` label or assignee could not be added: `gh pr edit %s --repo %s --add-label inspect-update --add-assignee ransomr`.' "$DRAFT_PR" "$DRAFT_PR" "$REPO")
+          elif [ -n "$HANDOFF" ] && [ "$DRAFT_OUTCOME" = "failure" ]; then
+            body+=$(printf '\n\nThe draft PR for this handoff could not be opened (see the run log). Re-running the failed land job while this run'"'"'s one-day `landing` artifact lasts opens it: a re-run adopts the branch `%s` and any PR from it that an earlier attempt made instead of duplicating them (it posts this run'"'"'s comments again). By hand instead, once the branch is on origin: `gh pr create --draft --repo %s --base main --head %s --title "chore: reconcile inspect-ai %s (maintainer handoff)" --body "Fixes #%s"`, then add the `inspect-update` label; if the branch is not on origin, open your own PR from the reviewed commits with that label and `Fixes #%s`.' \
+              "$BRANCH" "$REPO" "$BRANCH" "$LATEST" "$ISSUE" "$ISSUE")
           fi
           # shellcheck disable=SC2016 # Markdown backticks, not expansions
           if [ -n "$KEPT" ]; then
