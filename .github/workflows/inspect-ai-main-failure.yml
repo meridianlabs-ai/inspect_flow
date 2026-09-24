@@ -582,6 +582,16 @@ jobs:
           # equals this, so the agent job cannot name another start and land
           # history the run never began from (agents#137, finding 4628444).
           start-sha: ${{ github.sha }}
+          # Build and dependency configuration (land's tier 2) lands: a fix
+          # may pin or re-lock a dependency. No automated job runs code from
+          # the branches pushed here as the runner with more than the
+          # read-only job token: the reusable workflows' agents provision and
+          # run as unprivileged users (agents step 5), this workflow and
+          # inspect-update.yml start from github.sha on the default branch,
+          # and Build runs read-only (meridianlabs-ai/agents
+          # design/executed-paths-residual.md → Land: tier-2 opt-in). Tier 1
+          # (.github/, agent instructions and settings) is refused either way.
+          allow-build-config: "true"
           # The labels the agent job's composer puts on the PR, pinned so a
           # manifest rewritten after it cannot add others (agents#132).
           allowed-pr-labels: '["auto"]'

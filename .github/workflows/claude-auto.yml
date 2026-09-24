@@ -99,7 +99,7 @@ jobs:
       # agent-landed branches as the runner (a scheduled agent job that
       # continues an earlier agent branch, say; CI on agent PRs does not
       # count). .github/ and agent instructions stay refused either way.
-      # allow_build_config: true
+      allow_build_config: true
 
   # Review -> fix / handoff. The marker is a cheap router (it's forgeable — only
   # the reviewer posts it in practice); the reusable workflow does the authoritative
@@ -164,4 +164,4 @@ jobs:
       # agent-landed branches as the runner (a scheduled agent job that
       # continues an earlier agent branch, say; CI on agent PRs does not
       # count). .github/ and agent instructions stay refused either way.
-      # allow_build_config: true
+      allow_build_config: true

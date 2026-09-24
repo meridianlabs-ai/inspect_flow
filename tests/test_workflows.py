@@ -21,12 +21,19 @@ Every job that runs the agent restores the Actions cache but never saves it
 
 The `land` job's "Route protected changes to the maintainer" step is run
 against a local origin and a bundle built like emit-landing's: commits that
-change a protected path (run 35921391185: pyproject.toml and uv.lock, which
-the shared land action refuses to push) become a maintainer handoff whose
-kept bundle applies from the handoff comment's own commands onto the draft
-PR's branch, while other commits are left to land as before. The "Open the
-maintainer's draft PR" step pushes that branch with a placeholder note and none
-of the agent's objects, and a re-run adopts the branch and PR it made.
+change a path the shared land action still refuses to push under
+`allow-build-config` (its tier 1: `.github/`, agent instructions and settings)
+become a maintainer handoff whose kept bundle applies from the handoff
+comment's own commands onto the draft PR's branch, while other commits,
+pyproject.toml and uv.lock among them (run 35921391185's shape, a handoff
+before the opt-in), are left to land. The "Open the maintainer's draft PR"
+step pushes that branch with a placeholder note and none of the agent's
+objects, and a re-run adopts the branch and PR it made.
+
+Both direct `land` callers and the dev-agent and @auto stubs opt in to land's
+tier 2 (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
+tier-2 opt-in), which Build allows by running every job that runs the
+checkout read-only, and by checking uv.lock's package sources first.
 
 Every call of the agents repo's reusable workflows sets the `provision` recipe
 the agent user runs in place of claude-setup, with claude-setup's Python
@@ -557,12 +564,48 @@ def test_agent_stubs_provision_like_claude_setup() -> None:
     }
 
 
+def test_landing_workflows_opt_in_to_build_config() -> None:
+    """Every land job that pushes agent commits here lands build and dependency
+    configuration (the tier-2 opt-in); the reviewer's land job pushes no bundle
+    and takes no such input."""
+    stub_calls = {
+        (path.name, name): (
+            job["uses"].split("/")[-1],
+            job.get("with", {}).get("allow_build_config"),
+        )
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+    }
+    assert stub_calls == {
+        ("claude.yml", "claude"): ("claude.yml@main", True),
+        ("claude.yml", "claude-auto"): ("claude.yml@main", True),
+        ("claude-auto.yml", "ci-fix"): ("claude-auto.yml@main", True),
+        ("claude-auto.yml", "review-fix"): ("claude-auto-review.yml@main", True),
+        ("claude-review.yml", "review"): ("claude-review.yml@main", None),
+    }
+    land_steps = {
+        (path.name, name): step["with"].get("allow-build-config")
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        for step in job.get("steps", [])
+        if step.get("uses", "").startswith(
+            "meridianlabs-ai/agents/.github/actions/land@"
+        )
+    }
+    assert land_steps == {
+        ("inspect-update.yml", "land"): "true",
+        ("inspect-ai-main-failure.yml", "triage-land"): "true",
+    }
+
+
 ROUTE_STEP = "Route protected changes to the maintainer"
 LAND_ACTIONS = "_actions/meridianlabs-ai/agents/main/.github/actions/land"
 
-# Stands in for the land action's lib.sh: the same two names the route step
-# reads, with a protected list shaped like the real one.
-STUB_LIB = """PROTECTED_PATHSPECS=(.github ':(glob)**/pyproject.toml' ':(glob)**/uv.lock')
+# Stands in for the land action's lib.sh: the names the route step reads,
+# with tier lists shaped like the real ones.
+STUB_LIB = """TIER1_PATHSPECS=(.github ':(glob)**/AGENTS.md' ':(glob)**/CLAUDE.md')
+TIER2_PATHSPECS=(':(glob)**/pyproject.toml' ':(glob)**/uv.lock')
 protected_reach() { :; }
 """
 
@@ -751,14 +794,15 @@ def _handoff_commands(comment: str, kept: Path) -> str:
 
 
 def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None:
-    """Run 35921391185's shape: the marker advance and the lock upgrade (plus a
-    source change) must not reach `land` as a push, and the kept commits must
-    apply from the handoff comment's own commands."""
+    """A reconciliation that also changes agent instructions must not reach
+    `land` as a push, and the kept commits must apply from the handoff comment's
+    own commands."""
     _write(
         landing.agent,
         {
             "pyproject.toml": '[tool.inspect_flow]\ninspect-reconciled-version = "0.3.268"\n',
             "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
             "src/inspect_flow/x.py": "x = 1\n",
         },
     )
@@ -791,13 +835,13 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     comment = (staged / "maintainer-handoff.md").read_text()
     assert comment.startswith("@ransomr: **maintainer review needed.**")
     assert "not a failed run" in comment
+    assert "change workflows or agent instructions and settings" in comment
+    assert "build or dependency" not in comment
     assert "None of these commits was pushed" in comment
     assert "no PR was opened" not in comment
-    assert (
-        "Protected, and the reason this needs you: `pyproject.toml`, `uv.lock`."
-        in comment
-    )
+    assert "Protected, and the reason this needs you: `AGENTS.md`." in comment
     assert "| `src/inspect_flow/x.py` | 1 | 0 |" in comment
+    assert "| `uv.lock` | 1 | 1 |" in comment
     assert (
         "gh run download 35921391185 --repo meridianlabs-ai/inspect_flow "
         "--name inspect-update-handoff-1 --dir" in comment
@@ -852,8 +896,24 @@ def test_protected_changes_become_a_maintainer_handoff(landing: Landing) -> None
     )
 
 
-def test_unprotected_changes_land_as_before(landing: Landing) -> None:
-    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+@pytest.mark.parametrize(
+    "files",
+    [
+        {"src/inspect_flow/x.py": "x = 1\n"},
+        # Run 35921391185's shape, a handoff before the tier-2 opt-in: the
+        # marker advance and the lock upgrade, plus a source change.
+        {
+            "pyproject.toml": '[tool.inspect_flow]\ninspect-reconciled-version = "0.3.268"\n',
+            "uv.lock": "b\n",
+            "src/inspect_flow/x.py": "x = 1\n",
+        },
+    ],
+    ids=["source", "build-config"],
+)
+def test_unprotected_changes_land_as_before(
+    landing: Landing, files: dict[str, str]
+) -> None:
+    _write(landing.agent, files)
     landing.emit()
 
     result, outputs = landing.run()
@@ -926,13 +986,32 @@ def test_an_unreadable_protected_list_fails_closed_to_the_maintainer(
     assert "treating every changed path as protected" in result.stdout
 
 
+def test_a_lib_without_the_tier_split_fails_closed_to_the_maintainer(
+    landing: Landing,
+) -> None:
+    """land's lib.sh before the tier split named one PROTECTED_PATHSPECS list;
+    a lib without TIER1_PATHSPECS is not read as "nothing protected"."""
+    _write(landing.agent, {"src/inspect_flow/x.py": "x = 1\n"})
+    landing.emit()
+    landing.lib.write_text(
+        "PROTECTED_PATHSPECS=(.github ':(glob)**/uv.lock')\nprotected_reach() { :; }\n"
+    )
+
+    result, outputs = landing.run()
+
+    assert result.returncode == 0, result.stderr
+    assert outputs["route"] == "handoff"
+    assert "defines no TIER1_PATHSPECS" in result.stderr
+    assert "treating every changed path as protected" in result.stdout
+
+
 def test_agent_chosen_path_names_are_not_rendered(landing: Landing) -> None:
     _write(
         landing.agent,
         {
-            "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
             "src/@auto `x`.py": "x = 1\n",
-            "a/@review/pyproject.toml": "",
+            "a/@review/AGENTS.md": "",
         },
     )
     landing.emit()
@@ -942,7 +1021,7 @@ def test_agent_chosen_path_names_are_not_rendered(landing: Landing) -> None:
     assert result.returncode == 0, result.stderr
     assert outputs["route"] == "handoff"
     comment = (landing.route / "landing/maintainer-handoff.md").read_text()
-    assert "`uv.lock`, 1 path(s) with other characters (see the patch)" in comment
+    assert "`AGENTS.md`, 1 path(s) with other characters (see the patch)" in comment
     assert "| 2 more (see the patch) | | |" in comment
     assert "@auto" not in comment and "@review" not in comment
 
@@ -1028,7 +1107,7 @@ def test_a_rerun_never_replaces_an_earlier_attempts_kept_commits(
     report = _steps("land")["Report the failure on the release issue"]["env"]
     assert keep == steps["route"]["env"]["ARTIFACT"] == report["ARTIFACT"]
 
-    _write(landing.agent, {"uv.lock": "b\n"})
+    _write(landing.agent, {"AGENTS.md": "# Agents\n"})
     landing.emit()
     comments = []
     for attempt in (1, 2):
@@ -1183,15 +1262,30 @@ def test_handoff_failure_recovery_clears_the_hold_as_well_as_the_claim(
     assert decisions == {"retitled": "false", "recovered": "true"}
 
 
-def test_the_agent_is_told_protected_commits_go_to_the_maintainer() -> None:
-    prompt = _prompt()
-    assert "are never\npushed by automation" in prompt
-    assert "hands them to the\nmaintainer" in prompt
+def test_the_agent_is_told_which_commits_go_to_the_maintainer() -> None:
+    prompt = " ".join(_prompt().split())
+    assert (
+        "The marker advance and the lock upgrade below change pyproject.toml and "
+        "uv.lock; those are pushed like your other commits." in prompt
+    )
+    assert (
+        "Commits that change anything under .github/ or agent instructions and "
+        "settings (AGENTS.md, CLAUDE.md, .claude/, .mcp.json) are never pushed by "
+        "automation: the trusted job hands them to the maintainer" in prompt
+    )
 
 
 def _handoff(landing: Landing) -> str:
-    """Route run 35921391185's shape to a handoff; return the verified tip."""
-    _write(landing.agent, {"uv.lock": "b\n", "src/inspect_flow/x.py": "x = 1\n"})
+    """Route a reconciliation that changes AGENTS.md to a handoff; return the
+    verified tip."""
+    _write(
+        landing.agent,
+        {
+            "uv.lock": "b\n",
+            "AGENTS.md": "# Agents\n",
+            "src/inspect_flow/x.py": "x = 1\n",
+        },
+    )
     landing.emit()
     result, outputs = landing.run()
     assert outputs["route"] == "handoff", result.stderr
@@ -1209,7 +1303,7 @@ def _origin_branch(landing: Landing) -> str:
 
 def test_the_draft_pr_carries_only_the_placeholder(landing: Landing) -> None:
     """The branch the draft PR needs is github.sha plus the placeholder note: no
-    object of the agent's commits (the protected uv.lock above all) reaches
+    object of the agent's commits (the protected AGENTS.md above all) reaches
     origin, and the note and PR body name the kept artifact and run, from
     trusted values only."""
     head = _handoff(landing)
@@ -1223,8 +1317,8 @@ def test_the_draft_pr_carries_only_the_placeholder(landing: Landing) -> None:
     assert _git(landing.origin, "diff", "--name-status", landing.start, tip) == (
         f"A\t{_placeholder()}"
     )
-    lock = _git(landing.agent, "rev-parse", f"{head}:uv.lock")
-    for obj in (head, lock):
+    agents = _git(landing.agent, "rev-parse", f"{head}:AGENTS.md")
+    for obj in (head, agents):
         missing = subprocess.run(
             ["git", "cat-file", "-e", obj], cwd=landing.origin, capture_output=True
         )
