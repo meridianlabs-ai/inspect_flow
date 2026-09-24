@@ -28,8 +28,9 @@
 #     the PR whose body says `Fixes #<issue>` as a draft assigned to ransomr,
 #     posts the analysis on the issue, applies `hold:release` for a
 #     deferral and `triaged` when done, and reports any agent error there.
-#     Gating on the label (not "was just opened") makes triage retry-safe: an agent that dies before
-#     finishing leaves no label, so the next failure re-triages.
+#     Gating on the label (not "was just opened") makes triage retry-safe: an
+#     agent that dies before finishing leaves no label, so the next failure
+#     re-triages.
 #   close-on-green — the inverse of triage-gate. The tracking issue means "the
 #     canary is currently red"; a green scheduled run is the ground-truth signal
 #     that flow is no longer broken, so it closes the open issue. This is the
@@ -543,10 +544,10 @@ jobs:
       actions: read # artifact download
     steps:
       # Scoped to this repo and to this job's writes: the push (contents), the
-      # PR and its label (pull requests), the analysis comment, the "Opened"
-      # link, the issue labels and the error report (issues). The push and the
-      # PR come from meridian-marvin[bot], so CI and the reviewer trigger as
-      # they did for the machine account.
+      # PR and its assignee (pull requests), the analysis comment, the
+      # "Opened" link, the issue labels and the error report (issues). The
+      # push and the PR come from meridian-marvin[bot], so CI triggers as it
+      # did for the machine account.
       - name: Mint the App token
         id: mint
         uses: actions/create-github-app-token@v2

@@ -1067,6 +1067,7 @@ def _report(
     kept: str = "",
     draft: str = "",
     draft_pr: str = "",
+    pr_number: str = "",
 ) -> tuple[bool, str]:
     """Whether the report step runs for these outcomes, and what it posts."""
     selected = _selected(
@@ -1074,6 +1075,7 @@ def _report(
         {
             "steps.mint.outcome": "success",
             "steps.land.outcome": land,
+            "steps.land.outputs.pr_number": pr_number,
             "steps.hold.outcome": hold,
             "steps.draft.outcome": draft,
         },
@@ -1088,6 +1090,7 @@ def _report(
             "HOLD_OUTCOME": hold,
             "DRAFT_OUTCOME": draft,
             "DRAFT_PR": draft_pr,
+            "PR_NUMBER": pr_number,
             "BRANCH": DRAFT_BRANCH,
             "HANDOFF": handoff,
             "RUN_URL": "https://github.com/x/runs/1",
@@ -1401,3 +1404,31 @@ def test_land_opens_a_draft_assigned_to_the_maintainer(workflow: str, job: str) 
     assert land["pr-draft"] == "true"
     assert land["pr-assignees"] == "ransomr"
     assert "auto" not in json.loads(land["allowed-pr-labels"])
+
+
+def test_a_landing_that_failed_after_opening_the_pr_keeps_it(tmp_path: Path) -> None:
+    """land fails the run when the PR's assignee (or a comment) did not take,
+    after it opened the PR: the release issue points at that PR rather than
+    telling the maintainer to close it and start again."""
+    selected, body = _report(tmp_path, land="failure", pr_number="861")
+
+    assert selected
+    assert "opened #861, but a landing step after it failed" in body
+    assert "The note on #861 names what failed, such as its assignee" in body
+    assert "review the PR as usual" in body
+    assert "did not complete" not in body
+
+
+def test_a_canary_pr_whose_assignee_did_not_take_is_still_triaged() -> None:
+    """The canary's land fails the run over a failed assignment after it opened
+    the PR; the issue is still marked triaged, or the next canary failure
+    re-triages and opens a duplicate PR, and the failure is reported."""
+    steps = _steps("triage-land", WORKFLOWS / "inspect-ai-main-failure.yml")
+    context = {
+        "steps.mint.outcome": "success",
+        "steps.land.outcome": "failure",
+        "steps.land.outputs.pr_number": "861",
+    }
+    assert _selected(steps["Apply the triage labels"]["if"], context)
+    context["steps.labels.outcome"] = "success"
+    assert _selected(steps["Report the failure on the tracking issue"]["if"], context)
