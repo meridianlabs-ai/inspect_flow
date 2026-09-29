@@ -76,6 +76,13 @@ on:
     # manually-dispatched run harmless.
     - cron: "0 18 * * 1"
   workflow_dispatch:
+    inputs:
+      debug_output:
+        description: >-
+          Print the agent's full transcript (every tool result) in the
+          public run log, to debug a run that did not land
+        type: boolean
+        default: false
 
 concurrency:
   group: inspect-update
@@ -321,6 +328,10 @@ jobs:
           anthropic_service_account_id: svac_01RL4wYD7ikbypwYKf4wFojv
           anthropic_workspace_id: wrkspc_01RKCQ5DTPBatQ7kHLkaEueD
           github_token: ${{ github.token }}
+          # Off unless a maintainer dispatches with debug_output: this repo
+          # is public, and the full output puts every tool result in the
+          # run log (only registered secrets are masked there).
+          show_full_output: ${{ inputs.debug_output == true && 'true' || 'false' }}
           settings: >-
             {"permissions":{"allow":["Read","Edit","Write",
             "WebFetch(domain:raw.githubusercontent.com)",
