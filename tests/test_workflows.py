@@ -568,6 +568,28 @@ def test_agent_stubs_provision_like_claude_setup() -> None:
     }
 
 
+def test_agent_stubs_pass_no_openai_key() -> None:
+    """The reusable workflows' codex jobs authenticate to OpenAI with workload
+    identity federation, so the stubs send them only the Marvin app secrets."""
+    marvin = {
+        "MARVIN_APP_CLIENT_ID": "${{ secrets.MARVIN_APP_CLIENT_ID }}",
+        "MARVIN_APP_PRIVATE_KEY": "${{ secrets.MARVIN_APP_PRIVATE_KEY }}",
+    }
+    stub_secrets = {
+        (path.name, name): job.get("secrets")
+        for path in WORKFLOWS.glob("*.yml")
+        for name, job in yaml.safe_load(path.read_text())["jobs"].items()
+        if job.get("uses", "").startswith("meridianlabs-ai/agents/.github/workflows/")
+    }
+    assert stub_secrets == {
+        ("claude.yml", "claude"): marvin,
+        ("claude.yml", "claude-auto"): marvin,
+        ("claude-auto.yml", "ci-fix"): marvin,
+        ("claude-auto.yml", "review-fix"): marvin,
+        ("claude-review.yml", "review"): marvin,
+    }
+
+
 def test_landing_workflows_opt_in_to_build_config() -> None:
     """Every land job that pushes agent commits here lands build and dependency
     configuration (the tier-2 opt-in); the reviewer's land job pushes no bundle
