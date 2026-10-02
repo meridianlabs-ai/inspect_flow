@@ -342,7 +342,7 @@ class GenerateConfigDict(TypedDict):
     max_tool_output: NotRequired[int | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Literal["auto"] | bool | None]
-    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic and Bedrock Converse (Claude and Nova) only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider's own automatic caching; on OpenAI it only turns off explicit `cache_breakpoint` marks — the model's own implicit caching still applies regardless. Use `ContentText(cache_breakpoint=True)` to mark an explicit cache boundary (e.g. a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI `gpt-5.6`+ only."""
     fallback_models: NotRequired[Sequence[str] | None]
     """Fallback models tried in order when the model's safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode)."""
     fail_on_refusal: NotRequired[bool | None]
@@ -419,7 +419,7 @@ class GenerateConfigMatrixDict(TypedDict):
     max_tool_output: NotRequired[Sequence[int | None] | None]
     """Maximum tool output (in bytes). Defaults to 16 * 1024."""
     cache_prompt: NotRequired[Sequence[Literal["auto"] | bool | None] | None]
-    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic and Bedrock Converse (Claude and Nova) only."""
+    """Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider's own automatic caching; on OpenAI it only turns off explicit `cache_breakpoint` marks — the model's own implicit caching still applies regardless. Use `ContentText(cache_breakpoint=True)` to mark an explicit cache boundary (e.g. a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI `gpt-5.6`+ only."""
     verbosity: NotRequired[Sequence[Literal["low", "medium", "high"] | None] | None]
     """Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to "medium" for OpenAI models)."""
     effort: NotRequired[
