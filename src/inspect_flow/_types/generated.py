@@ -226,6 +226,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Limit on total cost (in dollars) for each sample. Requires model cost data via model_cost_config."""
     early_stopping: NotRequired[NotGiven | None]
     """Early stopping callbacks."""
+    description: NotRequired[str | NotGiven | None]
+    """Short statement of what the task asks of the agent (recorded in the eval log)."""
     version: NotRequired[int | str | NotGiven]
     """Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match."""
     tags: NotRequired[Sequence[str] | NotGiven | None]

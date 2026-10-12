@@ -963,6 +963,7 @@ def test_spec_fields_are_classified_for_models() -> None:
         "config",
         "continue_on_fail",
         "cost_limit",
+        "description",
         "early_stopping",
         "epochs",
         "extra_args",
