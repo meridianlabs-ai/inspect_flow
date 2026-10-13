@@ -16,8 +16,9 @@ jobs:
         secrets: inherit
 
     # Release announcement to flow's Slack channel (shared converter action).
+    # Needs publish so a rejected or failed PyPI publish is never announced.
     announce:
-        needs: release-please
+        needs: [release-please, publish]
         if: ${{ needs.release-please.outputs.release_created }}
         runs-on: ubuntu-latest
         steps:

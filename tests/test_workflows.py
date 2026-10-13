@@ -1947,3 +1947,14 @@ def test_lock_source_check_refuses_other_sources(tmp_path: Path, package: str) -
     assert result.returncode == 1
     assert result.stdout.count("::error file=uv.lock::y 1.0: ") == 1, result.stdout
     assert "six" not in result.stdout
+
+
+def test_release_is_announced_only_after_it_is_published() -> None:
+    """The Slack announcement waits for the PyPI publish, which waits for
+    approval on the `pypi` environment, so a rejected or failed publish is
+    never announced."""
+    jobs = yaml.safe_load((WORKFLOWS / "release.yaml").read_text())["jobs"]
+    announce = jobs["announce"]
+    assert "publish" in _needs(announce)
+    assert "always()" not in announce["if"]
+    assert jobs["publish"]["environment"]["name"] == "pypi"
