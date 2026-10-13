@@ -139,6 +139,7 @@ def test_task_limits_and_flags() -> None:
                 checkpoint=checkpoint,
                 review=review,
                 headline_metric="accuracy_scorer",
+                description="Answer the question.",
             ),
         ]
     )
@@ -153,6 +154,7 @@ def test_task_limits_and_flags() -> None:
     assert task.review is not None
     assert [policy.tools for policy in task.review] == ["*"]
     assert task.headline_metric == HeadlineMetric(scorer="accuracy_scorer")
+    assert task.description == "Answer the question."
 
 
 def test_file_not_found() -> None:

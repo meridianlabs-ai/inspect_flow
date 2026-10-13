@@ -627,6 +627,11 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Early stopping callbacks.",
     )
 
+    description: str | None | NotGiven = Field(
+        default=not_given,
+        description="Short statement of what the task asks of the agent (recorded in the eval log).",
+    )
+
     version: int | str | NotGiven = Field(
         default=not_given,
         description="Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.",
