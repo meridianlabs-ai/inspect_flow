@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.1...v0.14.0) (2026-10-13)
+
+
+### Features
+
+* reconcile inspect-ai 0.3.278 (add FlowTask.description) and upgrade locked dependencies ([#874](https://github.com/meridianlabs-ai/inspect_flow/issues/874)) ([37cb4a2](https://github.com/meridianlabs-ai/inspect_flow/commit/37cb4a2a632fdda35b139acd29b8b37250f07f60))
+* reconcile with inspect-ai 0.3.266 (tool result review policies) ([#842](https://github.com/meridianlabs-ai/inspect_flow/issues/842)) ([9c06625](https://github.com/meridianlabs-ai/inspect_flow/commit/9c06625e9867bf85b61b6ff0dfcd6b07b802642a))
+
+
+### Bug Fixes
+
+* add meta model provider to auto-dependency table ([#846](https://github.com/meridianlabs-ai/inspect_flow/issues/846)) ([9425b60](https://github.com/meridianlabs-ai/inspect_flow/commit/9425b60601a82933472166bb3db7f8686b420dd1))
+
 ## [0.13.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.0...v0.13.1) (2026-09-19)
 
 
