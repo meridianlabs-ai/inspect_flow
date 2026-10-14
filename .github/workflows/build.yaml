@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -61,7 +61,7 @@ jobs:
       pull-requests: read # the coverage action reads the PR diff
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -95,7 +95,7 @@ jobs:
       # action's container mounts as its working directory), and the
       # `coverage` job pushes the new commits.
       - name: Keep the coverage data push local
-        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git init --quiet --bare .git/coverage-data-push
           git remote set-url --push origin .git/coverage-data-push
@@ -103,7 +103,7 @@ jobs:
       # coverage-comment.yml posts.
       - name: Coverage comment
         id: coverage_comment
-        if: matrix.python-version == '3.10' && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        if: matrix.python-version == '3.11' && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: py-cov-action/python-coverage-comment-action@50d15ff8768f6d897b04e5a0805bd1a98f7096c4 # v3
         with:
           GITHUB_TOKEN: ${{ github.token }}
@@ -119,7 +119,7 @@ jobs:
       # The data branch's tip on origin, and a bundle of the commits the
       # action pushed on top of it (none when the data did not change).
       - name: Bundle the coverage data
-        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           BRANCH: python-coverage-comment-action-data
           OUT: ${{ runner.temp }}/coverage-data
@@ -139,7 +139,7 @@ jobs:
           fi
           git -C "$push" bundle create "$OUT/data.bundle" "refs/heads/$BRANCH" ${base:+"^$base"}
       - name: Store the coverage data
-        if: matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-data
@@ -206,7 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -265,7 +265,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
