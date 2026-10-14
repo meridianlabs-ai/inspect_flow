@@ -127,7 +127,7 @@ jobs:
       - name: Mint app token
         id: mint
         if: env.MARVIN_APP_CLIENT_ID != ''
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
           private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
@@ -285,7 +285,7 @@ jobs:
       RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
       RUN_URL: ${{ github.event.workflow_run.html_url || format('https://github.com/{0}/actions/runs/{1}', github.repository, inputs.run_id) }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -567,7 +567,7 @@ jobs:
       # did for the machine account.
       - name: Mint the App token
         id: mint
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           # `app-id` takes the App ID or the Client ID; the action has no client-id input.
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
@@ -724,7 +724,7 @@ jobs:
       - name: Mint app token
         id: mint
         if: env.MARVIN_APP_CLIENT_ID != ''
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
           private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
