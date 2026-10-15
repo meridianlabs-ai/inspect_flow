@@ -1624,7 +1624,7 @@ LOCK_STEP = "Check uv.lock package sources"
 REQUIRED_CHECKS = {
     f"{job} ({python})"
     for job in ("py-ruff", "py-type", "py-test", "py-build", "check-type-gen")
-    for python in ("3.10", "3.11")
+    for python in ("3.11", "3.14")
 }
 
 
@@ -1679,11 +1679,11 @@ def test_coverage_writes_run_nothing_from_the_pr() -> None:
     py_test = {s.get("id", s.get("name")): s for s in build["jobs"]["py-test"]["steps"]}
     order = list(py_test)
     assert py_test["coverage_comment"]["if"] == (
-        "matrix.python-version == '3.10' && (github.event_name == 'pull_request' "
+        "matrix.python-version == '3.11' && (github.event_name == 'pull_request' "
         f"|| ({MAIN_PUSH}))"
     )
     for name in ("Keep the coverage data push local", "Bundle the coverage data"):
-        assert py_test[name]["if"] == f"matrix.python-version == '3.10' && {MAIN_PUSH}"
+        assert py_test[name]["if"] == f"matrix.python-version == '3.11' && {MAIN_PUSH}"
     assert (
         order.index("Keep the coverage data push local")
         < order.index("coverage_comment")
@@ -1900,7 +1900,6 @@ def test_lock_source_check_runs_before_the_checkout_code() -> None:
     assert steps[1]["name"] == LOCK_STEP
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="the check uses tomllib")
 def test_lock_source_check_passes_this_repository(tmp_path: Path) -> None:
     lock = (WORKFLOWS.parent.parent / "uv.lock").read_text()
 
@@ -1921,7 +1920,6 @@ wheels = [
 """
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="the check uses tomllib")
 @pytest.mark.parametrize(
     "package",
     [

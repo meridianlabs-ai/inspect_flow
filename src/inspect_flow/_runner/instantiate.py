@@ -425,9 +425,9 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
                 reducer=sequence_to_list(epochs.reducer),
             )
 
-        _T = TypeVar("_T")
+        _V = TypeVar("_V")
 
-        def ng(value: _T | NotGiven) -> _T | InspectNotGiven:
+        def ng(value: _V | NotGiven) -> _V | InspectNotGiven:
             return NOT_GIVEN if isinstance(value, NotGiven) else value
 
         tags = (

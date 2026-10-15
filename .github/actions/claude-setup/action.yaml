@@ -11,7 +11,7 @@ runs:
   steps:
     - uses: ./.github/actions/setup
       with:
-        # CI runs a 3.10/3.11 matrix; the agent only needs one interpreter.
+        # CI runs a 3.11/3.14 matrix; the agent only needs one interpreter.
         python-version: "3.11"
     # Put the uv-managed project venv on PATH so the agent's allow-listed bare
     # `pytest`/`ruff`/`pyright` resolve. Without this they aren't on PATH, so the

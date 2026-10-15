@@ -5,7 +5,7 @@ we run, and how commits and releases work.
 
 ## Development setup
 
-Inspect Flow requires Python 3.10 or later. Clone the repository and sync the
+Inspect Flow requires Python 3.11 or later. Clone the repository and sync the
 environment (this installs the `dev` dependency group by default):
 
 ```bash

@@ -3,13 +3,9 @@
 import re
 import subprocess
 import sys
+import tomllib
 from logging import getLogger
 from pathlib import Path
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version

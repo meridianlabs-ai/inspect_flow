@@ -3,6 +3,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import tomllib
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, List, Literal, Sequence
@@ -10,11 +11,6 @@ from typing import Any, Callable, List, Literal, Sequence
 from inspect_ai._util.file import absolute_file_path
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import canonicalize_name
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 from inspect_flow._config.portable import SpecNotPortableError, validate_portable_spec
 from inspect_flow._config.write import write_config_file
