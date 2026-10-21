@@ -128,7 +128,7 @@ flow step review_scores logs/ --min-score 0.9
 Parameter help text shown in `--help` is extracted from Google-style docstrings.
 
 ::: callout-note
-Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.html#read_eval_log) from Inspect AI with `header_only=False`.
+Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#read_eval_log) from Inspect AI with `header_only=False`.
 :::
 
 ### Nesting and deferred writes
@@ -137,7 +137,7 @@ Steps can call other steps — as shown in `review_scores` above. When steps are
 
 ### StepResult
 
-Steps can return a plain `list[EvalLog]` or a [`StepResult`](reference/inspect_flow.api.qmd#StepResult) for finer control:
+Steps can return a plain `list[EvalLog]` or a [`StepResult`](reference/inspect_flow.api.qmd#stepresult) for finer control:
 
 | Field | Default | Description |
 |---|---|---|
