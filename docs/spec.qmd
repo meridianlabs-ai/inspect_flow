@@ -12,7 +12,7 @@ Inspect Flow mirrors Inspect AI's object model with corresponding Flow types:
 -   **`FlowTask`** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
 -   **`FlowModel`** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 -   **`FlowSolver`** and **`FlowAgent`** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
--   **`FlowScorer`** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
+-   **`FlowScorer`** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorers.html).
 -   **`FlowOptions`** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 -   **`FlowDefaults`** — System for setting default values across tasks, models, solvers, and agents.
 -   **`FlowDependencies`** — Configuration for evaluation dependencies (used in virtual environment mode).
