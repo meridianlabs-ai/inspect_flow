@@ -69,3 +69,7 @@ Respect existing code patterns when modifying files. Run linting before committi
 - **CLI/API parity**: All CLI commands and options should be accessible through the Python API (in `_api/api.py`), either directly or through returned objects like `FlowStore`.
 - **Docstrings**: All public API functions, classes, and properties must have Google-style docstrings with Args sections.
 - **Session-level config**: Initialization concerns (logging, display, dotenv) belong in a module-level `init()` function rather than being repeated as params on every API method.
+
+## Reviewing other people's pull requests
+
+Unless a maintainer asked for your review, submit any review on someone else's pull request as a **Comment**, never **Approve** or **Request changes**. In this repository those are maintainer decisions: a non-maintainer's verdict doesn't count toward merging and misleads the author about where their PR stands. Put any confirmation or concern in the comment text, and say that you are an AI agent and not a maintainer. This does not apply to agents acting for project maintainers.
