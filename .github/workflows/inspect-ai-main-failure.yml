@@ -127,7 +127,7 @@ jobs:
       - name: Mint app token
         id: mint
         if: env.MARVIN_APP_CLIENT_ID != ''
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
           private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
@@ -333,7 +333,7 @@ jobs:
       # mint its own App token: `gh` here can read (the failed run's logs) and
       # nothing else. Commits carry the App's bot identity, since the App token
       # pushes them.
-      - uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1.0.248
+      - uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
         id: claude
         env:
           GIT_AUTHOR_NAME: meridian-marvin[bot]
@@ -567,7 +567,7 @@ jobs:
       # did for the machine account.
       - name: Mint the App token
         id: mint
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           # `app-id` takes the App ID or the Client ID; the action has no client-id input.
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
@@ -724,7 +724,7 @@ jobs:
       - name: Mint app token
         id: mint
         if: env.MARVIN_APP_CLIENT_ID != ''
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.MARVIN_APP_CLIENT_ID }}
           private-key: ${{ secrets.MARVIN_APP_PRIVATE_KEY }}
