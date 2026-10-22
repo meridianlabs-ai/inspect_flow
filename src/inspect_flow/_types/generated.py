@@ -328,7 +328,7 @@ class GenerateConfigDict(TypedDict):
     seed: NotRequired[int | None]
     """Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only."""
     top_k: NotRequired[int | None]
-    """Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only."""
+    """Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only."""
     num_choices: NotRequired[int | None]
     """How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only."""
     logprobs: NotRequired[bool | None]
@@ -405,7 +405,7 @@ class GenerateConfigMatrixDict(TypedDict):
     seed: NotRequired[Sequence[int | None] | None]
     """Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only."""
     top_k: NotRequired[Sequence[int | None] | None]
-    """Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only."""
+    """Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only."""
     num_choices: NotRequired[Sequence[int | None] | None]
     """How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only."""
     logprobs: NotRequired[Sequence[bool | None] | None]

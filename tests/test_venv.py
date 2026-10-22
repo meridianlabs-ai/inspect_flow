@@ -14,7 +14,7 @@ from botocore.client import BaseClient
 from inspect_ai import ScannerConfig
 from inspect_ai._util.module import load_module
 from inspect_ai._util.registry import registry_find, registry_info
-from inspect_ai.model import GenerateConfig
+from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.util import SandboxEnvironmentSpec
 from inspect_flow import (
     FlowDependencies,
@@ -374,6 +374,13 @@ def test_819_model_providers_cover_inspect_ai_registry() -> None:
     }
     assert builtin
     assert builtin <= _MODEL_PROVIDERS.keys()
+
+
+@pytest.mark.parametrize("model", ["anthropic/claude-x", "openai/gpt-x"])
+def test_885_locked_provider_sdks_initialize(model: str) -> None:
+    # Child environments copy the host's provider SDK versions, so the locked
+    # SDKs must satisfy the locked inspect-ai's provider minimums.
+    get_model(model, api_key="test")
 
 
 def test_826_builtin_providers_do_not_load_entry_points() -> None:
