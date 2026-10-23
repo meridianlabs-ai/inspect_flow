@@ -5,6 +5,14 @@ inputs:
   python-version:
     required: true
     description: Python version to use
+  locked:
+    required: false
+    default: "false"
+    description: Fail instead of re-locking when uv.lock is out of date
+  save-cache:
+    required: false
+    default: "auto"
+    description: Whether setup-uv saves the uv cache after the job
 
 runs:
   using: "composite"
@@ -19,6 +27,7 @@ runs:
         enable-cache: true
         cache-dependency-glob: "**/uv.lock"
         cache-suffix: ${{ inputs.python-version }}
+        save-cache: ${{ inputs.save-cache }}
     - name: Install dependencies with uv
-      run: uv sync --dev
+      run: uv sync --dev ${{ inputs.locked == 'true' && '--locked' || '' }}
       shell: bash

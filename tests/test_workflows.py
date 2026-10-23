@@ -1654,6 +1654,24 @@ def test_build_jobs_that_run_the_checkout_hold_no_write_permission() -> None:
     assert writers == {"coverage": {"contents"}}
 
 
+def test_inspect_ai_main_floats_only_inspect_ai() -> None:
+    """Inspect AI Main CI installs flow's dependencies from uv.lock and adds
+    inspect-ai main on top, without saving the uv cache Build restores."""
+    workflow = yaml.safe_load((WORKFLOWS / "inspect_ai_main.yaml").read_text())
+    assert workflow["permissions"] == {"contents": "read"}
+    for name, job in workflow["jobs"].items():
+        steps = job["steps"]
+        assert steps[0]["with"]["persist-credentials"] is False, name
+        assert steps[1]["uses"] == "./.github/actions/setup", name
+        assert steps[1]["with"]["locked"] is True, name
+        assert steps[1]["with"]["save-cache"] is False, name
+        assert steps[2]["run"] == (
+            "uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git"
+        ), name
+        for step in steps[3:]:
+            assert "uv sync" not in step.get("run", ""), name
+
+
 def test_build_keeps_the_required_check_names() -> None:
     workflow = yaml.safe_load(BUILD.read_text())
     checks = {
