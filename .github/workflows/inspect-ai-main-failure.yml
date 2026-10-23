@@ -2,10 +2,9 @@
 # git main every 3 hours) when it fails on a scheduled run.
 #
 # The canary going red usually means an unreleased inspect-ai change has broken
-# flow — but not always: an incidental cause (a dev-tool/linter upgrade
-# reformatting code, a flake, an unrelated dependency) can trip it too, since
-# the canary upgrades ALL dev dependencies. So "canary red" must be diagnosed,
-# not assumed to mean "inspect-ai broke us".
+# flow — but not always: an incidental cause (a flake, or a dependency that
+# inspect-ai main pulls in beyond flow's uv.lock) can trip it too. So "canary
+# red" must be diagnosed, not assumed to mean "inspect-ai broke us".
 #
 # Four jobs, split so that no job that runs the agent holds a write credential
 # (credential separation, Phase 2; the landing shape is meridianlabs-ai/agents
@@ -364,8 +363,8 @@ jobs:
             --add-dir ${{ runner.temp }}/agent-out
           prompt: |
             You are the canary-triage agent for inspect_flow. The "Inspect AI
-            Main CI" canary — which upgrades all dev dependencies, installs
-            inspect-ai from git main, and runs flow's lint/type/test/type-gen
+            Main CI" canary — which installs flow's locked dependencies, adds
+            inspect-ai from git main on top, and runs flow's lint/type/test/type-gen
             checks against it — failed on a scheduled run. Tracking issue:
             #${{ needs.triage-gate.outputs.issue_number }}. Failed canary run:
             ${{ env.RUN_URL }} (run id ${{ env.RUN_ID }}).
@@ -389,14 +388,13 @@ jobs:
             1. ROOT-CAUSE the failure. Inspect the failed logs
                (`gh run view ${{ env.RUN_ID }} --repo ${{ github.repository }} --log-failed`)
                and reproduce locally on the current checkout: `uv sync --dev
-               --upgrade`, `uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git`,
+               --locked`, `uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git`,
                then run the failing check(s). Determine the actual cause — do NOT
                assume it is an inspect-ai break.
 
             2. CLASSIFY into exactly one bucket:
-               a. INCIDENTAL (not inspect-ai): a dev-tool/linter/dependency
-                  upgrade that reformats or newly flags code, a flake, or an
-                  unrelated dependency. → fix now.
+               a. INCIDENTAL (not inspect-ai): a flake, or a dependency that
+                  inspect-ai main pulls in beyond the lock. → fix now.
                b. CLEAN inspect-ai reconciliation: an inspect-ai main change that
                   is stable and can be cleanly reconciled against flow today
                   (small, unambiguous). → fix now.
