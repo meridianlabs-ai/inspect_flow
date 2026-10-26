@@ -97,7 +97,7 @@ required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_6
 # API surface, advanced by .github/workflows/inspect-update.yml. Independent of
 # the `inspect-ai>=` dependency floor, which is only raised when a release
 # would completely break flow on older versions.
-inspect-reconciled-version = "0.3.281"
+inspect-reconciled-version = "0.3.285"
 
 [tool.pyright]
 include = ["src", "tests", "examples"]
