@@ -89,6 +89,8 @@ allow-direct-references = true
 managed = true
 add-bounds = "lower"
 default-groups = ["dev"]
+# CI runs on linux x86_64: skip releases whose wheels for it aren't published yet.
+required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [tool.inspect_flow]
 # Newest inspect-ai release whose CHANGELOG has been reconciled against flow's
