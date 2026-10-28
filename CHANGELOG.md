@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.15.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.14.0...v0.15.0) (2026-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* require Python 3.11 and test on Python 3.14 ([#878](https://github.com/meridianlabs-ai/inspect_flow/issues/878))
+
+### Features
+
+* require Python 3.11 and test on Python 3.14 ([#878](https://github.com/meridianlabs-ai/inspect_flow/issues/878)) ([851ed61](https://github.com/meridianlabs-ai/inspect_flow/commit/851ed6104afe4ffb5e171f25b16b6148c922c0e8))
+
 ## [0.14.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.1...v0.14.0) (2026-10-13)
 
 
