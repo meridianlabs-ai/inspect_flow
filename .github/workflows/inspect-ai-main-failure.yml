@@ -333,7 +333,7 @@ jobs:
       # mint its own App token: `gh` here can read (the failed run's logs) and
       # nothing else. Commits carry the App's bot identity, since the App token
       # pushes them.
-      - uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
+      - uses: anthropics/claude-code-action@aa8a7738e48bf30a40ee499ce818bef081c5ab5e # v1.0.257
         id: claude
         env:
           GIT_AUTHOR_NAME: meridian-marvin[bot]
