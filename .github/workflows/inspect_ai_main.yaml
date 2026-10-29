@@ -7,6 +7,12 @@ on:
   # Allow manual triggering from the Actions tab
   workflow_dispatch:
 
+# Flow's dependencies come from uv.lock; only inspect-ai main (and whatever it
+# needs beyond the lock) is installed on top. Nothing here saves the uv cache,
+# which Build restores under the same key.
+permissions:
+  contents: read
+
 jobs:
   py-ruff:
     runs-on: ubuntu-latest
@@ -15,12 +21,13 @@ jobs:
         python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Upgrade dependencies
-        run: uv sync --dev --upgrade
-        shell: bash
+          locked: true
+          save-cache: false
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Lint with Ruff
@@ -35,12 +42,13 @@ jobs:
         python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Upgrade dependencies
-        run: uv sync --dev --upgrade
-        shell: bash
+          locked: true
+          save-cache: false
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Type check with pyright
@@ -53,12 +61,13 @@ jobs:
         python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Upgrade dependencies
-        run: uv sync --dev --upgrade
-        shell: bash
+          locked: true
+          save-cache: false
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Run tests
@@ -72,9 +81,13 @@ jobs:
         python-version: [ "3.11", "3.14" ]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
+          locked: true
+          save-cache: false
       - name: Install inspect-ai main
         run: uv pip install git+https://github.com/UKGovernmentBEIS/inspect_ai.git
       - name: Generate types
