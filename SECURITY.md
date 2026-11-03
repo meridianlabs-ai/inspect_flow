@@ -27,18 +27,18 @@ We only fix security issues in the most recent release of `inspect_flow` on PyPI
 
 ## Scope
 
-Flow specs are Python. Running or checking a flow runs its spec file, the files it includes, and any `_flow.py` in the spec's directory and the directories above it. It also installs the Python packages the spec names. The sections below describe what we treat as a vulnerability and what we do not.
+Flow specs, the files they include, and `_flow.py` files are code that you run. `flow run`, `flow check` and `flow config` run the spec, its includes, and any `_flow.py` in the spec's directory and the directories above it. A command that takes an `@NAME` argument or a `--filter` can run every `_flow.py` from the current directory up. A run with `execution_type="venv"` also installs the spec's dependencies, a `pyproject.toml` or `requirements.txt` it finds above the spec, and packages it infers from model and task names. The sections below describe what we treat as a vulnerability and what we do not.
 
 ### In scope
 
-- Code execution or file access triggered by commands that only read, such as listing or viewing eval logs or a log store, on data someone else wrote
-- A flow loading or installing code from somewhere its spec and its included files don't name
+- Code execution or file access triggered by the contents of eval logs, a log store, or a log directory's `flow.yaml` that someone else wrote
+- A flow loading or installing code from somewhere other than the places described above
 - API keys, tokens, or other secrets written to eval logs, the log store, or error messages
 - Flaws in our release process, packaging, or CI that would let someone publish or modify a release
 
 ### Out of scope
 
-- Running a flow spec, or keeping one in a directory with an untrusted `_flow.py` above it, runs that code and installs the packages it names. Treat a flow spec from an untrusted source the same way you would treat any other Python you did not write.
+- Running `flow` in or below a directory that holds an untrusted spec or `_flow.py` runs that code, and a venv run installs what it finds there. Treat those files the same way you would treat any other Python you did not write.
 - Vulnerabilities in `inspect_ai` should be reported under [its security policy](https://github.com/UKGovernmentBEIS/inspect_ai/blob/main/SECURITY.md).
 - Vulnerabilities in other third-party dependencies should be reported to that project. Tell us if Inspect Flow needs a change in response, such as a version pin.
 - Reports produced by a security scanner, or written mainly by an automated tool or a language model, with no working proof of concept. We will close these without a detailed response.
