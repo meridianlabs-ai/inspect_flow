@@ -29,7 +29,8 @@ updates:
   # get their own group, so a broken update elsewhere can't hold them up. It
   # comes first because a package that matches both groups goes to the first.
   # inspect-ai is ignored: inspect-update.yml bumps it, because each new
-  # release needs type regeneration and reconciliation.
+  # release needs type regeneration and reconciliation. An inspect-scout update
+  # that needs a newer inspect-ai fails until inspect-update.yml moves inspect-ai.
   - package-ecosystem: "uv"
     versioning-strategy: "lockfile-only"
     directory: "/"

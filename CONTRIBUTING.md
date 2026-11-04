@@ -30,9 +30,11 @@ can overwrite editable installs. Use `python` directly instead.
 
 ### Dependencies and the cooldown
 
-`uv.lock` pins every Python dependency. CI installs from it, and fails when
-`uv.lock` is out of date with `pyproject.toml`. When you change dependencies in
-`pyproject.toml`, run `uv lock` and commit both files.
+`uv.lock` pins every runtime and dev dependency. The build backends (`hatchling`,
+`hatch-vcs`) are not in it; they resolve at build time, under the same cooldown.
+CI installs from `uv.lock`, and fails when it is out of date with
+`pyproject.toml`. When you change dependencies in `pyproject.toml`, run `uv lock`
+and commit both files.
 
 `pyproject.toml` sets `exclude-newer = "7 days"` under `[tool.uv]`, so `uv lock`,
 `uv sync` and `uv pip` only pick releases that have been on PyPI for at least
