@@ -261,13 +261,14 @@ jobs:
                   f"editable packages ({len(bad)} entries above)."
               )
           print(f"uv.lock: {len(lock.get('package', []))} packages, all from PyPI or editable here.")
-      # The project's locked dependencies, not the project itself: the step
-      # after the build installs the wheel.
+      # The project's locked runtime dependencies, without the project or the
+      # dev group: the step after the build installs the wheel.
       - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
           project-install: skip
+          default-dependency-groups: exclude
       - name: Build package
         run: uv build
       - name: Verify package

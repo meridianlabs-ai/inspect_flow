@@ -8,6 +8,7 @@ build.yaml installs from uv.lock through the shared install action.
 
 import re
 import tomllib
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ LOCKED_JOBS = {
         "versions": "locked",
         "python-version": MATRIX_PYTHON,
         "project-install": "skip",
+        "default-dependency-groups": "exclude",
     },
 }
 SIX_HOURS = "6 hours"
@@ -71,15 +73,23 @@ def run_lines(job: dict[str, Any]) -> list[str]:
     ]
 
 
-def test_six_hour_packages_are_direct_dependencies() -> None:
-    assert pyproject()["tool"]["uv"]["exclude-newer"] == "7 days"
+def test_exclude_newer_package_entries() -> None:
+    uv = pyproject()["tool"]["uv"]
+    assert uv["exclude-newer"] == "7 days"
     project = pyproject()["project"]
     direct = {
         normalize(re.split(r"[^A-Za-z0-9._-]", requirement, maxsplit=1)[0])
         for requirement in project["dependencies"]
         + project["optional-dependencies"]["dev"]
     }
-    assert set(six_hour_packages()) <= direct
+    now = datetime.now(UTC)
+    for package, cooldown in uv["exclude-newer-package"].items():
+        assert normalize(package) in direct, package
+        # Otherwise a dated emergency entry, removed before the cooldown passes it.
+        if cooldown != SIX_HOURS:
+            assert isinstance(cooldown, str), f"{package} = {cooldown!r}"
+            age = now - datetime.fromisoformat(cooldown).astimezone(UTC)
+            assert timedelta(0) <= age < timedelta(days=7), f"{package} = {cooldown}"
 
 
 def test_dependabot_cooldown_matches_pyproject() -> None:
@@ -113,6 +123,15 @@ def test_build_installs_only_through_the_shared_action() -> None:
     }
     assert len(refs) == 1, refs
     assert re.fullmatch(r"[0-9a-f]{40}", refs.pop())
+
+
+def test_every_python_job_is_locked() -> None:
+    python_jobs = {
+        name
+        for name, job in build_jobs().items()
+        if any(re.search(r"\b(uv|pip|python)\b", line) for line in run_lines(job))
+    }
+    assert python_jobs <= set(LOCKED_JOBS)
 
 
 @pytest.mark.parametrize("name,inputs", LOCKED_JOBS.items())
