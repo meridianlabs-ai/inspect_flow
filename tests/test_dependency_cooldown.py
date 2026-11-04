@@ -3,8 +3,9 @@
 pyproject.toml holds back releases younger than seven days, or six hours for a
 list of model provider SDKs and Inspect packages. Dependabot applies the seven
 days to its uv.lock bumps and leaves that list to uv. Every Python job in
-build.yaml installs from uv.lock through the shared install action. The
-publish jobs build with uv build after the shared setup-uv.
+build.yaml installs from uv.lock through the shared install action. py-build
+and the publish jobs build with the toolchain pinned with hashes in
+scripts/build-dist/requirements.txt, also through the shared action.
 """
 
 import re
@@ -18,23 +19,37 @@ import yaml
 
 REPO = Path(__file__).parents[1]
 GITHUB = REPO / ".github"
-BUILD = GITHUB / "workflows" / "build.yaml"
+WORKFLOWS = GITHUB / "workflows"
+BUILD = WORKFLOWS / "build.yaml"
+PUBLISH_WORKFLOWS = ["publish.yaml", "release.yaml"]
 INSTALL_ACTION = "meridianlabs-ai/actions/install-python-dependencies@"
-SETUP_UV = "meridianlabs-ai/actions/setup-uv@"
 MATRIX_PYTHON = "${{ matrix.python-version }}"
+TOOLCHAIN = {
+    "versions": "hashed-requirements",
+    "requirements-file": "scripts/build-dist/requirements.txt",
+    "package-format": "wheels-only",
+    "environment-dir": "${{ runner.temp }}/build-venv",
+}
 DEV = {"versions": "locked", "python-version": MATRIX_PYTHON, "extras": "dev"}
 LOCKED_JOBS = {
-    "py-ruff": DEV,
-    "py-type": DEV,
-    "py-test": DEV,
-    "check-type-gen": DEV,
-    "py-build": {
-        "versions": "locked",
-        "python-version": MATRIX_PYTHON,
-        "project-install": "skip",
-        "default-dependency-groups": "exclude",
-    },
+    "py-ruff": [DEV],
+    "py-type": [DEV],
+    "py-test": [DEV],
+    "check-type-gen": [DEV],
+    "py-build": [
+        {**TOOLCHAIN, "python-version": MATRIX_PYTHON},
+        {
+            "versions": "locked",
+            "python-version": MATRIX_PYTHON,
+            "project-install": "skip",
+            "default-dependency-groups": "exclude",
+            "also-install-without-deps": "${{ steps.build.outputs.wheel }}",
+        },
+    ],
 }
+# The publish jobs hold id-token, so they restore no Actions cache.
+PUBLISH_TOOLCHAIN = {**TOOLCHAIN, "python-version": "3.11", "actions-cache": "none"}
+BUILD_NO_ISOLATION = '"$RUNNER_TEMP/build-venv/bin/python" -m build --no-isolation'
 SIX_HOURS = "6 hours"
 
 
@@ -66,10 +81,17 @@ def build_jobs() -> dict[str, Any]:
     return jobs
 
 
+def publish_job(workflow: str) -> dict[str, Any]:
+    job: dict[str, Any] = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"][
+        "publish"
+    ]
+    return job
+
+
 def run_lines(job: dict[str, Any]) -> list[str]:
     return [
         line.strip()
-        for step in job["steps"]
+        for step in job.get("steps", [])
         for line in step.get("run", "").replace("\\\n", " ").splitlines()
         if line.strip()
     ]
@@ -128,17 +150,19 @@ def test_build_installs_only_through_the_shared_action() -> None:
 
 
 def test_every_python_job_is_locked() -> None:
+    python = r"\b(uvx?|pip3?|python3?)\b"
     python_jobs = {
         name
         for name, job in build_jobs().items()
-        if any(re.search(r"\b(uv|pip|python)\b", line) for line in run_lines(job))
+        if any(re.search(python, line) for line in run_lines(job))
+        or any(re.search(python, step.get("shell", "")) for step in job["steps"])
     }
     assert python_jobs <= set(LOCKED_JOBS)
 
 
 @pytest.mark.parametrize("name,inputs", LOCKED_JOBS.items())
 def test_python_jobs_install_from_the_lockfile(
-    name: str, inputs: dict[str, str]
+    name: str, inputs: list[dict[str, str]]
 ) -> None:
     job = build_jobs()[name]
     installs = [
@@ -146,7 +170,7 @@ def test_python_jobs_install_from_the_lockfile(
         for step in job["steps"]
         if step.get("uses", "").startswith(INSTALL_ACTION)
     ]
-    assert installs == [inputs]
+    assert installs == inputs
     # A bare `uv run` or `uv sync` re-locks, `--with` and pip installs skip
     # uv.lock, and `--exclude-newer` overrides the cooldown.
     unlocked = [
@@ -154,27 +178,27 @@ def test_python_jobs_install_from_the_lockfile(
         for line in run_lines(job)
         if re.search(r"\buv sync\b|--with\b|--exclude-newer\b", line)
         or (re.search(r"\buv run\b", line) and "--no-sync" not in line.split())
-        or (
-            re.search(r"\bpip3? install\b", line)
-            and not line.startswith("uv pip install --no-deps ")
-        )
+        or re.search(r"\bpip3? install\b", line)
     ]
     assert unlocked == []
 
 
-@pytest.mark.parametrize("workflow", ["publish.yaml", "release.yaml"])
-def test_publish_uses_the_shared_setup_uv(workflow: str) -> None:
-    job = yaml.safe_load((GITHUB / "workflows" / workflow).read_text())["jobs"][
-        "publish"
-    ]
+@pytest.mark.parametrize("workflow", PUBLISH_WORKFLOWS)
+def test_publish_builds_with_the_hashed_toolchain(workflow: str) -> None:
+    job = publish_job(workflow)
     uses = [step["uses"] for step in job["steps"] if "uses" in step]
-    setups = [
-        step.get("with")
-        for step in job["steps"]
-        if step.get("uses", "").startswith(SETUP_UV)
+    installs = [
+        (i, step.get("with"))
+        for i, step in enumerate(job["steps"])
+        if step.get("uses", "").startswith(INSTALL_ACTION)
     ]
-    # The job holds id-token: write, so it restores no Actions cache.
-    assert setups == [{"python-version": "3.14", "actions-cache": "none"}]
+    (builds,) = [
+        i
+        for i, step in enumerate(job["steps"])
+        if BUILD_NO_ISOLATION in step.get("run", "").splitlines()
+    ]
+    assert [inputs for _, inputs in installs] == [PUBLISH_TOOLCHAIN]
+    assert installs[0][0] < builds
     assert not [
         u
         for u in uses
@@ -184,4 +208,15 @@ def test_publish_uses_the_shared_setup_uv(workflow: str) -> None:
     ]
     assert not [
         line for line in run_lines(job) if re.search(r"\bpip3? install\b", line)
+    ]
+
+
+@pytest.mark.parametrize("workflow", ["build.yaml", *PUBLISH_WORKFLOWS])
+def test_no_build_or_install_outside_the_shared_action(workflow: str) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
+    assert not [
+        line
+        for job in jobs.values()
+        for line in run_lines(job)
+        if re.search(r"\buv (build|pip install)\b", line)
     ]
