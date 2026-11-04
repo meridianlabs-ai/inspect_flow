@@ -261,21 +261,36 @@ jobs:
                   f"editable packages ({len(bad)} entries above)."
               )
           print(f"uv.lock: {len(lock.get('package', []))} packages, all from PyPI or editable here.")
-      # The project's locked runtime dependencies, without the project or the
-      # dev group: the step after the build installs the wheel.
+      # The build toolchain that publish.yaml uses, pinned with hashes. To
+      # update the file, see publish.yaml.
+      - name: Install build toolchain
+        uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+        with:
+          versions: hashed-requirements
+          python-version: ${{ matrix.python-version }}
+          requirements-file: scripts/build-dist/requirements.txt
+          package-format: wheels-only
+          environment-dir: ${{ runner.temp }}/build-venv
+      - name: Build package
+        id: build
+        run: |
+          "$RUNNER_TEMP/build-venv/bin/python" -m build --no-isolation
+          wheels=(dist/*.whl)
+          [ ${#wheels[@]} -eq 1 ] && [ -f "${wheels[0]}" ] || { echo "::error::expected one wheel in dist/"; exit 1; }
+          # ./ marks a local path for the install action.
+          echo "wheel=./${wheels[0]}" >> "$GITHUB_OUTPUT"
+      # The locked runtime dependencies, without the dev group and without the
+      # project, then the wheel with --no-deps.
       - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
           project-install: skip
           default-dependency-groups: exclude
-      - name: Build package
-        run: uv build
+          also-install-without-deps: ${{ steps.build.outputs.wheel }}
       - name: Verify package
-        run: |
-          uv pip install --no-deps dist/*.whl
-          # -I so the import resolves to the installed wheel, not a checkout-root module.
-          .venv/bin/python -I -c "import inspect_flow; print('Package imported successfully')"
+        # -I so the import resolves to the installed wheel, not the checkout's src/.
+        run: .venv/bin/python -I -c "import inspect_flow; print('Package imported successfully')"
       - name: Minimize uv cache
         if: ${{ !cancelled() }}
         run: uv cache prune --ci

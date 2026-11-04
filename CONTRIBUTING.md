@@ -31,7 +31,9 @@ can overwrite editable installs. Use `python` directly instead.
 ### Dependencies and the cooldown
 
 `uv.lock` pins every runtime and dev dependency. The build backends (`hatchling`,
-`hatch-vcs`) are not in it; they resolve at build time, under the same cooldown.
+`hatch-vcs`) are not in it. CI and release builds install them, with `build`,
+from `scripts/build-dist/requirements.txt`, pinned with hashes. A local `uv build`
+resolves them at build time, under the same cooldown.
 CI installs from `uv.lock`, and fails when it is out of date with
 `pyproject.toml`. When you change dependencies in `pyproject.toml`, run `uv lock`
 and commit both files.

@@ -47,11 +47,18 @@ jobs:
               with:
                   fetch-depth: 0 # Get all tags for version detection
 
-            # id-token: write, so no Actions cache restore.
-            - uses: meridianlabs-ai/actions/setup-uv@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+            # The build toolchain pinned with hashes, as in publish.yaml (which
+            # says how to update the file). This job holds id-token, so it
+            # restores no Actions cache.
+            - name: Install build toolchain
+              uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
               with:
-                  python-version: "3.14"
+                  versions: hashed-requirements
+                  python-version: "3.11"
+                  requirements-file: scripts/build-dist/requirements.txt
+                  package-format: wheels-only
                   actions-cache: none
+                  environment-dir: ${{ runner.temp }}/build-venv
 
             - name: Show current version
               run: |
@@ -59,7 +66,7 @@ jobs:
 
             - name: Build
               run: |
-                  uv build
+                  "$RUNNER_TEMP/build-venv/bin/python" -m build --no-isolation
                   ls -la dist/
 
             - name: Publish to PyPI
