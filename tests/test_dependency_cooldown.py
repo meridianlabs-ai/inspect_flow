@@ -68,12 +68,14 @@ def six_hour_packages() -> list[str]:
     )
 
 
-def dependabot_uv() -> dict[str, Any]:
+def dependabot_uv(directory: str = "/") -> dict[str, Any]:
     updates = yaml.safe_load((GITHUB / "dependabot.yml").read_text())["updates"]
-    (root,) = [
-        u for u in updates if u["package-ecosystem"] == "uv" and u["directory"] == "/"
+    (update,) = [
+        u
+        for u in updates
+        if u["package-ecosystem"] == "uv" and u["directory"] == directory
     ]
-    return root
+    return update
 
 
 def build_jobs() -> dict[str, Any]:
@@ -94,6 +96,15 @@ def run_lines(job: dict[str, Any]) -> list[str]:
         for step in job.get("steps", [])
         for line in step.get("run", "").replace("\\\n", " ").splitlines()
         if line.strip()
+    ]
+
+
+def install_and_build_steps(job: dict[str, Any]) -> list[str]:
+    return [
+        "install" if step.get("uses", "").startswith(INSTALL_ACTION) else "build"
+        for step in job["steps"]
+        if step.get("uses", "").startswith(INSTALL_ACTION)
+        or BUILD_NO_ISOLATION in step.get("run", "").splitlines()
     ]
 
 
@@ -128,6 +139,11 @@ def test_dependabot_cooldown_matches_pyproject() -> None:
     assert list(groups) == ["six-hour-cooldown", "python-packages"]
     assert sorted(groups["six-hour-cooldown"]["patterns"]) == exempt
     assert groups["python-packages"]["patterns"] == ["*"]
+
+
+def test_dependabot_build_toolchain_cooldown_matches_pyproject() -> None:
+    days = int(pyproject()["tool"]["uv"]["exclude-newer"].removesuffix(" days"))
+    assert dependabot_uv("/scripts/build-dist")["cooldown"]["default-days"] == days
 
 
 def test_build_installs_only_through_the_shared_action() -> None:
@@ -183,22 +199,22 @@ def test_python_jobs_install_from_the_lockfile(
     assert unlocked == []
 
 
+def test_py_build_builds_between_toolchain_and_locked_install() -> None:
+    steps = install_and_build_steps(build_jobs()["py-build"])
+    assert steps == ["install", "build", "install"]
+
+
 @pytest.mark.parametrize("workflow", PUBLISH_WORKFLOWS)
 def test_publish_builds_with_the_hashed_toolchain(workflow: str) -> None:
     job = publish_job(workflow)
     uses = [step["uses"] for step in job["steps"] if "uses" in step]
     installs = [
-        (i, step.get("with"))
-        for i, step in enumerate(job["steps"])
+        step.get("with")
+        for step in job["steps"]
         if step.get("uses", "").startswith(INSTALL_ACTION)
     ]
-    (builds,) = [
-        i
-        for i, step in enumerate(job["steps"])
-        if BUILD_NO_ISOLATION in step.get("run", "").splitlines()
-    ]
-    assert [inputs for _, inputs in installs] == [PUBLISH_TOOLCHAIN]
-    assert installs[0][0] < builds
+    assert installs == [PUBLISH_TOOLCHAIN]
+    assert install_and_build_steps(job) == ["install", "build"]
     assert not [
         u
         for u in uses
