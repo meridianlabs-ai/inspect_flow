@@ -3,7 +3,8 @@
 pyproject.toml holds back releases younger than seven days, or six hours for a
 list of model provider SDKs and Inspect packages. Dependabot applies the seven
 days to its uv.lock bumps and leaves that list to uv. Every Python job in
-build.yaml installs from uv.lock through the shared install action.
+build.yaml installs from uv.lock through the shared install action. The
+publish jobs build with uv build after the shared setup-uv.
 """
 
 import re
@@ -19,6 +20,7 @@ REPO = Path(__file__).parents[1]
 GITHUB = REPO / ".github"
 BUILD = GITHUB / "workflows" / "build.yaml"
 INSTALL_ACTION = "meridianlabs-ai/actions/install-python-dependencies@"
+SETUP_UV = "meridianlabs-ai/actions/setup-uv@"
 MATRIX_PYTHON = "${{ matrix.python-version }}"
 DEV = {"versions": "locked", "python-version": MATRIX_PYTHON, "extras": "dev"}
 LOCKED_JOBS = {
@@ -158,3 +160,28 @@ def test_python_jobs_install_from_the_lockfile(
         )
     ]
     assert unlocked == []
+
+
+@pytest.mark.parametrize("workflow", ["publish.yaml", "release.yaml"])
+def test_publish_uses_the_shared_setup_uv(workflow: str) -> None:
+    job = yaml.safe_load((GITHUB / "workflows" / workflow).read_text())["jobs"][
+        "publish"
+    ]
+    uses = [step["uses"] for step in job["steps"] if "uses" in step]
+    setups = [
+        step.get("with")
+        for step in job["steps"]
+        if step.get("uses", "").startswith(SETUP_UV)
+    ]
+    # The job holds id-token: write, so it restores no Actions cache.
+    assert setups == [{"python-version": "3.14", "actions-cache": "none"}]
+    assert not [
+        u
+        for u in uses
+        if u.startswith(
+            ("actions/setup-python@", "astral-sh/setup-uv@", "actions/cache@")
+        )
+    ]
+    assert not [
+        line for line in run_lines(job) if re.search(r"\bpip3? install\b", line)
+    ]
