@@ -45,6 +45,12 @@ from rich.console import Console
 _test_action = RunAction("test")
 
 
+@pytest.fixture(autouse=True)
+def no_uv_python(monkeypatch: pytest.MonkeyPatch) -> None:
+    # CI's setup-uv sets UV_PYTHON, which outranks VIRTUAL_ENV in `uv pip`.
+    monkeypatch.delenv("UV_PYTHON", raising=False)
+
+
 def test_no_dependencies() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         with patch("subprocess.run") as mock_run:

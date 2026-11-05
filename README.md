@@ -201,7 +201,7 @@ See the following articles to learn more about using Flow:
 
 ## Development
 
-To work on development of Inspect Flow, clone the repository and install with the `-e` flag and `[dev, doc]` optional dependencies:
+To work on development of Inspect Flow, clone the repository and sync the environment with `uv sync`, which installs Flow editable with its dev tools:
 
 ```bash
 git clone https://github.com/meridianlabs-ai/inspect_flow
