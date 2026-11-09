@@ -19,8 +19,7 @@ SHORT_COOLDOWN_PACKAGES = ("anthropic", "inspect-ai", "inspect-scout", "openai")
 def uv_settings_env(
     env: Mapping[str, str],
     config_dir: str,
-    default: bool = True,
-    host_pins: Collection[str] = (),
+    pins: Collection[str] = (),
 ) -> dict[str, str]:
     # uv reads its system config from the first XDG_CONFIG_DIRS entry with a
     # uv/uv.toml. Flow's settings go there, so the user's project, user, env and
@@ -29,19 +28,15 @@ def uv_settings_env(
     if user_config_file(env):
         return dict(env)
     now = datetime.now(UTC)
-    packages: dict[str, str] = {}
-    lines: list[str] = []
-    if default:
-        lines.append(f'exclude-newer = "{_timestamp(now - DEFAULT_COOLDOWN)}"')
-        packages.update(
-            {p: _timestamp(now - SHORT_COOLDOWN) for p in SHORT_COOLDOWN_PACKAGES}
-        )
-    # A version copied from the host is already running there, so the cooldown
-    # must not reject it.
-    packages.update({p: _timestamp(now) for p in _pinned_names(host_pins)})
-    if packages:
-        lines.append("[exclude-newer-package]")
-        lines.extend(f'"{p}" = "{cutoff}"' for p, cutoff in packages.items())
+    packages = {p: _timestamp(now - SHORT_COOLDOWN) for p in SHORT_COOLDOWN_PACKAGES}
+    # A version already chosen (copied from the host, or frozen from the venv)
+    # must not be rejected by the cooldown.
+    packages.update({p: _timestamp(now) for p in _pinned_names(pins)})
+    lines = [
+        f'exclude-newer = "{_timestamp(now - DEFAULT_COOLDOWN)}"',
+        "[exclude-newer-package]",
+        *(f'"{p}" = "{cutoff}"' for p, cutoff in packages.items()),
+    ]
 
     config_file = Path(config_dir) / "uv" / "uv.toml"
     config_file.parent.mkdir(parents=True, exist_ok=True)

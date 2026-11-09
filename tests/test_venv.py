@@ -1441,6 +1441,8 @@ USER_SETTINGS = (
     f'[exclude-newer-package]\nopenai = "{USER_OPENAI_CUTOFF}"\n'
 )
 PROJECT = '[project]\nname = "p"\nversion = "0.1"\nrequires-python = ">=3.10"\n'
+# What `uv pip freeze` reports for the new venv.
+FROZEN = "-e file:///src/editable\nopenai==1.0.0\nrequests==2.0.0\n"
 
 UvCommand = tuple[list[str], dict[str, str], str]
 
@@ -1461,10 +1463,12 @@ def _uv_commands(
     # walking up from the temp dir.
     temp_dir = base_dir.with_name(base_dir.name + "-venv")
     temp_dir.mkdir(exist_ok=True)
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="mocked output"
-        )
+
+    def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        stdout = FROZEN if args[:3] == ["uv", "pip", "freeze"] else "mocked output"
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=stdout)
+
+    with patch("subprocess.run", side_effect=run) as mock_run:
         _create_venv(
             spec=spec,
             base_dir=base_dir.as_posix(),
@@ -1534,11 +1538,17 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
         "anthropic": HOST_PIN,
         "inspect-ai": inspect_ai,
     }
-    # The compile only hashes installed versions, so it gets no default.
-    host_pins = {"anthropic": HOST_PIN}
-    if inspect_ai == HOST_PIN:
-        host_pins["inspect-ai"] = HOST_PIN
-    assert _flow_cooldowns(_command(commands, "uv", "pip", "compile")) == host_pins
+    # The compile keeps the frozen versions; the default reaches the build
+    # requirements of the editable package's metadata.
+    compiled = _command(commands, "uv", "pip", "compile")
+    assert _flow_cooldowns(compiled) == {
+        **DEFAULTS,
+        "openai": HOST_PIN,
+        "requests": HOST_PIN,
+    }
+    assert _uv_cutoffs(_uv_settings_output(compiled))["*"] == {
+        _flow_settings(compiled)["exclude-newer"]
+    }
 
 
 def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:

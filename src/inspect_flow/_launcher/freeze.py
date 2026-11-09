@@ -1,7 +1,7 @@
 import logging
 import subprocess
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from inspect_ai._util.file import file, filesystem
@@ -19,6 +19,7 @@ def write_flow_requirements(
     dry_run: bool,
     python: str,
     compile_args: Sequence[str] = (),
+    compile_env: Callable[[list[str]], dict[str, str]] | None = None,
 ) -> None:
     if dry_run or not spec.log_dir:
         return
@@ -59,7 +60,7 @@ def write_flow_requirements(
                 str(requirements_in),
             ],
             cwd=cwd,
-            env=env,
+            env=compile_env(deduplicated_output.splitlines()) if compile_env else env,
             log_output=False,
         )
         fs = filesystem(spec.log_dir)

@@ -240,24 +240,22 @@ def _create_venv(
         dependencies,
         temp_dir,
         uv_settings_env(
-            env, str(Path(temp_dir) / "uv-install"), host_pins=host_dependencies
+            env, str(Path(temp_dir) / "uv-install"), pins=host_dependencies
         ),
         project_args,
     )
 
-    # Compiling only hashes the versions already installed, so it gets no default
-    # cooldown.
+    # Compiling keeps the frozen versions, but can still build an editable
+    # package's metadata, so the default applies to the build requirements.
     write_flow_requirements(
         spec,
         temp_dir,
-        uv_settings_env(
-            env,
-            str(Path(temp_dir) / "uv-compile"),
-            default=False,
-            host_pins=host_dependencies,
-        ),
+        env,
         dry_run,
         python=_venv_python(temp_dir),
+        compile_env=lambda frozen: uv_settings_env(
+            env, str(Path(temp_dir) / "uv-compile"), pins=frozen
+        ),
         compile_args=project_args,
     )
 
