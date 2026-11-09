@@ -20,7 +20,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._launcher.uv_settings import uv_cooldown_args
+from inspect_flow._launcher.uv_settings import uv_settings_env
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -224,21 +224,26 @@ def _create_venv(
     _uv_pip_install(
         dependencies,
         temp_dir,
-        env,
-        project_args
-        + uv_cooldown_args(project_dir, env, pip=True, host_pins=host_dependencies),
+        uv_settings_env(
+            env, str(Path(temp_dir) / "uv-install"), host_pins=host_dependencies
+        ),
+        project_args,
     )
 
+    # Compiling only hashes the versions already installed, so it gets no default
+    # cooldown.
     write_flow_requirements(
         spec,
         temp_dir,
-        env,
+        uv_settings_env(
+            env,
+            str(Path(temp_dir) / "uv-compile"),
+            default=False,
+            host_pins=host_dependencies,
+        ),
         dry_run,
         python=_venv_python(temp_dir),
-        compile_args=project_args
-        + uv_cooldown_args(
-            project_dir, env, pip=True, host_pins=host_dependencies, default=False
-        ),
+        compile_args=project_args,
     )
 
 
@@ -324,9 +329,8 @@ def _get_create_venv_with_base_dependencies(
             _uv_pip_install(
                 ["-r", file_path],
                 project_dir,
-                env,
-                _uv_project_args(project_dir)
-                + uv_cooldown_args(project_dir, env, pip=True),
+                uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
+                _uv_project_args(project_dir),
             )
 
         return create_venv_func
@@ -343,19 +347,18 @@ def _get_create_venv_with_base_dependencies(
         project_dir,
         "--active",
     ]
-    sync_args = _uv_sync_args(spec)
     if (Path(project_dir) / "uv.lock").exists():
+        # The lock fixes the runtime versions; the cooldown still applies to
+        # build requirements, which it does not lock.
         uv_args.append("--frozen")
-    elif not any(arg.startswith("--exclude-newer") for arg in sync_args):
-        uv_args.extend(uv_cooldown_args(project_dir, env, pip=False))
 
-    uv_args.extend(sync_args)
+    uv_args.extend(_uv_sync_args(spec))
 
     def create_venv_func() -> None:
         run_with_logging(
             ["uv", "sync"] + uv_args,
             cwd=temp_dir,
-            env=env,
+            env=uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
         )
 
     return create_venv_func

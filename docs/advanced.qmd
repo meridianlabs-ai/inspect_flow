@@ -119,14 +119,14 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 ### uv Settings and Release Cooldown
 
-Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it), your user and system `uv.toml` files, and `UV_*` environment variables.
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it, or the workspace root's settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`.
 
 By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
 
 - Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have.
-- A `uv.lock` installs exactly what it lists.
+- A `uv.lock` installs exactly the versions it lists. The default still applies to build requirements, such as `hatchling`, which the lock does not list.
 
-Your uv settings replace the default one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. For example, this `pyproject.toml` allows releases up to 1 day old, and any release of `inspect-evals`:
+Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases up to 1 day old, and any release of `inspect-evals`:
 
 ``` toml
 [tool.uv]
@@ -135,6 +135,8 @@ exclude-newer = "1 day"
 [tool.uv.exclude-newer-package]
 inspect-evals = false
 ```
+
+A config file named with `--config-file` or `UV_CONFIG_FILE` replaces all other uv settings, Flow's default included, and `UV_NO_CONFIG` turns them all off.
 
 If a version you pin is newer than the window, uv's error names the package and the setting to change.
 
