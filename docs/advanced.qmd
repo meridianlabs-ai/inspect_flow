@@ -119,7 +119,7 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 ### uv Settings and Release Cooldown
 
-Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it, or the workspace root's settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`.
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it, or the workspace root's settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`. With no dependency file, uv reads a `uv.toml` in the spec's directory or above it.
 
 By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
 
@@ -136,7 +136,7 @@ exclude-newer = "1 day"
 inspect-evals = false
 ```
 
-A config file named with `--config-file` or `UV_CONFIG_FILE` replaces all other uv settings, Flow's default included, and `UV_NO_CONFIG` turns them all off.
+A config file named with `--config-file` or `UV_CONFIG_FILE` replaces your other uv config files, and Flow's default still fills in the cooldown settings it leaves unset. `UV_NO_CONFIG` turns off all uv config files, Flow's default included.
 
 If a version you pin is newer than the window, uv's error names the package and the setting to change.
 

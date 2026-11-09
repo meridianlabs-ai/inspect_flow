@@ -906,6 +906,8 @@ def test_241_not_found() -> None:
                 ".venv",
                 "--python",
                 "3.11",
+                "--project",
+                "/",
             ]
 
             args = mock_run.mock_calls[1].args[0]
@@ -1455,7 +1457,9 @@ def uv_env(tmp_path: Path) -> dict[str, str]:
 def _uv_commands(
     spec: FlowSpec, base_dir: Path, env: dict[str, str]
 ) -> list[UvCommand]:
-    temp_dir = base_dir / "venv"
+    # A sibling, as in production: uv must not find base_dir's settings by
+    # walking up from the temp dir.
+    temp_dir = base_dir.with_name(base_dir.name + "-venv")
     temp_dir.mkdir(exist_ok=True)
     with patch("subprocess.run") as mock_run:
         mock_run.return_value = subprocess.CompletedProcess(
@@ -1480,8 +1484,13 @@ def _command(commands: list[UvCommand], *prefix: str) -> UvCommand:
 
 
 def _flow_settings(command: UvCommand) -> dict[str, Any]:
-    config_dir = command[1]["XDG_CONFIG_DIRS"].split(os.pathsep)[0]
-    return tomllib.loads((Path(config_dir) / "uv" / "uv.toml").read_text())
+    env = command[1]
+    if "UV_CONFIG_FILE" in env:
+        config_file = Path(env["UV_CONFIG_FILE"])
+    else:
+        config_dir = env["XDG_CONFIG_DIRS"].split(os.pathsep)[0]
+        config_file = Path(config_dir) / "uv" / "uv.toml"
+    return tomllib.loads(config_file.read_text())
 
 
 def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta]:
@@ -1512,10 +1521,16 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
     commands = _uv_commands(spec, tmp_path, uv_env)
 
     venv = _command(commands, "uv", "venv")
-    assert _project_option(venv) is None
-    assert venv[1] == uv_env
+    # Without a dependency file, uv reads the settings where the spec is.
+    assert _project_option(venv) == str(tmp_path)
+    # `uv venv` installs seed packages when UV_VENV_SEED is set.
+    assert _flow_cooldowns(venv) == DEFAULTS
+    seeded = (venv[0], {**venv[1], "UV_VENV_SEED": "1"}, venv[2])
+    assert _uv_cutoffs(_uv_settings_output(seeded))["*"] == {
+        _flow_settings(venv)["exclude-newer"]
+    }
     install = _command(commands, "uv", "pip", "install")
-    assert _project_option(install) is None
+    assert _project_option(install) == str(tmp_path)
     # anthropic and inspect-ai are pinned to the versions installed here.
     inspect_ai = HOST_PIN if "==" in get_pip_string("inspect-ai") else SIX_HOURS
     assert _flow_cooldowns(install) == {
@@ -1584,22 +1599,64 @@ def test_cooldown_copies_system_config(tmp_path: Path, uv_env: dict[str, str]) -
     assert settings["exclude-newer-package"]["anthropic"]
 
 
-def _uv_cutoffs(command: UvCommand) -> dict[str, set[str]]:
-    # The cutoffs uv itself settles on, from its --show-settings output.
+def test_cooldown_keeps_relative_locations(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    system = tmp_path / "system_config" / "uv" / "uv.toml"
+    system.parent.mkdir(parents=True)
+    system.write_text(
+        'find-links = ["./top-links"]\nextra-index-url = ["./top-extra"]\n'
+        '[[index]]\nname = "named"\nurl = "./named-index"\n'
+        '[pip]\nfind-links = ["./pip-links"]\nindex-url = "./pip-index"\n'
+        'extra-index-url = ["./pip-extra"]\n'
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    args, env, cwd = _command(
+        _uv_commands(spec, tmp_path, uv_env), "uv", "pip", "install"
+    )
+
+    # uv reads them against the original file's directory, not the copy's.
+    def locations(env: dict[str, str]) -> set[str]:
+        output = _uv_settings_output((args, env, cwd))
+        return set(re.findall(r'"(/[^"]*-(?:links|index|extra))"', output))
+
+    expected = {
+        str(system.parent / name)
+        for name in (
+            "top-links",
+            "top-extra",
+            "named-index",
+            "pip-links",
+            "pip-index",
+            "pip-extra",
+        )
+    }
+    assert locations(uv_env) == expected
+    assert locations(env) == expected
+
+
+def _uv_settings_output(command: UvCommand) -> str:
     args, env, cwd = command
-    result = subprocess.run(
+    return subprocess.run(
         [*args, "--offline", "--show-settings"],
         env=env,
         cwd=cwd,
         capture_output=True,
         text=True,
         check=True,
-    )
+    ).stdout
+
+
+def _uv_cutoffs(output: str) -> dict[str, set[str]]:
+    # The cutoffs uv itself settles on, from its --show-settings output.
     timestamp = r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)"
     return {
-        "*": set(re.findall(r"\bglobal:[^\"]*?" + timestamp, result.stdout)),
+        "*": set(re.findall(r"\bglobal:[^\"]*?" + timestamp, output)),
         **{
-            p: set(re.findall(f'"{p}"[^"]*?' + timestamp, result.stdout))
+            p: set(re.findall(f'"{p}"[^"]*?' + timestamp, output))
             for p in ("anthropic", "openai")
         },
     }
@@ -1611,6 +1668,7 @@ PROJECT_SETTINGS = (
     + f'[tool.uv.exclude-newer-package]\nopenai = "{USER_OPENAI_CUTOFF}"\n'
 )
 NO_FILE: dict[str, Any] = {"dependency_file": "no_file"}
+INDEX_ONLY = 'index-url = "https://example.invalid/simple"\n'
 
 
 @pytest.mark.parametrize(
@@ -1673,14 +1731,49 @@ NO_FILE: dict[str, Any] = {"dependency_file": "no_file"}
             id="sync_args_package",
         ),
         pytest.param(
-            # uv reads only the named file, so flow's defaults do not apply.
             {"pyproject.toml": PROJECT, "custom.toml": USER_SETTINGS},
             {},
             {"uv_sync_args": ["--config-file", "{tmp}/custom.toml"]},
             True,
             True,
-            False,
+            True,
             id="sync_args_config_file",
+        ),
+        pytest.param(
+            {"pyproject.toml": PROJECT, "custom.toml": INDEX_ONLY},
+            {},
+            {"uv_sync_args": "--config-file={tmp}/custom.toml"},
+            False,
+            False,
+            True,
+            id="sync_args_config_file_index_only",
+        ),
+        pytest.param(
+            {"custom.toml": INDEX_ONLY},
+            {"UV_CONFIG_FILE": "{tmp}/custom.toml"},
+            NO_FILE,
+            False,
+            False,
+            True,
+            id="uv_config_file_index_only",
+        ),
+        pytest.param(
+            {"uv.toml": INDEX_ONLY + USER_SETTINGS},
+            {},
+            {},
+            True,
+            True,
+            True,
+            id="spec_dir_uv_toml",
+        ),
+        pytest.param(
+            {"uv.toml": INDEX_ONLY + USER_SETTINGS},
+            {},
+            NO_FILE,
+            True,
+            True,
+            True,
+            id="spec_dir_uv_toml_no_file",
         ),
     ],
 )
@@ -1718,7 +1811,10 @@ def test_user_settings_override_defaults(
 
     flow = _flow_settings(command)
     flow_packages = flow["exclude-newer-package"]
-    assert _uv_cutoffs(command) == {
+    output = _uv_settings_output(command)
+    if any(INDEX_ONLY in content for content in files.values()):
+        assert "https://example.invalid/simple" in output
+    assert _uv_cutoffs(output) == {
         "*": {USER_CUTOFF if user_global else flow["exclude-newer"]},
         "openai": {USER_OPENAI_CUTOFF if user_openai else flow_packages["openai"]},
         "anthropic": {flow_packages["anthropic"]} if flow_anthropic else set(),

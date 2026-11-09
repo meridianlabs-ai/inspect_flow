@@ -8,7 +8,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, List, Literal, Sequence
 
-from inspect_ai._util.file import absolute_file_path
+from inspect_ai._util.file import absolute_file_path, filesystem
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import canonicalize_name
 
@@ -20,7 +20,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._launcher.uv_settings import uv_settings_env
+from inspect_flow._launcher.uv_settings import config_file_from_args, uv_settings_env
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -182,9 +182,16 @@ def _create_venv(
     action: RunAction,
 ) -> None:
     dependency_file = _get_dependency_file(spec, base_dir=base_dir)
-    project_dir = str(Path(dependency_file[1]).parent) if dependency_file else None
+    if dependency_file:
+        project_dir: str | None = str(Path(dependency_file[1]).parent)
+    elif "UV_PROJECT" not in env and filesystem(base_dir).is_local():
+        # Without a dependency file, uv still reads the settings (a `uv.toml`)
+        # where the spec is.
+        project_dir = base_dir
+    else:
+        project_dir = None
     create_venv_func = _get_create_venv_with_base_dependencies(
-        spec, dependency_file, temp_dir=temp_dir, env=env, action=action
+        spec, dependency_file, project_dir, temp_dir=temp_dir, env=env, action=action
     )
 
     create_venv_func()
@@ -306,6 +313,7 @@ def _explicit_dependency_file_specifies_inspect_ai(
 def _get_create_venv_with_base_dependencies(
     spec: FlowSpec,
     dependency_file: tuple[Literal["requirements.txt", "pyproject.toml"], str] | None,
+    project_dir: str | None,
     temp_dir: str,
     env: dict[str, str],
     action: RunAction,
@@ -314,7 +322,7 @@ def _get_create_venv_with_base_dependencies(
         action.print("Dependency file: none")
 
         def create_venv_func() -> None:
-            return _uv_venv(spec, temp_dir, env, action, project_dir=None)
+            return _uv_venv(spec, temp_dir, env, action, project_dir)
 
         return create_venv_func
 
@@ -352,13 +360,16 @@ def _get_create_venv_with_base_dependencies(
         # build requirements, which it does not lock.
         uv_args.append("--frozen")
 
-    uv_args.extend(_uv_sync_args(spec))
+    # Flow's settings go into a copy of a config file named on the command line.
+    config_file, sync_args = config_file_from_args(_uv_sync_args(spec))
+    uv_args.extend(sync_args)
+    sync_env = {**env, "UV_CONFIG_FILE": config_file} if config_file else env
 
     def create_venv_func() -> None:
         run_with_logging(
             ["uv", "sync"] + uv_args,
             cwd=temp_dir,
-            env=uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
+            env=uv_settings_env(sync_env, str(Path(temp_dir) / "uv-defaults")),
         )
 
     return create_venv_func
@@ -390,7 +401,8 @@ def _uv_venv(
         ["uv", "venv", ".venv", "--python", spec.python_version]
         + _uv_project_args(project_dir),
         cwd=temp_dir,
-        env=env,
+        # `uv venv` installs seed packages when UV_VENV_SEED is set.
+        env=uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
     )
 
 
