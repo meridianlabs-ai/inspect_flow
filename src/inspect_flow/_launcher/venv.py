@@ -20,6 +20,7 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
+from inspect_flow._launcher.uv_settings import uv_cooldown_args
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -180,8 +181,10 @@ def _create_venv(
     dry_run: bool,
     action: RunAction,
 ) -> None:
+    dependency_file = _get_dependency_file(spec, base_dir=base_dir)
+    project_dir = str(Path(dependency_file[1]).parent) if dependency_file else None
     create_venv_func = _get_create_venv_with_base_dependencies(
-        spec, base_dir=base_dir, temp_dir=temp_dir, env=env, action=action
+        spec, dependency_file, temp_dir=temp_dir, env=env, action=action
     )
 
     create_venv_func()
@@ -201,22 +204,42 @@ def _create_venv(
     if spec.dependencies and spec.dependencies.auto_detect_dependencies is False:
         auto_detect_dependencies = False
 
+    # Packages copied from this (the host) environment, at the versions installed here.
+    host_dependencies: List[str] = []
     if auto_detect_dependencies:
-        dependencies.extend(
+        host_dependencies.extend(
             collect_auto_dependencies(
                 spec, exclude_packages=_explicit_dependency_names(explicit_dependencies)
             )
         )
-    dependencies.append(get_pip_string("inspect-flow"))
+    host_dependencies.append(get_pip_string("inspect-flow"))
     if not any(
-        _spec_is_inspect_ai(d) for d in dependencies
+        _spec_is_inspect_ai(d) for d in dependencies + host_dependencies
     ) and not _explicit_dependency_file_specifies_inspect_ai(spec, base_dir):
         # Ensure same version of inspect-ai is installed (supports -e installs)
-        dependencies.append(get_pip_string("inspect-ai"))
+        host_dependencies.append(get_pip_string("inspect-ai"))
+    dependencies.extend(host_dependencies)
 
-    _uv_pip_install(dependencies, temp_dir, env)
+    project_args = _uv_project_args(project_dir)
+    _uv_pip_install(
+        dependencies,
+        temp_dir,
+        env,
+        project_args
+        + uv_cooldown_args(project_dir, env, pip=True, host_pins=host_dependencies),
+    )
 
-    write_flow_requirements(spec, temp_dir, env, dry_run, python=_venv_python(temp_dir))
+    write_flow_requirements(
+        spec,
+        temp_dir,
+        env,
+        dry_run,
+        python=_venv_python(temp_dir),
+        uv_args=project_args
+        + uv_cooldown_args(
+            project_dir, env, pip=True, host_pins=host_dependencies, default=False
+        ),
+    )
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
@@ -276,31 +299,38 @@ def _explicit_dependency_file_specifies_inspect_ai(
 
 
 def _get_create_venv_with_base_dependencies(
-    spec: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str], action: RunAction
+    spec: FlowSpec,
+    dependency_file: tuple[Literal["requirements.txt", "pyproject.toml"], str] | None,
+    temp_dir: str,
+    env: dict[str, str],
+    action: RunAction,
 ) -> Callable[..., None]:
-    file_type: Literal["requirements.txt", "pyproject.toml"] | None = None
-    file_path: str | None = None
-    dependency_file_info = _get_dependency_file(spec, base_dir=base_dir)
-    if not dependency_file_info:
+    if not dependency_file:
         action.print("Dependency file: none")
 
         def create_venv_func() -> None:
-            return _uv_venv(spec, temp_dir, env, action)
+            return _uv_venv(spec, temp_dir, env, action, project_dir=None)
 
         return create_venv_func
 
-    file_type, file_path = dependency_file_info
+    file_type, file_path = dependency_file
+    project_dir = str(Path(file_path).parent)
     action.print("Dependency file:", path(file_path))
     if file_type == "requirements.txt":
 
         def create_venv_func() -> None:
-            _uv_venv(spec, temp_dir, env, action)
+            _uv_venv(spec, temp_dir, env, action, project_dir)
             # Need to run in the directory containing the requirements.txt to handle relative paths
-            _uv_pip_install(["-r", file_path], Path(file_path).parent.as_posix(), env)
+            _uv_pip_install(
+                ["-r", file_path],
+                project_dir,
+                env,
+                _uv_project_args(project_dir)
+                + uv_cooldown_args(project_dir, env, pip=True),
+            )
 
         return create_venv_func
 
-    project_dir = Path(file_path).parent
     if not spec.python_version:
         spec.python_version = resolve_python_version(file_path)
     action.print(f"Python: {spec.python_version}")
@@ -310,13 +340,16 @@ def _get_create_venv_with_base_dependencies(
         "--python",
         spec.python_version,
         "--project",
-        str(project_dir),
+        project_dir,
         "--active",
     ]
-    if (project_dir / "uv.lock").exists():
+    sync_args = _uv_sync_args(spec)
+    if (Path(project_dir) / "uv.lock").exists():
         uv_args.append("--frozen")
+    elif not any(arg.startswith("--exclude-newer") for arg in sync_args):
+        uv_args.extend(uv_cooldown_args(project_dir, env, pip=False))
 
-    uv_args.extend(_uv_sync_args(spec))
+    uv_args.extend(sync_args)
 
     def create_venv_func() -> None:
         run_with_logging(
@@ -338,7 +371,11 @@ def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
 
 
 def _uv_venv(
-    spec: FlowSpec, temp_dir: str, env: dict[str, str], action: RunAction
+    spec: FlowSpec,
+    temp_dir: str,
+    env: dict[str, str],
+    action: RunAction,
+    project_dir: str | None,
 ) -> None:
     spec.python_version = (
         spec.python_version
@@ -347,19 +384,27 @@ def _uv_venv(
     action.print(f"Python: {spec.python_version}")
 
     run_with_logging(
-        ["uv", "venv", "--python", spec.python_version],
+        ["uv", "venv", ".venv", "--python", spec.python_version]
+        + _uv_project_args(project_dir),
         cwd=temp_dir,
         env=env,
     )
 
 
-def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None:
+def _uv_pip_install(
+    args: List[str], temp_dir: str, env: dict[str, str], uv_args: List[str]
+) -> None:
     """Install packages using 'uv pip install'."""
     run_with_logging(
-        ["uv", "pip", "install"] + args,
+        ["uv", "pip", "install"] + args + uv_args,
         cwd=temp_dir,
         env=env,
     )
+
+
+def _uv_project_args(project_dir: str | None) -> List[str]:
+    # Lets uv find the dependency file's own settings (`[tool.uv]`, `uv.toml`).
+    return ["--project", project_dir] if project_dir else []
 
 
 def _get_dependency_file(

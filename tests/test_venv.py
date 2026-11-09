@@ -3,6 +3,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -70,7 +71,8 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert len(args) == 5
+            assert len(args) == 7
+            assert args[5:] == ["--project", Path.cwd().as_posix()]
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -899,6 +901,7 @@ def test_241_not_found() -> None:
             assert args == [
                 "uv",
                 "venv",
+                ".venv",
                 "--python",
                 "3.11",
             ]
@@ -986,6 +989,8 @@ def test_inspect_ai_version_via_additional_dependencies() -> None:
                 "install",
                 "inspect-ai==0.3.100",
                 f"-e {flow_path}",
+                "--project",
+                Path.cwd().as_posix(),
             ]
 
 
@@ -1020,7 +1025,7 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
             assert mock_run.call_count == 3
 
             install_req_args = mock_run.mock_calls[1].args[0]
-            assert install_req_args == [
+            assert install_req_args[:5] == [
                 "uv",
                 "pip",
                 "install",
@@ -1030,11 +1035,12 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
 
             last_args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert last_args == [
+            assert last_args[:5] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
+                "--project",
             ]
 
 
@@ -1077,11 +1083,12 @@ def test_inspect_ai_version_via_dependency_file_pyproject() -> None:
 
             last_args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert last_args == [
+            assert last_args[:5] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
+                "--project",
             ]
 
 
@@ -1410,3 +1417,220 @@ def test_freeze_targets_explicit_interpreter_not_virtual_env() -> None:
         # decoy venv, so its presence proves the freeze used --python, not
         # VIRTUAL_ENV. Dropping --python would freeze the empty venv instead.
         assert "pydantic==" in requirements
+
+
+SEVEN_DAYS = timedelta(days=7)
+SIX_HOURS = timedelta(hours=6)
+# The cutoff for a version copied from the host: no cooldown.
+HOST_PIN = timedelta(0)
+
+
+@pytest.fixture
+def uv_env(tmp_path: Path) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if not k.startswith("UV_")}
+    env["XDG_CONFIG_HOME"] = str(tmp_path / "user_config")
+    env["XDG_CONFIG_DIRS"] = str(tmp_path / "system_config")
+    return env
+
+
+def _uv_commands(
+    spec: FlowSpec, base_dir: Path, env: dict[str, str]
+) -> list[list[str]]:
+    temp_dir = base_dir / "venv"
+    temp_dir.mkdir(exist_ok=True)
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+        _create_venv(
+            spec=spec,
+            base_dir=base_dir.as_posix(),
+            temp_dir=temp_dir.as_posix(),
+            env=env,
+            dry_run=False,
+            action=_test_action,
+        )
+    return [c.args[0] for c in mock_run.call_args_list]
+
+
+def _command(commands: list[list[str]], *prefix: str) -> list[str]:
+    (command,) = [c for c in commands if c[: len(prefix)] == list(prefix)]
+    return command
+
+
+def _cooldowns(args: list[str]) -> dict[str, timedelta]:
+    # The age of each cutoff passed to uv, to the minute; "*" for all packages.
+    cutoffs: dict[str, str] = {}
+    for flag, value in zip(args, args[1:], strict=False):
+        if flag == "--exclude-newer":
+            cutoffs["*"] = value
+        elif flag == "--exclude-newer-package":
+            package, cutoffs_value = value.split("=", 1)
+            cutoffs[package] = cutoffs_value
+    now = datetime.now(UTC)
+    return {
+        package: timedelta(
+            minutes=round((now - datetime.fromisoformat(cutoff)).total_seconds() / 60)
+        )
+        for package, cutoff in cutoffs.items()
+    }
+
+
+def _project_option(args: list[str]) -> str | None:
+    return args[args.index("--project") + 1] if "--project" in args else None
+
+
+def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    spec = FlowSpec(
+        log_dir=(tmp_path / "logs").as_posix(),
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name", model="anthropic/claude-x")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    assert _project_option(_command(commands, "uv", "venv")) is None
+    install = _command(commands, "uv", "pip", "install")
+    assert _project_option(install) is None
+    # anthropic and inspect-ai are pinned to the versions installed here.
+    inspect_ai = HOST_PIN if "==" in get_pip_string("inspect-ai") else SIX_HOURS
+    assert _cooldowns(install) == {
+        "*": SEVEN_DAYS,
+        "anthropic": HOST_PIN,
+        "inspect-ai": inspect_ai,
+        "inspect-scout": SIX_HOURS,
+        "openai": SIX_HOURS,
+    }
+    # The freeze only hashes installed versions, so it gets no default.
+    host_pins = {"anthropic": HOST_PIN}
+    if inspect_ai == HOST_PIN:
+        host_pins["inspect-ai"] = HOST_PIN
+    assert _cooldowns(_command(commands, "uv", "pip", "compile")) == host_pins
+
+
+def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    default = {
+        "*": SEVEN_DAYS,
+        "anthropic": SIX_HOURS,
+        "inspect-ai": SIX_HOURS,
+        "inspect-scout": SIX_HOURS,
+        "openai": SIX_HOURS,
+    }
+    assert _project_option(_command(commands, "uv", "venv")) == str(tmp_path)
+    requirements = _command(commands, "uv", "pip", "install", "-r")
+    assert _project_option(requirements) == str(tmp_path)
+    assert _cooldowns(requirements) == default
+    (install,) = [c for c in commands[1:] if c[3] != "-r"]
+    assert _project_option(install) == str(tmp_path)
+    assert _cooldowns(install) == default
+
+
+@pytest.mark.parametrize(
+    "files,sync,pip",
+    [
+        ({}, {"*", "anthropic", "inspect-ai", "inspect-scout", "openai"}, None),
+        (
+            {
+                "pyproject.toml": '[tool.uv]\nexclude-newer = "3 days"\n'
+                '[tool.uv.exclude-newer-package]\nopenai = "1 day"\n'
+            },
+            {"anthropic", "inspect-ai", "inspect-scout"},
+            None,
+        ),
+        (
+            # `uv pip` reads [tool.uv.pip]; `uv sync` does not.
+            {"pyproject.toml": '[tool.uv.pip]\nexclude-newer = "3 days"\n'},
+            {"*", "anthropic", "inspect-ai", "inspect-scout", "openai"},
+            {"anthropic", "inspect-ai", "inspect-scout", "openai"},
+        ),
+        (
+            # uv reads a uv.toml beside the pyproject.toml instead of its [tool.uv].
+            {
+                "pyproject.toml": '[tool.uv]\nexclude-newer = "3 days"\n',
+                "uv.toml": '[exclude-newer-package]\n"Inspect_AI" = "1 day"\n',
+            },
+            {"*", "anthropic", "inspect-scout", "openai"},
+            None,
+        ),
+    ],
+)
+def test_cooldown_pyproject(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    files: dict[str, str],
+    sync: set[str],
+    pip: set[str] | None,
+) -> None:
+    project = '[project]\nname = "p"\nversion = "0.1"\ndependencies = ["inspect-ai"]\n'
+    (tmp_path / "pyproject.toml").write_text(project + files.pop("pyproject.toml", ""))
+    for name, content in files.items():
+        (tmp_path / name).write_text(content)
+    commands = _uv_commands(
+        FlowSpec(python_version="3.11", tasks=[FlowTask(name="task_name")]),
+        tmp_path,
+        uv_env,
+    )
+
+    sync_command = _command(commands, "uv", "sync")
+    assert _project_option(sync_command) == str(tmp_path)
+    assert set(_cooldowns(sync_command)) == sync
+    install = _command(commands, "uv", "pip", "install")
+    assert _project_option(install) == str(tmp_path)
+    assert set(_cooldowns(install)) == (sync if pip is None else pip)
+
+
+def test_cooldown_frozen_or_user_sync_args(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "p"\nversion = "0.1"\n')
+    spec = FlowSpec(
+        python_version="3.11",
+        dependencies=FlowDependencies(uv_sync_args="--exclude-newer=2025-01-01"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    sync = _command(_uv_commands(spec, tmp_path, uv_env), "uv", "sync")
+    assert sync[-1] == "--exclude-newer=2025-01-01"
+    assert "--exclude-newer-package" not in sync
+
+    (tmp_path / "uv.lock").write_text("")
+    spec.dependencies = None
+    sync = _command(_uv_commands(spec, tmp_path, uv_env), "uv", "sync")
+    assert "--frozen" in sync
+    assert _cooldowns(sync) == {}
+
+
+@pytest.mark.parametrize(
+    "setting",
+    ["env", "user", "system", "config_file"],
+)
+def test_cooldown_user_settings(
+    tmp_path: Path, uv_env: dict[str, str], setting: str
+) -> None:
+    settings = 'exclude-newer = "3 days"\n[exclude-newer-package]\nopenai = "1 day"\n'
+    config_dir = {"user": "user_config", "system": "system_config"}.get(setting)
+    if setting == "env":
+        uv_env["UV_EXCLUDE_NEWER"] = "3 days"
+    elif config_dir:
+        (tmp_path / config_dir / "uv").mkdir(parents=True)
+        (tmp_path / config_dir / "uv" / "uv.toml").write_text(settings)
+    else:
+        (tmp_path / "custom.toml").write_text(settings)
+        uv_env["UV_CONFIG_FILE"] = str(tmp_path / "custom.toml")
+    spec = FlowSpec(
+        dependencies=FlowDependencies(
+            dependency_file="no_file", additional_dependencies=["inspect-ai"]
+        ),
+        tasks=[FlowTask(name="task_name")],
+    )
+    install = _command(_uv_commands(spec, tmp_path, uv_env), "uv", "pip", "install")
+
+    expected = {"anthropic", "inspect-ai", "inspect-scout"}
+    assert set(_cooldowns(install)) == (
+        expected | {"openai"} if setting == "env" else expected
+    )

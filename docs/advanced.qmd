@@ -117,6 +117,27 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 3. Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
 
+### uv Settings and Release Cooldown
+
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it), your user and system `uv.toml` files, and `UV_*` environment variables.
+
+By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
+
+- Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have.
+- A `uv.lock` installs exactly what it lists.
+
+Your uv settings replace the default one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. For example, this `pyproject.toml` allows releases up to 1 day old, and any release of `inspect-evals`:
+
+``` toml
+[tool.uv]
+exclude-newer = "1 day"
+
+[tool.uv.exclude-newer-package]
+inspect-evals = false
+```
+
+If a version you pin is newer than the window, uv's error names the package and the setting to change.
+
 ### Python Version
 
 Specify the Python version for your spec's virtual environment when using venv mode:
