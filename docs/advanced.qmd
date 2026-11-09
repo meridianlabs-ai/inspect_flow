@@ -136,7 +136,13 @@ exclude-newer = "1 day"
 inspect-evals = false
 ```
 
-A config file named with `--config-file` or `UV_CONFIG_FILE` replaces your other uv config files, and Flow's default still fills in the cooldown settings it leaves unset. `UV_NO_CONFIG` turns off all uv config files, Flow's default included.
+Flow adds no default, and logs a warning, when uv reads a system `uv.toml` (such as `/etc/uv/uv.toml`) or a config file named with `UV_CONFIG_FILE` or `--config-file` in `uv_sync_args`. Packages copied from your environment are then not exempt from a cooldown in that file. To keep a cooldown, set it in that file:
+
+``` toml
+exclude-newer = "7 days"
+```
+
+`UV_NO_CONFIG` disables config discovery, including Flow's system defaults. Explicit files selected by `UV_CONFIG_FILE` or `--config-file` are still read.
 
 If a version you pin is newer than the window, uv's error names the package and the setting to change.
 

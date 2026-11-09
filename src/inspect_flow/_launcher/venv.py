@@ -20,7 +20,12 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
-from inspect_flow._launcher.uv_settings import config_file_from_args, uv_settings_env
+from inspect_flow._launcher.uv_settings import (
+    config_file_arg,
+    user_config_file,
+    uv_settings_env,
+    warn_no_default_cooldown,
+)
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -181,6 +186,9 @@ def _create_venv(
     dry_run: bool,
     action: RunAction,
 ) -> None:
+    config_file = user_config_file(env)
+    if config_file:
+        warn_no_default_cooldown(config_file)
     dependency_file = _get_dependency_file(spec, base_dir=base_dir)
     if dependency_file:
         project_dir: str | None = str(Path(dependency_file[1]).parent)
@@ -360,16 +368,19 @@ def _get_create_venv_with_base_dependencies(
         # build requirements, which it does not lock.
         uv_args.append("--frozen")
 
-    # Flow's settings go into a copy of a config file named on the command line.
-    config_file, sync_args = config_file_from_args(_uv_sync_args(spec))
+    sync_args = _uv_sync_args(spec)
     uv_args.extend(sync_args)
-    sync_env = {**env, "UV_CONFIG_FILE": config_file} if config_file else env
+    config_file = config_file_arg(sync_args)
+    if config_file:
+        warn_no_default_cooldown(config_file, "`uv sync`")
 
     def create_venv_func() -> None:
         run_with_logging(
             ["uv", "sync"] + uv_args,
             cwd=temp_dir,
-            env=uv_settings_env(sync_env, str(Path(temp_dir) / "uv-defaults")),
+            env=env
+            if config_file
+            else uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
         )
 
     return create_venv_func

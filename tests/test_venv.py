@@ -1484,12 +1484,8 @@ def _command(commands: list[UvCommand], *prefix: str) -> UvCommand:
 
 
 def _flow_settings(command: UvCommand) -> dict[str, Any]:
-    env = command[1]
-    if "UV_CONFIG_FILE" in env:
-        config_file = Path(env["UV_CONFIG_FILE"])
-    else:
-        config_dir = env["XDG_CONFIG_DIRS"].split(os.pathsep)[0]
-        config_file = Path(config_dir) / "uv" / "uv.toml"
+    config_dir = command[1]["XDG_CONFIG_DIRS"].split(os.pathsep)[0]
+    config_file = Path(config_dir) / "uv" / "uv.toml"
     return tomllib.loads(config_file.read_text())
 
 
@@ -1576,66 +1572,75 @@ def test_cooldown_sync(tmp_path: Path, uv_env: dict[str, str], locked: bool) -> 
     assert _flow_cooldowns(sync) == DEFAULTS
 
 
-def test_cooldown_copies_system_config(tmp_path: Path, uv_env: dict[str, str]) -> None:
-    system = tmp_path / "system_config" / "uv" / "uv.toml"
-    system.parent.mkdir(parents=True)
-    system.write_text(
-        'native-tls = true\n[[index]]\nname = "mirror"\nurl = "https://mirror.invalid/simple"\n'
-        '[exclude-newer-package]\n"OpenAI" = "1 day"\n'
-    )
-    spec = FlowSpec(
-        dependencies=FlowDependencies(dependency_file="no_file"),
-        tasks=[FlowTask(name="task_name")],
-    )
-    install = _command(_uv_commands(spec, tmp_path, uv_env), "uv", "pip", "install")
-
-    settings = _flow_settings(install)
-    assert settings["native-tls"] is True
-    assert settings["index"] == [
-        {"name": "mirror", "url": "https://mirror.invalid/simple"}
-    ]
-    assert settings["exclude-newer-package"]["openai"] == "1 day"
-    assert "OpenAI" not in settings["exclude-newer-package"]
-    assert settings["exclude-newer-package"]["anthropic"]
+# Valid to uv, but not to Python's TOML parser: Flow must not read the file.
+UV_ONLY_SYNTAX = 'exclude-newer-package = { openai = "1 day", }\n'
 
 
-def test_cooldown_keeps_relative_locations(
-    tmp_path: Path, uv_env: dict[str, str]
+@pytest.mark.parametrize("discovery", [True, False])
+def test_system_config_turns_off_default(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    recording_console: Console,
+    discovery: bool,
 ) -> None:
     system = tmp_path / "system_config" / "uv" / "uv.toml"
     system.parent.mkdir(parents=True)
-    system.write_text(
-        'find-links = ["./top-links"]\nextra-index-url = ["./top-extra"]\n'
-        '[[index]]\nname = "named"\nurl = "./named-index"\n'
-        '[pip]\nfind-links = ["./pip-links"]\nindex-url = "./pip-index"\n'
-        'extra-index-url = ["./pip-extra"]\n'
-    )
+    system.write_text(UV_ONLY_SYNTAX)
+    if not discovery:
+        uv_env["UV_NO_SYSTEM_CONFIG"] = "1"
     spec = FlowSpec(
         dependencies=FlowDependencies(dependency_file="no_file"),
         tasks=[FlowTask(name="task_name")],
     )
-    args, env, cwd = _command(
-        _uv_commands(spec, tmp_path, uv_env), "uv", "pip", "install"
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    warned = str(system) in recording_console.export_text()
+    if discovery:
+        assert warned
+        # Flow leaves the system file to work alone.
+        assert all(env == uv_env for _, env, _ in commands)
+        output = _uv_settings_output(_command(commands, "uv", "pip", "install"))
+        assert _uv_cutoffs(output) == {"*": set(), "openai": set(), "anthropic": set()}
+    else:
+        # uv ignores the system file, so Flow neither reads it nor warns.
+        assert not warned
+        assert _flow_cooldowns(_command(commands, "uv", "venv")) == DEFAULTS
+
+
+@pytest.mark.parametrize("option", ["env", "sync_args"])
+def test_explicit_config_turns_off_default(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    recording_console: Console,
+    option: str,
+) -> None:
+    (tmp_path / "pyproject.toml").write_text(PROJECT)
+    custom = tmp_path / "custom.toml"
+    custom.write_text(INDEX_ONLY + UV_ONLY_SYNTAX)
+    if option == "env":
+        uv_env["UV_CONFIG_FILE"] = str(custom)
+    spec = FlowSpec(
+        python_version="3.11",
+        dependencies=FlowDependencies(
+            uv_sync_args=f"--config-file={custom}" if option == "sync_args" else None
+        ),
+        tasks=[FlowTask(name="task_name")],
     )
+    commands = _uv_commands(spec, tmp_path, uv_env)
 
-    # uv reads them against the original file's directory, not the copy's.
-    def locations(env: dict[str, str]) -> set[str]:
-        output = _uv_settings_output((args, env, cwd))
-        return set(re.findall(r'"(/[^"]*-(?:links|index|extra))"', output))
-
-    expected = {
-        str(system.parent / name)
-        for name in (
-            "top-links",
-            "top-extra",
-            "named-index",
-            "pip-links",
-            "pip-index",
-            "pip-extra",
-        )
-    }
-    assert locations(uv_env) == expected
-    assert locations(env) == expected
+    assert str(custom) in recording_console.export_text()
+    sync = _command(commands, "uv", "sync")
+    # uv gets the file as the user named it, and no defaults.
+    assert sync[1] == uv_env
+    output = _uv_settings_output(sync)
+    assert "https://example.invalid/simple" in output
+    assert _uv_cutoffs(output) == {"*": set(), "openai": set(), "anthropic": set()}
+    install = _command(commands, "uv", "pip", "install")
+    if option == "env":
+        assert install[1] == uv_env
+    else:
+        # `--config-file` in uv_sync_args reaches only `uv sync`.
+        assert _flow_cooldowns(install)["*"] == SEVEN_DAYS
 
 
 def _uv_settings_output(command: UvCommand) -> str:
@@ -1713,15 +1718,6 @@ INDEX_ONLY = 'index-url = "https://example.invalid/simple"\n'
             {}, {"UV_EXCLUDE_NEWER": USER_CUTOFF}, NO_FILE, True, False, True, id="env"
         ),
         pytest.param(
-            {"system_config/uv/uv.toml": USER_SETTINGS},
-            {},
-            NO_FILE,
-            True,
-            True,
-            True,
-            id="system",
-        ),
-        pytest.param(
             {"pyproject.toml": PROJECT},
             {},
             {"uv_sync_args": f"--exclude-newer-package openai={USER_OPENAI_CUTOFF}"},
@@ -1729,33 +1725,6 @@ INDEX_ONLY = 'index-url = "https://example.invalid/simple"\n'
             True,
             True,
             id="sync_args_package",
-        ),
-        pytest.param(
-            {"pyproject.toml": PROJECT, "custom.toml": USER_SETTINGS},
-            {},
-            {"uv_sync_args": ["--config-file", "{tmp}/custom.toml"]},
-            True,
-            True,
-            True,
-            id="sync_args_config_file",
-        ),
-        pytest.param(
-            {"pyproject.toml": PROJECT, "custom.toml": INDEX_ONLY},
-            {},
-            {"uv_sync_args": "--config-file={tmp}/custom.toml"},
-            False,
-            False,
-            True,
-            id="sync_args_config_file_index_only",
-        ),
-        pytest.param(
-            {"custom.toml": INDEX_ONLY},
-            {"UV_CONFIG_FILE": "{tmp}/custom.toml"},
-            NO_FILE,
-            False,
-            False,
-            True,
-            id="uv_config_file_index_only",
         ),
         pytest.param(
             {"uv.toml": INDEX_ONLY + USER_SETTINGS},
