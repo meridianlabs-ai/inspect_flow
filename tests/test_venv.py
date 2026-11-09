@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import subprocess
@@ -73,8 +74,13 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert len(args) == 7
-            assert args[5:] == ["--project", Path.cwd().as_posix()]
+            assert len(args) == 9
+            assert args[5:] == [
+                "--python",
+                f"{temp_dir}/.venv/bin/python",
+                "--project",
+                Path.cwd().as_posix(),
+            ]
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -993,6 +999,8 @@ def test_inspect_ai_version_via_additional_dependencies() -> None:
                 "install",
                 "inspect-ai==0.3.100",
                 f"-e {flow_path}",
+                "--python",
+                f"{temp_dir}/.venv/bin/python",
                 "--project",
                 Path.cwd().as_posix(),
             ]
@@ -1044,7 +1052,7 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
                 "pip",
                 "install",
                 f"-e {flow_path}",
-                "--project",
+                "--python",
             ]
 
 
@@ -1092,7 +1100,7 @@ def test_inspect_ai_version_via_dependency_file_pyproject() -> None:
                 "pip",
                 "install",
                 f"-e {flow_path}",
-                "--project",
+                "--python",
             ]
 
 
@@ -1566,6 +1574,45 @@ def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> No
     (install,) = [c for c in commands[1:] if c[0][3] != "-r"]
     assert _project_option(install) == str(tmp_path)
     assert _flow_cooldowns(install) == DEFAULTS
+
+
+def test_install_stays_in_venv(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    # The project's uv settings must not choose another environment.
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    (tmp_path / "uv.toml").write_text(f"[pip]\npython = {json.dumps(sys.executable)}\n")
+    venv = tmp_path.with_name(tmp_path.name + "-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    installs = [
+        c
+        for c in _uv_commands(spec, tmp_path, uv_env)
+        if c[0][:3] == ["uv", "pip", "install"]
+    ]
+
+    assert len(installs) == 2
+    for args, env, _ in installs:
+        # A dry run of an unknown package names the environment uv would install
+        # into, offline. uv omits the name for a `.venv` in the working directory.
+        result = subprocess.run(
+            ["uv", "pip", "install", "no-such-package"]
+            + args[args.index("--python") :]
+            + ["--offline", "--dry-run"],
+            env=env,
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        target = re.search(r"environment at: (.+)", result.stderr)
+        assert target, result.stderr
+        assert Path(target[1]).resolve() == venv.resolve()
 
 
 @pytest.mark.parametrize("locked", [False, True])

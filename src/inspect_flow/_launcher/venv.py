@@ -239,6 +239,7 @@ def _create_venv(
     _uv_pip_install(
         dependencies,
         temp_dir,
+        _venv_python(temp_dir),
         uv_settings_env(
             env, str(Path(temp_dir) / "uv-install"), pins=host_dependencies
         ),
@@ -343,6 +344,7 @@ def _get_create_venv_with_base_dependencies(
             _uv_pip_install(
                 ["-r", file_path],
                 project_dir,
+                _venv_python(temp_dir),
                 uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
                 _uv_project_args(project_dir),
             )
@@ -416,12 +418,18 @@ def _uv_venv(
 
 
 def _uv_pip_install(
-    args: List[str], temp_dir: str, env: dict[str, str], uv_args: List[str]
+    args: List[str],
+    cwd: str,
+    python: str,
+    env: dict[str, str],
+    uv_args: List[str],
 ) -> None:
     """Install packages using 'uv pip install'."""
+    # An explicit interpreter keeps uv's `python` and `system` settings from
+    # choosing another environment.
     run_with_logging(
-        ["uv", "pip", "install"] + args + uv_args,
-        cwd=temp_dir,
+        ["uv", "pip", "install"] + args + ["--python", python] + uv_args,
+        cwd=cwd,
         env=env,
     )
 
