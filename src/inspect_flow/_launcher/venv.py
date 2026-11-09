@@ -235,7 +235,7 @@ def _create_venv(
         env,
         dry_run,
         python=_venv_python(temp_dir),
-        uv_args=project_args
+        compile_args=project_args
         + uv_cooldown_args(
             project_dir, env, pip=True, host_pins=host_dependencies, default=False
         ),

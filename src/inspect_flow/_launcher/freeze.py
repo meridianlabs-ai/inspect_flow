@@ -18,7 +18,7 @@ def write_flow_requirements(
     env: dict[str, str],
     dry_run: bool,
     python: str,
-    uv_args: Sequence[str] = (),
+    compile_args: Sequence[str] = (),
 ) -> None:
     if dry_run or not spec.log_dir:
         return
@@ -27,7 +27,7 @@ def write_flow_requirements(
     # VIRTUAL_ENV, which can silently record the host environment instead of the
     # evaluation environment (e.g. under in-process embedding).
     freeze_result = run_with_logging(
-        ["uv", "pip", "freeze", "--python", python, *uv_args],
+        ["uv", "pip", "freeze", "--python", python],
         cwd=cwd,
         env=env,
         log_output=False,  # Don't log the full freeze output
@@ -55,7 +55,7 @@ def write_flow_requirements(
                 "--no-header",
                 "--no-annotate",
                 "--no-deps",
-                *uv_args,
+                *compile_args,
                 str(requirements_in),
             ],
             cwd=cwd,

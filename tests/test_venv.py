@@ -1500,7 +1500,9 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
         "inspect-scout": SIX_HOURS,
         "openai": SIX_HOURS,
     }
-    # The freeze only hashes installed versions, so it gets no default.
+    # `uv pip freeze` takes no resolver settings.
+    assert _cooldowns(_command(commands, "uv", "pip", "freeze")) == {}
+    # The compile only hashes installed versions, so it gets no default.
     host_pins = {"anthropic": HOST_PIN}
     if inspect_ai == HOST_PIN:
         host_pins["inspect-ai"] = HOST_PIN
