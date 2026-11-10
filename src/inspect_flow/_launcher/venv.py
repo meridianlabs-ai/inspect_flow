@@ -439,20 +439,21 @@ def _uv_pip_install(
         ["uv", "pip", "install"]
         + args
         + ["--python", python]
-        + _python_version_args(python)
+        + _python_version_args(python, env)
         + uv_args,
         cwd=cwd,
         env=env,
     )
 
 
-def _python_version_args(python: str) -> List[str]:
+def _python_version_args(python: str, env: dict[str, str]) -> List[str]:
     # The full version: pyvenv.cfg can record only the minor version, and uv
     # would then resolve for x.y.0.
     if not Path(python).exists():
         return []
     result = run_with_logging(
         [python, "-c", "import sys; print('.'.join(map(str, sys.version_info[:3])))"],
+        env=env,
         log_output=False,
     )
     return ["--python-version", result.stdout.strip()]

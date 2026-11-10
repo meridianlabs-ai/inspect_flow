@@ -1879,7 +1879,7 @@ def test_install_stays_in_venv(tmp_path: Path, uv_env: dict[str, str]) -> None:
 
 
 def test_install_uses_venv_python_version(
-    tmp_path: Path, uv_env: dict[str, str]
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # A project `python-version` must not choose wheels for another interpreter.
     # The only foreign wheel is for Python 3.9 on this platform. `patchy` needs
@@ -1916,6 +1916,9 @@ def test_install_uses_venv_python_version(
         dependencies=FlowDependencies(dependency_file="requirements.txt"),
         tasks=[FlowTask(name="task_name")],
     )
+    # The version query runs with flow's environment, which has no PYTHONHOME,
+    # not with this process's broken one.
+    monkeypatch.setenv("PYTHONHOME", str(tmp_path / "no-python-home"))
     installs = [
         c
         for c in _uv_commands(spec, tmp_path, uv_env)
