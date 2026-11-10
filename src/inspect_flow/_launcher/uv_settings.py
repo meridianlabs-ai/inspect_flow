@@ -30,8 +30,10 @@ def uv_settings_env(
     now = datetime.now(UTC)
     packages = {p: _timestamp(now - SHORT_COOLDOWN) for p in SHORT_COOLDOWN_PACKAGES}
     # A version already chosen (copied from the host, or frozen from the venv)
-    # must not be rejected by the cooldown.
-    packages.update({p: _timestamp(now) for p in _pinned_names(pins)})
+    # must not be rejected by the cooldown. The exemption covers the whole
+    # package, so a build requirement on it is held to the chosen version.
+    exact_pins = _exact_pins(pins)
+    packages.update({p: _timestamp(now) for p in exact_pins})
     lines = [
         f'exclude-newer = "{_timestamp(now - DEFAULT_COOLDOWN)}"',
         "[exclude-newer-package]",
@@ -42,7 +44,15 @@ def uv_settings_env(
     config_file.parent.mkdir(parents=True, exist_ok=True)
     config_file.write_text("".join(f"{line}\n" for line in lines))
     config_dirs = env.get("XDG_CONFIG_DIRS") or "/etc/xdg"
-    return {**env, "XDG_CONFIG_DIRS": os.pathsep.join([config_dir, config_dirs])}
+    uv_env = {**env, "XDG_CONFIG_DIRS": os.pathsep.join([config_dir, config_dirs])}
+    if exact_pins:
+        build_constraints = Path(config_dir) / "build-constraints.txt"
+        build_constraints.write_text("".join(f"{p}\n" for p in exact_pins.values()))
+        # uv reads a space-separated list of files.
+        uv_env["UV_BUILD_CONSTRAINT"] = " ".join(
+            filter(None, [env.get("UV_BUILD_CONSTRAINT"), str(build_constraints)])
+        )
+    return uv_env
 
 
 def user_config_file(env: Mapping[str, str]) -> str | None:
@@ -79,8 +89,9 @@ def _flag(env: Mapping[str, str], name: str) -> bool:
     return env.get(name, "").lower() in ("1", "true", "yes", "on")
 
 
-def _pinned_names(requirements: Collection[str]) -> set[str]:
-    names: set[str] = set()
+def _exact_pins(requirements: Collection[str]) -> dict[str, str]:
+    # Package name to its exact pin, for the requirements pinned to one version.
+    pins: dict[str, str] = {}
     for requirement in requirements:
         try:
             parsed = Requirement(requirement)
@@ -90,8 +101,8 @@ def _pinned_names(requirements: Collection[str]) -> set[str]:
             s.operator in ("==", "===") and not s.version.endswith(".*")
             for s in parsed.specifier
         ):
-            names.add(canonicalize_name(parsed.name))
-    return names
+            pins[canonicalize_name(parsed.name)] = f"{parsed.name}{parsed.specifier}"
+    return pins
 
 
 def _timestamp(value: datetime) -> str:

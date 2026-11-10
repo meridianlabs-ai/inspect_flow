@@ -1515,6 +1515,11 @@ def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta]:
     }
 
 
+def _build_constraints(command: UvCommand) -> set[str]:
+    files = command[1].get("UV_BUILD_CONSTRAINT", "").split()
+    return {line for f in files for line in Path(f).read_text().splitlines()}
+
+
 def _project_option(command: UvCommand) -> str | None:
     args = command[0]
     return args[args.index("--project") + 1] if "--project" in args else None
@@ -1526,6 +1531,9 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
         dependencies=FlowDependencies(dependency_file="no_file"),
         tasks=[FlowTask(name="task_name", model="anthropic/claude-x")],
     )
+    user_constraints = tmp_path / "user-build-constraints.txt"
+    user_constraints.write_text("setuptools<99\n")
+    uv_env["UV_BUILD_CONSTRAINT"] = str(user_constraints)
     commands = _uv_commands(spec, tmp_path, uv_env)
 
     venv = _command(commands, "uv", "venv")
@@ -1554,9 +1562,17 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
         "openai": HOST_PIN,
         "requests": HOST_PIN,
     }
-    assert _uv_cutoffs(_uv_settings_output(compiled))["*"] == {
-        _flow_settings(compiled)["exclude-newer"]
+    output = _uv_settings_output(compiled)
+    assert _uv_cutoffs(output)["*"] == {_flow_settings(compiled)["exclude-newer"]}
+    # The exemptions cover whole packages, so a build requirement on one is held
+    # to the frozen version. The user's build constraints stay.
+    assert _build_constraints(compiled) == {
+        "setuptools<99",
+        "openai==1.0.0",
+        "requests==2.0.0",
     }
+    assert all(f'"{f}"' in output for f in compiled[1]["UV_BUILD_CONSTRAINT"].split())
+    assert any(c.startswith("anthropic==") for c in _build_constraints(install))
 
 
 def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:
