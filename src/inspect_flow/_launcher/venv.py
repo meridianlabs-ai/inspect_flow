@@ -23,7 +23,6 @@ from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._launcher.uv_settings import (
     config_file_arg,
     user_config_file,
-    uv_pinned_settings,
     uv_settings_env,
     warn_no_default_cooldown,
 )
@@ -237,30 +236,15 @@ def _create_venv(
     dependencies.extend(host_dependencies)
 
     project_args = _uv_project_args(project_dir)
-    install_env, install_args = uv_pinned_settings(
-        env, str(Path(temp_dir) / "uv-install"), host_dependencies
-    )
     _uv_pip_install(
         dependencies,
         temp_dir,
         _venv_python(temp_dir),
-        install_env,
-        project_args + install_args,
+        uv_settings_env(env, str(Path(temp_dir) / "uv-install"), host_dependencies),
+        project_args,
     )
 
-    # Compiling keeps the frozen versions, but can still build an editable
-    # package's metadata, so the default applies to the build requirements.
-    write_flow_requirements(
-        spec,
-        temp_dir,
-        env,
-        dry_run,
-        python=_venv_python(temp_dir),
-        compile_settings=lambda frozen: uv_pinned_settings(
-            env, str(Path(temp_dir) / "uv-compile"), frozen
-        ),
-        compile_args=project_args,
-    )
+    write_flow_requirements(spec, temp_dir, env, dry_run, python=_venv_python(temp_dir))
 
 
 def _resolve_dependency(dependency: str, base_dir: str) -> str:
@@ -365,7 +349,7 @@ def _get_create_venv_with_base_dependencies(
         project_dir,
         "--active",
     ]
-    if (Path(project_dir) / "uv.lock").exists():
+    if _has_lock(project_dir, temp_dir, env):
         # The lock fixes the runtime versions; the cooldown still applies to
         # build requirements, which it does not lock.
         uv_args.append("--frozen")
@@ -386,6 +370,21 @@ def _get_create_venv_with_base_dependencies(
         )
 
     return create_venv_func
+
+
+def _has_lock(project_dir: str, temp_dir: str, env: dict[str, str]) -> bool:
+    if (Path(project_dir) / "uv.lock").exists():
+        return True
+    # A workspace member uses the lock at its workspace root.
+    result = run_with_logging(
+        ["uv", "workspace", "dir", "--project", project_dir, "--offline"],
+        cwd=temp_dir,
+        env=env,
+        check=False,
+        log_output=False,
+    )
+    root = result.stdout.strip()
+    return result.returncode == 0 and (Path(root) / "uv.lock").exists()
 
 
 def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:

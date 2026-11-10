@@ -29,8 +29,7 @@ def uv_settings_env(
         return dict(env)
     now = datetime.now(UTC)
     packages = {p: _timestamp(now - SHORT_COOLDOWN) for p in SHORT_COOLDOWN_PACKAGES}
-    # A version already chosen (copied from the host, or frozen from the venv)
-    # must not be rejected by the cooldown.
+    # A version copied from the host must not be rejected by the cooldown.
     packages.update({p: _timestamp(now) for p in _exact_pins(pins)})
     lines = [
         f'exclude-newer = "{_timestamp(now - DEFAULT_COOLDOWN)}"',
@@ -43,24 +42,6 @@ def uv_settings_env(
     config_file.write_text("".join(f"{line}\n" for line in lines))
     config_dirs = env.get("XDG_CONFIG_DIRS") or "/etc/xdg"
     return {**env, "XDG_CONFIG_DIRS": os.pathsep.join([config_dir, config_dirs])}
-
-
-def uv_pinned_settings(
-    env: Mapping[str, str], config_dir: str, pins: Collection[str]
-) -> tuple[dict[str, str], list[str]]:
-    # The environment and extra arguments for a uv command that installs or
-    # compiles `pins`. Their exemption covers every version of each package, so
-    # a build requirement on one is also held to the pinned version.
-    uv_env = uv_settings_env(env, config_dir, pins)
-    exact_pins = _exact_pins(pins)
-    if user_config_file(env) or not exact_pins:
-        return uv_env, []
-    build_constraints = Path(config_dir) / "build-constraints.txt"
-    build_constraints.write_text("".join(f"{p}\n" for p in exact_pins.values()))
-    # `--build-constraints` replaces UV_BUILD_CONSTRAINT, a list uv splits on
-    # whitespace, so the user's files are passed along too.
-    files = [*env.get("UV_BUILD_CONSTRAINT", "").split(), str(build_constraints)]
-    return uv_env, [arg for f in files for arg in ("--build-constraints", f)]
 
 
 def user_config_file(env: Mapping[str, str]) -> str | None:

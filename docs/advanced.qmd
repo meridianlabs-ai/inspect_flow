@@ -111,7 +111,7 @@ The `dependencies` field in `FlowSpec` accepts a `FlowDependencies` object:
 
 1. How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file.
 May also be set to a path to a dependency file or `"no_file"` to not use a dependency file.
-When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
+When using `pyproject.toml`, if a `uv.lock` file exists in the same directory or at the root of its uv workspace, it will be used automatically for reproducible installs.
 
 2. Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
@@ -119,12 +119,18 @@ When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, i
 
 ### uv Settings and Release Cooldown
 
+Venv mode needs uv 0.13.4 or newer.
+
 Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file's `pyproject.toml` (or a `uv.toml` beside it, or the workspace root's settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`. With no dependency file, uv reads a `uv.toml` in the spec's directory or above it.
 
 By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
 
 - Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have.
 - A `uv.lock` installs exactly the versions it lists. The default still applies to build requirements, such as `hatchling`, which the lock does not list.
+
+If the dependency project has no lock, uv creates one and records Flow's cooldown settings in it. Running uv without Flow can update those recorded settings.
+
+The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package's metadata, it can fetch a newer build requirement.
 
 Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases up to 1 day old, and any release of `inspect-evals`:
 
