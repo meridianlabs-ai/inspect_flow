@@ -2148,6 +2148,32 @@ NO_FILE: dict[str, Any] = {"dependency_file": "no_file"}
 INDEX_ONLY = 'index-url = "https://example.invalid/simple"\n'
 
 
+def test_relative_uv_project(
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A relative UV_PROJECT is relative to the caller's directory, not the
+    # spec's or flow's temp dir.
+    caller = tmp_path / "caller"
+    (caller / "proj").mkdir(parents=True)
+    (caller / "proj" / "pyproject.toml").write_text(PROJECT_SETTINGS)
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    monkeypatch.chdir(caller)
+    uv_env["UV_PROJECT"] = "proj"
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, spec_dir, uv_env)
+
+    for command in (
+        _command(commands, "uv", "venv"),
+        _command(commands, "uv", "pip", "install"),
+    ):
+        assert command[2] != str(caller)
+        assert _uv_cutoffs(_uv_settings_output(command))["*"] == {USER_CUTOFF}
+
+
 @pytest.mark.parametrize(
     "files,env,dependencies,user_global,user_openai,flow_anthropic",
     [

@@ -194,7 +194,10 @@ def _create_venv(
     dependency_file = _get_dependency_file(spec, base_dir=base_dir)
     if dependency_file:
         project_dir: str | None = str(Path(dependency_file[1]).parent)
-    elif "UV_PROJECT" not in env and filesystem(base_dir).is_local():
+    elif env.get("UV_PROJECT"):
+        # uv would read a relative path from flow's temp dir, not the caller's.
+        project_dir = os.path.abspath(env["UV_PROJECT"])
+    elif filesystem(base_dir).is_local():
         # Without a dependency file, uv still reads the settings (a `uv.toml`)
         # where the spec is.
         project_dir = base_dir
