@@ -81,8 +81,7 @@ jobs:
       # a lockfile sync:       uv venv --python 3.11 && uv sync --dev
       # Node tooling:          corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile
       provision: |
-        uv venv --python 3.11
-        uv sync --dev
+        uv sync --frozen --python 3.11
       head_branch: ${{ github.event.workflow_run.head_branch }}
       pr_number: ${{ github.event.workflow_run.pull_requests[0].number }}
       ci_run_id: ${{ github.event.workflow_run.id }}
@@ -136,8 +135,7 @@ jobs:
       # a lockfile sync:       uv venv --python 3.11 && uv sync --dev
       # Node tooling:          corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile
       provision: |
-        uv venv --python 3.11
-        uv sync --dev
+        uv sync --frozen --python 3.11
       pr_number: ${{ github.event.issue.number }}
       comment_author: ${{ github.event.comment.user.login }}
       # Without this the loop derives the human to ping from the PR's

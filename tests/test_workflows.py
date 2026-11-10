@@ -552,7 +552,11 @@ def test_agent_stubs_provision_like_claude_setup() -> None:
         (WORKFLOWS.parent / "actions/claude-setup/action.yaml").read_text()
     )
     python = claude_setup["runs"]["steps"][0]["with"]["python-version"]
-    recipe = f"uv venv --python {python}\nuv sync --dev\n"
+    # The agent jobs that run claude-setup hold id-token: install exactly
+    # uv.lock and restore no Actions cache.
+    install = claude_setup["runs"]["steps"][0]["with"]
+    assert (install["versions"], install["actions-cache"]) == ("locked", "none")
+    recipe = f"uv sync --frozen --python {python}\n"
     stub_calls = {
         (path.name, name): job.get("with", {}).get("provision")
         for path in WORKFLOWS.glob("*.yml")

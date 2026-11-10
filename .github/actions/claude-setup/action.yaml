@@ -2,17 +2,19 @@ name: Claude agent environment
 description: >-
   Provision the project so Claude Code agents (dev + reviewer) can actually run
   pytest/ruff/pyright instead of falling back to static checks. Invoked by the
-  reusable agent workflows in meridianlabs-ai/agents when present. Delegates to
-  the existing CI setup so the install logic and uv cache are shared, not
-  duplicated.
+  workflows that run an agent in this repo (inspect-update.yml,
+  inspect-ai-main-failure.yml). Those jobs hold `id-token: write`, so the
+  install is exactly uv.lock (`--locked`) and restores no Actions cache.
 
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/setup
+    - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
       with:
+        versions: locked
         # CI runs a 3.11/3.14 matrix; the agent only needs one interpreter.
         python-version: "3.11"
+        actions-cache: none
     # Put the uv-managed project venv on PATH so the agent's allow-listed bare
     # `pytest`/`ruff`/`pyright` resolve. Without this they aren't on PATH, so the
     # agent falls back to `.venv/bin/...` / `make check` — neither allow-listed —

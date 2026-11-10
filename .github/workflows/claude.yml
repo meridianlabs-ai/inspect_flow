@@ -139,8 +139,7 @@ jobs:
       # a lockfile sync:       uv venv --python 3.11 && uv sync --dev
       # Node tooling:          corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile
       provision: |
-        uv venv --python 3.11
-        uv sync --dev
+        uv sync --frozen --python 3.11
       # trigger_phrase is single-valued, so resolve it from the SAME source the
       # action will check for this event (comment > review > issue), not from a
       # union of all sources — otherwise a stale @claude in an enclosing issue
@@ -274,8 +273,7 @@ jobs:
       # a lockfile sync:       uv venv --python 3.11 && uv sync --dev
       # Node tooling:          corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile
       provision: |
-        uv venv --python 3.11
-        uv sync --dev
+        uv sync --frozen --python 3.11
       trigger_phrase: "@auto"
       label_trigger: "auto"
       # allow_build_config (optional, default false; agents repo:
