@@ -79,7 +79,7 @@ def user_config_file(env: Mapping[str, str]) -> str | None:
     # replace. Only its existence is checked: uv reads it, Flow does not.
     if env.get("UV_CONFIG_FILE"):
         return env["UV_CONFIG_FILE"]
-    if _flag(env, "UV_NO_CONFIG") or _flag(env, "UV_NO_SYSTEM_CONFIG"):
+    if env_flag(env, "UV_NO_CONFIG") or env_flag(env, "UV_NO_SYSTEM_CONFIG"):
         return None
     # Where uv looks, per https://docs.astral.sh/uv/concepts/configuration-files/
     for directory in (env.get("XDG_CONFIG_DIRS") or "/etc/xdg").split(os.pathsep):
@@ -104,8 +104,9 @@ def warn_no_default_cooldown(config_file: str, scope: str = "this run") -> None:
     )
 
 
-def _flag(env: Mapping[str, str], name: str) -> bool:
-    return env.get(name, "").lower() in ("1", "true", "yes", "on")
+def env_flag(env: Mapping[str, str], name: str) -> bool:
+    # The values uv reads as true.
+    return env.get(name, "").lower() in ("1", "t", "true", "y", "yes", "on")
 
 
 def _exact_pins(requirements: Collection[str]) -> dict[str, str]:

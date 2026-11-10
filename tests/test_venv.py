@@ -1948,6 +1948,22 @@ def test_explicit_lock_mode_is_kept(
     )
 
 
+def test_env_lock_mode_is_kept(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    # UV_LOCKED rejects a stale lock; flow's --frozen would accept it.
+    member = _locked_workspace(tmp_path, uv_env)
+    pyproject = member / "pyproject.toml"
+    pyproject.write_text(pyproject.read_text().replace(">=3.10", ">=3.11"))
+    uv_env["UV_LOCKED"] = "1"
+    spec = FlowSpec(python_version=sys.executable, tasks=[FlowTask(name="task_name")])
+    args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
+
+    result = subprocess.run(
+        args + ["--offline"], env=env, cwd=cwd, capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "needs to be updated" in result.stderr
+
+
 # Valid to uv, but not to Python's TOML parser: Flow must not read the file.
 UV_ONLY_SYNTAX = 'exclude-newer-package = { openai = "1 day", }\n'
 

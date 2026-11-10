@@ -22,6 +22,7 @@ from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._launcher.uv_settings import (
     config_file_arg,
+    env_flag,
     user_config_file,
     uv_pinned_settings,
     uv_settings_env,
@@ -353,7 +354,9 @@ def _get_create_venv_with_base_dependencies(
         "--active",
     ]
     sync_args = _uv_sync_args(spec)
-    lock_mode = {"--locked", "--frozen"} & set(sync_args)
+    lock_mode = {"--locked", "--frozen"} & set(sync_args) or any(
+        env_flag(env, name) for name in ("UV_LOCKED", "UV_FROZEN")
+    )
     if not lock_mode and _has_lock(project_dir, temp_dir, env):
         # The lock fixes the runtime versions; the cooldown still applies to
         # build requirements, which it does not lock.
