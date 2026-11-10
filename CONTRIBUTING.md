@@ -45,8 +45,6 @@ For this repository:
   each week.
 - The 6-hour packages are in `[tool.uv.exclude-newer-package]` in
   `pyproject.toml`.
-- The build backends (`hatchling`, `hatch-vcs`) are not in `uv.lock`. A local
-  `uv build` resolves them at build time, under the same cooldown.
 
 ## Checks and tests
 
