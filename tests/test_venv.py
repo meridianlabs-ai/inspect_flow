@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
+from urllib.parse import unquote
 
 import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi providers
 import pytest
@@ -1593,7 +1594,7 @@ def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator
 
         def do_GET(self, body: bool = True) -> None:
             base = f"http://{self.headers['Host']}"
-            kind, name = self.path.strip("/").split("/")
+            kind, name = unquote(self.path).strip("/").split("/")
             if kind == "files":
                 content = (wheels / name).read_bytes()
                 content_type = "application/octet-stream"
@@ -1635,37 +1636,29 @@ def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator
         server.server_close()
 
 
-@pytest.mark.parametrize("override", [False, True])
-def test_host_pin_exempt_only_at_its_version(
+def _install_copied_dep(
     tmp_path: Path,
     uv_env: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
-    override: bool,
-) -> None:
-    # The host has copied-dep 2.0, which the index lists with no upload date, as
-    # a private index might. 3.0 was uploaded an hour ago.
+    host_version: str,
+    upload_times: dict[str, str | None],
+    uv_toml: str = "",
+) -> subprocess.CompletedProcess[str]:
+    # Runs flow's final install of copied-dep, copied from the host at
+    # `host_version`, from an index of the given versions and upload times.
     wheels = tmp_path / "wheels"
-    _wheel(wheels, "copied-dep", "2.0")
-    _wheel(wheels, "copied-dep", "3.0")
-    an_hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
-    upload_times = {
-        "copied_dep-2.0-py3-none-any.whl": None,
-        "copied_dep-3.0-py3-none-any.whl": an_hour_ago,
-    }
-    host = tmp_path / "host" / "copied_dep-2.0.dist-info"
+    for version in upload_times:
+        _wheel(wheels, "copied-dep", version)
+    host = tmp_path / "host" / f"copied_dep-{host_version}.dist-info"
     host.mkdir(parents=True)
     (host / "METADATA").write_text(
-        "Metadata-Version: 2.1\nName: copied-dep\nVersion: 2.0\n"
+        f"Metadata-Version: 2.1\nName: copied-dep\nVersion: {host_version}\n"
     )
     monkeypatch.syspath_prepend(str(host.parent))
     monkeypatch.delenv("INSPECT_EVAL_MODEL", raising=False)
     base_dir = tmp_path / "spec"
     base_dir.mkdir()
-    if override:
-        # The exemption must not let an override install the new release.
-        (base_dir / "uv.toml").write_text(
-            'override-dependencies = ["copied-dep==3.0"]\n'
-        )
+    (base_dir / "uv.toml").write_text(uv_toml)
     venv = base_dir.with_name("spec-venv") / ".venv"
     subprocess.run(
         ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
@@ -1677,21 +1670,49 @@ def test_host_pin_exempt_only_at_its_version(
         dependencies=FlowDependencies(dependency_file="no_file"),
         tasks=[FlowTask(name="copied_dep/task")],
     )
+    files = {
+        f"copied_dep-{version}-py3-none-any.whl": time
+        for version, time in upload_times.items()
+    }
 
-    with _simple_index(wheels, upload_times) as index_url:
+    with _simple_index(wheels, files) as index_url:
         uv_env.update(UV_INDEX_URL=index_url, UV_NO_CACHE="1")
         args, env, cwd = _command(
             _uv_commands(spec, base_dir, uv_env), "uv", "pip", "install"
         )
-        assert "copied_dep==2.0" in args
-        result = subprocess.run(
-            ["uv", "pip", "install", "copied_dep==2.0"]
-            + args[args.index("--python") :],
+        pin = f"copied_dep=={host_version}"
+        assert pin in args
+        return subprocess.run(
+            ["uv", "pip", "install", pin] + args[args.index("--python") :],
             env=env,
             cwd=cwd,
             capture_output=True,
             text=True,
         )
+
+
+def _an_hour_ago() -> str:
+    return (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+
+
+@pytest.mark.parametrize("override", [False, True])
+def test_host_pin_exempt_only_at_its_version(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    override: bool,
+) -> None:
+    # The host has copied-dep 2.0, which the index lists with no upload date, as
+    # a private index might. 3.0 was uploaded an hour ago. The exemption must
+    # not let an override install the new release.
+    result = _install_copied_dep(
+        tmp_path,
+        uv_env,
+        monkeypatch,
+        "2.0",
+        {"2.0": None, "3.0": _an_hour_ago()},
+        'override-dependencies = ["copied-dep==3.0"]\n' if override else "",
+    )
 
     if override:
         assert result.returncode != 0
@@ -1699,6 +1720,28 @@ def test_host_pin_exempt_only_at_its_version(
     else:
         assert result.returncode == 0, result.stderr
         assert "+ copied-dep==2.0" in result.stderr
+
+
+@pytest.mark.parametrize("host_version", ["2.0", "2.0+cu128"])
+def test_host_pin_keeps_local_label(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    host_version: str,
+) -> None:
+    # `==2.0` also matches 2.0+cu129, a local build uploaded an hour ago, which
+    # the exemption would let through.
+    result = _install_copied_dep(
+        tmp_path,
+        uv_env,
+        monkeypatch,
+        host_version,
+        {"2.0": None, "2.0+cu128": None, "2.0+cu129": _an_hour_ago()},
+    )
+
+    assert result.returncode == 0, result.stderr
+    installed = [line.strip() for line in result.stderr.splitlines()]
+    assert f"+ copied-dep=={host_version}" in installed
 
 
 def test_install_holds_build_requirements_to_host_versions(

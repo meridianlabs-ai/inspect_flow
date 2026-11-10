@@ -111,17 +111,20 @@ def env_flag(env: Mapping[str, str], name: str) -> bool:
 
 def _exact_pins(requirements: Collection[str]) -> dict[str, str]:
     # Package name to its exact pin, for the requirements pinned to one version.
+    # `===` matches that version only: `==2.0` would also take a 2.0+cu129 build.
     pins: dict[str, str] = {}
     for requirement in requirements:
         try:
             parsed = Requirement(requirement)
         except InvalidRequirement:
             continue
-        if any(
-            s.operator in ("==", "===") and not s.version.endswith(".*")
+        versions = [
+            s.version
             for s in parsed.specifier
-        ):
-            pins[canonicalize_name(parsed.name)] = f"{parsed.name}{parsed.specifier}"
+            if s.operator in ("==", "===") and not s.version.endswith(".*")
+        ]
+        if versions:
+            pins[canonicalize_name(parsed.name)] = f"{parsed.name}==={versions[0]}"
     return pins
 
 

@@ -130,6 +130,16 @@ By default, Flow installs only releases that are at least 7 days old, or 6 hours
 
 If the dependency project has no lock, uv creates one and records Flow's cooldown settings in it. Running uv without Flow can update those recorded settings.
 
+With `--locked` in `uv_sync_args`, or `UV_LOCKED`, uv also checks that the lock records the cooldown settings in use. A lock created without a cooldown therefore fails the first Flow run, because Flow's default changes those settings. Set the cooldown in the project and run `uv lock` once; your settings then replace Flow's and the lock stays valid. Give an `exclude-newer-package` entry to each of `anthropic`, `inspect-ai`, `inspect-scout` and `openai` that the project uses, since Flow's 6-hour entries for them stay otherwise:
+
+``` toml
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.uv.exclude-newer-package]
+openai = "6 hours"
+```
+
 The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package's metadata, it can fetch a newer build requirement.
 
 Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases up to 1 day old, and any release of `inspect-evals`:
