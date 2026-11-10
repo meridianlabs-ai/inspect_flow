@@ -1484,7 +1484,7 @@ def _uv_commands(
 
     def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         # Queries that change nothing run for real.
-        if args[:2] == ["uv", "workspace"]:
+        if args[:2] == ["uv", "workspace"] or args[0] != "uv":
             return real_run(args, **kwargs)
         return subprocess.CompletedProcess(
             args=args, returncode=0, stdout="mocked output"
@@ -1569,12 +1569,18 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
     assert "--project" not in compiled[0]
 
 
-def _wheel(directory: Path, name: str, version: str, tag: str = "py3-none-any") -> None:
+def _wheel(
+    directory: Path,
+    name: str,
+    version: str,
+    tag: str = "py3-none-any",
+    metadata: str = "",
+) -> None:
     # A wheel with metadata only, for a local package index.
     dist_info = f"{name.replace('-', '_')}-{version}.dist-info"
     files = {
-        f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n",
-        f"{dist_info}/WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: {tag}\n",
+        f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n{metadata}",
+        f"{dist_info}/WHEEL": f"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: {tag}\n",
     }
     record = "".join(f"{n},,\n" for n in [*files, f"{dist_info}/RECORD"])
     directory.mkdir(parents=True, exist_ok=True)
@@ -1876,9 +1882,18 @@ def test_install_uses_venv_python_version(
     tmp_path: Path, uv_env: dict[str, str]
 ) -> None:
     # A project `python-version` must not choose wheels for another interpreter.
-    # The only wheel is for Python 3.9 on this platform.
+    # The only foreign wheel is for Python 3.9 on this platform. `patchy` needs
+    # this interpreter's patch version, and so does its dependency `leaf`.
     wheels = tmp_path / "wheels"
     _wheel(wheels, "foreign", "1.0", f"cp39-cp39-{next(sys_tags()).platform}")
+    full = ".".join(map(str, sys.version_info[:3]))
+    _wheel(
+        wheels,
+        "patchy",
+        "1.0",
+        metadata=f'Requires-Python: >={full}\nRequires-Dist: leaf; python_full_version >= "{full}"\n',
+    )
+    _wheel(wheels, "leaf", "1.0")
     uv_env.update(UV_NO_INDEX="1", UV_FIND_LINKS=str(wheels), UV_NO_CACHE="1")
     (tmp_path / "requirements.txt").write_text("inspect-ai\n")
     (tmp_path / "uv.toml").write_text('[pip]\npython-version = "3.9"\n')
@@ -1888,6 +1903,14 @@ def test_install_uses_venv_python_version(
         env=uv_env,
         check=True,
         capture_output=True,
+    )
+    # uv sometimes records only the minor version.
+    config = venv / "pyvenv.cfg"
+    minor = ".".join(map(str, sys.version_info[:2]))
+    config.write_text(
+        re.sub(
+            r"(?m)^version_info = .*$", f"version_info = {minor}", config.read_text()
+        )
     )
     spec = FlowSpec(
         dependencies=FlowDependencies(dependency_file="requirements.txt"),
@@ -1915,6 +1938,17 @@ def test_install_uses_venv_python_version(
                 text=True,
             )
             assert (result.returncode == 0) == selected, result.stderr
+        result = subprocess.run(
+            ["uv", "pip", "install", "patchy==1.0"]
+            + options
+            + ["--offline", "--dry-run"],
+            env=env,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "+ leaf==1.0" in result.stderr
 
 
 @pytest.mark.parametrize("locked", [False, True])

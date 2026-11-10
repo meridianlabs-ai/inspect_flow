@@ -447,14 +447,15 @@ def _uv_pip_install(
 
 
 def _python_version_args(python: str) -> List[str]:
-    # uv records the venv's version in pyvenv.cfg.
-    config = Path(python).parents[1] / "pyvenv.cfg"
-    lines = config.read_text().splitlines() if config.exists() else []
-    for line in lines:
-        key, _, value = line.partition("=")
-        if key.strip() == "version_info":
-            return ["--python-version", value.strip()]
-    return []
+    # The full version: pyvenv.cfg can record only the minor version, and uv
+    # would then resolve for x.y.0.
+    if not Path(python).exists():
+        return []
+    result = run_with_logging(
+        [python, "-c", "import sys; print('.'.join(map(str, sys.version_info[:3])))"],
+        log_output=False,
+    )
+    return ["--python-version", result.stdout.strip()]
 
 
 def _uv_project_args(project_dir: str | None) -> List[str]:
