@@ -11,12 +11,13 @@ environment:
 ```bash
 git clone https://github.com/meridianlabs-ai/inspect_flow
 cd inspect_flow
-uv sync
+uv sync --locked
 source .venv/bin/activate
 ```
 
-`uv sync` creates `.venv` with the exact versions in `uv.lock` and installs Flow
-editable. The default `dev` dependency group brings in the `dev` extra (the dev
+`uv sync --locked` creates `.venv` with the exact versions in `uv.lock` and
+installs Flow editable. It fails if `uv.lock` is out of date with
+`pyproject.toml`. The default `dev` dependency group brings in the `dev` extra (the dev
 tools) and the `local-eval` test package.
 
 Optionally install the pre-commit hooks:
@@ -28,36 +29,24 @@ make hooks
 Note: don't use `uv run` to execute Python commands — it re-syncs the lockfile and
 can overwrite editable installs. Use `python` directly instead.
 
-### Dependencies and the cooldown
+### Dependencies
 
-`uv.lock` pins every runtime and dev dependency. The build backends (`hatchling`,
-`hatch-vcs`) are not in it. CI and release builds install them, with `build`,
-from `scripts/build-dist/requirements.txt`, pinned with hashes. A local `uv build`
-resolves them at build time, under the same cooldown.
-CI installs from `uv.lock`, and fails when it is out of date with
-`pyproject.toml`. When you change dependencies in `pyproject.toml`, run `uv lock`
-and commit both files.
+[DEPENDENCIES.md](https://github.com/meridianlabs-ai/actions/blob/main/DEPENDENCIES.md)
+in meridianlabs-ai/actions tells how the Inspect repositories install and change
+dependencies. It covers the lock file, the cooldown, Dependabot, the canaries,
+the release build tools, and the procedures to add or update a dependency.
+Follow it. It is the same for every Inspect repository, so this file does not
+repeat it.
 
-`pyproject.toml` sets `exclude-newer = "7 days"` under `[tool.uv]`, so `uv lock`,
-`uv sync` and `uv pip` only pick releases that have been on PyPI for at least
-seven days. A compromised release is usually found and removed within that time,
-before it reaches `uv.lock`, CI or your machine. A few packages wait 6 hours
-instead, so Flow can adopt a new release the day it ships: `inspect-ai`,
-`inspect-scout`, and the `anthropic` and `openai` SDKs. They are listed with
-`"6 hours"` in `[tool.uv.exclude-newer-package]`. Only a direct dependency (a
-package in `dependencies` or the `dev` extra in `pyproject.toml`) that is a model
-provider SDK or an Inspect package gets this exception. Every other package keeps
-the seven-day cooldown, including the CA bundle (`certifi`). Dependabot's `uv`
-entry in `.github/dependabot.yml` repeats the cooldown and the list, except
-`inspect-ai`, which it ignores (`.github/workflows/inspect-update.yml` bumps it).
-When you add a `"6 hours"` entry, also add the package to `cooldown.exclude` and
-the `six-hour-cooldown` group there. `tests/test_dependency_cooldown.py` checks
-that the two files match.
+For this repository:
 
-Dependabot proposes `uv.lock` updates daily, once a release has cleared its
-cooldown. To adopt a release sooner, run `uv lock --upgrade-package <package>` and
-commit `uv.lock`. A release still inside its cooldown can't be locked; wait for it
-rather than overriding `exclude-newer`.
+- Inspect Flow uses only released inspect_ai: `inspect-ai` comes from PyPI.
+  Dependabot ignores it, and `.github/workflows/inspect-update.yml` updates it
+  each week.
+- The 6-hour packages are in `[tool.uv.exclude-newer-package]` in
+  `pyproject.toml`.
+- The build backends (`hatchling`, `hatch-vcs`) are not in `uv.lock`. A local
+  `uv build` resolves them at build time, under the same cooldown.
 
 ## Checks and tests
 
