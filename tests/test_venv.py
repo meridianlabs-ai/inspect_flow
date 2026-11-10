@@ -1,11 +1,13 @@
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import tomllib
+import zipfile
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
@@ -42,6 +44,7 @@ from inspect_flow._launcher.pip_string import (
     _get_pip_string_with_version,
     get_pip_string,
 )
+from inspect_flow._launcher.uv_settings import uv_pinned_settings
 from inspect_flow._launcher.venv import _create_venv, venv_launch
 from local_eval.noop import noop
 from rich.console import Console
@@ -74,13 +77,14 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert len(args) == 9
-            assert args[5:] == [
+            assert args[5:9] == [
                 "--python",
                 f"{temp_dir}/.venv/bin/python",
                 "--project",
                 Path.cwd().as_posix(),
             ]
+            # A pinned inspect-ai is also a build constraint.
+            assert args[9::2] == ["--build-constraints"] * len(args[9::2])
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -1515,8 +1519,13 @@ def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta]:
     }
 
 
+def _build_constraint_files(command: UvCommand) -> list[str]:
+    args = command[0]
+    return [args[i + 1] for i, a in enumerate(args) if a == "--build-constraints"]
+
+
 def _build_constraints(command: UvCommand) -> set[str]:
-    files = command[1].get("UV_BUILD_CONSTRAINT", "").split()
+    files = _build_constraint_files(command)
     return {line for f in files for line in Path(f).read_text().splitlines()}
 
 
@@ -1571,8 +1580,73 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
         "openai==1.0.0",
         "requests==2.0.0",
     }
-    assert all(f'"{f}"' in output for f in compiled[1]["UV_BUILD_CONSTRAINT"].split())
+    assert all(f'"{f}"' in output for f in _build_constraint_files(compiled))
     assert any(c.startswith("anthropic==") for c in _build_constraints(install))
+
+
+def _wheel(directory: Path, name: str, version: str) -> None:
+    # A wheel with metadata only, for a local package index.
+    dist_info = f"{name.replace('-', '_')}-{version}.dist-info"
+    files = {
+        f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n",
+        f"{dist_info}/WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+    }
+    record = "".join(f"{n},,\n" for n in [*files, f"{dist_info}/RECORD"])
+    directory.mkdir(parents=True, exist_ok=True)
+    wheel = directory / f"{name.replace('-', '_')}-{version}-py3-none-any.whl"
+    with zipfile.ZipFile(wheel, "w") as z:
+        for n, text in files.items():
+            z.writestr(n, text)
+        z.writestr(f"{dist_info}/RECORD", record)
+
+
+def test_compile_holds_build_requirements_to_frozen_versions(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    # The editable package's build needs overlap-dep, which the venv also has at
+    # a frozen version. A local index offers 1.0 and 2.0 of each build requirement.
+    wheels = tmp_path / "wheels"
+    for name in ("overlap-dep", "overlap-other"):
+        for version in ("1.0", "2.0"):
+            _wheel(wheels, name, version)
+    package = tmp_path / "package"
+    shutil.copytree(Path(__file__).parent / "fixtures" / "build_overlap", package)
+    user_constraints = tmp_path / "user-build-constraints.txt"
+    user_constraints.write_text("overlap-other<2\n")
+    uv_env.update(
+        UV_NO_CACHE="1",
+        UV_NO_INDEX="1",
+        UV_FIND_LINKS=str(wheels),
+        UV_BUILD_CONSTRAINT=str(user_constraints),
+    )
+    venv = tmp_path / "venv"
+    for command in (
+        ["uv", "venv", str(venv), "--python", sys.executable],
+        ["uv", "pip", "install", "--python", str(venv / "bin" / "python")]
+        + ["overlap-dep==1.0", "-e", str(package)],
+    ):
+        subprocess.run(command, env=uv_env, check=True, capture_output=True)
+
+    # A space in the path must not split the build-constraints file name.
+    config_dir = tmp_path / "temp files" / "uv-compile"
+    write_flow_requirements(
+        FlowSpec(log_dir=(tmp_path / "logs").as_posix(), tasks=[]),
+        str(tmp_path),
+        uv_env,
+        dry_run=False,
+        python=str(venv / "bin" / "python"),
+        compile_settings=lambda frozen: uv_pinned_settings(
+            uv_env, str(config_dir), frozen
+        ),
+    )
+
+    # The build could take overlap-dep 2.0, but is held to the frozen 1.0; the
+    # user's constraint still holds overlap-other.
+    seen = (package / "build-saw.txt").read_text()
+    assert seen == repr({"overlap-dep": "1.0", "overlap-other": "1.0"})
+    requirements = (tmp_path / "logs" / "flow-requirements.txt").read_text()
+    assert "overlap-dep==1.0" in requirements
+    assert f"-e file://{package}" in requirements
 
 
 def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:
