@@ -44,6 +44,25 @@ def uv_settings_env(
     return {**env, "XDG_CONFIG_DIRS": os.pathsep.join([config_dir, config_dirs])}
 
 
+def uv_pinned_settings(
+    env: Mapping[str, str], config_dir: str, pins: Collection[str]
+) -> tuple[dict[str, str], list[str]]:
+    # The environment and extra arguments for a uv command that installs `pins`.
+    # Their exemption covers every version of each package, so a build
+    # requirement on one (such as torch for a CUDA extension) is also held to
+    # the pinned version.
+    uv_env = uv_settings_env(env, config_dir, pins)
+    exact_pins = _exact_pins(pins)
+    if user_config_file(env) or not exact_pins:
+        return uv_env, []
+    build_constraints = Path(config_dir) / "build-constraints.txt"
+    build_constraints.write_text("".join(f"{p}\n" for p in exact_pins.values()))
+    # `--build-constraints` replaces UV_BUILD_CONSTRAINT, a list uv splits on
+    # whitespace, so the user's files are passed along too.
+    files = [*env.get("UV_BUILD_CONSTRAINT", "").split(), str(build_constraints)]
+    return uv_env, [arg for f in files for arg in ("--build-constraints", f)]
+
+
 def user_config_file(env: Mapping[str, str]) -> str | None:
     # The explicit or system config file uv reads, which Flow's settings would
     # replace. Only its existence is checked: uv reads it, Flow does not.

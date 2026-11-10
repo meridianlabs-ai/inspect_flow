@@ -1,11 +1,13 @@
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import tomllib
+import zipfile
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
@@ -74,13 +76,14 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert len(args) == 9
-            assert args[5:] == [
+            assert args[5:9] == [
                 "--python",
                 f"{temp_dir}/.venv/bin/python",
                 "--project",
                 Path.cwd().as_posix(),
             ]
+            # A pinned inspect-ai is also a build constraint.
+            assert args[9::2] == ["--build-constraints"] * len(args[9::2])
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -1555,6 +1558,94 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
     compiled = _command(commands, "uv", "pip", "compile")
     assert compiled[1] == uv_env
     assert "--project" not in compiled[0]
+
+
+def _wheel(directory: Path, name: str, version: str) -> None:
+    # A wheel with metadata only, for a local package index.
+    dist_info = f"{name.replace('-', '_')}-{version}.dist-info"
+    files = {
+        f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n",
+        f"{dist_info}/WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+    }
+    record = "".join(f"{n},,\n" for n in [*files, f"{dist_info}/RECORD"])
+    directory.mkdir(parents=True, exist_ok=True)
+    wheel = directory / f"{name.replace('-', '_')}-{version}-py3-none-any.whl"
+    with zipfile.ZipFile(wheel, "w") as z:
+        for n, text in files.items():
+            z.writestr(n, text)
+        z.writestr(f"{dist_info}/RECORD", record)
+
+
+def test_install_holds_build_requirements_to_host_versions(
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # overlap-dep is copied from the host at 1.0 and is also a build requirement
+    # of another dependency, as torch is for a CUDA extension. A local index
+    # offers 1.0 and 2.0 of each build requirement.
+    wheels = tmp_path / "wheels"
+    for name in ("overlap-dep", "overlap-other"):
+        for version in ("1.0", "2.0"):
+            _wheel(wheels, name, version)
+    host = tmp_path / "host" / "overlap_dep-1.0.dist-info"
+    host.mkdir(parents=True)
+    (host / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: overlap-dep\nVersion: 1.0\n"
+    )
+    monkeypatch.syspath_prepend(str(host.parent))
+    monkeypatch.delenv("INSPECT_EVAL_MODEL", raising=False)
+    package = tmp_path / "overlap-package"
+    shutil.copytree(Path(__file__).parent / "fixtures" / "build_overlap", package)
+    user_constraints = tmp_path / "user-build-constraints.txt"
+    user_constraints.write_text("overlap-other<2\n")
+    uv_env.update(
+        UV_NO_CACHE="1",
+        UV_NO_INDEX="1",
+        UV_FIND_LINKS=str(wheels),
+        UV_BUILD_CONSTRAINT=str(user_constraints),
+    )
+    # A space in flow's temp dir must not split the build-constraints file name.
+    base_dir = tmp_path / "spec dir"
+    base_dir.mkdir()
+    spec = FlowSpec(
+        dependencies=FlowDependencies(
+            dependency_file="no_file", additional_dependencies=[str(package)]
+        ),
+        tasks=[FlowTask(name="overlap_dep/task")],
+    )
+    args, env, cwd = _command(
+        _uv_commands(spec, base_dir, uv_env), "uv", "pip", "install"
+    )
+    assert "overlap_dep==1.0" in args
+
+    # Install the overlapping packages with the captured options, offline.
+    python = Path(args[args.index("--python") + 1])
+    subprocess.run(
+        ["uv", "venv", str(python.parents[1]), "--python", sys.executable],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    packages = [a for a in args[3 : args.index("--python")] if "overlap" in a]
+    subprocess.run(
+        ["uv", "pip", "install", *packages, *args[args.index("--python") :]],
+        env=env,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
+
+    # The build could take overlap-dep 2.0, but is held to the host's 1.0; the
+    # user's constraint still holds overlap-other.
+    seen = (package / "build-saw.txt").read_text()
+    assert seen == repr({"overlap-dep": "1.0", "overlap-other": "1.0"})
+    frozen = subprocess.run(
+        ["uv", "pip", "freeze", "--python", str(python)],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "overlap-dep==1.0" in frozen.splitlines()
 
 
 def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:

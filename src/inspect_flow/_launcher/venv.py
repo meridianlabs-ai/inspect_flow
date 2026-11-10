@@ -23,6 +23,7 @@ from inspect_flow._launcher.python_version import resolve_python_version
 from inspect_flow._launcher.uv_settings import (
     config_file_arg,
     user_config_file,
+    uv_pinned_settings,
     uv_settings_env,
     warn_no_default_cooldown,
 )
@@ -235,13 +236,15 @@ def _create_venv(
         host_dependencies.append(get_pip_string("inspect-ai"))
     dependencies.extend(host_dependencies)
 
-    project_args = _uv_project_args(project_dir)
+    install_env, install_args = uv_pinned_settings(
+        env, str(Path(temp_dir) / "uv-install"), host_dependencies
+    )
     _uv_pip_install(
         dependencies,
         temp_dir,
         _venv_python(temp_dir),
-        uv_settings_env(env, str(Path(temp_dir) / "uv-install"), host_dependencies),
-        project_args,
+        install_env,
+        _uv_project_args(project_dir) + install_args,
     )
 
     write_flow_requirements(spec, temp_dir, env, dry_run, python=_venv_python(temp_dir))
