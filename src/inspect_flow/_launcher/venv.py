@@ -352,12 +352,12 @@ def _get_create_venv_with_base_dependencies(
         project_dir,
         "--active",
     ]
-    if _has_lock(project_dir, temp_dir, env):
+    sync_args = _uv_sync_args(spec)
+    lock_mode = {"--locked", "--frozen"} & set(sync_args)
+    if not lock_mode and _has_lock(project_dir, temp_dir, env):
         # The lock fixes the runtime versions; the cooldown still applies to
         # build requirements, which it does not lock.
         uv_args.append("--frozen")
-
-    sync_args = _uv_sync_args(spec)
     uv_args.extend(sync_args)
     config_file = config_file_arg(sync_args)
     if config_file:
@@ -430,12 +430,28 @@ def _uv_pip_install(
 ) -> None:
     """Install packages using 'uv pip install'."""
     # An explicit interpreter keeps uv's `python` and `system` settings from
-    # choosing another environment.
+    # choosing another environment, and its version keeps `python-version`
+    # from choosing wheels for another interpreter.
     run_with_logging(
-        ["uv", "pip", "install"] + args + ["--python", python] + uv_args,
+        ["uv", "pip", "install"]
+        + args
+        + ["--python", python]
+        + _python_version_args(python)
+        + uv_args,
         cwd=cwd,
         env=env,
     )
+
+
+def _python_version_args(python: str) -> List[str]:
+    # uv records the venv's version in pyvenv.cfg.
+    config = Path(python).parents[1] / "pyvenv.cfg"
+    lines = config.read_text().splitlines() if config.exists() else []
+    for line in lines:
+        key, _, value = line.partition("=")
+        if key.strip() == "version_info":
+            return ["--python-version", value.strip()]
+    return []
 
 
 def _uv_project_args(project_dir: str | None) -> List[str]:

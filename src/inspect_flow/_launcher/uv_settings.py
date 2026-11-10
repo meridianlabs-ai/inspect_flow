@@ -28,13 +28,16 @@ def uv_settings_env(
     if user_config_file(env):
         return dict(env)
     now = datetime.now(UTC)
-    packages = {p: _timestamp(now - SHORT_COOLDOWN) for p in SHORT_COOLDOWN_PACKAGES}
-    # A version copied from the host must not be rejected by the cooldown.
-    packages.update({p: _timestamp(now) for p in _exact_pins(pins)})
+    packages = {
+        p: f'"{_timestamp(now - SHORT_COOLDOWN)}"' for p in SHORT_COOLDOWN_PACKAGES
+    }
+    # A version copied from the host must not be rejected by the cooldown, even
+    # from an index without upload dates.
+    packages.update({p: "false" for p in _exact_pins(pins)})
     lines = [
         f'exclude-newer = "{_timestamp(now - DEFAULT_COOLDOWN)}"',
         "[exclude-newer-package]",
-        *(f'"{p}" = "{cutoff}"' for p, cutoff in packages.items()),
+        *(f'"{p}" = {cutoff}' for p, cutoff in packages.items()),
     ]
 
     config_file = Path(config_dir) / "uv" / "uv.toml"
@@ -48,19 +51,27 @@ def uv_pinned_settings(
     env: Mapping[str, str], config_dir: str, pins: Collection[str]
 ) -> tuple[dict[str, str], list[str]]:
     # The environment and extra arguments for a uv command that installs `pins`.
-    # Their exemption covers every version of each package, so a build
-    # requirement on one (such as torch for a CUDA extension) is also held to
-    # the pinned version.
+    # Their exemption covers every version of each package, so the pins are
+    # also constraints: a project override cannot swap in another version, and
+    # a build requirement on one (such as torch for a CUDA extension) gets the
+    # pinned version.
     uv_env = uv_settings_env(env, config_dir, pins)
     exact_pins = _exact_pins(pins)
     if user_config_file(env) or not exact_pins:
         return uv_env, []
-    build_constraints = Path(config_dir) / "build-constraints.txt"
-    build_constraints.write_text("".join(f"{p}\n" for p in exact_pins.values()))
-    # `--build-constraints` replaces UV_BUILD_CONSTRAINT, a list uv splits on
+    pins_file = Path(config_dir) / "host-pins.txt"
+    pins_file.write_text("".join(f"{p}\n" for p in exact_pins.values()))
+    # Each option replaces its environment variable, a list uv splits on
     # whitespace, so the user's files are passed along too.
-    files = [*env.get("UV_BUILD_CONSTRAINT", "").split(), str(build_constraints)]
-    return uv_env, [arg for f in files for arg in ("--build-constraints", f)]
+    return uv_env, [
+        arg
+        for option, variable in (
+            ("--constraints", "UV_CONSTRAINT"),
+            ("--build-constraints", "UV_BUILD_CONSTRAINT"),
+        )
+        for f in [*env.get(variable, "").split(), str(pins_file)]
+        for arg in (option, f)
+    ]
 
 
 def user_config_file(env: Mapping[str, str]) -> str | None:

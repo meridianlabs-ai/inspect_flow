@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -8,8 +9,11 @@ import tempfile
 import threading
 import tomllib
 import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from functools import partial
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -46,6 +50,7 @@ from inspect_flow._launcher.pip_string import (
 )
 from inspect_flow._launcher.venv import _create_venv, venv_launch
 from local_eval.noop import noop
+from packaging.tags import sys_tags
 from rich.console import Console
 
 _test_action = RunAction("test")
@@ -82,8 +87,8 @@ def test_no_dependencies() -> None:
                 "--project",
                 Path.cwd().as_posix(),
             ]
-            # A pinned inspect-ai is also a build constraint.
-            assert args[9::2] == ["--build-constraints"] * len(args[9::2])
+            # A pinned inspect-ai is also a constraint.
+            assert set(args[9::2]) <= {"--constraints", "--build-constraints"}
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -1437,8 +1442,8 @@ def test_freeze_targets_explicit_interpreter_not_virtual_env() -> None:
 
 SEVEN_DAYS = timedelta(days=7)
 SIX_HOURS = timedelta(hours=6)
-# The cutoff for a version copied from the host: no cooldown.
-HOST_PIN = timedelta(0)
+# A package copied from the host: no cooldown.
+HOST_PIN = False
 DEFAULTS = {
     "*": SEVEN_DAYS,
     "anthropic": SIX_HOURS,
@@ -1509,14 +1514,17 @@ def _flow_settings(command: UvCommand) -> dict[str, Any]:
     return tomllib.loads(config_file.read_text())
 
 
-def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta]:
-    # The age of each cutoff in flow's settings, to the minute; "*" for all packages.
+def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta | bool]:
+    # The age of each cutoff in flow's settings, to the minute; "*" for all
+    # packages, and False for none.
     settings = _flow_settings(command)
     cutoffs = {"*": settings["exclude-newer"]} if "exclude-newer" in settings else {}
     cutoffs.update(settings.get("exclude-newer-package", {}))
     now = datetime.now(UTC)
     return {
-        package: timedelta(
+        package: cutoff
+        if cutoff is False
+        else timedelta(
             minutes=round((now - datetime.fromisoformat(cutoff)).total_seconds() / 60)
         )
         for package, cutoff in cutoffs.items()
@@ -1560,20 +1568,137 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
     assert "--project" not in compiled[0]
 
 
-def _wheel(directory: Path, name: str, version: str) -> None:
+def _wheel(directory: Path, name: str, version: str, tag: str = "py3-none-any") -> None:
     # A wheel with metadata only, for a local package index.
     dist_info = f"{name.replace('-', '_')}-{version}.dist-info"
     files = {
         f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n",
-        f"{dist_info}/WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+        f"{dist_info}/WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: {tag}\n",
     }
     record = "".join(f"{n},,\n" for n in [*files, f"{dist_info}/RECORD"])
     directory.mkdir(parents=True, exist_ok=True)
-    wheel = directory / f"{name.replace('-', '_')}-{version}-py3-none-any.whl"
+    wheel = directory / f"{name.replace('-', '_')}-{version}-{tag}.whl"
     with zipfile.ZipFile(wheel, "w") as z:
         for n, text in files.items():
             z.writestr(n, text)
         z.writestr(f"{dist_info}/RECORD", record)
+
+
+@contextmanager
+def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator[str]:
+    # A PEP 691 index of the wheels, with each one's upload time, or none.
+    class Handler(BaseHTTPRequestHandler):
+        def do_HEAD(self) -> None:
+            self.do_GET(body=False)
+
+        def do_GET(self, body: bool = True) -> None:
+            base = f"http://{self.headers['Host']}"
+            kind, name = self.path.strip("/").split("/")
+            if kind == "files":
+                content = (wheels / name).read_bytes()
+                content_type = "application/octet-stream"
+            else:
+                files = [
+                    {
+                        "filename": w.name,
+                        "url": f"{base}/files/{w.name}",
+                        "hashes": {
+                            "sha256": hashlib.sha256(w.read_bytes()).hexdigest()
+                        },
+                        **(
+                            {"upload-time": upload_times[w.name]}
+                            if upload_times[w.name]
+                            else {}
+                        ),
+                    }
+                    for w in wheels.glob(f"{name.replace('-', '_')}-*.whl")
+                ]
+                index = {"meta": {"api-version": "1.1"}, "name": name, "files": files}
+                content = json.dumps(index).encode()
+                content_type = "application/vnd.pypi.simple.v1+json"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            if body:
+                self.wfile.write(content)
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}/simple"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("override", [False, True])
+def test_host_pin_exempt_only_at_its_version(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    override: bool,
+) -> None:
+    # The host has copied-dep 2.0, which the index lists with no upload date, as
+    # a private index might. 3.0 was uploaded an hour ago.
+    wheels = tmp_path / "wheels"
+    _wheel(wheels, "copied-dep", "2.0")
+    _wheel(wheels, "copied-dep", "3.0")
+    an_hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    upload_times = {
+        "copied_dep-2.0-py3-none-any.whl": None,
+        "copied_dep-3.0-py3-none-any.whl": an_hour_ago,
+    }
+    host = tmp_path / "host" / "copied_dep-2.0.dist-info"
+    host.mkdir(parents=True)
+    (host / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: copied-dep\nVersion: 2.0\n"
+    )
+    monkeypatch.syspath_prepend(str(host.parent))
+    monkeypatch.delenv("INSPECT_EVAL_MODEL", raising=False)
+    base_dir = tmp_path / "spec"
+    base_dir.mkdir()
+    if override:
+        # The exemption must not let an override install the new release.
+        (base_dir / "uv.toml").write_text(
+            'override-dependencies = ["copied-dep==3.0"]\n'
+        )
+    venv = base_dir.with_name("spec-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="copied_dep/task")],
+    )
+
+    with _simple_index(wheels, upload_times) as index_url:
+        uv_env.update(UV_INDEX_URL=index_url, UV_NO_CACHE="1")
+        args, env, cwd = _command(
+            _uv_commands(spec, base_dir, uv_env), "uv", "pip", "install"
+        )
+        assert "copied_dep==2.0" in args
+        result = subprocess.run(
+            ["uv", "pip", "install", "copied_dep==2.0"]
+            + args[args.index("--python") :],
+            env=env,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+
+    if override:
+        assert result.returncode != 0
+        assert "copied-dep==3.0" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
+        assert "+ copied-dep==2.0" in result.stderr
 
 
 def test_install_holds_build_requirements_to_host_versions(
@@ -1704,6 +1829,51 @@ def test_install_stays_in_venv(tmp_path: Path, uv_env: dict[str, str]) -> None:
         assert Path(target[1]).resolve() == venv.resolve()
 
 
+def test_install_uses_venv_python_version(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    # A project `python-version` must not choose wheels for another interpreter.
+    # The only wheel is for Python 3.9 on this platform.
+    wheels = tmp_path / "wheels"
+    _wheel(wheels, "foreign", "1.0", f"cp39-cp39-{next(sys_tags()).platform}")
+    uv_env.update(UV_NO_INDEX="1", UV_FIND_LINKS=str(wheels), UV_NO_CACHE="1")
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    (tmp_path / "uv.toml").write_text('[pip]\npython-version = "3.9"\n')
+    venv = tmp_path.with_name(tmp_path.name + "-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    installs = [
+        c
+        for c in _uv_commands(spec, tmp_path, uv_env)
+        if c[0][:3] == ["uv", "pip", "install"]
+    ]
+
+    assert len(installs) == 2
+    for args, env, cwd in installs:
+        options = args[args.index("--python") :]
+        version = options.index("--python-version")
+        without_version = options[:version] + options[version + 2 :]
+        for uv_options, selected in ((options, False), (without_version, True)):
+            result = subprocess.run(
+                ["uv", "pip", "install", "foreign==1.0"]
+                + uv_options
+                + ["--offline", "--dry-run"],
+                env=env,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+            )
+            assert (result.returncode == 0) == selected, result.stderr
+
+
 @pytest.mark.parametrize("locked", [False, True])
 def test_cooldown_sync(tmp_path: Path, uv_env: dict[str, str], locked: bool) -> None:
     (tmp_path / "pyproject.toml").write_text(PROJECT)
@@ -1718,10 +1888,8 @@ def test_cooldown_sync(tmp_path: Path, uv_env: dict[str, str], locked: bool) -> 
     assert _flow_cooldowns(sync) == DEFAULTS
 
 
-def test_workspace_member_lock_is_frozen(
-    tmp_path: Path, uv_env: dict[str, str]
-) -> None:
-    # A workspace member uses the lock at the workspace root.
+def _locked_workspace(tmp_path: Path, uv_env: dict[str, str]) -> Path:
+    # A workspace and its lock, with no dependencies; returns the member.
     root = tmp_path / "workspace"
     member = root / "member"
     member.mkdir(parents=True)
@@ -1737,6 +1905,15 @@ def test_workspace_member_lock_is_frozen(
         check=True,
         capture_output=True,
     )
+    return member
+
+
+def test_workspace_member_lock_is_frozen(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    # A workspace member uses the lock at the workspace root.
+    member = _locked_workspace(tmp_path, uv_env)
+    root = member.parent
     lock = (root / "uv.lock").read_text()
     spec = FlowSpec(python_version=sys.executable, tasks=[FlowTask(name="task_name")])
     args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
@@ -1746,6 +1923,29 @@ def test_workspace_member_lock_is_frozen(
         args + ["--offline"], env=env, cwd=cwd, check=True, capture_output=True
     )
     assert (root / "uv.lock").read_text() == lock
+
+
+@pytest.mark.parametrize("mode", ["--locked", "--frozen"])
+def test_explicit_lock_mode_is_kept(
+    tmp_path: Path, uv_env: dict[str, str], mode: str
+) -> None:
+    member = _locked_workspace(tmp_path, uv_env)
+    spec = FlowSpec(
+        python_version=sys.executable,
+        dependencies=FlowDependencies(uv_sync_args=[mode]),
+        tasks=[FlowTask(name="task_name")],
+    )
+    args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
+
+    assert [a for a in args if a in ("--locked", "--frozen")] == [mode]
+    # uv accepts the arguments.
+    subprocess.run(
+        args + ["--offline", "--show-settings"],
+        env=env,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
 
 
 # Valid to uv, but not to Python's TOML parser: Flow must not read the file.
