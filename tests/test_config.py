@@ -554,6 +554,28 @@ def test_257_format_map_not_config() -> None:
     assert spec2.env["INSPECT_EVAL_LOG_FILE_PATTERN"] == "logs//{task}_{model}_{id}"
 
 
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ('Reply as JSON: {"answer": "A"}', 'Reply as JSON: {"answer": "A"}'),
+        ('Reply as JSON: {{"answer": "A"}}', 'Reply as JSON: {{"answer": "A"}}'),
+        (r"^\d{3}$", r"^\d{3}$"),
+        ("Question: {}", "Question: {}"),
+        ('{log_dir}: {"a": 1}', 'logs: {"a": 1}'),
+    ],
+)
+def test_substitution_leaves_literal_braces(value: str, expected: str) -> None:
+    spec = FlowSpec(
+        log_dir="logs",
+        tasks=[FlowTask(name="task", config=GenerateConfig(system_message=value))],
+    )
+    spec2 = expand_spec(spec, base_dir=".")
+    assert spec2.tasks
+    task = spec2.tasks[0]
+    assert isinstance(task, FlowTask) and task.config
+    assert task.config.system_message == expected
+
+
 def test_266_format_map_log_dir_create_unique() -> None:
     log_dir = "logs/flow_test"
     Path(log_dir).mkdir(parents=True, exist_ok=True)
