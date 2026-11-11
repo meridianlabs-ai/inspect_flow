@@ -1,0 +1,5 @@
+# A package with dynamic metadata, so uv runs its build backend to read it.
+[build-system]
+requires = ["overlap-dep", "overlap-other"]
+build-backend = "overlap_backend"
+backend-path = ["."]
