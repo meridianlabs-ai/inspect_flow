@@ -34,7 +34,8 @@ Inspect Flow is designed for researchers and engineers running systematic AI eva
 See [src/inspect_flow/README.md](src/inspect_flow/README.md) for detailed module internals.
 
 ## Build/Lint/Test Commands
-- Repo setup: `uv sync`
+- Repo setup: `uv sync --locked` (installs exactly `uv.lock`; fails if the lock is out of date)
+- How dependencies are installed and changed (the lock file, the cooldown) is in [DEPENDENCIES.md](https://github.com/meridianlabs-ai/actions/blob/main/DEPENDENCIES.md) in meridianlabs-ai/actions
 - Lint + type check: `make check` (runs ruff + pyright)
 - Run all tests: `pytest`
 - Run a single test: `pytest tests/path/to/test_file.py::test_function_name -v`
