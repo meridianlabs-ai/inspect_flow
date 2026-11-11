@@ -8,7 +8,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, List, Literal, Sequence
 
-from inspect_ai._util.file import absolute_file_path
+from inspect_ai._util.file import absolute_file_path, filesystem
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import canonicalize_name
 
@@ -20,6 +20,14 @@ from inspect_flow._launcher.auto_dependencies import collect_auto_dependencies
 from inspect_flow._launcher.freeze import write_flow_requirements
 from inspect_flow._launcher.pip_string import get_pip_string
 from inspect_flow._launcher.python_version import resolve_python_version
+from inspect_flow._launcher.uv_settings import (
+    config_file_arg,
+    env_flag,
+    user_config_file,
+    uv_pinned_settings,
+    uv_settings_env,
+    warn_no_default_cooldown,
+)
 from inspect_flow._runner.cli import CHECK_ACTIONS, RUN_ACTIONS
 from inspect_flow._runner.run import LaunchResult
 from inspect_flow._types.flow_types import FlowSpec
@@ -180,8 +188,23 @@ def _create_venv(
     dry_run: bool,
     action: RunAction,
 ) -> None:
+    config_file = user_config_file(env)
+    if config_file:
+        warn_no_default_cooldown(config_file)
+    dependency_file = _get_dependency_file(spec, base_dir=base_dir)
+    if dependency_file:
+        project_dir: str | None = str(Path(dependency_file[1]).parent)
+    elif env.get("UV_PROJECT"):
+        # uv would read a relative path from flow's temp dir, not the caller's.
+        project_dir = os.path.abspath(env["UV_PROJECT"])
+    elif filesystem(base_dir).is_local():
+        # Without a dependency file, uv still reads the settings (a `uv.toml`)
+        # where the spec is.
+        project_dir = base_dir
+    else:
+        project_dir = None
     create_venv_func = _get_create_venv_with_base_dependencies(
-        spec, base_dir=base_dir, temp_dir=temp_dir, env=env, action=action
+        spec, dependency_file, project_dir, temp_dir=temp_dir, env=env, action=action
     )
 
     create_venv_func()
@@ -201,20 +224,32 @@ def _create_venv(
     if spec.dependencies and spec.dependencies.auto_detect_dependencies is False:
         auto_detect_dependencies = False
 
+    # Packages copied from this (the host) environment, at the versions installed here.
+    host_dependencies: List[str] = []
     if auto_detect_dependencies:
-        dependencies.extend(
+        host_dependencies.extend(
             collect_auto_dependencies(
                 spec, exclude_packages=_explicit_dependency_names(explicit_dependencies)
             )
         )
-    dependencies.append(get_pip_string("inspect-flow"))
+    host_dependencies.append(get_pip_string("inspect-flow"))
     if not any(
-        _spec_is_inspect_ai(d) for d in dependencies
+        _spec_is_inspect_ai(d) for d in dependencies + host_dependencies
     ) and not _explicit_dependency_file_specifies_inspect_ai(spec, base_dir):
         # Ensure same version of inspect-ai is installed (supports -e installs)
-        dependencies.append(get_pip_string("inspect-ai"))
+        host_dependencies.append(get_pip_string("inspect-ai"))
+    dependencies.extend(host_dependencies)
 
-    _uv_pip_install(dependencies, temp_dir, env)
+    install_env, install_args = uv_pinned_settings(
+        env, str(Path(temp_dir) / "uv-install"), host_dependencies
+    )
+    _uv_pip_install(
+        dependencies,
+        temp_dir,
+        _venv_python(temp_dir),
+        install_env,
+        _uv_project_args(project_dir) + install_args,
+    )
 
     write_flow_requirements(spec, temp_dir, env, dry_run, python=_venv_python(temp_dir))
 
@@ -276,31 +311,39 @@ def _explicit_dependency_file_specifies_inspect_ai(
 
 
 def _get_create_venv_with_base_dependencies(
-    spec: FlowSpec, base_dir: str, temp_dir: str, env: dict[str, str], action: RunAction
+    spec: FlowSpec,
+    dependency_file: tuple[Literal["requirements.txt", "pyproject.toml"], str] | None,
+    project_dir: str | None,
+    temp_dir: str,
+    env: dict[str, str],
+    action: RunAction,
 ) -> Callable[..., None]:
-    file_type: Literal["requirements.txt", "pyproject.toml"] | None = None
-    file_path: str | None = None
-    dependency_file_info = _get_dependency_file(spec, base_dir=base_dir)
-    if not dependency_file_info:
+    if not dependency_file:
         action.print("Dependency file: none")
 
         def create_venv_func() -> None:
-            return _uv_venv(spec, temp_dir, env, action)
+            return _uv_venv(spec, temp_dir, env, action, project_dir)
 
         return create_venv_func
 
-    file_type, file_path = dependency_file_info
+    file_type, file_path = dependency_file
+    project_dir = str(Path(file_path).parent)
     action.print("Dependency file:", path(file_path))
     if file_type == "requirements.txt":
 
         def create_venv_func() -> None:
-            _uv_venv(spec, temp_dir, env, action)
+            _uv_venv(spec, temp_dir, env, action, project_dir)
             # Need to run in the directory containing the requirements.txt to handle relative paths
-            _uv_pip_install(["-r", file_path], Path(file_path).parent.as_posix(), env)
+            _uv_pip_install(
+                ["-r", file_path],
+                project_dir,
+                _venv_python(temp_dir),
+                uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
+                _uv_project_args(project_dir),
+            )
 
         return create_venv_func
 
-    project_dir = Path(file_path).parent
     if not spec.python_version:
         spec.python_version = resolve_python_version(file_path)
     action.print(f"Python: {spec.python_version}")
@@ -310,22 +353,47 @@ def _get_create_venv_with_base_dependencies(
         "--python",
         spec.python_version,
         "--project",
-        str(project_dir),
+        project_dir,
         "--active",
     ]
-    if (project_dir / "uv.lock").exists():
+    sync_args = _uv_sync_args(spec)
+    lock_mode = {"--locked", "--frozen"} & set(sync_args) or any(
+        env_flag(env, name) for name in ("UV_LOCKED", "UV_FROZEN")
+    )
+    if not lock_mode and _has_lock(project_dir, temp_dir, env):
+        # The lock fixes the runtime versions; the cooldown still applies to
+        # build requirements, which it does not lock.
         uv_args.append("--frozen")
-
-    uv_args.extend(_uv_sync_args(spec))
+    uv_args.extend(sync_args)
+    config_file = config_file_arg(sync_args)
+    if config_file:
+        warn_no_default_cooldown(config_file, "`uv sync`")
 
     def create_venv_func() -> None:
         run_with_logging(
             ["uv", "sync"] + uv_args,
             cwd=temp_dir,
-            env=env,
+            env=env
+            if config_file
+            else uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
         )
 
     return create_venv_func
+
+
+def _has_lock(project_dir: str, temp_dir: str, env: dict[str, str]) -> bool:
+    if (Path(project_dir) / "uv.lock").exists():
+        return True
+    # A workspace member uses the lock at its workspace root.
+    result = run_with_logging(
+        ["uv", "workspace", "dir", "--project", project_dir, "--offline"],
+        cwd=temp_dir,
+        env=env,
+        check=False,
+        log_output=False,
+    )
+    root = result.stdout.strip()
+    return result.returncode == 0 and (Path(root) / "uv.lock").exists()
 
 
 def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
@@ -338,7 +406,11 @@ def _uv_sync_args(spec: FlowSpec) -> Sequence[str]:
 
 
 def _uv_venv(
-    spec: FlowSpec, temp_dir: str, env: dict[str, str], action: RunAction
+    spec: FlowSpec,
+    temp_dir: str,
+    env: dict[str, str],
+    action: RunAction,
+    project_dir: str | None,
 ) -> None:
     spec.python_version = (
         spec.python_version
@@ -347,19 +419,52 @@ def _uv_venv(
     action.print(f"Python: {spec.python_version}")
 
     run_with_logging(
-        ["uv", "venv", "--python", spec.python_version],
+        ["uv", "venv", ".venv", "--python", spec.python_version]
+        + _uv_project_args(project_dir),
         cwd=temp_dir,
-        env=env,
+        # `uv venv` installs seed packages when UV_VENV_SEED is set.
+        env=uv_settings_env(env, str(Path(temp_dir) / "uv-defaults")),
     )
 
 
-def _uv_pip_install(args: List[str], temp_dir: str, env: dict[str, str]) -> None:
+def _uv_pip_install(
+    args: List[str],
+    cwd: str,
+    python: str,
+    env: dict[str, str],
+    uv_args: List[str],
+) -> None:
     """Install packages using 'uv pip install'."""
+    # An explicit interpreter keeps uv's `python` and `system` settings from
+    # choosing another environment, and its version keeps `python-version`
+    # from choosing wheels for another interpreter.
     run_with_logging(
-        ["uv", "pip", "install"] + args,
-        cwd=temp_dir,
+        ["uv", "pip", "install"]
+        + args
+        + ["--python", python]
+        + _python_version_args(python, env)
+        + uv_args,
+        cwd=cwd,
         env=env,
     )
+
+
+def _python_version_args(python: str, env: dict[str, str]) -> List[str]:
+    # The full version: pyvenv.cfg can record only the minor version, and uv
+    # would then resolve for x.y.0.
+    if not Path(python).exists():
+        return []
+    result = run_with_logging(
+        [python, "-c", "import sys; print('.'.join(map(str, sys.version_info[:3])))"],
+        env=env,
+        log_output=False,
+    )
+    return ["--python-version", result.stdout.strip()]
+
+
+def _uv_project_args(project_dir: str | None) -> List[str]:
+    # Lets uv find the dependency file's own settings (`[tool.uv]`, `uv.toml`).
+    return ["--project", project_dir] if project_dir else []
 
 
 def _get_dependency_file(
