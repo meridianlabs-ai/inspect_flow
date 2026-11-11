@@ -5,7 +5,8 @@ list of model provider SDKs and Inspect packages. Dependabot applies the seven
 days to its uv.lock bumps and leaves that list to uv. Every Python job in
 build.yaml installs from uv.lock through the shared install action. py-build
 and the publish jobs build with the toolchain pinned with hashes in
-scripts/build-dist/requirements.txt, also through the shared action.
+scripts/build-dist/requirements.txt, also through the shared action. Venv
+mode applies the same cooldown by default to the environments it creates.
 """
 
 import re
@@ -16,6 +17,11 @@ from typing import Any
 
 import pytest
 import yaml
+from inspect_flow._launcher.uv_settings import (
+    DEFAULT_COOLDOWN,
+    SHORT_COOLDOWN,
+    SHORT_COOLDOWN_PACKAGES,
+)
 
 REPO = Path(__file__).parents[1]
 GITHUB = REPO / ".github"
@@ -139,6 +145,13 @@ def test_dependabot_cooldown_matches_pyproject() -> None:
     assert list(groups) == ["six-hour-cooldown", "python-packages"]
     assert sorted(groups["six-hour-cooldown"]["patterns"]) == exempt
     assert groups["python-packages"]["patterns"] == ["*"]
+
+
+def test_venv_default_cooldown_matches_pyproject() -> None:
+    days = int(pyproject()["tool"]["uv"]["exclude-newer"].removesuffix(" days"))
+    assert DEFAULT_COOLDOWN == timedelta(days=days)
+    assert SHORT_COOLDOWN == timedelta(hours=int(SIX_HOURS.removesuffix(" hours")))
+    assert sorted(SHORT_COOLDOWN_PACKAGES) == six_hour_packages()
 
 
 def test_dependabot_build_toolchain_cooldown_matches_pyproject() -> None:
