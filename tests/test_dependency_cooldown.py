@@ -100,6 +100,11 @@ def workflow_jobs(workflow: str) -> dict[str, Any]:
     return jobs
 
 
+def needs(job: dict[str, Any]) -> list[str]:
+    value: str | list[str] = job.get("needs", [])
+    return [value] if isinstance(value, str) else value
+
+
 def run_lines(job: dict[str, Any]) -> list[str]:
     return [
         line.strip()
@@ -243,8 +248,13 @@ def test_publish_jobs_only_upload_the_shared_build(workflow: str) -> None:
         steps = [step.get("uses", "") for step in job["steps"]]
         assert len(steps) == len(PUBLISH_STEPS)
         assert all(map(str.startswith, steps, PUBLISH_STEPS)), steps
-        assert "build" in job["needs"]
+        assert "build" in needs(job)
         assert job["steps"][0]["with"] == DOWNLOAD_INPUTS
+    # Without the release-please tag, hatch-vcs builds a dev version.
+    if workflow == "release.yaml":
+        build = workflow_jobs(workflow)["build"]
+        assert "release-please" in needs(build)
+        assert all(build["if"] == job["if"] for job in publishers)
 
 
 @pytest.mark.parametrize("workflow", ["build.yaml", *PUBLISH_WORKFLOWS])
