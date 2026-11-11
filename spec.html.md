@@ -8,7 +8,7 @@ Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:
 - **[FlowTask](./reference/inspect_flow.html.md#flowtask)** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
 - **[FlowModel](./reference/inspect_flow.html.md#flowmodel)** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 - **[FlowSolver](./reference/inspect_flow.html.md#flowsolver)** and **[FlowAgent](./reference/inspect_flow.html.md#flowagent)** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
-- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
+- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorers.html).
 - **[FlowOptions](./reference/inspect_flow.html.md#flowoptions)** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 - **[FlowDefaults](./reference/inspect_flow.html.md#flowdefaults)** — System for setting default values across tasks, models, solvers, and agents.
 - **[FlowDependencies](./reference/inspect_flow.html.md#flowdependencies)** — Configuration for evaluation dependencies (used in virtual environment mode).
@@ -329,6 +329,21 @@ FlowTask(
     model_roles={
         "assistant": "openai/gpt-5",
         "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+
+A role can also bind to a list of models, in which case model-graded scorers grade with each model and resolve the final grade by majority vote:
+
+``` python
+FlowTask(
+    name="majority_vote_task",
+    model_roles={
+        "grader": [
+            "openai/gpt-5",
+            "anthropic/claude-3-5-sonnet",
+            "google/gemini-2.5-pro",
+        ],
     }
 )
 ```

@@ -261,7 +261,7 @@ Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:
 - **[FlowTask](./reference/inspect_flow.html.md#flowtask)** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
 - **[FlowModel](./reference/inspect_flow.html.md#flowmodel)** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 - **[FlowSolver](./reference/inspect_flow.html.md#flowsolver)** and **[FlowAgent](./reference/inspect_flow.html.md#flowagent)** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
-- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
+- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorers.html).
 - **[FlowOptions](./reference/inspect_flow.html.md#flowoptions)** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 - **[FlowDefaults](./reference/inspect_flow.html.md#flowdefaults)** — System for setting default values across tasks, models, solvers, and agents.
 - **[FlowDependencies](./reference/inspect_flow.html.md#flowdependencies)** — Configuration for evaluation dependencies (used in virtual environment mode).
@@ -582,6 +582,21 @@ FlowTask(
     model_roles={
         "assistant": "openai/gpt-5",
         "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+
+A role can also bind to a list of models, in which case model-graded scorers grade with each model and resolve the final grade by majority vote:
+
+``` python
+FlowTask(
+    name="majority_vote_task",
+    model_roles={
+        "grader": [
+            "openai/gpt-5",
+            "anthropic/claude-3-5-sonnet",
+            "google/gemini-2.5-pro",
+        ],
     }
 )
 ```
@@ -922,11 +937,7 @@ When including files by path, relative paths will be resolved relative to the co
 from inspect_flow import FlowSpec, FlowTask
 
 FlowSpec(
-    includes=[
-        "defaults.py",
-        "../shared.py",
-        "/absolute/path.py",
-    ],
+    includes=["defaults.py"],
     log_dir="logs",
     tasks=[
         FlowTask(
@@ -1158,7 +1169,7 @@ FlowSpec(
 
 This creates **4 tasks** (2 tasks × 2 models).
 
-In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
+In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `turn_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
 
 ### models_matrix()
 
@@ -2313,7 +2324,7 @@ When [log matching](#log-matching) is enabled, the Flow Store matches logs using
 
 - Task name, model, solver, scorer, and task arguments
 - Model configuration (temperature, top_p, max_tokens, seed, etc.)
-- Task limits (message_limit, token_limit, time_limit, working_limit)
+- Task limits (message_limit, token_limit, turn_limit, time_limit, working_limit, cost_limit)
 - Approval and sandbox settings
 
 Note that `limit`, `sample_shuffle`, retry parameters, and parallelism settings are NOT included—these are runtime parameters that don’t change what you’re evaluating.
@@ -2406,9 +2417,12 @@ Copy eval logs to a destination directory:
 ``` bash
 flow step copy logs/ --dest s3://bucket/prod/
 flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
+flow step copy logs/ --dest ./realigned/ --suffix +realigned
 ```
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
+
+Use `--suffix` to mark copies that are derivatives of the original — it is inserted before the file extension (`probe.eval` becomes `probe+realigned.eval`), so the marker travels with the file even when it is copied onward. From Python, [copy()](./reference/inspect_flow.api.html.md#copy) also accepts a `rename` function mapping the source filename to the destination filename for full control.
 
 ### [**scan**](./reference/inspect_flow.api.html.md#scan)
 
@@ -2423,6 +2437,8 @@ flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
 `--scanners` accepts a path to a Python or YAML file containing `@scanjob` or `@scanner` definitions (or, from the Python API, a `ScanJob`, `ScanJobConfig`, sequence, or dict of scanners). Scan results are written to `<log_dir>/scans` by default — set `--scans` to override, which is required when input logs span multiple directories. A `scout.yaml` project file is written alongside to link transcripts and scans.
 
 Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
+
+The `scan` step runs after the eval set completes. To instead run scanners inline against each sample *during* the run, set `scanner` on [FlowOptions](./reference/inspect_flow.html.md#flowoptions) to a path to a scanner config file (or a `ScannerConfig`) — this maps to the `scanner` parameter of Inspect’s `eval_set()`. The config file path is resolved relative to the config file (CLI) or `base_dir` (API), but any `file:` references *inside* the scanner config are resolved by Inspect Scout relative to the current working directory, so prefer absolute `file:` paths when running from a different directory.
 
 ## Custom Steps
 
@@ -2459,7 +2475,7 @@ Parameter help text shown in `--help` is extracted from Google-style docstrings.
 
 > **NOTE: Note**
 >
-> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.html#read_eval_log) from Inspect AI with `header_only=False`.
+> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#read_eval_log) from Inspect AI with `header_only=False`.
 
 ### Nesting and deferred writes
 
@@ -2467,7 +2483,7 @@ Steps can call other steps — as shown in `review_scores` above. When steps are
 
 ### StepResult
 
-Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#StepResult) for finer control:
+Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#stepresult) for finer control:
 
 | Field | Default | Description |
 |----|----|----|
@@ -2804,6 +2820,7 @@ In virtual environment mode, Flow automatically discovers and installs dependenc
 - **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
   - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Factories: `FlowTask(factory="inspect_evals/mmlu")` (or `factory=FlowFactory("inspect_evals/mmlu")`) infers the same package. A registry-decorated callable factory (e.g. `factory=mmlu`) infers the package of its registry name. When both `name` and `factory` are given, `factory` decides the package, matching how the runner resolves the object
   - Note: Package inference only works with Flow types ([FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
@@ -2847,13 +2864,58 @@ FlowSpec(
 ```
 
 1  
-How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
+How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory or at the root of its uv workspace, it will be used automatically for reproducible installs.
 
 2  
 Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
 3  
 Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+
+### uv Settings and Release Cooldown
+
+Venv mode needs uv 0.13.4 or newer.
+
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file’s `pyproject.toml` (or a `uv.toml` beside it, or the workspace root’s settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`. With no dependency file, uv reads a `uv.toml` or `[tool.uv]` settings from a `pyproject.toml` in the spec’s directory or above it. This also applies when `dependency_file="no_file"`. With a dependency file, flow uses that file’s project for uv settings even if `UV_PROJECT` is set; `UV_PROJECT` is used only when there is no dependency file. Venv mode installs into its own environment for the machine Flow runs on, so the `[tool.uv.pip]` settings `target`, `prefix` and `python-platform` are not supported there. Other `[tool.uv.pip]` install settings, such as `require-hashes`, `no-deps`, `no-build` and `only-binary`, also apply to the packages Flow installs itself (`inspect-flow`, `inspect-ai` and auto-detected packages). `require-hashes` makes setup fail, because those requirements carry no hashes, and `no-deps` can leave the environment without their dependencies.
+
+By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
+
+- Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have. A build that needs one of these packages gets that version too. A uv override of one of these packages conflicts with the copied version; to use another version, list the package in `additional_dependencies`.
+- A `uv.lock` installs exactly the versions it lists. The default still applies to build requirements, such as `hatchling`, which the lock does not list.
+
+If the dependency project has no lock, uv creates one and records Flow’s cooldown settings in it. Running uv without Flow can update those recorded settings.
+
+With `--locked` in `uv_sync_args`, or `UV_LOCKED`, uv also checks that the lock records the cooldown settings in use. A lock created without a cooldown therefore fails the first Flow run, because Flow’s default changes those settings. Set the cooldown in the project and run `uv lock` once; your settings then replace Flow’s and the lock stays valid. Give an `exclude-newer-package` entry to each of `anthropic`, `inspect-ai`, `inspect-scout` and `openai` that the project uses, since Flow’s 6-hour entries for them stay otherwise:
+
+``` toml
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.uv.exclude-newer-package]
+openai = "6 hours"
+```
+
+The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package’s metadata, it can fetch a newer build requirement.
+
+Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases at least 1 day old, and any release of `inspect-evals`:
+
+``` toml
+[tool.uv]
+exclude-newer = "1 day"
+
+[tool.uv.exclude-newer-package]
+inspect-evals = false
+```
+
+Flow adds no default, and logs a warning, when uv reads a system `uv.toml` (such as `/etc/uv/uv.toml`) or a config file named with `UV_CONFIG_FILE` or `--config-file` in `uv_sync_args`. Packages copied from your environment are then not exempt from a cooldown in that file. To keep a cooldown, set it in that file:
+
+``` toml
+exclude-newer = "7 days"
+```
+
+`UV_NO_CONFIG` disables config discovery, including Flow’s system defaults. Explicit files selected by `UV_CONFIG_FILE` or `--config-file` are still read.
+
+If a version you pin is newer than the window, uv’s error names the package and the setting to change.
 
 ### Python Version
 

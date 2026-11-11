@@ -67,9 +67,12 @@ Copy eval logs to a destination directory:
 ``` bash
 flow step copy logs/ --dest s3://bucket/prod/
 flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
+flow step copy logs/ --dest ./realigned/ --suffix +realigned
 ```
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
+
+Use `--suffix` to mark copies that are derivatives of the original — it is inserted before the file extension (`probe.eval` becomes `probe+realigned.eval`), so the marker travels with the file even when it is copied onward. From Python, [copy()](./reference/inspect_flow.api.html.md#copy) also accepts a `rename` function mapping the source filename to the destination filename for full control.
 
 ### [**scan**](./reference/inspect_flow.api.html.md#scan)
 
@@ -84,6 +87,8 @@ flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
 `--scanners` accepts a path to a Python or YAML file containing `@scanjob` or `@scanner` definitions (or, from the Python API, a `ScanJob`, `ScanJobConfig`, sequence, or dict of scanners). Scan results are written to `<log_dir>/scans` by default — set `--scans` to override, which is required when input logs span multiple directories. A `scout.yaml` project file is written alongside to link transcripts and scans.
 
 Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
+
+The `scan` step runs after the eval set completes. To instead run scanners inline against each sample *during* the run, set `scanner` on [FlowOptions](./reference/inspect_flow.html.md#flowoptions) to a path to a scanner config file (or a `ScannerConfig`) — this maps to the `scanner` parameter of Inspect’s `eval_set()`. The config file path is resolved relative to the config file (CLI) or `base_dir` (API), but any `file:` references *inside* the scanner config are resolved by Inspect Scout relative to the current working directory, so prefer absolute `file:` paths when running from a different directory.
 
 ## Custom Steps
 
@@ -120,7 +125,7 @@ Parameter help text shown in `--help` is extracted from Google-style docstrings.
 
 > **NOTE: Note**
 >
-> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.html#read_eval_log) from Inspect AI with `header_only=False`.
+> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#read_eval_log) from Inspect AI with `header_only=False`.
 
 ### Nesting and deferred writes
 
@@ -128,7 +133,7 @@ Steps can call other steps — as shown in `review_scores` above. When steps are
 
 ### StepResult
 
-Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#StepResult) for finer control:
+Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#stepresult) for finer control:
 
 | Field | Default | Description |
 |----|----|----|

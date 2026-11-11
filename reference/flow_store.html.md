@@ -36,9 +36,9 @@ flow store import [OPTIONS] PATH...
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
-| `--copy-from` | directory | Copy logs from this directory to PATH before importing. Supports both local and S3 paths. | None |
-| `--dry-run` | boolean | Preview what would be imported without making changes | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--copy-from` | directory | Copy logs from this directory to PATH before importing. Supports both local and S3 paths. | `Sentinel.UNSET` |
+| `--dry-run` | boolean | Preview what would be imported without making changes | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store remove
 
@@ -58,11 +58,11 @@ flow store remove [OPTIONS] [PREFIX]...
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
-| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
 | `--missing` | boolean | Remove logs that no longer exist on file system | `False` |
-| `--dry-run` | boolean | Preview what would be removed without making changes | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--dry-run` | boolean | Preview what would be removed without making changes | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store info
 
@@ -82,7 +82,7 @@ flow store info [OPTIONS]
 | `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store delete
 
@@ -101,8 +101,8 @@ flow store delete [OPTIONS]
 | `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--yes`, `-y` | boolean | Skip confirmation prompt | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--yes`, `-y` | boolean | Skip confirmation prompt | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store list
 
@@ -123,6 +123,6 @@ flow store list [OPTIONS]
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
-| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--format` | choice (`flat` \| `tree`) | Output format: tree, flat | `flat` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |

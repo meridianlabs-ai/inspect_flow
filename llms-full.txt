@@ -261,7 +261,7 @@ Inspect Flow mirrors Inspect AI’s object model with corresponding Flow types:
 - **[FlowTask](./reference/inspect_flow.html.md#flowtask)** — Configuration for a single evaluation task. Maps to Inspect AI [Task](https://inspect.aisi.org.uk/tasks.html) parameters.
 - **[FlowModel](./reference/inspect_flow.html.md#flowmodel)** — Model configuration including API settings and generation settings. Maps to Inspect AI [Model](https://inspect.aisi.org.uk/models.html).
 - **[FlowSolver](./reference/inspect_flow.html.md#flowsolver)** and **[FlowAgent](./reference/inspect_flow.html.md#flowagent)** — Solver and agent chain configuration. Map to Inspect AI [Solver](https://inspect.aisi.org.uk/solvers.html) and [Agent](https://inspect.aisi.org.uk/agents.html).
-- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorer.html).
+- **[FlowScorer](./reference/inspect_flow.html.md#flowscorer)** — Configuration for a Scorer. Maps to Inspect AI [Scorer](https://inspect.aisi.org.uk/scorers.html).
 - **[FlowOptions](./reference/inspect_flow.html.md#flowoptions)** — Runtime execution options. Maps to Inspect AI [eval_set()](https://inspect.aisi.org.uk/reference/inspect_ai.html#eval_set) parameters.
 - **[FlowDefaults](./reference/inspect_flow.html.md#flowdefaults)** — System for setting default values across tasks, models, solvers, and agents.
 - **[FlowDependencies](./reference/inspect_flow.html.md#flowdependencies)** — Configuration for evaluation dependencies (used in virtual environment mode).
@@ -582,6 +582,21 @@ FlowTask(
     model_roles={
         "assistant": "openai/gpt-5",
         "critic": "anthropic/claude-3-5-sonnet",
+    }
+)
+```
+
+A role can also bind to a list of models, in which case model-graded scorers grade with each model and resolve the final grade by majority vote:
+
+``` python
+FlowTask(
+    name="majority_vote_task",
+    model_roles={
+        "grader": [
+            "openai/gpt-5",
+            "anthropic/claude-3-5-sonnet",
+            "google/gemini-2.5-pro",
+        ],
     }
 )
 ```
@@ -922,11 +937,7 @@ When including files by path, relative paths will be resolved relative to the co
 from inspect_flow import FlowSpec, FlowTask
 
 FlowSpec(
-    includes=[
-        "defaults.py",
-        "../shared.py",
-        "/absolute/path.py",
-    ],
+    includes=["defaults.py"],
     log_dir="logs",
     tasks=[
         FlowTask(
@@ -1158,7 +1169,7 @@ FlowSpec(
 
 This creates **4 tasks** (2 tasks × 2 models).
 
-In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
+In addition to `model`, `config`, `solver`, and `args`, you can also sweep over sample limit fields: `message_limit`, `token_limit`, `turn_limit`, `time_limit`, `working_limit`, and `cost_limit`. See [this example](https://github.com/meridianlabs-ai/inspect_flow/blob/main/examples/tasks_matrix_limits.py) for usage.
 
 ### models_matrix()
 
@@ -2313,7 +2324,7 @@ When [log matching](#log-matching) is enabled, the Flow Store matches logs using
 
 - Task name, model, solver, scorer, and task arguments
 - Model configuration (temperature, top_p, max_tokens, seed, etc.)
-- Task limits (message_limit, token_limit, time_limit, working_limit)
+- Task limits (message_limit, token_limit, turn_limit, time_limit, working_limit, cost_limit)
 - Approval and sandbox settings
 
 Note that `limit`, `sample_shuffle`, retry parameters, and parallelism settings are NOT included—these are runtime parameters that don’t change what you’re evaluating.
@@ -2406,9 +2417,12 @@ Copy eval logs to a destination directory:
 ``` bash
 flow step copy logs/ --dest s3://bucket/prod/
 flow step copy logs/ --dest ./archive/ --source-prefix ./logs/
+flow step copy logs/ --dest ./realigned/ --suffix +realigned
 ```
 
 Without `--source-prefix`, files are copied flat into the destination. With it, directory structure relative to the prefix is preserved. Use `--overwrite` to replace existing files. Use `--store` to add copied logs to the Flow Store index.
+
+Use `--suffix` to mark copies that are derivatives of the original — it is inserted before the file extension (`probe.eval` becomes `probe+realigned.eval`), so the marker travels with the file even when it is copied onward. From Python, [copy()](./reference/inspect_flow.api.html.md#copy) also accepts a `rename` function mapping the source filename to the destination filename for full control.
 
 ### [**scan**](./reference/inspect_flow.api.html.md#scan)
 
@@ -2423,6 +2437,8 @@ flow step scan logs/ --scanners scanjob.yaml -S threshold=0.8
 `--scanners` accepts a path to a Python or YAML file containing `@scanjob` or `@scanner` definitions (or, from the Python API, a `ScanJob`, `ScanJobConfig`, sequence, or dict of scanners). Scan results are written to `<log_dir>/scans` by default — set `--scans` to override, which is required when input logs span multiple directories. A `scout.yaml` project file is written alongside to link transcripts and scans.
 
 Logs pass through unmodified, so `scan` composes with other steps. The full set of scanner, model, and execution options mirrors `scout scan` — run `flow step scan --help` or see the [Inspect Scout docs](https://meridianlabs-ai.github.io/inspect_scout/reference/scanning.html#scan) for details.
+
+The `scan` step runs after the eval set completes. To instead run scanners inline against each sample *during* the run, set `scanner` on [FlowOptions](./reference/inspect_flow.html.md#flowoptions) to a path to a scanner config file (or a `ScannerConfig`) — this maps to the `scanner` parameter of Inspect’s `eval_set()`. The config file path is resolved relative to the config file (CLI) or `base_dir` (API), but any `file:` references *inside* the scanner config are resolved by Inspect Scout relative to the current working directory, so prefer absolute `file:` paths when running from a different directory.
 
 ## Custom Steps
 
@@ -2459,7 +2475,7 @@ Parameter help text shown in `--help` is extracted from Google-style docstrings.
 
 > **NOTE: Note**
 >
-> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.html#read_eval_log) from Inspect AI with `header_only=False`.
+> Steps receive log headers only — samples are not loaded. To access samples in a custom step, use [`read_eval_log()`](https://inspect.aisi.org.uk/reference/inspect_ai.log.html#read_eval_log) from Inspect AI with `header_only=False`.
 
 ### Nesting and deferred writes
 
@@ -2467,7 +2483,7 @@ Steps can call other steps — as shown in `review_scores` above. When steps are
 
 ### StepResult
 
-Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#StepResult) for finer control:
+Steps can return a plain `list[EvalLog]` or a [StepResult](./reference/inspect_flow.api.html.md#stepresult) for finer control:
 
 | Field | Default | Description |
 |----|----|----|
@@ -2804,6 +2820,7 @@ In virtual environment mode, Flow automatically discovers and installs dependenc
 - **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
   - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Factories: `FlowTask(factory="inspect_evals/mmlu")` (or `factory=FlowFactory("inspect_evals/mmlu")`) infers the same package. A registry-decorated callable factory (e.g. `factory=mmlu`) infers the package of its registry name. When both `name` and `factory` are given, `factory` decides the package, matching how the runner resolves the object
   - Note: Package inference only works with Flow types ([FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
@@ -2847,13 +2864,58 @@ FlowSpec(
 ```
 
 1  
-How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
+How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory or at the root of its uv workspace, it will be used automatically for reproducible installs.
 
 2  
 Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
 3  
 Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+
+### uv Settings and Release Cooldown
+
+Venv mode needs uv 0.13.4 or newer.
+
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file’s `pyproject.toml` (or a `uv.toml` beside it, or the workspace root’s settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`. With no dependency file, uv reads a `uv.toml` or `[tool.uv]` settings from a `pyproject.toml` in the spec’s directory or above it. This also applies when `dependency_file="no_file"`. With a dependency file, flow uses that file’s project for uv settings even if `UV_PROJECT` is set; `UV_PROJECT` is used only when there is no dependency file. Venv mode installs into its own environment for the machine Flow runs on, so the `[tool.uv.pip]` settings `target`, `prefix` and `python-platform` are not supported there. Other `[tool.uv.pip]` install settings, such as `require-hashes`, `no-deps`, `no-build` and `only-binary`, also apply to the packages Flow installs itself (`inspect-flow`, `inspect-ai` and auto-detected packages). `require-hashes` makes setup fail, because those requirements carry no hashes, and `no-deps` can leave the environment without their dependencies.
+
+By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
+
+- Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have. A build that needs one of these packages gets that version too. A uv override of one of these packages conflicts with the copied version; to use another version, list the package in `additional_dependencies`.
+- A `uv.lock` installs exactly the versions it lists. The default still applies to build requirements, such as `hatchling`, which the lock does not list.
+
+If the dependency project has no lock, uv creates one and records Flow’s cooldown settings in it. Running uv without Flow can update those recorded settings.
+
+With `--locked` in `uv_sync_args`, or `UV_LOCKED`, uv also checks that the lock records the cooldown settings in use. A lock created without a cooldown therefore fails the first Flow run, because Flow’s default changes those settings. Set the cooldown in the project and run `uv lock` once; your settings then replace Flow’s and the lock stays valid. Give an `exclude-newer-package` entry to each of `anthropic`, `inspect-ai`, `inspect-scout` and `openai` that the project uses, since Flow’s 6-hour entries for them stay otherwise:
+
+``` toml
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.uv.exclude-newer-package]
+openai = "6 hours"
+```
+
+The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package’s metadata, it can fetch a newer build requirement.
+
+Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases at least 1 day old, and any release of `inspect-evals`:
+
+``` toml
+[tool.uv]
+exclude-newer = "1 day"
+
+[tool.uv.exclude-newer-package]
+inspect-evals = false
+```
+
+Flow adds no default, and logs a warning, when uv reads a system `uv.toml` (such as `/etc/uv/uv.toml`) or a config file named with `UV_CONFIG_FILE` or `--config-file` in `uv_sync_args`. Packages copied from your environment are then not exempt from a cooldown in that file. To keep a cooldown, set it in that file:
+
+``` toml
+exclude-newer = "7 days"
+```
+
+`UV_NO_CONFIG` disables config discovery, including Flow’s system defaults. Explicit files selected by `UV_CONFIG_FILE` or `--config-file` are still read.
+
+If a version you pin is newer than the window, uv’s error names the package and the setting to change.
 
 ### Python Version
 
@@ -3192,14 +3254,14 @@ flow check [OPTIONS] CONFIG_FILE
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--json` | boolean | Output results as JSON. | `False` |
-| `--venv` | boolean | If set, resolve tasks in a virtual environment in a temporary directory. | `False` |
+| `--venv` | boolean | If set, resolve tasks in a virtual environment in a temporary directory. | `Sentinel.UNSET` |
 | `--limit` | integer | Set the expected number of samples per task for completeness calculation. | None |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
-| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
-| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
+| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | `Sentinel.UNSET` |
+| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | `Sentinel.UNSET` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # flow_config – Inspect Flow
@@ -3217,20 +3279,20 @@ flow config [OPTIONS] CONFIG_FILE
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--json` | boolean | Output results as JSON. | `False` |
-| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
-| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `False` |
+| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `Sentinel.UNSET` |
+| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `Sentinel.UNSET` |
 | `--log-dir-create-unique` / `--no-log-dir-create-unique` | boolean | If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | None |
 | `--store-write` / `--no-store-write` | boolean | Write completed logs to the store (default: `--store-write`). | None |
 | `--store-read` / `--no-store-read` | boolean | Read existing logs from the store (default: `--no-store-read`). | None |
-| `--store-filter` | text | Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--store-filter` | text | Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--store` | text | Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store. | None |
 | `--limit` | integer | Limit the number of samples to run. | None |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
-| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
-| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
+| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | `Sentinel.UNSET` |
+| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | `Sentinel.UNSET` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # flow_list – Inspect Flow
@@ -3268,20 +3330,20 @@ flow list log [OPTIONS] [PATH]
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
-| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--format` | choice (`table` \| `tree`) | Output format | `table` |
 | `--oneline` | boolean | Show each log on a single line (compact table format). | `False` |
 | `--provenance` | boolean | Show provenance (edit history) for each log. Only displayed in multiline mode. | `False` |
 | `--no-page` | boolean | Disable paged output. | `False` |
 | `-n`, `--max-count` | integer | Limit output to N logs. Also accepts -N (e.g. -5). | None |
-| `--task` | text | Only show logs whose task name matches PATTERN (glob). May be repeated. | None |
-| `--model` | text | Only show logs whose model matches PATTERN (glob). May be repeated. | None |
-| `--tag` | text | Only show logs with a tag matching PATTERN (glob). May be repeated. | None |
-| `--status` | choice (`success` \| `error` \| `cancelled` \| `started`) | Only show logs with this status. May be repeated. | None |
+| `--task` | text | Only show logs whose task name matches PATTERN (glob). May be repeated. | `Sentinel.UNSET` |
+| `--model` | text | Only show logs whose model matches PATTERN (glob). May be repeated. | `Sentinel.UNSET` |
+| `--tag` | text | Only show logs with a tag matching PATTERN (glob). May be repeated. | `Sentinel.UNSET` |
+| `--status` | choice (`success` \| `error` \| `cancelled` \| `started`) | Only show logs with this status. May be repeated. | `Sentinel.UNSET` |
 | `--live` | integer | Refresh display every N seconds (default: 10). | None |
 | `--since`, `--after` | text | Only show logs whose filename timestamp is at or after DATE. Date strings like `'2024-01-15'` resolve to midnight; relative expressions like `'today'` resolve to the current time. | None |
 | `--until`, `--before` | text | Only show logs whose filename timestamp is at or before DATE. Date strings like `'2024-06-01'` resolve to midnight; relative expressions like `'yesterday'` resolve to the current time minus one day. | None |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # flow_run – Inspect Flow
@@ -3299,23 +3361,23 @@ flow run [OPTIONS] CONFIG_FILE
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--json` | boolean | Output results as JSON. | `False` |
-| `--dry-run` | boolean | Do not run spec, but show a count of tasks that would be run. | `False` |
-| `--log-dir-allow-dirty` | boolean | Do not fail if the `log-dir` contains files that are not part of the eval set. | `False` |
+| `--dry-run` | boolean | Do not run spec, but show a count of tasks that would be run. | `Sentinel.UNSET` |
+| `--log-dir-allow-dirty` | boolean | Do not fail if the `log-dir` contains files that are not part of the eval set. | `Sentinel.UNSET` |
 | `--handle-file` | file | Write a JSON launch handle (with the run’s `log_dir` and `pid`) to this file once the log directory is resolved. Lets a monitor discover a backgrounded run. A relative path is resolved relative to the config file’s directory, not the current working directory. | None |
-| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `False` |
-| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `False` |
+| `--venv` | boolean | If set run the flow in a virtual environment in a temporary directory. | `Sentinel.UNSET` |
+| `--resume` | boolean | Resume from the previous run by reusing its log directory. Mutually exclusive with `--log-dir`. | `Sentinel.UNSET` |
 | `--log-dir-create-unique` / `--no-log-dir-create-unique` | boolean | If set, create a unique log directory by appending a datetime subdirectory (e.g. `2025-12-09T17-36-43`) under the specified `log_dir`. If not set, use the existing `log_dir` (which must be empty or have `log_dir_allow_dirty=True`). | None |
 | `--store-write` / `--no-store-write` | boolean | Write completed logs to the store (default: `--store-write`). | None |
 | `--store-read` / `--no-store-read` | boolean | Read existing logs from the store (default: `--no-store-read`). | None |
-| `--store-filter` | text | Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--store-filter` | text | Log filter to apply when searching the store for existing logs. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--store` | text | Path to the store directory. Will override the store specified in the config. `'auto'` for default location. `'none'` for no store. | None |
 | `--limit` | integer | Limit the number of samples to run. | None |
 | `--log-dir` | directory | Set the log directory. Will override the `log_dir` specified in the config. | None |
-| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | None |
-| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | None |
+| `--arg`, `-A` | text | Set arguments that will be passed as kwargs to the function in the flow config. Only used when the last statement in the config file is a function. Examples: `--arg task_min_priority=2` If the same key is provided multiple times, later values will override earlier ones. | `Sentinel.UNSET` |
+| `--set`, `-s` | text | Override any field in the flow config using dot notation (e.g. `field.subfield=value`). The path corresponds to the fields of [FlowSpec](../reference/inspect_flow.html.md#flowspec) and its nested types (`options`, `defaults`, `tasks`, etc.). Examples: `--set options.limit=10` `--set defaults.solver.args.tool_calls=none` `--set options.metadata={"key1": "val1", "key2": "val2"}` Values are parsed as JSON when possible (lists and dicts), otherwise as strings. String values are appended to existing lists; JSON lists and dicts replace existing values. When the same key is provided multiple times, later values override earlier ones. | `Sentinel.UNSET` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # flow_step – Inspect Flow
@@ -3363,15 +3425,16 @@ flow step copy [OPTIONS] [PATH]...
 |----|----|----|----|
 | `--dest` | text | Destination directory (local or S3). | \_required |
 | `--source-prefix` | text | Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix. | None |
+| `--suffix` | text | Suffix inserted before the file extension of each copy (e.g. `+realigned` copies `probe.eval` to `probe+realigned.eval`). Mutually exclusive with the rename parameter (Python API only). | None |
 | `--overwrite` | boolean | Overwrite existing files at the destination. | `False` |
 | `--store` | text | Resolve logs from a store. Use –store for the default store or –store PATH for a specific one. | None |
-| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
-| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
+| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
+| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | `Sentinel.UNSET` |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow step metadata
 
@@ -3392,13 +3455,13 @@ flow step metadata [OPTIONS] [PATH]...
 | `--author` | text | Provenance author. Defaults to git user. | None |
 | `--reason` | text | Reason for the edit. | None |
 | `--store` | text | Resolve logs from a store. Use –store for the default store or –store PATH for a specific one. | None |
-| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
-| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
+| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
+| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | `Sentinel.UNSET` |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow step scan
 
@@ -3415,42 +3478,42 @@ flow step scan [OPTIONS] [PATH]...
 | Name | Type | Description | Default |
 |----|----|----|----|
 | `--scanners` | text | Scanners to run, as a sequence, dict, `ScanJob`, `ScanJobConfig`, or a path to a Python/YAML file containing scanjob/scanner definitions. | \_required |
-| `-S` | text | One or more scanjob or scanner arguments (e.g. -S arg=value) | None |
+| `-S` | text | One or more scanjob or scanner arguments (e.g. -S arg=value) | `Sentinel.UNSET` |
 | `--scans` | text | Location to write scan results to. Defaults to a ‘scans’ directory alongside the input logs (errors if logs are in multiple directories). | None |
-| `-V`, `--validation` | text | One or more validation sets to apply for scanners (e.g. -V myscanner:deception.csv) | None |
-| `--model` | text | Model used by default for llm scanners. | None |
-| `--model-base-url` | text | Base URL for for model API | None |
-| `-M` | text | One or more native model arguments (e.g. -M arg=value) | None |
-| `--model-config` | text | YAML or JSON config file with model arguments. | None |
-| `--model-role` | text | Named model role with model name or YAML/JSON config, e.g. –model-role critic=openai/gpt-4o or –model-role grader=“{model: mockllm/model, temperature: 0.5}” | None |
-| `--max-transcripts` | integer | Maximum number of transcripts to scan concurrently (defaults to 25) | None |
-| `--max-processes` | integer | Number of worker processes. Defaults to 4. | None |
-| `--limit` | integer | Limit number of transcripts to scan. | None |
+| `-V`, `--validation` | text | One or more validation sets to apply for scanners (e.g. -V myscanner:deception.csv) | `Sentinel.UNSET` |
+| `--model` | text | Model used by default for llm scanners. | `Sentinel.UNSET` |
+| `--model-base-url` | text | Base URL for for model API | `Sentinel.UNSET` |
+| `-M` | text | One or more native model arguments (e.g. -M arg=value) | `Sentinel.UNSET` |
+| `--model-config` | text | YAML or JSON config file with model arguments. | `Sentinel.UNSET` |
+| `--model-role` | text | Named model role with model name or YAML/JSON config, e.g. –model-role critic=openai/gpt-4o or –model-role grader=“{model: mockllm/model, temperature: 0.5}” | `Sentinel.UNSET` |
+| `--max-transcripts` | integer | Maximum number of transcripts to scan concurrently (defaults to 25) | `Sentinel.UNSET` |
+| `--max-processes` | integer | Number of worker processes. Defaults to 4. | `Sentinel.UNSET` |
+| `--limit` | integer | Limit number of transcripts to scan. | `Sentinel.UNSET` |
 | `--shuffle` | text | Shuffle order of transcripts (pass a seed to make the order deterministic) | None |
-| `--tags` | text | Tags to associate with this scan job (comma separated) | None |
-| `--metadata` | text | Metadata to associate with this scan job (more than one –metadata argument can be specified). | None |
+| `--tags` | text | Tags to associate with this scan job (comma separated) | `Sentinel.UNSET` |
+| `--metadata` | text | Metadata to associate with this scan job (more than one –metadata argument can be specified). | `Sentinel.UNSET` |
 | `--cache` | text | Policy for caching of model generations. Specify –cache to cache with 7 day expiration (7D). Specify an explicit duration (e.g. (e.g. 1h, 3d, 6M) to set the expiration explicitly (durations can be expressed as s, m, h, D, W, M, or Y). Alternatively, pass the file path to a YAML or JSON config file with a full `CachePolicy` configuration. | None |
 | `--batch` | text | Batch requests together to reduce API calls when using a model that supports batching (by default, no batching). Specify –batch to batch with default configuration, specify a batch size e.g. `--batch=1000` to configure batches of 1000 requests, or pass the file path to a YAML or JSON config file with batch configuration. | None |
-| `--max-connections` | integer | Maximum number of concurrent connections to Model API (defaults to max_transcripts) | None |
-| `--max-retries` | integer | Maximum number of times to retry model API requests (defaults to unlimited) | None |
-| `--timeout` | integer | Model API request timeout in seconds (defaults to no timeout) | None |
-| `--max-tokens` | integer | The maximum number of tokens that can be generated in the completion (default is model specific) | None |
-| `--temperature` | float | What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. | None |
-| `--top-p` | float | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | None |
-| `--top-k` | integer | Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, and vLLM only. | None |
-| `--reasoning-effort` | choice (`minimal` \| `low` \| `medium` \| `high`) | Constrains effort on reasoning for reasoning models (defaults to `medium`). Open AI o-series and gpt-5 models only. | None |
-| `--reasoning-tokens` | integer | Maximum number of tokens to use for reasoning. Anthropic Claude models only. | None |
-| `--reasoning-summary` | choice (`concise` \| `detailed` \| `auto`) | Provide summary of reasoning steps (defaults to no summary). Use ‘auto’ to access the most detailed summarizer available for the current model. OpenAI reasoning models only. | None |
-| `--reasoning-history` | choice (`none` \| `all` \| `last` \| `auto`) | Include reasoning in chat message history sent to generate (defaults to “auto”, which uses the recommended default for each provider) | None |
+| `--max-connections` | integer | Maximum number of concurrent connections to Model API (defaults to max_transcripts) | `Sentinel.UNSET` |
+| `--max-retries` | integer | Maximum number of times to retry model API requests (defaults to unlimited) | `Sentinel.UNSET` |
+| `--timeout` | integer | Model API request timeout in seconds (defaults to no timeout) | `Sentinel.UNSET` |
+| `--max-tokens` | integer | The maximum number of tokens that can be generated in the completion (default is model specific) | `Sentinel.UNSET` |
+| `--temperature` | float | What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. | `Sentinel.UNSET` |
+| `--top-p` | float | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | `Sentinel.UNSET` |
+| `--top-k` | integer | Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, and vLLM only. | `Sentinel.UNSET` |
+| `--reasoning-effort` | choice (`minimal` \| `low` \| `medium` \| `high`) | Constrains effort on reasoning for reasoning models (defaults to `medium`). Open AI o-series and gpt-5 models only. | `Sentinel.UNSET` |
+| `--reasoning-tokens` | integer | Maximum number of tokens to use for reasoning. Anthropic Claude models only. | `Sentinel.UNSET` |
+| `--reasoning-summary` | choice (`concise` \| `detailed` \| `auto`) | Provide summary of reasoning steps (defaults to no summary). Use ‘auto’ to access the most detailed summarizer available for the current model. OpenAI reasoning models only. | `Sentinel.UNSET` |
+| `--reasoning-history` | choice (`none` \| `all` \| `last` \| `auto`) | Include reasoning in chat message history sent to generate (defaults to “auto”, which uses the recommended default for each provider) | `Sentinel.UNSET` |
 | `--fail-on-error` | boolean | Re-raise exceptions instead of capturing them in results | `False` |
 | `--store` | text | Resolve logs from a store. Use –store for the default store or –store PATH for a specific one. | None |
-| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
-| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
+| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
+| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | `Sentinel.UNSET` |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow step tag
 
@@ -3471,13 +3534,13 @@ flow step tag [OPTIONS] [PATH]...
 | `--author` | text | Provenance author. Defaults to git user. | None |
 | `--reason` | text | Reason for the edit. | None |
 | `--store` | text | Resolve logs from a store. Use –store for the default store or –store PATH for a specific one. | None |
-| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
-| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | None |
+| `--filter` | text | Log filter. Only process logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
+| `--exclude` | text | Log filter. Exclude logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times. | `Sentinel.UNSET` |
 | `--recursive` / `--no-recursive` | boolean | Recurse into directories (default: true). No effect when –store is used. | `True` |
 | `--dry-run` | boolean | Preview changes without writing to disk. | `False` |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # flow_store – Inspect Flow
@@ -3518,9 +3581,9 @@ flow store import [OPTIONS] PATH...
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
-| `--copy-from` | directory | Copy logs from this directory to PATH before importing. Supports both local and S3 paths. | None |
-| `--dry-run` | boolean | Preview what would be imported without making changes | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--copy-from` | directory | Copy logs from this directory to PATH before importing. Supports both local and S3 paths. | `Sentinel.UNSET` |
+| `--dry-run` | boolean | Preview what would be imported without making changes | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store remove
 
@@ -3540,11 +3603,11 @@ flow store remove [OPTIONS] [PREFIX]...
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
-| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--recursive`, `-r` / `--no-recursive`, `-R` | boolean | Search directories recursively for logs | `True` |
 | `--missing` | boolean | Remove logs that no longer exist on file system | `False` |
-| `--dry-run` | boolean | Preview what would be removed without making changes | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--dry-run` | boolean | Preview what would be removed without making changes | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store info
 
@@ -3564,7 +3627,7 @@ flow store info [OPTIONS]
 | `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store delete
 
@@ -3583,8 +3646,8 @@ flow store delete [OPTIONS]
 | `--store` | text | Path to the store directory. | None |
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
-| `--yes`, `-y` | boolean | Skip confirmation prompt | `False` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--yes`, `-y` | boolean | Skip confirmation prompt | `Sentinel.UNSET` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 ## flow store list
 
@@ -3605,9 +3668,9 @@ flow store list [OPTIONS]
 | `--display` | choice (`full` \| `conversation` \| `rich` \| `plain` \| `log` \| `none`) | Set the display mode (defaults to `'full'`). | `full` |
 | `--log-level` | choice (`debug` \| `trace` \| `http` \| `info` \| `warning` \| `error` \| `critical` \| `notset`) | Set the log level (defaults to `'warning'`). | `warning` |
 | `--exclude` | text | Log filter. Include only logs that do NOT pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. | None |
-| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | None |
+| `--filter` | text | Log filter. Include only logs that pass. Accepts a registered name, `file.py@name`, or a name defined in `_flow.py`. Can be used multiple times (all must pass). | `Sentinel.UNSET` |
 | `--format` | choice (`flat` \| `tree`) | Output format: tree, flat | `flat` |
-| `--help` | boolean | Show this message and exit. | `False` |
+| `--help` | boolean | Show this message and exit. | `Sentinel.UNSET` |
 
 
 # inspect_flow.api – Inspect Flow
@@ -3618,7 +3681,7 @@ flow store list [OPTIONS]
 
 Initialize the inspect_flow API.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L28)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L28)
 
 ``` python
 def init(
@@ -3641,7 +3704,7 @@ Directory (or file path) to search for `.env` files. If a file path is given, it
 
 Run an inspect_flow evaluation.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L89)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L89)
 
 ``` python
 def run(
@@ -3673,7 +3736,7 @@ If set, write a JSON launch handle (with the run’s `log_dir` and `pid`) to thi
 
 Check completeness of an inspect_flow evaluation against existing logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L176)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L176)
 
 ``` python
 def check(
@@ -3697,7 +3760,7 @@ Log directory to check against. Overrides the `log_dir` in the spec.
 
 Run a step function on the given logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/run.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/run.py#L27)
 
 ``` python
 def run_step(
@@ -3748,7 +3811,7 @@ Keyword arguments to pass to the step function.
 
 Load a spec from file.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L60)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L60)
 
 ``` python
 def load_spec(
@@ -3764,11 +3827,43 @@ The path to the spec file.
 `args` dict\[str, Any\] \| None  
 A dictionary of arguments to pass as kwargs to the function in the flow config.
 
+### dump_spec
+
+Dump a flow spec to its canonical wire representation.
+
+The returned dict is JSON-compatible and stable: re-dumping a reloaded spec reproduces it exactly, i.e. `dump_spec(load_spec_data(dump_spec(spec))) == dump_spec(spec)`. Fields that are unset — or explicitly set to their default value — are omitted, so effective values always survive a round trip but `model_fields_set` membership does not. Explicit `None` is preserved, and Flow’s `NotGiven` sentinel never appears. Live values normalize to references (a registered callable to its registry name, a registry object such as a tool in agent args to its reference dict), so a reloaded spec is wire-equivalent to, but not necessarily object-equal to, the original. The runner resolves a name back to a callable only in `factory` fields and `store.filter`; in any other position (e.g. factory `args`) the name reloads as a plain string — `validate_portable_spec` flags these before dumping. Typed values are normalized through validation, so a coercible value assigned without validation (e.g. a numeric string in a float field) dumps in canonical form.
+
+Values in untyped fields (e.g. `flow_metadata`, `model_args`) should be JSON-native; anything else follows pydantic’s JSON coercion (a tuple becomes a list, a `datetime` a string, a set a list in unspecified order) and may not round-trip. In fields that skip validation (e.g. `early_stopping`), serializable live objects carry one-way: they reload as plain data. Arguments captured in a registered object’s params are encoded by inspect-ai at construction time (non-serializable values are already stringified before Flow sees them). Whether a reference resolves in the target process — installed packages, shipped files — is a separate concern; gate portable use with `validate_portable_spec` before dumping. YAML/JSON rendering is left to the caller.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/serialize.py#L19)
+
+``` python
+def dump_spec(spec: FlowSpec) -> dict[str, Any]
+```
+
+`spec` [FlowSpec](../reference/inspect_flow.html.md#flowspec)  
+The flow spec to dump.
+
+### load_spec_data
+
+Reconstruct a flow spec from its canonical wire representation.
+
+Inverse of [dump_spec()](../reference/inspect_flow.api.html.md#dump_spec). Validation is strict: unknown fields are rejected (except in [FlowFactory](../reference/inspect_flow.html.md#flowfactory) mappings, whose API forwards unrecognized keys as factory arguments), as is an embedded `NotGiven` sentinel or a non-finite float (whether present literally or produced by coercing a string such as `"NaN"`). JSON and YAML parsers accept both, but they signal data that did not come from [dump_spec()](../reference/inspect_flow.api.html.md#dump_spec), and a sentinel would be misread as a user value.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/serialize.py#L91)
+
+``` python
+def load_spec_data(data: Mapping[str, Any]) -> FlowSpec
+```
+
+`data` Mapping\[str, Any\]  
+Spec data produced by [dump_spec()](../reference/inspect_flow.api.html.md#dump_spec), possibly after a JSON or YAML round trip.
+
 ### config
 
 Return the flow spec configuration.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L231)
 
 ``` python
 def config(
@@ -3783,13 +3878,63 @@ The flow spec configuration.
 `base_dir` str \| None  
 The base directory for resolving relative paths. Defaults to the current working directory.
 
+### validate_portable_spec
+
+Validate that a flow spec can be serialized and recreated in another process.
+
+A portable spec survives the boundary the venv runner and remote orchestrators cross: dumped to YAML/JSON, then re-validated as a [FlowSpec](../reference/inspect_flow.html.md#flowspec) in a fresh process. Values that do not survive it are live (already-instantiated) Inspect objects such as `Task`, `Model`, `Scorer`, `Solver`, and `Agent` — which reload as a `repr` string or a plain dict rather than the object — and callables the child cannot resolve. A serialized callable is looked up in the Inspect registry, so only a registered object (or a registry name string) is portable: an undecorated function is not, even at module level, and neither are lambdas, `functools.partial`, nested functions, classes, and callable objects. Any JSON-serializable data is portable.
+
+Every field is checked, including free-form containers (`args`, `metadata`, `flow_metadata`, scanner params) and any inline [FlowSpec](../reference/inspect_flow.html.md#flowspec) in `includes` — a path string there is not loaded, so an included file’s contents are not checked. The spec is not expanded or resolved, and nothing is installed or launched.
+
+Four limitations. A value Pydantic coerces natively on dump is reported as portable, because it reloads as the coerced type rather than being lost: `tuple` and `set` become `list`, a dataclass or `BaseModel` becomes `dict`, non-string mapping keys become strings, `datetime`/`date`/`UUID`/ `Path`/`Decimal`/`bytes` become strings, and `NaN` becomes `None`. A registered callable is portable only in a field the runner resolves names in — the `factory` fields and `store.filter` — since elsewhere its name reloads as a plain string. And a live registered object in scanner `params` is rejected even though scout would re-inflate it, since that only holds when every scanner entry is a spec reference.
+
+A registered object’s name must also be resolvable in the child. Inspect qualifies names of objects defined in an installed package (`my_pkg/my_task`), which the child can import; a bare name from a loose module relies on that module already being imported and is *not* checked here. Prefer factories from packaged code.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L108)
+
+``` python
+def validate_portable_spec(spec: FlowSpec) -> None
+```
+
+`spec` [FlowSpec](../reference/inspect_flow.html.md#flowspec)  
+The flow spec to validate.
+
+### iter_model_refs
+
+Yield the model references a flow spec will run with.
+
+Defaults are merged before iterating (`apply_defaults` is applied to a copy; it is idempotent, so an already-resolved spec is unchanged). Every ref therefore points at the task or scanner the model actually applies to, with concrete merged values — a model declared in `defaults.model` appears at `tasks[i].model` for each task it lands on, never at a `defaults.*` path. Consumers do not have to reason about defaults, which are partial templates rather than declarations in their own right.
+
+Order is stable: tasks, then `options`. Sites walked: each task’s `model` and `model_roles` (whether a [FlowTask](../reference/inspect_flow.html.md#flowtask) or an already-instantiated `Task`), and `options.scanner`. A list-valued task role (one role bound to several models) yields one ref per element, at an indexed path (`tasks[0].model_roles['grader'][0]`), each carrying the role — so a role may map to several refs. Every `GenerateConfig.fallback_models` entry (on a task, model, or scanner) is yielded at `<config>.fallback_models[i]`, because those models handle requests after a classifier refusal.
+
+Nothing is instantiated, installed, or read from disk — which is why a spec whose `includes` have not been expanded is rejected: includes reference other spec files, and enumerating around them would silently under-report. `load_spec` expands and clears them.
+
+**This will not find every model a run may use.** It reads the model reference fields Flow declares in its own schema; it does not execute anything, so any model chosen at run time is invisible to it:
+
+- **user code** — a callable `factory` or an `@after_instantiate` hook can return any model, including one named nowhere in the spec;
+- **ambient configuration** — a task or scanner with no model resolves `INSPECT_EVAL_MODEL` / `SCOUT_SCAN_MODEL` from the environment, which `spec.env` may itself set;
+- **free-form constructor args** — most commonly a plain string consumed by user code (`FlowTask(args={"grader_model": "openai/gpt-4o"})`, a `model_graded_qa` scorer’s `model` arg); also any `{"model": ..., "config": ...}` mapping, which inspect-ai materializes into a live model, api key included.
+
+An empty or short result therefore does not prove which models will run. What it does guarantee is that no *declared* spec field is missed as Flow’s schema grows: a snapshot test forces every new field on the model-bearing spec types through this classification.
+
+Where a declared model site exists but cannot be read statically (e.g. a scanner given as a config-file path, or an `Any`-typed field holding an unrecognized shape), a [SpecModelRef](../reference/inspect_flow.api.html.md#specmodelref) is yielded with `unenumerable` set rather than nothing. A host applying policy should reject what it cannot enumerate — refs where `unenumerable` is `True`, and (if it does not permit factories) where `from_factory` is `True`, plus model-bearing constructor args and modelless tasks, which are outside this walk — then apply policy over what this yields.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/model_refs.py#L162)
+
+``` python
+def iter_model_refs(spec: FlowSpec) -> Iterator[SpecModelRef]
+```
+
+`spec` [FlowSpec](../reference/inspect_flow.html.md#flowspec)  
+The flow spec to introspect. Refs report paths and merged values from the defaults-applied spec, not the literal input object.
+
 ### list_logs
 
 List log paths grouped by directory, directories ordered by most recent log file.
 
 Within each directory, logs are sorted by filename timestamp descending. Logs without a timestamp prefix sort at the end.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/list_logs.py#L42)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/list_logs.py#L42)
 
 ``` python
 def list_logs(
@@ -3816,7 +3961,7 @@ Only include logs whose filename timestamp is at or before this date. Accepts a 
 
 Get a FlowStore instance.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L248)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L248)
 
 ``` python
 def store_get(store: str = "auto", create: bool = True) -> FlowStore
@@ -3832,7 +3977,7 @@ Whether to create the store if it does not exist.
 
 Delete a flow store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L205)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L205)
 
 ``` python
 def delete_store(store_path: str) -> None
@@ -3845,7 +3990,7 @@ Path to the store directory.
 
 Copy all log files from src_dir to dest_dir, preserving directory structure.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_util/logs.py#L98)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_util/logs.py#L98)
 
 ``` python
 def copy_all_logs(src_dir: str, dest_dir: str, dry_run: bool, recursive: bool) -> None
@@ -3867,7 +4012,7 @@ If True, search src_dir recursively for log files.
 
 Add or remove tags on eval logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/tag.py#L37)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/tag.py#L37)
 
 ``` python
 @step
@@ -3900,7 +4045,7 @@ Reason for the edit.
 
 Set or delete metadata fields on eval logs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/tag.py#L65)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/tag.py#L65)
 
 ``` python
 @step
@@ -3933,7 +4078,7 @@ Reason for the edit.
 
 Copy eval logs to a destination directory.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/copy.py#L21)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/copy.py#L39)
 
 ``` python
 @step
@@ -3942,6 +4087,8 @@ def copy(
     *,
     dest: str,
     source_prefix: str | None = None,
+    suffix: str | None = None,
+    rename: Callable[[str], str] | None = None,
     overwrite: bool = False,
     store: FlowStore | str | None = None,  # noqa: ARG001 handled by @step wrapper
 ) -> list[EvalLog]
@@ -3956,6 +4103,12 @@ Destination directory (local or S3).
 `source_prefix` str \| None  
 Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.
 
+`suffix` str \| None  
+Suffix inserted before the file extension of each copy (e.g. `+realigned` copies `probe.eval` to `probe+realigned.eval`). Mutually exclusive with the rename parameter (Python API only).
+
+`rename` Callable\[\[str\], str\] \| None  
+Function mapping source filename to destination filename. Python-only. Mutually exclusive with suffix.
+
 `overwrite` bool  
 Overwrite existing files at the destination.
 
@@ -3968,7 +4121,7 @@ Run Inspect Scout scanners against the transcripts of eval logs.
 
 Mirrors the CLI surface of `scout scan`, minus `-T/--transcripts` (which flow sources from log paths) and `-F/--filter` (handled by flow’s own `--filter`). Returns scout’s `Status`. For use as a flow step (logs only), see `scan_step`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/scan.py#L82)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/scan.py#L82)
 
 ``` python
 def scan(
@@ -4103,7 +4256,7 @@ Print resolved scanners and transcript counts without scanning.
 
 Interface for flow store implementations.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L25)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L25)
 
 ``` python
 class FlowStore(ABC)
@@ -4122,7 +4275,7 @@ The store version.
 import_log_path  
 Import a log file(s) or directory(ies) into the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L40)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L40)
 
 ``` python
 @abstractmethod
@@ -4150,7 +4303,7 @@ Print paths of files being added
 get_logs  
 Get all log file paths in the store.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L58)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L58)
 
 ``` python
 @abstractmethod
@@ -4163,7 +4316,7 @@ Optional filter to apply to log headers. Only logs passing the filter are includ
 remove_log_prefix  
 Remove logs matching the given prefixes.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L72)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L72)
 
 ``` python
 @abstractmethod
@@ -4202,7 +4355,7 @@ Fine-grained return type for @step functions.
 
 Steps can also return a sequence of EvalLog directly (equivalent to StepResult(logs=logs, modified=True)) or \[\] (equivalent to StepResult(modified=False, skip_log_steps=True)).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/step.py#L40)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/step.py#L40)
 
 ``` python
 class StepResult(NamedTuple)
@@ -4228,10 +4381,106 @@ Display type for flow output.
 
 Matches Inspect’s set of display types: - “full”: Full interactive display with progress bars and rich formatting. - “conversation”: Stream the model conversation to the terminal. - “rich”: Rich text formatting without interactive elements. - “plain”: Plain text output. - “log”: Flat, ANSI-free log lines. - “none”: No display output.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_display/display.py#L16)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_display/display.py#L16)
 
 ``` python
 DisplayType = Literal["full", "conversation", "rich", "plain", "log", "none"]
+```
+
+### SpecModelRef
+
+A single model reference found in a flow spec.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/model_refs.py#L28)
+
+``` python
+@dataclass
+class SpecModelRef
+```
+
+#### Attributes
+
+`path` str  
+Field path of the reference (e.g. `"tasks[0].model_roles['grader']"`).
+
+`ref` str \| [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| Model \| None  
+The reference as it appears in the spec: a model name string, a [FlowModel](../reference/inspect_flow.html.md#flowmodel), or an already-instantiated `Model`. `None` marks a model site that exists but cannot be read statically (e.g. a scanner given as a config-file path).
+
+`role` str \| None  
+The named role this reference is bound to, or `None` for an unroled model.
+
+Taken from the `model_roles` key, falling back to `FlowModel.role` (which is passed to `get_model(role=...)` at any model site); the mapping key wins when both are set.
+
+This records how the reference is *declared*, not which slot the model will end up serving. So a `kind="fallback"` ref is roled only when it comes from a [FlowModel](../reference/inspect_flow.html.md#flowmodel)’s own `config` — that config is an argument to the same `get_model` call that binds the role. A fallback in a `FlowTask.config` is always `None`: that is a task-level generate config (its field description says it “does not apply to model roles”), so no role participates at that layer — the task’s `model_roles` models generate with it too.
+
+`kind` Literal\['model', 'fallback'\]  
+Which kind of reference this is, and hence which namespace `name` is in.
+
+`"model"` is an Inspect `provider/model` reference. `"fallback"` is a `GenerateConfig.fallback_models` entry, which is a provider-native id with no provider prefix. A host comparing or authorizing names across both must branch on this rather than parse `path`.
+
+`name` str \| None  
+The model name that will actually be used, or `None` if not static.
+
+A [FlowModel](../reference/inspect_flow.html.md#flowmodel)’s string `factory` takes precedence over `name`, so it is reported instead — unlike other Flow types, that string is not a factory registry reference but the model id itself, passed to `get_model(model=...)` (see `from_factory`). A callable `factory` builds the model itself and yields `None` even when `name` is set. A live `Model` reports its provider-qualified name.
+
+`None` has two causes, distinguished by `unenumerable`: either a model binds here but its name cannot be known statically, or the reference declares no model at all (a [FlowModel](../reference/inspect_flow.html.md#flowmodel) with neither `name` nor `factory` — after defaults merging that is a misconfigured task, which instantiation rejects). Key policy on `unenumerable` rather than on this — and note `unenumerable` is not by itself sufficient: a *string* `factory` is enumerable but its name is a factory id, so a host feeding `name` to a model lookup should check `from_factory` too.
+
+Names are Inspect `provider/model` references, except entries from `GenerateConfig.fallback_models`, which are provider-native ids passed verbatim to the provider (e.g. `"claude-opus-4-5"`).
+
+A model reached through a `base_url` override still reports its Inspect id, which is an assertion about identity rather than a guarantee of which endpoint serves the request.
+
+`from_factory` bool  
+Whether `name` came from `FlowModel.factory` rather than `name`.
+
+For a [FlowModel](../reference/inspect_flow.html.md#flowmodel) a string `factory` *is* the model id — it is passed to `get_model(model=...)`, and inspect has no separate model-factory registry — so such a ref is still enumerable. But `factory` means “registry name” on every other Flow type, and a host may have its own policy against factories; this reports one without making the caller unwrap [FlowFactory](../reference/inspect_flow.html.md#flowfactory) and re-derive the precedence rule.
+
+`unenumerable` bool  
+Whether a model binds here whose name is not statically knowable.
+
+`True` for a model site this walk cannot read (`ref is None`) and for a [FlowModel](../reference/inspect_flow.html.md#flowmodel) built by a callable `factory`. `False` when `name` is `None` merely because the reference declares no model — a [FlowModel](../reference/inspect_flow.html.md#flowmodel) with neither `name` nor `factory`, which instantiation rejects rather than running anything.
+
+This is the signal for “I cannot name the model”, and a host that cannot allow what it cannot name should reject specs where this is `True`, without rejecting ordinary field-default templates. It is not the only thing a host may want to reject: see `from_factory` for names that are known but derived from `FlowModel.factory`.
+
+Note a callable factory is only `True` in-process: serializing a spec rewrites it to a `file.py@attr` string, which reloads as a string factory and is reported as a name (the name `_call_factory` will then resolve). Such a name is not a `provider/model` reference, so it fails an allow-list rather than passing one.
+
+### SpecNotPortableError
+
+Raised when a flow spec cannot be serialized and recreated in another process.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L72)
+
+``` python
+class SpecNotPortableError(ValueError)
+```
+
+#### Methods
+
+\_\_init\_\_  
+Create the error.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L80)
+
+``` python
+def __init__(
+    self, violations: list[SpecViolation], hint: str | None = None
+) -> None
+```
+
+`violations` list\[[SpecViolation](../reference/inspect_flow.api.html.md#specviolation)\]  
+Every violation found, each with its field path.
+
+`hint` str \| None  
+Extra guidance appended to the rendered message, for a caller with an escape hatch the validator should not assume.
+
+### SpecViolation
+
+A single reason a flow spec is not portable.
+
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L59)
+
+``` python
+@dataclass
+class SpecViolation
 ```
 
 
@@ -4243,7 +4492,7 @@ DisplayType = Literal["full", "conversation", "rich", "plain", "log", "none"]
 
 Configuration for an agent: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L186)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L335)
 
 ``` python
 class FlowAgent(FlowBase)
@@ -4272,7 +4521,7 @@ Default `model`/`solver`/`agent`/`task` values applied to every task in the spec
 
 A value set on an individual [FlowTask](../reference/inspect_flow.html.md#flowtask) overrides the default here. The `*_prefix` variants apply defaults by registry-name prefix. Attached via `FlowSpec(defaults=...)`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L727)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L932)
 
 ``` python
 class FlowDefaults(FlowBase)
@@ -4313,7 +4562,7 @@ Dependencies to install in the per-run virtual environment.
 
 Only applies in venv execution mode (`execution_type="venv"`); combines an optional `dependency_file`, `additional_dependencies`, and automatic detection (`auto_detect_dependencies`).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L776)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L981)
 
 ``` python
 class FlowDependencies(FlowBase)
@@ -4339,7 +4588,7 @@ Configuration for task epochs.
 
 Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L220)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L369)
 
 ``` python
 class FlowEpochs(FlowBase)
@@ -4363,7 +4612,7 @@ Works with [FlowTask](../reference/inspect_flow.html.md#flowtask), [FlowAgent](.
 
 Positional and keyword arguments passed to the factory at construction are collected into the `args` field and forwarded to the factory at evaluation time.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L261)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L410)
 
 ``` python
 class FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed=True)
@@ -4375,7 +4624,7 @@ Configuration for a model.
 
 `name` is an Inspect model identifier (e.g. `"openai/gpt-4o"`); `config`, `model_args`, `base_url`, `api_key`, and `role` tune how it is created.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L77)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L231)
 
 ``` python
 class FlowModel(FlowBase)
@@ -4390,10 +4639,7 @@ Name of the model to use. If factory is not provided, this is used to create the
 Factory function to create the model instance.
 
 `role` str \| None \| NotGiven  
-Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn’t been externally specified.
-
-`default` str \| None \| NotGiven  
-Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).
+Optional named role for model (e.g. for roles specified at the task or eval level).
 
 `config` GenerateConfig \| None \| NotGiven  
 Model generation config. Highest precedence: overrides `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and `defaults.config`.
@@ -4419,7 +4665,7 @@ Eval-set-wide options forwarded to Inspect’s `eval_set`.
 
 These apply to the whole run (retries, sandbox cleanup, global limits, display, scoring, the control channel, etc.) rather than to individual tasks — set per-task settings on [FlowTask](../reference/inspect_flow.html.md#flowtask). Attached to a spec via `FlowSpec(options=...)`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L492)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L672)
 
 ``` python
 class FlowOptions(FlowBase)
@@ -4445,14 +4691,20 @@ Sandbox environment type (or optionally a str or tuple with a shorthand spec).
 `sandbox_cleanup` bool \| None \| NotGiven  
 Cleanup sandbox environments after task completes (defaults to `True`).
 
-`checkpoint` SkipValidation\[CheckpointConfig\] \| bool \| None \| NotGiven  
-Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level `checkpoint` when set.
+`sandbox_prebuilt` bool \| None \| NotGiven  
+Treat sandbox images as prebuilt, skipping builds and failing at task startup when an image is missing (defaults to `False`).
+
+`checkpoint` FlowCheckpoint \| None \| NotGiven  
+Checkpoint configuration for this eval set, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level `checkpoint`, taking precedence over both; `False` here or on a task disables checkpointing.
 
 `acp_server` bool \| int \| str \| None \| NotGiven  
 Override the original eval’s ACP server transport on retry. `True` enables a default AF_UNIX socket; an integer binds a TCP loopback port; a string is taken as a custom UNIX socket path; `None` (default) replays whatever transport (or no transport) was persisted in the original log’s `EvalConfig.acp_server`.
 
 `ctl_server` bool \| str \| None \| NotGiven  
 Control-channel server for this eval-set process. `True` or `None` (default) binds the default AF_UNIX socket; `False` disables the control endpoint; `"keep-alive"` additionally keeps the process running after the eval-set finishes so external clients (the `inspect ctl` CLI, scripted agents, TUIs) can still query state and read results — exit via `inspect ctl release` (or `POST /release`). Requires `retry_immediate=True` (the default) for the `"keep-alive"` value.
+
+`scanner` str \| ScannerConfig \| None \| NotGiven  
+Scanners to run inline against each sample as the eval set runs. Either a path to a scanner config file (loaded via `ScannerConfig.from_file()`) or a `ScannerConfig`. Relative paths will be resolved relative to the config file (when using the CLI) or `base_dir` arg (when using the API). Note that `file:` references *within* a scanner config are resolved by Inspect Scout relative to the current working directory, not the config file — prefer absolute `file:` paths when running from a different directory. To scan transcripts after the run completes, use the `scan` step instead.
 
 `tags` Sequence\[str\] \| None \| NotGiven  
 Tags to associate with this evaluation run.
@@ -4468,6 +4720,9 @@ Task display type (defaults to `'rich'`).
 
 `approval` str \| ApprovalPolicyConfig \| None \| NotGiven  
 Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.
+
+`review` str \| ReviewPolicyConfig \| None \| NotGiven  
+Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Overrides any task-level `review`. Defaults to no review policy.
 
 `score` bool \| None \| NotGiven  
 Score output (defaults to `True`).
@@ -4487,8 +4742,8 @@ Level for logging to the log file (defaults to `"info"`).
 `log_format` Literal\['eval', 'json'\] \| None \| NotGiven  
 Format for writing log files (defaults to `"eval"`, the native high-performance format).
 
-`limit` int \| None \| NotGiven  
-Limit evaluated samples (defaults to all samples).
+`limit` int \| tuple\[int, int\] \| None \| NotGiven  
+Limit evaluated samples: an integer for the first `n` samples, or a `(start, end)` tuple for a slice-style range with 0-based `start` and exclusive `end` — e.g. `(9, 20)` evaluates samples 10 through 20 (defaults to all samples).
 
 `sample_shuffle` bool \| int \| None \| NotGiven  
 Shuffle order of samples (pass a seed to make the order deterministic).
@@ -4507,6 +4762,12 @@ Score samples that error rather than failing the eval mid-run. Errors still coun
 
 `debug_errors` bool \| None \| NotGiven  
 Raise task errors (rather than logging them) so they can be debugged (defaults to `False`).
+
+`incomplete_action` IncompleteAction \| None \| NotGiven  
+Disposition applied when recovering a crashed log from a previous execution, for samples that were in progress at crash. `"retry"` (default) re-runs them; `"error"` resolves them as operator terminations — if that leaves every expected sample final, the recovered log finalizes as `status="success"`, the task classifies as complete, and nothing re-runs.
+
+`incomplete_max` int \| float \| None \| NotGiven  
+Safety threshold for `incomplete_action="error"` (count if \>= 1, or proportion of expected samples if strictly less than 1, so `1.0` means one sample, not 100%): when more than this many samples are in progress, fall back to the default recover-and-retry behavior. Has no effect (a warning is logged) with `incomplete_action="retry"`.
 
 `model_cost_config` str \| dict\[str, ModelCost\] \| None \| NotGiven  
 YAML or JSON file with model prices for cost tracking.
@@ -4569,7 +4830,7 @@ Replacements applied to `bundle_dir` to generate a URL. If provided and `bundle_
 
 Configuration for a scorer: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L134)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L283)
 
 ``` python
 class FlowScorer(FlowBase)
@@ -4593,7 +4854,7 @@ Optional. Metadata stored in the flow config. Not passed to the scorer.
 
 Configuration for a solver: a registry `name` (or `factory`) plus its `args`.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L160)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L309)
 
 ``` python
 class FlowSolver(FlowBase)
@@ -4628,7 +4889,7 @@ Model generation `config` can be set in several places; later entries win: `defa
 
 Eval parameters (`model`, `solver`, limits, etc.) are not set directly on [FlowSpec](../reference/inspect_flow.html.md#flowspec); put them on [FlowTask](../reference/inspect_flow.html.md#flowtask) (or `defaults` to apply them to every task).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L870)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1075)
 
 ``` python
 class FlowSpec(FlowBase, arbitrary_types_allowed=True)
@@ -4682,7 +4943,7 @@ Internal state populated by the spec loader. Not intended for direct user config
 
 Store configuration with optional log filter.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L841)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1046)
 
 ``` python
 class FlowStoreConfig(FlowBase)
@@ -4708,7 +4969,7 @@ Configuration for a single evaluation task.
 
 Identifies the task (`name` or `factory`) and carries its per-task settings: `model`, `solver`, `scorer`, `config` (generation config), `epochs`, `sandbox`, `approval`, and the various limits. Unset fields fall back to [FlowDefaults](../reference/inspect_flow.html.md#flowdefaults).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L334)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L483)
 
 ``` python
 class FlowTask(FlowBase, arbitrary_types_allowed=True)
@@ -4734,6 +4995,9 @@ Solver or list of solvers. Defaults to `generate()`, a normal call to the model.
 `scorer` str \| [FlowScorer](../reference/inspect_flow.html.md#flowscorer) \| Scorer \| Sequence\[str \| [FlowScorer](../reference/inspect_flow.html.md#flowscorer) \| Scorer\] \| None \| NotGiven  
 Scorer or list of scorers used to evaluate model output.
 
+`headline_metric` HeadlineMetric \| str \| None \| NotGiven  
+Which score/metric best summarises this task (e.g. for a leaderboard or log listing). A `str` names the scorer, as `"<scorer>"` or `"<scorer>.<score>"` to address one value of a scorer returning a dict of scores. Pass a `HeadlineMetric` to also name the `metric` or `reducer`. Unset fields resolve by convention, so `HeadlineMetric(metric="accuracy")` takes that metric from the first score reporting it; the default is the first metric of the first score.
+
 `model` str \| [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| Model \| None \| NotGiven  
 Default model for task (Optional, defaults to eval model).
 
@@ -4741,13 +5005,16 @@ Default model for task (Optional, defaults to eval model).
 Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
 `model_roles` ModelRolesConfig \| None \| NotGiven  
-Named roles for use in `get_model()`.
+Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`.
 
 `sandbox` SandboxEnvironmentType \| None \| NotGiven  
 Sandbox environment type (or optionally a str or tuple with a shorthand spec)
 
 `approval` str \| ApprovalPolicyConfig \| None \| NotGiven  
 Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.
+
+`review` str \| ReviewPolicyConfig \| None \| NotGiven  
+Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy.
 
 `epochs` int \| [FlowEpochs](../reference/inspect_flow.html.md#flowepochs) \| None \| NotGiven  
 Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)
@@ -4758,11 +5025,20 @@ Epochs to repeat samples for and optional score reducer function(s) used to comb
 `continue_on_fail` bool \| None \| NotGiven  
 `True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).
 
+`score_on_error` bool \| None \| NotGiven  
+Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set.
+
+`checkpoint` FlowCheckpoint \| None \| NotGiven  
+Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence; `False` at either level disables checkpointing.
+
 `message_limit` int \| None \| NotGiven  
 Limit on total messages used for each sample.
 
-`token_limit` int \| None \| NotGiven  
-Limit on total tokens used for each sample.
+`token_limit` int \| str \| TokenLimit \| None \| NotGiven  
+Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`.
+
+`turn_limit` int \| None \| NotGiven  
+Limit on total turns (assistant messages) for each sample.
 
 `time_limit` int \| None \| NotGiven  
 Limit on clock time (in seconds) for samples.
@@ -4776,8 +5052,11 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 `early_stopping` SkipValidation\[EarlyStopping\] \| None \| NotGiven  
 Early stopping callbacks.
 
+`description` str \| None \| NotGiven  
+Short statement of what the task asks of the agent (recorded in the eval log).
+
 `version` int \| str \| NotGiven  
-Version of task (to distinguish evolutions of the task spec or breaking changes to it)
+Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.
 
 `tags` Sequence\[str\] \| None \| NotGiven  
 Tags to associate with the task.
@@ -4800,7 +5079,7 @@ Returns: The model name if set, otherwise None.
 
 Configuration for task instantiation parallelism.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L808)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1013)
 
 ``` python
 class InstantiateConfig(FlowBase)
@@ -4820,7 +5099,7 @@ Maximum worker threads to use for instantiation.
 
 A function that receives an `EvalLog` (header-only) and returns `True` to include the log or `False` to exclude it.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L40)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L64)
 
 ``` python
 LogFilter: TypeAlias = Callable[[EvalLog], bool]
@@ -4836,7 +5115,7 @@ The decorated function receives the list of instantiated `Task` objects and may 
 
 All registered hooks fire on every run, in alphabetical order by registered name. Hooks defined in any source reachable by spec loading or task instantiation are discovered automatically — including spec files, `_flow.py` auto-includes, task modules loaded by path, and entry-point packages installed in the venv.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/after_instantiate.py#L20)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/after_instantiate.py#L20)
 
 ``` python
 def after_instantiate(func: AfterInstantiate) -> AfterInstantiate
@@ -4862,7 +5141,7 @@ def after_flow_spec_loaded(
 - `spec`: The loaded [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 - `files`: List of file paths that were loaded to create the [FlowSpec](../reference/inspect_flow.html.md#flowspec).
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/decorator.py#L9)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/decorator.py#L9)
 
 ``` python
 def after_load(func: F) -> F
@@ -4875,7 +5154,7 @@ The function to decorate.
 
 Decorator to register a log filter function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/log_filter.py#L27)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/log_filter.py#L27)
 
 ``` python
 def log_filter(func: Callable[[EvalLog], bool]) -> Callable[[EvalLog], bool]
@@ -4888,7 +5167,7 @@ A function that takes an EvalLog and returns True to include.
 
 Decorator to register a step function.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/step.py#L108)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/step.py#L108)
 
 ``` python
 def step(
@@ -4905,7 +5184,7 @@ A function that takes a list of EvalLog objects and performs operations on them 
 
 Create a list of agents from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L245)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L245)
 
 ``` python
 def agents_matrix(
@@ -4925,7 +5204,7 @@ Additional args to pass to agent constructor.
 
 Set fields on a list of agents.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L175)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L175)
 
 ``` python
 def agents_with(
@@ -4961,7 +5240,7 @@ Type needed to differentiated solvers and agents in solver lists.
 
 Create a list of generate configs from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L259)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L259)
 
 ``` python
 def configs_matrix(
@@ -5032,7 +5311,7 @@ Map token Ids to an associated bias value from -100 to 100 (e.g. “42=10,43=-1
 Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only.
 
 `top_k` Sequence\[int \| None\] \| None  
-Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only.
+Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only.
 
 `num_choices` Sequence\[int \| None\] \| None  
 How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only.
@@ -5056,7 +5335,7 @@ Whether to automatically map tools to model internal implementations (e.g. ‘c
 Maximum tool output (in bytes). Defaults to 16 \* 1024.
 
 `cache_prompt` Sequence\[Literal\['auto'\] \| bool \| None\] \| None  
-Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.
+Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider’s own automatic caching; on OpenAI it only turns off explicit `cache_breakpoint` marks — the model’s own implicit caching still applies regardless. Use `ContentText(cache_breakpoint=True)` to mark an explicit cache boundary (e.g. a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI `gpt-5.6`+ only.
 
 `verbosity` Sequence\[Literal\['low', 'medium', 'high'\] \| None\] \| None  
 Constrains the verbosity of the model’s response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to “medium” for OpenAI models).
@@ -5089,7 +5368,7 @@ Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, 
 
 Set fields on a list of generate configs.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L189)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L189)
 
 ``` python
 def configs_with(
@@ -5098,6 +5377,7 @@ def configs_with(
     max_retries: int | None = ...,
     timeout: int | None = ...,
     attempt_timeout: int | None = ...,
+    stream_idle_timeout: int | None = ...,
     max_connections: int | None = ...,
     adaptive_connections: bool | int | AdaptiveConcurrency | None = ...,
     system_message: str | None = ...,
@@ -5120,6 +5400,7 @@ def configs_with(
     max_tool_output: int | None = ...,
     cache_prompt: Literal['auto'] | bool | None = ...,
     fallback_models: Sequence[str] | None = ...,
+    fail_on_refusal: bool | None = ...,
     verbosity: Literal['low', 'medium', 'high'] | None = ...,
     effort: Literal['low', 'medium', 'high', 'xhigh', 'max'] | None = ...,
     reasoning_effort: Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] | None = ...,
@@ -5140,13 +5421,16 @@ def configs_with(
 The config or list of configs to set fields on.
 
 `max_retries` int \| None  
-Maximum number of times to retry request (defaults to unlimited).
+Maximum number of times to retry request, so e.g. 1 allows two attempts total (defaults to unlimited).
 
 `timeout` int \| None  
 Timeout (in seconds) for an entire request (including retries).
 
 `attempt_timeout` int \| None  
 Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries).
+
+`stream_idle_timeout` int \| None  
+Timeout (in seconds) on silence within a streaming response — if a streaming attempt delivers no chunk for this long, the attempt is abandoned and retried according to max_retries. Setting it requests streaming (like on_stream); it has no effect on calls that do not stream.
 
 `max_connections` int \| None  
 Maximum number of concurrent connections to Model API (default is model specific).
@@ -5185,7 +5469,7 @@ Map token Ids to an associated bias value from -100 to 100 (e.g. “42=10,43=-1
 Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only.
 
 `top_k` int \| None  
-Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only.
+Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only.
 
 `num_choices` int \| None  
 How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only.
@@ -5209,10 +5493,13 @@ Whether to automatically map tools to model internal implementations (e.g. ‘c
 Maximum tool output (in bytes). Defaults to 16 \* 1024.
 
 `cache_prompt` Literal\['auto'\] \| bool \| None  
-Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.
+Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider’s own automatic caching; on OpenAI it only turns off explicit `cache_breakpoint` marks — the model’s own implicit caching still applies regardless. Use `ContentText(cache_breakpoint=True)` to mark an explicit cache boundary (e.g. a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI `gpt-5.6`+ only.
 
 `fallback_models` Sequence\[str\] \| None  
 Fallback models tried in order when the model’s safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode).
+
+`fail_on_refusal` bool \| None  
+Raise a `ModelRefusalError` (failing the sample) when the model returns `stop_reason="content_filter"`. Defaults to False.
 
 `verbosity` Literal\['low', 'medium', 'high'\] \| None  
 Constrains the verbosity of the model’s response. Lower values will result in more concise responses, while higher values will result in more verbose responses. GPT 5.x models only (defaults to “medium” for OpenAI models).
@@ -5259,7 +5546,7 @@ Merge two flow objects, with `add` values overriding `base` values.
 
 Only explicitly set fields in `add` override `base` — unset fields (defaulting to `NotGiven`) are ignored. Nested fields like `config` and `flow_metadata` are merged recursively rather than replaced.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/merge.py#L52)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/merge.py#L52)
 
 ``` python
 def merge(base: _T, add: _T) -> _T
@@ -5275,7 +5562,7 @@ The object to merge into the base. Only explicitly set fields override those in 
 
 Create a list of models from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L274)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L274)
 
 ``` python
 def models_matrix(
@@ -5295,7 +5582,7 @@ Model generation config. Highest precedence: overrides `config` on [FlowTask](..
 
 Set fields on a list of models.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L203)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L203)
 
 ``` python
 def models_with(
@@ -5304,7 +5591,6 @@ def models_with(
     name: str | NotGiven | None = ...,
     factory: FlowFactoryModel | str | NotGiven | None = ...,
     role: str | NotGiven | None = ...,
-    default: str | NotGiven | None = ...,
     config: GenerateConfig | NotGiven | None = ...,
     base_url: str | NotGiven | None = ...,
     api_key: str | NotGiven | None = ...,
@@ -5324,10 +5610,7 @@ Name of the model to use. If factory is not provided, this is used to create the
 Factory function to create the model instance.
 
 `role` str \| NotGiven \| None  
-Optional named role for model (e.g. for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn’t been externally specified.
-
-`default` str \| NotGiven \| None  
-Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g. `openai/gpt-4o`).
+Optional named role for model (e.g. for roles specified at the task or eval level).
 
 `config` GenerateConfig \| NotGiven \| None  
 Model generation config. Highest precedence: overrides `config` on [FlowTask](../reference/inspect_flow.html.md#flowtask) and `defaults.config`.
@@ -5351,7 +5634,7 @@ Optional. Metadata stored in the flow config. Not passed to the model.
 
 Create a list of solvers from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L288)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L288)
 
 ``` python
 def solvers_matrix(
@@ -5371,7 +5654,7 @@ Additional args to pass to solver constructor.
 
 Set fields on a list of solvers.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L217)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L217)
 
 ``` python
 def solvers_with(
@@ -5403,7 +5686,7 @@ Optional. Metadata stored in the flow config. Not passed to the solver.
 
 Create a list of tasks from the product of lists of field values.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L302)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L302)
 
 ``` python
 def tasks_matrix(
@@ -5413,9 +5696,10 @@ def tasks_matrix(
     solver: Sequence[str | FlowSolver | FlowAgent | Solver | Agent | Sequence[str | FlowSolver | Solver] | NotGiven | None] | None = ...,
     model: Sequence[str | FlowModel | Model | NotGiven | None] | None = ...,
     config: Sequence[GenerateConfig | NotGiven] | None = ...,
-    model_roles: Sequence[Mapping[str, FlowModel | str | Model] | NotGiven | None] | None = ...,
+    model_roles: Sequence[Mapping[str, FlowModel | str | Model | Sequence[FlowModel | str | Model]] | NotGiven | None] | None = ...,
     message_limit: Sequence[int | NotGiven | None] | None = ...,
-    token_limit: Sequence[int | NotGiven | None] | None = ...,
+    token_limit: Sequence[int | str | TokenLimit | NotGiven | None] | None = ...,
+    turn_limit: Sequence[int | NotGiven | None] | None = ...,
     time_limit: Sequence[int | NotGiven | None] | None = ...,
     working_limit: Sequence[int | NotGiven | None] | None = ...,
     cost_limit: Sequence[float | NotGiven | None] | None = ...,
@@ -5437,14 +5721,17 @@ Default model for task (Optional, defaults to eval model).
 `config` Sequence\[GenerateConfig \| NotGiven\] \| None  
 Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
-`model_roles` Sequence\[Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\] \| NotGiven \| None\] \| None  
-Named roles for use in `get_model()`.
+`model_roles` Sequence\[Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model \| Sequence\[[FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\]\] \| NotGiven \| None\] \| None  
+Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`.
 
 `message_limit` Sequence\[int \| NotGiven \| None\] \| None  
 Limit on total messages used for each sample.
 
-`token_limit` Sequence\[int \| NotGiven \| None\] \| None  
-Limit on total tokens used for each sample.
+`token_limit` Sequence\[int \| str \| TokenLimit \| NotGiven \| None\] \| None  
+Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`.
+
+`turn_limit` Sequence\[int \| NotGiven \| None\] \| None  
+Limit on total turns (assistant messages) for each sample.
 
 `time_limit` Sequence\[int \| NotGiven \| None\] \| None  
 Limit on clock time (in seconds) for samples.
@@ -5459,7 +5746,7 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 
 Set fields on a list of tasks.
 
-[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L231)
+[Source](https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L231)
 
 ``` python
 def tasks_with(
@@ -5471,20 +5758,26 @@ def tasks_with(
     extra_args: FlowExtraArgs | NotGiven | None = ...,
     solver: str | FlowSolver | FlowAgent | Solver | Agent | Sequence[str | FlowSolver | Solver] | NotGiven | None = ...,
     scorer: str | FlowScorer | Scorer | Sequence[str | FlowScorer | Scorer] | NotGiven | None = ...,
+    headline_metric: HeadlineMetric | str | NotGiven | None = ...,
     model: str | FlowModel | Model | NotGiven | None = ...,
     config: GenerateConfig | NotGiven = ...,
-    model_roles: Mapping[str, FlowModel | str | Model] | NotGiven | None = ...,
+    model_roles: Mapping[str, FlowModel | str | Model | Sequence[FlowModel | str | Model]] | NotGiven | None = ...,
     sandbox: str | tuple[str, str] | SandboxEnvironmentSpec | NotGiven | None = ...,
     approval: str | ApprovalPolicyConfig | NotGiven | None = ...,
+    review: str | ReviewPolicyConfig | NotGiven | None = ...,
     epochs: int | FlowEpochs | NotGiven | None = ...,
     fail_on_error: bool | float | NotGiven | None = ...,
     continue_on_fail: bool | NotGiven | None = ...,
+    score_on_error: bool | NotGiven | None = ...,
+    checkpoint: CheckpointConfig | bool | str | NotGiven | None = ...,
     message_limit: int | NotGiven | None = ...,
-    token_limit: int | NotGiven | None = ...,
+    token_limit: int | str | TokenLimit | NotGiven | None = ...,
+    turn_limit: int | NotGiven | None = ...,
     time_limit: int | NotGiven | None = ...,
     working_limit: int | NotGiven | None = ...,
     cost_limit: float | NotGiven | None = ...,
     early_stopping: NotGiven | None = ...,
+    description: str | NotGiven | None = ...,
     version: int | str | NotGiven = ...,
     tags: Sequence[str] | NotGiven | None = ...,
     metadata: Mapping[str, Any] | NotGiven | None = ...,
@@ -5514,20 +5807,26 @@ Solver or list of solvers. Defaults to `generate()`, a normal call to the model.
 `scorer` str \| [FlowScorer](../reference/inspect_flow.html.md#flowscorer) \| Scorer \| Sequence\[str \| [FlowScorer](../reference/inspect_flow.html.md#flowscorer) \| Scorer\] \| NotGiven \| None  
 Scorer or list of scorers used to evaluate model output.
 
+`headline_metric` HeadlineMetric \| str \| NotGiven \| None  
+Which score/metric best summarises this task (e.g. for a leaderboard or log listing). A `str` names the scorer, as `"<scorer>"` or `"<scorer>.<score>"` to address one value of a scorer returning a dict of scores. Pass a `HeadlineMetric` to also name the `metric` or `reducer`. Unset fields resolve by convention, so `HeadlineMetric(metric="accuracy")` takes that metric from the first score reporting it; the default is the first metric of the first score.
+
 `model` str \| [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| Model \| NotGiven \| None  
 Default model for task (Optional, defaults to eval model).
 
 `config` GenerateConfig \| NotGiven  
 Model generation config for the default model (does not apply to model roles). Overrides `defaults.config`; overridden by `FlowModel.config`.
 
-`model_roles` Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\] \| NotGiven \| None  
-Named roles for use in `get_model()`.
+`model_roles` Mapping\[str, [FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model \| Sequence\[[FlowModel](../reference/inspect_flow.html.md#flowmodel) \| str \| Model\]\] \| NotGiven \| None  
+Named roles for use in `get_model()`. A list value binds one role to several models (e.g. model-graded scorers then grade by majority vote): `{'grader': [a, b]}` is one task with a two-model grader. To sweep graders across task variants instead, pass a list of `model_roles` mappings in `matrix`.
 
 `sandbox` str \| tuple\[str, str\] \| SandboxEnvironmentSpec \| NotGiven \| None  
 Sandbox environment type (or optionally a str or tuple with a shorthand spec)
 
 `approval` str \| ApprovalPolicyConfig \| NotGiven \| None  
 Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.
+
+`review` str \| ReviewPolicyConfig \| NotGiven \| None  
+Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy.
 
 `epochs` int \| [FlowEpochs](../reference/inspect_flow.html.md#flowepochs) \| NotGiven \| None  
 Epochs to repeat samples for and optional score reducer function(s) used to combine sample scores (defaults to `"mean"`)
@@ -5538,11 +5837,20 @@ Epochs to repeat samples for and optional score reducer function(s) used to comb
 `continue_on_fail` bool \| NotGiven \| None  
 `True` to continue running and only fail at the end if the `fail_on_error` condition is met. `False` to fail eval immediately when the `fail_on_error` condition is met (default).
 
+`score_on_error` bool \| NotGiven \| None  
+Score samples that error rather than failing the eval mid-run. Overridden by `options.score_on_error` when set.
+
+`checkpoint` CheckpointConfig \| bool \| str \| NotGiven \| None  
+Checkpoint configuration for this task, or `True` to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with `options.checkpoint`, which takes precedence; `False` at either level disables checkpointing.
+
 `message_limit` int \| NotGiven \| None  
 Limit on total messages used for each sample.
 
-`token_limit` int \| NotGiven \| None  
-Limit on total tokens used for each sample.
+`token_limit` int \| str \| TokenLimit \| NotGiven \| None  
+Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g. `'1M'`), or a `TokenLimit`.
+
+`turn_limit` int \| NotGiven \| None  
+Limit on total turns (assistant messages) for each sample.
 
 `time_limit` int \| NotGiven \| None  
 Limit on clock time (in seconds) for samples.
@@ -5556,8 +5864,11 @@ Limit on total cost (in dollars) for each sample. Requires model cost data via m
 `early_stopping` NotGiven \| None  
 Early stopping callbacks.
 
+`description` str \| NotGiven \| None  
+Short statement of what the task asks of the agent (recorded in the eval log).
+
 `version` int \| str \| NotGiven  
-Version of task (to distinguish evolutions of the task spec or breaking changes to it)
+Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.
 
 `tags` Sequence\[str\] \| NotGiven \| None  
 Tags to associate with the task.

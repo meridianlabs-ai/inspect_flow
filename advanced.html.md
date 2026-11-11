@@ -113,6 +113,7 @@ In virtual environment mode, Flow automatically discovers and installs dependenc
 - **Package inference**: Detects packages from Flow type names in your config:
   - Models: `model="openai/gpt-4"` → installs `openai`
   - Tasks: `FlowTask(name="inspect_evals/mmlu")` → installs `inspect-evals`
+  - Factories: `FlowTask(factory="inspect_evals/mmlu")` (or `factory=FlowFactory("inspect_evals/mmlu")`) infers the same package. A registry-decorated callable factory (e.g. `factory=mmlu`) infers the package of its registry name. When both `name` and `factory` are given, `factory` decides the package, matching how the runner resolves the object
   - Note: Package inference only works with Flow types ([FlowTask](./reference/inspect_flow.html.md#flowtask), [FlowModel](./reference/inspect_flow.html.md#flowmodel), etc.), not direct Inspect AI objects
 
 This means most workflows require no dependency configuration at all!
@@ -156,13 +157,58 @@ FlowSpec(
 ```
 
 1  
-How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory, it will be used automatically for reproducible installs.
+How to find dependency files: Defaults to `"auto"` which auto-detects a `requirements.txt` or a `pyproject.toml` file. May also be set to a path to a dependency file or `"no_file"` to not use a dependency file. When using `pyproject.toml`, if a `uv.lock` file exists in the same directory or at the root of its uv workspace, it will be used automatically for reproducible installs.
 
 2  
 Extra packages beyond the dependency file. Accepts a string or list of strings. Supports: PyPI packages, Git repositories, local packages.
 
 3  
 Auto-install packages based on task and model names in the config (default: `True`). For example, `model="openai/gpt-4"` installs `openai`, and `name="inspect_evals/mmlu"` installs `inspect-evals`.
+
+### uv Settings and Release Cooldown
+
+Venv mode needs uv 0.13.4 or newer.
+
+Flow builds the virtual environment with uv, and every uv command it runs reads your uv settings: the `[tool.uv]` table in the dependency file’s `pyproject.toml` (or a `uv.toml` beside it, or the workspace root’s settings), your user and system `uv.toml` files, `UV_*` environment variables and `uv_sync_args`. With no dependency file, uv reads a `uv.toml` or `[tool.uv]` settings from a `pyproject.toml` in the spec’s directory or above it. This also applies when `dependency_file="no_file"`. With a dependency file, flow uses that file’s project for uv settings even if `UV_PROJECT` is set; `UV_PROJECT` is used only when there is no dependency file. Venv mode installs into its own environment for the machine Flow runs on, so the `[tool.uv.pip]` settings `target`, `prefix` and `python-platform` are not supported there. Other `[tool.uv.pip]` install settings, such as `require-hashes`, `no-deps`, `no-build` and `only-binary`, also apply to the packages Flow installs itself (`inspect-flow`, `inspect-ai` and auto-detected packages). `require-hashes` makes setup fail, because those requirements carry no hashes, and `no-deps` can leave the environment without their dependencies.
+
+By default, Flow installs only releases that are at least 7 days old, or 6 hours old for `anthropic`, `inspect-ai`, `inspect-scout` and `openai`. This keeps a broken or compromised release out of your evaluations on the day it is published. Two kinds of install are exempt:
+
+- Packages Flow copies from the environment you run it in (`inspect-flow`, `inspect-ai` and auto-detected packages) install at the version you already have. A build that needs one of these packages gets that version too. A uv override of one of these packages conflicts with the copied version; to use another version, list the package in `additional_dependencies`.
+- A `uv.lock` installs exactly the versions it lists. The default still applies to build requirements, such as `hatchling`, which the lock does not list.
+
+If the dependency project has no lock, uv creates one and records Flow’s cooldown settings in it. Running uv without Flow can update those recorded settings.
+
+With `--locked` in `uv_sync_args`, or `UV_LOCKED`, uv also checks that the lock records the cooldown settings in use. A lock created without a cooldown therefore fails the first Flow run, because Flow’s default changes those settings. Set the cooldown in the project and run `uv lock` once; your settings then replace Flow’s and the lock stays valid. Give an `exclude-newer-package` entry to each of `anthropic`, `inspect-ai`, `inspect-scout` and `openai` that the project uses, since Flow’s 6-hour entries for them stay otherwise:
+
+``` toml
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.uv.exclude-newer-package]
+openai = "6 hours"
+```
+
+The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package’s metadata, it can fetch a newer build requirement.
+
+Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases at least 1 day old, and any release of `inspect-evals`:
+
+``` toml
+[tool.uv]
+exclude-newer = "1 day"
+
+[tool.uv.exclude-newer-package]
+inspect-evals = false
+```
+
+Flow adds no default, and logs a warning, when uv reads a system `uv.toml` (such as `/etc/uv/uv.toml`) or a config file named with `UV_CONFIG_FILE` or `--config-file` in `uv_sync_args`. Packages copied from your environment are then not exempt from a cooldown in that file. To keep a cooldown, set it in that file:
+
+``` toml
+exclude-newer = "7 days"
+```
+
+`UV_NO_CONFIG` disables config discovery, including Flow’s system defaults. Explicit files selected by `UV_CONFIG_FILE` or `--config-file` are still read.
+
+If a version you pin is newer than the window, uv’s error names the package and the setting to change.
 
 ### Python Version
 

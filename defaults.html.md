@@ -333,11 +333,7 @@ When including files by path, relative paths will be resolved relative to the co
 from inspect_flow import FlowSpec, FlowTask
 
 FlowSpec(
-    includes=[
-        "defaults.py",
-        "../shared.py",
-        "/absolute/path.py",
-    ],
+    includes=["defaults.py"],
     log_dir="logs",
     tasks=[
         FlowTask(

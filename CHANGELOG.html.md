@@ -1,5 +1,80 @@
 # changelog – Inspect Flow
 
+## [0.15.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.14.0...v0.15.0) (2026-11-11)
+
+### ⚠ BREAKING CHANGES
+
+- require Python 3.11 and test on Python 3.14 ([\#878](https://github.com/meridianlabs-ai/inspect_flow/issues/878))
+
+### Features
+
+- require Python 3.11 and test on Python 3.14 ([\#878](https://github.com/meridianlabs-ai/inspect_flow/issues/878)) ([851ed61](https://github.com/meridianlabs-ai/inspect_flow/commit/851ed6104afe4ffb5e171f25b16b6148c922c0e8))
+
+### Bug Fixes
+
+- honor uv settings and apply a default release cooldown in venv mode ([\#905](https://github.com/meridianlabs-ai/inspect_flow/issues/905)) ([28290c3](https://github.com/meridianlabs-ai/inspect_flow/commit/28290c303fa87c1b45810049d4cb800c138fbb0f))
+
+## [0.14.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.1...v0.14.0) (2026-10-13)
+
+### Features
+
+- reconcile inspect-ai 0.3.278 (add FlowTask.description) and upgrade locked dependencies ([\#874](https://github.com/meridianlabs-ai/inspect_flow/issues/874)) ([37cb4a2](https://github.com/meridianlabs-ai/inspect_flow/commit/37cb4a2a632fdda35b139acd29b8b37250f07f60))
+- reconcile with inspect-ai 0.3.266 (tool result review policies) ([\#842](https://github.com/meridianlabs-ai/inspect_flow/issues/842)) ([9c06625](https://github.com/meridianlabs-ai/inspect_flow/commit/9c06625e9867bf85b61b6ff0dfcd6b07b802642a))
+
+### Bug Fixes
+
+- add meta model provider to auto-dependency table ([\#846](https://github.com/meridianlabs-ai/inspect_flow/issues/846)) ([9425b60](https://github.com/meridianlabs-ai/inspect_flow/commit/9425b60601a82933472166bb3db7f8686b420dd1))
+
+## [0.13.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.0...v0.13.1) (2026-09-19)
+
+### Bug Fixes
+
+- support latest inspect_ai version ([\#838](https://github.com/meridianlabs-ai/inspect_flow/issues/838)) ([191eea2](https://github.com/meridianlabs-ai/inspect_flow/commit/191eea2c564561979aa4391600ab26095fc57171))
+
+## [0.13.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.12.0...v0.13.0) (2026-09-09)
+
+### ⚠ BREAKING CHANGES
+
+- `FlowModel.default` is removed. A config that declares `default` under a model now fails validation at load; delete the key, it never had any effect. `SpecModelRef.kind` no longer includes `"default"`.
+
+### Features
+
+- add headline_metric and sandbox_prebuilt, reconcile with inspect-ai 0.3.261 ([\#804](https://github.com/meridianlabs-ai/inspect_flow/issues/804)) ([3169439](https://github.com/meridianlabs-ai/inspect_flow/commit/3169439eb3e2b81a49159d757a481b59f7d61ce3))
+- add incomplete_action/incomplete_max to FlowOptions, reconcile with inspect-ai 0.3.263 ([\#817](https://github.com/meridianlabs-ai/inspect_flow/issues/817)) ([4930609](https://github.com/meridianlabs-ai/inspect_flow/commit/4930609b3694e60ddb32a91f33b8f58148d6a2a3))
+- support list-valued model roles in FlowTask.model_roles ([\#808](https://github.com/meridianlabs-ai/inspect_flow/issues/808)) ([e471403](https://github.com/meridianlabs-ai/inspect_flow/commit/e47140374db14b9e644405b950816b488270741d))
+
+### Bug Fixes
+
+- avoid loading entry points for built-in model providers ([\#827](https://github.com/meridianlabs-ai/inspect_flow/issues/827)) ([304c905](https://github.com/meridianlabs-ai/inspect_flow/commit/304c90576d102cc858dd0dfb3b3dae9b2133c143))
+- collect venv auto-dependencies from string factory references ([\#821](https://github.com/meridianlabs-ai/inspect_flow/issues/821)) ([4f1a8cb](https://github.com/meridianlabs-ai/inspect_flow/commit/4f1a8cb9f977cf9e9a4d596e1f60763e8ec68b03))
+- detect venv providers from every declared model reference ([\#779](https://github.com/meridianlabs-ai/inspect_flow/issues/779)) ([\#809](https://github.com/meridianlabs-ai/inspect_flow/issues/809)) ([9560e61](https://github.com/meridianlabs-ai/inspect_flow/commit/9560e6188606c9fb8c08d61a2efe63f5fada53a9))
+- map built-in openai-api, deepseek, sagemaker and other providers to their SDKs ([\#819](https://github.com/meridianlabs-ai/inspect_flow/issues/819)) ([\#822](https://github.com/meridianlabs-ai/inspect_flow/issues/822)) ([af659dd](https://github.com/meridianlabs-ai/inspect_flow/commit/af659dd0afe6fbb2d1830822f94a1b56e2c3826e))
+- remove non-functional FlowModel.default field ([\#778](https://github.com/meridianlabs-ai/inspect_flow/issues/778)) ([\#810](https://github.com/meridianlabs-ai/inspect_flow/issues/810)) ([1207a4a](https://github.com/meridianlabs-ai/inspect_flow/commit/1207a4a995df661a251df072cf6fac15d923f478))
+- resolve model provider dependencies through the inspect-ai registry ([\#825](https://github.com/meridianlabs-ai/inspect_flow/issues/825)) ([ac81548](https://github.com/meridianlabs-ai/inspect_flow/commit/ac815482af4e0e5d675512991dbed9c0dc52f42f))
+
+## [0.12.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.11.0...v0.12.0) (2026-08-04)
+
+### Features
+
+- public model-reference introspection (iter_model_refs) ([\#784](https://github.com/meridianlabs-ai/inspect_flow/issues/784)) ([dc20def](https://github.com/meridianlabs-ai/inspect_flow/commit/dc20def3efd14bea31e51e34c5ce016050070752))
+- public validate_portable_spec API ([\#785](https://github.com/meridianlabs-ai/inspect_flow/issues/785)) ([64e10bc](https://github.com/meridianlabs-ai/inspect_flow/commit/64e10bc0c43431e99dcd2412f6f7921091a813f1))
+
+## [0.11.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.10.0...v0.11.0) (2026-07-22)
+
+### Features
+
+- add turn_limit, score_on_error, checkpoint to FlowTask; widen limit types ([\#764](https://github.com/meridianlabs-ai/inspect_flow/issues/764)) ([083da8b](https://github.com/meridianlabs-ai/inspect_flow/commit/083da8b9b9bd2f86fe7d0959e2fd0a31ce545604))
+- support inline scanners via scanner on FlowOptions ([\#765](https://github.com/meridianlabs-ai/inspect_flow/issues/765)) ([668d268](https://github.com/meridianlabs-ai/inspect_flow/commit/668d2680212b8f539cc5155a6a60db810f87d29e)), closes [\#763](https://github.com/meridianlabs-ai/inspect_flow/issues/763)
+- support renaming copies in the copy step (suffix and rename params) ([\#757](https://github.com/meridianlabs-ai/inspect_flow/issues/757)) ([449ce1d](https://github.com/meridianlabs-ai/inspect_flow/commit/449ce1dc1856fb4b3f63808b30b4b9150360da94))
+
+### Bug Fixes
+
+- reconcile with inspect-ai 0.3.248 (cloudflare provider rename) ([\#770](https://github.com/meridianlabs-ai/inspect_flow/issues/770)) ([b636ead](https://github.com/meridianlabs-ai/inspect_flow/commit/b636eadac754acc7924bacb5b98f59118c4e01d1))
+- reconcile with inspect-ai 0.3.249 (scout CLI import shim, moonshot provider, regenerated types) ([\#773](https://github.com/meridianlabs-ai/inspect_flow/issues/773)) ([a9d5a3b](https://github.com/meridianlabs-ai/inspect_flow/commit/a9d5a3b2373b11d0ea963bc6c32738fa135c9961))
+- select the interpreter explicitly when freezing requirements ([\#775](https://github.com/meridianlabs-ai/inspect_flow/issues/775)) ([3718697](https://github.com/meridianlabs-ai/inspect_flow/commit/371869798adb2913c720fb184659979b70191c6f))
+- upgrade deps and add additional matrix fields ([\#750](https://github.com/meridianlabs-ai/inspect_flow/issues/750)) ([20503c0](https://github.com/meridianlabs-ai/inspect_flow/commit/20503c0195520febe83a93ace420bebd9c8b22bf))
+- verify FlowTask.version matches loaded task version instead of overwriting ([\#760](https://github.com/meridianlabs-ai/inspect_flow/issues/760)) ([15c99b2](https://github.com/meridianlabs-ai/inspect_flow/commit/15c99b2819928f7da83facf22e61a445ec156446))
+
 ## [0.10.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0) (2026-07-10)
 
 ### Features

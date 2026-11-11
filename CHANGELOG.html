@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.11.9">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -36,14 +39,15 @@ ul.task-list li input[type="checkbox"] {
 <link href="./images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-771725699ea44adeffca0fa6042fd43a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -81,11 +85,11 @@ ul.task-list li input[type="checkbox"] {
 <meta name="twitter:card" content="summary">
 </head>
 
-<body class="nav-fixed quarto-light">
+<body class="nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="./index.html" class="navbar-brand navbar-brand-logo">
@@ -96,8 +100,7 @@ ul.task-list li input[type="checkbox"] {
     <span class="navbar-title">Inspect Flow</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -187,6 +190,7 @@ ul.task-list li input[type="checkbox"] {
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -195,106 +199,136 @@ ul.task-list li input[type="checkbox"] {
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active" data-toc-expanded="1">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">0.10.0 (2026-07-10)</a>
+  <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">0.15.0 (2026-11-11)</a>
   <ul class="collapse">
+  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">⚠ BREAKING CHANGES</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug Fixes</a></li>
-  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.9.1 (2026-06-17)</a>
-  <ul class="collapse">
-  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug Fixes</a></li>
-  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.9.0 (2026-05-19)</a>
+  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.14.0 (2026-10-13)</a>
   <ul class="collapse">
   <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
-  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug Fixes</a></li>
-  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
+  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug Fixes</a></li>
   </ul></li>
-  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.8.0 (2026-04-17)</a>
+  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.13.1 (2026-09-19)</a>
   <ul class="collapse">
+  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug Fixes</a></li>
+  </ul></li>
+  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.13.0 (2026-09-09)</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">⚠ BREAKING CHANGES</a></li>
   <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
   <li><a href="#bug-fixes-3" id="toc-bug-fixes-3" class="nav-link" data-scroll-target="#bug-fixes-3">Bug Fixes</a></li>
-  <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.7.0 (2026-03-24)</a>
+  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.12.0 (2026-08-04)</a>
   <ul class="collapse">
   <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
-  <li><a href="#bug-fixes-4" id="toc-bug-fixes-4" class="nav-link" data-scroll-target="#bug-fixes-4">Bug Fixes</a></li>
-  <li><a href="#documentation-4" id="toc-documentation-4" class="nav-link" data-scroll-target="#documentation-4">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.6.0 (2026-03-16)</a>
+  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.11.0 (2026-07-22)</a>
   <ul class="collapse">
   <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
-  <li><a href="#bug-fixes-5" id="toc-bug-fixes-5" class="nav-link" data-scroll-target="#bug-fixes-5">Bug Fixes</a></li>
-  <li><a href="#documentation-5" id="toc-documentation-5" class="nav-link" data-scroll-target="#documentation-5">Documentation</a></li>
+  <li><a href="#bug-fixes-4" id="toc-bug-fixes-4" class="nav-link" data-scroll-target="#bug-fixes-4">Bug Fixes</a></li>
   </ul></li>
-  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.5.0 (2026-03-06)</a>
+  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.10.0 (2026-07-10)</a>
   <ul class="collapse">
   <li><a href="#features-5" id="toc-features-5" class="nav-link" data-scroll-target="#features-5">Features</a></li>
-  <li><a href="#bug-fixes-6" id="toc-bug-fixes-6" class="nav-link" data-scroll-target="#bug-fixes-6">Bug Fixes</a></li>
-  <li><a href="#documentation-6" id="toc-documentation-6" class="nav-link" data-scroll-target="#documentation-6">Documentation</a></li>
+  <li><a href="#bug-fixes-5" id="toc-bug-fixes-5" class="nav-link" data-scroll-target="#bug-fixes-5">Bug Fixes</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-7" id="toc-section-7" class="nav-link" data-scroll-target="#section-7">0.4.1 (2026-02-20)</a>
+  <li><a href="#section-7" id="toc-section-7" class="nav-link" data-scroll-target="#section-7">0.9.1 (2026-06-17)</a>
   <ul class="collapse">
-  <li><a href="#bug-fixes-7" id="toc-bug-fixes-7" class="nav-link" data-scroll-target="#bug-fixes-7">Bug Fixes</a></li>
+  <li><a href="#bug-fixes-6" id="toc-bug-fixes-6" class="nav-link" data-scroll-target="#bug-fixes-6">Bug Fixes</a></li>
+  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-8" id="toc-section-8" class="nav-link" data-scroll-target="#section-8">0.4.0 (2026-02-19)</a>
+  <li><a href="#section-8" id="toc-section-8" class="nav-link" data-scroll-target="#section-8">0.9.0 (2026-05-19)</a>
   <ul class="collapse">
   <li><a href="#features-6" id="toc-features-6" class="nav-link" data-scroll-target="#features-6">Features</a></li>
-  <li><a href="#bug-fixes-8" id="toc-bug-fixes-8" class="nav-link" data-scroll-target="#bug-fixes-8">Bug Fixes</a></li>
+  <li><a href="#bug-fixes-7" id="toc-bug-fixes-7" class="nav-link" data-scroll-target="#bug-fixes-7">Bug Fixes</a></li>
+  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-9" id="toc-section-9" class="nav-link" data-scroll-target="#section-9">0.3.0 (2026-02-03)</a>
+  <li><a href="#section-9" id="toc-section-9" class="nav-link" data-scroll-target="#section-9">0.8.0 (2026-04-17)</a>
   <ul class="collapse">
   <li><a href="#features-7" id="toc-features-7" class="nav-link" data-scroll-target="#features-7">Features</a></li>
-  <li><a href="#bug-fixes-9" id="toc-bug-fixes-9" class="nav-link" data-scroll-target="#bug-fixes-9">Bug Fixes</a></li>
+  <li><a href="#bug-fixes-8" id="toc-bug-fixes-8" class="nav-link" data-scroll-target="#bug-fixes-8">Bug Fixes</a></li>
+  <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-10" id="toc-section-10" class="nav-link" data-scroll-target="#section-10">0.2.2 (2026-01-26)</a>
-  <ul class="collapse">
-  <li><a href="#bug-fixes-10" id="toc-bug-fixes-10" class="nav-link" data-scroll-target="#bug-fixes-10">Bug Fixes</a></li>
-  </ul></li>
-  <li><a href="#section-11" id="toc-section-11" class="nav-link" data-scroll-target="#section-11">0.2.1 (2026-01-23)</a>
-  <ul class="collapse">
-  <li><a href="#bug-fixes-11" id="toc-bug-fixes-11" class="nav-link" data-scroll-target="#bug-fixes-11">Bug Fixes</a></li>
-  <li><a href="#documentation-7" id="toc-documentation-7" class="nav-link" data-scroll-target="#documentation-7">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-12" id="toc-section-12" class="nav-link" data-scroll-target="#section-12">0.2.0 (2026-01-22)</a>
+  <li><a href="#section-10" id="toc-section-10" class="nav-link" data-scroll-target="#section-10">0.7.0 (2026-03-24)</a>
   <ul class="collapse">
   <li><a href="#features-8" id="toc-features-8" class="nav-link" data-scroll-target="#features-8">Features</a></li>
-  <li><a href="#bug-fixes-12" id="toc-bug-fixes-12" class="nav-link" data-scroll-target="#bug-fixes-12">Bug Fixes</a></li>
-  <li><a href="#documentation-8" id="toc-documentation-8" class="nav-link" data-scroll-target="#documentation-8">Documentation</a></li>
+  <li><a href="#bug-fixes-9" id="toc-bug-fixes-9" class="nav-link" data-scroll-target="#bug-fixes-9">Bug Fixes</a></li>
+  <li><a href="#documentation-4" id="toc-documentation-4" class="nav-link" data-scroll-target="#documentation-4">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-13" id="toc-section-13" class="nav-link" data-scroll-target="#section-13">0.1.4 (2026-01-14)</a>
+  <li><a href="#section-11" id="toc-section-11" class="nav-link" data-scroll-target="#section-11">0.6.0 (2026-03-16)</a>
   <ul class="collapse">
+  <li><a href="#features-9" id="toc-features-9" class="nav-link" data-scroll-target="#features-9">Features</a></li>
+  <li><a href="#bug-fixes-10" id="toc-bug-fixes-10" class="nav-link" data-scroll-target="#bug-fixes-10">Bug Fixes</a></li>
+  <li><a href="#documentation-5" id="toc-documentation-5" class="nav-link" data-scroll-target="#documentation-5">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-12" id="toc-section-12" class="nav-link" data-scroll-target="#section-12">0.5.0 (2026-03-06)</a>
+  <ul class="collapse">
+  <li><a href="#features-10" id="toc-features-10" class="nav-link" data-scroll-target="#features-10">Features</a></li>
+  <li><a href="#bug-fixes-11" id="toc-bug-fixes-11" class="nav-link" data-scroll-target="#bug-fixes-11">Bug Fixes</a></li>
+  <li><a href="#documentation-6" id="toc-documentation-6" class="nav-link" data-scroll-target="#documentation-6">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-13" id="toc-section-13" class="nav-link" data-scroll-target="#section-13">0.4.1 (2026-02-20)</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes-12" id="toc-bug-fixes-12" class="nav-link" data-scroll-target="#bug-fixes-12">Bug Fixes</a></li>
+  </ul></li>
+  <li><a href="#section-14" id="toc-section-14" class="nav-link" data-scroll-target="#section-14">0.4.0 (2026-02-19)</a>
+  <ul class="collapse">
+  <li><a href="#features-11" id="toc-features-11" class="nav-link" data-scroll-target="#features-11">Features</a></li>
   <li><a href="#bug-fixes-13" id="toc-bug-fixes-13" class="nav-link" data-scroll-target="#bug-fixes-13">Bug Fixes</a></li>
   </ul></li>
-  <li><a href="#section-14" id="toc-section-14" class="nav-link" data-scroll-target="#section-14">0.1.3 (2026-01-06)</a>
+  <li><a href="#section-15" id="toc-section-15" class="nav-link" data-scroll-target="#section-15">0.3.0 (2026-02-03)</a>
   <ul class="collapse">
+  <li><a href="#features-12" id="toc-features-12" class="nav-link" data-scroll-target="#features-12">Features</a></li>
   <li><a href="#bug-fixes-14" id="toc-bug-fixes-14" class="nav-link" data-scroll-target="#bug-fixes-14">Bug Fixes</a></li>
   </ul></li>
-  <li><a href="#section-15" id="toc-section-15" class="nav-link" data-scroll-target="#section-15">0.1.2 (2025-12-15)</a>
+  <li><a href="#section-16" id="toc-section-16" class="nav-link" data-scroll-target="#section-16">0.2.2 (2026-01-26)</a>
   <ul class="collapse">
   <li><a href="#bug-fixes-15" id="toc-bug-fixes-15" class="nav-link" data-scroll-target="#bug-fixes-15">Bug Fixes</a></li>
   </ul></li>
-  <li><a href="#section-16" id="toc-section-16" class="nav-link" data-scroll-target="#section-16">0.1.1 (2025-12-11)</a>
+  <li><a href="#section-17" id="toc-section-17" class="nav-link" data-scroll-target="#section-17">0.2.1 (2026-01-23)</a>
   <ul class="collapse">
   <li><a href="#bug-fixes-16" id="toc-bug-fixes-16" class="nav-link" data-scroll-target="#bug-fixes-16">Bug Fixes</a></li>
+  <li><a href="#documentation-7" id="toc-documentation-7" class="nav-link" data-scroll-target="#documentation-7">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-18" id="toc-section-18" class="nav-link" data-scroll-target="#section-18">0.2.0 (2026-01-22)</a>
+  <ul class="collapse">
+  <li><a href="#features-13" id="toc-features-13" class="nav-link" data-scroll-target="#features-13">Features</a></li>
+  <li><a href="#bug-fixes-17" id="toc-bug-fixes-17" class="nav-link" data-scroll-target="#bug-fixes-17">Bug Fixes</a></li>
+  <li><a href="#documentation-8" id="toc-documentation-8" class="nav-link" data-scroll-target="#documentation-8">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-19" id="toc-section-19" class="nav-link" data-scroll-target="#section-19">0.1.4 (2026-01-14)</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes-18" id="toc-bug-fixes-18" class="nav-link" data-scroll-target="#bug-fixes-18">Bug Fixes</a></li>
+  </ul></li>
+  <li><a href="#section-20" id="toc-section-20" class="nav-link" data-scroll-target="#section-20">0.1.3 (2026-01-06)</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes-19" id="toc-bug-fixes-19" class="nav-link" data-scroll-target="#bug-fixes-19">Bug Fixes</a></li>
+  </ul></li>
+  <li><a href="#section-21" id="toc-section-21" class="nav-link" data-scroll-target="#section-21">0.1.2 (2025-12-15)</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes-20" id="toc-bug-fixes-20" class="nav-link" data-scroll-target="#bug-fixes-20">Bug Fixes</a></li>
+  </ul></li>
+  <li><a href="#section-22" id="toc-section-22" class="nav-link" data-scroll-target="#section-22">0.1.1 (2025-12-11)</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes-21" id="toc-bug-fixes-21" class="nav-link" data-scroll-target="#bug-fixes-21">Bug Fixes</a></li>
   <li><a href="#documentation-9" id="toc-documentation-9" class="nav-link" data-scroll-target="#documentation-9">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-17" id="toc-section-17" class="nav-link" data-scroll-target="#section-17">0.1.0 (2025-12-05)</a>
+  <li><a href="#section-23" id="toc-section-23" class="nav-link" data-scroll-target="#section-23">0.1.0 (2025-12-05)</a>
   <ul class="collapse">
-  <li><a href="#features-9" id="toc-features-9" class="nav-link" data-scroll-target="#features-9">Features</a></li>
+  <li><a href="#features-14" id="toc-features-14" class="nav-link" data-scroll-target="#features-14">Features</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content" tabindex="-1">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -316,9 +350,114 @@ ul.task-list li input[type="checkbox"] {
 
 
 <section id="section" class="level2">
-<h2 class="anchored" data-anchor-id="section"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0">0.10.0</a> (2026-07-10)</h2>
+<h2 class="anchored" data-anchor-id="section"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.14.0...v0.15.0">0.15.0</a> (2026-11-11)</h2>
+<section id="breaking-changes" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes">⚠ BREAKING CHANGES</h3>
+<ul>
+<li>require Python 3.11 and test on Python 3.14 (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/878">#878</a>)</li>
+</ul>
+</section>
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
+<ul>
+<li>require Python 3.11 and test on Python 3.14 (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/878">#878</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/851ed6104afe4ffb5e171f25b16b6148c922c0e8">851ed61</a>)</li>
+</ul>
+</section>
+<section id="bug-fixes" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li>honor uv settings and apply a default release cooldown in venv mode (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/905">#905</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/28290c303fa87c1b45810049d4cb800c138fbb0f">28290c3</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-1" class="level2">
+<h2 class="anchored" data-anchor-id="section-1"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.1...v0.14.0">0.14.0</a> (2026-10-13)</h2>
+<section id="features-1" class="level3">
+<h3 class="anchored" data-anchor-id="features-1">Features</h3>
+<ul>
+<li>reconcile inspect-ai 0.3.278 (add FlowTask.description) and upgrade locked dependencies (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/874">#874</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/37cb4a2a632fdda35b139acd29b8b37250f07f60">37cb4a2</a>)</li>
+<li>reconcile with inspect-ai 0.3.266 (tool result review policies) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/842">#842</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/9c06625e9867bf85b61b6ff0dfcd6b07b802642a">9c06625</a>)</li>
+</ul>
+</section>
+<section id="bug-fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug Fixes</h3>
+<ul>
+<li>add meta model provider to auto-dependency table (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/846">#846</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/9425b60601a82933472166bb3db7f8686b420dd1">9425b60</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-2" class="level2">
+<h2 class="anchored" data-anchor-id="section-2"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.13.0...v0.13.1">0.13.1</a> (2026-09-19)</h2>
+<section id="bug-fixes-2" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug Fixes</h3>
+<ul>
+<li>support latest inspect_ai version (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/838">#838</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/191eea2c564561979aa4391600ab26095fc57171">191eea2</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-3" class="level2">
+<h2 class="anchored" data-anchor-id="section-3"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.12.0...v0.13.0">0.13.0</a> (2026-09-09)</h2>
+<section id="breaking-changes-1" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-1">⚠ BREAKING CHANGES</h3>
+<ul>
+<li><code>FlowModel.default</code> is removed. A config that declares <code>default</code> under a model now fails validation at load; delete the key, it never had any effect. <code>SpecModelRef.kind</code> no longer includes <code>"default"</code>.</li>
+</ul>
+</section>
+<section id="features-2" class="level3">
+<h3 class="anchored" data-anchor-id="features-2">Features</h3>
+<ul>
+<li>add headline_metric and sandbox_prebuilt, reconcile with inspect-ai 0.3.261 (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/804">#804</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/3169439eb3e2b81a49159d757a481b59f7d61ce3">3169439</a>)</li>
+<li>add incomplete_action/incomplete_max to FlowOptions, reconcile with inspect-ai 0.3.263 (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/817">#817</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/4930609b3694e60ddb32a91f33b8f58148d6a2a3">4930609</a>)</li>
+<li>support list-valued model roles in FlowTask.model_roles (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/808">#808</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e47140374db14b9e644405b950816b488270741d">e471403</a>)</li>
+</ul>
+</section>
+<section id="bug-fixes-3" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-3">Bug Fixes</h3>
+<ul>
+<li>avoid loading entry points for built-in model providers (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/827">#827</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/304c90576d102cc858dd0dfb3b3dae9b2133c143">304c905</a>)</li>
+<li>collect venv auto-dependencies from string factory references (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/821">#821</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/4f1a8cb9f977cf9e9a4d596e1f60763e8ec68b03">4f1a8cb</a>)</li>
+<li>detect venv providers from every declared model reference (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/779">#779</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/809">#809</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/9560e6188606c9fb8c08d61a2efe63f5fada53a9">9560e61</a>)</li>
+<li>map built-in openai-api, deepseek, sagemaker and other providers to their SDKs (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/819">#819</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/822">#822</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/af659dd0afe6fbb2d1830822f94a1b56e2c3826e">af659dd</a>)</li>
+<li>remove non-functional FlowModel.default field (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/778">#778</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/810">#810</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/1207a4a995df661a251df072cf6fac15d923f478">1207a4a</a>)</li>
+<li>resolve model provider dependencies through the inspect-ai registry (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/825">#825</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/ac815482af4e0e5d675512991dbed9c0dc52f42f">ac81548</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-4" class="level2">
+<h2 class="anchored" data-anchor-id="section-4"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.11.0...v0.12.0">0.12.0</a> (2026-08-04)</h2>
+<section id="features-3" class="level3">
+<h3 class="anchored" data-anchor-id="features-3">Features</h3>
+<ul>
+<li>public model-reference introspection (iter_model_refs) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/784">#784</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/dc20def3efd14bea31e51e34c5ce016050070752">dc20def</a>)</li>
+<li>public validate_portable_spec API (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/785">#785</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/64e10bc0c43431e99dcd2412f6f7921091a813f1">64e10bc</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-5" class="level2">
+<h2 class="anchored" data-anchor-id="section-5"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.10.0...v0.11.0">0.11.0</a> (2026-07-22)</h2>
+<section id="features-4" class="level3">
+<h3 class="anchored" data-anchor-id="features-4">Features</h3>
+<ul>
+<li>add turn_limit, score_on_error, checkpoint to FlowTask; widen limit types (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/764">#764</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/083da8b9b9bd2f86fe7d0959e2fd0a31ce545604">083da8b</a>)</li>
+<li>support inline scanners via scanner on FlowOptions (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/765">#765</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/668d2680212b8f539cc5155a6a60db810f87d29e">668d268</a>), closes <a href="https://github.com/meridianlabs-ai/inspect_flow/issues/763">#763</a></li>
+<li>support renaming copies in the copy step (suffix and rename params) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/757">#757</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/449ce1dc1856fb4b3f63808b30b4b9150360da94">449ce1d</a>)</li>
+</ul>
+</section>
+<section id="bug-fixes-4" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-4">Bug Fixes</h3>
+<ul>
+<li>reconcile with inspect-ai 0.3.248 (cloudflare provider rename) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/770">#770</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/b636eadac754acc7924bacb5b98f59118c4e01d1">b636ead</a>)</li>
+<li>reconcile with inspect-ai 0.3.249 (scout CLI import shim, moonshot provider, regenerated types) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/773">#773</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/a9d5a3b2373b11d0ea963bc6c32738fa135c9961">a9d5a3b</a>)</li>
+<li>select the interpreter explicitly when freezing requirements (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/775">#775</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/371869798adb2913c720fb184659979b70191c6f">3718697</a>)</li>
+<li>upgrade deps and add additional matrix fields (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/750">#750</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/20503c0195520febe83a93ace420bebd9c8b22bf">20503c0</a>)</li>
+<li>verify FlowTask.version matches loaded task version instead of overwriting (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/760">#760</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/15c99b2819928f7da83facf22e61a445ec156446">15c99b2</a>)</li>
+</ul>
+</section>
+</section>
+<section id="section-6" class="level2">
+<h2 class="anchored" data-anchor-id="section-6"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.1...v0.10.0">0.10.0</a> (2026-07-10)</h2>
+<section id="features-5" class="level3">
+<h3 class="anchored" data-anchor-id="features-5">Features</h3>
 <ul>
 <li>add –json output to read-only CLI commands (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/745">#745</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/29814126922cd01e507a57da5ee36f490214decf">2981412</a>)</li>
 <li>emit a launch handle file for run discoverability (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/747">#747</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/2c0db7808cd8cacd34e7b4a7d270352234a282bf">2c0db78</a>)</li>
@@ -326,8 +465,8 @@ ul.task-list li input[type="checkbox"] {
 <li>widen –display/DisplayType to Inspect’s full set (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/746">#746</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/0f71433c2d99f465f0dfdcb5e84828d62000eb85">0f71433</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes">Bug Fixes</h3>
+<section id="bug-fixes-5" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-5">Bug Fixes</h3>
 <ul>
 <li>add hint when eval_set fails due to stale inspect-ai version (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/725">#725</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/21601742ec3e1de10960f2a34969de4930d347a5">2160174</a>)</li>
 <li>avoid race on flow-requirements.in for concurrent runs in same dir (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/713">#713</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e68e0258b60db1ba8b5d178f7ad3c0fca0bd08ee">e68e025</a>)</li>
@@ -343,10 +482,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-1" class="level2">
-<h2 class="anchored" data-anchor-id="section-1"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.0...v0.9.1">0.9.1</a> (2026-06-17)</h2>
-<section id="bug-fixes-1" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug Fixes</h3>
+<section id="section-7" class="level2">
+<h2 class="anchored" data-anchor-id="section-7"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.9.0...v0.9.1">0.9.1</a> (2026-06-17)</h2>
+<section id="bug-fixes-6" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-6">Bug Fixes</h3>
 <ul>
 <li>drive store task-identifier column by TASK_IDENTIFIER_VERSION (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/706">#706</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/81733534441802398c103de4ecd19d60116b564d">8173353</a>)</li>
 <li>make task-identifier-version-bump test version-agnostic (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/709">#709</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/2d2eeb7c040f636394f29f3988d2931f1b3bbcf1">2d2eeb7</a>)</li>
@@ -361,10 +500,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-2" class="level2">
-<h2 class="anchored" data-anchor-id="section-2"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.8.0...v0.9.0">0.9.0</a> (2026-05-19)</h2>
-<section id="features-1" class="level3">
-<h3 class="anchored" data-anchor-id="features-1">Features</h3>
+<section id="section-8" class="level2">
+<h2 class="anchored" data-anchor-id="section-8"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.8.0...v0.9.0">0.9.0</a> (2026-05-19)</h2>
+<section id="features-6" class="level3">
+<h3 class="anchored" data-anchor-id="features-6">Features</h3>
 <ul>
 <li>add <a href="https://github.com/after"><span class="citation" data-cites="after">@after</span></a>_instantiate hook (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/695">#695</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/69b4c407b057d9fab3fa707a2473cdfb9d391e7c">69b4c40</a>)</li>
 <li>add ability to reference python constants in _flow.py form the CLI (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/674">#674</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/cff24a301d5d4264bd41b70518b1bb4cf02c96bd">cff24a3</a>)</li>
@@ -373,8 +512,8 @@ ul.task-list li input[type="checkbox"] {
 <li>parallel task instantiation (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/691">#691</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/71f0e514a57093431be8f7d15557ae1589adba37">71f0e51</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-2" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug Fixes</h3>
+<section id="bug-fixes-7" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-7">Bug Fixes</h3>
 <ul>
 <li><code>flow store list --display plain</code> outputs only log paths (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/685">#685</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/17d54dfa5c507851e753e9278216437866e29d92">17d54df</a>)</li>
 <li>scout.yaml writes paths in a single consistent form (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/686">#686</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/690">#690</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/9064884f1c7df888afbf6b0cd704ffa1323d4852">9064884</a>)</li>
@@ -390,16 +529,16 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-3" class="level2">
-<h2 class="anchored" data-anchor-id="section-3"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.7.0...v0.8.0">0.8.0</a> (2026-04-17)</h2>
-<section id="features-2" class="level3">
-<h3 class="anchored" data-anchor-id="features-2">Features</h3>
+<section id="section-9" class="level2">
+<h2 class="anchored" data-anchor-id="section-9"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.7.0...v0.8.0">0.8.0</a> (2026-04-17)</h2>
+<section id="features-7" class="level3">
+<h3 class="anchored" data-anchor-id="features-7">Features</h3>
 <ul>
 <li>flow step command (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/562">#562</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/5b0854bcf8707452ad949a892caab18a0c196bad">5b0854b</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-3" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-3">Bug Fixes</h3>
+<section id="bug-fixes-8" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-8">Bug Fixes</h3>
 <ul>
 <li>add –live option to flow list log (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/630">#630</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/b044b6d93bdf1d33dbe9283473d94f717cdd003a">b044b6d</a>)</li>
 <li>add –provenance flag to flow list log (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/649">#649</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e0c28bd957016294011f3a302fca518e5c690f9f">e0c28bd</a>)</li>
@@ -436,18 +575,18 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-4" class="level2">
-<h2 class="anchored" data-anchor-id="section-4"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.6.0...v0.7.0">0.7.0</a> (2026-03-24)</h2>
-<section id="features-3" class="level3">
-<h3 class="anchored" data-anchor-id="features-3">Features</h3>
+<section id="section-10" class="level2">
+<h2 class="anchored" data-anchor-id="section-10"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.6.0...v0.7.0">0.7.0</a> (2026-03-24)</h2>
+<section id="features-8" class="level3">
+<h3 class="anchored" data-anchor-id="features-8">Features</h3>
 <ul>
 <li>FlowFactory to provide type checking of factory argumnets (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/580">#580</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/8403977d82f05bec12ba595e345699708e098ffe">8403977</a>)</li>
 <li>list log command (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/575">#575</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/87e6b2869dadab511d689843b1e5ab6ac754e3b9">87e6b28</a>)</li>
 <li>store_read and store_write flags. Default store_read off. (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/585">#585</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/d9f75b6c0e4f6d078a56b4141a344fb2a7c38875">d9f75b6</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-4" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-4">Bug Fixes</h3>
+<section id="bug-fixes-9" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-9">Bug Fixes</h3>
 <ul>
 <li>add support for tags on FlowTask (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/593">#593</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/4d070d71ad8c3291571a3cadc78e1432ea6fc422">4d070d7</a>)</li>
 <li>add viewer url column to flow list log (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/586">#586</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/c877ecb51a36418f128462762020e3e683a24dcc">c877ecb</a>)</li>
@@ -472,16 +611,16 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-5" class="level2">
-<h2 class="anchored" data-anchor-id="section-5"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.5.0...v0.6.0">0.6.0</a> (2026-03-16)</h2>
-<section id="features-4" class="level3">
-<h3 class="anchored" data-anchor-id="features-4">Features</h3>
+<section id="section-11" class="level2">
+<h2 class="anchored" data-anchor-id="section-11"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.5.0...v0.6.0">0.6.0</a> (2026-03-16)</h2>
+<section id="features-9" class="level3">
+<h3 class="anchored" data-anchor-id="features-9">Features</h3>
 <ul>
 <li>store filtering (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/552">#552</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e197b1cf5262d16849ce77ea555f6ad4df6318f1">e197b1c</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-5" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-5">Bug Fixes</h3>
+<section id="bug-fixes-10" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-10">Bug Fixes</h3>
 <ul>
 <li>–copy-from support for s3: paths (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/551">#551</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e1fe49a3f5a84fa4da5ba4161e74f946c557aee8">e1fe49a</a>)</li>
 <li>add embed_viewer location to output (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/550">#550</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/7a87b435bba41661c7bfb22d4503bb0fda49636a">7a87b43</a>)</li>
@@ -502,16 +641,16 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-6" class="level2">
-<h2 class="anchored" data-anchor-id="section-6"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.1...v0.5.0">0.5.0</a> (2026-03-06)</h2>
-<section id="features-5" class="level3">
-<h3 class="anchored" data-anchor-id="features-5">Features</h3>
+<section id="section-12" class="level2">
+<h2 class="anchored" data-anchor-id="section-12"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.1...v0.5.0">0.5.0</a> (2026-03-06)</h2>
+<section id="features-10" class="level3">
+<h3 class="anchored" data-anchor-id="features-10">Features</h3>
 <ul>
 <li>add –resume flag to reuse previous log dir (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/532">#532</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/a2d9ea92c81a75acd227cbe1f95b44822058e539">a2d9ea9</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-6" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-6">Bug Fixes</h3>
+<section id="bug-fixes-11" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-11">Bug Fixes</h3>
 <ul>
 <li>–log-dir-create-unique creates subdir with the current timestamp (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/526">#526</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/392e34e5d69df4f7d47f618cf2806d3a2a43cd85">392e34e</a>)</li>
 <li>add DATETIME substitution (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/527">#527</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/2ad81040b70e14dfdba4dbeecea06d4c232b1ce6">2ad8104</a>)</li>
@@ -532,10 +671,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-7" class="level2">
-<h2 class="anchored" data-anchor-id="section-7"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.0...v0.4.1">0.4.1</a> (2026-02-20)</h2>
-<section id="bug-fixes-7" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-7">Bug Fixes</h3>
+<section id="section-13" class="level2">
+<h2 class="anchored" data-anchor-id="section-13"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.4.0...v0.4.1">0.4.1</a> (2026-02-20)</h2>
+<section id="bug-fixes-12" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-12">Bug Fixes</h3>
 <ul>
 <li>add docstring to DisplayType for quarto docs build (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/504">#504</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/dfdf661df75c2f3f4c42c9e9fe87c3be47f3939f">dfdf661</a>)</li>
 <li>compile with conflicting git urls (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/508">#508</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/b0f33243e02462d9d7b222d32cb7a4652b87ea34">b0f3324</a>)</li>
@@ -544,16 +683,16 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-8" class="level2">
-<h2 class="anchored" data-anchor-id="section-8"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.3.0...v0.4.0">0.4.0</a> (2026-02-19)</h2>
-<section id="features-6" class="level3">
-<h3 class="anchored" data-anchor-id="features-6">Features</h3>
+<section id="section-14" class="level2">
+<h2 class="anchored" data-anchor-id="section-14"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.3.0...v0.4.0">0.4.0</a> (2026-02-19)</h2>
+<section id="features-11" class="level3">
+<h3 class="anchored" data-anchor-id="features-11">Features</h3>
 <ul>
 <li>flow store to enable log reuse across directories (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/340">#340</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/bc5d9935c63cef984edcdc0f6ccc6a61ee6ea716">bc5d993</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-8" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-8">Bug Fixes</h3>
+<section id="bug-fixes-13" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-13">Bug Fixes</h3>
 <ul>
 <li>add progress console output for loading tasks (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/476">#476</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/763023d6d0a3b0b644ee0e6096a592fbb8702a81">763023d</a>)</li>
 <li>avoid extra output on Ctrl+C (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/475">#475</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/638bdf6d8733e9509cfa39bff9488d580adaf5b6">638bdf6</a>)</li>
@@ -561,16 +700,16 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-9" class="level2">
-<h2 class="anchored" data-anchor-id="section-9"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.2...v0.3.0">0.3.0</a> (2026-02-03)</h2>
-<section id="features-7" class="level3">
-<h3 class="anchored" data-anchor-id="features-7">Features</h3>
+<section id="section-15" class="level2">
+<h2 class="anchored" data-anchor-id="section-15"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.2...v0.3.0">0.3.0</a> (2026-02-03)</h2>
+<section id="features-12" class="level3">
+<h3 class="anchored" data-anchor-id="features-12">Features</h3>
 <ul>
 <li>improved console output (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/466">#466</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/247725fd141182b20b568733c6bf7f1c71e841f9">247725f</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-9" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-9">Bug Fixes</h3>
+<section id="bug-fixes-14" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-14">Bug Fixes</h3>
 <ul>
 <li>_flow.py should not include itself when loaded directly (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/467">#467</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/3e2633372f1950b0c6f86ae0f4de51843d293f18">3e26333</a>), closes <a href="https://github.com/meridianlabs-ai/inspect_flow/issues/465">#465</a></li>
 <li>log-dir-create-unique corrected handling of paths ending in / (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/451">#451</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/2f5b3ab9744d86a9a697d65de29391f69dba43a3">2f5b3ab</a>)</li>
@@ -579,20 +718,20 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-10" class="level2">
-<h2 class="anchored" data-anchor-id="section-10"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.1...v0.2.2">0.2.2</a> (2026-01-26)</h2>
-<section id="bug-fixes-10" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-10">Bug Fixes</h3>
+<section id="section-16" class="level2">
+<h2 class="anchored" data-anchor-id="section-16"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.1...v0.2.2">0.2.2</a> (2026-01-26)</h2>
+<section id="bug-fixes-15" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-15">Bug Fixes</h3>
 <ul>
 <li>remove duplicated inspect_ai code (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/444">#444</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/c6c141cad42f997a2b128add00688e9c4a2024ec">c6c141c</a>)</li>
 <li>use inspect-ai load_tasks to ensure task path is captured correctly (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/441">#441</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/b34e303c7e504402c894ffc8b92539d18e94914a">b34e303</a>)</li>
 </ul>
 </section>
 </section>
-<section id="section-11" class="level2">
-<h2 class="anchored" data-anchor-id="section-11"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.0...v0.2.1">0.2.1</a> (2026-01-23)</h2>
-<section id="bug-fixes-11" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-11">Bug Fixes</h3>
+<section id="section-17" class="level2">
+<h2 class="anchored" data-anchor-id="section-17"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.2.0...v0.2.1">0.2.1</a> (2026-01-23)</h2>
+<section id="bug-fixes-16" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-16">Bug Fixes</h3>
 <ul>
 <li>apply substitutions, defaults, and call <a href="https://github.com/after"><span class="citation" data-cites="after">@after</span></a>_load functions after overrides (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/440">#440</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/0b507c96d26adf713636b7484535c9fe476e57c6">0b507c9</a>)</li>
 <li>enable relative imports for local file (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/436">#436</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/50d8a43920c9d7c5c66e7da5a99841ee73b1798e">50d8a43</a>)</li>
@@ -606,17 +745,17 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-12" class="level2">
-<h2 class="anchored" data-anchor-id="section-12"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.4...v0.2.0">0.2.0</a> (2026-01-22)</h2>
-<section id="features-8" class="level3">
-<h3 class="anchored" data-anchor-id="features-8">Features</h3>
+<section id="section-18" class="level2">
+<h2 class="anchored" data-anchor-id="section-18"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.4...v0.2.0">0.2.0</a> (2026-01-22)</h2>
+<section id="features-13" class="level3">
+<h3 class="anchored" data-anchor-id="features-13">Features</h3>
 <ul>
 <li>default to running inproc and support for inspect-ai types (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/421">#421</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/0ad7ff1">0ad7ff1</a>)</li>
 <li>support specifying tools for a FlowTask (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/401">#401</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/3a5903a3077c4850c5664976ee4615b7a6935a4c">3a5903a</a>)</li>
 </ul>
 </section>
-<section id="bug-fixes-12" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-12">Bug Fixes</h3>
+<section id="bug-fixes-17" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-17">Bug Fixes</h3>
 <ul>
 <li>add –log-dir-allow-dirty flag (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/416">#416</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/a27f79d936b62996a8936890104d3e93306e5815">a27f79d</a>)</li>
 <li>Allow including flow spec objects (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/420">#420</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/52dade680a09d2df7f3b8905770e3b21aa9bcbe2">52dade6</a>)</li>
@@ -634,10 +773,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-13" class="level2">
-<h2 class="anchored" data-anchor-id="section-13"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.3...v0.1.4">0.1.4</a> (2026-01-14)</h2>
-<section id="bug-fixes-13" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-13">Bug Fixes</h3>
+<section id="section-19" class="level2">
+<h2 class="anchored" data-anchor-id="section-19"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.3...v0.1.4">0.1.4</a> (2026-01-14)</h2>
+<section id="bug-fixes-18" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-18">Bug Fixes</h3>
 <ul>
 <li>add hashes to flow-requirements.txt (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/381">#381</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/e870d7904bcc886d4a3811c79a74abe29f0e2559">e870d79</a>)</li>
 <li>correctly write flow-requirements.txt to s3 (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/375">#375</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/abaecd493a962717e7177a9462d6b9a434df429c">abaecd4</a>)</li>
@@ -645,10 +784,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-14" class="level2">
-<h2 class="anchored" data-anchor-id="section-14"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.2...v0.1.3">0.1.3</a> (2026-01-06)</h2>
-<section id="bug-fixes-14" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-14">Bug Fixes</h3>
+<section id="section-20" class="level2">
+<h2 class="anchored" data-anchor-id="section-20"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.2...v0.1.3">0.1.3</a> (2026-01-06)</h2>
+<section id="bug-fixes-19" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-19">Bug Fixes</h3>
 <ul>
 <li>ensure logging works in run process in venv (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/343">#343</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/530eb8e5902ef3212bd12f63e22980a34e812b8e">530eb8e</a>)</li>
 <li>improved errors on duplicate tasks (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/353">#353</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/21fd03cf58432b793bffbe627a1e688143decad2">21fd03c</a>)</li>
@@ -658,10 +797,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-15" class="level2">
-<h2 class="anchored" data-anchor-id="section-15"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.1...v0.1.2">0.1.2</a> (2025-12-15)</h2>
-<section id="bug-fixes-15" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-15">Bug Fixes</h3>
+<section id="section-21" class="level2">
+<h2 class="anchored" data-anchor-id="section-21"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/v0.1.1...v0.1.2">0.1.2</a> (2025-12-15)</h2>
+<section id="bug-fixes-20" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-20">Bug Fixes</h3>
 <ul>
 <li>add logging of include files (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/330">#330</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/29f6c8c6e443a158069471573643f209b7db26b6">29f6c8c</a>)</li>
 <li>add uv_sync_args to dependency configuration (<a href="https://github.com/meridianlabs-ai/inspect_flow/issues/328">#328</a>) (<a href="https://github.com/meridianlabs-ai/inspect_flow/commit/89dfd51118f84b0eb46249701e4f709aa0c8dfe6">89dfd51</a>)</li>
@@ -671,10 +810,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-16" class="level2">
-<h2 class="anchored" data-anchor-id="section-16"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/0.1.0...v0.1.1">0.1.1</a> (2025-12-11)</h2>
-<section id="bug-fixes-16" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-16">Bug Fixes</h3>
+<section id="section-22" class="level2">
+<h2 class="anchored" data-anchor-id="section-22"><a href="https://github.com/meridianlabs-ai/inspect_flow/compare/0.1.0...v0.1.1">0.1.1</a> (2025-12-11)</h2>
+<section id="bug-fixes-21" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-21">Bug Fixes</h3>
 <ul>
 <li>Rename FlowJob to FlowSpec</li>
 <li>Fix log paths in Inspect output</li>
@@ -689,10 +828,10 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 </section>
 </section>
-<section id="section-17" class="level2">
-<h2 class="anchored" data-anchor-id="section-17"><a href="https://github.com/meridianlabs-ai/inspect_flow/releases/tag/0.1.0">0.1.0</a> (2025-12-05)</h2>
-<section id="features-9" class="level3">
-<h3 class="anchored" data-anchor-id="features-9">Features</h3>
+<section id="section-23" class="level2">
+<h2 class="anchored" data-anchor-id="section-23"><a href="https://github.com/meridianlabs-ai/inspect_flow/releases/tag/0.1.0">0.1.0</a> (2025-12-05)</h2>
+<section id="features-14" class="level3">
+<h3 class="anchored" data-anchor-id="features-14">Features</h3>
 <ul>
 <li>Flow support for configuration repeatability and sharing</li>
 </ul>
@@ -848,7 +987,8 @@ document.addEventListener("DOMContentLoaded", function () {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -857,8 +997,69 @@ document.addEventListener("DOMContentLoaded", function () {
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -872,6 +1073,7 @@ document.addEventListener("DOMContentLoaded", function () {
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1034,44 +1236,54 @@ document.addEventListener("DOMContentLoaded", function () {
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -1149,6 +1361,7 @@ document.addEventListener("DOMContentLoaded", function () {
             interactiveBorder: 10,
             theme: 'quarto',
             placement: 'right',
+            plugins: [hideOnEscAndFocusOut],
             positionFixed: true,
             popperOptions: {
               modifiers: [
@@ -1210,6 +1423,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script>
 </div> <!-- /content -->
 <footer class="footer">

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.11.9">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -13,10 +13,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -70,18 +73,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
 <link href="../reference/inspect_flow.qmd#flowagent" rel="next">
-<link href="../reference/inspect_flow.api.qmd#displaytype" rel="prev">
+<link href="../reference/inspect_flow.api.qmd#specviolation" rel="prev">
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-771725699ea44adeffca0fa6042fd43a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -119,11 +123,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="twitter:card" content="summary">
 </head>
 
-<body class="nav-sidebar docked nav-fixed quarto-light">
+<body class="nav-sidebar docked nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
@@ -134,8 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">Inspect Flow</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -225,15 +228,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
     <div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li><li class="breadcrumb-item"><a href="../reference/inspect_flow.html">inspect_flow</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li><li class="breadcrumb-item"><a href="../reference/inspect_flow.html">inspect_flow</a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav>
@@ -241,7 +245,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto" aria-label="Section">
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -253,21 +257,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Python API</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Python API</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section: Python API">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow.api</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-2-label">inspect_flow.api</span></a>
+            <button type="button" class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section: inspect_flow.api">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#init" class="sidebar-item-text sidebar-link">
@@ -300,8 +304,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#dump_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dump_spec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#load_spec_data" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_spec_data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
  <span class="menu-text">config</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#validate_portable_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate_portable_spec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#iter_model_refs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">iter_model_refs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -370,17 +398,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">DisplayType</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specmodelref" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecModelRef</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specnotportableerror" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecNotPortableError</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specviolation" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecViolation</span></a>
+  </div>
+</li>
       </ul>
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">inspect_flow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-3-label">inspect_flow</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section: inspect_flow">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowagent" class="sidebar-item-text sidebar-link">
@@ -562,12 +608,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">CLI Commands</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-4-label">CLI Commands</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section: CLI Commands">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
@@ -612,7 +658,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active" data-toc-expanded="1">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
@@ -661,9 +707,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content" tabindex="-1">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li><li class="breadcrumb-item"><a href="../reference/inspect_flow.html">inspect_flow</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li><li class="breadcrumb-item"><a href="../reference/inspect_flow.html">inspect_flow</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">inspect_flow</h1>
 </div>
@@ -693,7 +739,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowagent">FlowAgent</h3>
 <p>Configuration for an agent: a registry <code>name</code> (or <code>factory</code>) plus its <code>args</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L186">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L335">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowAgent(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -727,7 +773,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Default <code>model</code>/<code>solver</code>/<code>agent</code>/<code>task</code> values applied to every task in the spec.</p>
 <p>A value set on an individual <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> overrides the default here. The <code>*_prefix</code> variants apply defaults by registry-name prefix. Attached via <code>FlowSpec(defaults=...)</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L727">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L932">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDefaults(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -777,7 +823,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Dependencies to install in the per-run virtual environment.</p>
 <p>Only applies in venv execution mode (<code>execution_type="venv"</code>); combines an optional <code>dependency_file</code>, <code>additional_dependencies</code>, and automatic detection (<code>auto_detect_dependencies</code>).</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L776">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L981">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowDependencies(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -807,7 +853,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Configuration for task epochs.</p>
 <p>Number of epochs to repeat samples over and optionally one or more reducers used to combine scores from samples across epochs. If not specified the “mean” score reducer is used.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L220">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L369">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowEpochs(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -831,7 +877,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Works with <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>, <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowagent">FlowAgent</a></span>, <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowsolver">FlowSolver</a></span>, <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowscorer">FlowScorer</a></span>, and <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>.</p>
 <p>Positional and keyword arguments passed to the factory at construction are collected into the <code>args</code> field and forwarded to the factory at evaluation time.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L261">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L410">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowFactory(BaseModel, Generic[R], arbitrary_types_allowed<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -840,7 +886,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Configuration for a model.</p>
 <p><code>name</code> is an Inspect model identifier (e.g.&nbsp;<code>"openai/gpt-4o"</code>); <code>config</code>, <code>model_args</code>, <code>base_url</code>, <code>api_key</code>, and <code>role</code> tune how it is created.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L77">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L231">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowModel(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -856,11 +902,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">role</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Optional named role for model (e.g.&nbsp;for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn’t been externally specified.</p>
-</dd>
-<dt><code class="ref-definition">default</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
-<dd>
-<p>Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g.&nbsp;<code>openai/gpt-4o</code>).</p>
+<p>Optional named role for model (e.g.&nbsp;for roles specified at the task or eval level).</p>
 </dd>
 <dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name">GenerateConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -894,7 +936,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Eval-set-wide options forwarded to Inspect’s <code>eval_set</code>.</p>
 <p>These apply to the whole run (retries, sandbox cleanup, global limits, display, scoring, the control channel, etc.) rather than to individual tasks — set per-task settings on <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>. Attached to a spec via <code>FlowSpec(options=...)</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L492">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L672">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowOptions(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -924,9 +966,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Cleanup sandbox environments after task completes (defaults to <code>True</code>).</p>
 </dd>
-<dt><code class="ref-definition">checkpoint</code> <span class="element-type"><span class="element-type-name">SkipValidation</span>[<span class="element-type-name">CheckpointConfig</span>] | <span class="element-type-name">bool</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">sandbox_prebuilt</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Checkpoint configuration for this eval set, or <code>True</code> to enable checkpointing with the default trigger (every 500k tokens). Overrides any task- or sample-level <code>checkpoint</code> when set.</p>
+<p>Treat sandbox images as prebuilt, skipping builds and failing at task startup when an image is missing (defaults to <code>False</code>).</p>
+</dd>
+<dt><code class="ref-definition">checkpoint</code> <span class="element-type"><span class="element-type-name">FlowCheckpoint</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Checkpoint configuration for this eval set, or <code>True</code> to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with task- and sample-level <code>checkpoint</code>, taking precedence over both; <code>False</code> here or on a task disables checkpointing.</p>
 </dd>
 <dt><code class="ref-definition">acp_server</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -935,6 +981,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">ctl_server</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Control-channel server for this eval-set process. <code>True</code> or <code>None</code> (default) binds the default AF_UNIX socket; <code>False</code> disables the control endpoint; <code>"keep-alive"</code> additionally keeps the process running after the eval-set finishes so external clients (the <code>inspect ctl</code> CLI, scripted agents, TUIs) can still query state and read results — exit via <code>inspect ctl release</code> (or <code>POST /release</code>). Requires <code>retry_immediate=True</code> (the default) for the <code>"keep-alive"</code> value.</p>
+</dd>
+<dt><code class="ref-definition">scanner</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ScannerConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Scanners to run inline against each sample as the eval set runs. Either a path to a scanner config file (loaded via <code>ScannerConfig.from_file()</code>) or a <code>ScannerConfig</code>. Relative paths will be resolved relative to the config file (when using the CLI) or <code>base_dir</code> arg (when using the API). Note that <code>file:</code> references <em>within</em> a scanner config are resolved by Inspect Scout relative to the current working directory, not the config file — prefer absolute <code>file:</code> paths when running from a different directory. To scan transcripts after the run completes, use the <code>scan</code> step instead.</p>
 </dd>
 <dt><code class="ref-definition">tags</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -955,6 +1005,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">approval</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ApprovalPolicyConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Tool use approval policies. Either a path to an approval policy config file or a list of approval policies. Defaults to no approval policy.</p>
+</dd>
+<dt><code class="ref-definition">review</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ReviewPolicyConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Overrides any task-level <code>review</code>. Defaults to no review policy.</p>
 </dd>
 <dt><code class="ref-definition">score</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -980,9 +1034,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Format for writing log files (defaults to <code>"eval"</code>, the native high-performance format).</p>
 </dd>
-<dt><code class="ref-definition">limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">limit</code> <span class="element-type"><span class="element-type-name">int</span> | tuple[<span class="element-type-name">int</span>, <span class="element-type-name">int</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Limit evaluated samples (defaults to all samples).</p>
+<p>Limit evaluated samples: an integer for the first <code>n</code> samples, or a <code>(start, end)</code> tuple for a slice-style range with 0-based <code>start</code> and exclusive <code>end</code> — e.g.&nbsp;<code>(9, 20)</code> evaluates samples 10 through 20 (defaults to all samples).</p>
 </dd>
 <dt><code class="ref-definition">sample_shuffle</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1007,6 +1061,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">debug_errors</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Raise task errors (rather than logging them) so they can be debugged (defaults to <code>False</code>).</p>
+</dd>
+<dt><code class="ref-definition">incomplete_action</code> <span class="element-type"><span class="element-type-name">IncompleteAction</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Disposition applied when recovering a crashed log from a previous execution, for samples that were in progress at crash. <code>"retry"</code> (default) re-runs them; <code>"error"</code> resolves them as operator terminations — if that leaves every expected sample final, the recovered log finalizes as <code>status="success"</code>, the task classifies as complete, and nothing re-runs.</p>
+</dd>
+<dt><code class="ref-definition">incomplete_max</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">float</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Safety threshold for <code>incomplete_action="error"</code> (count if &gt;= 1, or proportion of expected samples if strictly less than 1, so <code>1.0</code> means one sample, not 100%): when more than this many samples are in progress, fall back to the default recover-and-retry behavior. Has no effect (a warning is logged) with <code>incomplete_action="retry"</code>.</p>
 </dd>
 <dt><code class="ref-definition">model_cost_config</code> <span class="element-type"><span class="element-type-name">str</span> | dict[<span class="element-type-name">str</span>, <span class="element-type-name">ModelCost</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1091,7 +1153,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowscorer">FlowScorer</h3>
 <p>Configuration for a scorer: a registry <code>name</code> (or <code>factory</code>) plus its <code>args</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L134">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L283">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowScorer(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1120,7 +1182,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowsolver">FlowSolver</h3>
 <p>Configuration for a solver: a registry <code>name</code> (or <code>factory</code>) plus its <code>args</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L160">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L309">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSolver(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1158,7 +1220,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Model generation <code>config</code> can be set in several places; later entries win: <code>defaults.config</code> &lt; <code>FlowTask.config</code> &lt; <code>FlowModel.config</code>.</p>
 <p>Eval parameters (<code>model</code>, <code>solver</code>, limits, etc.) are not set directly on <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span>; put them on <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> (or <code>defaults</code> to apply them to every task).</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L870">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1075">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowSpec(FlowBase, arbitrary_types_allowed<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1227,7 +1289,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowstoreconfig">FlowStoreConfig</h3>
 <p>Store configuration with optional log filter.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L841">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1046">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowStoreConfig(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1257,7 +1319,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Configuration for a single evaluation task.</p>
 <p>Identifies the task (<code>name</code> or <code>factory</code>) and carries its per-task settings: <code>model</code>, <code>solver</code>, <code>scorer</code>, <code>config</code> (generation config), <code>epochs</code>, <code>sandbox</code>, <code>approval</code>, and the various limits. Unset fields fall back to <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowdefaults">FlowDefaults</a></span>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L334">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L483">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowTask(FlowBase, arbitrary_types_allowed<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1287,6 +1349,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Scorer or list of scorers used to evaluate model output.</p>
 </dd>
+<dt><code class="ref-definition">headline_metric</code> <span class="element-type"><span class="element-type-name">HeadlineMetric</span> | <span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Which score/metric best summarises this task (e.g.&nbsp;for a leaderboard or log listing). A <code>str</code> names the scorer, as <code>"&lt;scorer&gt;"</code> or <code>"&lt;scorer&gt;.&lt;score&gt;"</code> to address one value of a scorer returning a dict of scores. Pass a <code>HeadlineMetric</code> to also name the <code>metric</code> or <code>reducer</code>. Unset fields resolve by convention, so <code>HeadlineMetric(metric="accuracy")</code> takes that metric from the first score reporting it; the default is the first metric of the first score.</p>
+</dd>
 <dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">Model</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Default model for task (Optional, defaults to eval model).</p>
@@ -1297,7 +1363,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">ModelRolesConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Named roles for use in <code>get_model()</code>.</p>
+<p>Named roles for use in <code>get_model()</code>. A list value binds one role to several models (e.g.&nbsp;model-graded scorers then grade by majority vote): <code>{'grader': [a, b]}</code> is one task with a two-model grader. To sweep graders across task variants instead, pass a list of <code>model_roles</code> mappings in <code>matrix</code>.</p>
 </dd>
 <dt><code class="ref-definition">sandbox</code> <span class="element-type"><span class="element-type-name">SandboxEnvironmentType</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1306,6 +1372,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">approval</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ApprovalPolicyConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.</p>
+</dd>
+<dt><code class="ref-definition">review</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ReviewPolicyConfig</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy.</p>
 </dd>
 <dt><code class="ref-definition">epochs</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowepochs">FlowEpochs</a></span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1319,13 +1389,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p><code>True</code> to continue running and only fail at the end if the <code>fail_on_error</code> condition is met. <code>False</code> to fail eval immediately when the <code>fail_on_error</code> condition is met (default).</p>
 </dd>
+<dt><code class="ref-definition">score_on_error</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Score samples that error rather than failing the eval mid-run. Overridden by <code>options.score_on_error</code> when set.</p>
+</dd>
+<dt><code class="ref-definition">checkpoint</code> <span class="element-type"><span class="element-type-name">FlowCheckpoint</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Checkpoint configuration for this task, or <code>True</code> to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with <code>options.checkpoint</code>, which takes precedence; <code>False</code> at either level disables checkpointing.</p>
+</dd>
 <dt><code class="ref-definition">message_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
 <p>Limit on total messages used for each sample.</p>
 </dd>
-<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">TokenLimit</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Limit on total tokens used for each sample.</p>
+<p>Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g.&nbsp;<code>'1M'</code>), or a <code>TokenLimit</code>.</p>
+</dd>
+<dt><code class="ref-definition">turn_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Limit on total turns (assistant messages) for each sample.</p>
 </dd>
 <dt><code class="ref-definition">time_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1343,9 +1425,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Early stopping callbacks.</p>
 </dd>
+<dt><code class="ref-definition">description</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
+<dd>
+<p>Short statement of what the task asks of the agent (recorded in the eval log).</p>
+</dd>
 <dt><code class="ref-definition">version</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Version of task (to distinguish evolutions of the task spec or breaking changes to it)</p>
+<p>Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.</p>
 </dd>
 <dt><code class="ref-definition">tags</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
@@ -1375,7 +1461,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="instantiateconfig">InstantiateConfig</h3>
 <p>Configuration for task instantiation parallelism.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L808">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L1013">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> InstantiateConfig(FlowBase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
@@ -1399,7 +1485,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="logfilter">LogFilter</h3>
 <p>A function that receives an <code>EvalLog</code> (header-only) and returns <code>True</code> to include the log or <code>False</code> to exclude it.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/flow_types.py#L40">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/flow_types.py#L64">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>LogFilter: TypeAlias <span class="op">=</span> Callable[[EvalLog], <span class="bu">bool</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
@@ -1412,7 +1498,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The decorated function receives the list of instantiated <code>Task</code> objects and may either return a new list (replacing the tasks that <code>eval_set</code> sees) or return <code>None</code> to keep the list it was given (after any in-place edits).</p>
 <p>All registered hooks fire on every run, in alphabetical order by registered name. Hooks defined in any source reachable by spec loading or task instantiation are discovered automatically — including spec files, <code>_flow.py</code> auto-includes, task modules loaded by path, and entry-point packages installed in the venv.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/after_instantiate.py#L20">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/after_instantiate.py#L20">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> after_instantiate(func: AfterInstantiate) <span class="op">-&gt;</span> AfterInstantiate</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1436,7 +1522,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>files</code>: List of file paths that were loaded to create the <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span>.</li>
 </ul>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/decorator.py#L9">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/decorator.py#L9">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> after_load(func: F) <span class="op">-&gt;</span> F</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1450,7 +1536,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="log_filter">log_filter</h3>
 <p>Decorator to register a log filter function.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/log_filter.py#L27">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/log_filter.py#L27">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> log_filter(func: Callable[[EvalLog], <span class="bu">bool</span>]) <span class="op">-&gt;</span> Callable[[EvalLog], <span class="bu">bool</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1464,7 +1550,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="step">step</h3>
 <p>Decorator to register a step function.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/step.py#L108">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/step.py#L108">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> step(</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    func: StepFunction[P],</span>
@@ -1483,7 +1569,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="agents_matrix">agents_matrix</h3>
 <p>Create a list of agents from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L245">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L245">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_matrix(</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1505,7 +1591,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="agents_with">agents_with</h3>
 <p>Set fields on a list of agents.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L175">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L175">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agents_with(</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1547,7 +1633,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="configs_matrix">configs_matrix</h3>
 <p>Create a list of generate configs from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L259">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L259">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_matrix(</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1628,7 +1714,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">top_k</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only.</p>
+<p>Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only.</p>
 </dd>
 <dt><code class="ref-definition">num_choices</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1660,7 +1746,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">cache_prompt</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">Literal</span>['auto'] | <span class="element-type-name">bool</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.</p>
+<p>Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider’s own automatic caching; on OpenAI it only turns off explicit <code>cache_breakpoint</code> marks — the model’s own implicit caching still applies regardless. Use <code>ContentText(cache_breakpoint=True)</code> to mark an explicit cache boundary (e.g.&nbsp;a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI <code>gpt-5.6</code>+ only.</p>
 </dd>
 <dt><code class="ref-definition">verbosity</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">Literal</span>['low', 'medium', 'high'] | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1704,7 +1790,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="configs_with">configs_with</h3>
 <p>Set fields on a list of generate configs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L189">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L189">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> configs_with(</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1712,42 +1798,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    max_retries: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    timeout: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    attempt_timeout: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    max_connections: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    adaptive_connections: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> AdaptiveConcurrency <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    system_message: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    max_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    top_p: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    temperature: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    stop_seqs: Sequence[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    best_of: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    frequency_penalty: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    presence_penalty: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    logit_bias: Mapping[<span class="bu">str</span>, <span class="bu">float</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    seed: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>    top_k: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>    num_choices: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>    logprobs: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>    top_logprobs: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    prompt_logprobs: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    parallel_tool_calls: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    internal_tools: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    max_tool_output: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    cache_prompt: Literal[<span class="st">'auto'</span>] <span class="op">|</span> <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    fallback_models: Sequence[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>    verbosity: Literal[<span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    effort: Literal[<span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>, <span class="st">'xhigh'</span>, <span class="st">'max'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    reasoning_effort: Literal[<span class="st">'none'</span>, <span class="st">'minimal'</span>, <span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>, <span class="st">'xhigh'</span>, <span class="st">'max'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>    reasoning_mode: Literal[<span class="st">'standard'</span>, <span class="st">'pro'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    reasoning_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    reasoning_summary: Literal[<span class="st">'none'</span>, <span class="st">'concise'</span>, <span class="st">'detailed'</span>, <span class="st">'auto'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    reasoning_history: Literal[<span class="st">'none'</span>, <span class="st">'all'</span>, <span class="st">'last'</span>, <span class="st">'auto'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>    response_schema: ResponseSchema <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>    extra_headers: Mapping[<span class="bu">str</span>, <span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>    extra_body: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>    modalities: Sequence[Literal[<span class="st">'image'</span>] <span class="op">|</span> ImageOutput] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    cache: <span class="bu">bool</span> <span class="op">|</span> CachePolicy <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>    batch: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> BatchConfig <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[GenerateConfig]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    stream_idle_timeout: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    max_connections: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    adaptive_connections: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> AdaptiveConcurrency <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    system_message: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    max_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    top_p: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    temperature: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    stop_seqs: Sequence[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    best_of: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    frequency_penalty: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    presence_penalty: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    logit_bias: Mapping[<span class="bu">str</span>, <span class="bu">float</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>    seed: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>    top_k: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>    num_choices: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>    logprobs: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    top_logprobs: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    prompt_logprobs: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    parallel_tool_calls: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    internal_tools: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    max_tool_output: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    cache_prompt: Literal[<span class="st">'auto'</span>] <span class="op">|</span> <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>    fallback_models: Sequence[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    fail_on_refusal: <span class="bu">bool</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    verbosity: Literal[<span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>    effort: Literal[<span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>, <span class="st">'xhigh'</span>, <span class="st">'max'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    reasoning_effort: Literal[<span class="st">'none'</span>, <span class="st">'minimal'</span>, <span class="st">'low'</span>, <span class="st">'medium'</span>, <span class="st">'high'</span>, <span class="st">'xhigh'</span>, <span class="st">'max'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    reasoning_mode: Literal[<span class="st">'standard'</span>, <span class="st">'pro'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    reasoning_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>    reasoning_summary: Literal[<span class="st">'none'</span>, <span class="st">'concise'</span>, <span class="st">'detailed'</span>, <span class="st">'auto'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>    reasoning_history: Literal[<span class="st">'none'</span>, <span class="st">'all'</span>, <span class="st">'last'</span>, <span class="st">'auto'</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>    response_schema: ResponseSchema <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>    extra_headers: Mapping[<span class="bu">str</span>, <span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    extra_body: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>    modalities: Sequence[Literal[<span class="st">'image'</span>] <span class="op">|</span> ImageOutput] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>    cache: <span class="bu">bool</span> <span class="op">|</span> CachePolicy <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a>    batch: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> BatchConfig <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[GenerateConfig]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name">GenerateConfig</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">GenerateConfig</span>]</span></dt>
 <dd>
@@ -1755,7 +1843,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">max_retries</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Maximum number of times to retry request (defaults to unlimited).</p>
+<p>Maximum number of times to retry request, so e.g.&nbsp;1 allows two attempts total (defaults to unlimited).</p>
 </dd>
 <dt><code class="ref-definition">timeout</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1764,6 +1852,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">attempt_timeout</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Timeout (in seconds) for any given attempt (if exceeded, will abandon attempt and retry according to max_retries).</p>
+</dd>
+<dt><code class="ref-definition">stream_idle_timeout</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Timeout (in seconds) on silence within a streaming response — if a streaming attempt delivers no chunk for this long, the attempt is abandoned and retried according to max_retries. Setting it requests streaming (like on_stream); it has no effect on calls that do not stream.</p>
 </dd>
 <dt><code class="ref-definition">max_connections</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1815,7 +1907,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">top_k</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only.</p>
+<p>Randomly sample the next word from the top_k most likely next words. Google, HuggingFace, vLLM, and SGLang only.</p>
 </dd>
 <dt><code class="ref-definition">num_choices</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1847,11 +1939,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">cache_prompt</code> <span class="element-type"><span class="element-type-name">Literal</span>['auto'] | <span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Whether to cache the prompt prefix. Enabled by default. Set to False to disable. Anthropic only.</p>
+<p>Whether to cache the prompt prefix. Enabled by default. Set to False to disable: on Anthropic and Bedrock Converse (Claude and Nova) this turns off the provider’s own automatic caching; on OpenAI it only turns off explicit <code>cache_breakpoint</code> marks — the model’s own implicit caching still applies regardless. Use <code>ContentText(cache_breakpoint=True)</code> to mark an explicit cache boundary (e.g.&nbsp;a fixed rubric ahead of a varying item) instead of relying on automatic caching; Anthropic and OpenAI <code>gpt-5.6</code>+ only.</p>
 </dd>
 <dt><code class="ref-definition">fallback_models</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Fallback models tried in order when the model’s safety classifiers refuse the request. Anthropic Claude API only (not supported on Bedrock/Vertex/Azure or with batch mode).</p>
+</dd>
+<dt><code class="ref-definition">fail_on_refusal</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Raise a <code>ModelRefusalError</code> (failing the sample) when the model returns <code>stop_reason="content_filter"</code>. Defaults to False.</p>
 </dd>
 <dt><code class="ref-definition">verbosity</code> <span class="element-type"><span class="element-type-name">Literal</span>['low', 'medium', 'high'] | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1912,7 +2008,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Merge two flow objects, with <code>add</code> values overriding <code>base</code> values.</p>
 <p>Only explicitly set fields in <code>add</code> override <code>base</code> — unset fields (defaulting to <code>NotGiven</code>) are ignored. Nested fields like <code>config</code> and <code>flow_metadata</code> are merged recursively rather than replaced.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/merge.py#L52">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/merge.py#L52">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> merge(base: _T, add: _T) <span class="op">-&gt;</span> _T</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
@@ -1930,7 +2026,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="models_matrix">models_matrix</h3>
 <p>Create a list of models from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L274">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L274">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_matrix(</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1952,7 +2048,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="models_with">models_with</h3>
 <p>Set fields on a list of models.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L203">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L203">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> models_with(</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -1960,14 +2056,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    factory: FlowFactoryModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    role: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    default: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    config: GenerateConfig <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    base_url: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    api_key: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    memoize: <span class="bu">bool</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    model_args: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    flow_metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowModel]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    config: GenerateConfig <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    base_url: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    api_key: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    memoize: <span class="bu">bool</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    model_args: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    flow_metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowModel]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>]</span></dt>
 <dd>
@@ -1983,11 +2078,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 <dt><code class="ref-definition">role</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Optional named role for model (e.g.&nbsp;for roles specified at the task or eval level). Provide a default as a fallback in the case where the role hasn’t been externally specified.</p>
-</dd>
-<dt><code class="ref-definition">default</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
-<dd>
-<p>Optional. Fallback model in case the specified model or role is not found. Should be a fully qualified model name (e.g.&nbsp;<code>openai/gpt-4o</code>).</p>
+<p>Optional named role for model (e.g.&nbsp;for roles specified at the task or eval level).</p>
 </dd>
 <dt><code class="ref-definition">config</code> <span class="element-type"><span class="element-type-name">GenerateConfig</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2019,7 +2110,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="solvers_matrix">solvers_matrix</h3>
 <p>Create a list of solvers from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L288">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L288">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_matrix(</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -2041,7 +2132,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="solvers_with">solvers_with</h3>
 <p>Set fields on a list of solvers.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L217">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L217">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solvers_with(</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -2078,7 +2169,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="tasks_matrix">tasks_matrix</h3>
 <p>Create a list of tasks from the product of lists of field values.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L302">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L302">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_matrix(</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -2087,13 +2178,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    solver: Sequence[<span class="bu">str</span> <span class="op">|</span> FlowSolver <span class="op">|</span> FlowAgent <span class="op">|</span> Solver <span class="op">|</span> Agent <span class="op">|</span> Sequence[<span class="bu">str</span> <span class="op">|</span> FlowSolver <span class="op">|</span> Solver] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    model: Sequence[<span class="bu">str</span> <span class="op">|</span> FlowModel <span class="op">|</span> Model <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    config: Sequence[GenerateConfig <span class="op">|</span> NotGiven] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    model_roles: Sequence[Mapping[<span class="bu">str</span>, FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    model_roles: Sequence[Mapping[<span class="bu">str</span>, FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model <span class="op">|</span> Sequence[FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model]] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    message_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>    token_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    time_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    working_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    cost_limit: Sequence[<span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowTask]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>    token_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> TokenLimit <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    turn_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    time_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    working_limit: Sequence[<span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    cost_limit: Sequence[<span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowTask]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">task</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>]</span></dt>
 <dd>
@@ -2115,17 +2207,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Model generation config for the default model (does not apply to model roles). Overrides <code>defaults.config</code>; overridden by <code>FlowModel.config</code>.</p>
 </dd>
-<dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">Mapping</span>[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span>] | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
+<dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">Mapping</span>[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span>]] | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Named roles for use in <code>get_model()</code>.</p>
+<p>Named roles for use in <code>get_model()</code>. A list value binds one role to several models (e.g.&nbsp;model-graded scorers then grade by majority vote): <code>{'grader': [a, b]}</code> is one task with a two-model grader. To sweep graders across task variants instead, pass a list of <code>model_roles</code> mappings in <code>matrix</code>.</p>
 </dd>
 <dt><code class="ref-definition">message_limit</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Limit on total messages used for each sample.</p>
 </dd>
-<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
+<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">TokenLimit</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Limit on total tokens used for each sample.</p>
+<p>Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g.&nbsp;<code>'1M'</code>), or a <code>TokenLimit</code>.</p>
+</dd>
+<dt><code class="ref-definition">turn_limit</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on total turns (assistant messages) for each sample.</p>
 </dd>
 <dt><code class="ref-definition">time_limit</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span>] | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2145,7 +2241,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="tasks_with">tasks_with</h3>
 <p>Set fields on a list of tasks.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_types/factories.py#L231">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_types/factories.py#L231">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tasks_with(</span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
@@ -2156,26 +2252,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    extra_args: FlowExtraArgs <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    solver: <span class="bu">str</span> <span class="op">|</span> FlowSolver <span class="op">|</span> FlowAgent <span class="op">|</span> Solver <span class="op">|</span> Agent <span class="op">|</span> Sequence[<span class="bu">str</span> <span class="op">|</span> FlowSolver <span class="op">|</span> Solver] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
 <span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    scorer: <span class="bu">str</span> <span class="op">|</span> FlowScorer <span class="op">|</span> Scorer <span class="op">|</span> Sequence[<span class="bu">str</span> <span class="op">|</span> FlowScorer <span class="op">|</span> Scorer] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    model: <span class="bu">str</span> <span class="op">|</span> FlowModel <span class="op">|</span> Model <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    config: GenerateConfig <span class="op">|</span> NotGiven <span class="op">=</span> ...,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>    model_roles: Mapping[<span class="bu">str</span>, FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    sandbox: <span class="bu">str</span> <span class="op">|</span> <span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>] <span class="op">|</span> SandboxEnvironmentSpec <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    approval: <span class="bu">str</span> <span class="op">|</span> ApprovalPolicyConfig <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    epochs: <span class="bu">int</span> <span class="op">|</span> FlowEpochs <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    fail_on_error: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    continue_on_fail: <span class="bu">bool</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>    message_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    token_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>    time_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>    working_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>    cost_limit: <span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>    early_stopping: NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>    version: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">=</span> ...,</span>
-<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>    tags: Sequence[<span class="bu">str</span>] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>    metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    sample_id: <span class="bu">str</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> Sequence[<span class="bu">str</span> <span class="op">|</span> <span class="bu">int</span>] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>    flow_metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
-<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowTask]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    headline_metric: HeadlineMetric <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    model: <span class="bu">str</span> <span class="op">|</span> FlowModel <span class="op">|</span> Model <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>    config: GenerateConfig <span class="op">|</span> NotGiven <span class="op">=</span> ...,</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    model_roles: Mapping[<span class="bu">str</span>, FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model <span class="op">|</span> Sequence[FlowModel <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> Model]] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    sandbox: <span class="bu">str</span> <span class="op">|</span> <span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>] <span class="op">|</span> SandboxEnvironmentSpec <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    approval: <span class="bu">str</span> <span class="op">|</span> ApprovalPolicyConfig <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    review: <span class="bu">str</span> <span class="op">|</span> ReviewPolicyConfig <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    epochs: <span class="bu">int</span> <span class="op">|</span> FlowEpochs <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>    fail_on_error: <span class="bu">bool</span> <span class="op">|</span> <span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    continue_on_fail: <span class="bu">bool</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>    score_on_error: <span class="bu">bool</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>    checkpoint: CheckpointConfig <span class="op">|</span> <span class="bu">bool</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>    message_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>    token_limit: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> TokenLimit <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>    turn_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>    time_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>    working_limit: <span class="bu">int</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    cost_limit: <span class="bu">float</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>    early_stopping: NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>    description: <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>    version: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> NotGiven <span class="op">=</span> ...,</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>    tags: Sequence[<span class="bu">str</span>] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>    metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>    sample_id: <span class="bu">str</span> <span class="op">|</span> <span class="bu">int</span> <span class="op">|</span> Sequence[<span class="bu">str</span> <span class="op">|</span> <span class="bu">int</span>] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>    flow_metadata: Mapping[<span class="bu">str</span>, Any] <span class="op">|</span> NotGiven <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> ...,</span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[FlowTask]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">task</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span>]</span></dt>
 <dd>
@@ -2205,6 +2307,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Scorer or list of scorers used to evaluate model output.</p>
 </dd>
+<dt><code class="ref-definition">headline_metric</code> <span class="element-type"><span class="element-type-name">HeadlineMetric</span> | <span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Which score/metric best summarises this task (e.g.&nbsp;for a leaderboard or log listing). A <code>str</code> names the scorer, as <code>"&lt;scorer&gt;"</code> or <code>"&lt;scorer&gt;.&lt;score&gt;"</code> to address one value of a scorer returning a dict of scores. Pass a <code>HeadlineMetric</code> to also name the <code>metric</code> or <code>reducer</code>. Unset fields resolve by convention, so <code>HeadlineMetric(metric="accuracy")</code> takes that metric from the first score reporting it; the default is the first metric of the first score.</p>
+</dd>
 <dt><code class="ref-definition">model</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">Model</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Default model for task (Optional, defaults to eval model).</p>
@@ -2213,9 +2319,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Model generation config for the default model (does not apply to model roles). Overrides <code>defaults.config</code>; overridden by <code>FlowModel.config</code>.</p>
 </dd>
-<dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">Mapping</span>[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span>] | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dt><code class="ref-definition">model_roles</code> <span class="element-type"><span class="element-type-name">Mapping</span>[<span class="element-type-name">str</span>, <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">str</span> | <span class="element-type-name">Model</span>]] | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Named roles for use in <code>get_model()</code>.</p>
+<p>Named roles for use in <code>get_model()</code>. A list value binds one role to several models (e.g.&nbsp;model-graded scorers then grade by majority vote): <code>{'grader': [a, b]}</code> is one task with a two-model grader. To sweep graders across task variants instead, pass a list of <code>model_roles</code> mappings in <code>matrix</code>.</p>
 </dd>
 <dt><code class="ref-definition">sandbox</code> <span class="element-type"><span class="element-type-name">str</span> | tuple[<span class="element-type-name">str</span>, <span class="element-type-name">str</span>] | <span class="element-type-name">SandboxEnvironmentSpec</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2224,6 +2330,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">approval</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ApprovalPolicyConfig</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Tool use approval policies. Either a path to an approval policy config file or an approval policy config. Defaults to no approval policy.</p>
+</dd>
+<dt><code class="ref-definition">review</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">ReviewPolicyConfig</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Tool result review policies, applied after a tool call executes and before the model sees its result. Either a path to a review policy config file or a review policy config. Defaults to no review policy.</p>
 </dd>
 <dt><code class="ref-definition">epochs</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowepochs">FlowEpochs</a></span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2237,13 +2347,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p><code>True</code> to continue running and only fail at the end if the <code>fail_on_error</code> condition is met. <code>False</code> to fail eval immediately when the <code>fail_on_error</code> condition is met (default).</p>
 </dd>
+<dt><code class="ref-definition">score_on_error</code> <span class="element-type"><span class="element-type-name">bool</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Score samples that error rather than failing the eval mid-run. Overridden by <code>options.score_on_error</code> when set.</p>
+</dd>
+<dt><code class="ref-definition">checkpoint</code> <span class="element-type"><span class="element-type-name">CheckpointConfig</span> | <span class="element-type-name">bool</span> | <span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Checkpoint configuration for this task, or <code>True</code> to enable checkpointing with the default trigger (every 500k tokens). Merged per-field with <code>options.checkpoint</code>, which takes precedence; <code>False</code> at either level disables checkpointing.</p>
+</dd>
 <dt><code class="ref-definition">message_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Limit on total messages used for each sample.</p>
 </dd>
-<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dt><code class="ref-definition">token_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">TokenLimit</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
-<p>Limit on total tokens used for each sample.</p>
+<p>Limit on total tokens used for each sample. May be an integer, a string with a unit suffix (e.g.&nbsp;<code>'1M'</code>), or a <code>TokenLimit</code>.</p>
+</dd>
+<dt><code class="ref-definition">turn_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Limit on total turns (assistant messages) for each sample.</p>
 </dd>
 <dt><code class="ref-definition">time_limit</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2261,9 +2383,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Early stopping callbacks.</p>
 </dd>
+<dt><code class="ref-definition">description</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Short statement of what the task asks of the agent (recorded in the eval log).</p>
+</dd>
 <dt><code class="ref-definition">version</code> <span class="element-type"><span class="element-type-name">int</span> | <span class="element-type-name">str</span> | <span class="element-type-name">NotGiven</span></span></dt>
 <dd>
-<p>Version of task (to distinguish evolutions of the task spec or breaking changes to it)</p>
+<p>Expected version of the task. Verified against the version of the loaded task; instantiation fails if they do not match.</p>
 </dd>
 <dt><code class="ref-definition">tags</code> <span class="element-type"><span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>] | <span class="element-type-name">NotGiven</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -2434,7 +2560,8 @@ document.addEventListener("DOMContentLoaded", function () {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -2443,8 +2570,69 @@ document.addEventListener("DOMContentLoaded", function () {
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -2458,6 +2646,7 @@ document.addEventListener("DOMContentLoaded", function () {
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -2620,44 +2809,54 @@ document.addEventListener("DOMContentLoaded", function () {
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2735,6 +2934,7 @@ document.addEventListener("DOMContentLoaded", function () {
             interactiveBorder: 10,
             theme: 'quarto',
             placement: 'right',
+            plugins: [hideOnEscAndFocusOut],
             positionFixed: true,
             popperOptions: {
               modifiers: [
@@ -2797,10 +2997,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   </script>
-<nav class="page-navigation">
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
   <div class="nav-page nav-page-previous">
-      <a href="../reference/inspect_flow.api.html#displaytype" class="pagination-link" aria-label="DisplayType">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">DisplayType</span>
+      <a href="../reference/inspect_flow.api.html#specviolation" class="pagination-link" aria-label="SpecViolation">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">SpecViolation</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.11.9">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -13,10 +13,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -74,14 +77,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../images/icon-dark.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-60b6846f58d02926bc6ca5ecd6f15c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-771725699ea44adeffca0fa6042fd43a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -119,11 +123,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="twitter:card" content="summary">
 </head>
 
-<body class="nav-sidebar docked nav-fixed quarto-light">
+<body class="nav-sidebar docked nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
@@ -134,8 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">Inspect Flow</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -225,15 +228,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
     <div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/inspect_flow.api.html">Python API</a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav>
@@ -241,7 +245,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto" aria-label="Section">
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -253,21 +257,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Python API</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Python API</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section: Python API">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.api.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">inspect_flow.api</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-2-label">inspect_flow.api</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section: inspect_flow.api">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 show">  
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#init" class="sidebar-item-text sidebar-link">
@@ -300,8 +304,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#dump_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dump_spec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#load_spec_data" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">load_spec_data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.api.html#config" class="sidebar-item-text sidebar-link">
  <span class="menu-text">config</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#validate_portable_spec" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate_portable_spec</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#iter_model_refs" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">iter_model_refs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -370,17 +398,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">DisplayType</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specmodelref" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecModelRef</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specnotportableerror" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecNotPortableError</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/inspect_flow.api.html#specviolation" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SpecViolation</span></a>
+  </div>
+</li>
       </ul>
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/inspect_flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">inspect_flow</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-3-label">inspect_flow</span></a>
+            <button type="button" class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="false" aria-label="Toggle section: inspect_flow">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/inspect_flow.html#flowagent" class="sidebar-item-text sidebar-link">
@@ -562,12 +608,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">CLI Commands</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+ <span class="menu-text" id="quarto-sidebar-section-4-label">CLI Commands</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section: CLI Commands">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../reference/flow_check.html" class="sidebar-item-text sidebar-link">
@@ -612,7 +658,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active" data-toc-expanded="1">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
@@ -623,7 +669,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#check" id="toc-check" class="nav-link" data-scroll-target="#check">check</a></li>
   <li><a href="#run_step" id="toc-run_step" class="nav-link" data-scroll-target="#run_step">run_step</a></li>
   <li><a href="#load_spec" id="toc-load_spec" class="nav-link" data-scroll-target="#load_spec">load_spec</a></li>
+  <li><a href="#dump_spec" id="toc-dump_spec" class="nav-link" data-scroll-target="#dump_spec">dump_spec</a></li>
+  <li><a href="#load_spec_data" id="toc-load_spec_data" class="nav-link" data-scroll-target="#load_spec_data">load_spec_data</a></li>
   <li><a href="#config" id="toc-config" class="nav-link" data-scroll-target="#config">config</a></li>
+  <li><a href="#validate_portable_spec" id="toc-validate_portable_spec" class="nav-link" data-scroll-target="#validate_portable_spec">validate_portable_spec</a></li>
+  <li><a href="#iter_model_refs" id="toc-iter_model_refs" class="nav-link" data-scroll-target="#iter_model_refs">iter_model_refs</a></li>
   <li><a href="#list_logs" id="toc-list_logs" class="nav-link" data-scroll-target="#list_logs">list_logs</a></li>
   <li><a href="#store_get" id="toc-store_get" class="nav-link" data-scroll-target="#store_get">store_get</a></li>
   <li><a href="#delete_store" id="toc-delete_store" class="nav-link" data-scroll-target="#delete_store">delete_store</a></li>
@@ -635,12 +685,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#flowstore" id="toc-flowstore" class="nav-link" data-scroll-target="#flowstore">FlowStore</a></li>
   <li><a href="#stepresult" id="toc-stepresult" class="nav-link" data-scroll-target="#stepresult">StepResult</a></li>
   <li><a href="#displaytype" id="toc-displaytype" class="nav-link" data-scroll-target="#displaytype">DisplayType</a></li>
+  <li><a href="#specmodelref" id="toc-specmodelref" class="nav-link" data-scroll-target="#specmodelref">SpecModelRef</a></li>
+  <li><a href="#specnotportableerror" id="toc-specnotportableerror" class="nav-link" data-scroll-target="#specnotportableerror">SpecNotPortableError</a></li>
+  <li><a href="#specviolation" id="toc-specviolation" class="nav-link" data-scroll-target="#specviolation">SpecViolation</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content" tabindex="-1">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -672,7 +725,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="init">init</h3>
 <p>Initialize the inspect_flow API.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L28">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L28">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> init(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    log_level: <span class="bu">str</span> <span class="op">=</span> DEFAULT_LOG_LEVEL,</span>
@@ -698,7 +751,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run">run</h3>
 <p>Run an inspect_flow evaluation.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L89">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L89">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
@@ -735,7 +788,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="check">check</h3>
 <p>Check completeness of an inspect_flow evaluation against existing logs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L176">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L176">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check(</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
@@ -762,7 +815,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="run_step">run_step</h3>
 <p>Run a step function on the given logs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/run.py#L27">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/run.py#L27">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_step(</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    step: WrappedStepFunction[P],</span>
@@ -823,7 +876,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="load_spec">load_spec</h3>
 <p>Load a spec from file.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L60">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L60">Source</a>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_spec(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span>: <span class="bu">str</span>,</span>
@@ -841,16 +894,47 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
+<section id="dump_spec" class="level3">
+<h3 class="anchored" data-anchor-id="dump_spec">dump_spec</h3>
+<p>Dump a flow spec to its canonical wire representation.</p>
+<p>The returned dict is JSON-compatible and stable: re-dumping a reloaded spec reproduces it exactly, i.e. <code>dump_spec(load_spec_data(dump_spec(spec))) == dump_spec(spec)</code>. Fields that are unset — or explicitly set to their default value — are omitted, so effective values always survive a round trip but <code>model_fields_set</code> membership does not. Explicit <code>None</code> is preserved, and Flow’s <code>NotGiven</code> sentinel never appears. Live values normalize to references (a registered callable to its registry name, a registry object such as a tool in agent args to its reference dict), so a reloaded spec is wire-equivalent to, but not necessarily object-equal to, the original. The runner resolves a name back to a callable only in <code>factory</code> fields and <code>store.filter</code>; in any other position (e.g.&nbsp;factory <code>args</code>) the name reloads as a plain string — <code>validate_portable_spec</code> flags these before dumping. Typed values are normalized through validation, so a coercible value assigned without validation (e.g.&nbsp;a numeric string in a float field) dumps in canonical form.</p>
+<p>Values in untyped fields (e.g.&nbsp;<code>flow_metadata</code>, <code>model_args</code>) should be JSON-native; anything else follows pydantic’s JSON coercion (a tuple becomes a list, a <code>datetime</code> a string, a set a list in unspecified order) and may not round-trip. In fields that skip validation (e.g.&nbsp;<code>early_stopping</code>), serializable live objects carry one-way: they reload as plain data. Arguments captured in a registered object’s params are encoded by inspect-ai at construction time (non-serializable values are already stringified before Flow sees them). Whether a reference resolves in the target process — installed packages, shipped files — is a separate concern; gate portable use with <code>validate_portable_spec</code> before dumping. YAML/JSON rendering is left to the caller.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/serialize.py#L19">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dump_spec(spec: FlowSpec) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, Any]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<dl>
+<dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
+<dd>
+<p>The flow spec to dump.</p>
+</dd>
+</dl>
+</section>
+<section id="load_spec_data" class="level3">
+<h3 class="anchored" data-anchor-id="load_spec_data">load_spec_data</h3>
+<p>Reconstruct a flow spec from its canonical wire representation.</p>
+<p>Inverse of <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.api.html#dump_spec">dump_spec()</a></span>. Validation is strict: unknown fields are rejected (except in <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowfactory">FlowFactory</a></span> mappings, whose API forwards unrecognized keys as factory arguments), as is an embedded <code>NotGiven</code> sentinel or a non-finite float (whether present literally or produced by coercing a string such as <code>"NaN"</code>). JSON and YAML parsers accept both, but they signal data that did not come from <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.api.html#dump_spec">dump_spec()</a></span>, and a sentinel would be misread as a user value.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/serialize.py#L91">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_spec_data(data: Mapping[<span class="bu">str</span>, Any]) <span class="op">-&gt;</span> FlowSpec</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<dl>
+<dt><code class="ref-definition">data</code> <span class="element-type"><span class="element-type-name">Mapping</span>[<span class="element-type-name">str</span>, <span class="element-type-name">Any</span>]</span></dt>
+<dd>
+<p>Spec data produced by <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.api.html#dump_spec">dump_spec()</a></span>, possibly after a JSON or YAML round trip.</p>
+</dd>
+</dl>
+</section>
 <section id="config" class="level3">
 <h3 class="anchored" data-anchor-id="config">config</h3>
 <p>Return the flow spec configuration.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L231">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L231">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> config(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    spec: FlowSpec,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    base_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
 <dd>
@@ -862,19 +946,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
+<section id="validate_portable_spec" class="level3">
+<h3 class="anchored" data-anchor-id="validate_portable_spec">validate_portable_spec</h3>
+<p>Validate that a flow spec can be serialized and recreated in another process.</p>
+<p>A portable spec survives the boundary the venv runner and remote orchestrators cross: dumped to YAML/JSON, then re-validated as a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span> in a fresh process. Values that do not survive it are live (already-instantiated) Inspect objects such as <code>Task</code>, <code>Model</code>, <code>Scorer</code>, <code>Solver</code>, and <code>Agent</code> — which reload as a <code>repr</code> string or a plain dict rather than the object — and callables the child cannot resolve. A serialized callable is looked up in the Inspect registry, so only a registered object (or a registry name string) is portable: an undecorated function is not, even at module level, and neither are lambdas, <code>functools.partial</code>, nested functions, classes, and callable objects. Any JSON-serializable data is portable.</p>
+<p>Every field is checked, including free-form containers (<code>args</code>, <code>metadata</code>, <code>flow_metadata</code>, scanner params) and any inline <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span> in <code>includes</code> — a path string there is not loaded, so an included file’s contents are not checked. The spec is not expanded or resolved, and nothing is installed or launched.</p>
+<p>Four limitations. A value Pydantic coerces natively on dump is reported as portable, because it reloads as the coerced type rather than being lost: <code>tuple</code> and <code>set</code> become <code>list</code>, a dataclass or <code>BaseModel</code> becomes <code>dict</code>, non-string mapping keys become strings, <code>datetime</code>/<code>date</code>/<code>UUID</code>/ <code>Path</code>/<code>Decimal</code>/<code>bytes</code> become strings, and <code>NaN</code> becomes <code>None</code>. A registered callable is portable only in a field the runner resolves names in — the <code>factory</code> fields and <code>store.filter</code> — since elsewhere its name reloads as a plain string. And a live registered object in scanner <code>params</code> is rejected even though scout would re-inflate it, since that only holds when every scanner entry is a spec reference.</p>
+<p>A registered object’s name must also be resolvable in the child. Inspect qualifies names of objects defined in an installed package (<code>my_pkg/my_task</code>), which the child can import; a bare name from a loose module relies on that module already being imported and is <em>not</em> checked here. Prefer factories from packaged code.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L108">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_portable_spec(spec: FlowSpec) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<dl>
+<dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
+<dd>
+<p>The flow spec to validate.</p>
+</dd>
+</dl>
+</section>
+<section id="iter_model_refs" class="level3">
+<h3 class="anchored" data-anchor-id="iter_model_refs">iter_model_refs</h3>
+<p>Yield the model references a flow spec will run with.</p>
+<p>Defaults are merged before iterating (<code>apply_defaults</code> is applied to a copy; it is idempotent, so an already-resolved spec is unchanged). Every ref therefore points at the task or scanner the model actually applies to, with concrete merged values — a model declared in <code>defaults.model</code> appears at <code>tasks[i].model</code> for each task it lands on, never at a <code>defaults.*</code> path. Consumers do not have to reason about defaults, which are partial templates rather than declarations in their own right.</p>
+<p>Order is stable: tasks, then <code>options</code>. Sites walked: each task’s <code>model</code> and <code>model_roles</code> (whether a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowtask">FlowTask</a></span> or an already-instantiated <code>Task</code>), and <code>options.scanner</code>. A list-valued task role (one role bound to several models) yields one ref per element, at an indexed path (<code>tasks[0].model_roles['grader'][0]</code>), each carrying the role — so a role may map to several refs. Every <code>GenerateConfig.fallback_models</code> entry (on a task, model, or scanner) is yielded at <code>&lt;config&gt;.fallback_models[i]</code>, because those models handle requests after a classifier refusal.</p>
+<p>Nothing is instantiated, installed, or read from disk — which is why a spec whose <code>includes</code> have not been expanded is rejected: includes reference other spec files, and enumerating around them would silently under-report. <code>load_spec</code> expands and clears them.</p>
+<p><strong>This will not find every model a run may use.</strong> It reads the model reference fields Flow declares in its own schema; it does not execute anything, so any model chosen at run time is invisible to it:</p>
+<ul>
+<li><strong>user code</strong> — a callable <code>factory</code> or an <code>@after_instantiate</code> hook can return any model, including one named nowhere in the spec;</li>
+<li><strong>ambient configuration</strong> — a task or scanner with no model resolves <code>INSPECT_EVAL_MODEL</code> / <code>SCOUT_SCAN_MODEL</code> from the environment, which <code>spec.env</code> may itself set;</li>
+<li><strong>free-form constructor args</strong> — most commonly a plain string consumed by user code (<code>FlowTask(args={"grader_model": "openai/gpt-4o"})</code>, a <code>model_graded_qa</code> scorer’s <code>model</code> arg); also any <code>{"model": ..., "config": ...}</code> mapping, which inspect-ai materializes into a live model, api key included.</li>
+</ul>
+<p>An empty or short result therefore does not prove which models will run. What it does guarantee is that no <em>declared</em> spec field is missed as Flow’s schema grows: a snapshot test forces every new field on the model-bearing spec types through this classification.</p>
+<p>Where a declared model site exists but cannot be read statically (e.g.&nbsp;a scanner given as a config-file path, or an <code>Any</code>-typed field holding an unrecognized shape), a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.api.html#specmodelref">SpecModelRef</a></span> is yielded with <code>unenumerable</code> set rather than nothing. A host applying policy should reject what it cannot enumerate — refs where <code>unenumerable</code> is <code>True</code>, and (if it does not permit factories) where <code>from_factory</code> is <code>True</code>, plus model-bearing constructor args and modelless tasks, which are outside this walk — then apply policy over what this yields.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/model_refs.py#L162">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> iter_model_refs(spec: FlowSpec) <span class="op">-&gt;</span> Iterator[SpecModelRef]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<dl>
+<dt><code class="ref-definition">spec</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#flowspec">FlowSpec</a></span></span></dt>
+<dd>
+<p>The flow spec to introspect. Refs report paths and merged values from the defaults-applied spec, not the literal input object.</p>
+</dd>
+</dl>
+</section>
 <section id="list_logs" class="level3">
 <h3 class="anchored" data-anchor-id="list_logs">list_logs</h3>
 <p>List log paths grouped by directory, directories ordered by most recent log file.</p>
 <p>Within each directory, logs are sorted by filename timestamp descending. Logs without a timestamp prefix sort at the end.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/list_logs.py#L42">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/list_logs.py#L42">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> list_logs(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    log_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    store: <span class="bu">str</span> <span class="op">|</span> FlowStore <span class="op">=</span> <span class="st">"auto"</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    since: <span class="bu">str</span> <span class="op">|</span> datetime <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    until: <span class="bu">str</span> <span class="op">|</span> datetime <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> list_logs(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    log_dir: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    store: <span class="bu">str</span> <span class="op">|</span> FlowStore <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    since: <span class="bu">str</span> <span class="op">|</span> datetime <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    until: <span class="bu">str</span> <span class="op">|</span> datetime <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">log_dir</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -898,9 +1025,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="store_get">store_get</h3>
 <p>Get a FlowStore instance.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_api/api.py#L248">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_api/api.py#L248">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> store_get(store: <span class="bu">str</span> <span class="op">=</span> <span class="st">"auto"</span>, create: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> FlowStore</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> store_get(store: <span class="bu">str</span> <span class="op">=</span> <span class="st">"auto"</span>, create: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>) <span class="op">-&gt;</span> FlowStore</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">store</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
 <dd>
@@ -916,9 +1043,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="delete_store">delete_store</h3>
 <p>Delete a flow store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L205">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L205">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> delete_store(store_path: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> delete_store(store_path: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">store_path</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
 <dd>
@@ -930,9 +1057,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="copy_all_logs">copy_all_logs</h3>
 <p>Copy all log files from src_dir to dest_dir, preserving directory structure.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_util/logs.py#L98">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_util/logs.py#L98">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> copy_all_logs(src_dir: <span class="bu">str</span>, dest_dir: <span class="bu">str</span>, dry_run: <span class="bu">bool</span>, recursive: <span class="bu">bool</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> copy_all_logs(src_dir: <span class="bu">str</span>, dest_dir: <span class="bu">str</span>, dry_run: <span class="bu">bool</span>, recursive: <span class="bu">bool</span>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">src_dir</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
 <dd>
@@ -956,17 +1083,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="tag">tag</h3>
 <p>Add or remove tags on eval logs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/tag.py#L37">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/tag.py#L37">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tag(</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    add: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    remove: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    author: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    reason: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tag(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    add: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    remove: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    author: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    reason: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">logs</code> <span class="element-type">list[<span class="element-type-name">EvalLog</span>]</span></dt>
 <dd>
@@ -994,17 +1121,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="metadata">metadata</h3>
 <p>Set or delete metadata fields on eval logs.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/tag.py#L65">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/tag.py#L65">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> metadata(</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">set</span>: <span class="bu">dict</span>[<span class="bu">str</span>, Any] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    remove: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    author: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    reason: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> metadata(</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">set</span>: <span class="bu">dict</span>[<span class="bu">str</span>, Any] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    remove: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    author: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    reason: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">logs</code> <span class="element-type">list[<span class="element-type-name">EvalLog</span>]</span></dt>
 <dd>
@@ -1032,17 +1159,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="copy">copy</h3>
 <p>Copy eval logs to a destination directory.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/copy.py#L21">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/copy.py#L39">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> copy(</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    dest: <span class="bu">str</span>,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    source_prefix: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    overwrite: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    store: FlowStore <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,  <span class="co"># noqa: ARG001 handled by @step wrapper</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="at">@step</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> copy(</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    dest: <span class="bu">str</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    source_prefix: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    suffix: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    rename: Callable[[<span class="bu">str</span>], <span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    overwrite: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    store: FlowStore <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,  <span class="co"># noqa: ARG001 handled by @step wrapper</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">list</span>[EvalLog]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">logs</code> <span class="element-type">list[<span class="element-type-name">EvalLog</span>]</span></dt>
 <dd>
@@ -1055,6 +1184,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code class="ref-definition">source_prefix</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
 <dd>
 <p>Directory prefix to strip from source paths. Without this option, files are copied flat into the destination. When provided, preserves directory structure relative to the prefix.</p>
+</dd>
+<dt><code class="ref-definition">suffix</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Suffix inserted before the file extension of each copy (e.g.&nbsp;<code>+realigned</code> copies <code>probe.eval</code> to <code>probe+realigned.eval</code>). Mutually exclusive with the rename parameter (Python API only).</p>
+</dd>
+<dt><code class="ref-definition">rename</code> <span class="element-type"><span class="element-type-name">Callable</span>[[<span class="element-type-name">str</span>], <span class="element-type-name">str</span>] | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Function mapping source filename to destination filename. Python-only. Mutually exclusive with suffix.</p>
 </dd>
 <dt><code class="ref-definition">overwrite</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
 <dd>
@@ -1071,41 +1208,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Run Inspect Scout scanners against the transcripts of eval logs.</p>
 <p>Mirrors the CLI surface of <code>scout scan</code>, minus <code>-T/--transcripts</code> (which flow sources from log paths) and <code>-F/--filter</code> (handled by flow’s own <code>--filter</code>). Returns scout’s <code>Status</code>. For use as a flow step (logs only), see <code>scan_step</code>.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/scan.py#L82">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/scan.py#L82">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan(</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    scanners: ScannersSpec,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    s: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    scans: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    validation: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    model: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    model_base_url: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    m: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    model_config: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    model_role: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    max_transcripts: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    max_processes: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    limit: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    shuffle: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>,</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    tags: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    metadata: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    cache: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    batch: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    max_connections: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    max_retries: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    timeout: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    max_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>    temperature: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>    top_p: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    top_k: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>    reasoning_effort: Literal[<span class="st">"minimal"</span>, <span class="st">"low"</span>, <span class="st">"medium"</span>, <span class="st">"high"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    reasoning_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>    reasoning_summary: Literal[<span class="st">"concise"</span>, <span class="st">"detailed"</span>, <span class="st">"auto"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    reasoning_history: Literal[<span class="st">"none"</span>, <span class="st">"all"</span>, <span class="st">"last"</span>, <span class="st">"auto"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    fail_on_error: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Status</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    logs: <span class="bu">list</span>[EvalLog],</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    scanners: ScannersSpec,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    s: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    scans: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    validation: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    model: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    model_base_url: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    m: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    model_config: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    model_role: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    max_transcripts: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    max_processes: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    limit: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    shuffle: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>,</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    tags: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    metadata: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> (),</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    cache: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    batch: <span class="bu">int</span> <span class="op">|</span> <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    max_connections: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    max_retries: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    timeout: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    max_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    temperature: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    top_p: <span class="bu">float</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    top_k: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    reasoning_effort: Literal[<span class="st">"minimal"</span>, <span class="st">"low"</span>, <span class="st">"medium"</span>, <span class="st">"high"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    reasoning_tokens: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    reasoning_summary: Literal[<span class="st">"concise"</span>, <span class="st">"detailed"</span>, <span class="st">"auto"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    reasoning_history: Literal[<span class="st">"none"</span>, <span class="st">"all"</span>, <span class="st">"last"</span>, <span class="st">"auto"</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    fail_on_error: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Status</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">logs</code> <span class="element-type">list[<span class="element-type-name">EvalLog</span>]</span></dt>
 <dd>
@@ -1237,9 +1374,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="flowstore">FlowStore</h3>
 <p>Interface for flow store implementations.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L25">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L25">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowStore(ABC)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FlowStore(ABC)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -1260,16 +1397,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Import a log file(s) or directory(ies) into the store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L40">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L40">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> import_log_path(</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>,</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    log_path: <span class="bu">str</span> <span class="op">|</span> Sequence[<span class="bu">str</span>],</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    recursive: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    verbose: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> import_log_path(</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    log_path: <span class="bu">str</span> <span class="op">|</span> Sequence[<span class="bu">str</span>],</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    recursive: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    verbose: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">log_path</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>]</span></dt>
 <dd>
@@ -1293,10 +1430,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Get all log file paths in the store.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L58">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L58">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_logs(<span class="va">self</span>, <span class="bu">filter</span>: LogFilter <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> <span class="bu">set</span>[<span class="bu">str</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_logs(<span class="va">self</span>, <span class="bu">filter</span>: LogFilter <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> <span class="bu">set</span>[<span class="bu">str</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">filter</code> <span class="element-type"><span class="element-type-name"><a href="../reference/inspect_flow.html#logfilter">LogFilter</a></span> | <span class="element-type-name">None</span></span></dt>
 <dd>
@@ -1308,18 +1445,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>Remove logs matching the given prefixes.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_store/store.py#L72">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_store/store.py#L72">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> remove_log_prefix(</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>,</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    prefix: <span class="bu">str</span> <span class="op">|</span> Sequence[<span class="bu">str</span>],</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    missing: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    recursive: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    verbose: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>,</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">filter</span>: LogFilter <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="at">@abstractmethod</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> remove_log_prefix(</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    prefix: <span class="bu">str</span> <span class="op">|</span> Sequence[<span class="bu">str</span>],</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    missing: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    recursive: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    dry_run: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    verbose: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">filter</span>: LogFilter <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <dl>
 <dt><code class="ref-definition">prefix</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">Sequence</span>[<span class="element-type-name">str</span>]</span></dt>
 <dd>
@@ -1355,9 +1492,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Fine-grained return type for <span class="citation" data-cites="step">@step</span> functions.</p>
 <p>Steps can also return a sequence of EvalLog directly (equivalent to StepResult(logs=logs, modified=True)) or [] (equivalent to StepResult(modified=False, skip_log_steps=True)).</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_steps/step.py#L40">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_steps/step.py#L40">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> StepResult(NamedTuple)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> StepResult(NamedTuple)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section class="level4">
 <h4 class="anchored" data-anchor-id="">Attributes</h4>
 <dl>
@@ -1385,9 +1522,104 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Display type for flow output.</p>
 <p>Matches Inspect’s set of display types: - “full”: Full interactive display with progress bars and rich formatting. - “conversation”: Stream the model conversation to the terminal. - “rich”: Rich text formatting without interactive elements. - “plain”: Plain text output. - “log”: Flat, ANSI-free log lines. - “none”: No display output.</p>
 <div class="source-link">
-<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/ffa0e8545d3e4c0ccf86720a0e3ecd8770ecab75/src/inspect_flow/_display/display.py#L16">Source</a>
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_display/display.py#L16">Source</a>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>DisplayType <span class="op">=</span> Literal[<span class="st">"full"</span>, <span class="st">"conversation"</span>, <span class="st">"rich"</span>, <span class="st">"plain"</span>, <span class="st">"log"</span>, <span class="st">"none"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>DisplayType <span class="op">=</span> Literal[<span class="st">"full"</span>, <span class="st">"conversation"</span>, <span class="st">"rich"</span>, <span class="st">"plain"</span>, <span class="st">"log"</span>, <span class="st">"none"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="specmodelref" class="level3">
+<h3 class="anchored" data-anchor-id="specmodelref">SpecModelRef</h3>
+<p>A single model reference found in a flow spec.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/model_refs.py#L28">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SpecModelRef</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4">
+<h4 class="anchored" data-anchor-id="">Attributes</h4>
+<dl>
+<dt><code class="ref-definition">path</code> <span class="element-type"><span class="element-type-name">str</span></span></dt>
+<dd>
+<p>Field path of the reference (e.g.&nbsp;<code>"tasks[0].model_roles['grader']"</code>).</p>
+</dd>
+<dt><code class="ref-definition">ref</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> | <span class="element-type-name">Model</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>The reference as it appears in the spec: a model name string, a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>, or an already-instantiated <code>Model</code>. <code>None</code> marks a model site that exists but cannot be read statically (e.g.&nbsp;a scanner given as a config-file path).</p>
+</dd>
+<dt><code class="ref-definition">role</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>The named role this reference is bound to, or <code>None</code> for an unroled model.</p>
+<p>Taken from the <code>model_roles</code> key, falling back to <code>FlowModel.role</code> (which is passed to <code>get_model(role=...)</code> at any model site); the mapping key wins when both are set.</p>
+<p>This records how the reference is <em>declared</em>, not which slot the model will end up serving. So a <code>kind="fallback"</code> ref is roled only when it comes from a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>’s own <code>config</code> — that config is an argument to the same <code>get_model</code> call that binds the role. A fallback in a <code>FlowTask.config</code> is always <code>None</code>: that is a task-level generate config (its field description says it “does not apply to model roles”), so no role participates at that layer — the task’s <code>model_roles</code> models generate with it too.</p>
+</dd>
+<dt><code class="ref-definition">kind</code> <span class="element-type"><span class="element-type-name">Literal</span>['model', 'fallback']</span></dt>
+<dd>
+<p>Which kind of reference this is, and hence which namespace <code>name</code> is in.</p>
+<p><code>"model"</code> is an Inspect <code>provider/model</code> reference. <code>"fallback"</code> is a <code>GenerateConfig.fallback_models</code> entry, which is a provider-native id with no provider prefix. A host comparing or authorizing names across both must branch on this rather than parse <code>path</code>.</p>
+</dd>
+<dt><code class="ref-definition">name</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>The model name that will actually be used, or <code>None</code> if not static.</p>
+<p>A <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span>’s string <code>factory</code> takes precedence over <code>name</code>, so it is reported instead — unlike other Flow types, that string is not a factory registry reference but the model id itself, passed to <code>get_model(model=...)</code> (see <code>from_factory</code>). A callable <code>factory</code> builds the model itself and yields <code>None</code> even when <code>name</code> is set. A live <code>Model</code> reports its provider-qualified name.</p>
+<p><code>None</code> has two causes, distinguished by <code>unenumerable</code>: either a model binds here but its name cannot be known statically, or the reference declares no model at all (a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> with neither <code>name</code> nor <code>factory</code> — after defaults merging that is a misconfigured task, which instantiation rejects). Key policy on <code>unenumerable</code> rather than on this — and note <code>unenumerable</code> is not by itself sufficient: a <em>string</em> <code>factory</code> is enumerable but its name is a factory id, so a host feeding <code>name</code> to a model lookup should check <code>from_factory</code> too.</p>
+<p>Names are Inspect <code>provider/model</code> references, except entries from <code>GenerateConfig.fallback_models</code>, which are provider-native ids passed verbatim to the provider (e.g.&nbsp;<code>"claude-opus-4-5"</code>).</p>
+<p>A model reached through a <code>base_url</code> override still reports its Inspect id, which is an assertion about identity rather than a guarantee of which endpoint serves the request.</p>
+</dd>
+<dt><code class="ref-definition">from_factory</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
+<dd>
+<p>Whether <code>name</code> came from <code>FlowModel.factory</code> rather than <code>name</code>.</p>
+<p>For a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> a string <code>factory</code> <em>is</em> the model id — it is passed to <code>get_model(model=...)</code>, and inspect has no separate model-factory registry — so such a ref is still enumerable. But <code>factory</code> means “registry name” on every other Flow type, and a host may have its own policy against factories; this reports one without making the caller unwrap <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowfactory">FlowFactory</a></span> and re-derive the precedence rule.</p>
+</dd>
+<dt><code class="ref-definition">unenumerable</code> <span class="element-type"><span class="element-type-name">bool</span></span></dt>
+<dd>
+<p>Whether a model binds here whose name is not statically knowable.</p>
+<p><code>True</code> for a model site this walk cannot read (<code>ref is None</code>) and for a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> built by a callable <code>factory</code>. <code>False</code> when <code>name</code> is <code>None</code> merely because the reference declares no model — a <span class="element-type-name ref-interlink"><a href="../reference/inspect_flow.html#flowmodel">FlowModel</a></span> with neither <code>name</code> nor <code>factory</code>, which instantiation rejects rather than running anything.</p>
+<p>This is the signal for “I cannot name the model”, and a host that cannot allow what it cannot name should reject specs where this is <code>True</code>, without rejecting ordinary field-default templates. It is not the only thing a host may want to reject: see <code>from_factory</code> for names that are known but derived from <code>FlowModel.factory</code>.</p>
+<p>Note a callable factory is only <code>True</code> in-process: serializing a spec rewrites it to a <code>file.py@attr</code> string, which reloads as a string factory and is reported as a name (the name <code>_call_factory</code> will then resolve). Such a name is not a <code>provider/model</code> reference, so it fails an allow-list rather than passing one.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="specnotportableerror" class="level3">
+<h3 class="anchored" data-anchor-id="specnotportableerror">SpecNotPortableError</h3>
+<p>Raised when a flow spec cannot be serialized and recreated in another process.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L72">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SpecNotPortableError(<span class="pp">ValueError</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section class="level4 class-methods">
+<h4 class="class-methods anchored" data-anchor-id="">Methods</h4>
+<dl>
+<dt>__init__</dt>
+<dd>
+<p>Create the error.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L80">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__init__</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>, violations: <span class="bu">list</span>[SpecViolation], hint: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<dl>
+<dt><code class="ref-definition">violations</code> <span class="element-type">list[<span class="element-type-name"><a href="../reference/inspect_flow.api.html#specviolation">SpecViolation</a></span>]</span></dt>
+<dd>
+<p>Every violation found, each with its field path.</p>
+</dd>
+<dt><code class="ref-definition">hint</code> <span class="element-type"><span class="element-type-name">str</span> | <span class="element-type-name">None</span></span></dt>
+<dd>
+<p>Extra guidance appended to the rendered message, for a caller with an escape hatch the validator should not assume.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</section>
+<section id="specviolation" class="level3">
+<h3 class="anchored" data-anchor-id="specviolation">SpecViolation</h3>
+<p>A single reason a flow spec is not portable.</p>
+<div class="source-link">
+<a href="https://github.com/meridianlabs-ai/inspect_flow/blob/b4899117766084f0d465d464493a652fd9b622bc/src/inspect_flow/_config/portable.py#L59">Source</a>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python doc-declaration code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SpecViolation</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -1540,7 +1772,8 @@ document.addEventListener("DOMContentLoaded", function () {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -1549,8 +1782,69 @@ document.addEventListener("DOMContentLoaded", function () {
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -1564,6 +1858,7 @@ document.addEventListener("DOMContentLoaded", function () {
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1726,44 +2021,54 @@ document.addEventListener("DOMContentLoaded", function () {
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -1841,6 +2146,7 @@ document.addEventListener("DOMContentLoaded", function () {
             interactiveBorder: 10,
             theme: 'quarto',
             placement: 'right',
+            plugins: [hideOnEscAndFocusOut],
             positionFixed: true,
             popperOptions: {
               modifiers: [
@@ -1903,7 +2209,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
   </script>
-<nav class="page-navigation">
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
   <div class="nav-page nav-page-previous">
       <a href="../reference/index.html" class="pagination-link" aria-label="Reference">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Reference</span>
