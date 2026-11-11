@@ -71,6 +71,22 @@ def test_store_trailing_slash() -> None:
     assert len(store.get_logs()) == 0
 
 
+def test_store_remove_trailing_slash_skips_sibling_dirs(tmp_path: Path) -> None:
+    for name in ["run_1", "run_10"]:
+        (tmp_path / name).mkdir()
+        shutil.copy(log1_path, tmp_path / name)
+    store: FlowStore = store_get()
+    store.import_log_path(str(tmp_path), recursive=True)
+    assert len(store.get_logs()) == 2
+
+    store.remove_log_prefix(str(tmp_path / "run_1") + "/", recursive=True)
+    assert store.get_logs() == {"file://" + str(tmp_path / "run_10" / log1_name)}
+
+    # Without the trailing slash the prefix is still a plain string prefix.
+    store.remove_log_prefix(str(tmp_path / "run_1"), recursive=True)
+    assert len(store.get_logs()) == 0
+
+
 def test_store_remove_escaping(mock_s3: BaseClient) -> None:
     dir = "s3://test-bucket/user's logs"
     log_name = "2025-12-11T18-00-43+00-00_gpqa-diamond_NL3aygdanSgqAJfzoMFuH6.eval"
