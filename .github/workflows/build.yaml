@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+      - uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+      - uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
@@ -77,7 +77,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+      - uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
@@ -264,7 +264,7 @@ jobs:
       # The build toolchain that publish.yaml uses, pinned with hashes. To
       # update the file, see publish.yaml.
       - name: Install build toolchain
-        uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+        uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: hashed-requirements
           python-version: ${{ matrix.python-version }}
@@ -281,7 +281,7 @@ jobs:
           echo "wheel=./${wheels[0]}" >> "$GITHUB_OUTPUT"
       # The locked runtime dependencies, without the dev group and without the
       # project, then the wheel with --no-deps.
-      - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+      - uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
@@ -304,7 +304,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+      - uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
           versions: locked
           python-version: ${{ matrix.python-version }}
