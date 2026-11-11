@@ -1,12 +1,23 @@
+import hashlib
+import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+import tomllib
+import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 from functools import partial
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
+from urllib.parse import unquote
 
 import inspect_ai.model._providers.providers  # noqa: F401  registers @modelapi providers
 import pytest
@@ -40,9 +51,16 @@ from inspect_flow._launcher.pip_string import (
 )
 from inspect_flow._launcher.venv import _create_venv, venv_launch
 from local_eval.noop import noop
+from packaging.tags import sys_tags
 from rich.console import Console
 
 _test_action = RunAction("test")
+
+
+@pytest.fixture(autouse=True)
+def no_uv_python(monkeypatch: pytest.MonkeyPatch) -> None:
+    # CI's setup-uv sets UV_PYTHON, which outranks VIRTUAL_ENV in `uv pip`.
+    monkeypatch.delenv("UV_PYTHON", raising=False)
 
 
 def test_no_dependencies() -> None:
@@ -64,7 +82,14 @@ def test_no_dependencies() -> None:
             assert mock_run.call_count == 2
             args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert len(args) == 5
+            assert args[5:9] == [
+                "--python",
+                f"{temp_dir}/.venv/bin/python",
+                "--project",
+                Path.cwd().as_posix(),
+            ]
+            # A pinned inspect-ai is also a constraint.
+            assert set(args[9::2]) <= {"--constraints", "--build-constraints"}
             assert args[:4] == [
                 "uv",
                 "pip",
@@ -893,8 +918,11 @@ def test_241_not_found() -> None:
             assert args == [
                 "uv",
                 "venv",
+                ".venv",
                 "--python",
                 "3.11",
+                "--project",
+                "/",
             ]
 
             args = mock_run.mock_calls[1].args[0]
@@ -980,6 +1008,10 @@ def test_inspect_ai_version_via_additional_dependencies() -> None:
                 "install",
                 "inspect-ai==0.3.100",
                 f"-e {flow_path}",
+                "--python",
+                f"{temp_dir}/.venv/bin/python",
+                "--project",
+                Path.cwd().as_posix(),
             ]
 
 
@@ -1014,7 +1046,7 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
             assert mock_run.call_count == 3
 
             install_req_args = mock_run.mock_calls[1].args[0]
-            assert install_req_args == [
+            assert install_req_args[:5] == [
                 "uv",
                 "pip",
                 "install",
@@ -1024,11 +1056,12 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
 
             last_args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert last_args == [
+            assert last_args[:5] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
+                "--python",
             ]
 
 
@@ -1067,15 +1100,17 @@ def test_inspect_ai_version_via_dependency_file_pyproject() -> None:
                     action=_test_action,
                 )
 
-            assert mock_run.call_count == 2
+            # The workspace lock lookup, `uv sync` and `uv pip install`.
+            assert mock_run.call_count == 3
 
             last_args = mock_run.call_args.args[0]
             flow_path = str((Path(__file__).parents[1]).resolve())
-            assert last_args == [
+            assert last_args[:5] == [
                 "uv",
                 "pip",
                 "install",
                 f"-e {flow_path}",
+                "--python",
             ]
 
 
@@ -1404,3 +1439,850 @@ def test_freeze_targets_explicit_interpreter_not_virtual_env() -> None:
         # decoy venv, so its presence proves the freeze used --python, not
         # VIRTUAL_ENV. Dropping --python would freeze the empty venv instead.
         assert "pydantic==" in requirements
+
+
+SEVEN_DAYS = timedelta(days=7)
+SIX_HOURS = timedelta(hours=6)
+# A package copied from the host: no cooldown.
+HOST_PIN = False
+DEFAULTS = {
+    "*": SEVEN_DAYS,
+    "anthropic": SIX_HOURS,
+    "inspect-ai": SIX_HOURS,
+    "inspect-scout": SIX_HOURS,
+    "openai": SIX_HOURS,
+}
+USER_CUTOFF = "2026-01-02T03:04:05Z"
+USER_OPENAI_CUTOFF = "2026-01-03T03:04:05Z"
+USER_SETTINGS = (
+    f'exclude-newer = "{USER_CUTOFF}"\n'
+    f'[exclude-newer-package]\nopenai = "{USER_OPENAI_CUTOFF}"\n'
+)
+PROJECT = '[project]\nname = "p"\nversion = "0.1"\nrequires-python = ">=3.10"\n'
+
+UvCommand = tuple[list[str], dict[str, str], str]
+
+
+@pytest.fixture
+def uv_env(tmp_path: Path) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if not k.startswith("UV_")}
+    env.pop("XDG_CONFIG_HOME", None)
+    env["HOME"] = str(tmp_path / "home")
+    env["XDG_CONFIG_DIRS"] = str(tmp_path / "system_config")
+    return env
+
+
+def _uv_commands(
+    spec: FlowSpec, base_dir: Path, env: dict[str, str]
+) -> list[UvCommand]:
+    # A sibling, as in production: uv must not find base_dir's settings by
+    # walking up from the temp dir.
+    temp_dir = base_dir.with_name(base_dir.name + "-venv")
+    temp_dir.mkdir(exist_ok=True)
+
+    real_run = subprocess.run
+
+    def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        # Queries that change nothing run for real.
+        if args[:2] == ["uv", "workspace"] or args[0] != "uv":
+            return real_run(args, **kwargs)
+        return subprocess.CompletedProcess(
+            args=args, returncode=0, stdout="mocked output"
+        )
+
+    with patch("subprocess.run", side_effect=run) as mock_run:
+        _create_venv(
+            spec=spec,
+            base_dir=base_dir.as_posix(),
+            temp_dir=temp_dir.as_posix(),
+            env=env,
+            dry_run=False,
+            action=_test_action,
+        )
+    return [
+        (c.args[0], c.kwargs["env"], c.kwargs["cwd"]) for c in mock_run.call_args_list
+    ]
+
+
+def _command(commands: list[UvCommand], *prefix: str) -> UvCommand:
+    (command,) = [c for c in commands if c[0][: len(prefix)] == list(prefix)]
+    return command
+
+
+def _flow_settings(command: UvCommand) -> dict[str, Any]:
+    config_dir = command[1]["XDG_CONFIG_DIRS"].split(os.pathsep)[0]
+    config_file = Path(config_dir) / "uv" / "uv.toml"
+    return tomllib.loads(config_file.read_text())
+
+
+def _flow_cooldowns(command: UvCommand) -> dict[str, timedelta | bool]:
+    # The age of each cutoff in flow's settings, to the minute; "*" for all
+    # packages, and False for none.
+    settings = _flow_settings(command)
+    cutoffs = {"*": settings["exclude-newer"]} if "exclude-newer" in settings else {}
+    cutoffs.update(settings.get("exclude-newer-package", {}))
+    now = datetime.now(UTC)
+    return {
+        package: cutoff
+        if cutoff is False
+        else timedelta(
+            minutes=round((now - datetime.fromisoformat(cutoff)).total_seconds() / 60)
+        )
+        for package, cutoff in cutoffs.items()
+    }
+
+
+def _project_option(command: UvCommand) -> str | None:
+    args = command[0]
+    return args[args.index("--project") + 1] if "--project" in args else None
+
+
+def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    spec = FlowSpec(
+        log_dir=(tmp_path / "logs").as_posix(),
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name", model="anthropic/claude-x")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    venv = _command(commands, "uv", "venv")
+    # Without a dependency file, uv reads the settings where the spec is.
+    assert _project_option(venv) == str(tmp_path)
+    # `uv venv` installs seed packages when UV_VENV_SEED is set.
+    assert _flow_cooldowns(venv) == DEFAULTS
+    seeded = (venv[0], {**venv[1], "UV_VENV_SEED": "1"}, venv[2])
+    assert _uv_cutoffs(_uv_settings_output(seeded))["*"] == {
+        _flow_settings(venv)["exclude-newer"]
+    }
+    install = _command(commands, "uv", "pip", "install")
+    assert _project_option(install) == str(tmp_path)
+    # anthropic and inspect-ai are pinned to the versions installed here.
+    inspect_ai = HOST_PIN if "==" in get_pip_string("inspect-ai") else SIX_HOURS
+    assert _flow_cooldowns(install) == {
+        **DEFAULTS,
+        "anthropic": HOST_PIN,
+        "inspect-ai": inspect_ai,
+    }
+    # Recording the venv's packages uses only the user's own uv settings.
+    compiled = _command(commands, "uv", "pip", "compile")
+    assert compiled[1] == uv_env
+    assert "--project" not in compiled[0]
+
+
+def _wheel(
+    directory: Path,
+    name: str,
+    version: str,
+    tag: str = "py3-none-any",
+    metadata: str = "",
+) -> None:
+    # A wheel with metadata only, for a local package index.
+    dist_info = f"{name.replace('-', '_')}-{version}.dist-info"
+    files = {
+        f"{dist_info}/METADATA": f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n{metadata}",
+        f"{dist_info}/WHEEL": f"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: {tag}\n",
+    }
+    record = "".join(f"{n},,\n" for n in [*files, f"{dist_info}/RECORD"])
+    directory.mkdir(parents=True, exist_ok=True)
+    wheel = directory / f"{name.replace('-', '_')}-{version}-{tag}.whl"
+    with zipfile.ZipFile(wheel, "w") as z:
+        for n, text in files.items():
+            z.writestr(n, text)
+        z.writestr(f"{dist_info}/RECORD", record)
+
+
+@contextmanager
+def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator[str]:
+    # A PEP 691 index of the wheels, with each one's upload time, or none.
+    class Handler(BaseHTTPRequestHandler):
+        def do_HEAD(self) -> None:
+            self.do_GET(body=False)
+
+        def do_GET(self, body: bool = True) -> None:
+            base = f"http://{self.headers['Host']}"
+            kind, name = unquote(self.path).strip("/").split("/")
+            if kind == "files":
+                content = (wheels / name).read_bytes()
+                content_type = "application/octet-stream"
+            else:
+                files = [
+                    {
+                        "filename": w.name,
+                        "url": f"{base}/files/{w.name}",
+                        "hashes": {
+                            "sha256": hashlib.sha256(w.read_bytes()).hexdigest()
+                        },
+                        **(
+                            {"upload-time": upload_times[w.name]}
+                            if upload_times[w.name]
+                            else {}
+                        ),
+                    }
+                    for w in wheels.glob(f"{name.replace('-', '_')}-*.whl")
+                ]
+                index = {"meta": {"api-version": "1.1"}, "name": name, "files": files}
+                content = json.dumps(index).encode()
+                content_type = "application/vnd.pypi.simple.v1+json"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            if body:
+                self.wfile.write(content)
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}/simple"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def _install_copied_dep(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    host_version: str,
+    upload_times: dict[str, str | None],
+    uv_toml: str = "",
+) -> subprocess.CompletedProcess[str]:
+    # Runs flow's final install of copied-dep, copied from the host at
+    # `host_version`, from an index of the given versions and upload times.
+    wheels = tmp_path / "wheels"
+    for version in upload_times:
+        _wheel(wheels, "copied-dep", version)
+    host = tmp_path / "host" / f"copied_dep-{host_version}.dist-info"
+    host.mkdir(parents=True)
+    (host / "METADATA").write_text(
+        f"Metadata-Version: 2.1\nName: copied-dep\nVersion: {host_version}\n"
+    )
+    monkeypatch.syspath_prepend(str(host.parent))
+    monkeypatch.delenv("INSPECT_EVAL_MODEL", raising=False)
+    base_dir = tmp_path / "spec"
+    base_dir.mkdir()
+    (base_dir / "uv.toml").write_text(uv_toml)
+    venv = base_dir.with_name("spec-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="copied_dep/task")],
+    )
+    files = {
+        f"copied_dep-{version}-py3-none-any.whl": time
+        for version, time in upload_times.items()
+    }
+
+    with _simple_index(wheels, files) as index_url:
+        uv_env.update(UV_INDEX_URL=index_url, UV_NO_CACHE="1")
+        args, env, cwd = _command(
+            _uv_commands(spec, base_dir, uv_env), "uv", "pip", "install"
+        )
+        pin = f"copied_dep=={host_version}"
+        assert pin in args
+        return subprocess.run(
+            ["uv", "pip", "install", pin] + args[args.index("--python") :],
+            env=env,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+
+
+def _an_hour_ago() -> str:
+    return (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+
+
+@pytest.mark.parametrize("override", [False, True])
+def test_host_pin_exempt_only_at_its_version(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    override: bool,
+) -> None:
+    # The host has copied-dep 2.0, which the index lists with no upload date, as
+    # a private index might. 3.0 was uploaded an hour ago. The exemption must
+    # not let an override install the new release.
+    result = _install_copied_dep(
+        tmp_path,
+        uv_env,
+        monkeypatch,
+        "2.0",
+        {"2.0": None, "3.0": _an_hour_ago()},
+        'override-dependencies = ["copied-dep==3.0"]\n' if override else "",
+    )
+
+    if override:
+        assert result.returncode != 0
+        assert "copied-dep==3.0" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
+        assert "+ copied-dep==2.0" in result.stderr
+
+
+@pytest.mark.parametrize("host_version", ["2.0", "2.0+cu128"])
+def test_host_pin_keeps_local_label(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    host_version: str,
+) -> None:
+    # `==2.0` also matches 2.0+cu129, a local build uploaded an hour ago, which
+    # the exemption would let through.
+    result = _install_copied_dep(
+        tmp_path,
+        uv_env,
+        monkeypatch,
+        host_version,
+        {"2.0": None, "2.0+cu128": None, "2.0+cu129": _an_hour_ago()},
+    )
+
+    assert result.returncode == 0, result.stderr
+    installed = [line.strip() for line in result.stderr.splitlines()]
+    assert f"+ copied-dep=={host_version}" in installed
+
+
+def test_install_holds_build_requirements_to_host_versions(
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # overlap-dep is copied from the host at 1.0 and is also a build requirement
+    # of another dependency, as torch is for a CUDA extension. A local index
+    # offers 1.0 and 2.0 of each build requirement.
+    wheels = tmp_path / "wheels"
+    for name in ("overlap-dep", "overlap-other"):
+        for version in ("1.0", "2.0"):
+            _wheel(wheels, name, version)
+    host = tmp_path / "host" / "overlap_dep-1.0.dist-info"
+    host.mkdir(parents=True)
+    (host / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: overlap-dep\nVersion: 1.0\n"
+    )
+    monkeypatch.syspath_prepend(str(host.parent))
+    monkeypatch.delenv("INSPECT_EVAL_MODEL", raising=False)
+    package = tmp_path / "overlap-package"
+    shutil.copytree(Path(__file__).parent / "fixtures" / "build_overlap", package)
+    user_constraints = tmp_path / "user-build-constraints.txt"
+    user_constraints.write_text("overlap-other<2\n")
+    uv_env.update(
+        UV_NO_CACHE="1",
+        UV_NO_INDEX="1",
+        UV_FIND_LINKS=str(wheels),
+        UV_BUILD_CONSTRAINT=str(user_constraints),
+    )
+    # A space in flow's temp dir must not split the build-constraints file name.
+    base_dir = tmp_path / "spec dir"
+    base_dir.mkdir()
+    spec = FlowSpec(
+        dependencies=FlowDependencies(
+            dependency_file="no_file", additional_dependencies=[str(package)]
+        ),
+        tasks=[FlowTask(name="overlap_dep/task")],
+    )
+    args, env, cwd = _command(
+        _uv_commands(spec, base_dir, uv_env), "uv", "pip", "install"
+    )
+    assert "overlap_dep==1.0" in args
+
+    # Install the overlapping packages with the captured options, offline.
+    python = Path(args[args.index("--python") + 1])
+    subprocess.run(
+        ["uv", "venv", str(python.parents[1]), "--python", sys.executable],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    packages = [a for a in args[3 : args.index("--python")] if "overlap" in a]
+    subprocess.run(
+        ["uv", "pip", "install", *packages, *args[args.index("--python") :]],
+        env=env,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
+
+    # The build could take overlap-dep 2.0, but is held to the host's 1.0; the
+    # user's constraint still holds overlap-other.
+    seen = (package / "build-saw.txt").read_text()
+    assert seen == repr({"overlap-dep": "1.0", "overlap-other": "1.0"})
+    frozen = subprocess.run(
+        ["uv", "pip", "freeze", "--python", str(python)],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "overlap-dep==1.0" in frozen.splitlines()
+
+
+def test_cooldown_requirements_txt(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    assert _project_option(_command(commands, "uv", "venv")) == str(tmp_path)
+    requirements = _command(commands, "uv", "pip", "install", "-r")
+    assert _project_option(requirements) == str(tmp_path)
+    assert _flow_cooldowns(requirements) == DEFAULTS
+    (install,) = [c for c in commands[1:] if c[0][3] != "-r"]
+    assert _project_option(install) == str(tmp_path)
+    assert _flow_cooldowns(install) == DEFAULTS
+
+
+def test_install_stays_in_venv(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    # The project's uv settings must not choose another environment.
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    (tmp_path / "uv.toml").write_text(f"[pip]\npython = {json.dumps(sys.executable)}\n")
+    venv = tmp_path.with_name(tmp_path.name + "-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    installs = [
+        c
+        for c in _uv_commands(spec, tmp_path, uv_env)
+        if c[0][:3] == ["uv", "pip", "install"]
+    ]
+
+    assert len(installs) == 2
+    for args, env, _ in installs:
+        # A dry run of an unknown package names the environment uv would install
+        # into, offline. uv omits the name for a `.venv` in the working directory.
+        result = subprocess.run(
+            ["uv", "pip", "install", "no-such-package"]
+            + args[args.index("--python") :]
+            + ["--offline", "--dry-run"],
+            env=env,
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        target = re.search(r"environment at: (.+)", result.stderr)
+        assert target, result.stderr
+        assert Path(target[1]).resolve() == venv.resolve()
+
+
+def test_install_uses_venv_python_version(
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A project `python-version` must not choose wheels for another interpreter.
+    # The only foreign wheel is for Python 3.9 on this platform. `patchy` needs
+    # this interpreter's patch version, and so does its dependency `leaf`.
+    wheels = tmp_path / "wheels"
+    _wheel(wheels, "foreign", "1.0", f"cp39-cp39-{next(sys_tags()).platform}")
+    full = ".".join(map(str, sys.version_info[:3]))
+    _wheel(
+        wheels,
+        "patchy",
+        "1.0",
+        metadata=f'Requires-Python: >={full}\nRequires-Dist: leaf; python_full_version >= "{full}"\n',
+    )
+    _wheel(wheels, "leaf", "1.0")
+    uv_env.update(UV_NO_INDEX="1", UV_FIND_LINKS=str(wheels), UV_NO_CACHE="1")
+    (tmp_path / "requirements.txt").write_text("inspect-ai\n")
+    (tmp_path / "uv.toml").write_text('[pip]\npython-version = "3.9"\n')
+    venv = tmp_path.with_name(tmp_path.name + "-venv") / ".venv"
+    subprocess.run(
+        ["uv", "venv", str(venv), "--python", sys.executable, "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    # uv sometimes records only the minor version.
+    config = venv / "pyvenv.cfg"
+    minor = ".".join(map(str, sys.version_info[:2]))
+    config.write_text(
+        re.sub(
+            r"(?m)^version_info = .*$", f"version_info = {minor}", config.read_text()
+        )
+    )
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="requirements.txt"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    # The version query runs with flow's environment, which has no PYTHONHOME,
+    # not with this process's broken one.
+    monkeypatch.setenv("PYTHONHOME", str(tmp_path / "no-python-home"))
+    installs = [
+        c
+        for c in _uv_commands(spec, tmp_path, uv_env)
+        if c[0][:3] == ["uv", "pip", "install"]
+    ]
+
+    assert len(installs) == 2
+    for args, env, cwd in installs:
+        options = args[args.index("--python") :]
+        version = options.index("--python-version")
+        without_version = options[:version] + options[version + 2 :]
+        for uv_options, selected in ((options, False), (without_version, True)):
+            result = subprocess.run(
+                ["uv", "pip", "install", "foreign==1.0"]
+                + uv_options
+                + ["--offline", "--dry-run"],
+                env=env,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+            )
+            assert (result.returncode == 0) == selected, result.stderr
+        result = subprocess.run(
+            ["uv", "pip", "install", "patchy==1.0"]
+            + options
+            + ["--offline", "--dry-run"],
+            env=env,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "+ leaf==1.0" in result.stderr
+
+
+@pytest.mark.parametrize("locked", [False, True])
+def test_cooldown_sync(tmp_path: Path, uv_env: dict[str, str], locked: bool) -> None:
+    (tmp_path / "pyproject.toml").write_text(PROJECT)
+    if locked:
+        (tmp_path / "uv.lock").write_text("")
+    spec = FlowSpec(python_version="3.11", tasks=[FlowTask(name="task_name")])
+    sync = _command(_uv_commands(spec, tmp_path, uv_env), "uv", "sync")
+
+    assert _project_option(sync) == str(tmp_path)
+    assert ("--frozen" in sync[0]) == locked
+    # A lock does not cover build requirements, so a locked sync gets the default too.
+    assert _flow_cooldowns(sync) == DEFAULTS
+
+
+def _locked_workspace(tmp_path: Path, uv_env: dict[str, str]) -> Path:
+    # A workspace and its lock, with no dependencies; returns the member.
+    root = tmp_path / "workspace"
+    member = root / "member"
+    member.mkdir(parents=True)
+    workspace = '[tool.uv.workspace]\nmembers = ["member"]\n'
+    (root / "pyproject.toml").write_text(PROJECT.replace('"p"', '"root"') + workspace)
+    (member / "pyproject.toml").write_text(PROJECT)
+    uv_env.update(
+        UV_CACHE_DIR=str(tmp_path / "cache"), VIRTUAL_ENV=str(tmp_path / "venv")
+    )
+    subprocess.run(
+        ["uv", "lock", "--project", str(member), "--offline"],
+        env=uv_env,
+        check=True,
+        capture_output=True,
+    )
+    return member
+
+
+def test_workspace_member_lock_is_frozen(
+    tmp_path: Path, uv_env: dict[str, str]
+) -> None:
+    # A workspace member uses the lock at the workspace root.
+    member = _locked_workspace(tmp_path, uv_env)
+    root = member.parent
+    lock = (root / "uv.lock").read_text()
+    spec = FlowSpec(python_version=sys.executable, tasks=[FlowTask(name="task_name")])
+    args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
+
+    assert "--frozen" in args
+    subprocess.run(
+        args + ["--offline"], env=env, cwd=cwd, check=True, capture_output=True
+    )
+    assert (root / "uv.lock").read_text() == lock
+
+
+@pytest.mark.parametrize("mode", ["--locked", "--frozen"])
+def test_explicit_lock_mode_is_kept(
+    tmp_path: Path, uv_env: dict[str, str], mode: str
+) -> None:
+    member = _locked_workspace(tmp_path, uv_env)
+    spec = FlowSpec(
+        python_version=sys.executable,
+        dependencies=FlowDependencies(uv_sync_args=[mode]),
+        tasks=[FlowTask(name="task_name")],
+    )
+    args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
+
+    assert [a for a in args if a in ("--locked", "--frozen")] == [mode]
+    # uv accepts the arguments.
+    subprocess.run(
+        args + ["--offline", "--show-settings"],
+        env=env,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_env_lock_mode_is_kept(tmp_path: Path, uv_env: dict[str, str]) -> None:
+    # UV_LOCKED rejects a stale lock; flow's --frozen would accept it.
+    member = _locked_workspace(tmp_path, uv_env)
+    pyproject = member / "pyproject.toml"
+    pyproject.write_text(pyproject.read_text().replace(">=3.10", ">=3.11"))
+    uv_env["UV_LOCKED"] = "1"
+    spec = FlowSpec(python_version=sys.executable, tasks=[FlowTask(name="task_name")])
+    args, env, cwd = _command(_uv_commands(spec, member, uv_env), "uv", "sync")
+
+    result = subprocess.run(
+        args + ["--offline"], env=env, cwd=cwd, capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "needs to be updated" in result.stderr
+
+
+# Valid to uv, but not to Python's TOML parser: Flow must not read the file.
+UV_ONLY_SYNTAX = 'exclude-newer-package = { openai = "1 day", }\n'
+
+
+@pytest.mark.parametrize("discovery", [True, False])
+def test_system_config_turns_off_default(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    recording_console: Console,
+    discovery: bool,
+) -> None:
+    system = tmp_path / "system_config" / "uv" / "uv.toml"
+    system.parent.mkdir(parents=True)
+    system.write_text(UV_ONLY_SYNTAX)
+    if not discovery:
+        uv_env["UV_NO_SYSTEM_CONFIG"] = "1"
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    warned = str(system) in recording_console.export_text()
+    if discovery:
+        assert warned
+        # Flow leaves the system file to work alone.
+        assert all(env == uv_env for _, env, _ in commands)
+        output = _uv_settings_output(_command(commands, "uv", "pip", "install"))
+        assert _uv_cutoffs(output) == {"*": set(), "openai": set(), "anthropic": set()}
+    else:
+        # uv ignores the system file, so Flow neither reads it nor warns.
+        assert not warned
+        assert _flow_cooldowns(_command(commands, "uv", "venv")) == DEFAULTS
+
+
+@pytest.mark.parametrize("option", ["env", "sync_args"])
+def test_explicit_config_turns_off_default(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    recording_console: Console,
+    option: str,
+) -> None:
+    (tmp_path / "pyproject.toml").write_text(PROJECT)
+    custom = tmp_path / "custom.toml"
+    custom.write_text(INDEX_ONLY + UV_ONLY_SYNTAX)
+    if option == "env":
+        uv_env["UV_CONFIG_FILE"] = str(custom)
+    spec = FlowSpec(
+        python_version="3.11",
+        dependencies=FlowDependencies(
+            uv_sync_args=f"--config-file={custom}" if option == "sync_args" else None
+        ),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+
+    assert str(custom) in recording_console.export_text()
+    sync = _command(commands, "uv", "sync")
+    # uv gets the file as the user named it, and no defaults.
+    assert sync[1] == uv_env
+    output = _uv_settings_output(sync)
+    assert "https://example.invalid/simple" in output
+    assert _uv_cutoffs(output) == {"*": set(), "openai": set(), "anthropic": set()}
+    install = _command(commands, "uv", "pip", "install")
+    if option == "env":
+        assert install[1] == uv_env
+    else:
+        # `--config-file` in uv_sync_args reaches only `uv sync`.
+        assert _flow_cooldowns(install)["*"] == SEVEN_DAYS
+
+
+def _uv_settings_output(command: UvCommand) -> str:
+    args, env, cwd = command
+    return subprocess.run(
+        [*args, "--offline", "--show-settings"],
+        env=env,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+
+def _uv_cutoffs(output: str) -> dict[str, set[str]]:
+    # The cutoffs uv itself settles on, from its --show-settings output.
+    timestamp = r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)"
+    return {
+        "*": set(re.findall(r"\bglobal:[^\"]*?" + timestamp, output)),
+        **{
+            p: set(re.findall(f'"{p}"[^"]*?' + timestamp, output))
+            for p in ("anthropic", "openai")
+        },
+    }
+
+
+PROJECT_SETTINGS = (
+    PROJECT
+    + f'[tool.uv]\nexclude-newer = "{USER_CUTOFF}"\n'
+    + f'[tool.uv.exclude-newer-package]\nopenai = "{USER_OPENAI_CUTOFF}"\n'
+)
+NO_FILE: dict[str, Any] = {"dependency_file": "no_file"}
+INDEX_ONLY = 'index-url = "https://example.invalid/simple"\n'
+
+
+def test_relative_uv_project(
+    tmp_path: Path, uv_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A relative UV_PROJECT is relative to the caller's directory, not the
+    # spec's or flow's temp dir.
+    caller = tmp_path / "caller"
+    (caller / "proj").mkdir(parents=True)
+    (caller / "proj" / "pyproject.toml").write_text(PROJECT_SETTINGS)
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    monkeypatch.chdir(caller)
+    uv_env["UV_PROJECT"] = "proj"
+    spec = FlowSpec(
+        dependencies=FlowDependencies(dependency_file="no_file"),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, spec_dir, uv_env)
+
+    for command in (
+        _command(commands, "uv", "venv"),
+        _command(commands, "uv", "pip", "install"),
+    ):
+        assert command[2] != str(caller)
+        assert _uv_cutoffs(_uv_settings_output(command))["*"] == {USER_CUTOFF}
+
+
+@pytest.mark.parametrize(
+    "files,env,dependencies,user_global,user_openai,flow_anthropic",
+    [
+        pytest.param(
+            {"pyproject.toml": PROJECT_SETTINGS}, {}, {}, True, True, True, id="project"
+        ),
+        pytest.param(
+            {
+                "pyproject.toml": PROJECT_SETTINGS
+                + '[tool.uv.workspace]\nmembers = ["member"]\n',
+                "member/pyproject.toml": PROJECT.replace('"p"', '"member"')
+                + "[tool.uv]\npackage = true\n",
+            },
+            {},
+            {"dependency_file": "member/pyproject.toml"},
+            True,
+            True,
+            True,
+            id="workspace_root",
+        ),
+        pytest.param(
+            {"proj/pyproject.toml": PROJECT_SETTINGS},
+            {"UV_PROJECT": "{tmp}/proj"},
+            NO_FILE,
+            True,
+            True,
+            True,
+            id="uv_project",
+        ),
+        pytest.param(
+            {"home/.config/uv/uv.toml": USER_SETTINGS},
+            {},
+            NO_FILE,
+            True,
+            True,
+            True,
+            id="user_home",
+        ),
+        pytest.param(
+            {}, {"UV_EXCLUDE_NEWER": USER_CUTOFF}, NO_FILE, True, False, True, id="env"
+        ),
+        pytest.param(
+            {"pyproject.toml": PROJECT},
+            {},
+            {"uv_sync_args": f"--exclude-newer-package openai={USER_OPENAI_CUTOFF}"},
+            False,
+            True,
+            True,
+            id="sync_args_package",
+        ),
+        pytest.param(
+            {"uv.toml": INDEX_ONLY + USER_SETTINGS},
+            {},
+            {},
+            True,
+            True,
+            True,
+            id="spec_dir_uv_toml",
+        ),
+        pytest.param(
+            {"uv.toml": INDEX_ONLY + USER_SETTINGS},
+            {},
+            NO_FILE,
+            True,
+            True,
+            True,
+            id="spec_dir_uv_toml_no_file",
+        ),
+    ],
+)
+def test_user_settings_override_defaults(
+    tmp_path: Path,
+    uv_env: dict[str, str],
+    files: dict[str, str],
+    env: dict[str, str],
+    dependencies: dict[str, Any],
+    user_global: bool,
+    user_openai: bool,
+    flow_anthropic: bool,
+) -> None:
+    def resolve(value: Any) -> Any:
+        if isinstance(value, list):
+            return [resolve(v) for v in value]
+        return (
+            value.replace("{tmp}", str(tmp_path)) if isinstance(value, str) else value
+        )
+
+    for name, content in files.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(content)
+    uv_env.update({k: resolve(v) for k, v in env.items()})
+    spec = FlowSpec(
+        python_version="3.11",
+        dependencies=FlowDependencies(
+            **{k: resolve(v) for k, v in dependencies.items()}
+        ),
+        tasks=[FlowTask(name="task_name")],
+    )
+    commands = _uv_commands(spec, tmp_path, uv_env)
+    sync = [c for c in commands if c[0][:2] == ["uv", "sync"]]
+    command = sync[0] if sync else _command(commands, "uv", "pip", "install")
+
+    flow = _flow_settings(command)
+    flow_packages = flow["exclude-newer-package"]
+    output = _uv_settings_output(command)
+    if any(INDEX_ONLY in content for content in files.values()):
+        assert "https://example.invalid/simple" in output
+    assert _uv_cutoffs(output) == {
+        "*": {USER_CUTOFF if user_global else flow["exclude-newer"]},
+        "openai": {USER_OPENAI_CUTOFF if user_openai else flow_packages["openai"]},
+        "anthropic": {flow_packages["anthropic"]} if flow_anthropic else set(),
+    }
