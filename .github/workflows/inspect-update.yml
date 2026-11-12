@@ -414,10 +414,11 @@ jobs:
                summarising the work as done.
                - Advance the reconciled marker in pyproject.toml:
                  [tool.inspect_flow] inspect-reconciled-version = "${{ needs.gate.outputs.latest }}"
-               - Upgrade all locked dependencies (`uv lock --upgrade` then
-                 `uv sync`) so the pinned CI checks run against the reconciled
-                 inspect-ai release and the latest of everything else, rather
-                 than stale pins. Do NOT raise the `inspect-ai>=` dependency
+               - Move inspect-ai in the lock to the reconciled release
+                 (`uv lock --upgrade-package inspect-ai` then `uv sync`) so the
+                 pinned CI checks run against it. Leave every other locked
+                 version as it is: Dependabot updates those under the 7-day
+                 cooldown. Do NOT raise the `inspect-ai>=` dependency
                  floor unless flow would be completely broken on older
                  versions.
                - Regenerate the generated types after the upgrade
@@ -428,7 +429,7 @@ jobs:
                  against the locked inspect-ai and fails if it differs.
                - Verify with `ruff format`, `ruff check --fix`, `pyright`, and
                  the relevant tests before committing.
-               - If the full upgrade cannot produce a green build because a
+               - If the inspect-ai upgrade cannot produce a green build because a
                  dependency has not caught up to the reconciled release (e.g.
                  inspect-scout still imports a symbol inspect-ai renamed), do
                  NOT commit a broken lock. Hold the offending package(s) back at
@@ -808,7 +809,7 @@ jobs:
             printf '### Inspect and apply\n\nThis run also opens a draft PR from `%s`, labelled `inspect-update` and linked here with `Fixes #%s`. Its branch holds only a placeholder, `%s`, and none of these commits. On that branch, in a worktree of %s that you control, before running anything from these commits:\n\n' "$BRANCH" "$ISSUE" "$PLACEHOLDER" "$REPO"
             printf '```sh\ngit fetch origin\ngit bundle verify %s/commits.bundle\ngit fetch %s/commits.bundle HEAD:%s\ntest "$(git rev-parse %s)" = %s\ngit log --stat -p %s..%s\ngit switch %s\ngit merge --no-edit %s\ngit rm -q %s\ngit commit -q -m "chore: remove the maintainer handoff placeholder"\ngit merge --no-edit origin/main\n```\n\n' \
               "$dir" "$dir" "$ref" "$ref" "$head" "$START" "$ref" "$BRANCH" "$ref" "$PLACEHOLDER"
-            printf 'Read every line: workflows run with this repository'"'"'s secrets and tokens, and agent instructions and settings steer every later agent run. If the merge of `origin/main` conflicts on `uv.lock`, re-run `uv lock --upgrade` rather than merging it by hand.\n\n'
+            printf 'Read every line: workflows run with this repository'"'"'s secrets and tokens, and agent instructions and settings steer every later agent run. If the merge of `origin/main` conflicts on `uv.lock`, take `origin/main`'"'"'s `uv.lock` and re-run `uv lock --upgrade-package inspect-ai` rather than merging it by hand.\n\n'
             printf '### Tests and review\n\n`uv sync --frozen`, `make check`, `pytest`, and `python src/inspect_flow/_types/type_gen.py` leaving no diff (the check-type-gen CI job), then review it as you would any workflow change.\n\n'
             printf '### PR\n\nPush the branch once the tests pass, retitle the draft PR and replace its body with the agent'"'"'s `pr-title.txt` and `pr-body.md` (keep `Fixes #%s`, so merging it closes this issue), then mark it ready. The placeholder fails the required `py-test` checks until it is deleted. If this run reports that the draft PR was not opened, follow the recovery it gives. Until this issue is closed it carries the `maintainer-handoff` label and the weekly run starts no newer release; inspect-ai %s stays claimed by this issue'"'"'s title either way.\n' "$ISSUE" "$LATEST"
           } >"$land/maintainer-handoff.md"
