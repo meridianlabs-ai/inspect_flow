@@ -113,8 +113,7 @@ jobs:
     # Node tooling:          corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile
     with:
       provision: |
-        uv venv --python 3.11
-        uv sync --dev
+        uv sync --frozen --python 3.11
     uses: meridianlabs-ai/agents/.github/workflows/claude-review.yml@main
     # The machine account's secrets, for the gate's deterministic ack/stage
     # steps (eyes reaction + board stage) and the land job's posts (the
