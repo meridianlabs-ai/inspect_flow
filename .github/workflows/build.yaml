@@ -261,8 +261,8 @@ jobs:
                   f"editable packages ({len(bad)} entries above)."
               )
           print(f"uv.lock: {len(lock.get('package', []))} packages, all from PyPI or editable here.")
-      # The build toolchain that publish.yaml uses, pinned with hashes. To
-      # update the file, see publish.yaml.
+      # The build toolchain that release.yaml uses, pinned with hashes. To
+      # update the file, see release.yaml.
       - name: Install build toolchain
         uses: meridianlabs-ai/actions/install-python-dependencies@6fe6acfaeb946d22dd4fb673c744a3591eab0d91 # main
         with:
