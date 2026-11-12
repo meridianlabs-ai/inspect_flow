@@ -29,10 +29,13 @@ jobs:
                   release-url: ${{ needs.release-please.outputs.html_url }}
                   release-body: ${{ needs.release-please.outputs.body }}
 
-    # The build toolchain pinned with hashes, as in publish.yaml (which says
-    # how to update the file). The build runs in the shared workflow, in a job
-    # with no publishing credential. It needs the release-please tag, or
-    # hatch-vcs builds a dev version.
+    # The build runs in the shared workflow, in a job with no publishing
+    # credential. It needs the release-please tag, or hatch-vcs builds a dev
+    # version. It uses the hashed scripts/build-dist/requirements.txt, which
+    # Dependabot updates. To update the file by hand, run in scripts/build-dist:
+    #   uv pip compile --no-config --generate-hashes --python-version 3.11 \
+    #     --python-platform x86_64-unknown-linux-gnu --exclude-newer "7 days" \
+    #     --only-binary :all: --upgrade requirements.in -o requirements.txt
     build:
         needs: release-please
         if: ${{ needs.release-please.outputs.release_created }}

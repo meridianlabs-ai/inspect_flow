@@ -6,9 +6,9 @@ days to its uv.lock bumps and leaves that list to uv. Every Python job in
 build.yaml installs from uv.lock through the shared install action. py-build
 builds with the toolchain pinned with hashes in
 scripts/build-dist/requirements.txt, also through the shared action. The
-publish workflows build with the same file in the shared build workflow, and
-their publish jobs only upload that build. Venv
-mode applies the same cooldown by default to the environments it creates.
+release workflow builds with the same file in the shared build workflow, and
+its publish job only uploads that build. Venv mode applies the same cooldown
+by default to the environments it creates.
 """
 
 import re
@@ -29,7 +29,7 @@ REPO = Path(__file__).parents[1]
 GITHUB = REPO / ".github"
 WORKFLOWS = GITHUB / "workflows"
 BUILD = WORKFLOWS / "build.yaml"
-PUBLISH_WORKFLOWS = ["publish.yaml", "release.yaml"]
+RELEASE = "release.yaml"
 INSTALL_ACTION = "meridianlabs-ai/actions/install-python-dependencies@"
 SHARED_BUILD = "meridianlabs-ai/actions/.github/workflows/build-python-dist.yml@"
 PUBLISH_STEPS = ("actions/download-artifact@", "pypa/gh-action-pypi-publish@")
@@ -226,9 +226,8 @@ def test_py_build_builds_between_toolchain_and_locked_install() -> None:
     assert steps == ["install", "build", "install"]
 
 
-@pytest.mark.parametrize("workflow", PUBLISH_WORKFLOWS)
-def test_publish_builds_in_the_shared_workflow(workflow: str) -> None:
-    build = workflow_jobs(workflow)["build"]
+def test_publish_builds_in_the_shared_workflow() -> None:
+    build = workflow_jobs(RELEASE)["build"]
     assert build["uses"].startswith(SHARED_BUILD), build["uses"]
     ref = build["uses"].removeprefix(SHARED_BUILD).split()[0]
     assert re.fullmatch(r"[0-9a-f]{40}", ref), "pin a 40-character SHA"
@@ -236,11 +235,11 @@ def test_publish_builds_in_the_shared_workflow(workflow: str) -> None:
     assert build["permissions"] == {"contents": "read"}
 
 
-@pytest.mark.parametrize("workflow", PUBLISH_WORKFLOWS)
-def test_publish_jobs_only_upload_the_shared_build(workflow: str) -> None:
+def test_publish_jobs_only_upload_the_shared_build() -> None:
+    jobs = workflow_jobs(RELEASE)
     publishers = [
         job
-        for job in workflow_jobs(workflow).values()
+        for job in jobs.values()
         if job.get("permissions", {}).get("id-token") == "write"
     ]
     assert publishers, "no job holds id-token: write"
@@ -251,13 +250,12 @@ def test_publish_jobs_only_upload_the_shared_build(workflow: str) -> None:
         assert "build" in needs(job)
         assert job["steps"][0]["with"] == DOWNLOAD_INPUTS
     # Without the release-please tag, hatch-vcs builds a dev version.
-    if workflow == "release.yaml":
-        build = workflow_jobs(workflow)["build"]
-        assert "release-please" in needs(build)
-        assert all(build["if"] == job["if"] for job in publishers)
+    build = jobs["build"]
+    assert "release-please" in needs(build)
+    assert all(build["if"] == job["if"] for job in publishers)
 
 
-@pytest.mark.parametrize("workflow", ["build.yaml", *PUBLISH_WORKFLOWS])
+@pytest.mark.parametrize("workflow", ["build.yaml", RELEASE])
 def test_no_build_or_install_outside_the_shared_action(workflow: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
     assert not [
