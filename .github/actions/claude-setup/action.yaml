@@ -2,9 +2,9 @@ name: Claude agent environment
 description: >-
   Provision the project so Claude Code agents (dev + reviewer) can actually run
   pytest/ruff/pyright instead of falling back to static checks. Invoked by the
-  workflows that run an agent in this repo (inspect-update.yml,
-  inspect-ai-main-failure.yml). Those jobs hold `id-token: write`, so the
-  install is exactly uv.lock (`--locked`) and restores no Actions cache.
+  workflow that runs an agent in this repo (inspect-update.yml). Its jobs hold
+  `id-token: write`, so the install is exactly uv.lock (`--locked`) and
+  restores no Actions cache.
 
 runs:
   using: composite

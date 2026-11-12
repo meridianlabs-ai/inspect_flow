@@ -1,10 +1,10 @@
 """The dependency cooldown in pyproject.toml and the CI jobs that install from uv.lock.
 
 pyproject.toml holds back releases younger than seven days, or six hours for a
-list of model provider SDKs and Inspect packages. Dependabot applies the seven
-days to its uv.lock bumps and leaves that list to uv. Every Python job in
-build.yaml installs from uv.lock through the shared install action. py-build
-builds with the toolchain pinned with hashes in
+list of model provider SDKs, and does not hold back Inspect packages.
+Dependabot applies the seven days to its uv.lock bumps and leaves those lists to
+uv. Every Python job in build.yaml installs from uv.lock through the shared
+install action. py-build builds with the toolchain pinned with hashes in
 scripts/build-dist/requirements.txt, also through the shared action. The
 release workflow builds with the same file in the shared build workflow, and
 its publish job only uploads that build. Venv mode applies the same cooldown
@@ -21,6 +21,7 @@ import pytest
 import yaml
 from inspect_flow._launcher.uv_settings import (
     DEFAULT_COOLDOWN,
+    NO_COOLDOWN_PACKAGES,
     SHORT_COOLDOWN,
     SHORT_COOLDOWN_PACKAGES,
 )
@@ -73,11 +74,9 @@ def normalize(package: str) -> str:
     return re.sub(r"[-_.]+", "-", package).lower()
 
 
-def six_hour_packages() -> list[str]:
+def packages_with_cooldown(value: str | bool) -> list[str]:
     packages = pyproject()["tool"]["uv"]["exclude-newer-package"]
-    return sorted(
-        normalize(p) for p, cooldown in packages.items() if cooldown == SIX_HOURS
-    )
+    return sorted(normalize(p) for p, cooldown in packages.items() if cooldown == value)
 
 
 def dependabot_uv(directory: str = "/") -> dict[str, Any]:
@@ -136,7 +135,7 @@ def test_exclude_newer_package_entries() -> None:
     for package, cooldown in uv["exclude-newer-package"].items():
         assert normalize(package) in direct, package
         # Otherwise a dated emergency entry, removed before the cooldown passes it.
-        if cooldown != SIX_HOURS:
+        if cooldown != SIX_HOURS and cooldown is not False:
             assert isinstance(cooldown, str), f"{package} = {cooldown!r}"
             age = now - datetime.fromisoformat(cooldown).astimezone(UTC)
             assert timedelta(0) <= age < timedelta(days=7), f"{package} = {cooldown}"
@@ -147,8 +146,13 @@ def test_dependabot_cooldown_matches_pyproject() -> None:
     assert dependabot["cooldown"]["default-days"] == 7
     # inspect-update.yml bumps inspect-ai.
     assert dependabot["ignore"] == [{"dependency-name": "inspect-ai"}]
-    # Dependabot's cooldown counts whole days, so it leaves the 6-hour packages to uv.
-    exempt = [p for p in six_hour_packages() if p != "inspect-ai"]
+    # Dependabot's cooldown counts whole days, so it leaves uv's short or no
+    # cooldown to uv.
+    exempt = sorted(
+        p
+        for p in packages_with_cooldown(SIX_HOURS) + packages_with_cooldown(False)
+        if p != "inspect-ai"
+    )
     assert sorted(dependabot["cooldown"]["exclude"]) == exempt
     groups = dependabot["groups"]
     assert list(groups) == ["six-hour-cooldown", "python-packages"]
@@ -160,7 +164,8 @@ def test_venv_default_cooldown_matches_pyproject() -> None:
     days = int(pyproject()["tool"]["uv"]["exclude-newer"].removesuffix(" days"))
     assert DEFAULT_COOLDOWN == timedelta(days=days)
     assert SHORT_COOLDOWN == timedelta(hours=int(SIX_HOURS.removesuffix(" hours")))
-    assert sorted(SHORT_COOLDOWN_PACKAGES) == six_hour_packages()
+    assert sorted(SHORT_COOLDOWN_PACKAGES) == packages_with_cooldown(SIX_HOURS)
+    assert sorted(NO_COOLDOWN_PACKAGES) == packages_with_cooldown(False)
 
 
 def test_dependabot_build_toolchain_cooldown_matches_pyproject() -> None:

@@ -43,8 +43,9 @@ For this repository:
 - Inspect Flow uses only released inspect_ai: `inspect-ai` comes from PyPI.
   Dependabot ignores it, and `.github/workflows/inspect-update.yml` updates it
   each week.
-- The 6-hour packages are in `[tool.uv.exclude-newer-package]` in
-  `pyproject.toml`.
+- In `[tool.uv.exclude-newer-package]` in `pyproject.toml`, Inspect packages
+  (`inspect-ai`, `inspect-scout`) have no uv cooldown (`false`), and model
+  provider SDKs stay at 6 hours.
 
 ## Checks and tests
 

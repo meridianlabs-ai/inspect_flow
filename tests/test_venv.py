@@ -1448,8 +1448,8 @@ HOST_PIN = False
 DEFAULTS = {
     "*": SEVEN_DAYS,
     "anthropic": SIX_HOURS,
-    "inspect-ai": SIX_HOURS,
-    "inspect-scout": SIX_HOURS,
+    "inspect-ai": False,
+    "inspect-scout": False,
     "openai": SIX_HOURS,
 }
 USER_CUTOFF = "2026-01-02T03:04:05Z"
@@ -1556,13 +1556,8 @@ def test_cooldown_no_file(tmp_path: Path, uv_env: dict[str, str]) -> None:
     }
     install = _command(commands, "uv", "pip", "install")
     assert _project_option(install) == str(tmp_path)
-    # anthropic and inspect-ai are pinned to the versions installed here.
-    inspect_ai = HOST_PIN if "==" in get_pip_string("inspect-ai") else SIX_HOURS
-    assert _flow_cooldowns(install) == {
-        **DEFAULTS,
-        "anthropic": HOST_PIN,
-        "inspect-ai": inspect_ai,
-    }
+    # anthropic is pinned to the version installed here.
+    assert _flow_cooldowns(install) == {**DEFAULTS, "anthropic": HOST_PIN}
     # Recording the venv's packages uses only the user's own uv settings.
     compiled = _command(commands, "uv", "pip", "compile")
     assert compiled[1] == uv_env
