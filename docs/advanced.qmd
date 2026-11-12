@@ -140,7 +140,7 @@ exclude-newer = "7 days"
 openai = "6 hours"
 ```
 
-The default does not apply when Flow records the installed packages in `flow-requirements.txt`. That step uses only your uv settings, so if it builds an editable package's metadata, it can fetch a newer build requirement.
+Recording the installed packages in `flow-requirements.txt` never downloads a build requirement. Editable, local directory, VCS and source archive packages are recorded as `uv pip freeze` lists them, without a `--hash` option. A source archive URL keeps a `#sha256=` digest only when its installer recorded one, which uv does not.
 
 Flow passes its default to uv as the lowest-priority settings, so your uv settings replace it one setting at a time. An `exclude-newer` value replaces the 7-day window, and an `exclude-newer-package` entry replaces the default for that package. The 6-hour entries stay when you set only `exclude-newer`; to apply a stricter rule to those four packages, such as a fixed date or a longer window, give them `exclude-newer-package` entries too. For example, this `pyproject.toml` allows releases at least 1 day old, and any release of `inspect-evals`:
 
