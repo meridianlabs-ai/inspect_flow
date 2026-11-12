@@ -1160,6 +1160,14 @@ def test_402_env_model(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(dependencies) == 1
     assert "openai" in dependencies[0]
 
+    # model_roles do not replace the main model, so it still comes from the env
+    spec = FlowSpec(
+        tasks=[FlowTask(name="task_name", model_roles={"grader": "mockllm/model"})]
+    )
+    dependencies = collect_auto_dependencies(spec)
+    assert len(dependencies) == 1
+    assert "openai" in dependencies[0]
+
 
 def test_411_deduplicate_freeze_requirements() -> None:
     # Test case 1: Duplicate git URLs with and without commit hash
