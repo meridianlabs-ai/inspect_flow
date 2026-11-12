@@ -153,6 +153,22 @@ def test_relative_path_prefix_not_matching() -> None:
     assert _relative_path("/a/b/c/log.eval", "/x/y") == "log.eval"
 
 
+def test_relative_path_prefix_sibling_directory() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b10/log.eval", "/a/b") == "log.eval"
+    assert (
+        _relative_path("s3://bucket/logs2/log.eval", "s3://bucket/logs") == "log.eval"
+    )
+
+
+def test_relative_path_prefix_windows_separators() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("C:\\a\\b\\sub\\log.eval", "C:\\a\\b") == "sub\\log.eval"
+    assert _relative_path("C:\\a\\b10\\log.eval", "C:\\a\\b") == "log.eval"
+
+
 # --- _dest_path ---
 
 
@@ -193,6 +209,16 @@ def test_copy_with_source_prefix(tmp_path: Path) -> None:
     prefix = str(tmp_path / "src")
     [result] = copy([log_path], dest=dest, source_prefix=prefix)
     assert "subdir/test.eval" in result.location
+
+
+def test_copy_with_source_prefix_sibling_directory(tmp_path: Path) -> None:
+    inside = _make_log(tmp_path / "logs" / "run1" / "sub", "a.eval")
+    sibling = _make_log(tmp_path / "logs" / "run10", "b.eval")
+    dest = tmp_path / "dest"
+    prefix = str(tmp_path / "logs" / "run1")
+    copy([inside, sibling], dest=str(dest), source_prefix=prefix)
+    copied = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.eval"))
+    assert copied == ["b.eval", "sub/a.eval"]
 
 
 def test_copy_skips_existing(tmp_path: Path) -> None:

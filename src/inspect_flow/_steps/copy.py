@@ -16,8 +16,10 @@ def _relative_path(location: str, source_prefix: str | None) -> str:
     if source_prefix:
         _, abs_location = split_protocol(absolute_file_path(location))
         _, abs_prefix = split_protocol(absolute_file_path(source_prefix))
-        if abs_location.startswith(abs_prefix):
-            return abs_location.removeprefix(abs_prefix).lstrip("/")
+        abs_prefix = abs_prefix.rstrip("/\\")
+        rest = abs_location[len(abs_prefix) :]
+        if abs_location.startswith(abs_prefix) and rest[:1] in ("/", "\\"):
+            return rest.lstrip("/\\")
     return basename(location)
 
 
