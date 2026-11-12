@@ -2,8 +2,10 @@ import logging
 import subprocess
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 from inspect_ai._util.file import file, filesystem
+from packaging.requirements import InvalidRequirement, Requirement
 
 from inspect_flow._types.flow_types import FlowSpec
 from inspect_flow._util.subprocess_util import run_with_logging
@@ -26,7 +28,9 @@ def write_flow_requirements(
         env=env,
         log_output=False,  # Don't log the full freeze output
     )
-    deduplicated_output = _deduplicate_freeze_requirements(freeze_result.stdout)
+    lines = _deduplicate_freeze_requirements(freeze_result.stdout).strip().splitlines()
+    as_written = [line for line in lines if not _compiles_without_build(line)]
+    to_compile = [line for line in lines if _compiles_without_build(line)]
     with tempfile.NamedTemporaryFile(
         mode="w",
         dir=cwd,
@@ -34,7 +38,7 @@ def write_flow_requirements(
         suffix=".in",
         delete=False,
     ) as f:
-        f.write(deduplicated_output)
+        f.write("".join(f"{line}\n" for line in to_compile))
         requirements_in = Path(f.name)
 
     try:
@@ -49,6 +53,9 @@ def write_flow_requirements(
                 "--no-header",
                 "--no-annotate",
                 "--no-deps",
+                # A source build uses a backend already installed, rather than
+                # fetching one outside the install's release cooldown.
+                "--no-build-isolation",
                 str(requirements_in),
             ],
             cwd=cwd,
@@ -58,6 +65,7 @@ def write_flow_requirements(
         fs = filesystem(spec.log_dir)
         fs.mkdir(spec.log_dir, exist_ok=True)
         with file(spec.log_dir + "/flow-requirements.txt", "w") as f:
+            f.write("".join(f"{line}\n" for line in as_written))
             f.write(compile_result.stdout)
     except subprocess.CalledProcessError as e:
         detail = (e.stderr or e.output or "").strip()
@@ -67,6 +75,18 @@ def write_flow_requirements(
         logger.warning(msg)
     finally:
         requirements_in.unlink()
+
+
+def _compiles_without_build(line: str) -> bool:
+    # uv reads a registry pin's or a wheel's name and version without building;
+    # any other source is built for its metadata, and the compile adds no hash.
+    try:
+        requirement = Requirement(line)
+    except InvalidRequirement:
+        return False  # `-e <url>`
+    if requirement.url is None:
+        return True
+    return urlparse(requirement.url).path.endswith(".whl")
 
 
 def _deduplicate_freeze_requirements(freeze_output: str) -> str:
