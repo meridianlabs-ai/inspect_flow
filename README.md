@@ -42,7 +42,7 @@
 | src/inspect\_flow/\_launcher/launch.py             |       53 |        1 |       20 |        1 |     97.26% |        91 |
 | src/inspect\_flow/\_launcher/pip\_string.py        |       75 |       26 |       28 |        4 |     55.34% |20-24, 87-88, 95-105, 110-\>112, 115-132 |
 | src/inspect\_flow/\_launcher/python\_version.py    |       53 |       13 |       16 |        4 |     69.57% |29-36, 49-\>47, 56-57, 85-91, 113-115, 121 |
-| src/inspect\_flow/\_launcher/uv\_settings.py       |       64 |        1 |       22 |        1 |     97.67% |        94 |
+| src/inspect\_flow/\_launcher/uv\_settings.py       |       66 |        1 |       22 |        1 |     97.73% |        96 |
 | src/inspect\_flow/\_launcher/venv.py               |      238 |        3 |       78 |        3 |     98.10% |205, 296, 309 |
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/check.py                |       35 |        1 |       10 |        1 |     95.56% |        23 |
@@ -90,7 +90,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       14 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **6382** |  **365** | **2020** |  **182** | **92.56%** |           |
+| **TOTAL**                                          | **6384** |  **365** | **2020** |  **182** | **92.56%** |           |
 
 
 ## Setup coverage badge
