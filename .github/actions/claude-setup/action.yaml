@@ -9,7 +9,7 @@ description: >-
 runs:
   using: composite
   steps:
-    - uses: meridianlabs-ai/actions/install-python-dependencies@3bc608093ab8b8dd7f82764a863d9d5f9dce61a5 # main
+    - uses: meridianlabs-ai/actions/install-python-dependencies@57adfb7a3247f06e4f1c033f461a54e0d83d04f5 # main
       with:
         versions: locked
         # CI runs a 3.11/3.14 matrix; the agent only needs one interpreter.
