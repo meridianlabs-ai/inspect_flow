@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.15.0...v0.15.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* record flow-requirements.txt without building source packages ([#921](https://github.com/meridianlabs-ai/inspect_flow/issues/921)) ([278d685](https://github.com/meridianlabs-ai/inspect_flow/commit/278d685f1ce37be78a32e9c489af32b617b79158))
+
 ## [0.15.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.14.0...v0.15.0) (2026-11-11)
 
 
