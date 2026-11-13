@@ -12,8 +12,8 @@ must decide from `repos/*/pulls` and `repos/*/issues`, never from the search
 API, whose results under the job token differ from a user's (runs 35611948106
 and 35614947712 refused on an open labelled issue counted as a pull request).
 
-The PR labels each composer writes (here and in inspect-ai-main-failure.yml)
-must be exactly the `allowed-pr-labels` its `land` step pins, so a manifest
+The PR labels the composer writes must be exactly the `allowed-pr-labels` the
+`land` step pins, so a manifest
 rewritten after the composer cannot add another label (#847).
 
 Every job that runs the agent restores the Actions cache but never saves it
@@ -30,13 +30,13 @@ before the opt-in), are left to land. The "Open the maintainer's draft PR"
 step pushes that branch with a placeholder note and none of the agent's
 objects, and a re-run adopts the branch and PR it made.
 
-Both direct `land` callers and the dev-agent and @auto stubs opt in to land's
+The direct `land` caller and the dev-agent and @auto stubs opt in to land's
 tier 2 (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
 tier-2 opt-in), which Build allows by running every job that runs the
 checkout read-only, and by checking uv.lock's package sources first.
 
-Both scheduled agent workflows have land open their PRs as drafts assigned to
-ransomr (agents#175's `pr-draft` and `pr-assignees`), and neither carries the
+The scheduled agent workflow has land open its PRs as drafts assigned to
+ransomr (agents#175's `pr-draft` and `pr-assignees`), and none carries the
 `auto` label (#859 sat labelled `auto`, never reviewed).
 
 Every call of the agents repo's reusable workflows sets the `provision` recipe
@@ -494,18 +494,11 @@ def test_gate_skips_gh_when_already_reconciled(tmp_path: Path) -> None:
     assert calls == []
 
 
-@pytest.mark.parametrize(
-    ("workflow", "agent_job", "land_job"),
-    [
-        ("inspect-update.yml", "agent", "land"),
-        ("inspect-ai-main-failure.yml", "triage-agent", "triage-land"),
-    ],
-)
 def test_land_allows_only_the_labels_the_composer_writes(
-    tmp_path: Path, repo: Path, workflow: str, agent_job: str, land_job: str
+    tmp_path: Path, repo: Path
 ) -> None:
-    compose = _steps(agent_job, WORKFLOWS / workflow)["Compose landing manifest"]
-    land = _steps(land_job, WORKFLOWS / workflow)["Land"]
+    compose = _steps("agent")["Compose landing manifest"]
+    land = _steps("land")["Land"]
     env = _env(tmp_path, repo, {"type": "result", "subtype": "success"})
     _commit(repo)
     output = tmp_path / "github-output"
@@ -538,7 +531,6 @@ def test_agent_jobs_only_read_the_actions_cache() -> None:
     }
     assert agent_jobs == {
         ("inspect-update.yml", "agent"): "read",
-        ("inspect-ai-main-failure.yml", "triage-agent"): "read",
         ("claude.yml", "claude"): "read",
         ("claude.yml", "claude-auto"): "read",
         ("claude-auto.yml", "ci-fix"): "read",
@@ -625,7 +617,6 @@ def test_landing_workflows_opt_in_to_build_config() -> None:
     }
     assert land_steps == {
         ("inspect-update.yml", "land"): "true",
-        ("inspect-ai-main-failure.yml", "triage-land"): "true",
     }
 
 
@@ -637,16 +628,13 @@ def _needs(job: dict[str, Any]) -> list[str]:
     return [needs] if isinstance(needs, str) else needs
 
 
-@pytest.mark.parametrize(
-    ("workflow", "gate"),
-    [("inspect-update.yml", "gate"), ("inspect-ai-main-failure.yml", "triage-gate")],
-)
-def test_a_dispatch_runs_only_from_the_default_branch(workflow: str, gate: str) -> None:
-    """Both direct workflows opt in to land's tier 2 and run their agent as the
+def test_a_dispatch_runs_only_from_the_default_branch() -> None:
+    """The direct workflow opts in to land's tier 2 and runs its agent as the
     runner on the dispatched ref's checkout: the gate's first step fails a
     dispatch from any other branch, loudly, and no job a dispatch can start
     runs without the gate succeeding."""
-    document = yaml.safe_load((WORKFLOWS / workflow).read_text())
+    gate = "gate"
+    document = yaml.safe_load(WORKFLOW.read_text())
     assert "workflow_dispatch" in document[True]
     jobs = document["jobs"]
     assert "needs" not in jobs[gate]
@@ -686,12 +674,9 @@ def test_a_dispatch_runs_only_from_the_default_branch(workflow: str, gate: str) 
     for name, job in jobs.items():
         if name == gate:
             continue
-        if gate in _needs(job):
-            if "always()" in job.get("if", ""):
-                assert f"needs.{gate}.result == 'success'" in job["if"], name
-        else:
-            # close-on-green: a workflow_run-only job, which no dispatch starts.
-            assert job["if"].startswith("github.event_name == 'workflow_run'"), name
+        assert gate in _needs(job), name
+        if "always()" in job.get("if", ""):
+            assert f"needs.{gate}.result == 'success'" in job["if"], name
 
 
 ROUTE_STEP = "Route protected changes to the maintainer"
@@ -1578,15 +1563,11 @@ def test_a_draft_opened_without_its_label_is_reported(tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    ("workflow", "job"),
-    [("inspect-update.yml", "land"), ("inspect-ai-main-failure.yml", "triage-land")],
-)
-def test_land_opens_a_draft_assigned_to_the_maintainer(workflow: str, job: str) -> None:
-    """The agents behind these PRs read third-party text (a failed run's logs,
-    inspect-ai's changelog), so land opens their PRs as drafts for ransomr's
-    review (agents#175) and neither allows the `auto` label (#859)."""
-    land = _steps(job, WORKFLOWS / workflow)["Land"]["with"]
+def test_land_opens_a_draft_assigned_to_the_maintainer() -> None:
+    """The agent behind these PRs reads third-party text (inspect-ai's
+    changelog), so land opens its PRs as drafts for ransomr's review
+    (agents#175) and does not allow the `auto` label (#859)."""
+    land = _steps("land")["Land"]["with"]
     assert land["pr-draft"] == "true"
     assert land["pr-assignees"] == "ransomr"
     assert "auto" not in json.loads(land["allowed-pr-labels"])
@@ -1603,21 +1584,6 @@ def test_a_landing_that_failed_after_opening_the_pr_keeps_it(tmp_path: Path) -> 
     assert "The note on #861 names what failed, such as its assignee" in body
     assert "review the PR as usual" in body
     assert "did not complete" not in body
-
-
-def test_a_canary_pr_whose_assignee_did_not_take_is_still_triaged() -> None:
-    """The canary's land fails the run over a failed assignment after it opened
-    the PR; the issue is still marked triaged, or the next canary failure
-    re-triages and opens a duplicate PR, and the failure is reported."""
-    steps = _steps("triage-land", WORKFLOWS / "inspect-ai-main-failure.yml")
-    context = {
-        "steps.mint.outcome": "success",
-        "steps.land.outcome": "failure",
-        "steps.land.outputs.pr_number": "861",
-    }
-    assert _selected(steps["Apply the triage labels"]["if"], context)
-    context["steps.labels.outcome"] = "success"
-    assert _selected(steps["Report the failure on the tracking issue"]["if"], context)
 
 
 BUILD = WORKFLOWS / "build.yaml"

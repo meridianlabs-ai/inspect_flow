@@ -882,10 +882,10 @@ jobs:
           # No automated job runs code from the branches pushed here as the
           # runner with more than the read-only job token: the reusable
           # workflows' agents provision and run as unprivileged users (agents
-          # step 5); this workflow and inspect-ai-main-failure.yml start from
-          # github.sha on the default branch on their automated triggers and
-          # on a dispatch from the default branch, and their gates refuse a
-          # dispatch from any other branch; Build runs read-only
+          # step 5); this workflow starts from github.sha on the default
+          # branch on its automated triggers and on a dispatch from the
+          # default branch, and its gates refuse a dispatch from any other
+          # branch; Build runs read-only
           # (meridianlabs-ai/agents design/executed-paths-residual.md → Land:
           # tier-2 opt-in). Accepted residual (Ransom, 2026-09-24): a branch
           # cut before that guard carries the unguarded workflow file, so a

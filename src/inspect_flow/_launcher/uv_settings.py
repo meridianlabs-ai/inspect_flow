@@ -13,7 +13,8 @@ logger = getLogger(__name__)
 # in step with [tool.uv] in flow's own pyproject.toml.
 DEFAULT_COOLDOWN = timedelta(days=7)
 SHORT_COOLDOWN = timedelta(hours=6)
-SHORT_COOLDOWN_PACKAGES = ("anthropic", "inspect-ai", "inspect-scout", "openai")
+SHORT_COOLDOWN_PACKAGES = ("anthropic", "openai")
+NO_COOLDOWN_PACKAGES = ("inspect-ai", "inspect-scout")
 
 
 def uv_settings_env(
@@ -31,6 +32,7 @@ def uv_settings_env(
     packages = {
         p: f'"{_timestamp(now - SHORT_COOLDOWN)}"' for p in SHORT_COOLDOWN_PACKAGES
     }
+    packages.update({p: "false" for p in NO_COOLDOWN_PACKAGES})
     # A version copied from the host must not be rejected by the cooldown, even
     # from an index without upload dates.
     packages.update({p: "false" for p in _exact_pins(pins)})
