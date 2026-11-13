@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import threading
 import tomllib
@@ -702,11 +703,17 @@ def test_python_version() -> None:
 def test_5_flow_requirements() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         log_dir = Path(temp_dir) / "logs"
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="mocked output"
-            )
 
+        def fake_run(
+            args: list[str], *pos: object, **kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            stdout = {
+                "uv pip freeze": "package-a==1.0.0\n",
+                "uv pip compile": "compiled output",
+            }.get(" ".join(args[:3]), "mocked output")
+            return subprocess.CompletedProcess(args=args, returncode=0, stdout=stdout)
+
+        with patch("subprocess.run", side_effect=fake_run):
             _create_venv(
                 spec=FlowSpec(
                     python_version="3.11",
@@ -724,7 +731,7 @@ def test_5_flow_requirements() -> None:
         assert requirements_path.exists()
         with open(requirements_path, "r") as f:
             requirements = f.read()
-            assert requirements == "mocked output"
+            assert requirements == "compiled output"
 
 
 def test_333_no_flow_requirements() -> None:
@@ -1383,6 +1390,7 @@ def test_freeze_forwards_explicit_interpreter_to_uv() -> None:
             compile_cmd[compile_cmd.index("--python") + 1]
             == "/custom/interpreter/python"
         )
+        assert "--no-build-isolation" in compile_cmd
 
 
 @pytest.mark.slow
@@ -1587,8 +1595,13 @@ def _wheel(
 
 
 @contextmanager
-def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator[str]:
-    # A PEP 691 index of the wheels, with each one's upload time, or none.
+def _simple_index(
+    wheels: Path,
+    upload_times: dict[str, str | None],
+    requested: list[str] | None = None,
+) -> Iterator[str]:
+    # A PEP 691 index of the wheels and sdists, with each one's upload time, or
+    # none. Appends the project names asked for to `requested`.
     class Handler(BaseHTTPRequestHandler):
         def do_HEAD(self) -> None:
             self.do_GET(body=False)
@@ -1600,6 +1613,9 @@ def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator
                 content = (wheels / name).read_bytes()
                 content_type = "application/octet-stream"
             else:
+                if requested is not None:
+                    requested.append(name)
+                prefix = name.replace("-", "_")
                 files = [
                     {
                         "filename": w.name,
@@ -1613,7 +1629,10 @@ def _simple_index(wheels: Path, upload_times: dict[str, str | None]) -> Iterator
                             else {}
                         ),
                     }
-                    for w in wheels.glob(f"{name.replace('-', '_')}-*.whl")
+                    for w in [
+                        *wheels.glob(f"{prefix}-*.whl"),
+                        *wheels.glob(f"{prefix}-*.tar.gz"),
+                    ]
                 ]
                 index = {"meta": {"api-version": "1.1"}, "name": name, "files": files}
                 content = json.dumps(index).encode()
@@ -1690,6 +1709,113 @@ def _install_copied_dep(
             capture_output=True,
             text=True,
         )
+
+
+def _dynamic_package(directory: Path, name: str) -> Path:
+    # A source package whose version only a build backend nothing provides can
+    # compute, so any metadata build asks the index for that backend.
+    directory.mkdir(parents=True)
+    (directory / "pyproject.toml").write_text(
+        '[build-system]\nrequires = ["missing-backend"]\n'
+        'build-backend = "missing_backend"\n'
+        f'[project]\nname = "{name}"\ndynamic = ["version"]\n'
+    )
+    return directory
+
+
+def _write_requirements(
+    tmp_path: Path, uv_env: dict[str, str], frozen: list[str]
+) -> list[str]:
+    # Records `frozen` as the freeze output with the real compile, offline,
+    # against an index of copied-dep 2.0 (a wheel) and sdist-only 1.0 (an sdist
+    # whose build needs missing-backend). Returns the project names the index
+    # was asked for.
+    files = tmp_path / "index"
+    _wheel(files, "copied-dep", "2.0")
+    sdist = _dynamic_package(tmp_path / "sdist", "sdist-only")
+    with tarfile.open(files / "sdist_only-1.0.tar.gz", "w:gz") as tar:
+        tar.add(sdist, "sdist_only-1.0")
+    real_run = subprocess.run
+
+    def fake_run(
+        args: list[str], *pos: Any, **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
+        if args[:3] == ["uv", "pip", "freeze"]:
+            stdout = "".join(f"{line}\n" for line in frozen)
+            return subprocess.CompletedProcess(args=args, returncode=0, stdout=stdout)
+        return real_run(args, *pos, **kwargs)
+
+    requested: list[str] = []
+    upload_times: dict[str, str | None] = {f.name: None for f in files.iterdir()}
+    with (
+        _simple_index(files, upload_times, requested) as index_url,
+        patch("subprocess.run", side_effect=fake_run),
+    ):
+        write_flow_requirements(
+            spec=FlowSpec(
+                log_dir=(tmp_path / "logs").as_posix(),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            cwd=str(tmp_path),
+            env={**uv_env, "UV_INDEX_URL": index_url, "UV_NO_CACHE": "1"},
+            dry_run=False,
+            python=sys.executable,
+        )
+    return requested
+
+
+def _hashed(requirement: str, file: Path) -> str:
+    digest = hashlib.sha256(file.read_bytes()).hexdigest()
+    return f"{requirement} \\\n    --hash=sha256:{digest}\n"
+
+
+def test_flow_requirements_builds_nothing(
+    tmp_path: Path, uv_env: dict[str, str], recording_console: Console
+) -> None:
+    # Source lines are recorded as frozen, with nothing built; registry pins
+    # (one with only an sdist) and wheels are compiled for their hashes.
+    package = _dynamic_package(tmp_path / "package", "dynamic-pkg")
+    _wheel(tmp_path / "local", "wheel-pkg", "1.0")
+    wheel = tmp_path / "local" / "wheel_pkg-1.0-py3-none-any.whl"
+    source_lines = [
+        f"-e {package.as_uri()}",
+        f"other-pkg @ {package.as_uri()}",
+        f"vcs-pkg @ git+{(tmp_path / 'missing-repo').as_uri()}@{'0' * 40}",
+        f"src-archive @ {(tmp_path / 'x.tar.gz').as_uri()}#sha256={'a' * 64}",
+    ]
+    registry_lines = ["copied-dep==2.0", "sdist-only==1.0"]
+    wheel_line = f"wheel-pkg @ {wheel.as_uri()}"
+
+    _write_requirements(tmp_path, uv_env, source_lines + registry_lines + [wheel_line])
+
+    requirements = (tmp_path / "logs" / "flow-requirements.txt").read_text()
+    index = tmp_path / "index"
+    assert requirements == (
+        "".join(f"{line}\n" for line in source_lines)
+        + _hashed("copied-dep==2.0", index / "copied_dep-2.0-py3-none-any.whl")
+        + _hashed("sdist-only==1.0", index / "sdist_only-1.0.tar.gz")
+        + _hashed(wheel_line, wheel)
+    )
+    assert "Failed to generate" not in recording_console.export_text()
+
+
+def test_flow_requirements_settings_cannot_fetch_build_requirements(
+    tmp_path: Path, uv_env: dict[str, str], recording_console: Console
+) -> None:
+    # An override that turns a registry pin into a source makes the compile
+    # build it, with an installed backend only.
+    package = _dynamic_package(tmp_path / "package", "copied-dep")
+    override = tmp_path / "override.txt"
+    override.write_text(f"copied-dep @ {package.as_uri()}\n")
+    uv_env["UV_OVERRIDE"] = str(override)
+
+    requested = _write_requirements(tmp_path, uv_env, ["copied-dep==2.0"])
+
+    assert "missing-backend" not in requested
+    assert "Failed to generate flow-requirements.txt" in (
+        recording_console.export_text()
+    )
+    assert not (tmp_path / "logs" / "flow-requirements.txt").exists()
 
 
 def _an_hour_ago() -> str:
