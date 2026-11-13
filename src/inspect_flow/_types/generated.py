@@ -233,7 +233,7 @@ class FlowTaskDict(TypedDict, closed=True):
     tags: NotRequired[Sequence[str] | NotGiven | None]
     """Tags to associate with the task."""
     metadata: NotRequired[Mapping[str, Any] | NotGiven | None]
-    """Additional metadata to associate with the task."""
+    """Additional metadata to associate with the task. Merged with the metadata of the loaded task, with these values taking precedence. `None` clears the metadata of the loaded task."""
     sample_id: NotRequired[str | int | Sequence[str | int] | NotGiven | None]
     """Evaluate specific sample(s) from the dataset."""
     flow_metadata: NotRequired[Mapping[str, Any] | NotGiven | None]

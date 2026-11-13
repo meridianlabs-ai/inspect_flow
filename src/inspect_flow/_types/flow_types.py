@@ -642,7 +642,8 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
     )
 
     metadata: dict[str, Any] | None | NotGiven = Field(
-        default=not_given, description="Additional metadata to associate with the task."
+        default=not_given,
+        description="Additional metadata to associate with the task. Merged with the metadata of the loaded task, with these values taking precedence. `None` clears the metadata of the loaded task.",
     )
 
     sample_id: str | int | Sequence[str | int] | None | NotGiven = Field(

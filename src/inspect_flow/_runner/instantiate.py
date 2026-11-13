@@ -436,6 +436,10 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             else flow_task.tags
         )
 
+        metadata = flow_task.metadata
+        if metadata and task.metadata:
+            metadata = task.metadata | metadata
+
         task_with(
             task,
             # dataset= Not Supported
@@ -465,7 +469,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             early_stopping=ng(flow_task.early_stopping),
             name=ng(task_name),
             description=ng(flow_task.description),
-            metadata=ng(flow_task.metadata),
+            metadata=ng(metadata),
             tags=ng(tags),
         )
     return tasks

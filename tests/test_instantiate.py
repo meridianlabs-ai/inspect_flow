@@ -367,6 +367,53 @@ def test_version_not_set_preserves_loaded_version() -> None:
 
 
 @task
+def metadata_task() -> Task:
+    return Task(metadata={"source": "task", "requires": "tools"})
+
+
+@pytest.mark.parametrize(
+    ("flow_task", "expected"),
+    [
+        pytest.param(
+            FlowTask(name="metadata_task", metadata={"variant": "a"}),
+            {"source": "task", "requires": "tools", "variant": "a"},
+            id="merged",
+        ),
+        pytest.param(
+            FlowTask(name="metadata_task", metadata={"source": "flow"}),
+            {"source": "flow", "requires": "tools"},
+            id="flow_wins_on_clash",
+        ),
+        pytest.param(
+            FlowTask(name="metadata_task"),
+            {"source": "task", "requires": "tools"},
+            id="not_set_preserves_task_metadata",
+        ),
+        pytest.param(
+            FlowTask(name="metadata_task", metadata=None),
+            None,
+            id="none_clears_task_metadata",
+        ),
+        pytest.param(
+            FlowTask(name="versioned_task", metadata={"variant": "a"}),
+            {"variant": "a"},
+            id="task_without_metadata",
+        ),
+        pytest.param(
+            FlowTask(name="versioned_task"),
+            None,
+            id="no_metadata",
+        ),
+    ],
+)
+def test_metadata_merged_with_task_metadata(
+    flow_task: FlowTask, expected: dict[str, Any] | None
+) -> None:
+    tasks = instantiate_tasks(spec=FlowSpec(tasks=[flow_task]), base_dir=".")
+    assert tasks[0].task.metadata == expected
+
+
+@task
 def instantiate_error_task() -> Task:
     raise ValueError("Instantiation Error")
 
