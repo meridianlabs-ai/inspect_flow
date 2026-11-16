@@ -1082,6 +1082,7 @@ def test_spec_fields_are_classified_for_models() -> None:
         "score",
         "score_display",
         "score_on_error",
+        "sentinel_proxy",
         "tags",
         "trace",
     ]
