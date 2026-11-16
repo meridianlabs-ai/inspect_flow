@@ -238,6 +238,7 @@ def run_eval_set(spec: FlowSpec, base_dir: str, dry_run: bool = False) -> Launch
             log_dir_allow_dirty=default_none(options.log_dir_allow_dirty),
             eval_set_id=default_none(options.eval_set_id),
             embed_viewer=default(options.embed_viewer, False),
+            sentinel_proxy=default_none(options.sentinel_proxy),
             retry_immediate=True,
             # kwargs= FlowSpec, FlowTask, and FlowModel allow setting the generate config
         )

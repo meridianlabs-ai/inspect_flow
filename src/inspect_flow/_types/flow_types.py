@@ -22,6 +22,7 @@ from typing import (
 
 import rich.repr
 from inspect_ai import ScannerConfig, Task
+from inspect_ai._sentinel._config import SentinelProxy
 from inspect_ai._util.error import PrerequisiteError
 from inspect_ai.agent import Agent
 from inspect_ai.approval._policy import ApprovalPolicyConfig
@@ -922,6 +923,11 @@ class FlowOptions(FlowBase):
     embed_viewer: bool | None | NotGiven = Field(
         default=not_given,
         description="If True, embed a log viewer into the log directory.",
+    )
+
+    sentinel_proxy: SentinelProxy | None | NotGiven = Field(
+        default=not_given,
+        description="Whether to look for a sentinel sidecar behind each model's proxy, which then judges the agent's model calls. Off unless set: `off` (the default) never looks, `auto` uses a sidecar it finds, and `required` fails a task unless one is found. Only an Anthropic, OpenAI or OpenAI-compatible model whose base URL was set is probed. Experimental: not yet a stable API; may change without notice.",
     )
 
     bundle_url_mappings: dict[str, str] | None | NotGiven = Field(

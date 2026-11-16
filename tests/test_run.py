@@ -1158,6 +1158,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
             checkpoint=True,
             acp_server=8080,
             ctl_server="keep-alive",
+            sentinel_proxy="auto",
         ),
         tasks=[
             task_file + "@noop",
@@ -1218,6 +1219,7 @@ def test_eval_set_args(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["checkpoint"] == spec.options.checkpoint
     assert call_args.kwargs["acp_server"] == spec.options.acp_server
     assert call_args.kwargs["ctl_server"] == spec.options.ctl_server
+    assert call_args.kwargs["sentinel_proxy"] == spec.options.sentinel_proxy
 
 
 def test_eval_set_scanner_config(mock_eval_set: MagicMock) -> None:
