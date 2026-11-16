@@ -437,7 +437,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
         )
 
         metadata = flow_task.metadata
-        if metadata and task.metadata:
+        if isinstance(metadata, dict) and task.metadata:
             metadata = task.metadata | metadata
 
         task_with(

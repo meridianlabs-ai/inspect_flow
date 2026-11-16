@@ -385,6 +385,11 @@ def metadata_task() -> Task:
             id="flow_wins_on_clash",
         ),
         pytest.param(
+            FlowTask(name="metadata_task", metadata={}),
+            {"source": "task", "requires": "tools"},
+            id="empty_preserves_task_metadata",
+        ),
+        pytest.param(
             FlowTask(name="metadata_task"),
             {"source": "task", "requires": "tools"},
             id="not_set_preserves_task_metadata",
