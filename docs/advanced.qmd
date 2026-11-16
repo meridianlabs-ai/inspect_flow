@@ -254,6 +254,8 @@ The `metadata` field in `FlowOptions` and `FlowTask` is passed directly to Inspe
 
 The metadata from `FlowOptions` is applied globally to all tasks in the evaluation run, while task-level metadata is specific to each task. These metadata dictionaries are merged in Inspect AI, with task-level metadata keys overriding the global options.
 
+If the task code sets its own metadata (`Task(metadata=...)`), `FlowTask.metadata` is merged with it, with the `FlowTask` keys taking precedence. Set `metadata=None` on the `FlowTask` to clear the metadata of the loaded task.
+
 ### `flow_metadata` (Flow-Only Metadata)
 
 The `flow_metadata` field is available on `FlowSpec`, `FlowTask`, `FlowModel`, `FlowScorer`, `FlowSolver`, and `FlowAgent`. This metadata is **not passed to Inspect AI**—it exists only in the Flow configuration and is useful for configuration-time logic and organization.
