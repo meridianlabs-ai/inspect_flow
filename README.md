@@ -17,7 +17,7 @@
 | src/inspect\_flow/\_cli/main.py                    |       34 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/options.py                 |       81 |        0 |       16 |        0 |    100.00% |           |
 | src/inspect\_flow/\_cli/run.py                     |       38 |        0 |        6 |        0 |    100.00% |           |
-| src/inspect\_flow/\_cli/step.py                    |      205 |       17 |       88 |       19 |     87.71% |28, 41, 44, 54-55, 77, 86, 92-\>99, 94-\>93, 96, 103, 109, 144-\>147, 147-\>exit, 314-\>313, 319, 321, 329, 351, 353, 355, 394 |
+| src/inspect\_flow/\_cli/step.py                    |      205 |       18 |       88 |       20 |     87.03% |28, 41, 44, 54-55, 77, 86, 92-\>99, 94-\>93, 96, 103, 109, 139, 144-\>147, 147-\>exit, 314-\>313, 319, 321, 329, 351, 353, 355, 394 |
 | src/inspect\_flow/\_cli/store.py                   |      177 |        0 |       52 |        3 |     98.69% |49-\>51, 260-\>exit, 400-\>exit |
 | src/inspect\_flow/\_config/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_config/defaults.py             |       90 |        0 |       46 |        0 |    100.00% |           |
@@ -90,7 +90,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       14 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **6384** |  **365** | **2020** |  **182** | **92.56%** |           |
+| **TOTAL**                                          | **6384** |  **366** | **2020** |  **183** | **92.54%** |           |
 
 
 ## Setup coverage badge
