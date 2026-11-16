@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.15.0...v0.16.0) (2026-11-16)
+
+
+### Features
+
+* add FlowOptions.sentinel_proxy for inspect-ai 0.3.290 ([#935](https://github.com/meridianlabs-ai/inspect_flow/issues/935)) ([1e33695](https://github.com/meridianlabs-ai/inspect_flow/commit/1e33695af71be951faae408413cd088cfa17fa87))
+
+
+### Bug Fixes
+
+* record flow-requirements.txt without building source packages ([#921](https://github.com/meridianlabs-ai/inspect_flow/issues/921)) ([278d685](https://github.com/meridianlabs-ai/inspect_flow/commit/278d685f1ce37be78a32e9c489af32b617b79158))
+
 ## [0.15.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.14.0...v0.15.0) (2026-11-11)
 
 
