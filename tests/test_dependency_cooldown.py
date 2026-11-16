@@ -242,10 +242,11 @@ def test_publish_builds_in_the_shared_workflow() -> None:
 
 def test_publish_jobs_only_upload_the_shared_build() -> None:
     jobs = workflow_jobs(RELEASE)
+    # A job that calls a shared workflow, such as docs, has no steps here.
     publishers = [
         job
         for job in jobs.values()
-        if job.get("permissions", {}).get("id-token") == "write"
+        if job.get("permissions", {}).get("id-token") == "write" and "uses" not in job
     ]
     assert publishers, "no job holds id-token: write"
     for job in publishers:
