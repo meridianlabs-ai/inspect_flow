@@ -47,7 +47,7 @@
 | src/inspect\_flow/\_runner/\_\_init\_\_.py         |        0 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/check.py                |       35 |        1 |       10 |        1 |     95.56% |        23 |
 | src/inspect\_flow/\_runner/cli.py                  |       72 |       11 |        4 |        2 |     82.89% |47-48, 119-123, 146-149 |
-| src/inspect\_flow/\_runner/instantiate.py          |      250 |        3 |      116 |        3 |     98.36% |73, 307-308, 399-\>401 |
+| src/inspect\_flow/\_runner/instantiate.py          |      253 |        3 |      118 |        3 |     98.38% |73, 307-308, 399-\>401 |
 | src/inspect\_flow/\_runner/logs.py                 |      141 |        1 |       56 |        2 |     98.48% |217, 255-\>249 |
 | src/inspect\_flow/\_runner/resolve.py              |        8 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/\_runner/run.py                  |      239 |       17 |       90 |       11 |     90.88% |246-247, 251-\>253, 259, 262-263, 267, 277-278, 295, 311, 352-353, 370, 392-\>389, 393-\>392, 395, 401, 404-405 |
@@ -90,7 +90,7 @@
 | src/inspect\_flow/\_util/util.py                   |       14 |        0 |        4 |        0 |    100.00% |           |
 | src/inspect\_flow/\_version.py                     |       11 |        0 |        0 |        0 |    100.00% |           |
 | src/inspect\_flow/api/\_\_init\_\_.py              |       14 |        0 |        0 |        0 |    100.00% |           |
-| **TOTAL**                                          | **6384** |  **366** | **2020** |  **183** | **92.54%** |           |
+| **TOTAL**                                          | **6387** |  **366** | **2022** |  **183** | **92.54%** |           |
 
 
 ## Setup coverage badge
