@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from inspect_flow import FlowSpec, FlowTask
+from inspect_flow import FlowOptions, FlowSpec, FlowTask
 from inspect_flow._runner.run import run_eval_set
 from inspect_flow._util.subprocess_util import SpawnResult
 from inspect_flow.api import check
@@ -99,6 +99,21 @@ def test_check_result_is_complete(tmp_path: Path) -> None:
     run_eval_set(spec=spec, base_dir=".")
     complete = check(spec=spec, base_dir=".")
     assert complete.is_complete
+
+
+def test_check_range_limit_is_complete(tmp_path: Path) -> None:
+    spec = FlowSpec(
+        log_dir=str(tmp_path / "logs"),
+        options=FlowOptions(limit=(1, 2)),
+        tasks=[FlowTask(name=_TASK, model="mockllm/mock-llm")],
+    )
+
+    run_eval_set(spec=spec, base_dir=".")
+    result = check(spec=spec, base_dir=".")
+
+    assert result.is_complete
+    assert result.tasks[0].samples == 1
+    assert result.tasks[0].total_samples == 1
 
 
 @pytest.mark.parametrize("is_complete", [True, False])

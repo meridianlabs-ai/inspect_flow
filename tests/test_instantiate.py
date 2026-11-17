@@ -10,7 +10,8 @@ from inspect_ai.log import HeadlineMetric
 from inspect_ai.model import Model, get_model
 from inspect_ai.review._policy import ReviewerPolicyConfig, ReviewPolicyConfig
 from inspect_ai.scorer._reducer.registry import reducer_log_name
-from inspect_ai.util import CheckpointConfig, TokenInterval
+from inspect_ai.util import CheckpointConfig, SandboxEnvironmentSpec, TokenInterval
+from inspect_flow._config.load import expand_spec
 from inspect_flow._runner.instantiate import instantiate_tasks
 from inspect_flow._types.flow_types import (
     FlowAgent,
@@ -155,6 +156,20 @@ def test_task_limits_and_flags() -> None:
     assert [policy.tools for policy in task.review] == ["*"]
     assert task.headline_metric == HeadlineMetric(scorer="accuracy_scorer")
     assert task.description == "Answer the question."
+
+
+def test_expanded_spec_keeps_tuple_sandbox() -> None:
+    spec = FlowSpec(
+        tasks=[FlowTask(name=task_name, sandbox=("docker", "compose.yaml"))]
+    )
+    spec = expand_spec(spec, base_dir=".")
+    assert spec.tasks
+    assert isinstance(spec.tasks[0], FlowTask)
+    assert spec.tasks[0].sandbox == ("docker", "compose.yaml")
+    tasks = instantiate_tasks(spec=spec, base_dir=".")
+    assert tasks[0].task.sandbox == SandboxEnvironmentSpec(
+        type="docker", config="compose.yaml"
+    )
 
 
 def test_file_not_found() -> None:

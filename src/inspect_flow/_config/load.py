@@ -210,8 +210,10 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
             return new
         elif isinstance(obj, dict):
             return {k: substitute_strings(v) for k, v in obj.items()}
-        elif isinstance(obj, (list, tuple)):
+        elif isinstance(obj, list):
             return [substitute_strings(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return tuple(substitute_strings(item) for item in obj)
         elif isinstance(obj, BaseModel):
             # Process Pydantic objects by iterating over their fields
             updates = {}
