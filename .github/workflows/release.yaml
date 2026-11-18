@@ -10,7 +10,7 @@ jobs:
         permissions:
             contents: write
             pull-requests: write
-        uses: meridianlabs-ai/actions/.github/workflows/release-please-python.yml@57adfb7a3247f06e4f1c033f461a54e0d83d04f5 # main
+        uses: meridianlabs-ai/actions/.github/workflows/release-please-python.yml@65f1b6bdb9b1af7eb0bc89942c624dd4efef1316 # main
         with:
             approvers: "ransomr jjallaire dragonstyle"
         # Only the secrets the reusable workflow uses, not `secrets: inherit`, so
@@ -27,7 +27,7 @@ jobs:
         if: ${{ needs.release-please.outputs.release_created }}
         runs-on: ubuntu-latest
         steps:
-            - uses: meridianlabs-ai/actions/slack-release-announce@57adfb7a3247f06e4f1c033f461a54e0d83d04f5 # main
+            - uses: meridianlabs-ai/actions/slack-release-announce@65f1b6bdb9b1af7eb0bc89942c624dd4efef1316 # main
               with:
                   webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
                   title: ":rocket: inspect-flow ${{ needs.release-please.outputs.tag_name }} released"
@@ -46,7 +46,7 @@ jobs:
         if: ${{ needs.release-please.outputs.release_created }}
         permissions:
             contents: read
-        uses: meridianlabs-ai/actions/.github/workflows/build-python-dist.yml@57adfb7a3247f06e4f1c033f461a54e0d83d04f5 # main
+        uses: meridianlabs-ai/actions/.github/workflows/build-python-dist.yml@65f1b6bdb9b1af7eb0bc89942c624dd4efef1316 # main
         with:
             python-version: "3.11"
 

@@ -315,7 +315,7 @@ jobs:
       # The job token is passed explicitly so the action does not mint its own
       # App token: `gh` here can read (the canonical PR diff) and nothing else.
       # Commits carry the App's bot identity, since the App token pushes them.
-      - uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
+      - uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         id: claude
         env:
           GIT_AUTHOR_NAME: meridian-marvin[bot]
