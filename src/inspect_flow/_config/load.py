@@ -1,4 +1,5 @@
 import inspect
+import re
 import traceback
 from logging import getLogger
 from pathlib import Path
@@ -186,6 +187,12 @@ class _SpecFormatMapMapping:
         return f"{{{key}}}"
 
 
+# Only `{name}` and `{name[key]}` with a known name are substituted; other braces
+# (JSON, regex, prompt templates) stay as written
+_SUBSTITUTION_PATTERN = re.compile(r"\{([A-Za-z_]\w*)(?:\[[^\[\]{}]+\])*\}")
+_SUBSTITUTION_NAMES = {*FlowSpec.model_fields, "DATETIME"}
+
+
 def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
     """Apply any substitutions to the spec."""
     # Issue #266 must resolve the log dir before applying substitutions
@@ -194,11 +201,19 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
 
     mapping = _SpecFormatMapMapping(spec)
 
+    def substitute_match(match: re.Match[str]) -> str:
+        if match.group(1) not in _SUBSTITUTION_NAMES:
+            return match.group(0)
+        return match.group(0).format_map(mapping)
+
+    def substitute(s: str) -> str:
+        return _SUBSTITUTION_PATTERN.sub(substitute_match, s)
+
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
         if isinstance(obj, str):
             last = obj
-            new = obj.format_map(mapping)
+            new = substitute(obj)
             # Repeat until no more substitutions occur
             while new != last:
                 if obj in new:
@@ -206,7 +221,7 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
                         f"Circular substitution detected for string: {obj}"
                     )
                 last = new
-                new = last.format_map(mapping)
+                new = substitute(last)
             return new
         elif isinstance(obj, dict):
             return {k: substitute_strings(v) for k, v in obj.items()}
