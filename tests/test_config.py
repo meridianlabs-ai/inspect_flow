@@ -562,6 +562,9 @@ def test_257_format_map_not_config() -> None:
         (r"^\d{3}$", r"^\d{3}$"),
         ("Question: {}", "Question: {}"),
         ('{log_dir}: {"a": 1}', 'logs: {"a": 1}'),
+        ("Answer with {choices[0]}", "Answer with {choices[0]}"),
+        ("{item[name]}", "{item[name]}"),
+        ("{schema}", "{schema}"),
     ],
 )
 def test_substitution_leaves_literal_braces(value: str, expected: str) -> None:

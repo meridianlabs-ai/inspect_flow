@@ -187,8 +187,10 @@ class _SpecFormatMapMapping:
         return f"{{{key}}}"
 
 
-# Only `{name}` and `{name[key]}` are substituted; other braces (JSON, regex) stay
-_SUBSTITUTION_PATTERN = re.compile(r"\{[A-Za-z_]\w*(?:\[[^\[\]{}]+\])*\}")
+# Only `{name}` and `{name[key]}` with a known name are substituted; other braces
+# (JSON, regex, prompt templates) stay as written
+_SUBSTITUTION_PATTERN = re.compile(r"\{([A-Za-z_]\w*)(?:\[[^\[\]{}]+\])*\}")
+_SUBSTITUTION_NAMES = {*FlowSpec.model_fields, "DATETIME"}
 
 
 def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
@@ -199,8 +201,13 @@ def _apply_substitutions(spec: FlowSpec, base_dir: str) -> FlowSpec:
 
     mapping = _SpecFormatMapMapping(spec)
 
+    def substitute_match(match: re.Match[str]) -> str:
+        if match.group(1) not in _SUBSTITUTION_NAMES:
+            return match.group(0)
+        return match.group(0).format_map(mapping)
+
     def substitute(s: str) -> str:
-        return _SUBSTITUTION_PATTERN.sub(lambda m: m.group(0).format_map(mapping), s)
+        return _SUBSTITUTION_PATTERN.sub(substitute_match, s)
 
     # Recursively apply substitutions to all string fields
     def substitute_strings(obj: Any) -> Any:
