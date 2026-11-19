@@ -81,6 +81,28 @@ def test_task_with_get_model(mock_eval_set: MagicMock) -> None:
     assert call_args.kwargs["max_tasks"] == 10
 
 
+def test_log_dir_sibling_of_cwd_is_not_made_relative(
+    mock_eval_set: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # log_dir "<dir>/proj-logs" is not inside cwd "<dir>/proj", so eval_set must
+    # get it unchanged rather than "logs" (which would resolve to "<dir>/proj/logs").
+    task_path = str(Path(task_file).resolve())
+    cwd = tmp_path / "proj"
+    cwd.mkdir()
+    monkeypatch.chdir(cwd)
+    log_dir = Path.cwd().as_posix() + "-logs"
+    run_eval_set(
+        spec=FlowSpec(
+            log_dir=log_dir,
+            tasks=[FlowTask(name=task_path + "@noop", model="mockllm/mock-llm")],
+        ),
+        base_dir=".",
+    )
+
+    mock_eval_set.assert_called_once()
+    assert mock_eval_set.call_args.kwargs["log_dir"] == log_dir
+
+
 def test_task_with_two_models() -> None:
     # This test verifies that the tasks have distinct identifiers and eval_set runs correctly
     # So can not use a mock
