@@ -115,7 +115,8 @@ def _collect_task_dependencies(
     _collect_sandbox_dependencies(task.sandbox, dependencies)
     # Issue #262 _collect_approver_dependencies(task.approver, dependencies)
 
-    if not task.model and not task.model_roles:
+    # model_roles do not replace the main model, which still comes from the env
+    if not task.model:
         _collect_env_model_dependencies(dependencies)
 
 
