@@ -340,9 +340,15 @@ def _merge_include_objects(spec: _T, included: _T) -> _T:
         spec_value = getattr(spec, field_name)
         included_value = getattr(included, field_name)
 
-        if isinstance(included_value, NotGiven):
+        # Fields of Inspect types (GenerateConfig) and FlowStoreConfig default to
+        # real values rather than not_given, so only explicitly set fields count
+        if isinstance(included_value, NotGiven) or (
+            field_name not in included.model_fields_set
+        ):
             pass
-        elif isinstance(spec_value, NotGiven):
+        elif isinstance(spec_value, NotGiven) or (
+            field_name not in spec.model_fields_set
+        ):
             updates[field_name] = included_value
         elif isinstance(spec_value, BaseModel) and isinstance(
             included_value, BaseModel

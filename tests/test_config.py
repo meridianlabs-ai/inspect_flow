@@ -41,7 +41,13 @@ from inspect_flow._config.load import (
     expand_spec,
     int_load_spec,
 )
-from inspect_flow._types.flow_types import FlowDependencies, FlowFactory, not_given
+from inspect_flow._types.flow_types import (
+    FlowDefaults,
+    FlowDependencies,
+    FlowFactory,
+    FlowStoreConfig,
+    not_given,
+)
 from inspect_flow._util.data import LAST_LOG_DIR_KEY, write_data
 from inspect_flow._util.error import FlowHandledError
 from inspect_flow._util.logging import init_flow_logging
@@ -758,6 +764,51 @@ def test_418_spec_includes() -> None:
     spec3 = expand_spec(spec2, base_dir=".")
     assert spec3.options
     assert spec3.options.log_dir_allow_dirty is True
+
+
+def test_include_keeps_included_fields_that_have_real_defaults() -> None:
+    included = FlowSpec(
+        defaults=FlowDefaults(config=GenerateConfig(temperature=0.5)),
+        store=FlowStoreConfig(path="team_store", read=True),
+    )
+    spec = expand_spec(
+        FlowSpec(
+            includes=[included],
+            defaults=FlowDefaults(config=GenerateConfig(max_tokens=100)),
+            store=FlowStoreConfig(filter="my_filter"),
+            tasks=[FlowTask(name="local_eval/noop", model="mockllm/model")],
+        ),
+        base_dir=".",
+    )
+    assert isinstance(spec.tasks, list) and isinstance(spec.tasks[0], FlowTask)
+    config = spec.tasks[0].config
+    assert isinstance(config, GenerateConfig)
+    assert (config.temperature, config.max_tokens) == (0.5, 100)
+    assert isinstance(spec.store, FlowStoreConfig)
+    assert (spec.store.path, spec.store.read, spec.store.filter) == (
+        "team_store",
+        True,
+        "my_filter",
+    )
+
+
+def test_include_unset_field_does_not_block_later_include() -> None:
+    spec = expand_spec(
+        FlowSpec(
+            includes=[
+                FlowSpec(store=FlowStoreConfig(path="team_store")),
+                FlowSpec(store=FlowStoreConfig(read=True)),
+            ],
+            store=FlowStoreConfig(filter="my_filter"),
+        ),
+        base_dir=".",
+    )
+    assert isinstance(spec.store, FlowStoreConfig)
+    assert (spec.store.path, spec.store.read, spec.store.filter) == (
+        "team_store",
+        True,
+        "my_filter",
+    )
 
 
 def test_inspect_objects() -> None:
