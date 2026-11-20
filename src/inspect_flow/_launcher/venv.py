@@ -1,4 +1,5 @@
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -288,7 +289,8 @@ def _file_specifies_inspect_ai(file_path: str) -> bool:
         return any(isinstance(d, str) and _spec_is_inspect_ai(d) for d in deps)
     with open(file_path) as f:
         for raw_line in f:
-            line = raw_line.strip()
+            # Drop an inline comment, options such as `--hash` and a trailing `\`.
+            line = re.split(r"\s+(?:#|--)|\s*\\$", raw_line.strip())[0]
             if not line or line.startswith(("#", "-")):
                 continue
             if _spec_is_inspect_ai(line):
