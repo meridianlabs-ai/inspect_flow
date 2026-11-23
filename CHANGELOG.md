@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.16.0...v0.17.0) (2026-11-23)
+
+
+### Features
+
+* add FlowTask.max_samples for inspect-ai 0.3.292 ([#959](https://github.com/meridianlabs-ai/inspect_flow/issues/959)) ([20cf524](https://github.com/meridianlabs-ai/inspect_flow/commit/20cf524e60fd648ac56f73327cb84c36864d94bb))
+
+
+### Bug Fixes
+
+* collect INSPECT_EVAL_MODEL provider dependencies for tasks that set only model_roles ([#948](https://github.com/meridianlabs-ai/inspect_flow/issues/948)) ([70c8970](https://github.com/meridianlabs-ai/inspect_flow/commit/70c8970f66c87a0fc54e08711ceed30d399b3a09))
+* leave literal braces in spec strings untouched during substitution ([#939](https://github.com/meridianlabs-ai/inspect_flow/issues/939)) ([e49d95a](https://github.com/meridianlabs-ai/inspect_flow/commit/e49d95a5db1a034a235841234dd7b09ef8baf47b))
+* only strip the cwd from log_dir and log paths at a path-separator boundary ([#949](https://github.com/meridianlabs-ai/inspect_flow/issues/949)) ([aadfbe0](https://github.com/meridianlabs-ai/inspect_flow/commit/aadfbe0bfa1d0f7eb8457d1163442d6367a016bb))
+* resolve relative paths in flow store remove the same way as import ([#954](https://github.com/meridianlabs-ai/inspect_flow/issues/954)) ([7562d57](https://github.com/meridianlabs-ai/inspect_flow/commit/7562d5727205c9268b9328c393bdd69987a6d42b))
+
 ## [0.16.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.15.0...v0.16.0) (2026-11-16)
 
 
