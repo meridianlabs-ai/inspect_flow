@@ -226,6 +226,8 @@ class FlowTaskDict(TypedDict, closed=True):
     """Limit on total cost (in dollars) for each sample. Requires model cost data via model_cost_config."""
     early_stopping: NotRequired[NotGiven | None]
     """Early stopping callbacks."""
+    max_samples: NotRequired[int | NotGiven | None]
+    """Maximum number of this task's samples to run in parallel. Overridden by `options.max_samples` when set."""
     description: NotRequired[str | NotGiven | None]
     """Short statement of what the task asks of the agent (recorded in the eval log)."""
     version: NotRequired[int | str | NotGiven]

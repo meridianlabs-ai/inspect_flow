@@ -971,6 +971,7 @@ def test_spec_fields_are_classified_for_models() -> None:
         "fail_on_error",
         "flow_metadata",
         "headline_metric",
+        "max_samples",
         "message_limit",
         "metadata",
         "model",
