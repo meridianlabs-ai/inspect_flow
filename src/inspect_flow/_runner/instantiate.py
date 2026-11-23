@@ -467,6 +467,7 @@ def _instantiate_task(spec: FlowSpec, flow_task: TaskSpec, base_dir: str) -> lis
             working_limit=ng(flow_task.working_limit),
             cost_limit=ng(flow_task.cost_limit),
             early_stopping=ng(flow_task.early_stopping),
+            max_samples=ng(flow_task.max_samples),
             name=ng(task_name),
             description=ng(flow_task.description),
             metadata=ng(metadata),

@@ -137,6 +137,7 @@ def test_task_limits_and_flags() -> None:
                 turn_limit=5,
                 token_limit="1M",
                 score_on_error=True,
+                max_samples=3,
                 checkpoint=checkpoint,
                 review=review,
                 headline_metric="accuracy_scorer",
@@ -151,6 +152,7 @@ def test_task_limits_and_flags() -> None:
     assert task.turn_limit == 5
     assert task.token_limit == 1_000_000
     assert task.score_on_error is True
+    assert task.max_samples == 3
     assert task.checkpoint == checkpoint
     assert task.review is not None
     assert [policy.tools for policy in task.review] == ["*"]

@@ -628,6 +628,11 @@ class FlowTask(FlowBase, arbitrary_types_allowed=True):
         description="Early stopping callbacks.",
     )
 
+    max_samples: int | None | NotGiven = Field(
+        default=not_given,
+        description="Maximum number of this task's samples to run in parallel. Overridden by `options.max_samples` when set.",
+    )
+
     description: str | None | NotGiven = Field(
         default=not_given,
         description="Short statement of what the task asks of the agent (recorded in the eval log).",
@@ -842,7 +847,7 @@ class FlowOptions(FlowBase):
 
     max_samples: int | None | NotGiven = Field(
         default=not_given,
-        description="Maximum number of samples to run in parallel (default is `max_connections`).",
+        description="Maximum number of samples to run in parallel within each task (overrides a task's own `max_samples`; default is `max_connections`).",
     )
 
     max_dataset_memory: int | None | NotGiven = Field(
