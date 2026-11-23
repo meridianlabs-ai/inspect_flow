@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 from inspect_flow._cli.store import store_command
+from inspect_flow._store.store import store_factory
 from rich.console import Console
 
 LOG_DIR = "tests/test_logs/logs1"
@@ -219,3 +220,22 @@ def test_store_import_path_with_dotdot_is_normalized() -> None:
     assert logs, "Expected logs to be imported"
     dotdot_logs = [log for log in logs if ".." in log]
     assert not dotdot_logs, f"Some log paths contain '..': {dotdot_logs}"
+
+
+def test_store_remove_path_with_dotdot() -> None:
+    # Removing with the same ".." path that was used for import should remove the logs.
+    runner = CliRunner()
+    path_with_dotdot = "tests/test_logs/logs2/../logs1"
+    result = runner.invoke(
+        store_command, ["import", path_with_dotdot], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    store = store_factory("auto", base_dir=".")
+    assert store is not None
+    assert len(store.get_logs()) == 2
+
+    result = runner.invoke(
+        store_command, ["remove", path_with_dotdot], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert store.get_logs() == set()

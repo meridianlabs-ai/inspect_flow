@@ -176,6 +176,9 @@ def _remove_prefix(
     logs: set[str],
     logs_to_remove: set[str],
 ) -> None:
+    if not urlparse(prefix).scheme:
+        # Resolve local paths as import_log_path does; URIs keep a trailing sep.
+        prefix = absolute_file_path(prefix)
     prefix = to_uri(prefix)
     if prefix in logs:
         logs_to_remove.add(prefix)
