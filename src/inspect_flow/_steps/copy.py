@@ -1,3 +1,4 @@
+import os
 from os.path import splitext
 from typing import Callable
 
@@ -14,10 +15,15 @@ from inspect_flow._util.console import flow_print
 def _relative_path(location: str, source_prefix: str | None) -> str:
     """Return the relative portion of location for the destination."""
     if source_prefix:
-        _, abs_location = split_protocol(absolute_file_path(location))
+        protocol, abs_location = split_protocol(absolute_file_path(location))
         _, abs_prefix = split_protocol(absolute_file_path(source_prefix))
-        if abs_location.startswith(abs_prefix):
-            return abs_location.removeprefix(abs_prefix).lstrip("/")
+        # A backslash separates directories only in Windows local paths;
+        # elsewhere it is a valid character in a directory or key name.
+        seps = "/\\" if os.name == "nt" and protocol in (None, "file") else "/"
+        abs_prefix = abs_prefix.rstrip(seps)
+        rest = abs_location[len(abs_prefix) :]
+        if abs_location.startswith(abs_prefix) and rest.startswith(tuple(seps)):
+            return rest.lstrip(seps)
     return basename(location)
 
 
