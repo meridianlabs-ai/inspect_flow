@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 from unittest.mock import patch
@@ -188,6 +189,23 @@ def test_list_log_limit_qualifiers(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert "turn_limit=5" in result.output
+
+
+def test_list_log_total_samples_without_results(tmp_path: Path) -> None:
+    # The sample log ran 1 of 198 dataset samples (limit=1) for 4 epochs.
+    log = read_eval_log(_SAMPLE_LOG)
+    assert log.eval.dataset.samples == 198
+    assert log.eval.dataset.sample_ids is not None
+    assert len(log.eval.dataset.sample_ids) == 1
+    assert log.eval.config.epochs == 4
+    log.status = "error"
+    log.results = None
+    write_eval_log(log, str(tmp_path / "log.eval"))
+    result = CliRunner().invoke(
+        list_command, ["log", str(tmp_path), "--json"], catch_exceptions=False
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output)["logs"][0]["total_samples"] == 4
 
 
 def test_list_log_provenance(tmp_path: Path) -> None:

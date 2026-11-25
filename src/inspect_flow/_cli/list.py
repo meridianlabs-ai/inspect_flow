@@ -20,6 +20,7 @@ from inspect_ai.log import (
     TagsEdit,
     read_eval_log_async,
 )
+from inspect_ai.log._recover._write import expected_samples
 from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.progress import Progress
@@ -202,8 +203,7 @@ def _date_str(header_result: _HeaderResult) -> str:
 def _total_samples(header: EvalLog) -> int | None:
     if header.results:
         return header.results.total_samples
-    total = (header.eval.dataset.samples or 0) * (header.eval.config.epochs or 1)
-    return total or None
+    return expected_samples(header.eval) or None
 
 
 def _samples_str(header_result: _HeaderResult) -> str:
