@@ -1072,6 +1072,46 @@ def test_inspect_ai_version_via_dependency_file_requirements() -> None:
             ]
 
 
+@pytest.mark.parametrize(
+    "contents",
+    [
+        "inspect-ai==0.3.100 \\\n    --hash=sha256:" + "0" * 64 + "\n",
+        "inspect-ai==0.3.100\\\n    --hash=sha256:" + "0" * 64 + "\n",
+        "inspect-ai==0.3.100  # pinned for this eval\n",
+    ],
+    ids=["hash", "hash-no-space", "inline-comment"],
+)
+def test_inspect_ai_version_via_dependency_file_requirements_hash_or_comment(
+    tmp_path: Path, contents: str
+) -> None:
+    """An inspect-ai pin followed by `--hash` lines (as written by
+    `uv pip compile --generate-hashes`) or by an inline comment must also
+    stop the auto-pinned host inspect-ai from being appended."""
+    req_file = tmp_path / "requirements.txt"
+    req_file.write_text(contents)
+    temp_dir = tmp_path / "venv"
+    temp_dir.mkdir()
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="mocked output"
+        )
+
+        _create_venv(
+            spec=FlowSpec(
+                dependencies=FlowDependencies(dependency_file=req_file.as_posix()),
+                tasks=[FlowTask(name="task_name")],
+            ),
+            base_dir=tmp_path.as_posix(),
+            temp_dir=temp_dir.as_posix(),
+            env=os.environ.copy(),
+            dry_run=False,
+            action=_test_action,
+        )
+
+    assert get_pip_string("inspect-ai") not in mock_run.call_args.args[0]
+
+
 def test_inspect_ai_version_via_dependency_file_pyproject() -> None:
     """When the user pins inspect-ai in a pyproject.toml dependency_file,
     the venv setup must use that file and must not also append the
