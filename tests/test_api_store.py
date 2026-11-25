@@ -1,7 +1,11 @@
+import os
 import shutil
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from botocore.client import BaseClient
+from inspect_flow._store import deltalake
 from inspect_flow.api import FlowStore, store_get
 
 parent = str(Path.cwd() / "tests/test_logs")
@@ -69,6 +73,38 @@ def test_store_trailing_slash() -> None:
     assert len(store.get_logs()) == 2
     store.remove_log_prefix(dir1 + "/")
     assert len(store.get_logs()) == 0
+
+
+def test_store_remove_trailing_slash_skips_sibling_dirs(tmp_path: Path) -> None:
+    for name in ["run_1", "run_10"]:
+        (tmp_path / name).mkdir()
+        shutil.copy(log1_path, tmp_path / name)
+    store: FlowStore = store_get()
+    store.import_log_path(str(tmp_path), recursive=True)
+    assert len(store.get_logs()) == 2
+
+    store.remove_log_prefix(str(tmp_path / "run_1") + "/", recursive=True)
+    assert store.get_logs() == {"file://" + str(tmp_path / "run_10" / log1_name)}
+
+    # Without the trailing slash the prefix is still a plain string prefix.
+    store.remove_log_prefix(str(tmp_path / "run_1"), recursive=True)
+    assert len(store.get_logs()) == 0
+
+
+@pytest.mark.parametrize("recursive", [True, False])
+def test_store_remove_trailing_slash_windows_sep(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, recursive: bool
+) -> None:
+    for name in ["run_1", "run_10"]:
+        (tmp_path / name).mkdir()
+        shutil.copy(log1_path, tmp_path / name)
+    store: FlowStore = store_get()
+    store.import_log_path(str(tmp_path), recursive=True)
+
+    # On Windows os.sep is a backslash, but stored paths use forward slashes.
+    monkeypatch.setattr(deltalake, "os", SimpleNamespace(sep="\\", environ=os.environ))
+    store.remove_log_prefix(str(tmp_path / "run_1") + "/", recursive=recursive)
+    assert store.get_logs() == {"file://" + str(tmp_path / "run_10" / log1_name)}
 
 
 def test_store_remove_escaping(mock_s3: BaseClient) -> None:
