@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.17.0...v0.17.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* use the selected sample count as the total in flow list log ([#965](https://github.com/meridianlabs-ai/inspect_flow/issues/965)) ([427f1eb](https://github.com/meridianlabs-ai/inspect_flow/commit/427f1ebcbc47fb2cbebfc8d2733f65519e6817b7))
+
 ## [0.17.0](https://github.com/meridianlabs-ai/inspect_flow/compare/v0.16.0...v0.17.0) (2026-11-23)
 
 
