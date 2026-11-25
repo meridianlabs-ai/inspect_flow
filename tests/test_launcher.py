@@ -22,6 +22,7 @@ from inspect_flow._types.flow_types import FlowOptions, FlowTask
 from inspect_flow._util.constants import DEFAULT_LOG_LEVEL
 from inspect_flow._util.subprocess_util import RUN_RESULT_FILE_ENV, read_run_result
 from inspect_flow.api import SpecNotPortableError
+from rich.console import Console
 
 from tests.conftest import MockVenvSubprocess, mock_call_arg
 
@@ -273,6 +274,28 @@ def test_relative_bundle_dir(mock_venv_subprocess: MockVenvSubprocess) -> None:
     assert spec.options.bundle_url_mappings
     assert absolute_path in spec.options.bundle_url_mappings
     mock_venv_subprocess.popen.assert_called_once()
+
+
+def test_relative_bundle_url_mappings_embed_viewer(
+    recording_console: Console, tmp_path: Path
+) -> None:
+    launch(
+        spec=FlowSpec(
+            execution_type="inproc",
+            log_dir="logs/viewer_test",
+            store=None,
+            options=FlowOptions(
+                embed_viewer=True,
+                bundle_url_mappings={"logs": "http://example.com/view"},
+            ),
+            tasks=[FlowTask(name=str(Path(_TASK).resolve()), model="mockllm/mock-llm")],
+        ),
+        base_dir=tmp_path.as_posix(),
+        dry_run=True,
+    )
+
+    out = recording_console.export_text()
+    assert "Viewer: http://example.com/view/viewer_test/" in out
 
 
 def test_bundle_dir(mock_venv_subprocess: MockVenvSubprocess) -> None:

@@ -33,16 +33,16 @@ def _prepare_launch_spec(spec: FlowSpec, base_dir: str) -> None:
 
     write_data(LAST_LOG_DIR_KEY, spec.log_dir)
 
+    # Ensure bundle_dir and bundle_url_mappings are absolute paths
     if spec.options and spec.options.bundle_dir:
-        # Ensure bundle_dir and bundle_url_mappings are absolute paths
         spec.options.bundle_dir = absolute_path_relative_to(
             spec.options.bundle_dir, base_dir=base_dir
         )
-        if spec.options.bundle_url_mappings:
-            spec.options.bundle_url_mappings = {
-                absolute_path_relative_to(k, base_dir=base_dir): v
-                for k, v in spec.options.bundle_url_mappings.items()
-            }
+    if spec.options and spec.options.bundle_url_mappings:
+        spec.options.bundle_url_mappings = {
+            absolute_path_relative_to(k, base_dir=base_dir): v
+            for k, v in spec.options.bundle_url_mappings.items()
+        }
 
     if spec.options and isinstance(spec.options.scanner, str):
         scanner_path = absolute_path_relative_to(
