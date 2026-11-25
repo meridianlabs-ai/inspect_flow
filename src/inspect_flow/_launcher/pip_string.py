@@ -3,6 +3,8 @@ from importlib.metadata import Distribution, PackageNotFoundError
 from logging import getLogger
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from pydantic import BaseModel, Field
 
@@ -108,7 +110,7 @@ def _direct_url_to_pip_string(direct_url: _DirectUrl) -> str:
     if direct_url.dir_info and direct_url.dir_info.editable:
         url = direct_url.url
         if url.startswith("file://"):
-            url = url[7:]  # Strip file:// prefix
+            url = url2pathname(urlparse(url).path)
         return f"-e {url}"
 
     # Local directory (non-editable)

@@ -449,6 +449,23 @@ def test_818_registered_provider_resolves_to_its_package() -> None:
     assert collect_auto_dependencies(spec) == [get_pip_string("local_eval")]
 
 
+def test_editable_install_path_is_decoded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # direct_url.json records an editable install as a percent-encoded file URI
+    project = tmp_path / "My Evals" / "editable_pkg"
+    project.mkdir(parents=True)
+    dist_info = tmp_path / "site" / "editable_pkg-0.1.dist-info"
+    dist_info.mkdir(parents=True)
+    (dist_info / "METADATA").write_text("Name: editable_pkg\nVersion: 0.1\n")
+    (dist_info / "direct_url.json").write_text(
+        json.dumps({"url": project.as_uri(), "dir_info": {"editable": True}})
+    )
+    monkeypatch.syspath_prepend(str(tmp_path / "site"))
+
+    assert get_pip_string("editable_pkg") == f"-e {project}"
+
+
 def test_auto_dependency_list_valued_model_role() -> None:
     # a list-valued role binds several models to one role; every element's
     # provider package must be collected
