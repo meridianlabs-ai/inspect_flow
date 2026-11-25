@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -162,11 +163,28 @@ def test_relative_path_prefix_sibling_directory() -> None:
     )
 
 
-def test_relative_path_prefix_windows_separators() -> None:
+def test_relative_path_prefix_windows_separators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from inspect_flow._steps.copy import _relative_path
 
+    monkeypatch.setattr(os, "name", "nt")
     assert _relative_path("C:\\a\\b\\sub\\log.eval", "C:\\a\\b") == "sub\\log.eval"
     assert _relative_path("C:\\a\\b10\\log.eval", "C:\\a\\b") == "log.eval"
+
+
+def test_relative_path_prefix_keeps_literal_backslash() -> None:
+    from inspect_flow._steps.copy import _relative_path
+
+    assert _relative_path("/a/b/\\run/log.eval", "/a/b") == "\\run/log.eval"
+    assert _relative_path("/a/b\\x/log.eval", "/a/b") == "log.eval"
+    assert (
+        _relative_path("s3://bucket/logs/\\run/log.eval", "s3://bucket/logs")
+        == "\\run/log.eval"
+    )
+    assert (
+        _relative_path("s3://bucket/logs\\x/log.eval", "s3://bucket/logs") == "log.eval"
+    )
 
 
 # --- _dest_path ---
@@ -219,6 +237,16 @@ def test_copy_with_source_prefix_sibling_directory(tmp_path: Path) -> None:
     copy([inside, sibling], dest=str(dest), source_prefix=prefix)
     copied = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.eval"))
     assert copied == ["b.eval", "sub/a.eval"]
+
+
+def test_copy_with_source_prefix_backslash_directory(tmp_path: Path) -> None:
+    _make_log(tmp_path / "logs" / "\\run", "a.eval")
+    _make_log(tmp_path / "logs" / "run", "a.eval")
+    logs = sorted(str(p) for p in (tmp_path / "logs").rglob("*.eval"))
+    dest = tmp_path / "dest"
+    copy(logs, dest=str(dest), source_prefix=str(tmp_path / "logs"))
+    copied = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.eval"))
+    assert copied == ["\\run/a.eval", "run/a.eval"]
 
 
 def test_copy_skips_existing(tmp_path: Path) -> None:
