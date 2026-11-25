@@ -181,14 +181,14 @@ def _remove_prefix(
         # Resolve local paths as import_log_path does; URIs keep a trailing sep.
         prefix = absolute_file_path(prefix)
     prefix = to_uri(prefix)
-    if is_dir and not prefix.endswith(("/", os.sep)):
+    sep = filesystem(prefix).sep
+    if is_dir and not prefix.endswith(sep):
         # Resolving a local path drops its trailing separator; keep it so that
         # "logs/run_1/" does not also match "logs/run_10/".
-        prefix += os.sep
+        prefix += sep
     if prefix in logs:
         logs_to_remove.add(prefix)
         return
-    sep = filesystem(prefix).sep
     prefix_len = len(prefix)
     for log in list(logs):
         if log.startswith(prefix):
